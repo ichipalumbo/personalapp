@@ -35,12 +35,31 @@ Criar uma plataforma web mobile-first que permita:
 ✅ Gerenciamento de alunos e slots  
 ✅ Criação em massa de slots (bulk)  
 ✅ Autenticação simples (usuário/senha)  
+✅ Autenticação simples (ID único — MVP)
 
 ### Usuários
 - **1 Professora (Admin)** - gerencia tudo
 - **5-7 Alunos** - agendamento apenas
 
 ---
+
+## Decisões do MVP
+
+- Autenticação: **Login por ID apenas (sem senha)** — fluxo simples para o MVP. O Apps Script valida o `ID` na aba `Usuarios` e retorna um token de sessão curto (TTL configurável). (Decisão tomada pelo cliente.)
+- Sincronização Calendar → Sheets: **Trigger automático a cada 2 horas** + botão manual "🔄 Sincronizar" no painel da professora. (Latência aceitável para MVP.)
+- DiasFixos: padronizar para valores `[1..7]` onde `1=Segunda` e `7=Domingo`.
+- Convenção de nomes: usar `camelCase` para JSON e objetos (ex.: `slotId`, `agendId`, `dataAgendamento`). Nas abas do Sheets usar cabeçalhos Title Case (ex.: `SlotId`).
+
+## Glossário
+
+- **Slot**: horário criado pela professora. `tipo` ∈ {`AULA`,`PESSOAL`}.
+- **Aula**: slot que alunos podem agendar (visível aos alunos).
+- **Pessoal**: bloqueio da professora — invisível para alunos.
+- **Agendamento**: objeto que liga um `Slot` a um `Aluno`.
+- **Alocado**: slot reservado para um aluno recorrente (aula fixa).
+- **DiasFixos**: array de inteiros `[1..7]` representando dias da semana (1=Segunda).
+- **GoogleEventId**: ID do evento no Google Calendar.
+
 
 ## Arquitetura & Tecnologia
 

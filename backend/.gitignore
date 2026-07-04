@@ -1,0 +1,5 @@
+node_modules/
+.clasp.json
+*.swp
+*.swo
+.DS_Store
