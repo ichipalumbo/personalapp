@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Personal Trainer</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+    <!--
+    ========================================================
+    [HTML-HEADER] - Cabeçalho da página
+    ========================================================
+    -->
+    <header class="header">
+        <div>
+            <h1>💪 <span>Agenda</span> Personal Trainer</h1>
+            <div class="nav-calendario" style="margin-top:8px;">
+                <button onclick="navegarMes(-1)" title="Mês anterior">◀</button>
+                <span id="mesAnoLabel">Janeiro 2025</span>
+                <button onclick="navegarMes(1)" title="Próximo mês">▶</button>
+                <button class="btn btn-sm btn-secondary" onclick="irParaHoje()" style="margin-left:8px;">Hoje</button>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-primary" id="btnToggleCadastro" onclick="toggleTelaCadastro()">👥 Gerenciar Alunos</button>
+            <button class="btn btn-secondary" onclick="exportarDados()">📥 Exportar</button>
+            <button class="btn btn-secondary" onclick="importarDados()">📤 Importar</button>
+            <button class="btn btn-danger" onclick="limparTudo()">🗑️ Limpar Tudo</button>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!--
+        ========================================================
+        [HTML-ALUNOS] - Painel de cadastro de alunos (tela cheia)
+        ========================================================
+        -->
+        <section class="alunos-panel" id="painelCadastro">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:15px;">
+                <h2>👥 Cadastro de Alunos</h2>
+                <button class="btn btn-secondary btn-sm" onclick="toggleTelaCadastro()">✕ Fechar</button>
+            </div>
+
+            <div class="form-aluno" style="margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid #333;">
+                <div>
+                    <label>Nome do Aluno *</label>
+                    <input type="text" id="inputNome" placeholder="Ex: João Silva">
+                </div>
+                <div>
+                    <label>Telefone</label>
+                    <input type="text" id="inputTelefone" placeholder="(11) 99999-8888">
+                </div>
+                <div>
+                    <label>💰 Preço por aula (R$)</label>
+                    <input type="number" id="inputPreco" class="input-preco" placeholder="0,00" step="0.01" min="0">
+                </div>
+                <div>
+                    <label>Objetivo</label>
+                    <select id="inputObjetivo">
+                        <option value="Funcional">Funcional</option>
+                        <option value="Hipertrofia">Hipertrofia</option>
+                        <option value="Emagrecimento">Emagrecimento</option>
+                        <option value="Condicionamento">Condicionamento</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                <button class="btn btn-primary" onclick="adicionarAluno()">+ Adicionar Aluno</button>
+            </div>
+
+            <h3 style="margin-bottom:10px;color:#ccc;font-size:1rem;">Alunos Cadastrados</h3>
+            <div class="alunos-grid" id="alunosGrid"></div>
+        </section>
+
+        <!--
+        ========================================================
+        [HTML-CALENDARIO] - Calendário Mensal
+        ========================================================
+        -->
+        <section class="calendario-mensal" id="painelCalendario">
+            <div class="mes-header">
+                <h2>📆 Calendário Mensal</h2>
+                <div class="mes-nav">
+                    <button onclick="navegarMes(-1)">◀ Anterior</button>
+                    <button onclick="navegarMes(1)">Próximo ▶</button>
+                    <button onclick="irParaHoje()">📍 Hoje</button>
+                </div>
+            </div>
+            <div class="calendario-grid" id="calendarioGrid">
+                <!-- Renderizado via JS -->
+            </div>
+            <p style="margin-top:12px;color:#666;font-size:0.8rem;">💡 Clique em um dia para ver a agenda semanal daquela semana</p>
+        </section>
+
+        <!--
+        ========================================================
+        [HTML-AGENDA] - Agenda Semanal
+        ========================================================
+        -->
+        <section class="agenda-panel" id="painelAgenda">
+            <h2>📅 <span id="semanaLabel">Agenda Semanal</span></h2>
+            <div class="agenda-grid" id="agendaGrid">
+                <!-- Renderizado via JS -->
+            </div>
+        </section>
+
+    </div>
+
+    <!--
+    ========================================================
+    [HTML-MODAL] - Modal de agendamento
+    ========================================================
+    -->
+    <div class="modal-overlay" id="modalAgendar">
+        <div class="modal">
+            <h3>📌 Agendar Aula</h3>
+            <p style="margin-bottom:15px;color:#aaa;" id="modalInfo"></p>
+
+            <div class="form-group">
+                <label>Selecione o Aluno</label>
+                <select id="modalSelectAluno"></select>
+            </div>
+
+            <div class="form-group">
+                <label>Período da Aula</label>
+                <div class="modal-horarios-duplos">
+                    <select id="modalHorarioInicio"></select>
+                    <span>até</span>
+                    <select id="modalHorarioFim"></select>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="confirmarAgendamento()">Agendar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Input oculto para importar -->
+    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleImport(event)">
+
+    <!--
+    ========================================================
+    [HTML-TOAST] - Toast notification
+    ========================================================
+    -->
+    <div class="toast" id="toast"></div>
+
+    <!--
+    ========================================================
+    [SCRIPTS] - JavaScript (ordem IMPORTANTE!)
+    ========================================================
+    -->
+    <script src="assets/js/dados.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/alunos.js"></script>
+    <script src="assets/js/agenda.js"></script>
+    <script src="assets/js/calendario.js"></script>
+    <script src="assets/js/modal.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>

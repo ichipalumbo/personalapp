@@ -1,0 +1,589 @@
+/*
+========================================================
+[STYLE-BASE] - Reset e estilos base
+========================================================
+*/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #1a1a2e;
+    color: #eee;
+    min-height: 100vh;
+    padding: 20px;
+}
+
+/*
+========================================================
+[STYLE-HEADER] - Cabeçalho da página
+========================================================
+*/
+.header {
+    max-width: 1200px;
+    margin: 0 auto 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.header h1 {
+    font-size: 1.8rem;
+    color: #ff6f00;
+}
+.header h1 span {
+    color: #fff;
+    font-weight: 300;
+}
+
+.header-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.header .nav-calendario {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.header .nav-calendario button {
+    background: #0f3460;
+    border: 1px solid #333;
+    color: #eee;
+    padding: 8px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.3s;
+}
+.header .nav-calendario button:hover {
+    background: #1a4a7a;
+    border-color: #ff6f00;
+}
+.header .nav-calendario span {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #ff6f00;
+    min-width: 180px;
+    text-align: center;
+}
+
+/*
+========================================================
+[STYLE-BOTOES] - Estilos de botões
+========================================================
+*/
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.btn-primary {
+    background: #ff6f00;
+    color: #fff;
+}
+.btn-primary:hover {
+    background: #e65100;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 111, 0, 0.4);
+}
+
+.btn-secondary {
+    background: #2d2d44;
+    color: #ccc;
+}
+.btn-secondary:hover {
+    background: #3d3d55;
+}
+
+.btn-danger {
+    background: #c62828;
+    color: #fff;
+}
+.btn-danger:hover {
+    background: #b71c1c;
+}
+
+.btn-success {
+    background: #2e7d32;
+    color: #fff;
+}
+.btn-success:hover {
+    background: #1b5e20;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+}
+
+/*
+========================================================
+[STYLE-ALUNOS] - Painel de cadastro de alunos
+========================================================
+*/
+.alunos-panel {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.alunos-panel h2 {
+    margin-bottom: 15px;
+    color: #ff6f00;
+}
+
+.alunos-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    min-height: 40px;
+}
+
+.aluno-card {
+    background: #0f3460;
+    padding: 10px 16px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-left: 4px solid #ff6f00;
+    font-size: 0.9rem;
+}
+
+.aluno-card .objetivo-badge {
+    font-size: 0.7rem;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+.aluno-card .remove-aluno {
+    cursor: pointer;
+    color: #ef5350;
+    font-weight: bold;
+    margin-left: 4px;
+}
+.aluno-card .remove-aluno:hover {
+    color: #ff1744;
+}
+
+.form-aluno {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: end;
+}
+
+.form-aluno input,
+.form-aluno select {
+    padding: 10px 14px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #0f3460;
+    color: #eee;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border 0.3s;
+}
+.form-aluno input:focus,
+.form-aluno select:focus {
+    border-color: #ff6f00;
+}
+.form-aluno input::placeholder {
+    color: #888;
+}
+
+.form-aluno label {
+    font-size: 0.8rem;
+    color: #aaa;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.form-aluno .input-preco {
+    max-width: 120px;
+}
+
+/*
+========================================================
+[STYLE-AGENDA] - Grade da agenda semanal
+========================================================
+*/
+.agenda-panel {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    margin-bottom: 30px;
+}
+
+.agenda-panel h2 {
+    margin-bottom: 15px;
+    color: #ff6f00;
+}
+
+.agenda-grid {
+    display: grid;
+    grid-template-columns: 70px repeat(5, 1fr);
+    gap: 2px;
+    min-width: 700px;
+}
+
+.agenda-header {
+    background: #0f3460;
+    padding: 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+    border-radius: 4px;
+}
+
+.agenda-horario {
+    background: #0f3460;
+    padding: 8px;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #aaa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.agenda-cell {
+    background: #1a1a3e;
+    padding: 6px;
+    min-height: 50px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+}
+.agenda-cell:hover {
+    background: #252550;
+}
+
+.agenda-cell.vago {
+    border: 1px dashed #333;
+}
+.agenda-cell.vago:hover {
+    border-color: #ff6f00;
+}
+
+.agenda-cell.ocupado {
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.aula-block {
+    background: #2e7d32;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    line-height: 1.3;
+    border-left: 3px solid #66bb6a;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+.aula-block .aula-nome {
+    font-weight: 600;
+    color: #fff;
+}
+.aula-block .aula-objetivo {
+    font-size: 0.65rem;
+    color: #a5d6a7;
+}
+.aula-block .aula-horario {
+    font-size: 0.65rem;
+    color: #c8e6c9;
+}
+
+/* Cores por objetivo */
+.objetivo-Funcional { border-left-color: #ff6f00; background: #3e2723; }
+.objetivo-Funcional .aula-objetivo { color: #ffab91; }
+
+.objetivo-Hipertrofia { border-left-color: #42a5f5; background: #1a237e; }
+.objetivo-Hipertrofia .aula-objetivo { color: #90caf9; }
+
+.objetivo-Emagrecimento { border-left-color: #66bb6a; background: #1b5e20; }
+.objetivo-Emagrecimento .aula-objetivo { color: #a5d6a7; }
+
+.objetivo-Condicionamento { border-left-color: #ab47bc; background: #311b92; }
+.objetivo-Condicionamento .aula-objetivo { color: #ce93d8; }
+
+.objetivo-Outro { border-left-color: #78909c; background: #37474f; }
+.objetivo-Outro .aula-objetivo { color: #b0bec5; }
+
+/*
+========================================================
+[STYLE-CALENDARIO] - Calendário mensal
+========================================================
+*/
+.calendario-mensal {
+    background: #16213e;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.calendario-mensal .mes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.calendario-mensal .mes-header h2 {
+    color: #ff6f00;
+    font-size: 1.4rem;
+}
+
+.calendario-mensal .mes-header .mes-nav {
+    display: flex;
+    gap: 8px;
+}
+
+.calendario-mensal .mes-header .mes-nav button {
+    background: #0f3460;
+    border: 1px solid #333;
+    color: #eee;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+.calendario-mensal .mes-header .mes-nav button:hover {
+    background: #1a4a7a;
+    border-color: #ff6f00;
+}
+.calendario-mensal .mes-header .mes-nav button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.calendario-grid .dia-header {
+    text-align: center;
+    padding: 8px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #888;
+    text-transform: uppercase;
+}
+
+.calendario-grid .dia-cell {
+    background: #0f3460;
+    border-radius: 8px;
+    padding: 8px;
+    min-height: 80px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+    position: relative;
+}
+.calendario-grid .dia-cell:hover {
+    background: #1a4a7a;
+    border-color: #ff6f00;
+}
+.calendario-grid .dia-cell.outro-mes {
+    opacity: 0.3;
+}
+.calendario-grid .dia-cell.hoje {
+    border-color: #ff6f00;
+    background: #1a1a3e;
+}
+.calendario-grid .dia-cell .dia-numero {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.calendario-grid .dia-cell .dia-aulas {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.calendario-grid .dia-cell .dia-aula-item {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.calendario-grid .dia-cell .dia-aula-item.funcional { background: #3e2723; color: #ffab91; }
+.calendario-grid .dia-cell .dia-aula-item.hipertrofia { background: #1a237e; color: #90caf9; }
+.calendario-grid .dia-cell .dia-aula-item.emagrecimento { background: #1b5e20; color: #a5d6a7; }
+.calendario-grid .dia-cell .dia-aula-item.condicionamento { background: #311b92; color: #ce93d8; }
+.calendario-grid .dia-cell .dia-aula-item.outro { background: #37474f; color: #b0bec5; }
+.calendario-grid .dia-cell .dia-mais {
+    font-size: 0.6rem;
+    color: #888;
+    margin-top: 2px;
+}
+
+/*
+========================================================
+[STYLE-MODAL] - Modal de agendamento
+========================================================
+*/
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: #16213e;
+    border-radius: 16px;
+    padding: 30px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.modal h3 {
+    margin-bottom: 20px;
+    color: #ff6f00;
+}
+
+.modal .form-group {
+    margin-bottom: 15px;
+}
+.modal .form-group label {
+    display: block;
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-bottom: 5px;
+}
+.modal .form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #0f3460;
+    color: #eee;
+    font-size: 1rem;
+    outline: none;
+}
+.modal .form-group select:focus {
+    border-color: #ff6f00;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: end;
+    margin-top: 20px;
+}
+
+.modal-horarios-duplos {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.modal-horarios-duplos select {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #0f3460;
+    color: #eee;
+    font-size: 1rem;
+    outline: none;
+}
+.modal-horarios-duplos select:focus {
+    border-color: #ff6f00;
+}
+.modal-horarios-duplos span {
+    color: #888;
+    font-size: 0.9rem;
+}
+
+/*
+========================================================
+[STYLE-TOAST] - Toast notifications
+========================================================
+*/
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: #2e7d32;
+    color: #fff;
+    padding: 14px 24px;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    font-weight: 500;
+    z-index: 2000;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.4s ease;
+}
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+.toast.error {
+    background: #c62828;
+}
+
+/*
+========================================================
+[STYLE-RESPONSIVO] - Media queries
+========================================================
+*/
+@media (max-width: 768px) {
+    .header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    .header-actions {
+        justify-content: center;
+    }
+    .form-aluno {
+        flex-direction: column;
+    }
+    .form-aluno input,
+    .form-aluno select {
+        width: 100%;
+    }
+    .agenda-grid {
+        font-size: 0.75rem;
+        grid-template-columns: 50px repeat(5, 1fr);
+    }
+    .agenda-horario {
+        font-size: 0.7rem;
+    }
+    .modal {
+        padding: 20px;
+    }
+}
