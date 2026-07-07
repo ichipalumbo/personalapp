@@ -83,22 +83,30 @@ function limparTudo() {
 
 function toggleTelaCadastro() {
     telaCadastroAberta = !telaCadastroAberta;
+    
     const painelCadastro = document.getElementById('painelCadastro');
     const painelAgenda = document.getElementById('painelAgenda');
     const painelCalendario = document.getElementById('painelCalendario');
     const btnToggle = document.getElementById('btnToggleCadastro');
 
     if (telaCadastroAberta) {
-        painelCadastro.style.display = 'block';
-        painelAgenda.style.display = 'none';
-        painelCalendario.style.display = 'none';
-        btnToggle.textContent = '📅 Voltar para Agenda';
-        btnToggle.className = 'btn btn-secondary';
+        // Modo CADASTRO: só mostra o painel de alunos
+        if (painelCadastro) painelCadastro.style.display = 'block';
+        if (painelAgenda) painelAgenda.style.display = 'none';
+        if (painelCalendario) painelCalendario.style.display = 'none';
+        if (btnToggle) {
+            btnToggle.textContent = '📅 Voltar para Agenda';
+            btnToggle.className = 'btn btn-secondary';
+        }
     } else {
-        painelCadastro.style.display = 'none';
-        painelAgenda.style.display = 'block';
-        painelCalendario.style.display = 'block';
-        btnToggle.textContent = '👥 Gerenciar Alunos';
-        btnToggle.className = 'btn btn-primary';
+        // Modo AGENDA: mostra calendário + agenda
+        if (painelCadastro) painelCadastro.style.display = 'none';
+        if (painelAgenda) painelAgenda.style.display = 'block';
+        if (painelCalendario) painelCalendario.style.display = 'block';
+        if (btnToggle) {
+            btnToggle.textContent = '👥 Gerenciar Alunos';
+            btnToggle.className = 'btn btn-primary';
+        }
     }
 }
+

@@ -18,8 +18,13 @@ function carregarDados() {
 function salvarDados() {
     try {
         localStorage.setItem('personalTrainerData', JSON.stringify({ alunos, aulas }));
-        renderizarCalendario(); // Atualiza o calendário sempre que salvar
+        // Só atualiza o calendário se ele estiver visível
+        const painelCalendario = document.getElementById('painelCalendario');
+        if (painelCalendario && painelCalendario.style.display !== 'none') {
+            if (typeof renderizarCalendario === 'function') renderizarCalendario();
+        }
     } catch (e) {
         console.warn('Erro ao salvar dados:', e);
     }
 }
+

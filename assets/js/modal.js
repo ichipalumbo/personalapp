@@ -19,24 +19,36 @@ function preencherSelectHorarios() {
 }
 
 function abrirModal(dia, horario) {
-    if (alunos.length === 0) {
-        mostrarToast('Cadastre pelo menos um aluno primeiro!', 'error');
-        return;
-    }
-
     modalDia = dia;
     modalHorarioClick = horario;
 
-    document.getElementById('modalInfo').textContent = `${dia}`;
+    document.getElementById('modalInfo').textContent = dia;
 
+    // Sempre popula o select, mesmo que vazio
     const select = document.getElementById('modalSelectAluno');
-    select.innerHTML = alunos.map(a => `
-        <option value="${a.id}">${a.nome} — ${a.objetivo} ${a.preco ? `(R$ ${a.preco.toFixed(2)})` : ''}</option>
-    `).join('');
+    if (alunos.length > 0) {
+        select.innerHTML = getAlunosParaSelect();
+        select.disabled = false;
+    } else {
+        select.innerHTML = `<option value="">— Nenhum aluno cadastrado —</option>`;
+        select.disabled = true;
+    }
 
     preencherSelectHorarios();
+    
+    // Garantir que o cadastro rápido comece oculto
+    const container = document.getElementById('cadastroRapidoContainer');
+    const btn = document.getElementById('btnCadastroRapido');
+    if (container) container.style.display = 'none';
+    if (btn) {
+        btn.textContent = '➕ Novo';
+        btn.className = 'btn btn-sm btn-primary';
+    }
+    
     document.getElementById('modalAgendar').classList.add('active');
 }
+
+
 
 function fecharModal() {
     document.getElementById('modalAgendar').classList.remove('active');
@@ -48,8 +60,8 @@ function confirmarAgendamento() {
     const horarioInicio = document.getElementById('modalHorarioInicio').value;
     const horarioFim = document.getElementById('modalHorarioFim').value;
 
-    if (!alunoId) {
-        mostrarToast('Selecione um aluno!', 'error');
+    if (!alunoId || select.disabled) {
+        mostrarToast('Cadastre um aluno primeiro! Use o botão "➕ Novo"', 'error');
         return;
     }
 
