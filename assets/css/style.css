@@ -1,0 +1,460 @@
+/* ========================================================
+   [STYLE-BASE] - Reset e estilos base (Focado em Mobile)
+   ======================================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0D0D0D;
+    color: #E0E0E0;
+    min-height: 100vh;
+    padding: 15px;
+}
+
+.container {
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* ========================================================
+   [STYLE-HEADER & NAV] - Design Unificado AtivaMente
+   ======================================================== */
+.header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px 15px;
+    border-bottom: 2px solid #2A2A2A;
+    background: #0D0D0D;
+    gap: 15px;
+    width: 100%;
+}
+
+.marca-titulo {
+    margin: 0;
+    font-size: 1.8rem;
+    letter-spacing: -0.5px;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.marca-ativa {
+    color: #FFD700;
+}
+
+.marca-mente {
+    color: #0D0D0D;
+    text-shadow: 
+        -1.5px -1.5px 0 #FFF,  
+         1.5px -1.5px 0 #FFF,
+        -1.5px  1.5px 0 #FFF,
+         1.5px  1.5px 0 #FFF;
+}
+
+.marca-subtitulo {
+    margin: 5px 0 0 0;
+    font-size: 0.8rem;
+    font-weight: 400;
+    letter-spacing: 1px;
+    color: #888888;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.text-bounce {
+    display: inline-block;
+    animation: halterBounce 2.5s infinite ease-in-out;
+}
+
+@keyframes halterBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(8deg); }
+}
+
+.header-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-nav {
+    display: flex;
+    width: 100%;
+    justify-content: space-around;
+    background: #1A1A1A;
+    padding: 6px;
+    border-radius: 30px;
+    border: 1px solid #2A2A2A;
+}
+
+.header-nav .nav-link {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.header-nav .nav-link.ativo {
+    background: #FFD700 !important;
+    color: #0D0D0D !important;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
+.header-nav .nav-link.inativo {
+    color: #A0A0A0;
+    background: transparent;
+}
+
+.nav-icon-anim {
+    transition: transform 0.2s ease;
+}
+
+.header-nav .nav-link:active .nav-icon-anim {
+    transform: scale(1.15);
+}
+
+#utilitarios-dados {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+/* ========================================================
+   [STYLE-BOTOES]
+   ======================================================== */
+.btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-primary { background: #FFD700; color: #0D0D0D; }
+.btn-secondary { background: #2A2A2A; color: #E0E0E0; border: 1px solid #333; }
+.btn-danger { background: #F44336; color: #fff; }
+.btn-success { background: #4CAF50; color: #fff; }
+.btn-sm { padding: 6px 12px; font-size: 0.75rem; }
+
+/* ========================================================
+   [STYLE-ALUNOS] - Cards de Alunos
+   ======================================================== */
+.alunos-panel {
+    background: #1A1A1A;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #2A2A2A;
+}
+.alunos-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+.aluno-card {
+    background: #2A2A2A;
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 4px solid #FFD700;
+}
+
+/* Botão Flutuante Circular */
+#btnFlutuanteAdicionar {
+    position: fixed;
+    bottom: 30px;
+    right: 25px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #FFD700;
+    color: #0D0D0D;
+    border: none;
+    font-size: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    z-index: 99;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease;
+}
+#btnFlutuanteAdicionar:active {
+    transform: scale(0.9);
+}
+
+/* ========================================================
+   [STYLE-MODAL-ALUNOS] - Otimizado e Simétrico
+   ======================================================== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-alunos-corpo {
+    background: #1A1A1A;
+    border-radius: 16px;
+    padding: 24px;
+    width: 92%;
+    max-width: 440px;
+    border: 1px solid #2A2A2A;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+}
+.modal-alunos-corpo h3 {
+    font-size: 1.3rem;
+    color: #FFD700;
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.form-grupo-spa {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+.form-grupo-spa label {
+    font-size: 0.8rem;
+    color: #A0A0A0;
+    font-weight: 500;
+}
+.form-grupo-spa input, 
+.form-grupo-spa select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #333;
+    border-radius: 8px;
+    background: #0D0D0D;
+    color: #E0E0E0;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+.form-grupo-spa input:focus, 
+.form-grupo-spa select:focus {
+    border-color: #FFD700;
+}
+.modal-alunos-acoes {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+    justify-content: flex-end;
+}
+
+/* ========================================================
+   [STYLE-AGENDA DIÁRIA]
+   ======================================================== */
+.agenda-panel {
+    background: #1A1A1A;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #2A2A2A;
+}
+.agenda-dia-container {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.agenda-dia-linha {
+    display: grid;
+    grid-template-columns: 65px 1fr;
+    gap: 10px;
+}
+.agenda-dia-horario {
+    background: #0D0D0D;
+    padding: 12px 4px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #AAA;
+    border-radius: 8px;
+    border: 1px solid #1A1A1A;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.agenda-dia-aula {
+    background: #2A2A2A;
+    border-left: 4px solid #FFD700;
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    cursor: pointer;
+}
+.agenda-dia-aula-nome {
+    font-weight: 600;
+    color: #E0E0E0;
+    font-size: 0.85rem;
+}
+.agenda-dia-aula-local {
+    font-size: 0.75rem;
+    color: #AAA;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.agenda-dia-aula-detalhes {
+    color: #FFD700;
+    font-size: 0.7rem;
+    align-self: flex-start;
+    background: rgba(255, 215, 0, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-top: 2px;
+}
+.agenda-dia-vago {
+    border: 1px dashed #333;
+    border-radius: 8px;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.agenda-dia-vago:active {
+    background: rgba(255, 215, 0, 0.05);
+}
+.agenda-dia-vago-texto {
+    color: #666;
+    font-size: 0.75rem;
+}
+
+/* Cores por Objetivo */
+.objetivo-Funcional { border-left-color: #FFD700; }
+.objetivo-Hipertrofia { border-left-color: #64B5F6; }
+.objetivo-Emagrecimento { border-left-color: #81C784; }
+.objetivo-Condicionamento { border-left-color: #CE93D8; }
+.objetivo-Outro { border-left-color: #78909C; }
+
+/* Estilos de Bloco de Deslocamento e Bloqueio */
+.slot-deslocamento {
+    border-left-color: #FF9800;
+    background: rgba(255, 152, 0, 0.05);
+}
+.slot-bloqueado {
+    border-left-color: #EF5350;
+    background: rgba(239, 83, 80, 0.05);
+}
+
+/* ========================================================
+   [STYLE-CALENDARIO MENSAL]
+   ======================================================== */
+.calendario-mensal {
+    background: #1A1A1A;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #2A2A2A;
+}
+.calendario-mensal .mes-header {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.calendario-mensal .mes-header h2 { color: #FFD700; font-size: 1.2rem; }
+.calendario-mensal .mes-header .mes-nav { display: flex; gap: 6px; }
+
+.calendario-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+.calendario-grid .dia-header { text-align: center; padding: 4px 0; font-weight: 600; font-size: 0.7rem; color: #AAA; }
+.calendario-grid .dia-cell { background: #2A2A2A; border-radius: 6px; padding: 6px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; }
+.calendario-grid .dia-cell .dia-numero { font-size: 0.75rem; font-weight: 600; color: #E0E0E0; }
+
+.calendario-grid .dia-cell .dia-aulas { display: flex; flex-wrap: wrap; gap: 2px; }
+.calendario-grid .dia-cell .dia-aula-item { width: 6px; height: 6px; border-radius: 50%; padding: 0; text-indent: -9999px; overflow: hidden; display: inline-block; }
+.calendario-grid .dia-cell .dia-aula-item.funcional { background: #FFD700; }
+.calendario-grid .dia-cell .dia-aula-item.hipertrofia { background: #64B5F6; }
+.calendario-grid .dia-cell .dia-aula-item.emagrecimento { background: #81C784; }
+.calendario-grid .dia-cell .dia-aula-item.condicionamento { background: #CE93D8; }
+.calendario-grid .dia-cell .dia-aula-item.outro { background: #78909C; }
+
+/* ========================================================
+   [STYLE-MODAL COMUM & TOAST]
+   ======================================================== */
+.modal { background: #1A1A1A; border-radius: 16px; padding: 20px; width: 92%; max-width: 450px; border: 1px solid #2A2A2A; }
+.modal h3 { margin-bottom: 15px; color: #FFD700; font-size: 1.2rem; }
+.modal .form-group { margin-bottom: 12px; }
+.modal .form-group label { display: block; font-size: 0.8rem; color: #AAA; margin-bottom: 4px; }
+.modal .form-group select, .modal .form-group input { width: 100%; padding: 10px; border: 1px solid #333; border-radius: 8px; background: #0D0D0D; color: #E0E0E0; font-size: 0.9rem; }
+.modal-horarios-duplos { display: flex; gap: 8px; align-items: center; }
+
+.toast { position: fixed; bottom: 20px; right: 20px; left: 20px; text-align: center; background: #4CAF50; color: #fff; padding: 12px; border-radius: 8px; font-size: 0.9rem; z-index: 2000; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+.card-stat { background: #1A1A1A; border-radius: 12px; padding: 15px; text-align: center; border: 1px solid #2A2A2A; cursor: pointer; transition: all 0.2s ease; }
+.card-stat:active { transform: scale(0.97); }
+.card-stat .stat-numero { display: block; font-size: 1.6rem; font-weight: 700; color: #FFD700; margin-bottom: 2px; }
+.card-stat .stat-label { color: #AAA; font-size: 0.8rem; }
+
+/* Abas de Tipagem de Agendamento */
+.tab-tipo-agendamento .tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+.tab-tipo-agendamento .tab-btn.active {
+    background: #2A2A2A;
+    color: #FFD700;
+}
+
+/* ========================================================
+   📈 MEDIA QUERIES (MIN-WIDTH) - Expansão para Desktop
+   ======================================================== */
+@media (min-width: 768px) {
+    body { padding: 20px; }
+    .container { max-width: 1000px; }
+
+    .header { flex-direction: row; justify-content: space-between; align-items: center; text-align: left; padding: 20px 30px; }
+    .header-actions { flex-direction: row; width: auto; gap: 20px; }
+    .header-nav { width: auto; gap: 10px; }
+    .header-nav .nav-link { flex-direction: row; padding: 10px 20px; gap: 8px; border-radius: 20px; }
+    
+    .alunos-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+    .calendario-grid .dia-cell { min-height: 80px; }
+    .calendario-grid .dia-cell .dia-aula-item { width: auto; height: auto; border-radius: 4px; text-indent: 0; padding: 2px 4px; overflow: visible; display: block; font-size: 0.7rem; color: #FFF; background: #333; }
+}

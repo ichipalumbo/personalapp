@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AtivaMente - Agenda Personal Trainer</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        
+        <header class="header">
+            <div class="brand-container">
+                <h1 class="marca-titulo">
+                    <i class="fa-solid fa-dumbbell text-bounce"></i><span class="marca-ativa">Ativa</span><span class="marca-mente">Mente</span>
+                </h1>
+                <p class="marca-subtitulo">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    Personal Trainer
+                </p>
+            </div>
+            
+            <div class="header-actions">
+                <nav class="header-nav">
+                    <a href="#" class="nav-link ativo" data-target="tela-home">
+                        <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
+                    </a>
+                    <a href="#" class="nav-link inativo" data-target="tela-calendario">
+                        <i class="fa-solid fa-calendar-week nav-icon-anim"></i> Calendário
+                    </a>
+                    <a href="#" class="nav-link inativo" data-target="tela-alunos">
+                        <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
+                    </a>
+                </nav>
+            </div>
+        </header>
+
+        <main id="tela-home" class="view-section">
+            <section class="alunos-grid" style="margin-bottom: 20px;">
+                <div class="card-stat">
+                    <span class="stat-numero" id="totalAulasHoje">0</span>
+                    <span class="stat-label">Aulas Hoje</span>
+                </div>
+                <div class="card-stat" style="border-color: #FF5252; background: rgba(255, 82, 82, 0.05);" onclick="togglePainelReposicoes()">
+                    <span class="stat-numero" id="totalAulasRepor" style="color: #FF5252;">0</span>
+                    <span class="stat-label">Aulas para Repor</span>
+                </div>
+            </section>
+
+            <div id="painelReposicoesPendentes" class="agenda-panel" style="display: none; border-color: #FF5252; margin-bottom: 20px;">
+                <h3 style="font-size: 1.05rem; color: #FF5252; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+                    <span><i class="fa-solid fa-rotate-left"></i> Alunos aguardando reposição</span>
+                    <button class="btn btn-secondary btn-sm" onclick="togglePainelReposicoes()" style="padding: 2px 8px; font-size: 0.7rem;">Fechar</button>
+                </h3>
+                <div id="listaReposicoesPendentes" style="display: flex; flex-direction: column; gap: 8px;"></div>
+            </div>
+
+            <div class="agenda-panel">
+                <div class="header" style="margin-bottom: 15px; border-bottom: 1px solid #2A2A2A; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+                        <h2 style="font-size: 1.15rem; color: #FFD700; margin: 0;">Sua Agenda</h2>
+                        <span style="font-size: 0.75rem; color: #888;">Visualização fracionada (30 min)</span>
+                    </div>
+                    <button id="btnConfigAgenda" class="btn btn-secondary" style="padding: 10px; border-radius: 8px;">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                </div>
+
+                <div class="header" style="margin-bottom: 15px; background: #131313; padding: 10px; border-radius: 8px;">
+                    <div class="nav-calendario" style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
+                        <button id="btnAnterior" class="btn"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span id="dataAtual" style="font-weight: 700; color: #FFF;">Carregando...</span>
+                        <button id="btnProximo" class="btn"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button id="btnHoje" class="btn btn-secondary btn-sm">Hoje</button>
+                    </div>
+                </div>
+
+                <div class="agenda-dia-container" id="agendaGridHome"></div>
+            </div>
+        </main>
+
+        <main id="tela-calendario" class="view-section" style="display: none;">
+            <div class="calendario-mensal">
+                <div class="mes-header">
+                    <h2 id="nomeMesAno">Carregando...</h2>
+                    <div class="mes-nav">
+                        <button id="btnMesAnterior" class="btn"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+                        <button id="btnMesProximo" class="btn">Próximo <i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <div class="calendario-grid" id="calendarioMonthlyGrid"></div>
+            </div>
+        </main>
+
+        <main id="tela-alunos" class="view-section" style="display: none; padding-bottom: 80px;">
+            <section class="alunos-panel">
+                <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px;">Seus Alunos</h3>
+                <div class="alunos-grid" id="listaAlunos"></div>
+            </section>
+
+            <button id="btnFlutuanteAdicionar" onclick="abrirCadastroParaNovo()">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+
+            <div class="modal-overlay" id="modalFormAluno" style="display: none;">
+                <div class="modal-alunos-corpo">
+                    <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
+                    <form id="formNovoAluno" class="form-aluno">
+                        <input type="hidden" id="alunoIdEdicao" value="">
+                        <div class="form-grupo-spa">
+                            <label for="alunoNome">Nome completo *</label>
+                            <input type="text" id="alunoNome" placeholder="Ex: João Silva" required>
+                        </div>
+                        <div class="form-grupo-spa">
+                            <label for="alunoLocal">Local de Treino *</label>
+                            <input type="text" id="alunoLocal" placeholder="Ex: Academia X ou Condomínio" required>
+                        </div>
+                        <div class="form-grupo-spa">
+                            <label for="alunoPreco">Valor Hora/Aula *</label>
+                            <input type="number" id="alunoPreco" placeholder="Ex: 80" step="0.01" required>
+                        </div>
+                        <div class="form-grupo-spa">
+                            <label for="alunoTelefone">Telefone (Opcional)</label>
+                            <input type="tel" id="alunoTelefone" placeholder="(11) 99999-9999">
+                        </div>
+                        <div class="form-grupo-spa">
+                            <label for="alunoObjetivo">Objective *</label>
+                            <select id="alunoObjetivo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Hipertrofia">Hipertrofia</option>
+                                <option value="Emagrecimento">Emagrecimento</option>
+                                <option value="Condicionamento">Condicionamento</option>
+                                <option value="Funcional">Funcional</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div class="modal-alunos-acoes">
+                            <button type="button" class="btn btn-secondary" onclick="togglePainelCadastro(false)">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnSalvarAluno">Salvar Aluno</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+    </div>
+
+    <div class="modal-overlay" id="modalAgendamento" style="display: none;">
+        <div class="modal" style="max-width: 440px;">
+            <h3 id="modalTitle">Agendar Horário</h3>
+            
+            <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; margin-bottom: 18px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
+                <button type="button" class="tab-btn active" id="tabAgendarAula" onclick="selecionarTipoAgendamento('aula')">
+                    <i class="fa-solid fa-graduation-cap"></i> Aula
+                </button>
+                <button type="button" class="tab-btn" id="tabAgendarDeslocamento" onclick="selecionarTipoAgendamento('deslocamento')">
+                    <i class="fa-solid fa-car-side"></i> Deslocamento
+                </button>
+                <button type="button" class="tab-btn" id="tabAgendarBloqueio" onclick="selecionarTipoAgendamento('bloqueio')">
+                    <i class="fa-solid fa-lock"></i> Bloquear
+                </button>
+            </div>
+
+            <form id="formAgendamento">
+                <input type="hidden" id="agendaId">
+                <input type="hidden" id="agendaData">
+                <input type="hidden" id="agendaTipo" value="aula">
+                
+                <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                    <div class="form-grupo-spa" style="margin-bottom:0;">
+                        <label for="agendaHoraInicio">Início *</label>
+                        <select id="agendaHoraInicio" required></select>
+                    </div>
+                    <div class="form-grupo-spa" style="margin-bottom:0;">
+                        <label for="agendaHoraFim">Término *</label>
+                        <select id="agendaHoraFim" required></select>
+                    </div>
+                </div>
+
+                <div id="camposTipoAula" class="form-grupo-spa">
+                    <label for="agendaAluno">Aluno *</label>
+                    <select id="agendaAluno">
+                        <option value="">Selecione um aluno...</option>
+                    </select>
+                    
+                    <div style="margin-top: 14px;">
+                        <label for="agendaFrequencia">Frequência *</label>
+                        <select id="agendaFrequencia" style="margin-top: 4px;">
+                            <option value="uma_vez">Apenas esta data</option>
+                            <option value="semanal">Semanalmente (toda semana)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="camposTipoBloqueio" class="form-grupo-spa" style="display: none;">
+                    <label for="agendaDescricao">Motivo / Descrição *</label>
+                    <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
+                    <button type="button" class="btn btn-secondary" id="btnFecharModal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Agendar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalAcaoSlot" style="display: none;">
+        <div class="modal" style="max-width: 400px; text-align: center; padding: 25px;">
+            <i class="fa-regular fa-circle-question" style="font-size: 3rem; color: #FFD700; margin-bottom: 15px; display: block;"></i>
+            <h3 style="margin-bottom: 8px;">Gerenciar Compromisso</h3>
+            <p id="textoCompromissoDetalhes" style="font-size: 0.9rem; color: #AAA; margin-bottom: 24px;"></p>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="button" class="btn btn-danger" id="btnDeletarDefinitivo" style="width: 100%; padding: 12px;">
+                    <i class="fa-solid fa-trash-can" style="margin-right: 8px;"></i> Desmarcar Definitivamente
+                </button>
+                <button type="button" class="btn btn-primary" id="btnMandarParaReposicao" style="width: 100%; padding: 12px; background: #FF9800; color: #FFF; border: none;">
+                    <i class="fa-solid fa-rotate-left" style="margin-right: 8px;"></i> Cancelar e Enviar para Reposição
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="fecharModalAcaoSlot()" style="width: 100%; padding: 10px;">
+                    Voltar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalConfigAgenda" style="display: none;">
+        <div class="modal" style="max-width: 380px;">
+            <h3>Configurar Grade Horária</h3>
+            <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">Defina os limites de exibição de horas de trabalho da sua agenda diária.</p>
+            
+            <form id="formConfigAgenda">
+                <div class="form-grupo-spa">
+                    <label for="configHoraInicio">Hora de Início da Agenda *</label>
+                    <select id="configHoraInicio" required></select>
+                </div>
+                <div class="form-grupo-spa">
+                    <label for="configHoraFim">Hora de Fim da Agenda *</label>
+                    <select id="configHoraFim" required></select>
+                </div>
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" id="btnFecharConfig">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Configuração</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="assets/js/dados.js"></script>
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/modal.js"></script>
+    <script src="assets/js/agenda.js"></script>
+    <script src="assets/js/alunos.js"></script>
+    <script src="assets/js/calendario.js"></script>
+    <script src="assets/js/home.js"></script>
+    <script src="assets/js/pagina-calendario.js"></script>
+    <script src="assets/js/pagina-cadastro.js"></script>
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
