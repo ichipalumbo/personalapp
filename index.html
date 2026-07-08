@@ -50,7 +50,7 @@
              ======================================================== -->
         <main id="tela-home" class="view-section">
             
-            <!-- Subseção: Dashboard de Estatísticas Otimizado (Sem colisão de linhas estranhas) -->
+            <!-- Subseção: Dashboard de Estatísticas Otimizado -->
             <section class="alunos-grid" style="margin-bottom: 20px;">
                 <div class="card-stat">
                     <span class="stat-numero" id="totalAulasHoje">0</span>
@@ -73,7 +73,6 @@
 
             <!-- Subseção: Grade Horária Diária -->
             <div class="agenda-panel">
-                <!-- CORREÇÃO: Design de cabeçalho embelezado com emojis -->
                 <div class="agenda-header-wrapper">
                     <div class="agenda-header-info">
                         <h2>🎯 AtivaMente • Agenda ⚡</h2>
@@ -84,7 +83,7 @@
                     </button>
                 </div>
 
-                <!-- Cabeçalho de Navegação Diária com Estética de Calendário Premium -->
+                <!-- Cabeçalho de Navegação Diária -->
                 <div class="agenda-header-navegacao">
                     <div class="nav-calendario">
                         <button id="btnAnterior" class="btn-nav-dia" title="Dia Anterior">
@@ -98,7 +97,7 @@
                     </div>
                 </div>
 
-                <!-- Contêiner preenchido dinamicamente via JS (Exibe slots de 1h ou 30m) -->
+                <!-- Contêiner preenchido dinamicamente via JS -->
                 <div class="agenda-dia-container" id="agendaGridHome"></div>
             </div>
         </main>
@@ -201,18 +200,24 @@
                 
                 <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
 
-                <!-- Dropdowns dinâmicos de hora início e fim -->
+                <!-- CORREÇÃO: Escolha simplificada de Horário de Início + Duração do Bloco -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="agendaHoraInicio">Início *</label>
                         <select id="agendaHoraInicio" required></select>
                     </div>
                     <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="agendaHoraFim">Término *</label>
-                        <select id="agendaHoraFim" required></select>
+                        <label for="agendaDuracao">Duração *</label>
+                        <select id="agendaDuracao" required>
+                            <option value="30">30 min</option>
+                            <option value="60" selected>1h 00min</option>
+                            <option value="90">1h 30min</option>
+                            <option value="120">2h 00min</option>
+                        </select>
                     </div>
                 </div>
 
+                <!-- Campo exclusivo para AULA -->
                 <div id="camposTipoAula" class="form-grupo-spa">
                     <label for="agendaAluno">Aluno *</label>
                     <select id="agendaAluno">
@@ -228,9 +233,10 @@
                     </div>
                 </div>
 
+                <!-- Campo exclusivo para BLOQUEIO (Deslocamento agora é autoexplicativo) -->
                 <div id="camposTipoBloqueio" class="form-grupo-spa" style="display: none;">
-                    <label for="agendaDescricao">Motivo / Descrição *</label>
-                    <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular">
+                    <label for="agendaDescricao">Motivo / Descrição do Bloqueio *</label>
+                    <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular / Médico">
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
