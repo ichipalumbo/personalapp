@@ -20,7 +20,7 @@ window.inicializarHome = function() {
     window.renderizarListaReposicoes();
 };
 
-// CORREÇÃO: Renderiza a data com ícone de calendário animado e realce de cores
+// Renderiza a data com ícone de calendário animado e realce de cores
 window.atualizarDataAtual = function() {
     const elementoData = document.getElementById('dataAtual');
     if (!elementoData) return;
@@ -28,7 +28,6 @@ window.atualizarDataAtual = function() {
     const mes = String(dataSelecionada.getMonth() + 1).padStart(2, '0');
     const nomeDia = DIAS_DA_SEMANA[dataSelecionada.getDay()];
     
-    // Insere o ícone de calendário dourado dinamicamente
     elementoData.innerHTML = `<i class="fa-regular fa-calendar-check" style="color: #FFD700; margin-right: 8px;"></i>${nomeDia}, <span style="color: #FFD700; font-weight: 800;">${dia}/${mes}</span>`;
 };
 
@@ -61,7 +60,6 @@ window.renderizarAgendaDia = function() {
     const inicio = agendaConfig.horaInicio;
     const fim = agendaConfig.horaFim;
 
-    // Varre todos os horários fracionados do dia que encaixam nos limites do personal
     const slotsDoDia = HORARIOS.filter(h => {
         const horaInt = parseInt(h.split(':')[0]);
         return horaInt >= inicio && horaInt < fim;
@@ -132,6 +130,15 @@ window.renderizarAgendaDia = function() {
     grid.innerHTML = html;
 };
 
+// Somas minutos a uma string de horário (ex: "18:30" + 90 -> "20:00")
+window.somarMinutos = function(horaStr, minutos) {
+    const [h, m] = horaStr.split(':').map(Number);
+    let totalMinutos = h * 60 + m + parseInt(minutos);
+    const novaHora = Math.floor(totalMinutos / 60) % 24;
+    const novosMinutos = totalMinutos % 60;
+    return `${novaHora.toString().padStart(2, '0')}:${novosMinutos.toString().padStart(2, '0')}`;
+};
+
 window.abrirAgendamentoModal = function(dia, hora) {
     slotSelecionadoHora = hora;
     slotSelecionadoDiaTexto = dia;
@@ -139,19 +146,23 @@ window.abrirAgendamentoModal = function(dia, hora) {
     const modal = document.getElementById('modalAgendamento');
     document.getElementById('infoHorarioAlvo').textContent = `${dia} — Definir Período`;
 
+    // Reseta o formulário primeiro para limpar qualquer dado anterior
     if (document.getElementById('formAgendamento')) {
         document.getElementById('formAgendamento').reset();
     }
 
+    // Popula o dropdown de horário de início
     const selectInicio = document.getElementById('agendaHoraInicio');
-    const selectFim = document.getElementById('agendaHoraFim');
+    const selectDuracao = document.getElementById('agendaDuracao');
     
     const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
     selectInicio.innerHTML = optionsHtml;
-    selectFim.innerHTML = optionsHtml;
 
+    // Define as seleções padrão
     selectInicio.value = hora;
-    selectFim.value = window.calcularUmaHoraAFrente(hora);
+    if (selectDuracao) {
+        selectDuracao.value = "60"; // Padrão de 1 hora
+    }
 
     const selectAluno = document.getElementById('agendaAluno');
     if (selectAluno) {
@@ -161,13 +172,6 @@ window.abrirAgendamentoModal = function(dia, hora) {
 
     window.selecionarTipoAgendamento('aula');
     if (modal) modal.style.display = 'flex';
-};
-
-window.calcularUmaHoraAFrente = function(horaStr) {
-    const partes = horaStr.split(':');
-    let h = parseInt(partes[0]) + 1;
-    if (h > 23) h = 23;
-    return `${h.toString().padStart(2, '0')}:${partes[1]}`;
 };
 
 window.selecionarTipoAgendamento = function(tipo) {
@@ -186,11 +190,20 @@ window.selecionarTipoAgendamento = function(tipo) {
         tabAula.classList.add('active');
         camposAula.style.display = 'block';
         camposBloqueio.style.display = 'none';
-    } else {
+        document.getElementById('agendaAluno').required = true;
+        document.getElementById('agendaDescricao').required = false;
+    } else if (tipo === 'deslocamento') {
+        tabDeslocamento.classList.add('active');
         camposAula.style.display = 'none';
-        camposBloqueio.style.display = 'block';
-        if (tipo === 'deslocamento') tabDeslocamento.classList.add('active');
-        else tabBloqueio.classList.add('active');
+        camposBloqueio.style.display = 'none'; // Deslocamento não precisa de campo de descrição!
+        document.getElementById('agendaAluno').required = false;
+        document.getElementById('agendaDescricao').required = false;
+    } else if (tipo === 'bloqueio') {
+        tabBloqueio.classList.add('active');
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'block'; // Bloqueio exige uma descrição
+        document.getElementById('agendaAluno').required = false;
+        document.getElementById('agendaDescricao').required = true;
     }
 };
 
@@ -202,12 +215,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const tipo = document.getElementById('agendaTipo').value;
             const hInicio = document.getElementById('agendaHoraInicio').value;
-            const hFim = document.getElementById('agendaHoraFim').value;
-
-            if (hInicio >= hFim) {
-                alert("O horário de término deve ser posterior ao início!");
-                return;
-            }
+            const duracaoMinutos = document.getElementById('agendaDuracao').value;
+            
+            // Calcula automaticamente a hora final com base na duração selecionada
+            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
 
             let novoCompromisso = {
                 id: Date.now().toString(),
@@ -222,7 +233,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!alunoId) return;
                 novoCompromisso.alunoId = alunoId;
                 novoCompromisso.frequencia = document.getElementById('agendaFrequencia').value;
-            } else {
+            } else if (tipo === 'deslocamento') {
+                novoCompromisso.descricao = "Trânsito / Deslocamento"; // Descrição limpa automática
+            } else if (tipo === 'bloqueio') {
                 novoCompromisso.descricao = document.getElementById('agendaDescricao').value.trim();
             }
 
@@ -280,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('btnMandarParaReposicao')) {
         document.getElementById('btnMandarParaReposicao').addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            const compromisso = aulas.find(a => a.id !== idCompromissoSelecionado);
             if (confirm("Enviar para a lista de reposição pendente?")) {
                 aulasParaRepor.push({
                     id: Date.now().toString(),
