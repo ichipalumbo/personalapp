@@ -20,13 +20,16 @@ window.inicializarHome = function() {
     window.renderizarListaReposicoes();
 };
 
+// CORREÇÃO: Renderiza a data com ícone de calendário animado e realce de cores
 window.atualizarDataAtual = function() {
     const elementoData = document.getElementById('dataAtual');
     if (!elementoData) return;
     const dia = String(dataSelecionada.getDate()).padStart(2, '0');
     const mes = String(dataSelecionada.getMonth() + 1).padStart(2, '0');
     const nomeDia = DIAS_DA_SEMANA[dataSelecionada.getDay()];
-    elementoData.textContent = `${nomeDia}, ${dia}/${mes}`;
+    
+    // Insere o ícone de calendário dourado dinamicamente
+    elementoData.innerHTML = `<i class="fa-regular fa-calendar-check" style="color: #FFD700; margin-right: 8px;"></i>${nomeDia}, <span style="color: #FFD700; font-weight: 800;">${dia}/${mes}</span>`;
 };
 
 window.atualizarDashboardStats = function() {
@@ -47,7 +50,7 @@ window.getDiaTextoSelecionado = function() {
     return diaIndex === 0 ? 'Domingo' : 'Sábado';
 };
 
-// Renderiza em blocos de 30m e agrupa visualmente durações longas
+// Renderiza em slots de 30m agrupados visualmente para compromissos mais longos
 window.renderizarAgendaDia = function() {
     const grid = document.getElementById('agendaGridHome');
     if (!grid) return;
@@ -58,7 +61,7 @@ window.renderizarAgendaDia = function() {
     const inicio = agendaConfig.horaInicio;
     const fim = agendaConfig.horaFim;
 
-    // Varre todos os horários fracionados gerados no dados.js que se encaixam nos limites configurados
+    // Varre todos os horários fracionados do dia que encaixam nos limites do personal
     const slotsDoDia = HORARIOS.filter(h => {
         const horaInt = parseInt(h.split(':')[0]);
         return horaInt >= inicio && horaInt < fim;
@@ -67,8 +70,6 @@ window.renderizarAgendaDia = function() {
     let i = 0;
     while (i < slotsDoDia.length) {
         const horaStr = slotsDoDia[i];
-        
-        // Verifica se existe um agendamento cujo INTERVALO inicia exatamente neste bloco
         const compromisso = aulas.find(a => a.dia === diaTexto && a.horarioInicio === horaStr);
 
         if (compromisso) {
@@ -112,12 +113,10 @@ window.renderizarAgendaDia = function() {
                 </div>
             `;
 
-            // Avança o ponteiro do loop para pular os blocos que já estão cobertos por este agendamento longo
             while (i < slotsDoDia.length && slotsDoDia[i] < compromisso.horarioFim) {
                 i++;
             }
         } else {
-            // Bloco livre de 30 minutos
             html += `
                 <div class="agenda-dia-linha">
                     <div class="agenda-dia-horario">${horaStr}</div>
@@ -140,12 +139,10 @@ window.abrirAgendamentoModal = function(dia, hora) {
     const modal = document.getElementById('modalAgendamento');
     document.getElementById('infoHorarioAlvo').textContent = `${dia} — Definir Período`;
 
-    // CORREÇÃO: Reseta o formulário primeiro para limpar dados antigos antes de preencher as horas selecionadas!
     if (document.getElementById('formAgendamento')) {
         document.getElementById('formAgendamento').reset();
     }
 
-    // Popula dropdowns de horários
     const selectInicio = document.getElementById('agendaHoraInicio');
     const selectFim = document.getElementById('agendaHoraFim');
     
@@ -153,7 +150,6 @@ window.abrirAgendamentoModal = function(dia, hora) {
     selectInicio.innerHTML = optionsHtml;
     selectFim.innerHTML = optionsHtml;
 
-    // Define os valores selecionados de início e fim APÓS a limpeza do reset
     selectInicio.value = hora;
     selectFim.value = window.calcularUmaHoraAFrente(hora);
 
@@ -284,7 +280,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('btnMandarParaReposicao')) {
         document.getElementById('btnMandarParaReposicao').addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id !== idCompromissoSelecionado);
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
             if (confirm("Enviar para a lista de reposição pendente?")) {
                 aulasParaRepor.push({
                     id: Date.now().toString(),
