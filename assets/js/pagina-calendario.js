@@ -1,74 +1,68 @@
 // ========================================================
-// [PÁGINA-CALENDÁRIO] - Script específico da página de calendário
+// [CALENDÁRIO MENSAL] - Roteador e Renderização da SPA
 // ========================================================
 
-function irParaSemana(dia) {
-    const data = new Date(anoAtual, mesAtual, dia);
-    const diff = data.getDay() === 0 ? -6 : 1 - data.getDay();
-    const seg = new Date(data);
-    seg.setDate(data.getDate() + diff);
+// Esta função é disparada pelo app.js sempre que você clica na aba "Calendário"
+window.inicializarPaginaCalendario = function() {
+    // Garante que os dados mais recentes do LocalStorage estão carregados
+    if (typeof carregarDados === 'function') carregarDados();
     
-    const sex = new Date(seg);
-    sex.setDate(seg.getDate() + 4);
-    
-    const lbl = document.getElementById('semanaLabel');
-    if (lbl) {
-        lbl.textContent = `Semana de ${seg.getDate()}/${seg.getMonth()+1} a ${sex.getDate()}/${sex.getMonth()+1}/${sex.getFullYear()}`;
-    }
-
-    // Renderiza a agenda da semana no grid da página de calendário
-    const grid = document.getElementById('agendaGridCalendario');
-    if (!grid) return;
-
-    let html = `<div class="agenda-header">Horário</div>`;
-    DIAS.forEach(d => { html += `<div class="agenda-header">${d}</div>`; });
-
-    HORARIOS.forEach(h => {
-        html += `<div class="agenda-horario">${h}</div>`;
-        DIAS.forEach(d => {
-            const aula = getAulaNoIntervalo(d, h);
-            if (aula) {
-                const inicio = aula.horarioInicio === h;
-                const fim = aula.horarioFim === h;
-                const aluno = getAluno(aula.alunoId);
-                const nome = aluno ? aluno.nome : '❓';
-                const obj = aluno ? aluno.objetivo : 'Outro';
-                let rot = inicio&&fim ? nome : inicio ? `▸ ${nome}` : fim ? `${nome} ▸` : `│ ${nome}`;
-                html += `<div class="agenda-cell ocupado" style="cursor:default;">
-                    <div class="aula-block objetivo-${obj.replace(/\s/g,'')}">
-                        <span class="aula-nome">${rot}</span>
-                        <span class="aula-objetivo">${obj}${inicio?` (${aula.horarioInicio}-${aula.horarioFim})`:''}</span>
-                    </div>
-                </div>`;
-            } else {
-                html += `<div class="agenda-cell vago" style="cursor:default;"><span style="color:#444;font-size:0.7rem;">🟢 vago</span></div>`;
-            }
-        });
-    });
-
-    grid.innerHTML = html;
-}
-
-// Sobrescreve a função irParaSemana original para incluir renderização na página
-const irParaSemanaOriginal = window.irParaSemana;
-window.irParaSemana = function(dia) {
-    irParaSemanaOriginal(dia);
+    // Alinha os IDs para que o motor original funcione na SPA
+    window.renderizarCalendarioMensal();
 };
 
-// Inicialização
-document.addEventListener('DOMContentLoaded', function() {
-    carregarDados();
+window.renderizarCalendarioMensal = function() {
+    // CORREÇÃO CRÍTICA: Faz o mapeamento dinâmico para o motor original (calendario.js)
+    // encontrar o contêiner correto da SPA
+    const gridSPA = document.getElementById('calendarioMensalGrid');
     
-    // Popula o select de alunos no modal (se existir)
-    const select = document.getElementById('modalSelectAluno');
-    if (select) {
-        select.innerHTML = alunos.length > 0 
-            ? alunos.map(a => `<option value="${a.id}">${a.nome} — ${a.objetivo}${a.preco ? ` (R$${a.preco.toFixed(2)})` : ''}</option>`).join('')
-            : `<option value="">— Nenhum aluno —</option>`;
+    if (gridSPA) {
+        // Criamos temporariamente uma propriedade no elemento para o motor original funcionar
+        gridSPA.id = 'calendarioGrid'; 
     }
-    
-    const mesAtual = new Date().getMonth();
-    const anoAtual = new Date().getFullYear();
-    renderizarCalendario(mesAtual, anoAtual);
-});
 
+    // Procura e executa a função matemática que monta os dias (está no seu assets/js/calendario.js)
+    if (typeof renderizarCalendario === 'function') {
+        renderizarCalendario();
+    } else if (typeof renderizarMes === 'function') {
+        renderizarMes();
+    }
+
+    // Retorna o ID original da SPA para não quebrar o layout CSS
+    if (gridSPA) {
+        gridSPA.id = 'calendarioMensalGrid';
+    }
+};
+
+// Configuração dos botões de navegação de Mês Anterior / Próximo Mês
+document.addEventListener('DOMContentLoaded', () => {
+    // Mapeamento dos botões do topo do calendário
+    const btnMesAnterior = document.getElementById('btnMesAnterior');
+    const btnMesProximo = document.getElementById('btnMesProximo');
+
+    if (btnMesAnterior) {
+        btnMesAnterior.addEventListener('click', () => {
+            if (typeof navegarMes === 'function') {
+                navegarMes(-1); // Chama a função nativa do seu calendario.js
+                window.renderizarCalendarioMensal(); // Força a atualização visual
+            } else if (typeof mesAtual !== 'undefined') {
+                mesAtual--;
+                if (mesAtual < 0) { mesAtual = 11; anoAtual--; }
+                window.renderizarCalendarioMensal();
+            }
+        });
+    }
+
+    if (btnMesProximo) {
+        btnMesProximo.addEventListener('click', () => {
+            if (typeof navegarMes === 'function') {
+                navegarMes(1); // Chama a função nativa do seu calendario.js
+                window.renderizarCalendarioMensal(); // Força a atualização visual
+            } else if (typeof mesAtual !== 'undefined') {
+                mesAtual++;
+                if (mesAtual > 11) { mesAtual = 0; anoAtual++; }
+                window.renderizarCalendarioMensal();
+            }
+        });
+    }
+});

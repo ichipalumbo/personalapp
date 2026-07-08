@@ -124,26 +124,22 @@ function irParaHoje() {
 }
 
 function irParaSemana(dia) {
-    const data = new Date(anoAtual, mesAtual, dia);
-    const diaSemana = data.getDay();
-    
-    // Encontra a segunda-feira da semana
-    const diff = diaSemana === 0 ? -6 : 1 - diaSemana;
-    const segunda = new Date(data);
-    segunda.setDate(data.getDate() + diff);
-    
-    const mes = segunda.getMonth();
-    const ano = segunda.getFullYear();
-    const diaSegunda = segunda.getDate();
-    
-    // Muda a label da agenda semanal
-    const sexta = new Date(segunda);
-    sexta.setDate(diaSegunda + 4);
-    const label = document.getElementById('semanaLabel');
-    if (label) {
-        label.textContent = `Semana de ${diaSegunda}/${mes+1} a ${sexta.getDate()}/${sexta.getMonth()+1}/${ano}`;
+    // 1. Atualiza o controle de data global da Home (que está no home.js)
+    if (typeof dataSelecionada !== 'undefined') {
+        dataSelecionada = new Date(anoAtual, mesAtual, dia);
     }
+
+    // 2. Procura os links de navegação da SPA para simular o clique de mudança de aba
+    const linkHome = document.querySelector('.nav-link[data-target="tela-home"]');
     
-    // Scroll suave para a agenda
-    document.getElementById('painelAgenda').scrollIntoView({ behavior: 'smooth' });
+    if (linkHome) {
+        // Dispara o clique programaticamente. O app.js vai interceptar, 
+        // mostrar a Home e atualizar os dados do dia que você clicou!
+        linkHome.click(); 
+    } else {
+        // Fallback de segurança caso o app.js precise ser chamado de outra forma
+        const secoes = document.querySelectorAll('.view-section');
+        secoes.forEach(s => s.style.display = s.id === 'tela-home' ? 'block' : 'none');
+        if (typeof inicializarHome === 'function') inicializarHome();
+    }
 }

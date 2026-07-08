@@ -1,149 +1,162 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home — Agenda Personal Trainer</title>
+    <title>Agenda Personal Trainer</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-
 <body>
-
-    <!-- HEADER -->
-    <header class="header">
-        <div>
-            <h1>💪 <span>Agenda</span> Personal Trainer</h1>
-        </div>
-        <div class="header-actions" style="flex-direction:column;align-items:end;gap:8px;">
-            <nav class="header-nav">
-                <a href="index.html" class="ativo">🏠 Home</a>
-                <a href="calendario.html" class="inativo">📆 Calendário</a>
-                <a href="cadastro.html" class="inativo">👥 Alunos</a>
-            </nav>
-            <div style="display:flex;gap:8px;">
-                <button class="btn btn-secondary btn-sm" onclick="exportarDados()">📥 Exportar</button>
-                <button class="btn btn-secondary btn-sm" onclick="importarDados()">📤 Importar</button>
-                <button class="btn btn-danger btn-sm" onclick="limparTudo()">🗑️</button>
-            </div>
-        </div>
-    </header>
-
-
     <div class="container">
+        
+        <header class="header">
+            <h1>Agenda <span>Personal</span></h1>
+            
+            <div class="header-actions">
+                <nav class="header-nav">
+                    <a href="#" class="nav-link ativo" data-target="tela-home"><i class="fa-solid fa-house"></i> Home</a>
+                    <a href="#" class="nav-link inativo" data-target="tela-calendario"><i class="fa-solid fa-calendar-days"></i> Calendário</a>
+                    <a href="#" class="nav-link inativo" data-target="tela-alunos"><i class="fa-solid fa-user-plus"></i> Alunos</a>
+                </nav>
+                <div id="utilitarios-dados">
+                    <button class="btn btn-secondary btn-sm" id="btnExportar" title="Exportar Dados">
+                        <i class="fa-solid fa-file-export"></i>
+                    </button>
+                    <button class="btn btn-secondary btn-sm" id="btnImportar" title="Importar Dados">
+                        <i class="fa-solid fa-file-import"></i>
+                    </button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </header>
 
-        <!-- ESTATÍSTICAS RÁPIDAS -->
-        <section
-            style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;margin-bottom:30px;">
-            <div class="card-stat">
-                <span class="stat-numero" id="statAlunos">0</span>
-                <span class="stat-label">Alunos Ativos</span>
-            </div>
-            <div class="card-stat">
-                <span class="stat-numero" id="statAulasHoje">0</span>
-                <span class="stat-label">Aulas Hoje</span>
-            </div>
-            <div class="card-stat">
-                <span class="stat-numero" id="statAulasSemana">0</span>
-                <span class="stat-label">Aulas na Semana</span>
-            </div>
-            <div class="card-stat">
-                <span class="stat-numero" id="statFaturamento">R$ 0</span>
-                <span class="stat-label">Faturamento Semanal</span>
-            </div>
-        </section>
+        <main id="tela-home" class="view-section">
+            <section class="alunos-grid" style="margin-bottom: 20px;">
+                <div class="card-stat">
+                    <span class="stat-numero" id="totalAlunos">0</span>
+                    <span class="stat-label">Alunos Ativos</span>
+                </div>
+                <div class="card-stat">
+                    <span class="stat-numero" id="totalAulasSemana">0</span>
+                    <span class="stat-label">Aulas Agendadas</span>
+                </div>
+            </section>
 
-        <!-- SELEÇÃO DE VISÃO: DIA OU SEMANA -->
-        <section style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
-            <button class="btn btn-primary" id="btnVisaoDia" onclick="setVisao('dia')">📆 Agenda do Dia</button>
-            <button class="btn btn-secondary" id="btnVisaoSemana" onclick="setVisao('semana')">📅 Agenda da
-                Semana</button>
-        </section>
+            <div class="agenda-panel">
+                <div class="header" style="margin-bottom: 15px; border-bottom: 1px solid #2A2A2A; padding-bottom: 10px;">
+                    <h2 style="font-size: 1.2rem; color: #FFD700; text-align: left;">Sua Agenda</h2>
+                    <div class="nav-calendario">
+                        <button id="btnAnterior" class="btn"><i class="fa-solid fa-chevron-left"></i></button>
+                        <span id="dataAtual">Carregando...</span>
+                        <button id="btnProximo" class="btn"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button id="btnHoje" class="btn btn-secondary btn-sm">Hoje</button>
+                    </div>
+                </div>
 
-        <!-- AGENDA (DIA OU SEMANA) -->
-        <section class="agenda-panel" id="painelAgendaHome">
-            <h2>📅 <span id="homeTituloAgenda">Agenda do Dia</span></h2>
-            <div class="agenda-grid" id="agendaGridHome">
-                <!-- Renderizado via JS -->
+                <div class="agenda-dia-container" id="agendaGridHome"></div>
             </div>
-        </section>
+        </main>
 
+
+        <main id="tela-calendario" class="view-section" style="display: none;">
+            <div class="calendario-mensal">
+                <div class="mes-header">
+                    <h2 id="nomeMesAno">Carregando...</h2>
+                    <div class="mes-nav">
+                        <button id="btnMesAnterior" class="btn"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
+                        <button id="btnMesProximo" class="btn">Próximo <i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </div>
+
+                <div class="calendario-grid" id="calendarioMensalGrid"></div>
+            </div>
+        </main>
+
+
+        <main id="tela-alunos" class="view-section" style="display: none;">
+            <div class="alunos-panel">
+                <h2 style="font-size: 1.2rem; color: #FFD700; margin-bottom: 15px;">Cadastrar Novo Aluno</h2>
+                
+                <form id="formNovoAluno" class="form-aluno">
+                    <div style="flex: 2; min-width: 200px;">
+                        <input type="text" id="alunoNome" placeholder="Nome completo do aluno" required>
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <select id="alunoObjetivo" required>
+                            <option value="">Selecione o Objetivo...</option>
+                            <option value="Hipertrofia">Hipertrofia</option>
+                            <option value="Emagrecimento">Emagrecimento</option>
+                            <option value="Condicionamento">Condicionamento</option>
+                            <option value="Funcional">Funcional</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fa-solid fa-plus"></i> Adicionar
+                    </button>
+                </form>
+            </div>
+
+            <section class="alunos-panel">
+                <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px;">Seus Alunos</h3>
+                <div class="alunos-grid" id="listaAlunos"></div>
+            </section>
+        </main>
 
     </div>
 
-    <!-- MODAL (reaproveitado) -->
-    <!-- MODAL (com cadastro rápido) -->
-    <div class="modal-overlay" id="modalAgendar">
+    <div class="modal-overlay" id="modalAgendamento">
         <div class="modal">
-            <h3>📌 Agendar Aula</h3>
-            <p style="margin-bottom:15px;color:#aaa;" id="modalInfo"></p>
-
-            <div class="form-group">
-                <label>Selecione o Aluno</label>
-                <div style="display:flex;gap:8px;align-items:center;">
-                    <select id="modalSelectAluno" style="flex:1;"></select>
-                    <button class="btn btn-sm btn-primary" onclick="toggleCadastroRapido()" id="btnCadastroRapido"
-                        style="white-space:nowrap;">➕ Novo</button>
-                </div>
-            </div>
-
-            <!-- Cadastro Rápido (oculto inicialmente) -->
-            <div id="cadastroRapidoContainer"
-                style="display:none;margin-bottom:15px;padding:15px;background:#0D0D0D;border-radius:8px;border:1px solid #2A2A2A;">
-                <h4 style="color:#FFD700;margin-bottom:10px;font-size:0.9rem;">➕ Cadastro Rápido</h4>
-                <div style="display:flex;flex-direction:column;gap:8px;">
-                    <input type="text" id="rapidoNome" placeholder="Nome do aluno"
-                        style="padding:10px;border:1px solid #333;border-radius:8px;background:#0D0D0D;color:#E0E0E0;font-size:0.9rem;outline:none;">
-                    <div style="display:flex;gap:8px;">
-                        <input type="text" id="rapidoTelefone" placeholder="Telefone"
-                            style="flex:1;padding:10px;border:1px solid #333;border-radius:8px;background:#0D0D0D;color:#E0E0E0;font-size:0.9rem;outline:none;">
-                        <input type="number" id="rapidoPreco" placeholder="Preço" step="0.01" min="0"
-                            style="width:100px;padding:10px;border:1px solid #333;border-radius:8px;background:#0D0D0D;color:#E0E0E0;font-size:0.9rem;outline:none;">
-                    </div>
-                    <select id="rapidoObjetivo"
-                        style="padding:10px;border:1px solid #333;border-radius:8px;background:#0D0D0D;color:#E0E0E0;font-size:0.9rem;outline:none;">
-                        <option value="Funcional">Funcional</option>
-                        <option value="Hipertrofia">Hipertrofia</option>
-                        <option value="Emagrecimento">Emagrecimento</option>
-                        <option value="Condicionamento">Condicionamento</option>
-                        <option value="Outro">Outro</option>
+            <h3 id="modalTitle">Agendar Aula</h3>
+            <form id="formAgendamento">
+                <input type="hidden" id="agendaId">
+                <input type="hidden" id="agendaData">
+                
+                <div class="form-group">
+                    <label for="agendaAluno">Aluno</label>
+                    <select id="agendaAluno" required>
+                        <option value="">Selecione um aluno...</option>
                     </select>
-                    <div style="display:flex;gap:8px;justify-content:end;">
-                        <button class="btn btn-sm btn-secondary" onclick="toggleCadastroRapido()">Cancelar</button>
-                        <button class="btn btn-sm btn-success" onclick="cadastrarRapido()">✅ Cadastrar</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Horário</label>
+                    <div class="modal-horarios-duplos">
+                        <input type="time" id="agendaHoraInicio" required>
+                        <span style="color: #AAA;">até</span>
+                        <input type="time" id="agendaHoraFim" required>
                     </div>
                 </div>
-            </div>
 
-            <div class="form-group">
-                <label>Período da Aula</label>
-                <div class="modal-horarios-duplos">
-                    <select id="modalHorarioInicio"></select>
-                    <span>até</span>
-                    <select id="modalHorarioFim"></select>
+                <div class="form-group">
+                    <label for="agendaFrequencia">Repetição</label>
+                    <select id="agendaFrequencia" required>
+                        <option value="uma_vez">Apenas esta data</option>
+                        <option value="semanal">Semanalmente</option>
+                    </select>
                 </div>
-            </div>
 
-            <div class="modal-actions">
-                <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
-                <button class="btn btn-primary" onclick="confirmarAgendamento()">Agendar</button>
-            </div>
+                <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" id="btnFecharModal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" id="btnExcluirForm" style="display: none;">Excluir</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
         </div>
     </div>
 
-
-    <input type="file" id="fileInput" accept=".json" style="display:none" onchange="handleImport(event)">
     <div class="toast" id="toast"></div>
 
-    <script src="assets/js/dados.js"></script>
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/storage.js"></script>
-    <script src="assets/js/alunos.js"></script>
-    <script src="assets/js/agenda.js"></script>
-    <script src="assets/js/modal.js"></script>
-    <script src="assets/js/home.js"></script>
+<script src="assets/js/dados.js"></script>
+<script src="assets/js/storage.js"></script>
+<script src="assets/js/utils.js"></script>
+<script src="assets/js/agenda.js"></script> <script src="assets/js/alunos.js"></script>
+<script src="assets/js/calendario.js"></script>
 
-
+<script src="assets/js/home.js"></script>
+<script src="assets/js/pagina-calendario.js"></script>
+<script src="assets/js/pagina-cadastro.js"></script>
+<script src="assets/js/app.js"></script>
 </body>
-
 </html>

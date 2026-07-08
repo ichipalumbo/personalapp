@@ -1,243 +1,139 @@
 // ========================================================
-// [HOME] - Dashboard da Home Page
+// [HOME] - Dashboard e Controle da Agenda Diária da Home Page
 // ========================================================
 
-let visaoAtual = 'dia'; // Começa com 'dia' como padrão
+// Controladores internos de data da Home
+let dataSelecionada = new Date();
+const DIAS_DA_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
-function atualizarDashboard() {
-    // Estatísticas
-    document.getElementById('statAlunos').textContent = alunos.length;
-
-    const hoje = new Date();
-    const diaSemana = hoje.getDay(); // 0=Dom, 1=Seg...
-    const nomeDia = diaSemana >= 1 && diaSemana <= 5 ? DIAS[diaSemana - 1] : null;
-
-    // Aulas hoje
-    const aulasHoje = nomeDia ? aulas.filter(a => a.dia === nomeDia) : [];
-    document.getElementById('statAulasHoje').textContent = aulasHoje.length;
-
-    // Aulas na semana
-    const aulasSemana = aulas.filter(a => DIAS.includes(a.dia));
-    document.getElementById('statAulasSemana').textContent = aulasSemana.length;
-
-    // Faturamento semanal
-    let faturamento = 0;
-    aulasSemana.forEach(aula => {
-        const aluno = getAluno(aula.alunoId);
-        if (aluno && aluno.preco) {
-            faturamento += aluno.preco;
-        }
-    });
-    document.getElementById('statFaturamento').textContent = `R$ ${faturamento.toFixed(2)}`;
-
-    // Renderizar agenda conforme visão
-    renderizarHomeAgenda();
-}
-
-function getNomeDiaSemana() {
-    const diasSemana = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-    const hoje = new Date();
-    return diasSemana[hoje.getDay()];
-}
-
-function getDiaAtual() {
-    const hoje = new Date();
-    const diaSemana = hoje.getDay(); // 0=Dom, 1=Seg...
+// 1. FUNÇÃO DE INICIALIZAÇÃO GLOBAL (Chamada pelo app.js ao abrir a aba)
+window.inicializarHome = function() {
+    // Carrega os dados mais recentes do LocalStorage
+    if (typeof carregarDados === 'function') carregarDados();
     
-    if (diaSemana >= 1 && diaSemana <= 5) {
-        return DIAS[diaSemana - 1]; // Segunda a Sexta
-    } else if (diaSemana === 0) {
-        return 'Domingo';
-    } else {
-        return 'Sábado';
-    }
-}
+    // Atualiza o topo com a data legível
+    window.atualizarDataAtual();
+    
+    // Preenche as estatísticas de Alunos e Aulas
+    window.atualizarDashboardStats();
+    
+    // Constrói visualmente a lista de horários
+    window.renderizarAgendaDia();
+};
 
-function renderizarHomeAgenda() {
+// 2. EXPOR AS FUNÇÕES PARA O ESCOPO GLOBAL (Para que possam se auto-atualizar)
+
+window.atualizarDataAtual = function() {
+    const elementoData = document.getElementById('dataAtual');
+    if (!elementoData) return;
+
+    const dia = String(dataSelecionada.getDate()).padStart(2, '0');
+    const mes = String(dataSelecionada.getMonth() + 1).padStart(2, '0');
+    const nomeDia = DIAS_DA_SEMANA[dataSelecionada.getDay()];
+
+    elementoData.textContent = `${nomeDia}, ${dia}/${mes}`;
+};
+
+window.atualizarDashboardStats = function() {
+    const elAlunos = document.getElementById('totalAlunos');
+    const elAulas = document.getElementById('totalAulasSemana');
+
+    // Alunos totais ativos
+    if (elAlunos && typeof alunos !== 'undefined') {
+        elAlunos.textContent = alunos.length;
+    }
+
+    // Filtra o total de aulas cadastradas na semana corrente
+    if (elAulas && typeof aulas !== 'undefined') {
+        // Pega as aulas válidas associadas aos dias úteis (Segunda a Sexta)
+        const aulasSemana = aulas.filter(a => typeof DIAS !== 'undefined' && DIAS.includes(a.dia));
+        elAulas.textContent = aulasSemana.length;
+    }
+};
+
+window.renderizarAgendaDia = function() {
     const grid = document.getElementById('agendaGridHome');
-    const titulo = document.getElementById('homeTituloAgenda');
-    if (!grid || !titulo) return;
+    if (!grid) return;
 
-    if (visaoAtual === 'dia') {
-        titulo.textContent = `📆 Agenda do Dia`;
-        renderizarAgendaDia(grid);
-    } else {
-        titulo.textContent = '📅 Agenda da Semana';
-        renderizarAgendaSemana(grid);
-    }
-}
-
-function renderizarAgendaDia(grid) {
-    const nomeDiaSemana = getNomeDiaSemana();
-    const diaAtual = getDiaAtual();
+    // Identifica qual o dia textual correspondente à data selecionada (ex: "Segunda")
+    const diaSemanaIndex = dataSelecionada.getDay();
+    let diaTexto = 'Segunda'; // Padrão de segurança
     
-    let html = `
-        <div class="agenda-dia-container">
-            <div class="agenda-dia-header">
-                <div class="agenda-dia-col-horario">Horário</div>
-                <div class="agenda-dia-col-conteudo">${nomeDiaSemana}</div>
-            </div>
-    `;
+    if (typeof DIAS !== 'undefined' && diaSemanaIndex >= 1 && diaSemanaIndex <= 5) {
+        diaTexto = DIAS[diaSemanaIndex - 1];
+    } else if (diaSemanaIndex === 0) {
+        diaTexto = 'Domingo';
+    } else if (diaSemanaIndex === 6) {
+        diaTexto = 'Sábado';
+    }
 
-    HORARIOS.forEach(h => {
-        const aula = getAulaNoIntervalo(diaAtual, h);
-        
-        if (aula) {
-            const inicio = aula.horarioInicio === h;
-            const fim = aula.horarioFim === h;
-            const aluno = getAluno(aula.alunoId);
-            const nome = aluno ? aluno.nome : '❓ Desconhecido';
-            const obj = aluno ? aluno.objetivo : 'Outro';
-            const preco = aluno && aluno.preco ? `R$ ${aluno.preco.toFixed(2)}` : '';
+    let html = '';
+
+    // Varre a constante HORARIOS configurada no seu dados.js
+    if (typeof HORARIOS !== 'undefined') {
+        HORARIOS.forEach(h => {
+            // Busca se existe aula agendada para este dia e horário específico
+            const aula = typeof getAulaNoIntervalo === 'function' ? getAulaNoIntervalo(diaTexto, h) : null;
             
-            html += `
-                <div class="agenda-dia-linha">
-                    <div class="agenda-dia-col-horario agenda-dia-horario">${h}</div>
-                    <div class="agenda-dia-col-conteudo">
-                        <div class="agenda-dia-aula" onclick="cancelarAula('${aula.id}')">
-                            <div class="agenda-dia-aula-info">
-                                <span class="agenda-dia-aula-nome">${nome}</span>
-                                <span class="agenda-dia-aula-detalhes">${obj} ${preco}</span>
-                            </div>
-                            <span class="agenda-dia-aula-periodo">${aula.horarioInicio}-${aula.horarioFim}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="agenda-dia-linha">
-                    <div class="agenda-dia-col-horario agenda-dia-horario">${h}</div>
-                    <div class="agenda-dia-col-conteudo">
-                        <div class="agenda-dia-vago" onclick="abrirModal('${diaAtual}','${h}')">
-                            <span class="agenda-dia-vago-texto">🟢 Vago — Clique para agendar</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-    });
-
-    html += `</div>`;
-    grid.innerHTML = html;
-}
-
-
-function renderizarAgendaSemana(grid) {
-    let html = `<div class="agenda-header">Horário</div>`;
-    DIAS.forEach(d => {
-        html += `<div class="agenda-header">${d}</div>`;
-    });
-
-    HORARIOS.forEach(h => {
-        html += `<div class="agenda-horario">${h}</div>`;
-        DIAS.forEach(d => {
-            const aula = getAulaNoIntervalo(d, h);
             if (aula) {
-                const inicio = aula.horarioInicio === h;
-                const fim = aula.horarioFim === h;
-                const aluno = getAluno(aula.alunoId);
-                const nome = aluno ? aluno.nome : '❓';
-                const obj = aluno ? aluno.objetivo : 'Outro';
-                let rot = inicio&&fim ? nome : inicio ? `▸ ${nome}` : fim ? `${nome} ▸` : `│ ${nome}`;
-                html += `<div class="agenda-cell ocupado" onclick="cancelarAula('${aula.id}')">
-                    <div class="aula-block objetivo-${obj.replace(/\s/g,'')}">
-                        <span class="aula-nome">${rot}</span>
-                        <span class="aula-objetivo">${obj}${inicio?` (${aula.horarioInicio}-${aula.horarioFim})`:''}</span>
+                const aluno = typeof getAluno === 'function' ? getAluno(aula.alunoId) : null;
+                const nome = aluno ? aluno.nome : '❓ Aluno Removido';
+                const objetivo = aluno ? aluno.objetivo : 'Outro';
+                
+                html += `
+                    <div class="agenda-dia-linha">
+                        <div class="agenda-dia-horario">${h}</div>
+                        <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="if(typeof cancelarAula === 'function') cancelarAula('${aula.id}')">
+                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-user-clock"></i> ${nome}</span>
+                            <span class="agenda-dia-aula-detalhes">${objetivo}</span>
+                            <span class="agenda-dia-aula-periodo">${aula.horarioInicio} - ${aula.horarioFim}</span>
+                        </div>
                     </div>
-                </div>`;
+                `;
             } else {
-                html += `<div class="agenda-cell vago" onclick="abrirModal('${d}','${h}')"><span style="color:#444;font-size:0.7rem;">🟢 vago</span></div>`;
+                // Caso não tenha aula, exibe bloco vago que abre o Modal de agendamento ao clicar
+                html += `
+                    <div class="agenda-dia-linha">
+                        <div class="agenda-dia-horario">${h}</div>
+                        <div class="agenda-dia-vago" onclick="if(typeof abrirModal === 'function') abrirModal('${diaTexto}', '${h}')">
+                            <span class="agenda-dia-vago-texto"><i class="fa-regular fa-circle-dot" style="color: #4CAF50;"></i> Horário Livre — Toque para Agendar</span>
+                        </div>
+                    </div>
+                `;
             }
         });
-    });
+    }
 
     grid.innerHTML = html;
-}
+};
 
-function setVisao(tipo) {
-    visaoAtual = tipo;
-    const btnDia = document.getElementById('btnVisaoDia');
-    const btnSemana = document.getElementById('btnVisaoSemana');
+// 3. OUVINTES DOS BOTÕES DE NAVEGAÇÃO DE DIAS (Configurados apenas uma vez)
+document.addEventListener('DOMContentLoaded', () => {
+    const btnAnterior = document.getElementById('btnAnterior');
+    const btnProximo = document.getElementById('btnProximo');
+    const btnHoje = document.getElementById('btnHoje');
 
-    if (tipo === 'dia') {
-        btnDia.className = 'btn btn-primary';
-        btnSemana.className = 'btn btn-secondary';
-    } else {
-        btnDia.className = 'btn btn-secondary';
-        btnSemana.className = 'btn btn-primary';
+    if (btnAnterior) {
+        btnAnterior.addEventListener('click', () => {
+            dataSelecionada.setDate(dataSelecionada.getDate() - 1);
+            window.atualizarDataAtual();
+            window.renderizarAgendaDia();
+        });
     }
 
-    renderizarHomeAgenda();
-}
-
-// ===== CADASTRO RÁPIDO NO MODAL =====
-
-function toggleCadastroRapido() {
-    const container = document.getElementById('cadastroRapidoContainer');
-    const btn = document.getElementById('btnCadastroRapido');
-    
-    if (container.style.display === 'none' || container.style.display === '') {
-        container.style.display = 'block';
-        btn.textContent = '✕ Cancelar';
-        btn.className = 'btn btn-sm btn-danger';
-    } else {
-        container.style.display = 'none';
-        btn.textContent = '➕ Novo';
-        btn.className = 'btn btn-sm btn-primary';
-        // Limpa campos
-        document.getElementById('rapidoNome').value = '';
-        document.getElementById('rapidoTelefone').value = '';
-        document.getElementById('rapidoPreco').value = '';
-    }
-}
-
-function cadastrarRapido() {
-    const nome = document.getElementById('rapidoNome').value.trim();
-    const telefone = document.getElementById('rapidoTelefone').value.trim();
-    const preco = parseFloat(document.getElementById('rapidoPreco').value) || 0;
-    const objetivo = document.getElementById('rapidoObjetivo').value;
-
-    if (!nome) {
-        mostrarToast('Digite o nome do aluno!', 'error');
-        return;
+    if (btnProximo) {
+        btnProximo.addEventListener('click', () => {
+            dataSelecionada.setDate(dataSelecionada.getDate() + 1);
+            window.atualizarDataAtual();
+            window.renderizarAgendaDia();
+        });
     }
 
-    const novoAluno = {
-        id: Date.now().toString(),
-        nome,
-        telefone,
-        preco,
-        objetivo
-    };
-
-    alunos.push(novoAluno);
-    salvarDados();
-    
-    // Atualiza o select de alunos
-    const select = document.getElementById('modalSelectAluno');
-    select.innerHTML = getAlunosParaSelect(novoAluno.id);
-
-    // Fecha o cadastro rápido
-    toggleCadastroRapido();
-    
-    mostrarToast(`✅ ${nome} cadastrado e selecionado!`);
-}
-
-// ===== INICIALIZAÇÃO =====
-document.addEventListener('DOMContentLoaded', function() {
-    carregarDados();
-    
-    // Popula o select de alunos no modal (se existir)
-    const select = document.getElementById('modalSelectAluno');
-    if (select) {
-        select.innerHTML = alunos.length > 0 
-            ? alunos.map(a => `<option value="${a.id}">${a.nome} — ${a.objetivo}${a.preco ? ` (R$${a.preco.toFixed(2)})` : ''}</option>`).join('')
-            : `<option value="">— Nenhum aluno —</option>`;
+    if (btnHoje) {
+        btnHoje.addEventListener('click', () => {
+            dataSelecionada = new Date();
+            window.atualizarDataAtual();
+            window.renderizarAgendaDia();
+        });
     }
-    
-    // Força a visão de DIA a aparecer primeiro
-    setVisao('dia');
-    atualizarDashboard();
 });
-
