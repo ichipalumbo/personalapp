@@ -103,18 +103,49 @@
         </main>
 
         <!-- ========================================================
-             [TAG-TELA-CALENDARIO] - Visão Mensal Estratégica
+             [TAG-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica
              ======================================================== -->
         <main id="tela-calendario" class="view-section" style="display: none;">
-            <div class="calendario-mensal">
-                <div class="mes-header">
-                    <h2 id="nomeMesAno">Carregando...</h2>
-                    <div class="mes-nav">
-                        <button id="btnMesAnterior" class="btn"><i class="fa-solid fa-chevron-left"></i> Anterior</button>
-                        <button id="btnMesProximo" class="btn">Próximo <i class="fa-solid fa-chevron-right"></i></button>
+            
+            <!-- Seletor Premium de Modo de Visualização (Mensal / Semanal) -->
+            <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; margin-bottom: 18px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
+                <button type="button" class="tab-btn active" id="tabCalendarioMensal" onclick="alternarModoCalendario('mensal')">
+                    <i class="fa-solid fa-calendar-days"></i> Visão Mensal
+                </button>
+                <button type="button" class="tab-btn" id="tabCalendarioSemanal" onclick="alternarModoCalendario('semanal')">
+                    <i class="fa-solid fa-calendar-minus"></i> Visão Semanal
+                </button>
+            </div>
+
+            <!-- CONTAINER 1: VISÃO MENSAL -->
+            <div id="containerCalendarioMensal" class="calendario-mensal">
+                <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <h2 id="nomeMesAno" style="font-size: 1.2rem; color: #FFD700; margin: 0; font-weight: 800;">Carregando...</h2>
+                    <div class="mes-nav" style="display: flex; gap: 6px;">
+                        <button id="btnMesAnterior" class="btn btn-secondary btn-sm" title="Mês Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button id="btnMesHoje" class="btn btn-secondary btn-sm">Hoje</button>
+                        <button id="btnMesProximo" class="btn btn-secondary btn-sm" title="Próximo Mês"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
+                <!-- Grid Mensal de Células -->
                 <div class="calendario-grid" id="calendarioMonthlyGrid"></div>
+            </div>
+
+            <!-- CONTAINER 2: VISÃO SEMANAL (Mobile-First Estilo Linha do Tempo) -->
+            <div id="containerCalendarioSemanal" class="agenda-panel" style="display: none;">
+                <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div style="display: flex; flex-direction: column;">
+                        <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
+                        <span style="font-size: 0.75rem; color: #888;">Quadro resumido de treinos ⚡</span>
+                    </div>
+                    <div class="mes-nav" style="display: flex; gap: 6px;">
+                        <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">Esta Semana</button>
+                        <button id="btnSemanaProxima" class="btn btn-secondary btn-sm" title="Próxima Semana"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                </div>
+                <!-- Lista de Blocos Diários da Semana Corrente -->
+                <div id="calendarioSemanalGrid" style="display: flex; flex-direction: column; gap: 16px;"></div>
             </div>
         </main>
 
@@ -200,7 +231,7 @@
                 
                 <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
 
-                <!-- CORREÇÃO: Escolha simplificada de Horário de Início + Duração do Bloco -->
+                <!-- Escolha simplificada de Horário de Início + Duração do Bloco -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="agendaHoraInicio">Início *</label>

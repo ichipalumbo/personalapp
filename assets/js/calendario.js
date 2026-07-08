@@ -1,5 +1,5 @@
 // ========================================================
-// [JS-CALENDARIO] - Calendário Mensal
+// [TAG-JS-CALENDARIO-CORE] - Motor Matemático do Grid Mensal (Com Contadores)
 // ========================================================
 
 function getDiasNoMes(mes, ano) {
@@ -18,80 +18,102 @@ function getNomeMes(mes) {
     return nomes[mes];
 }
 
+// Filtra e retorna as aulas cadastradas em determinado dia da semana
 function getAulasDoDia(dia, mes, ano) {
     const data = new Date(ano, mes, dia);
     const diaSemana = data.getDay();
     
-    // Só mostramos aulas de segunda a sexta
+    // Mostramos apenas aulas de segunda a sexta (1 a 5)
     if (diaSemana < 1 || diaSemana > 5) return [];
     
-    return aulas.filter(a => {
-        const idxDia = DIAS.indexOf(a.dia);
-        return (idxDia + 1) === diaSemana;
-    });
+    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    const diaTexto = diasUteisMap[diaSemana - 1];
+    
+    return aulas.filter(a => a.dia === diaTexto);
 }
 
+// Constrói visualmente as células do Mês de forma super informativa com estatísticas
 function renderizarCalendario() {
     const grid = document.getElementById('calendarioGrid');
     if (!grid) return;
     
-    const label = document.getElementById('mesAnoLabel');
-    if (label) label.textContent = `${getNomeMes(mesAtual)} ${anoAtual}`;
+    const label = document.getElementById('nomeMesAno');
+    if (label) {
+        label.textContent = `${getNomeMes(mesAtual)} de ${anoAtual}`;
+    }
     
     const totalDias = getDiasNoMes(mesAtual, anoAtual);
     const primeiroDia = getPrimeiroDiaSemana(mesAtual, anoAtual);
     const hoje = new Date();
     
-    // Dias do mês anterior para preencher
+    // Busca informações de recobrimento do mês anterior
     const mesAnterior = mesAtual === 0 ? 11 : mesAtual - 1;
     const anoAnterior = mesAtual === 0 ? anoAtual - 1 : anoAtual;
     const diasMesAnterior = getDiasNoMes(mesAnterior, anoAnterior);
     
     let html = '';
     
-    // Cabeçalho dos dias da semana
+    // Cabeçalho textual dos dias da semana
     DIAS_SEMANA.forEach(d => {
         html += `<div class="dia-header">${d}</div>`;
     });
     
-    // Dias do mês anterior (para preencher o início)
+    // Desenha as células cinzas do mês anterior para preenchimento simétrico
     const inicioPreenchimento = primeiroDia === 0 ? 6 : primeiroDia - 1;
     for (let i = inicioPreenchimento; i > 0; i--) {
         html += `<div class="dia-cell outro-mes"><div class="dia-numero">${diasMesAnterior - i + 1}</div></div>`;
     }
     
-    // Dias do mês atual
+    // Desenha os dias válidos do mês corrente com contadores dinâmicos
     for (let d = 1; d <= totalDias; d++) {
         const ehHoje = d === hoje.getDate() && mesAtual === hoje.getMonth() && anoAtual === hoje.getFullYear();
         const aulasDoDia = getAulasDoDia(d, mesAtual, anoAtual);
         
+        // Separando e contando os tipos de atividades do dia
+        const totalAulas = aulasDoDia.filter(a => !a.tipo || a.tipo === 'aula').length;
+        const totalDesloc = aulasDoDia.filter(a => a.tipo === 'deslocamento').length;
+        const totalBloqueios = aulasDoDia.filter(a => a.tipo === 'bloqueio').length;
+
         let aulasHtml = '';
         if (aulasDoDia.length > 0) {
-            const maxMostrar = 3;
-            const mostrar = aulasDoDia.slice(0, maxMostrar);
-            const restantes = aulasDoDia.length - maxMostrar;
+            aulasHtml += `<div class="dia-stats-badges">`;
             
-            mostrar.forEach(aula => {
-                const aluno = getAluno(aula.alunoId);
-                if (!aluno) return;
-                const objClass = aluno.objetivo.toLowerCase();
-                aulasHtml += `<div class="dia-aula-item ${objClass}">${aluno.nome}</div>`;
-            });
-            
-            if (restantes > 0) {
-                aulasHtml += `<div class="dia-mais">+${restantes} mais</div>`;
+            // Renderiza indicador específico apenas se houver o evento
+            if (totalAulas > 0) {
+                aulasHtml += `
+                    <div class="badge-stat-mensal badge-aula" title="${totalAulas} Aula(s)">
+                        <i class="fa-solid fa-graduation-cap"></i><span>${totalAulas}</span>
+                    </div>
+                `;
             }
+            if (totalDesloc > 0) {
+                aulasHtml += `
+                    <div class="badge-stat-mensal badge-desloc" title="${totalDesloc} Deslocamento(s)">
+                        <i class="fa-solid fa-car-side"></i><span>${totalDesloc}</span>
+                    </div>
+                `;
+            }
+            if (totalBloqueios > 0) {
+                aulasHtml += `
+                    <div class="badge-stat-mensal badge-bloqueio" title="${totalBloqueios} Bloqueio(s)">
+                        <i class="fa-solid fa-lock"></i><span>${totalBloqueios}</span>
+                    </div>
+                `;
+            }
+            
+            aulasHtml += `</div>`;
         }
         
+        // Clicar em qualquer célula do mês redireciona de forma inteligente
         html += `
             <div class="dia-cell ${ehHoje ? 'hoje' : ''}" onclick="irParaSemana(${d})">
                 <div class="dia-numero">${d}</div>
-                <div class="dia-aulas">${aulasHtml}</div>
+                ${aulasHtml}
             </div>
         `;
     }
     
-    // Preencher restante da última semana
+    // Preencher as células do final da grade
     const totalCells = inicioPreenchimento + totalDias;
     const resto = totalCells % 7;
     if (resto > 0) {
@@ -115,31 +137,18 @@ function navegarMes(delta) {
     renderizarCalendario();
 }
 
-function irParaHoje() {
-    const hoje = new Date();
-    mesAtual = hoje.getMonth();
-    anoAtual = hoje.getFullYear();
-    renderizarCalendario();
-    irParaSemana(hoje.getDate());
-}
-
+// Redirecionamento Inteligente ao Clicar na Célula
 function irParaSemana(dia) {
-    // 1. Atualiza o controle de data global da Home (que está no home.js)
+    const dataAlvo = new Date(anoAtual, mesAtual, dia);
+    
     if (typeof dataSelecionada !== 'undefined') {
-        dataSelecionada = new Date(anoAtual, mesAtual, dia);
+        dataSelecionada = dataAlvo;
+    }
+    if (window.semanaReferencia) {
+        window.semanaReferencia = dataAlvo;
     }
 
-    // 2. Procura os links de navegação da SPA para simular o clique de mudança de aba
-    const linkHome = document.querySelector('.nav-link[data-target="tela-home"]');
-    
-    if (linkHome) {
-        // Dispara o clique programaticamente. O app.js vai interceptar, 
-        // mostrar a Home e atualizar os dados do dia que você clicou!
-        linkHome.click(); 
-    } else {
-        // Fallback de segurança caso o app.js precise ser chamado de outra forma
-        const secoes = document.querySelectorAll('.view-section');
-        secoes.forEach(s => s.style.display = s.id === 'tela-home' ? 'block' : 'none');
-        if (typeof inicializarHome === 'function') inicializarHome();
+    if (typeof alternarModoCalendario === 'function') {
+        window.alternarModoCalendario('semanal');
     }
 }

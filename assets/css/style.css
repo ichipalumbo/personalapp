@@ -20,7 +20,6 @@ body {
     margin: 0 auto;
 }
 
-/* CORREÇÃO: Respiro no topo de cada seção para descolar da linha do cabeçalho */
 .view-section {
     padding-top: 18px;
 }
@@ -34,7 +33,7 @@ body {
     align-items: center;
     text-align: center;
     padding: 20px 15px;
-    border-bottom: 1px solid #1F1F1F; /* CORREÇÃO: Suavizado de 2px para 1px */
+    border-bottom: 1px solid #1F1F1F;
     background: #0D0D0D;
     gap: 15px;
     width: 100%;
@@ -135,12 +134,6 @@ body {
     transform: scale(1.15);
 }
 
-#utilitarios-dados {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-}
-
 /* ========================================================
    [STYLE-BOTOES]
    ======================================================== */
@@ -177,7 +170,7 @@ body {
     display: grid;
     grid-template-columns: 1fr;
     gap: 12px;
-    margin-bottom: 20px; /* Aumentado margin bottom */
+    margin-bottom: 20px;
 }
 .aluno-card {
     background: #2A2A2A;
@@ -186,7 +179,6 @@ body {
     border-left: 4px solid #FFD700;
 }
 
-/* Botão Flutuante Circular */
 #btnFlutuanteAdicionar {
     position: fixed;
     bottom: 30px;
@@ -280,7 +272,7 @@ body {
    [STYLE-AGENDA DIÁRIA] - Visual Premium e Emojis Integrados
    ======================================================== */
 .agenda-panel {
-    background: #141414; /* Escuro premium diferenciado */
+    background: #141414;
     border-radius: 16px;
     padding: 20px;
     margin-bottom: 20px;
@@ -288,7 +280,6 @@ body {
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
-/* Cabeçalho superior interno da Agenda */
 .agenda-header-wrapper {
     display: flex;
     justify-content: space-between;
@@ -303,7 +294,7 @@ body {
     font-size: 1.25rem;
     color: #FFD700;
     margin: 0;
-    font-weight: 800; /* Mais encorpado */
+    font-weight: 800;
     letter-spacing: 0.3px;
 }
 
@@ -314,7 +305,6 @@ body {
     margin-top: 3px;
 }
 
-/* Botão de configuração premium redondo */
 .btn-config-icon {
     background: #1C1C1C;
     color: #FFD700;
@@ -334,7 +324,7 @@ body {
 }
 
 .btn-config-icon:hover .fa-gear {
-    transform: rotate(45deg); /* Gira levemente ao passar o mouse */
+    transform: rotate(45deg);
 }
 
 .btn-config-icon:active {
@@ -342,7 +332,6 @@ body {
     border-color: #FFD700;
 }
 
-/* Cabeçalho de navegação de dias luxuoso */
 .agenda-header-navegacao {
     background: #0B0B0B;
     border-radius: 12px;
@@ -368,7 +357,6 @@ body {
     align-items: center;
 }
 
-/* Chevrons com cores marcantes */
 .btn-nav-dia {
     background: transparent;
     border: none;
@@ -386,7 +374,6 @@ body {
     opacity: 0.8;
 }
 
-/* Botão Hoje */
 .btn-hoje-pill {
     background: #FFD700;
     color: #0D0D0D;
@@ -498,7 +485,7 @@ body {
 }
 
 /* ========================================================
-   [STYLE-CALENDARIO MENSAL]
+   [STYLE-CALENDARIO MENSAL] - Visual Dashboard Informativo
    ======================================================== */
 .calendario-mensal {
     background: #1A1A1A;
@@ -520,19 +507,95 @@ body {
 .calendario-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
+    gap: 3px; /* Pequeno espaçamento entre células */
 }
-.calendario-grid .dia-header { text-align: center; padding: 4px 0; font-weight: 600; font-size: 0.7rem; color: #AAA; }
-.calendario-grid .dia-cell { background: #2A2A2A; border-radius: 6px; padding: 6px; min-height: 55px; display: flex; flex-direction: column; justify-content: space-between; }
-.calendario-grid .dia-cell .dia-numero { font-size: 0.75rem; font-weight: 600; color: #E0E0E0; }
+.calendario-grid .dia-header { 
+    text-align: center; 
+    padding: 4px 0; 
+    font-weight: 700; 
+    font-size: 0.72rem; 
+    color: #888; 
+    text-transform: uppercase;
+}
+.calendario-grid .dia-cell { 
+    background: #1e1e1e; 
+    border-radius: 8px; 
+    padding: 6px; 
+    min-height: 60px; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: space-between; 
+    align-items: flex-start;
+    border: 1px solid #262626;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.calendario-grid .dia-cell:active {
+    transform: scale(0.95);
+    background: #2D2D2D;
+}
+.calendario-grid .dia-cell.outro-mes {
+    opacity: 0.25;
+    background: #141414;
+    cursor: default;
+    pointer-events: none;
+}
+.calendario-grid .dia-cell .dia-numero { 
+    font-size: 0.78rem; 
+    font-weight: 700; 
+    color: #888; 
+}
+.calendario-grid .dia-cell.hoje .dia-numero {
+    color: #FFD700;
+}
 
-.calendario-grid .dia-cell .dia-aulas { display: flex; flex-wrap: wrap; gap: 2px; }
-.calendario-grid .dia-cell .dia-aula-item { width: 6px; height: 6px; border-radius: 50%; padding: 0; text-indent: -9999px; overflow: hidden; display: inline-block; }
-.calendario-grid .dia-cell .dia-aula-item.funcional { background: #FFD700; }
-.calendario-grid .dia-cell .dia-aula-item.hipertrofia { background: #64B5F6; }
-.calendario-grid .dia-cell .dia-aula-item.emagrecimento { background: #81C784; }
-.calendario-grid .dia-cell .dia-aula-item.condicionamento { background: #CE93D8; }
-.calendario-grid .dia-cell .dia-aula-item.outro { background: #78909C; }
+/* Novo Destaque de Hoje Premium */
+.calendario-grid .dia-cell.hoje {
+    border: 1.5px solid #FFD700 !important;
+    background: rgba(255, 215, 0, 0.08) !important;
+    box-shadow: inset 0 0 8px rgba(255, 215, 0, 0.15);
+}
+
+/* Layout das micro-badges */
+.dia-stats-badges {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 100%;
+    margin-top: 4px;
+}
+
+/* Estilo para as mini-badges com ícone e volume */
+.badge-stat-mensal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-size: 0.62rem;
+    font-weight: 800;
+    padding: 2px 4px;
+    border-radius: 4px;
+    width: 100%;
+    text-align: center;
+}
+.badge-stat-mensal i {
+    font-size: 0.58rem;
+}
+.badge-aula {
+    background: rgba(255, 215, 0, 0.12);
+    color: #FFD700;
+    border: 1px solid rgba(255, 215, 0, 0.25);
+}
+.badge-desloc {
+    background: rgba(255, 152, 0, 0.12);
+    color: #FF9800;
+    border: 1px solid rgba(255, 152, 0, 0.25);
+}
+.badge-bloqueio {
+    background: rgba(239, 83, 80, 0.12);
+    color: #EF5350;
+    border: 1px solid rgba(239, 83, 80, 0.25);
+}
 
 /* ========================================================
    [STYLE-MODAL COMUM & TOAST]
@@ -583,6 +646,20 @@ body {
     .header-nav .nav-link { flex-direction: row; padding: 10px 20px; gap: 8px; border-radius: 20px; }
     
     .alunos-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
-    .calendario-grid .dia-cell { min-height: 80px; }
-    .calendario-grid .dia-cell .dia-aula-item { width: auto; height: auto; border-radius: 4px; text-indent: 0; padding: 2px 4px; overflow: visible; display: block; font-size: 0.7rem; color: #FFF; background: #333; }
+    
+    /* Layout do Calendário no Desktop */
+    .calendario-grid .dia-cell { 
+        min-height: 85px; 
+        padding: 8px;
+    }
+    .dia-stats-badges {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .badge-stat-mensal {
+        width: auto;
+        flex: 1;
+        min-width: 32px;
+    }
 }
