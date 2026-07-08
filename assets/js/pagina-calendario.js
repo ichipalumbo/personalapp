@@ -2,8 +2,8 @@
 // [TAG-JS-PAGINA-CALENDARIO] - Controle Mensal & Semanal na SPA
 // ========================================================
 
-// Variável para controlar o modo ativo na aba Calendário ('mensal' ou 'semanal')
-window.modoCalendarioAtivo = 'mensal';
+// MODIFICADO: A aba Calendário agora abre a Visão Semanal por padrão!
+window.modoCalendarioAtivo = 'semanal';
 
 // Data de referência para navegação na visão semanal (inicia na data de hoje)
 window.semanaReferencia = new Date();
@@ -12,11 +12,11 @@ window.semanaReferencia = new Date();
 window.inicializarPaginaCalendario = function() {
     if (typeof carregarDados === 'function') carregarDados();
     
-    // Força a exibição do modo salvo/ativo
+    // Força a exibição do modo salvo/ativo (que por padrão será o semanal)
     window.alternarModoCalendario(window.modoCalendarioAtivo);
 };
 
-// 2. ALTERNADOR DE ABAS (MENSAL VS SEMANAL)
+// 2. ALTERNADOR DE ABAS (SEMANAL VS MENSAL)
 window.alternarModoCalendario = function(modo) {
     window.modoCalendarioAtivo = modo;
     
@@ -28,20 +28,20 @@ window.alternarModoCalendario = function(modo) {
 
     if (!tabMensal || !tabSemanal) return;
 
-    if (modo === 'mensal') {
-        tabMensal.classList.add('active');
-        tabSemanal.classList.remove('active');
-        containerMensal.style.display = 'block';
-        containerSemanal.style.display = 'none';
-        
-        window.renderizarCalendarioMensal();
-    } else {
+    if (modo === 'semanal') {
         tabSemanal.classList.add('active');
         tabMensal.classList.remove('active');
         containerSemanal.style.display = 'block';
         containerMensal.style.display = 'none';
         
         window.renderizarCalendarioSemanal();
+    } else {
+        tabMensal.classList.add('active');
+        tabSemanal.classList.remove('active');
+        containerMensal.style.display = 'block';
+        containerSemanal.style.display = 'none';
+        
+        window.renderizarCalendarioMensal();
     }
 };
 
@@ -50,7 +50,7 @@ window.renderizarCalendarioMensal = function() {
     const gridSPA = document.getElementById('calendarioMonthlyGrid');
     if (!gridSPA) return;
 
-    // Alinha temporariamente o ID do contêiner para o motor do original renderizar
+    // Alinha temporariamente o ID do contêiner para o motor original renderizar
     gridSPA.id = 'calendarioGrid';
 
     if (typeof renderizarCalendario === 'function') {
@@ -77,14 +77,14 @@ window.renderizarCalendarioSemanal = function() {
     const sextaFeira = new Date(segundaFeira);
     sextaFeira.setDate(segundaFeira.getDate() + 4);
 
-    // Atualiza a Label de Período (ex: "06/07 a 10/07")
+    // Atualiza a Label de Período (ex: "Semana: 06/07 a 10/07 de 2026")
     if (labelPeriodo) {
         const dSeg = String(segundaFeira.getDate()).padStart(2, '0');
         const mSeg = String(segundaFeira.getMonth() + 1).padStart(2, '0');
         const dSex = String(sextaFeira.getDate()).padStart(2, '0');
         const mSex = String(sextaFeira.getMonth() + 1).padStart(2, '0');
         const anoRef = segundaFeira.getFullYear();
-        labelPeriodo.textContent = `Semana: ${dSeg}/${mSeg} a ${dSex}/${mSex} de ${anoRef}`;
+        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i>Semana: <span style="color: #FFD700;">${dSeg}/${mSeg} a ${dSex}/${mSex}</span> de ${anoRef}`;
     }
 
     let html = '';
@@ -168,19 +168,17 @@ window.renderizarCalendarioSemanal = function() {
     gridSemanal.innerHTML = html;
 };
 
-// 5. ATIVAÇÃO DE AÇÕES DO CARD CLICADO (Compartilhado com o modal de exclusão/reposição da Home)
+// 5. ATIVAÇÃO DE AÇÕES DO CARD CLICADO (Compartilhado com o modal de exclusão/reagendamento da Home)
 window.abrirCalendarioAcaoSlot = function(id, diaTexto) {
-    // Alinha variáveis no escopo global para que as ações no modal do index.html encontrem o ID correto
     if (typeof idCompromissoSelecionado !== 'undefined') {
         idCompromissoSelecionado = id;
     }
     
-    // Utiliza o modal unificado de gerenciamento de slots
     if (typeof abrirModalAcaoSlot === 'function') {
         abrirModalAcaoSlot(id);
     }
     
-    // Sobrescreve a escuta de finalização para garantir que atualize a tela de calendário após ações
+    // Sobrescreve a escuta de finalização para atualizar as duas visões de calendário imediatamente
     const originalFecharModalAcaoSlot = window.fecharModalAcaoSlot;
     window.fecharModalAcaoSlot = function() {
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();

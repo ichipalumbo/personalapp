@@ -1,5 +1,5 @@
 // ========================================================
-// [TAG-JS-HOME] - Lógica da Home, Slots de 30m e Duração Dinâmica
+// [TAG-JS-HOME] - Lógica da Home, Slots de 30m e Edição de Compromissos
 // ========================================================
 
 let dataSelecionada = new Date();
@@ -20,7 +20,7 @@ window.inicializarHome = function() {
     window.renderizarListaReposicoes();
 };
 
-// Renderiza a data com ícone de calendário animado e realce de cores
+// Renderiza a data com ícone de calendário flat e realce de cores
 window.atualizarDataAtual = function() {
     const elementoData = document.getElementById('dataAtual');
     if (!elementoData) return;
@@ -130,13 +130,20 @@ window.renderizarAgendaDia = function() {
     grid.innerHTML = html;
 };
 
-// Somas minutos a uma string de horário (ex: "18:30" + 90 -> "20:00")
+// Soma minutos a uma string de horário (ex: "18:30" + 90 -> "20:00")
 window.somarMinutos = function(horaStr, minutos) {
     const [h, m] = horaStr.split(':').map(Number);
     let totalMinutos = h * 60 + m + parseInt(minutos);
     const novaHora = Math.floor(totalMinutos / 60) % 24;
     const novosMinutos = totalMinutos % 60;
     return `${novaHora.toString().padStart(2, '0')}:${novosMinutos.toString().padStart(2, '0')}`;
+};
+
+// Calcula a diferença em minutos entre dois horários "HH:MM"
+window.diferencaMinutos = function(inicio, fim) {
+    const [hI, mI] = inicio.split(':').map(Number);
+    const [hF, mF] = fim.split(':').map(Number);
+    return (hF * 60 + mF) - (hI * 60 + mI);
 };
 
 window.abrirAgendamentoModal = function(dia, hora) {
@@ -146,22 +153,19 @@ window.abrirAgendamentoModal = function(dia, hora) {
     const modal = document.getElementById('modalAgendamento');
     document.getElementById('infoHorarioAlvo').textContent = `${dia} — Definir Período`;
 
-    // Reseta o formulário primeiro para limpar qualquer dado anterior
     if (document.getElementById('formAgendamento')) {
         document.getElementById('formAgendamento').reset();
     }
 
-    // Popula o dropdown de horário de início
     const selectInicio = document.getElementById('agendaHoraInicio');
     const selectDuracao = document.getElementById('agendaDuracao');
     
     const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
     selectInicio.innerHTML = optionsHtml;
 
-    // Define as seleções padrão
     selectInicio.value = hora;
     if (selectDuracao) {
-        selectDuracao.value = "60"; // Padrão de 1 hora
+        selectDuracao.value = "60"; 
     }
 
     const selectAluno = document.getElementById('agendaAluno');
@@ -195,13 +199,13 @@ window.selecionarTipoAgendamento = function(tipo) {
     } else if (tipo === 'deslocamento') {
         tabDeslocamento.classList.add('active');
         camposAula.style.display = 'none';
-        camposBloqueio.style.display = 'none'; // Deslocamento não precisa de campo de descrição!
+        camposBloqueio.style.display = 'none'; 
         document.getElementById('agendaAluno').required = false;
         document.getElementById('agendaDescricao').required = false;
     } else if (tipo === 'bloqueio') {
         tabBloqueio.classList.add('active');
         camposAula.style.display = 'none';
-        camposBloqueio.style.display = 'block'; // Bloqueio exige uma descrição
+        camposBloqueio.style.display = 'block'; 
         document.getElementById('agendaAluno').required = false;
         document.getElementById('agendaDescricao').required = true;
     }
@@ -216,8 +220,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const tipo = document.getElementById('agendaTipo').value;
             const hInicio = document.getElementById('agendaHoraInicio').value;
             const duracaoMinutos = document.getElementById('agendaDuracao').value;
-            
-            // Calcula automaticamente a hora final com base na duração selecionada
             const hFim = window.somarMinutos(hInicio, duracaoMinutos);
 
             let novoCompromisso = {
@@ -234,7 +236,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 novoCompromisso.alunoId = alunoId;
                 novoCompromisso.frequencia = document.getElementById('agendaFrequencia').value;
             } else if (tipo === 'deslocamento') {
-                novoCompromisso.descricao = "Trânsito / Deslocamento"; // Descrição limpa automática
+                novoCompromisso.descricao = "Trânsito / Deslocamento"; 
             } else if (tipo === 'bloqueio') {
                 novoCompromisso.descricao = document.getElementById('agendaDescricao').value.trim();
             }
@@ -255,23 +257,58 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// MODIFICADO: Abrir modal unificado de EDIÇÃO/GERENCIAMENTO de compromisso
 let idCompromissoSelecionado = "";
+
 window.abrirModalAcaoSlot = function(id) {
     idCompromissoSelecionado = id;
     const modal = document.getElementById('modalAcaoSlot');
-    const elTexto = document.getElementById('textoCompromissoDetalhes');
-    const btnRepor = document.getElementById('btnMandarParaReposicao');
     const compromisso = aulas.find(a => a.id === id);
     if (!compromisso) return;
 
-    if ((compromisso.tipo || 'aula') === 'aula') {
-        const aluno = typeof getAluno === 'function' ? getAluno(compromisso.alunoId) : null;
-        elTexto.textContent = `Aula com ${aluno ? aluno.nome : 'Aluno'} das ${compromisso.horarioInicio} até ${compromisso.horarioFim}.`;
-        btnRepor.style.display = 'block';
-    } else {
-        elTexto.textContent = `${compromisso.descricao || 'Compromisso'} das ${compromisso.horarioInicio} até ${compromisso.horarioFim}.`;
-        btnRepor.style.display = 'none';
+    // Exibe o dia em foco
+    document.getElementById('editInfoDia').textContent = `Editar Compromisso — ${compromisso.dia}`;
+    
+    // Configura e popula o seletor de horários de início
+    const selectInicio = document.getElementById('editHoraInicio');
+    const selectDuracao = document.getElementById('editDuracao');
+    
+    const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
+    selectInicio.innerHTML = optionsHtml;
+    selectInicio.value = compromisso.horarioInicio;
+
+    // Calcula a duração atual e marca o correto no select
+    const minutos = window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim);
+    selectDuracao.value = minutos.toString();
+
+    const tipo = compromisso.tipo || 'aula';
+    const camposAula = document.getElementById('editCamposTipoAula');
+    const camposBloqueio = document.getElementById('editCamposTipoBloqueio');
+    const btnRepor = document.getElementById('btnMandarParaReposicao');
+
+    // Carrega e oculta as seções de campos com base no tipo ativo do bloco
+    if (tipo === 'aula') {
+        camposAula.style.display = 'block';
+        camposBloqueio.style.display = 'none';
+        btnRepor.style.display = 'block'; // Mostra Reagendar somente para aulas
+
+        const selectAluno = document.getElementById('editAluno');
+        if (selectAluno) {
+            selectAluno.innerHTML = alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+            selectAluno.value = compromisso.alunoId;
+        }
+        document.getElementById('editFrequencia').value = compromisso.frequencia || 'uma_vez';
+    } else if (tipo === 'deslocamento') {
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'none';
+        btnRepor.style.display = 'none'; // Deslocamento não se reagenda
+    } else if (tipo === 'bloqueio') {
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'block';
+        btnRepor.style.display = 'none'; // Bloqueios particulares não geram reposições pendentes
+        document.getElementById('editDescricao').value = compromisso.descricao || '';
     }
+
     if (modal) modal.style.display = 'flex';
 };
 
@@ -279,31 +316,81 @@ window.fecharModalAcaoSlot = function() {
     document.getElementById('modalAcaoSlot').style.display = 'none';
 };
 
+// Listeners das ações de Salvamento, Cancelamento e Reagendamento (Alterados)
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('btnDeletarDefinitivo')) {
-        document.getElementById('btnDeletarDefinitivo').addEventListener('click', () => {
-            if (confirm("Desmarcar horário definitivamente?")) {
+    const formEditar = document.getElementById('formEditarCompromisso');
+    if (formEditar) {
+        formEditar.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            if (!compromisso) return;
+
+            const hInicio = document.getElementById('editHoraInicio').value;
+            const duracaoMinutos = document.getElementById('editDuracao').value;
+            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+
+            if (hInicio >= hFim) {
+                alert("O horário de término deve ser posterior ao início!");
+                return;
+            }
+
+            // Grava os novos horários
+            compromisso.horarioInicio = hInicio;
+            compromisso.horarioFim = hFim;
+
+            const tipo = compromisso.tipo || 'aula';
+            if (tipo === 'aula') {
+                compromisso.frequencia = document.getElementById('editFrequencia').value;
+            } else if (tipo === 'bloqueio') {
+                compromisso.descricao = document.getElementById('editDescricao').value.trim();
+            }
+
+            if (typeof salvarDados === 'function') salvarDados();
+
+            window.fecharModalAcaoSlot();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('✅ Alterações salvas com sucesso!');
+        });
+    }
+
+    // Cancelar (Excluir definitivamente)
+    const btnDeletar = document.getElementById('btnDeletarDefinitivo');
+    if (btnDeletar) {
+        btnDeletar.addEventListener('click', () => {
+            if (confirm("Deseja realmente cancelar este compromisso definitivamente?")) {
                 aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
                 if (typeof salvarDados === 'function') salvarDados();
+                
                 window.fecharModalAcaoSlot();
                 window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('Compromisso cancelado.');
             }
         });
     }
 
-    if (document.getElementById('btnMandarParaReposicao')) {
-        document.getElementById('btnMandarParaReposicao').addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id !== idCompromissoSelecionado);
-            if (confirm("Enviar para a lista de reposição pendente?")) {
+    // Reagendar (Enviar para reposição pendente)
+    const btnMandarReposicao = document.getElementById('btnMandarParaReposicao');
+    if (btnMandarReposicao) {
+        btnMandarReposicao.addEventListener('click', () => {
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            if (!compromisso) return;
+
+            if (confirm("Deseja reagendar esta aula (enviar para fila de reposição)?")) {
                 aulasParaRepor.push({
                     id: Date.now().toString(),
                     alunoId: compromisso.alunoId,
                     dataCancelamento: new Date().toLocaleDateString('pt-BR')
                 });
+                
+                // Remove o compromisso da agenda atual
                 aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
+                
                 if (typeof salvarDados === 'function') salvarDados();
+
                 window.fecharModalAcaoSlot();
                 window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula enviada para reposição!');
             }
         });
     }
