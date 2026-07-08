@@ -1,37 +1,66 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <!-- ========================================================
+         [TAG-HEAD] - Metadados, Título e Estilos Externos
+         ======================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Agenda Personal Trainer</title>
+    <title>AtivaMente - Agenda Personal Trainer</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Font Awesome para Ícones Modernos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
         
+        <!-- ========================================================
+             [TAG-HEADER] - Menu e Controle Global de Navegação (SPA)
+             ======================================================== -->
         <header class="header">
-            <h1>Agenda <span>Personal</span></h1>
+            <!-- Título Principal + Subtítulo da Empresa -->
+            <div class="brand-container">
+                <h1 class="marca-titulo">
+                    <i class="fa-solid fa-dumbbell text-bounce"></i><span class="marca-ativa">Ativa</span><span class="marca-mente">Mente</span>
+                </h1>
+                <p class="marca-subtitulo">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    Personal Trainer
+                </p>
+            </div>
             
+            <!-- Barra de Ações com Menu e Utilitários Integrados -->
             <div class="header-actions">
                 <nav class="header-nav">
-                    <a href="#" class="nav-link ativo" data-target="tela-home"><i class="fa-solid fa-house"></i> Home</a>
-                    <a href="#" class="nav-link inativo" data-target="tela-calendario"><i class="fa-solid fa-calendar-days"></i> Calendário</a>
-                    <a href="#" class="nav-link inativo" data-target="tela-alunos"><i class="fa-solid fa-user-plus"></i> Alunos</a>
+                    <a href="#" class="nav-link ativo" data-target="tela-home">
+                        <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
+                    </a>
+                    <a href="#" class="nav-link inativo" data-target="tela-calendario">
+                        <i class="fa-solid fa-calendar-week nav-icon-anim"></i> Calendário
+                    </a>
+                    <a href="#" class="nav-link inativo" data-target="tela-alunos">
+                        <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
+                    </a>
                 </nav>
+
+                <!-- Botões secundários de Backup -->
                 <div id="utilitarios-dados">
                     <button class="btn btn-secondary btn-sm" id="btnExportar" title="Exportar Dados">
-                        <i class="fa-solid fa-file-export"></i>
+                        <i class="fa-solid fa-cloud-arrow-down"></i> Exportar
                     </button>
                     <button class="btn btn-secondary btn-sm" id="btnImportar" title="Importar Dados">
-                        <i class="fa-solid fa-file-import"></i>
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Importar
                     </button>
                     <input type="file" id="importFile" accept=".json" style="display: none;">
                 </div>
             </div>
         </header>
 
+        <!-- ========================================================
+             [TAG-TELA-HOME] - Visão Operacional Diária e Dashboard
+             ======================================================== -->
         <main id="tela-home" class="view-section">
+            <!-- Subseção: Dashboard de Estatísticas -->
             <section class="alunos-grid" style="margin-bottom: 20px;">
                 <div class="card-stat">
                     <span class="stat-numero" id="totalAlunos">0</span>
@@ -43,6 +72,7 @@
                 </div>
             </section>
 
+            <!-- Subseção: Grade Horária Diária -->
             <div class="agenda-panel">
                 <div class="header" style="margin-bottom: 15px; border-bottom: 1px solid #2A2A2A; padding-bottom: 10px;">
                     <h2 style="font-size: 1.2rem; color: #FFD700; text-align: left;">Sua Agenda</h2>
@@ -54,11 +84,14 @@
                     </div>
                 </div>
 
+                <!-- Contêiner preenchido dinamicamente via JS -->
                 <div class="agenda-dia-container" id="agendaGridHome"></div>
             </div>
         </main>
 
-
+        <!-- ========================================================
+             [TAG-TELA-CALENDARIO] - Visão Mensal Estratégica
+             ======================================================== -->
         <main id="tela-calendario" class="view-section" style="display: none;">
             <div class="calendario-mensal">
                 <div class="mes-header">
@@ -69,44 +102,88 @@
                     </div>
                 </div>
 
+                <!-- Grid Mensal Inteligente -->
                 <div class="calendario-grid" id="calendarioMensalGrid"></div>
             </div>
         </main>
 
-
-        <main id="tela-alunos" class="view-section" style="display: none;">
-            <div class="alunos-panel">
-                <h2 style="font-size: 1.2rem; color: #FFD700; margin-bottom: 15px;">Cadastrar Novo Aluno</h2>
-                
-                <form id="formNovoAluno" class="form-aluno">
-                    <div style="flex: 2; min-width: 200px;">
-                        <input type="text" id="alunoNome" placeholder="Nome completo do aluno" required>
-                    </div>
-                    <div style="flex: 1; min-width: 150px;">
-                        <select id="alunoObjetivo" required>
-                            <option value="">Selecione o Objetivo...</option>
-                            <option value="Hipertrofia">Hipertrofia</option>
-                            <option value="Emagrecimento">Emagrecimento</option>
-                            <option value="Condicionamento">Condicionamento</option>
-                            <option value="Funcional">Funcional</option>
-                            <option value="Outro">Outro</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fa-solid fa-plus"></i> Adicionar
-                    </button>
-                </form>
-            </div>
-
+        <!-- ========================================================
+             [TAG-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM)
+             ======================================================== -->
+        <main id="tela-alunos" class="view-section" style="display: none; padding-bottom: 80px;">
+            
+            <!-- Listagem Dinâmica dos Alunos -->
             <section class="alunos-panel">
                 <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px;">Seus Alunos</h3>
                 <div class="alunos-grid" id="listaAlunos"></div>
             </section>
+
+            <!-- Botão Flutuante Estilo Mobile -->
+            <button id="btnFlutuanteAdicionar" onclick="abrirCadastroParaNovo()">
+                <i class="fa-solid fa-plus"></i>
+            </button>
+
+            <!-- MODAL DE CADASTRO/EDIÇÃO DE ALUNO (Design Limpo e Espaçado via CSS) -->
+            <div class="modal-overlay" id="modalFormAluno" style="display: none;">
+                <div class="modal-alunos-corpo">
+                    <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
+                    
+                    <form id="formNovoAluno" class="form-aluno">
+                        <input type="hidden" id="alunoIdEdicao" value="">
+
+                        <!-- Campo: Nome -->
+                        <div class="form-grupo-spa">
+                            <label for="alunoNome">Nome completo *</label>
+                            <input type="text" id="alunoNome" placeholder="Ex: João Silva" required>
+                        </div>
+                        
+                        <!-- Campo: Local de Treino -->
+                        <div class="form-grupo-spa">
+                            <label for="alunoLocal">Local de Treino *</label>
+                            <input type="text" id="alunoLocal" placeholder="Ex: Academia X ou Condomínio" required>
+                        </div>
+
+                        <!-- Campo: Valor Hora/Aula -->
+                        <div class="form-grupo-spa">
+                            <label for="alunoPreco">Valor Hora/Aula *</label>
+                            <input type="number" id="alunoPreco" placeholder="Ex: 80" step="0.01" required>
+                        </div>
+
+                        <!-- Campo: Telefone -->
+                        <div class="form-grupo-spa">
+                            <label for="alunoTelefone">Telefone (Opcional)</label>
+                            <input type="tel" id="alunoTelefone" placeholder="(11) 99999-9999">
+                        </div>
+
+                        <!-- Campo: Objetivo -->
+                        <div class="form-grupo-spa">
+                            <label for="alunoObjetivo">Objetivo *</label>
+                            <select id="alunoObjetivo" required>
+                                <option value="">Selecione...</option>
+                                <option value="Hipertrofia">Hipertrofia</option>
+                                <option value="Emagrecimento">Emagrecimento</option>
+                                <option value="Condicionamento">Condicionamento</option>
+                                <option value="Funcional">Funcional</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+
+                        <!-- Botões de Ação do Modal -->
+                        <div class="modal-alunos-acoes">
+                            <button type="button" class="btn btn-secondary" onclick="togglePainelCadastro(false)">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" id="btnSalvarAluno">Salvar Aluno</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </main>
 
     </div>
 
-    <div class="modal-overlay" id="modalAgendamento">
+    <!-- ========================================================
+         [TAG-MODAIS] - Modais Compartilhados (Agendamento, etc)
+         ======================================================== -->
+    <div class="modal-overlay" id="modalAgendamento" style="display: none;">
         <div class="modal">
             <h3 id="modalTitle">Agendar Aula</h3>
             <form id="formAgendamento">
@@ -146,17 +223,24 @@
         </div>
     </div>
 
+    <!-- Feedback Visual Rápido -->
     <div class="toast" id="toast"></div>
 
-<script src="assets/js/dados.js"></script>
-<script src="assets/js/storage.js"></script>
-<script src="assets/js/utils.js"></script>
-<script src="assets/js/agenda.js"></script> <script src="assets/js/alunos.js"></script>
-<script src="assets/js/calendario.js"></script>
-
-<script src="assets/js/home.js"></script>
-<script src="assets/js/pagina-calendario.js"></script>
-<script src="assets/js/pagina-cadastro.js"></script>
-<script src="assets/js/app.js"></script>
+    <!-- ========================================================
+         [TAG-SCRIPTS] - Carregamento dos Motores Lógicos
+         ======================================================== -->
+    <script src="assets/js/dados.js"></script>
+    <script src="assets/js/storage.js"></script>
+    <script src="assets/js/utils.js"></script>
+    <script src="assets/js/modal.js"></script>
+    <script src="assets/js/agenda.js"></script>
+    <script src="assets/js/alunos.js"></script>
+    <script src="assets/js/calendario.js"></script>
+    
+    <!-- Scripts de Interação Visual Específicos -->
+    <script src="assets/js/home.js"></script>
+    <script src="assets/js/pagina-calendario.js"></script>
+    <script src="assets/js/pagina-cadastro.js"></script>
+    <script src="assets/js/app.js"></script>
 </body>
 </html>
