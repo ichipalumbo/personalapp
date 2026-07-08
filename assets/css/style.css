@@ -312,23 +312,28 @@ body {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    cursor: pointer;
 }
 .agenda-dia-aula-nome {
     font-weight: 600;
     color: #E0E0E0;
     font-size: 0.85rem;
 }
+.agenda-dia-aula-local {
+    font-size: 0.75rem;
+    color: #AAA;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
 .agenda-dia-aula-detalhes {
     color: #FFD700;
     font-size: 0.7rem;
-}
-.agenda-dia-aula-periodo {
-    color: #AAA;
-    font-size: 0.7rem;
-    background: #1A1A1A;
+    align-self: flex-start;
+    background: rgba(255, 215, 0, 0.1);
     padding: 2px 6px;
     border-radius: 4px;
-    align-self: flex-start;
+    margin-top: 2px;
 }
 .agenda-dia-vago {
     border: 1px dashed #333;
@@ -337,9 +342,13 @@ body {
     display: flex;
     align-items: center;
     cursor: pointer;
+    transition: background 0.2s ease;
+}
+.agenda-dia-vago:active {
+    background: rgba(255, 215, 0, 0.05);
 }
 .agenda-dia-vago-texto {
-    color: #555;
+    color: #666;
     font-size: 0.75rem;
 }
 
@@ -349,6 +358,16 @@ body {
 .objetivo-Emagrecimento { border-left-color: #81C784; }
 .objetivo-Condicionamento { border-left-color: #CE93D8; }
 .objetivo-Outro { border-left-color: #78909C; }
+
+/* Estilos de Bloco de Deslocamento e Bloqueio */
+.slot-deslocamento {
+    border-left-color: #FF9800;
+    background: rgba(255, 152, 0, 0.05);
+}
+.slot-bloqueado {
+    border-left-color: #EF5350;
+    background: rgba(239, 83, 80, 0.05);
+}
 
 /* ========================================================
    [STYLE-CALENDARIO MENSAL]
@@ -400,9 +419,28 @@ body {
 .toast { position: fixed; bottom: 20px; right: 20px; left: 20px; text-align: center; background: #4CAF50; color: #fff; padding: 12px; border-radius: 8px; font-size: 0.9rem; z-index: 2000; opacity: 0; transform: translateY(20px); transition: all 0.3s ease; }
 .toast.show { opacity: 1; transform: translateY(0); }
 
-.card-stat { background: #1A1A1A; border-radius: 12px; padding: 15px; text-align: center; border: 1px solid #2A2A2A; }
+.card-stat { background: #1A1A1A; border-radius: 12px; padding: 15px; text-align: center; border: 1px solid #2A2A2A; cursor: pointer; transition: all 0.2s ease; }
+.card-stat:active { transform: scale(0.97); }
 .card-stat .stat-numero { display: block; font-size: 1.6rem; font-weight: 700; color: #FFD700; margin-bottom: 2px; }
 .card-stat .stat-label { color: #AAA; font-size: 0.8rem; }
+
+/* Abas de Tipagem de Agendamento */
+.tab-tipo-agendamento .tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+.tab-tipo-agendamento .tab-btn.active {
+    background: #2A2A2A;
+    color: #FFD700;
+}
 
 /* ========================================================
    📈 MEDIA QUERIES (MIN-WIDTH) - Expansão para Desktop

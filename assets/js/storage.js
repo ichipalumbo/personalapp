@@ -9,6 +9,8 @@ function carregarDados() {
             const parsed = JSON.parse(dados);
             alunos = parsed.alunos || [];
             aulas = parsed.aulas || [];
+            aulasParaRepor = parsed.aulasParaRepor || [];
+            agendaConfig = parsed.agendaConfig || { horaInicio: 7, horaFim: 21 };
         }
     } catch (e) {
         console.warn('Erro ao carregar dados:', e);
@@ -17,8 +19,14 @@ function carregarDados() {
 
 function salvarDados() {
     try {
-        localStorage.setItem('personalTrainerData', JSON.stringify({ alunos, aulas }));
-        // Só atualiza o calendário se ele estiver visível
+        localStorage.setItem('personalTrainerData', JSON.stringify({ 
+            alunos, 
+            aulas, 
+            aulasParaRepor, 
+            agendaConfig 
+        }));
+        
+        // Mantém a tela sincronizada
         const painelCalendario = document.getElementById('painelCalendario');
         if (painelCalendario && painelCalendario.style.display !== 'none') {
             if (typeof renderizarCalendario === 'function') renderizarCalendario();
@@ -27,4 +35,3 @@ function salvarDados() {
         console.warn('Erro ao salvar dados:', e);
     }
 }
-

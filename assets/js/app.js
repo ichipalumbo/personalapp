@@ -1,13 +1,15 @@
-// assets/js/app.js
+// ========================================================
+// [TAG-JS-APP] - Orquestrador de Roteamento da SPA (AtivaMente)
+// ========================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.querySelectorAll('.nav-link');
     const sections = document.querySelectorAll('.view-section');
     const utilitariosDados = document.getElementById('utilitarios-dados');
 
-    // Função para alternar entre as telas (Roteador)
+    // Função para alternar entre as telas (Roteador da SPA)
     function navegarPara(targetId) {
-        // 1. Esconder todas as seções e mostrar apenas a selecionada
+        // 1. Esconde todas as seções e mostra apenas a selecionada pelo usuário
         sections.forEach(section => {
             if (section.id === targetId) {
                 section.style.display = 'block';
@@ -16,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 2. Atualizar o estado visual dos botões do menu
+        // 2. Atualiza o estado visual das abas de navegação (Ativo / Inativo)
         navLinks.forEach(link => {
             if (link.getAttribute('data-target') === targetId) {
                 link.classList.remove('inativo');
@@ -27,14 +29,16 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 3. Mostrar os botões de Importar/Exportar apenas na Home
-        if (targetId === 'tela-home') {
-            utilitariosDados.style.display = 'flex';
-        } else {
-            utilitariosDados.style.display = 'none';
+        // 3. Tratamento de Segurança: Só tenta gerenciar os botões utilitários se eles existirem no HTML
+        if (utilitariosDados) {
+            if (targetId === 'tela-home') {
+                utilitariosDados.style.display = 'flex';
+            } else {
+                utilitariosDados.style.display = 'none';
+            }
         }
 
-        // 4. Inicializar ou atualizar os dados da tela específica
+        // 4. Inicializa os dados específicos e monta a tela selecionada
         switch (targetId) {
             case 'tela-home':
                 if (typeof inicializarHome === 'function') inicializarHome();
@@ -48,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Configurar ouvintes de clique no menu de navegação
+    // Configura os ouvintes de clique em cada botão do menu superior
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -57,6 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Carregar a Home por padrão no primeiro acesso
+    // Inicializa a Home por padrão no primeiro carregamento do aplicativo
     navegarPara('tela-home');
 });
