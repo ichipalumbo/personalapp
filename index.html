@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+    <!-- ========================================================
+         [TAG-HEAD] - Metadados, Título e Estilos Externos
+         ======================================================== -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AtivaMente - Agenda Personal Trainer</title>
     <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Font Awesome para Ícones Modernos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
         
+        <!-- ========================================================
+             [TAG-HEADER] - Menu e Controle Global de Navegação (SPA)
+             ======================================================== -->
         <header class="header">
+            <!-- Título Principal + Subtítulo da Empresa -->
             <div class="brand-container">
                 <h1 class="marca-titulo">
                     <i class="fa-solid fa-dumbbell text-bounce"></i><span class="marca-ativa">Ativa</span><span class="marca-mente">Mente</span>
@@ -21,6 +29,7 @@
                 </p>
             </div>
             
+            <!-- Barra de Ações com Menu Integrado -->
             <div class="header-actions">
                 <nav class="header-nav">
                     <a href="#" class="nav-link ativo" data-target="tela-home">
@@ -36,7 +45,12 @@
             </div>
         </header>
 
+        <!-- ========================================================
+             [TAG-TELA-HOME] - Visão Operacional Diária e Dashboard
+             ======================================================== -->
         <main id="tela-home" class="view-section">
+            
+            <!-- Subseção: Dashboard de Estatísticas Otimizado (Sem colisão de linhas estranhas) -->
             <section class="alunos-grid" style="margin-bottom: 20px;">
                 <div class="card-stat">
                     <span class="stat-numero" id="totalAulasHoje">0</span>
@@ -48,6 +62,7 @@
                 </div>
             </section>
 
+            <!-- Painel de Reposições Pendentes (Ocultável) -->
             <div id="painelReposicoesPendentes" class="agenda-panel" style="display: none; border-color: #FF5252; margin-bottom: 20px;">
                 <h3 style="font-size: 1.05rem; color: #FF5252; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
                     <span><i class="fa-solid fa-rotate-left"></i> Alunos aguardando reposição</span>
@@ -56,30 +71,41 @@
                 <div id="listaReposicoesPendentes" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
 
+            <!-- Subseção: Grade Horária Diária -->
             <div class="agenda-panel">
-                <div class="header" style="margin-bottom: 15px; border-bottom: 1px solid #2A2A2A; padding-bottom: 10px; display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; flex-direction: column; align-items: flex-start;">
-                        <h2 style="font-size: 1.15rem; color: #FFD700; margin: 0;">Sua Agenda</h2>
-                        <span style="font-size: 0.75rem; color: #888;">Visualização fracionada (30 min)</span>
+                <!-- CORREÇÃO: Design de cabeçalho embelezado com emojis -->
+                <div class="agenda-header-wrapper">
+                    <div class="agenda-header-info">
+                        <h2>🎯 AtivaMente • Agenda ⚡</h2>
+                        <span>Sua rotina de treinos bem organizada! 🚀</span>
                     </div>
-                    <button id="btnConfigAgenda" class="btn btn-secondary" style="padding: 10px; border-radius: 8px;">
-                        <i class="fa-solid fa-sliders"></i>
+                    <button id="btnConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
+                        <i class="fa-solid fa-gear fa-spin-hover" style="color: #FFD700;"></i>
                     </button>
                 </div>
 
-                <div class="header" style="margin-bottom: 15px; background: #131313; padding: 10px; border-radius: 8px;">
-                    <div class="nav-calendario" style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
-                        <button id="btnAnterior" class="btn"><i class="fa-solid fa-chevron-left"></i></button>
-                        <span id="dataAtual" style="font-weight: 700; color: #FFF;">Carregando...</span>
-                        <button id="btnProximo" class="btn"><i class="fa-solid fa-chevron-right"></i></button>
-                        <button id="btnHoje" class="btn btn-secondary btn-sm">Hoje</button>
+                <!-- Cabeçalho de Navegação Diária com Estética de Calendário Premium -->
+                <div class="agenda-header-navegacao">
+                    <div class="nav-calendario">
+                        <button id="btnAnterior" class="btn-nav-dia" title="Dia Anterior">
+                            <i class="fa-solid fa-circle-arrow-left"></i>
+                        </button>
+                        <span id="dataAtual" class="agenda-data-principal">Carregando...</span>
+                        <button id="btnProximo" class="btn-nav-dia" title="Próximo Dia">
+                            <i class="fa-solid fa-circle-arrow-right"></i>
+                        </button>
+                        <button id="btnHoje" class="btn-hoje-pill">📍 Hoje</button>
                     </div>
                 </div>
 
+                <!-- Contêiner preenchido dinamicamente via JS (Exibe slots de 1h ou 30m) -->
                 <div class="agenda-dia-container" id="agendaGridHome"></div>
             </div>
         </main>
 
+        <!-- ========================================================
+             [TAG-TELA-CALENDARIO] - Visão Mensal Estratégica
+             ======================================================== -->
         <main id="tela-calendario" class="view-section" style="display: none;">
             <div class="calendario-mensal">
                 <div class="mes-header">
@@ -93,6 +119,9 @@
             </div>
         </main>
 
+        <!-- ========================================================
+             [TAG-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM)
+             ======================================================== -->
         <main id="tela-alunos" class="view-section" style="display: none; padding-bottom: 80px;">
             <section class="alunos-panel">
                 <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px;">Seus Alunos</h3>
@@ -125,7 +154,7 @@
                             <input type="tel" id="alunoTelefone" placeholder="(11) 99999-9999">
                         </div>
                         <div class="form-grupo-spa">
-                            <label for="alunoObjetivo">Objective *</label>
+                            <label for="alunoObjetivo">Objetivo *</label>
                             <select id="alunoObjetivo" required>
                                 <option value="">Selecione...</option>
                                 <option value="Hipertrofia">Hipertrofia</option>
@@ -146,6 +175,9 @@
 
     </div>
 
+    <!-- ========================================================
+         [TAG-MODAIS] - Modais Compartilhados (Agendamento, Ações, etc)
+         ======================================================== -->
     <div class="modal-overlay" id="modalAgendamento" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <h3 id="modalTitle">Agendar Horário</h3>
@@ -169,6 +201,7 @@
                 
                 <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
 
+                <!-- Dropdowns dinâmicos de hora início e fim -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="agendaHoraInicio">Início *</label>
@@ -208,6 +241,7 @@
         </div>
     </div>
 
+    <!-- SELEÇÃO DE AÇÕES PARA SLOT OCUPADO -->
     <div class="modal-overlay" id="modalAcaoSlot" style="display: none;">
         <div class="modal" style="max-width: 400px; text-align: center; padding: 25px;">
             <i class="fa-regular fa-circle-question" style="font-size: 3rem; color: #FFD700; margin-bottom: 15px; display: block;"></i>
@@ -228,6 +262,7 @@
         </div>
     </div>
 
+    <!-- CONFIGURAÇÃO DE LIMITES DA AGENDA -->
     <div class="modal-overlay" id="modalConfigAgenda" style="display: none;">
         <div class="modal" style="max-width: 380px;">
             <h3>Configurar Grade Horária</h3>
