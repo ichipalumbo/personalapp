@@ -7,14 +7,14 @@ window.inicializarPaginaCadastro = function() {
     // Recarrega do Storage para garantir dados sempre atualizados
     if (typeof carregarDados === 'function') carregarDados();
     
-    // Desenha a listagem de alunos
+    // Desenha a listagem de alunos e atualiza o novo faturamento acumulado
     window.renderizarListaAlunos();
     
     // Garante que o modal começa fechado
     window.togglePainelCadastro(false);
 };
 
-// NOVO / CORREÇÃO: Cria o elo de compatibilidade (alias) com a chamada do app.js
+// Cria o elo de compatibilidade (alias) com a chamada do app.js
 window.inicializarAlunos = function() {
     window.inicializarPaginaCadastro();
 };
@@ -52,6 +52,10 @@ window.abrirCadastroParaNovo = function() {
 // 3. RENDERIZAÇÃO DA LISTA DE ALUNOS (Cards ultra-responsivos com novas informações)
 window.renderizarListaAlunos = function() {
     const listaContainer = document.getElementById('listaAlunos');
+    const faturamentoEl = document.getElementById('faturamentoProjetado');
+    const pendenciasEl = document.getElementById('totalPendenciasGrade');
+    const cardAuditoria = document.getElementById('cardAuditoriaGrade');
+    
     if (!listaContainer) return;
 
     if (typeof alunos !== 'undefined') {
@@ -62,22 +66,74 @@ window.renderizarListaAlunos = function() {
                     <p style="font-size: 0.95rem;">Nenhum aluno cadastrado no momento.</p>
                 </div>
             `;
+            if (faturamentoEl) faturamentoEl.textContent = 'R$ 0,00';
+            if (pendenciasEl) pendenciasEl.textContent = '0';
             return;
         }
 
-        // Gera o HTML de cada card incluindo Local, Valor Hora e Telefone
+        let faturamentoAcumuladoMes = 0;
+        let totalAlunosComPendencia = 0;
+
+        // Gera o HTML de cada card incluindo Local, Valor Hora, Telefone e Auditoria Contratual
         listaContainer.innerHTML = alunos.map(aluno => {
-            const preco = aluno.preco ? parseFloat(aluno.preco).toFixed(2) : '0.00';
+            const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+            const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
             const local = aluno.local || 'Não definido';
             const telefone = aluno.telefone || 'Sem tel.';
             
+            // Faturamento Projetado para este aluno com base nas aulas semanais acordadas
+            // Considera-se a média padrão de 4 semanas de cobrança por mês comercial
+            const receitaProjetadaAluno = preco * freqAcordada * 4;
+            faturamentoAcumuladoMes += receitaProjetadaAluno;
+
+            // --- MOTOR DE AUDITORIA DE GRADE ---
+            // Conta quantas aulas recorrentes ativas esse aluno tem agendadas no sistema
+            const aulasRecorrentesDoAluno = aulas.filter(a => a.alunoId === aluno.id && a.tipo === 'aula' && a.frequencia === 'semanal');
+            let totalAgendadoSemana = 0;
+            
+            aulasRecorrentesDoAluno.forEach(a => {
+                if (a.diasSemana && Array.isArray(a.diasSemana)) {
+                    totalAgendadoSemana += a.diasSemana.length;
+                } else {
+                    totalAgendadoSemana += 1;
+                }
+            });
+
+            // Criação do Badge de Status de Auditoria
+            let statusBadgeHtml = "";
+            if (totalAgendadoSemana < freqAcordada) {
+                totalAlunosComPendencia++;
+                const emFalta = freqAcordada - totalAgendadoSemana;
+                statusBadgeHtml = `
+                    <span style="background: rgba(255, 152, 0, 0.12); color: #FF9800; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(255, 152, 0, 0.25);">
+                        <i class="fa-solid fa-triangle-exclamation"></i> Pendente: falta agendar ${emFalta}x
+                    </span>
+                `;
+            } else if (totalAgendadoSemana === freqAcordada) {
+                statusBadgeHtml = `
+                    <span style="background: rgba(76, 175, 80, 0.12); color: #81C784; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(76, 175, 80, 0.25);">
+                        <i class="fa-solid fa-circle-check"></i> Grade Completa (${totalAgendadoSemana}x)
+                    </span>
+                `;
+            } else {
+                statusBadgeHtml = `
+                    <span style="background: rgba(100, 181, 246, 0.12); color: #64B5F6; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(100, 181, 246, 0.25);">
+                        <i class="fa-solid fa-circle-plus"></i> Grade Extra (${totalAgendadoSemana}x / ${freqAcordada}x)
+                    </span>
+                `;
+            }
+
             return `
-                <div class="aluno-card" style="display: flex; flex-direction: column; gap: 10px;">
+                <div class="aluno-card" style="display: flex; flex-direction: column; gap: 10px; position: relative;">
                     <!-- Topo do Card: Nome e Ações -->
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                         <div>
                             <strong style="display: block; color: #FFF; font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
-                            <span style="font-size: 0.75rem; color: #FFD700; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${aluno.objetivo}</span>
+                            <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px;">
+                                <span style="font-size: 0.72rem; color: #FFD700; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${aluno.objetivo}</span>
+                                <span style="color: #444; font-size: 0.75rem;">•</span>
+                                <span style="font-size: 0.72rem; color: #AAA; font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
+                            </div>
                         </div>
                         <div style="display: flex; gap: 8px; flex-shrink: 0;">
                             <!-- Botão Editar -->
@@ -90,16 +146,45 @@ window.renderizarListaAlunos = function() {
                             </button>
                         </div>
                     </div>
+
+                    <!-- Visualizador da Saúde de Grade / Match Acordado vs Agendado -->
+                    <div style="display: flex; align-items: center; gap: 8px; background: #131313; padding: 6px 10px; border-radius: 8px; margin: 2px 0;">
+                        <span style="font-size: 0.72rem; color: #888;">Grade:</span>
+                        ${statusBadgeHtml}
+                    </div>
                     
                     <!-- Rodapé do Card: Informações de Logística e Valores -->
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.78rem; color: #B0B0B0; border-top: 1px solid #333; padding-top: 8px; margin-top: 2px;">
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.78rem; color: #B0B0B0; border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
                         <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
-                        <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> R$ ${preco} / hora</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
+                            <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> R$ ${preco.toFixed(2)} / hora</div>
+                            <div style="color: #FFD700; font-weight: 700;"><i class="fa-solid fa-chart-pie"></i> Projeção: R$ ${receitaProjetadaAluno.toFixed(2)}/mês</div>
+                        </div>
                         <div><i class="fa-solid fa-phone" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${telefone}</div>
                     </div>
                 </div>
             `;
         }).join('');
+
+        // Atualiza os contadores globais do painel financeiro & auditoria
+        if (faturamentoEl) {
+            faturamentoEl.innerHTML = `<span style="font-size: 0.8rem; color: #FFF; display: block; margin-bottom: 2px; font-weight: 500;">R$ ${faturamentoAcumuladoMes.toFixed(2)}</span><span style="font-size: 0.65rem; color: #AAA; display: block;">Projeção total (com base em 4 semanas)</span>`;
+        }
+        
+        if (pendenciasEl) {
+            pendenciasEl.textContent = totalAlunosComPendencia;
+            if (cardAuditoria) {
+                if (totalAlunosComPendencia > 0) {
+                    cardAuditoria.style.borderColor = '#FF9800';
+                    cardAuditoria.style.background = 'rgba(255, 152, 0, 0.04)';
+                    pendenciasEl.style.color = '#FF9800';
+                } else {
+                    cardAuditoria.style.borderColor = '#81C784';
+                    cardAuditoria.style.background = 'rgba(129, 199, 132, 0.04)';
+                    pendenciasEl.style.color = '#81C784';
+                }
+            }
+        }
     }
 };
 
@@ -116,6 +201,7 @@ window.prepararEdicaoAluno = function(id) {
     const elPreco = document.getElementById('alunoPreco');
     const elTelefone = document.getElementById('alunoTelefone');
     const elObjetivo = document.getElementById('alunoObjetivo');
+    const elFrequencia = document.getElementById('alunoFrequenciaSemanal');
 
     if (elId) elId.value = aluno.id;
     if (elNome) elNome.value = aluno.nome;
@@ -123,6 +209,7 @@ window.prepararEdicaoAluno = function(id) {
     if (elPreco) elPreco.value = aluno.preco || '';
     if (elTelefone) elTelefone.value = aluno.telefone || '';
     if (elObjetivo) elObjetivo.value = aluno.objetivo || '';
+    if (elFrequencia) elFrequencia.value = aluno.frequenciaSemanal || '2';
 
     // Atualiza os títulos visuais do modal
     const titulo = document.getElementById('tituloFormAluno');
@@ -165,6 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const preco = parseFloat(document.getElementById('alunoPreco').value) || 0;
             const telefone = document.getElementById('alunoTelefone').value.trim();
             const objetivo = document.getElementById('alunoObjetivo').value;
+            const frequenciaSemanal = parseInt(document.getElementById('alunoFrequenciaSemanal').value, 10) || 2;
 
             if (typeof alunos === 'undefined') return;
 
@@ -177,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alunos[index].preco = preco;
                     alunos[index].telefone = telefone;
                     alunos[index].objetivo = objetivo;
+                    alunos[index].frequenciaSemanal = frequenciaSemanal;
                     if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno atualizado com sucesso!');
                 }
             } else {
@@ -187,7 +276,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     local: local,
                     preco: preco,
                     telefone: telefone,
-                    objetivo: objetivo
+                    objetivo: objetivo,
+                    frequenciaSemanal: frequenciaSemanal
                 };
                 alunos.push(novoAluno);
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno cadastrado com sucesso!');
