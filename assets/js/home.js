@@ -1,5 +1,5 @@
 // ========================================================
-// [TAG-JS-HOME] - Lógica da Home, Slots de 30m e Duração Dinâmica
+// [TAG-JS-HOME] - Lógica da Home, Slots de 30m e Edição de Compromissos
 // ========================================================
 
 let dataSelecionada = new Date();
@@ -20,7 +20,7 @@ window.inicializarHome = function() {
     window.renderizarListaReposicoes();
 };
 
-// Renderiza a data com ícone de calendário animado e realce de cores
+// Renderiza a data com ícone de calendário flat e realce de cores
 window.atualizarDataAtual = function() {
     const elementoData = document.getElementById('dataAtual');
     if (!elementoData) return;
@@ -37,7 +37,18 @@ window.atualizarDashboardStats = function() {
     const diaTexto = window.getDiaTextoSelecionado();
 
     if (elAulasHoje && typeof aulas !== 'undefined') {
-        const aulasHoje = aulas.filter(a => a.dia === diaTexto && (!a.tipo || a.tipo === 'aula'));
+        const dataSelecionadaStr = dataSelecionada.toLocaleDateString('pt-BR');
+        const aulasHoje = aulas.filter(a => {
+            if (a.tipo && a.tipo !== 'aula') return false;
+            
+            if (a.frequencia === 'semanal') {
+                return a.dia === diaTexto;
+            }
+            if (!a.data) {
+                return a.dia === diaTexto;
+            }
+            return a.data === dataSelecionadaStr;
+        });
         elAulasHoje.textContent = aulasHoje.length;
     }
     if (elAulasRepor) elAulasRepor.textContent = aulasParaRepor.length;
@@ -55,6 +66,7 @@ window.renderizarAgendaDia = function() {
     if (!grid) return;
 
     const diaTexto = window.getDiaTextoSelecionado();
+    const dataSelecionadaStr = dataSelecionada.toLocaleDateString('pt-BR');
     let html = '';
 
     const inicio = agendaConfig.horaInicio;
@@ -68,12 +80,24 @@ window.renderizarAgendaDia = function() {
     let i = 0;
     while (i < slotsDoDia.length) {
         const horaStr = slotsDoDia[i];
-        const compromisso = aulas.find(a => a.dia === diaTexto && a.horarioInicio === horaStr);
+        
+        const compromisso = aulas.find(a => {
+            if (a.horarioInicio !== horaStr) return false;
+            
+            if (a.frequencia === 'semanal') {
+                return a.dia === diaTexto;
+            }
+            if (!a.data) {
+                return a.dia === diaTexto;
+            }
+            return a.data === dataSelecionadaStr;
+        });
 
         if (compromisso) {
             let cardHtml = '';
             const tipo = compromisso.tipo || 'aula';
             const periodoExibicao = `${compromisso.horarioInicio} - ${compromisso.horarioFim}`;
+            const labelRecorrente = compromisso.frequencia === 'semanal' ? ' <i class="fa-solid fa-infinity" style="font-size: 0.65rem; opacity: 0.8;" title="Recorrente"></i>' : '';
 
             if (tipo === 'aula') {
                 const aluno = typeof getAluno === 'function' ? getAluno(compromisso.alunoId) : null;
@@ -83,7 +107,7 @@ window.renderizarAgendaDia = function() {
                 
                 cardHtml = `
                     <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                        <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}${labelRecorrente}</span>
                         <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
                         <span class="agenda-dia-aula-detalhes">${objetivo} (${periodoExibicao})</span>
                     </div>
@@ -91,14 +115,14 @@ window.renderizarAgendaDia = function() {
             } else if (tipo === 'deslocamento') {
                 cardHtml = `
                     <div class="agenda-dia-aula slot-deslocamento" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                        <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento${labelRecorrente}</span>
                         <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || 'Trânsito'} (${periodoExibicao})</span>
                     </div>
                 `;
             } else if (tipo === 'bloqueio') {
                 cardHtml = `
                     <div class="agenda-dia-aula slot-bloqueado" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
+                        <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado${labelRecorrente}</span>
                         <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || 'Compromisso'} (${periodoExibicao})</span>
                     </div>
                 `;
@@ -130,7 +154,7 @@ window.renderizarAgendaDia = function() {
     grid.innerHTML = html;
 };
 
-// Somas minutos a uma string de horário (ex: "18:30" + 90 -> "20:00")
+// Soma minutos a uma string de horário (ex: "18:30" + 90 -> "20:00")
 window.somarMinutos = function(horaStr, minutos) {
     const [h, m] = horaStr.split(':').map(Number);
     let totalMinutos = h * 60 + m + parseInt(minutos);
@@ -139,6 +163,14 @@ window.somarMinutos = function(horaStr, minutos) {
     return `${novaHora.toString().padStart(2, '0')}:${novosMinutos.toString().padStart(2, '0')}`;
 };
 
+// Calcula a diferença em minutos entre dois horários "HH:MM"
+window.diferencaMinutos = function(inicio, fim) {
+    const [hI, mI] = inicio.split(':').map(Number);
+    const [hF, mF] = fim.split(':').map(Number);
+    return (hF * 60 + mF) - (hI * 60 + mI);
+};
+
+// RENDERIZAÇÃO DO MODAL PARA EVENTO ÚNICO
 window.abrirAgendamentoModal = function(dia, hora) {
     slotSelecionadoHora = hora;
     slotSelecionadoDiaTexto = dia;
@@ -146,22 +178,19 @@ window.abrirAgendamentoModal = function(dia, hora) {
     const modal = document.getElementById('modalAgendamento');
     document.getElementById('infoHorarioAlvo').textContent = `${dia} — Definir Período`;
 
-    // Reseta o formulário primeiro para limpar qualquer dado anterior
     if (document.getElementById('formAgendamento')) {
         document.getElementById('formAgendamento').reset();
     }
 
-    // Popula o dropdown de horário de início
     const selectInicio = document.getElementById('agendaHoraInicio');
     const selectDuracao = document.getElementById('agendaDuracao');
     
     const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
     selectInicio.innerHTML = optionsHtml;
 
-    // Define as seleções padrão
     selectInicio.value = hora;
     if (selectDuracao) {
-        selectDuracao.value = "60"; // Padrão de 1 hora
+        selectDuracao.value = "60"; 
     }
 
     const selectAluno = document.getElementById('agendaAluno');
@@ -195,19 +224,101 @@ window.selecionarTipoAgendamento = function(tipo) {
     } else if (tipo === 'deslocamento') {
         tabDeslocamento.classList.add('active');
         camposAula.style.display = 'none';
-        camposBloqueio.style.display = 'none'; // Deslocamento não precisa de campo de descrição!
+        camposBloqueio.style.display = 'none'; 
         document.getElementById('agendaAluno').required = false;
         document.getElementById('agendaDescricao').required = false;
     } else if (tipo === 'bloqueio') {
         tabBloqueio.classList.add('active');
         camposAula.style.display = 'none';
-        camposBloqueio.style.display = 'block'; // Bloqueio exige uma descrição
+        camposBloqueio.style.display = 'block'; 
         document.getElementById('agendaAluno').required = false;
         document.getElementById('agendaDescricao').required = true;
     }
 };
 
+// NOVO: ABRE O MODAL DE RECORRÊNCIA SEMANAL
+window.abrirModalRecorrencia = function() {
+    const modal = document.getElementById('modalRecorrencia');
+    if (document.getElementById('formRecorrencia')) {
+        document.getElementById('formRecorrencia').reset();
+    }
+
+    const selectInicio = document.getElementById('recorrenciaHoraInicio');
+    const selectDuracao = document.getElementById('recorrenciaDuracao');
+    const selectDia = document.getElementById('recorrenciaDiaSemana');
+    
+    const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
+    selectInicio.innerHTML = optionsHtml;
+    selectInicio.value = "08:00";
+    selectDuracao.value = "60";
+
+    const diaTexto = window.getDiaTextoSelecionado();
+    if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(diaTexto)) {
+        selectDia.value = diaTexto;
+    } else {
+        selectDia.value = "Segunda";
+    }
+
+    const selectAluno = document.getElementById('recorrenciaAluno');
+    if (selectAluno) {
+        selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>' + 
+            alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+    }
+
+    window.selecionarTipoRecorrente('aula');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.selecionarTipoRecorrente = function(tipo) {
+    document.getElementById('recorrenciaTipo').value = tipo;
+    const tabAula = document.getElementById('tabRecorrenteAula');
+    const tabDeslocamento = document.getElementById('tabRecorrenteDeslocamento');
+    const tabBloqueio = document.getElementById('tabRecorrenteBloqueio');
+    const camposAula = document.getElementById('camposRecorrenteAula');
+    const camposBloqueio = document.getElementById('camposRecorrenteBloqueio');
+
+    tabAula.classList.remove('active');
+    tabDeslocamento.classList.remove('active');
+    tabBloqueio.classList.remove('active');
+
+    if (tipo === 'aula') {
+        tabAula.classList.add('active');
+        camposAula.style.display = 'block';
+        camposBloqueio.style.display = 'none';
+        document.getElementById('recorrenciaAluno').required = true;
+        document.getElementById('recorrenciaDescricao').required = false;
+    } else if (tipo === 'deslocamento') {
+        tabDeslocamento.classList.add('active');
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'none'; 
+        document.getElementById('recorrenciaAluno').required = false;
+        document.getElementById('recorrenciaDescricao').required = false;
+    } else if (tipo === 'bloqueio') {
+        tabBloqueio.classList.add('active');
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'block'; 
+        document.getElementById('recorrenciaAluno').required = false;
+        document.getElementById('recorrenciaDescricao').required = true;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Escuta do Botão Infinito de Recorrência
+    const btnRecorrencia = document.getElementById('btnRecorrenciaAgenda');
+    if (btnRecorrencia) {
+        btnRecorrencia.addEventListener('click', () => {
+            window.abrirModalRecorrencia();
+        });
+    }
+
+    const btnFecharRecorrencia = document.getElementById('btnFecharModalRecorrencia');
+    if (btnFecharRecorrencia) {
+        btnFecharRecorrencia.addEventListener('click', () => {
+            document.getElementById('modalRecorrencia').style.display = 'none';
+        });
+    }
+
+    // Gravação de Evento Único (Sem seletores de recorrência)
     const formAgendamento = document.getElementById('formAgendamento');
     if (formAgendamento) {
         formAgendamento.addEventListener('submit', (e) => {
@@ -216,25 +327,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const tipo = document.getElementById('agendaTipo').value;
             const hInicio = document.getElementById('agendaHoraInicio').value;
             const duracaoMinutos = document.getElementById('agendaDuracao').value;
-            
-            // Calcula automaticamente a hora final com base na duração selecionada
             const hFim = window.somarMinutos(hInicio, duracaoMinutos);
 
             let novoCompromisso = {
                 id: Date.now().toString(),
                 dia: slotSelecionadoDiaTexto,
+                data: dataSelecionada.toLocaleDateString('pt-BR'),
                 horarioInicio: hInicio,
                 horarioFim: hFim,
-                tipo: tipo
+                tipo: tipo,
+                frequencia: 'uma_vez' // Estritamente único!
             };
 
             if (tipo === 'aula') {
                 const alunoId = document.getElementById('agendaAluno').value;
                 if (!alunoId) return;
                 novoCompromisso.alunoId = alunoId;
-                novoCompromisso.frequencia = document.getElementById('agendaFrequencia').value;
             } else if (tipo === 'deslocamento') {
-                novoCompromisso.descricao = "Trânsito / Deslocamento"; // Descrição limpa automática
+                novoCompromisso.descricao = "Trânsito / Deslocamento"; 
             } else if (tipo === 'bloqueio') {
                 novoCompromisso.descricao = document.getElementById('agendaDescricao').value.trim();
             }
@@ -248,6 +358,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Gravação do Novo Evento Recorrente
+    const formRecorrencia = document.getElementById('formRecorrencia');
+    if (formRecorrencia) {
+        formRecorrencia.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const tipo = document.getElementById('recorrenciaTipo').value;
+            const hInicio = document.getElementById('recorrenciaHoraInicio').value;
+            const duracaoMinutos = document.getElementById('recorrenciaDuracao').value;
+            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+            const diaSemana = document.getElementById('recorrenciaDiaSemana').value;
+
+            let novoCompromisso = {
+                id: Date.now().toString(),
+                dia: diaSemana,
+                horarioInicio: hInicio,
+                horarioFim: hFim,
+                tipo: tipo,
+                frequencia: 'semanal' // Estritamente recorrente semanal!
+            };
+
+            if (tipo === 'aula') {
+                const alunoId = document.getElementById('recorrenciaAluno').value;
+                if (!alunoId) return;
+                novoCompromisso.alunoId = alunoId;
+            } else if (tipo === 'deslocamento') {
+                novoCompromisso.descricao = "Trânsito / Deslocamento"; 
+            } else if (tipo === 'bloqueio') {
+                novoCompromisso.descricao = document.getElementById('recorrenciaDescricao').value.trim();
+            }
+
+            aulas.push(novoCompromisso);
+            if (typeof salvarDados === 'function') salvarDados();
+
+            document.getElementById('modalRecorrencia').style.display = 'none';
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('♾️ Recorrência salva com sucesso!');
+        });
+    }
+
     if (document.getElementById('btnFecharModal')) {
         document.getElementById('btnFecharModal').addEventListener('click', () => {
             document.getElementById('modalAgendamento').style.display = 'none';
@@ -255,23 +405,78 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Abrir modal unificado de EDIÇÃO/GERENCIAMENTO de compromisso
 let idCompromissoSelecionado = "";
+
 window.abrirModalAcaoSlot = function(id) {
     idCompromissoSelecionado = id;
     const modal = document.getElementById('modalAcaoSlot');
-    const elTexto = document.getElementById('textoCompromissoDetalhes');
-    const btnRepor = document.getElementById('btnMandarParaReposicao');
     const compromisso = aulas.find(a => a.id === id);
     if (!compromisso) return;
 
-    if ((compromisso.tipo || 'aula') === 'aula') {
-        const aluno = typeof getAluno === 'function' ? getAluno(compromisso.alunoId) : null;
-        elTexto.textContent = `Aula com ${aluno ? aluno.nome : 'Aluno'} das ${compromisso.horarioInicio} até ${compromisso.horarioFim}.`;
-        btnRepor.style.display = 'block';
+    const freq = compromisso.frequencia || 'uma_vez';
+    document.getElementById('editCompromissoFrequencia').value = freq;
+
+    // Configura a badge de tipo de compromisso
+    const badge = document.getElementById('badgeTipoCompromisso');
+    const containerDiaSemana = document.getElementById('editDiaSemanaContainer');
+
+    if (freq === 'semanal') {
+        badge.innerHTML = `<i class="fa-solid fa-infinity"></i> Recorrente`;
+        badge.className = "badge-stat-mensal badge-aula"; // Estilo amarelo
+        
+        // Exibe o seletor para permitir mudar o dia de trabalho fixo da recorrência
+        containerDiaSemana.style.display = 'block';
+        document.getElementById('editDiaSemana').value = compromisso.dia;
+        document.getElementById('editInfoDia').textContent = `Definido para toda semana`;
     } else {
-        elTexto.textContent = `${compromisso.descricao || 'Compromisso'} das ${compromisso.horarioInicio} até ${compromisso.horarioFim}.`;
-        btnRepor.style.display = 'none';
+        badge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> Único`;
+        badge.className = "badge-stat-mensal badge-desloc"; // Estilo laranja
+        
+        // Oculta o seletor de dias da semana (dia fixado na data real)
+        containerDiaSemana.style.display = 'none';
+        document.getElementById('editInfoDia').textContent = `Agendado para: ${compromisso.data || compromisso.dia}`;
     }
+    
+    // Configura e popula o seletor de horários de início
+    const selectInicio = document.getElementById('editHoraInicio');
+    const selectDuracao = document.getElementById('editDuracao');
+    
+    const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
+    selectInicio.innerHTML = optionsHtml;
+    selectInicio.value = compromisso.horarioInicio;
+
+    // Calcula a duração atual e marca o correto no select
+    const minutos = window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim);
+    selectDuracao.value = minutos.toString();
+
+    const tipo = compromisso.tipo || 'aula';
+    const camposAula = document.getElementById('editCamposTipoAula');
+    const camposBloqueio = document.getElementById('editCamposTipoBloqueio');
+    const btnRepor = document.getElementById('btnMandarParaReposicao');
+
+    // Carrega e oculta as seções de campos com base no tipo ativo do bloco
+    if (tipo === 'aula') {
+        camposAula.style.display = 'block';
+        camposBloqueio.style.display = 'none';
+        btnRepor.style.display = 'block'; // Mostra Reagendar somente para aulas
+
+        const selectAluno = document.getElementById('editAluno');
+        if (selectAluno) {
+            selectAluno.innerHTML = alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+            selectAluno.value = compromisso.alunoId;
+        }
+    } else if (tipo === 'deslocamento') {
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'none';
+        btnRepor.style.display = 'none'; // Deslocamento não se reagenda
+    } else if (tipo === 'bloqueio') {
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'block';
+        btnRepor.style.display = 'none'; 
+        document.getElementById('editDescricao').value = compromisso.descricao || '';
+    }
+
     if (modal) modal.style.display = 'flex';
 };
 
@@ -279,31 +484,86 @@ window.fecharModalAcaoSlot = function() {
     document.getElementById('modalAcaoSlot').style.display = 'none';
 };
 
+// Listeners das ações de Salvamento, Cancelamento e Reagendamento
 document.addEventListener('DOMContentLoaded', () => {
-    if (document.getElementById('btnDeletarDefinitivo')) {
-        document.getElementById('btnDeletarDefinitivo').addEventListener('click', () => {
-            if (confirm("Desmarcar horário definitivamente?")) {
+    const formEditar = document.getElementById('formEditarCompromisso');
+    if (formEditar) {
+        formEditar.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            if (!compromisso) return;
+
+            const hInicio = document.getElementById('editHoraInicio').value;
+            const duracaoMinutos = document.getElementById('editDuracao').value;
+            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+            const freq = document.getElementById('editCompromissoFrequencia').value;
+
+            if (hInicio >= hFim) {
+                alert("O horário de término deve ser posterior ao início!");
+                return;
+            }
+
+            // Grava os novos horários
+            compromisso.horarioInicio = hInicio;
+            compromisso.horarioFim = hFim;
+
+            // Se for recorrente, permite salvar o novo dia da semana
+            if (freq === 'semanal') {
+                compromisso.dia = document.getElementById('editDiaSemana').value;
+                delete compromisso.data;
+            }
+
+            const tipo = compromisso.tipo || 'aula';
+            if (tipo === 'bloqueio') {
+                compromisso.descricao = document.getElementById('editDescricao').value.trim();
+            }
+
+            if (typeof salvarDados === 'function') salvarDados();
+
+            window.fecharModalAcaoSlot();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('✅ Alterações salvas com sucesso!');
+        });
+    }
+
+    // Cancelar (Excluir definitivamente)
+    const btnDeletar = document.getElementById('btnDeletarDefinitivo');
+    if (btnDeletar) {
+        btnDeletar.addEventListener('click', () => {
+            if (confirm("Deseja realmente cancelar este compromisso definitivamente?")) {
                 aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
                 if (typeof salvarDados === 'function') salvarDados();
+                
                 window.fecharModalAcaoSlot();
                 window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('Compromisso cancelado.');
             }
         });
     }
 
-    if (document.getElementById('btnMandarParaReposicao')) {
-        document.getElementById('btnMandarParaReposicao').addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id !== idCompromissoSelecionado);
-            if (confirm("Enviar para a lista de reposição pendente?")) {
+    // Reagendar (Enviar para reposição pendente)
+    const btnMandarReposicao = document.getElementById('btnMandarParaReposicao');
+    if (btnMandarReposicao) {
+        btnMandarReposicao.addEventListener('click', () => {
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            if (!compromisso) return;
+
+            if (confirm("Deseja reagendar esta aula (enviar para fila de reposição)?")) {
                 aulasParaRepor.push({
                     id: Date.now().toString(),
                     alunoId: compromisso.alunoId,
                     dataCancelamento: new Date().toLocaleDateString('pt-BR')
                 });
+                
+                // Remove o compromisso da agenda atual
                 aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
+                
                 if (typeof salvarDados === 'function') salvarDados();
+
                 window.fecharModalAcaoSlot();
                 window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula enviada para reposição!');
             }
         });
     }
