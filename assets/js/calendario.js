@@ -19,17 +19,30 @@ function getNomeMes(mes) {
 }
 
 // Filtra e retorna as aulas cadastradas em determinado dia da semana
+// CORREÇÃO: Suporta compromissos únicos (pela data específica) e recorrentes (pelo dia da semana)
 function getAulasDoDia(dia, mes, ano) {
     const data = new Date(ano, mes, dia);
     const diaSemana = data.getDay();
     
-    // Mostramos apenas aulas de segunda a sexta (1 a 5)
+    // Mostramos apenas compromissos de segunda a sexta na agenda de trabalho (1 a 5)
     if (diaSemana < 1 || diaSemana > 5) return [];
     
     const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
     const diaTexto = diasUteisMap[diaSemana - 1];
+    const dataStr = data.toLocaleDateString('pt-BR'); // ex: "06/07/2026"
     
-    return aulas.filter(a => a.dia === diaTexto);
+    return aulas.filter(a => {
+        // Se for recorrente semanal, bate pelo dia da semana
+        if (a.frequencia === 'semanal') {
+            return a.dia === diaTexto;
+        }
+        // Se não houver data salva por segurança (compromissos antigos), bate pelo dia
+        if (!a.data) {
+            return a.dia === diaTexto;
+        }
+        // Se for único, bate pela data exata
+        return a.data === dataStr;
+    });
 }
 
 // Constrói visualmente as células do Mês de forma super informativa com estatísticas
@@ -58,8 +71,9 @@ function renderizarCalendario() {
         html += `<div class="dia-header">${d}</div>`;
     });
     
-    // Desenha as células cinzas do mês anterior para preenchimento simétrico
-    const inicioPreenchimento = primeiroDia === 0 ? 6 : primeiroDia - 1;
+    // CORREÇÃO: Alinhamento das células do mês. Como DIAS_SEMANA começa no domingo,
+    // o número de células de preenchimento inicial é exatamente igual a 'primeiroDia'.
+    const inicioPreenchimento = primeiroDia;
     for (let i = inicioPreenchimento; i > 0; i--) {
         html += `<div class="dia-cell outro-mes"><div class="dia-numero">${diasMesAnterior - i + 1}</div></div>`;
     }

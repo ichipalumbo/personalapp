@@ -2,10 +2,10 @@
 // [TAG-JS-PAGINA-CALENDARIO] - Controle Mensal & Semanal na SPA
 // ========================================================
 
-// MODIFICADO: A aba Calendário agora abre a Visão Semanal por padrão!
+// A aba Calendário agora abre a Visão Semanal por padrão!
 window.modoCalendarioAtivo = 'semanal';
 
-// Data de referência para navegação na visão semanal (inicia na data de hoje)
+// Data de referência para navigation na visão semanal (inicia na data de hoje)
 window.semanaReferencia = new Date();
 
 // 1. INICIALIZADOR DA ABA CALENDÁRIO (Chamado ao mudar de aba)
@@ -62,6 +62,7 @@ window.renderizarCalendarioMensal = function() {
 };
 
 // 4. RENDERIZADOR DO CALENDÁRIO SEMANAL (Focado em Mobile-First, Empilhado Verticalmente)
+// CORREÇÃO: Resolve a recorrência indesejada filtrando compromissos pela data específica ou recorrência semanal
 window.renderizarCalendarioSemanal = function() {
     const gridSemanal = document.getElementById('calendarioSemanalGrid');
     const labelPeriodo = document.getElementById('periodoSemanaLabel');
@@ -100,10 +101,19 @@ window.renderizarCalendarioSemanal = function() {
         const diaTexto = diasUteisMap[d];
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
+        const dataStr = diaAtual.toLocaleDateString('pt-BR'); // ex: "06/07/2026"
 
-        // Filtra todas as aulas cadastradas neste dia da semana específico
+        // CORREÇÃO: Filtra os compromissos deste dia específico (se únicos) ou recorrentes semanais
         const compromissosDoDia = aulas
-            .filter(a => a.dia === diaTexto)
+            .filter(a => {
+                if (a.frequencia === 'semanal') {
+                    return a.dia === diaTexto;
+                }
+                if (!a.data) {
+                    return a.dia === diaTexto;
+                }
+                return a.data === dataStr;
+            })
             .sort((a, b) => a.horarioInicio.localeCompare(b.horarioInicio));
 
         let cardsHtml = '';
@@ -117,7 +127,7 @@ window.renderizarCalendarioSemanal = function() {
                 if (tipo === 'aula') {
                     const aluno = typeof getAluno === 'function' ? getAluno(comp.alunoId) : null;
                     const nome = aluno ? aluno.nome : '❓ Aluno Removido';
-                    const objetivo = aluno ? aluno.objetivo : 'Outro';
+                    const objetivo = aluno ? aluno.objective || aluno.objetivo : 'Outro';
                     const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
 
                     cardsHtml += `

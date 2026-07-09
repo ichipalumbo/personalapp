@@ -37,7 +37,18 @@ window.atualizarDashboardStats = function() {
     const diaTexto = window.getDiaTextoSelecionado();
 
     if (elAulasHoje && typeof aulas !== 'undefined') {
-        const aulasHoje = aulas.filter(a => a.dia === diaTexto && (!a.tipo || a.tipo === 'aula'));
+        const dataSelecionadaStr = dataSelecionada.toLocaleDateString('pt-BR');
+        const aulasHoje = aulas.filter(a => {
+            if (a.tipo && a.tipo !== 'aula') return false;
+            
+            if (a.frequencia === 'semanal') {
+                return a.dia === diaTexto;
+            }
+            if (!a.data) {
+                return a.dia === diaTexto;
+            }
+            return a.data === dataSelecionadaStr;
+        });
         elAulasHoje.textContent = aulasHoje.length;
     }
     if (elAulasRepor) elAulasRepor.textContent = aulasParaRepor.length;
@@ -55,6 +66,7 @@ window.renderizarAgendaDia = function() {
     if (!grid) return;
 
     const diaTexto = window.getDiaTextoSelecionado();
+    const dataSelecionadaStr = dataSelecionada.toLocaleDateString('pt-BR');
     let html = '';
 
     const inicio = agendaConfig.horaInicio;
@@ -68,12 +80,24 @@ window.renderizarAgendaDia = function() {
     let i = 0;
     while (i < slotsDoDia.length) {
         const horaStr = slotsDoDia[i];
-        const compromisso = aulas.find(a => a.dia === diaTexto && a.horarioInicio === horaStr);
+        
+        const compromisso = aulas.find(a => {
+            if (a.horarioInicio !== horaStr) return false;
+            
+            if (a.frequencia === 'semanal') {
+                return a.dia === diaTexto;
+            }
+            if (!a.data) {
+                return a.dia === diaTexto;
+            }
+            return a.data === dataSelecionadaStr;
+        });
 
         if (compromisso) {
             let cardHtml = '';
             const tipo = compromisso.tipo || 'aula';
             const periodoExibicao = `${compromisso.horarioInicio} - ${compromisso.horarioFim}`;
+            const labelRecorrente = compromisso.frequencia === 'semanal' ? ' <i class="fa-solid fa-infinity" style="font-size: 0.65rem; opacity: 0.8;" title="Recorrente"></i>' : '';
 
             if (tipo === 'aula') {
                 const aluno = typeof getAluno === 'function' ? getAluno(compromisso.alunoId) : null;
@@ -83,7 +107,7 @@ window.renderizarAgendaDia = function() {
                 
                 cardHtml = `
                     <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                        <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}${labelRecorrente}</span>
                         <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
                         <span class="agenda-dia-aula-detalhes">${objetivo} (${periodoExibicao})</span>
                     </div>
@@ -91,14 +115,14 @@ window.renderizarAgendaDia = function() {
             } else if (tipo === 'deslocamento') {
                 cardHtml = `
                     <div class="agenda-dia-aula slot-deslocamento" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                        <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento${labelRecorrente}</span>
                         <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || 'Trânsito'} (${periodoExibicao})</span>
                     </div>
                 `;
             } else if (tipo === 'bloqueio') {
                 cardHtml = `
                     <div class="agenda-dia-aula slot-bloqueado" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
+                        <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado${labelRecorrente}</span>
                         <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || 'Compromisso'} (${periodoExibicao})</span>
                     </div>
                 `;
@@ -146,6 +170,7 @@ window.diferencaMinutos = function(inicio, fim) {
     return (hF * 60 + mF) - (hI * 60 + mI);
 };
 
+// RENDERIZAÇÃO DO MODAL PARA EVENTO ÚNICO
 window.abrirAgendamentoModal = function(dia, hora) {
     slotSelecionadoHora = hora;
     slotSelecionadoDiaTexto = dia;
@@ -211,7 +236,89 @@ window.selecionarTipoAgendamento = function(tipo) {
     }
 };
 
+// NOVO: ABRE O MODAL DE RECORRÊNCIA SEMANAL
+window.abrirModalRecorrencia = function() {
+    const modal = document.getElementById('modalRecorrencia');
+    if (document.getElementById('formRecorrencia')) {
+        document.getElementById('formRecorrencia').reset();
+    }
+
+    const selectInicio = document.getElementById('recorrenciaHoraInicio');
+    const selectDuracao = document.getElementById('recorrenciaDuracao');
+    const selectDia = document.getElementById('recorrenciaDiaSemana');
+    
+    const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
+    selectInicio.innerHTML = optionsHtml;
+    selectInicio.value = "08:00";
+    selectDuracao.value = "60";
+
+    const diaTexto = window.getDiaTextoSelecionado();
+    if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(diaTexto)) {
+        selectDia.value = diaTexto;
+    } else {
+        selectDia.value = "Segunda";
+    }
+
+    const selectAluno = document.getElementById('recorrenciaAluno');
+    if (selectAluno) {
+        selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>' + 
+            alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+    }
+
+    window.selecionarTipoRecorrente('aula');
+    if (modal) modal.style.display = 'flex';
+};
+
+window.selecionarTipoRecorrente = function(tipo) {
+    document.getElementById('recorrenciaTipo').value = tipo;
+    const tabAula = document.getElementById('tabRecorrenteAula');
+    const tabDeslocamento = document.getElementById('tabRecorrenteDeslocamento');
+    const tabBloqueio = document.getElementById('tabRecorrenteBloqueio');
+    const camposAula = document.getElementById('camposRecorrenteAula');
+    const camposBloqueio = document.getElementById('camposRecorrenteBloqueio');
+
+    tabAula.classList.remove('active');
+    tabDeslocamento.classList.remove('active');
+    tabBloqueio.classList.remove('active');
+
+    if (tipo === 'aula') {
+        tabAula.classList.add('active');
+        camposAula.style.display = 'block';
+        camposBloqueio.style.display = 'none';
+        document.getElementById('recorrenciaAluno').required = true;
+        document.getElementById('recorrenciaDescricao').required = false;
+    } else if (tipo === 'deslocamento') {
+        tabDeslocamento.classList.add('active');
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'none'; 
+        document.getElementById('recorrenciaAluno').required = false;
+        document.getElementById('recorrenciaDescricao').required = false;
+    } else if (tipo === 'bloqueio') {
+        tabBloqueio.classList.add('active');
+        camposAula.style.display = 'none';
+        camposBloqueio.style.display = 'block'; 
+        document.getElementById('recorrenciaAluno').required = false;
+        document.getElementById('recorrenciaDescricao').required = true;
+    }
+};
+
 document.addEventListener('DOMContentLoaded', () => {
+    // Escuta do Botão Infinito de Recorrência
+    const btnRecorrencia = document.getElementById('btnRecorrenciaAgenda');
+    if (btnRecorrencia) {
+        btnRecorrencia.addEventListener('click', () => {
+            window.abrirModalRecorrencia();
+        });
+    }
+
+    const btnFecharRecorrencia = document.getElementById('btnFecharModalRecorrencia');
+    if (btnFecharRecorrencia) {
+        btnFecharRecorrencia.addEventListener('click', () => {
+            document.getElementById('modalRecorrencia').style.display = 'none';
+        });
+    }
+
+    // Gravação de Evento Único (Sem seletores de recorrência)
     const formAgendamento = document.getElementById('formAgendamento');
     if (formAgendamento) {
         formAgendamento.addEventListener('submit', (e) => {
@@ -225,16 +332,17 @@ document.addEventListener('DOMContentLoaded', () => {
             let novoCompromisso = {
                 id: Date.now().toString(),
                 dia: slotSelecionadoDiaTexto,
+                data: dataSelecionada.toLocaleDateString('pt-BR'),
                 horarioInicio: hInicio,
                 horarioFim: hFim,
-                tipo: tipo
+                tipo: tipo,
+                frequencia: 'uma_vez' // Estritamente único!
             };
 
             if (tipo === 'aula') {
                 const alunoId = document.getElementById('agendaAluno').value;
                 if (!alunoId) return;
                 novoCompromisso.alunoId = alunoId;
-                novoCompromisso.frequencia = document.getElementById('agendaFrequencia').value;
             } else if (tipo === 'deslocamento') {
                 novoCompromisso.descricao = "Trânsito / Deslocamento"; 
             } else if (tipo === 'bloqueio') {
@@ -250,6 +358,46 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Gravação do Novo Evento Recorrente
+    const formRecorrencia = document.getElementById('formRecorrencia');
+    if (formRecorrencia) {
+        formRecorrencia.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const tipo = document.getElementById('recorrenciaTipo').value;
+            const hInicio = document.getElementById('recorrenciaHoraInicio').value;
+            const duracaoMinutos = document.getElementById('recorrenciaDuracao').value;
+            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+            const diaSemana = document.getElementById('recorrenciaDiaSemana').value;
+
+            let novoCompromisso = {
+                id: Date.now().toString(),
+                dia: diaSemana,
+                horarioInicio: hInicio,
+                horarioFim: hFim,
+                tipo: tipo,
+                frequencia: 'semanal' // Estritamente recorrente semanal!
+            };
+
+            if (tipo === 'aula') {
+                const alunoId = document.getElementById('recorrenciaAluno').value;
+                if (!alunoId) return;
+                novoCompromisso.alunoId = alunoId;
+            } else if (tipo === 'deslocamento') {
+                novoCompromisso.descricao = "Trânsito / Deslocamento"; 
+            } else if (tipo === 'bloqueio') {
+                novoCompromisso.descricao = document.getElementById('recorrenciaDescricao').value.trim();
+            }
+
+            aulas.push(novoCompromisso);
+            if (typeof salvarDados === 'function') salvarDados();
+
+            document.getElementById('modalRecorrencia').style.display = 'none';
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('♾️ Recorrência salva com sucesso!');
+        });
+    }
+
     if (document.getElementById('btnFecharModal')) {
         document.getElementById('btnFecharModal').addEventListener('click', () => {
             document.getElementById('modalAgendamento').style.display = 'none';
@@ -257,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// MODIFICADO: Abrir modal unificado de EDIÇÃO/GERENCIAMENTO de compromisso
+// Abrir modal unificado de EDIÇÃO/GERENCIAMENTO de compromisso
 let idCompromissoSelecionado = "";
 
 window.abrirModalAcaoSlot = function(id) {
@@ -266,8 +414,29 @@ window.abrirModalAcaoSlot = function(id) {
     const compromisso = aulas.find(a => a.id === id);
     if (!compromisso) return;
 
-    // Exibe o dia em foco
-    document.getElementById('editInfoDia').textContent = `Editar Compromisso — ${compromisso.dia}`;
+    const freq = compromisso.frequencia || 'uma_vez';
+    document.getElementById('editCompromissoFrequencia').value = freq;
+
+    // Configura a badge de tipo de compromisso
+    const badge = document.getElementById('badgeTipoCompromisso');
+    const containerDiaSemana = document.getElementById('editDiaSemanaContainer');
+
+    if (freq === 'semanal') {
+        badge.innerHTML = `<i class="fa-solid fa-infinity"></i> Recorrente`;
+        badge.className = "badge-stat-mensal badge-aula"; // Estilo amarelo
+        
+        // Exibe o seletor para permitir mudar o dia de trabalho fixo da recorrência
+        containerDiaSemana.style.display = 'block';
+        document.getElementById('editDiaSemana').value = compromisso.dia;
+        document.getElementById('editInfoDia').textContent = `Definido para toda semana`;
+    } else {
+        badge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> Único`;
+        badge.className = "badge-stat-mensal badge-desloc"; // Estilo laranja
+        
+        // Oculta o seletor de dias da semana (dia fixado na data real)
+        containerDiaSemana.style.display = 'none';
+        document.getElementById('editInfoDia').textContent = `Agendado para: ${compromisso.data || compromisso.dia}`;
+    }
     
     // Configura e popula o seletor de horários de início
     const selectInicio = document.getElementById('editHoraInicio');
@@ -297,7 +466,6 @@ window.abrirModalAcaoSlot = function(id) {
             selectAluno.innerHTML = alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
             selectAluno.value = compromisso.alunoId;
         }
-        document.getElementById('editFrequencia').value = compromisso.frequencia || 'uma_vez';
     } else if (tipo === 'deslocamento') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'none';
@@ -305,7 +473,7 @@ window.abrirModalAcaoSlot = function(id) {
     } else if (tipo === 'bloqueio') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'block';
-        btnRepor.style.display = 'none'; // Bloqueios particulares não geram reposições pendentes
+        btnRepor.style.display = 'none'; 
         document.getElementById('editDescricao').value = compromisso.descricao || '';
     }
 
@@ -316,7 +484,7 @@ window.fecharModalAcaoSlot = function() {
     document.getElementById('modalAcaoSlot').style.display = 'none';
 };
 
-// Listeners das ações de Salvamento, Cancelamento e Reagendamento (Alterados)
+// Listeners das ações de Salvamento, Cancelamento e Reagendamento
 document.addEventListener('DOMContentLoaded', () => {
     const formEditar = document.getElementById('formEditarCompromisso');
     if (formEditar) {
@@ -329,6 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hInicio = document.getElementById('editHoraInicio').value;
             const duracaoMinutos = document.getElementById('editDuracao').value;
             const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+            const freq = document.getElementById('editCompromissoFrequencia').value;
 
             if (hInicio >= hFim) {
                 alert("O horário de término deve ser posterior ao início!");
@@ -339,10 +508,14 @@ document.addEventListener('DOMContentLoaded', () => {
             compromisso.horarioInicio = hInicio;
             compromisso.horarioFim = hFim;
 
+            // Se for recorrente, permite salvar o novo dia da semana
+            if (freq === 'semanal') {
+                compromisso.dia = document.getElementById('editDiaSemana').value;
+                delete compromisso.data;
+            }
+
             const tipo = compromisso.tipo || 'aula';
-            if (tipo === 'aula') {
-                compromisso.frequencia = document.getElementById('editFrequencia').value;
-            } else if (tipo === 'bloqueio') {
+            if (tipo === 'bloqueio') {
                 compromisso.descricao = document.getElementById('editDescricao').value.trim();
             }
 
