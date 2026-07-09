@@ -125,15 +125,17 @@
 
             <!-- CONTAINER 1: VISÃO SEMANAL -->
             <div id="containerCalendarioSemanal" class="agenda-panel" style="display: block;">
-                <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; flex-direction: column;">
-                        <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
-                        <!-- <span>Resumo de treinos estruturado <i class="fa-solid fa-bolt" style="color: #FFD700;"></i></span> -->
-                    </div>
-                    <div class="mes-nav" style="display: flex; gap: 6px;">
-                        <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">Hoje</button>
-                        <button id="btnSemanaProxima" class="btn btn-secondary btn-sm" title="Próxima Semana"><i class="fa-solid fa-chevron-right"></i></button>
+                <!-- REFAZIMENTO: Grupo Unificado de Cabeçalho Sticky para preservar contexto visual também na Semana -->
+                <div class="agenda-sticky-container">
+                    <div class="mes-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
+                        <div style="display: flex; flex-direction: column;">
+                            <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
+                        </div>
+                        <div class="mes-nav" style="display: flex; gap: 6px;">
+                            <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">Hoje</button>
+                            <button id="btnSemanaProxima" class="btn btn-secondary btn-sm" title="Próxima Semana"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
                     </div>
                 </div>
                 <!-- Lista de Blocos Diários da Semana Corrente -->
@@ -371,7 +373,7 @@
                     <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
                 </div>
 
-                <!-- Seleção Unificada de Dia de Semana Fixo -->
+                <!-- @TODO: Seleção Unificada de Dia de Semana Fixo -->
                 <div class="form-grupo-spa" id="containerDiaRecorrenteUnico" style="display: none; margin-bottom: 14px;">
                     <label for="recorrenciaDiaSemana">Dia da Semana Fixo *</label>
                     <select id="recorrenciaDiaSemana" required>
@@ -395,9 +397,10 @@
     <!-- C. MODAL DE EDIÇÃO DE COMPROMISSO -->
     <div class="modal-overlay" id="modalAcaoSlot" style="display: none;">
         <div class="modal" style="max-width: 440px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h3 id="editModalTitle" style="margin: 0;">Gerenciar Horário</h3>
-                <span id="badgeTipoCompromisso" class="badge-stat-mensal" style="width: auto; padding: 4px 10px; font-size: 0.7rem; border-radius: 20px;"></span>
+            <!-- MODIFICADO: Header otimizado com flexibilidade de layout para badge se adaptar à palavra -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 12px; width: 100%;">
+                <h3 id="editModalTitle" style="margin: 0; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">Gerenciar Horário</h3>
+                <span id="badgeTipoCompromisso" class="modal-badge" style="font-size: 0.7rem;"></span>
             </div>
             
             <form id="formEditarCompromisso">
@@ -507,6 +510,11 @@
             </form>
         </div>
     </div>
+
+    <!-- NATIVO: Botão Flutuante Voltar ao Topo Premium -->
+    <button id="btnBackToTop" class="btn-back-to-top" title="Voltar ao Topo">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
 
     <div class="toast" id="toast"></div>
 
