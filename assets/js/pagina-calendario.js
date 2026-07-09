@@ -59,6 +59,27 @@ window.renderizarCalendarioMensal = function() {
     gridSPA.id = 'calendarioMonthlyGrid';
 };
 
+// NOVO: Função para transportar o utilizador da Semana para o Dia específico na Home
+window.irParaDiaDestaSemana = function(dataStr) {
+    const parts = dataStr.split('/');
+    if (parts.length === 3) {
+        const dia = parseInt(parts[0], 10);
+        const mes = parseInt(parts[1], 10) - 1; // Ajusta mês (0-11 no JS)
+        const ano = parseInt(parts[2], 10);
+        window.dataSelecionada = new Date(ano, mes, dia);
+    }
+
+    // Aciona a simulação SPA de clique na aba "Home" para mudar de ecrã instantaneamente
+    const navLinkHome = document.querySelector('.header-nav .nav-link[data-target="tela-home"]');
+    if (navLinkHome) {
+        navLinkHome.click();
+    }
+
+    if (typeof mostrarToast === 'function') {
+        mostrarToast(`📅 Agenda do dia ${dataStr} aberta!`);
+    }
+};
+
 // 4. RENDERIZADOR DO CALENDÁRIO SEMANAL (Focado em Mobile-First, Empilhado Verticalmente)
 window.renderizarCalendarioSemanal = function() {
     const gridSemanal = document.getElementById('calendarioSemanalGrid');
@@ -115,7 +136,7 @@ window.renderizarCalendarioSemanal = function() {
                 const tipo = comp.tipo || 'aula';
                 const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
 
-                // NOVO: Sistema idêntico de Tags Visuais Premium nos cards para consistência total da SPA
+                // Sistema idêntico de Tags Visuais Premium nos cards para consistência total da SPA
                 let tagVisualHtml = '';
 
                 if (tipo === 'aula') {
@@ -176,14 +197,17 @@ window.renderizarCalendarioSemanal = function() {
             `;
         }
 
-        // Adiciona o dia com seu cabeçalho, destaque sutil e ID dinâmico para rolagem síncrona
+        // MODIFICADO: Adicionado cabeçalho do bloco de dia clicável (.semana-dia-header) para transporte de ecrã dinâmico
         html += `
             <div class="semana-dia-box ${ehHoje ? 'dia-semana-hoje-card' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}" style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2A2A2A; padding-bottom: 8px; margin-bottom: 12px;">
-                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem;">
-                        🎯 ${diaTexto}-feira ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 900;">HOJE</span>' : ''}
+                <div class="semana-dia-header" onclick="window.irParaDiaDestaSemana('${dataAlvoFormatada}')">
+                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
+                        🎯 ${diaTexto}-feira ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 900;">HOJE</span>' : ''}
                     </span>
-                    <span style="font-size: 0.8rem; background: ${ehHoje ? '#FFD700' : '#2D2D2D'}; color: ${ehHoje ? '#0D0D0D' : '#FFF'}; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="btn-semana-ir-dia"><i class="fa-regular fa-folder-open"></i> Abrir dia</span>
+                        <span style="font-size: 0.8rem; background: ${ehHoje ? '#FFD700' : '#2D2D2D'}; color: ${ehHoje ? '#0D0D0D' : '#FFF'}; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
+                    </div>
                 </div>
                 <div style="display: flex; flex-direction: column;">
                     ${cardsHtml}
