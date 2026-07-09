@@ -25,7 +25,7 @@ body {
 }
 
 /* ========================================================
-   [STYLE-HEADER & NAV] - Design Unificado AtivaMente (Header Fixo Premium)
+   [STYLE-HEADER & NAV] - Design Unificado Prô Josy (Header Fixo Premium)
    ======================================================== */
 .header {
     display: flex;
@@ -57,12 +57,10 @@ body {
     font-size: 1.7rem;
     letter-spacing: -0.5px;
     font-weight: 900;
-    /* text-transform: uppercase; */
 }
 
 .marca-ativa {
     color: #FFD700;
-    
 }
 
 .marca-mente {
@@ -321,10 +319,10 @@ body {
     box-shadow: 0 4px 20px rgba(0,0,0,0.4);
 }
 
-/* NOVO: Container Unificado para Cabeçalhos Sticky (Preserva contexto na rolagem) */
+/* CORREÇÃO MATEMÁTICA: Posição de ancoragem para evitar overlap no celular */
 .agenda-sticky-container {
     position: sticky;
-    top: 85px; /* Alinhado exatamente abaixo do cabeçalho de navegação no Mobile */
+    top: 135px; /* Alinhado exatamente abaixo do cabeçalho unificado no Mobile */
     z-index: 90;
     background: rgba(20, 20, 20, 0.94);
     backdrop-filter: blur(14px);
@@ -781,8 +779,8 @@ body {
         min-width: 32px;
     }
 
-    /* CORREÇÃO RESPONSIVA: Cabeçalho diário no desktop é menor para acompanhar o header row */
-    /* .agenda-sticky-container {
-        top: 75px; 
-    } */
+    /* CORREÇÃO RESPONSIVA: No desktop o header principal é mais baixo, então o offset sticky reduz */
+    .agenda-sticky-container {
+        top: 78px; 
+    }
 }
