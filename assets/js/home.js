@@ -2,7 +2,8 @@
 // [TAG-JS-HOME] - Lógica da Home, Slots de 30m e Edição de Compromissos
 // ========================================================
 
-let dataSelecionada = new Date();
+// MODIFICADO: Passa a utilizar escopo global unificado para date-sharing com o Calendário Semanal
+window.dataSelecionada = window.dataSelecionada || new Date();
 const DIAS_DA_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
 
 let slotSelecionadoHora = "";
@@ -42,9 +43,9 @@ window.inicializarHome = function() {
 window.atualizarDataAtual = function() {
     const elementoData = document.getElementById('dataAtual');
     if (!elementoData) return;
-    const dia = String(dataSelecionada.getDate()).padStart(2, '0');
-    const mes = String(dataSelecionada.getMonth() + 1).padStart(2, '0');
-    const nomeDia = DIAS_DA_SEMANA[dataSelecionada.getDay()];
+    const dia = String(window.dataSelecionada.getDate()).padStart(2, '0');
+    const mes = String(window.dataSelecionada.getMonth() + 1).padStart(2, '0');
+    const nomeDia = DIAS_DA_SEMANA[window.dataSelecionada.getDay()];
 
     elementoData.innerHTML = `<i class="fa-solid fa-calendar-minus" style="color: #FFD700; margin-right: 8px;"></i>${nomeDia} <span style="color: #FFD700; font-weight: 800;">(${dia}/${mes})</span>`;
 };
@@ -56,7 +57,7 @@ window.atualizarDashboardStats = function() {
     if (elAulasHoje && typeof aulas !== 'undefined') {
         const aulasHoje = aulas.filter(a => {
             if (a.tipo && a.tipo !== 'aula') return false;
-            return window.checarCompromissoNaData(a, dataSelecionada);
+            return window.checarCompromissoNaData(a, window.dataSelecionada);
         });
         elAulasHoje.textContent = aulasHoje.length;
     }
@@ -65,7 +66,7 @@ window.atualizarDashboardStats = function() {
 
 // Mapeamento direto de dia index do JavaScript para consistência total da AtivaMente
 window.getDiaTextoSelecionado = function() {
-    const diaIndex = dataSelecionada.getDay();
+    const diaIndex = window.dataSelecionada.getDay();
     const diasMapeados = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return diasMapeados[diaIndex];
 };
@@ -88,7 +89,7 @@ window.renderizarAgendaDia = function() {
 
     const agora = new Date();
     const agoraMinutos = agora.getHours() * 60 + agora.getMinutes();
-    const ehHoje = dataSelecionada.toDateString() === agora.toDateString();
+    const ehHoje = window.dataSelecionada.toDateString() === agora.toDateString();
 
     let i = 0;
     let slotAtualIdSetado = false;
@@ -102,7 +103,7 @@ window.renderizarAgendaDia = function() {
         const ehSlotMomentoAtual = ehHoje && (agoraMinutos >= slotMinutos && agoraMinutos < slotMinutos + 30);
 
         // Busca compromisso respeitando o novo motor unificado do Canvas
-        const compromisso = aulas.find(a => window.checarCompromissoNaData(a, dataSelecionada, horaStr));
+        const compromisso = aulas.find(a => window.checarCompromissoNaData(a, window.dataSelecionada, horaStr));
 
         // Verifica se o compromisso engloba o horário atual do sistema
         let ehCompromissoNoMomentoAtual = false;
@@ -193,7 +194,7 @@ window.renderizarAgendaDia = function() {
                 i++;
             }
         } else {
-            // MODIFICADO: Agora ao clicar num slot vago abre o modal intermédio de escolha de tipo
+            // Agora ao clicar num slot vago abre o modal intermédio de escolha de tipo
             html += `
                 <div class="agenda-dia-linha ${destacarLinha ? 'linha-hora-atual' : ''}" ${atribuirIdScroll ? 'id="slot-hora-atual"' : ''}>
                     <div class="agenda-dia-horario">
@@ -211,15 +212,7 @@ window.renderizarAgendaDia = function() {
 
     grid.innerHTML = html;
 
-    // Rola suavemente até o momento atual se estiver visualizando o dia de hoje
-    if (ehHoje && slotAtualIdSetado) {
-        setTimeout(() => {
-            const elAtual = document.getElementById('slot-hora-atual');
-            if (elAtual) {
-                elAtual.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-        }, 300);
-    }
+    // MODIFICADO: Comportamento de autoscroll (scrollIntoView) foi removido da Home para evitar movimentos abruptos e irritantes ao recarregar ou navegar entre dias!
 };
 
 // Soma minutos a uma string de horário (ex: "18:30" + 90 -> "20:00")
@@ -238,7 +231,7 @@ window.diferencaMinutos = function(inicio, fim) {
     return (hF * 60 + mF) - (hI * 60 + mI);
 };
 
-// NOVO: Abre o modal de escolha do tipo de agendamento (Fluxo Intermédio)
+// Abre o modal de escolha do tipo de agendamento (Fluxo Intermédio)
 window.abrirEscolhaTipoModal = function(dia, hora) {
     slotSelecionadoHora = hora;
     slotSelecionadoDiaTexto = dia;
@@ -492,7 +485,7 @@ window.selecionarTipoRecorrente = function(tipo) {
     }
 };
 
-// NOVO: Abre o modal de reagendamento específico a partir de um slot vazio
+// Abre o modal de reagendamento específico a partir de um slot vazio
 window.abrirReagendarAulaModalSlot = function(dia, hora) {
     window.reagendamentoDirectCardId = null; // Indica que a origem foi o clique num slot livre
 
@@ -540,7 +533,7 @@ window.abrirReagendarAulaModalSlot = function(dia, hora) {
     modal.style.display = 'flex';
 };
 
-// NOVO: Abre o modal específico a partir do botão "Reagendar" no card da fila
+// Abre o modal específico a partir do botão "Reagendar" no card da fila
 window.iniciarReagendamentoReposicao = function(id) {
     const rep = aulasParaRepor.find(r => r.id === id);
     if (!rep) return;
@@ -659,7 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let novoCompromisso = {
                 id: Date.now().toString(),
                 dia: dia,
-                data: dataSelecionada.toLocaleDateString('pt-BR'),
+                data: window.dataSelecionada.toLocaleDateString('pt-BR'),
                 horarioInicio: hInicio,
                 horarioFim: hFim,
                 tipo: 'aula',
@@ -698,7 +691,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let novoCompromisso = {
                 id: Date.now().toString(),
                 dia: slotSelecionadoDiaTexto,
-                data: dataSelecionada.toLocaleDateString('pt-BR'),
+                data: window.dataSelecionada.toLocaleDateString('pt-BR'),
                 horarioInicio: hInicio,
                 horarioFim: hFim,
                 tipo: tipo,
@@ -813,7 +806,7 @@ window.abrirModalAcaoSlot = function(id) {
     const btnReagendarInstancia = document.getElementById('btnReagendarInstancia');
     const recorrenteTopRow = document.querySelector('#acoesCompromissoRecorrente > div');
 
-    const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+    const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
     const tipo = compromisso.tipo || 'aula';
 
     // Remove a opção de "reagendar/reposição" para bloqueios e deslocamentos
@@ -984,7 +977,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
             if (!compromisso) return;
 
-            const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+            const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
             if (!compromisso.excecoes) compromisso.excecoes = [];
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
@@ -1005,7 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
             if (!compromisso) return;
 
-            const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+            const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
             if (!compromisso.excecoes) compromisso.excecoes = [];
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
@@ -1132,19 +1125,19 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('btnAnterior')) {
         document.getElementById('btnAnterior').addEventListener('click', () => {
-            dataSelecionada.setDate(dataSelecionada.getDate() - 1);
+            window.dataSelecionada.setDate(window.dataSelecionada.getDate() - 1);
             window.inicializarHome();
         });
     }
     if (document.getElementById('btnProximo')) {
         document.getElementById('btnProximo').addEventListener('click', () => {
-            dataSelecionada.setDate(dataSelecionada.getDate() + 1);
+            window.dataSelecionada.setDate(window.dataSelecionada.getDate() + 1);
             window.inicializarHome();
         });
     }
     if (document.getElementById('btnHoje')) {
         document.getElementById('btnHoje').addEventListener('click', () => {
-            dataSelecionada = new Date();
+            window.dataSelecionada = new Date();
             window.inicializarHome();
         });
     }

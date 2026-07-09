@@ -729,6 +729,52 @@ body {
 }
 
 /* ========================================================
+   [STYLE-CABEÇALHOS SEMANAIS INTERATIVOS] - (NOVO)
+   ======================================================== */
+.semana-dia-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2A2A2A;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-left: -4px;
+    margin-right: -4px;
+}
+
+.semana-dia-header:hover {
+    background: rgba(255, 215, 0, 0.08);
+    border-bottom-color: #FFD700;
+}
+
+.btn-semana-ir-dia {
+    font-size: 0.68rem;
+    color: #888;
+    background: #252525;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #333;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.semana-dia-header:hover .btn-semana-ir-dia {
+    background: #FFD700 !important;
+    color: #0D0D0D !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.2);
+}
+
+/* ========================================================
    [STYLE-MODAL COMUM & TOAST]
    ======================================================== */
 .modal { background: #1A1A1A; border-radius: 16px; padding: 20px; width: 92%; max-width: 450px; border: 1px solid #2A2A2A; }
