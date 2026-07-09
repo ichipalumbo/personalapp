@@ -69,30 +69,30 @@ window.renderizarCalendarioSemanal = function() {
     // Acha a Segunda-feira da semana de referência
     const dataRef = new Date(window.semanaReferencia);
     const diaSemana = dataRef.getDay();
-    const diferencaSegunda = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
-    const segundaFeira = new Date(dataRef.setDate(diferencaSegunda));
+    const dSeg = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+    const segundaFeira = new Date(dataRef.setDate(dSeg));
 
-    // Acha a Sexta-feira da semana de referência
-    const sextaFeira = new Date(segundaFeira);
-    sextaFeira.setDate(segundaFeira.getDate() + 4);
+    // CORREÇÃO: Acha o Sábado da semana de referência (segunda + 5 dias)
+    const sabado = new Date(segundaFeira);
+    sabado.setDate(segundaFeira.getDate() + 5);
 
-    // Atualiza a Label de Período (ex: "Semana: 06/07 a 10/07 de 2026")
+    // Atualiza a Label de Período (ex: "Semana: 06/07 a 11/07 de 2026")
     if (labelPeriodo) {
-        const dSeg = String(segundaFeira.getDate()).padStart(2, '0');
-        const mSeg = String(segundaFeira.getMonth() + 1).padStart(2, '0');
-        const dSex = String(sextaFeira.getDate()).padStart(2, '0');
-        const mSex = String(sextaFeira.getMonth() + 1).padStart(2, '0');
+        const dSegStr = String(segundaFeira.getDate()).padStart(2, '0');
+        const mSegStr = String(segundaFeira.getMonth() + 1).padStart(2, '0');
+        const dSabStr = String(sabado.getDate()).padStart(2, '0');
+        const mSabStr = String(sabado.getMonth() + 1).padStart(2, '0');
         const anoRef = segundaFeira.getFullYear();
-        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i>Semana: <span style="color: #FFD700;">${dSeg}/${mSeg} a ${dSex}/${mSex}</span> de ${anoRef}`;
+        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i>Semana: <span style="color: #FFD700;">${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}</span> de ${anoRef}`;
     }
 
     let html = '';
 
-    // Mapeamento textual dos dias úteis
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    // Mapeamento textual dos dias úteis + Sábado
+    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-    // Varre os 5 dias úteis (Segunda a Sexta) para desenhar os blocos
-    for (let d = 0; d < 5; d++) {
+    // CORREÇÃO: Varre os 6 dias úteis de trabalho (Segunda a Sábado) para desenhar os blocos
+    for (let d = 0; d < 6; d++) {
         const diaAtual = new Date(segundaFeira);
         diaAtual.setDate(segundaFeira.getDate() + d);
 
@@ -100,7 +100,10 @@ window.renderizarCalendarioSemanal = function() {
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
 
-        // CORREÇÃO: Filtra os compromissos deste dia usando a função central de datas
+        // Identifica se a célula sendo renderizada é HOJE
+        const ehHoje = diaAtual.toDateString() === new Date().toDateString();
+
+        // Filtra os compromissos deste dia usando a função unificada
         const compromissosDoDia = aulas
             .filter(a => window.checarCompromissoNaData(a, diaAtual))
             .sort((a, b) => a.horarioInicio.localeCompare(b.horarioInicio));
@@ -150,11 +153,14 @@ window.renderizarCalendarioSemanal = function() {
             `;
         }
 
+        // Adiciona o dia com seu cabeçalho, destaque sutil e ID dinâmico para rolagem síncrona
         html += `
-            <div style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            <div class="semana-dia-box ${ehHoje ? 'dia-semana-hoje-card' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}" style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2A2A2A; padding-bottom: 8px; margin-bottom: 12px;">
-                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem;">🎯 ${diaTexto}-feira</span>
-                    <span style="font-size: 0.8rem; background: #2D2D2D; color: #FFF; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
+                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem;">
+                        🎯 ${diaTexto}-feira ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 900;">HOJE</span>' : ''}
+                    </span>
+                    <span style="font-size: 0.8rem; background: ${ehHoje ? '#FFD700' : '#2D2D2D'}; color: ${ehHoje ? '#0D0D0D' : '#FFF'}; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
                 </div>
                 <div style="display: flex; flex-direction: column;">
                     ${cardsHtml}
@@ -164,6 +170,14 @@ window.renderizarCalendarioSemanal = function() {
     }
 
     gridSemanal.innerHTML = html;
+
+    // CORREÇÃO: Auto-Rolagem Inteligente (Auto-Scroll) para focar no dia de hoje automaticamente
+    setTimeout(() => {
+        const hojeEl = document.getElementById('semana-dia-hoje-elemento');
+        if (hojeEl) {
+            hojeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 120);
 };
 
 // 5. ATIVAÇÃO DE AÇÕES DO CARD CLICADO (Compartilhado com o modal de exclusão/reagendamento da Home)
@@ -176,11 +190,12 @@ window.abrirCalendarioAcaoSlot = function(id, diaTexto) {
         abrirModalAcaoSlot(id);
     }
     
+    // Sobrescreve a escuta de finalização para atualizar as duas visões de calendário imediatamente
     const originalFecharModalAcaoSlot = window.fecharModalAcaoSlot;
     window.fecharModalAcaoSlot = function() {
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
         window.renderizarCalendarioSemanal();
-        window.renderizarCalendarioMensal();
+        window.renderizarCalendarioMesal(); // Atualiza contadores
     };
 };
 

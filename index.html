@@ -78,7 +78,7 @@
                         <h2><i class="fa-solid fa-circle-check" style="color: #FFD700; margin-right: 8px;"></i>AtivaMente • Agenda</h2>
                         <span>Sua rotina de treinos bem organizada! <i class="fa-solid fa-bolt" style="color: #FFD700;"></i></span>
                     </div>
-                    <!-- CONTROLE DE BOTÕES ATUALIZADO: Inclui botão global para agendar Recorrências -->
+                    <!-- CONTROLE DE BOTÕES: Inclui botão global para agendar Recorrências -->
                     <div style="display: flex; gap: 8px;">
                         <button id="btnRecorrenciaAgenda" class="btn-config-icon" title="Agendar Horário Recorrente">
                             <i class="fa-solid fa-infinity" style="color: #FFD700;"></i>
@@ -278,7 +278,7 @@
         </div>
     </div>
 
-    <!-- B. NOVO: MODAL DE CADASTRO/AGENDAMENTO EXCLUSIVO PARA RECORRÊNCIAS (OUTLOOK STYLE) -->
+    <!-- B. MODAL DE CADASTRO/AGENDAMENTO EXCLUSIVO PARA RECORRÊNCIAS (OUTLOOK STYLE) -->
     <div class="modal-overlay" id="modalRecorrencia" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <h3><i class="fa-solid fa-infinity" style="color: #FFD700; margin-right: 8px;"></i>Agendar Horário Recorrente</h3>
@@ -321,15 +321,16 @@
                     </div>
                 </div>
 
-                <!-- Outlook Style: Seleção Múltipla de Dias da Semana -->
+                <!-- CORREÇÃO: Grid Interativo de Dias Incluindo Sábado -->
                 <div class="form-grupo-spa" id="containerDiasSemanaRecorrencia" style="margin-bottom: 16px;">
                     <label style="margin-bottom: 4px;">Selecione os dias da semana *</label>
-                    <div style="display: flex; gap: 6px; justify-content: space-between;">
+                    <div style="display: flex; gap: 4px; justify-content: space-between; flex-wrap: wrap;">
                         <button type="button" class="btn-dia-pill" data-dia="Segunda">Seg</button>
                         <button type="button" class="btn-dia-pill" data-dia="Terça">Ter</button>
                         <button type="button" class="btn-dia-pill" data-dia="Quarta">Qua</button>
                         <button type="button" class="btn-dia-pill" data-dia="Quinta">Qui</button>
                         <button type="button" class="btn-dia-pill" data-dia="Sexta">Sex</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Sábado">Sáb</button>
                     </div>
                 </div>
 
@@ -369,6 +370,19 @@
                     <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
                 </div>
 
+                <!-- Seleção Unificada de Dia de Semana Único -->
+                <div class="form-grupo-spa" id="containerDiaRecorrenteUnico" style="display: none; margin-bottom: 14px;">
+                    <label for="recorrenciaDiaSemana">Dia da Semana Fixo *</label>
+                    <select id="recorrenciaDiaSemana" required>
+                        <option value="Segunda">Segunda-feira</option>
+                        <option value="Terça">Terça-feira</option>
+                        <option value="Quarta">Quarta-feira</option>
+                        <option value="Quinta">Quinta-feira</option>
+                        <option value="Sexta">Sexta-feira</option>
+                        <option value="Sábado">Sábado</option>
+                    </select>
+                </div>
+
                 <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
                     <button type="button" class="btn btn-secondary" id="btnFecharModalRecorrencia">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Salvar Recorrência</button>
@@ -377,7 +391,7 @@
         </div>
     </div>
 
-    <!-- C. MODAL DE EDIÇÃO DE COMPROMISSO (Com Badge Informativa de Tipo) -->
+    <!-- C. MODAL DE EDIÇÃO DE COMPROMISSO -->
     <div class="modal-overlay" id="modalAcaoSlot" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -391,7 +405,7 @@
                 <!-- Informações do dia -->
                 <p id="editInfoDia" style="font-size: 0.8rem; color: #FFF; margin-bottom: 15px; font-weight: 600;"></p>
 
-                <!-- Permite alterar o Dia da Semana somente se o compromisso for RECORRENTE -->
+                <!-- Permite alterar o Dia da Semana se o compromisso for RECORRENTE -->
                 <div class="form-grupo-spa" id="editDiaSemanaContainer" style="display: none; margin-bottom: 14px;">
                     <label for="editDiaSemana">Dia da Semana *</label>
                     <select id="editDiaSemana">
@@ -400,6 +414,7 @@
                         <option value="Quarta">Quarta-feira</option>
                         <option value="Quinta">Quinta-feira</option>
                         <option value="Sexta">Sexta-feira</option>
+                        <option value="Sábado">Sábado</option>
                     </select>
                 </div>
 

@@ -47,10 +47,11 @@ window.atualizarDashboardStats = function() {
     if (elAulasRepor) elAulasRepor.textContent = aulasParaRepor.length;
 };
 
+// CORREÇÃO: Mapeamento direto de dia index do JavaScript para consistência total da AtivaMente
 window.getDiaTextoSelecionado = function() {
     const diaIndex = dataSelecionada.getDay();
-    if (typeof DIAS !== 'undefined' && diaIndex >= 1 && diaIndex <= 5) return DIAS[diaIndex - 1];
-    return diaIndex === 0 ? 'Domingo' : 'Sábado';
+    const diasMapeados = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    return diasMapeados[diaIndex];
 };
 
 // Renderiza em slots de 30m agrupados visualmente para compromissos mais longos
@@ -69,12 +70,39 @@ window.renderizarAgendaDia = function() {
         return horaInt >= inicio && horaInt < fim;
     });
 
+    const agora = new Date();
+    const agoraMinutos = agora.getHours() * 60 + agora.getMinutes();
+    const ehHoje = dataSelecionada.toDateString() === agora.toDateString();
+
     let i = 0;
+    let slotAtualIdSetado = false;
+
     while (i < slotsDoDia.length) {
         const horaStr = slotsDoDia[i];
         
+        // Determina se este slot específico representa o momento atual do sistema
+        const [slotH, slotM] = horaStr.split(':').map(Number);
+        const slotMinutos = slotH * 60 + slotM;
+        const ehSlotMomentoAtual = ehHoje && (agoraMinutos >= slotMinutos && agoraMinutos < slotMinutos + 30);
+
         // Busca compromisso respeitando o novo motor unificado do Canvas
         const compromisso = aulas.find(a => window.checarCompromissoNaData(a, dataSelecionada, horaStr));
+
+        // Verifica se o compromisso engloba o horário atual do sistema
+        let ehCompromissoNoMomentoAtual = false;
+        if (compromisso && ehHoje) {
+            const [cIniH, cIniM] = compromisso.horarioInicio.split(':').map(Number);
+            const [cFimH, cFimM] = compromisso.horarioFim.split(':').map(Number);
+            const cIniMin = cIniH * 60 + cIniM;
+            const cFimMin = cFimH * 60 + cFimM;
+            ehCompromissoNoMomentoAtual = agoraMinutos >= cIniMin && agoraMinutos < cFimMin;
+        }
+
+        const destacarLinha = ehSlotMomentoAtual || ehCompromissoNoMomentoAtual;
+        const atribuirIdScroll = destacarLinha && !slotAtualIdSetado;
+        if (atribuirIdScroll) {
+            slotAtualIdSetado = true;
+        }
 
         if (compromisso) {
             let cardHtml = '';
@@ -112,8 +140,11 @@ window.renderizarAgendaDia = function() {
             }
 
             html += `
-                <div class="agenda-dia-linha">
-                    <div class="agenda-dia-horario">${horaStr}</div>
+                <div class="agenda-dia-linha ${destacarLinha ? 'linha-hora-atual' : ''}" ${atribuirIdScroll ? 'id="slot-hora-atual"' : ''}>
+                    <div class="agenda-dia-horario">
+                        ${horaStr}
+                        ${destacarLinha ? '<span class="pulse-indicador-agora"></span>' : ''}
+                    </div>
                     ${cardHtml}
                 </div>
             `;
@@ -123,8 +154,11 @@ window.renderizarAgendaDia = function() {
             }
         } else {
             html += `
-                <div class="agenda-dia-linha">
-                    <div class="agenda-dia-horario">${horaStr}</div>
+                <div class="agenda-dia-linha ${destacarLinha ? 'linha-hora-atual' : ''}" ${atribuirIdScroll ? 'id="slot-hora-atual"' : ''}>
+                    <div class="agenda-dia-horario">
+                        ${horaStr}
+                        ${destacarLinha ? '<span class="pulse-indicador-agora"></span>' : ''}
+                    </div>
                     <div class="agenda-dia-vago" onclick="abrirAgendamentoModal('${diaTexto}', '${horaStr}')">
                         <span class="agenda-dia-vago-texto"><i class="fa-regular fa-calendar-plus" style="color: #FFD700;"></i> Vago — Toque para agendar</span>
                     </div>
@@ -135,6 +169,16 @@ window.renderizarAgendaDia = function() {
     }
 
     grid.innerHTML = html;
+
+    // Rola suavemente até o momento atual se estiver visualizando o dia de hoje
+    if (ehHoje && slotAtualIdSetado) {
+        setTimeout(() => {
+            const elAtual = document.getElementById('slot-hora-atual');
+            if (elAtual) {
+                elAtual.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 300);
+    }
 };
 
 // Soma minutos a uma string de horário (ex: "18:30" + 90 -> "20:00")
@@ -219,7 +263,7 @@ window.selecionarTipoAgendamento = function(tipo) {
     }
 };
 
-// NOVO: ATIVA INTERAÇÃO NOS BOTÕES DE SELEÇÃO MÚLTIPLA DE DIA (Outlook Style)
+// ATIVA INTERAÇÃO NOS BOTÕES DE SELEÇÃO MÚLTIPLA DE DIA (Outlook Style)
 window.inicializarMultiSelectPills = function() {
     document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill').forEach(btn => {
         // Remove listeners duplicados recriando o botão
@@ -241,7 +285,7 @@ window.inicializarMultiSelectPills = function() {
     }
 };
 
-// NOVO: ATUALIZA RESUMO EXPLICATIVO DINÂMICO DA RECORRÊNCIA (Outlook Style)
+// ATUALIZA RESUMO EXPLICATIVO DINÂMICO DA RECORRÊNCIA (Outlook Style)
 window.atualizarTextoPreviewRecorrencia = function() {
     const padrao = document.getElementById('recorrenciaPadrao').value;
     const intervalo = parseInt(document.getElementById('recorrenciaIntervalo').value) || 1;
@@ -254,7 +298,7 @@ window.atualizarTextoPreviewRecorrencia = function() {
 
     let msg = "";
     if (padrao === 'diaria') {
-        msg = `Repetir a cada ${intervalo} dia(s) útil/úteis (Segunda a Sexta-feira) sem interrupções.`;
+        msg = `Repetir a cada ${intervalo} dia(s) útil/úteis (Segunda a Sábado) sem interrupções.`;
     } else if (padrao === 'semanal') {
         const diasStr = diasSelecionados.length > 0 ? diasSelecionados.join(', ') : "[Nenhum selecionado]";
         msg = `Repetir a cada ${intervalo} semana(s) na(s) seguinte(s) data(s): ${diasStr}.`;
@@ -270,7 +314,7 @@ window.atualizarTextoPreviewRecorrencia = function() {
     }
 };
 
-// NOVO: ALTERNA VISUALIZAÇÃO DE PADRÕES DINAMICAMENTE NO MODAL
+// ALTERNA VISUALIZAÇÃO DE PADRÕES DINAMICAMENTE NO MODAL
 window.mudarPadraoRecorrencia = function() {
     const padrao = document.getElementById('recorrenciaPadrao').value;
     const containerDias = document.getElementById('containerDiasSemanaRecorrencia');
@@ -307,7 +351,7 @@ window.mudarPadraoRecorrencia = function() {
     window.atualizarTextoPreviewRecorrencia();
 };
 
-// ABRE O NOVO MODAL DE RECORRÊNCIA SEMANAL (OUTLOOK STYLE)
+// ABRE O MODAL DE RECORRÊNCIA SEMANAL (OUTLOOK STYLE)
 window.abrirModalRecorrencia = function() {
     const modal = document.getElementById('modalRecorrencia');
     if (document.getElementById('formRecorrencia')) {
@@ -461,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 frequencia: 'semanal', 
                 tipoRecorrencia: padrao,
                 intervaloRecorrencia: intervalo,
-                dataCriacao: new Date().toISOString() // Data inicial de ancoragem do motor do Canvas
+                dataCriacao: new Date().toISOString() // Data inicial de ancoragem do motor
             };
 
             if (tipo === 'aula') {
@@ -528,8 +572,8 @@ window.abrirModalAcaoSlot = function(id) {
     selectInicio.innerHTML = optionsHtml;
     selectInicio.value = compromisso.horarioInicio;
 
-    const minutos = window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim);
-    selectDuracao.value = minutos.toString();
+    const minutes = window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim);
+    selectDuracao.value = minutes.toString();
 
     const tipo = compromisso.tipo || 'aula';
     const camposAula = document.getElementById('editCamposTipoAula');
@@ -624,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnMandarReposicao = document.getElementById('btnMandarParaReposicao');
     if (btnMandarReposicao) {
         btnMandarReposicao.addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            const compromisso = aulas.find(a => a.id !== idCompromissoSelecionado);
             if (!compromisso) return;
 
             if (confirm("Deseja reagendar esta aula (enviar para fila de reposição)?")) {

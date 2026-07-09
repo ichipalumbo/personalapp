@@ -25,23 +25,36 @@ body {
 }
 
 /* ========================================================
-   [STYLE-HEADER & NAV] - Design Unificado AtivaMente
+   [STYLE-HEADER & NAV] - Design Unificado AtivaMente (Header Fixo Premium)
    ======================================================== */
 .header {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    padding: 20px 15px;
-    border-bottom: 1px solid #1F1F1F;
-    background: #0D0D0D;
+    padding: 16px 15px;
+    background: rgba(13, 13, 13, 0.88);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1.5px solid rgba(255, 215, 0, 0.18);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.65);
     gap: 15px;
     width: 100%;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brand-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 .marca-titulo {
     margin: 0;
-    font-size: 1.8rem;
+    font-size: 1.7rem;
     letter-spacing: -0.5px;
     font-weight: 900;
     text-transform: uppercase;
@@ -61,8 +74,8 @@ body {
 }
 
 .marca-subtitulo {
-    margin: 5px 0 0 0;
-    font-size: 0.8rem;
+    margin: 3px 0 0 0;
+    font-size: 0.75rem;
     font-weight: 400;
     letter-spacing: 1px;
     color: #888888;
@@ -156,19 +169,21 @@ body {
 .btn-success { background: #4CAF50; color: #fff; }
 .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
 
-/* Botões de seleção múltipla de dia da semana (Multi-Select Pills) */
+/* Botões de seleção múltipla de dia da semana */
 .btn-dia-pill {
     flex: 1;
+    min-width: 48px;
     background: #111111;
     color: #A0A0A0;
     border: 1px solid #2D2D2D;
     border-radius: 8px;
-    padding: 10px 4px;
-    font-size: 0.8rem;
+    padding: 10px 2px;
+    font-size: 0.78rem;
     font-weight: 700;
     cursor: pointer;
     text-align: center;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 4px;
 }
 .btn-dia-pill:hover {
     border-color: #444;
@@ -178,7 +193,7 @@ body {
     background: #FFD700 !important;
     color: #0D0D0D !important;
     border-color: #FFD700 !important;
-    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.25);
 }
 
 /* ========================================================
@@ -294,7 +309,7 @@ body {
 }
 
 /* ========================================================
-   [STYLE-AGENDA DIÁRIA] - Visual Premium e Emojis Integrados
+   [STYLE-AGENDA DIÁRIA] - Visual Premium
    ======================================================== */
 .agenda-panel {
     background: #141414;
@@ -431,6 +446,7 @@ body {
     display: grid;
     grid-template-columns: 65px 1fr;
     gap: 10px;
+    transition: all 0.3s ease;
 }
 .agenda-dia-horario {
     background: #0D0D0D;
@@ -443,6 +459,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 .agenda-dia-aula {
     background: #2A2A2A;
@@ -510,6 +527,53 @@ body {
 }
 
 /* ========================================================
+   [STYLE-DESTAQUE DE HORA ATUAL (HOME)]
+   ======================================================== */
+.linha-hora-atual {
+    border: 1.5px solid #FFD700 !important;
+    background: rgba(255, 215, 0, 0.03) !important;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
+    padding: 5px;
+    position: relative;
+}
+
+.linha-hora-atual .agenda-dia-horario {
+    background: #FFD700 !important;
+    color: #0D0D0D !important;
+    border-color: #FFD700 !important;
+    font-weight: 800;
+}
+
+/* Bolinha Pulsante "Agora" */
+.pulse-indicador-agora {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 8px;
+    height: 8px;
+    background-color: #EF5350; /* Vermelho vibrante para contraste visual */
+    border-radius: 50%;
+    box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.7);
+    animation: pulseAgora 1.6s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+@keyframes pulseAgora {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 8px rgba(239, 83, 80, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(239, 83, 80, 0);
+    }
+}
+
+/* ========================================================
    [STYLE-CALENDARIO MENSAL] - Visual Dashboard Informativo
    ======================================================== */
 .calendario-mensal {
@@ -532,7 +596,7 @@ body {
 .calendario-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 3px; /* Pequeno espaçamento entre células */
+    gap: 3px;
 }
 .calendario-grid .dia-header { 
     text-align: center; 
@@ -574,7 +638,7 @@ body {
     color: #FFD700;
 }
 
-/* Novo Destaque de Hoje Premium */
+/* Destaque de Hoje Premium */
 .calendario-grid .dia-cell.hoje {
     border: 1.5px solid #FFD700 !important;
     background: rgba(255, 215, 0, 0.08) !important;
@@ -620,6 +684,20 @@ body {
     background: rgba(239, 83, 80, 0.12);
     color: #EF5350;
     border: 1px solid rgba(239, 83, 80, 0.25);
+}
+
+/* ========================================================
+   [STYLE-DESTAQUE HOJE - VISÃO SEMANAL]
+   ======================================================== */
+.semana-dia-box {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dia-semana-hoje-card {
+    border: 2px solid #FFD700 !important;
+    background: rgba(255, 215, 0, 0.04) !important;
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.12) !important;
+    transform: translateY(-2px);
 }
 
 /* ========================================================
