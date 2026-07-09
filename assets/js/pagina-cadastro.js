@@ -14,6 +14,11 @@ window.inicializarPaginaCadastro = function() {
     window.togglePainelCadastro(false);
 };
 
+// NOVO / CORREÇÃO: Cria o elo de compatibilidade (alias) com a chamada do app.js
+window.inicializarAlunos = function() {
+    window.inicializarPaginaCadastro();
+};
+
 // 2. CONTROLE DO MODAL DE CADASTRO/EDIÇÃO (Abre e fecha de forma limpa)
 window.togglePainelCadastro = function(mostrar) {
     const modal = document.getElementById('modalFormAluno');

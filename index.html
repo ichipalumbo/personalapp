@@ -125,15 +125,17 @@
 
             <!-- CONTAINER 1: VISÃO SEMANAL -->
             <div id="containerCalendarioSemanal" class="agenda-panel" style="display: block;">
-                <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div style="display: flex; flex-direction: column;">
-                        <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
-                        <!-- <span>Resumo de treinos estruturado <i class="fa-solid fa-bolt" style="color: #FFD700;"></i></span> -->
-                    </div>
-                    <div class="mes-nav" style="display: flex; gap: 6px;">
-                        <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">Hoje</button>
-                        <button id="btnSemanaProxima" class="btn btn-secondary btn-sm" title="Próxima Semana"><i class="fa-solid fa-chevron-right"></i></button>
+                <!-- REFAZIMENTO: Grupo Unificado de Cabeçalho Sticky para preservar contexto visual também na Semana -->
+                <div class="agenda-sticky-container">
+                    <div class="mes-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
+                        <div style="display: flex; flex-direction: column;">
+                            <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
+                        </div>
+                        <div class="mes-nav" style="display: flex; gap: 6px;">
+                            <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+                            <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">Hoje</button>
+                            <button id="btnSemanaProxima" class="btn btn-secondary btn-sm" title="Próxima Semana"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
                     </div>
                 </div>
                 <!-- Lista de Blocos Diários da Semana Corrente -->
@@ -507,6 +509,11 @@
             </form>
         </div>
     </div>
+
+    <!-- NOVO: Botão Flutuante Voltar ao Topo Premium -->
+    <button id="btnBackToTop" class="btn-back-to-top" title="Voltar ao Topo">
+        <i class="fa-solid fa-arrow-up"></i>
+    </button>
 
     <div class="toast" id="toast"></div>
 
