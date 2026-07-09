@@ -765,6 +765,25 @@ body {
 }
 
 /* ========================================================
+   [STYLE-MODAL-BADGE] - Badge compacto ajustado à palavra (NOVO)
+   ======================================================== */
+.modal-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 5px 12px;
+    border-radius: 20px;
+    width: auto !important; /* Sobrescreve width estático de mobile */
+    max-width: max-content;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+/* ========================================================
    [STYLE-VOLTAR-AO-TOPO] - Botão Flutuante Premium
    ======================================================== */
 .btn-back-to-top {

@@ -60,7 +60,6 @@ window.renderizarCalendarioMensal = function() {
 };
 
 // 4. RENDERIZADOR DO CALENDÁRIO SEMANAL (Focado em Mobile-First, Empilhado Verticalmente)
-// CORREÇÃO: Resolve a recorrência indesejada filtrando compromissos pela lógica matemática universal unificada do Canvas
 window.renderizarCalendarioSemanal = function() {
     const gridSemanal = document.getElementById('calendarioSemanalGrid');
     const labelPeriodo = document.getElementById('periodoSemanaLabel');
@@ -72,7 +71,7 @@ window.renderizarCalendarioSemanal = function() {
     const dSeg = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
     const segundaFeira = new Date(dataRef.setDate(dSeg));
 
-    // CORREÇÃO: Acha o Sábado da semana de referência (segunda + 5 dias)
+    // Acha o Sábado da semana de referência (segunda + 5 dias)
     const sabado = new Date(segundaFeira);
     sabado.setDate(segundaFeira.getDate() + 5);
 
@@ -91,7 +90,7 @@ window.renderizarCalendarioSemanal = function() {
     // Mapeamento textual dos dias úteis + Sábado
     const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-    // CORREÇÃO: Varre os 6 dias úteis de trabalho (Segunda a Sábado) para desenhar os blocos
+    // Varre os 6 dias úteis de trabalho (Segunda a Sábado) para desenhar os blocos
     for (let d = 0; d < 6; d++) {
         const diaAtual = new Date(segundaFeira);
         diaAtual.setDate(segundaFeira.getDate() + d);
@@ -115,33 +114,55 @@ window.renderizarCalendarioSemanal = function() {
             compromissosDoDia.forEach(comp => {
                 const tipo = comp.tipo || 'aula';
                 const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
-                const labelRecorrente = comp.frequencia === 'semanal' ? ' <i class="fa-solid fa-infinity" style="font-size: 0.65rem; opacity: 0.8;" title="Recorrente"></i>' : '';
+
+                // NOVO: Sistema idêntico de Tags Visuais Premium nos cards para consistência total da SPA
+                let tagVisualHtml = '';
 
                 if (tipo === 'aula') {
-                    const aluno = typeof getAluno === 'function' ? getAluno(comp.alunoId) : null;
+                    const aluno = typeof window.getAluno === 'function' ? window.getAluno(comp.alunoId) : null;
                     const nome = aluno ? aluno.nome : '❓ Aluno Removido';
                     const objetivo = aluno ? aluno.objective || aluno.objetivo : 'Outro';
                     const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
 
-                    // [CORREÇÃO]: Passa a data formatada exata para a ação, assegurando consistência nas exceções de recorrência
+                    if (comp.reagendada || comp.isReposicao) {
+                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(100, 181, 246, 0.15); color: #64B5F6; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
+                    } else if (comp.frequencia === 'semanal') {
+                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
+                    } else {
+                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(129, 199, 132, 0.15); color: #81C784; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
+                    }
+
                     cardsHtml += `
                         <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}${labelRecorrente}</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                                <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                                ${tagVisualHtml}
+                            </div>
                             <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
                             <span class="agenda-dia-aula-detalhes">${objetivo} (${periodo})</span>
                         </div>
                     `;
                 } else if (tipo === 'deslocamento') {
+                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
+                    
                     cardsHtml += `
                         <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento${labelRecorrente}</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                                <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                                ${tagVisualHtml}
+                            </div>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'} (${periodo})</span>
                         </div>
                     `;
                 } else if (tipo === 'bloqueio') {
+                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> Bloqueio</span>`;
+
                     cardsHtml += `
                         <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado${labelRecorrente}</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                                <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
+                                ${tagVisualHtml}
+                            </div>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'} (${periodo})</span>
                         </div>
                     `;
@@ -173,7 +194,7 @@ window.renderizarCalendarioSemanal = function() {
 
     gridSemanal.innerHTML = html;
 
-    // CORREÇÃO: Auto-Rolagem Inteligente (Auto-Scroll) para focar no dia de hoje automaticamente
+    // Auto-Rolagem Inteligente (Auto-Scroll) para focar no dia de hoje automaticamente
     setTimeout(() => {
         const hojeEl = document.getElementById('semana-dia-hoje-elemento');
         if (hojeEl) {
@@ -235,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const hoje = new Date();
             if (typeof mesAtual !== 'undefined') mesAtual = hoje.getMonth();
             if (typeof anoAtual !== 'undefined') anoAtual = hoje.getFullYear();
-            window.renderizarCalendarioMensal();
+            window.renderizarCalendarioMesal();
         });
     }
 

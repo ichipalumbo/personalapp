@@ -11,6 +11,17 @@ let slotSelecionadoDiaTexto = "";
 // Variável para rastrear a data alvo de uma ação unificada de cancelamento/reagendamento
 window.dataAlvoAcaoStr = null;
 
+// Variável para controlar se o agendamento atual é uma reposição que veio do balde
+window.reposicaoIdEmReagendamento = null;
+
+// Helper global para buscar dados de aluno com segurança em qualquer escopo
+window.getAluno = function(id) {
+    if (typeof alunos !== 'undefined') {
+        return alunos.find(a => a.id === id);
+    }
+    return null;
+};
+
 window.inicializarHome = function() {
     if (typeof carregarDados === 'function') carregarDados();
     
@@ -38,7 +49,6 @@ window.atualizarDataAtual = function() {
 window.atualizarDashboardStats = function() {
     const elAulasHoje = document.getElementById('totalAulasHoje');
     const elAulasRepor = document.getElementById('totalAulasRepor');
-    const diaTexto = window.getDiaTextoSelecionado();
 
     if (elAulasHoje && typeof aulas !== 'undefined') {
         const aulasHoje = aulas.filter(a => {
@@ -50,7 +60,7 @@ window.atualizarDashboardStats = function() {
     if (elAulasRepor) elAulasRepor.textContent = aulasParaRepor.length;
 };
 
-// CORREÇÃO: Mapeamento direto de dia index do JavaScript para consistência total da AtivaMente
+// Mapeamento direto de dia index do JavaScript para consistência total da AtivaMente
 window.getDiaTextoSelecionado = function() {
     const diaIndex = dataSelecionada.getDay();
     const diasMapeados = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
@@ -111,32 +121,56 @@ window.renderizarAgendaDia = function() {
             let cardHtml = '';
             const tipo = compromisso.tipo || 'aula';
             const periodoExibicao = `${compromisso.horarioInicio} - ${compromisso.horarioFim}`;
-            const labelRecorrente = compromisso.frequencia === 'semanal' ? ' <i class="fa-solid fa-infinity" style="font-size: 0.65rem; opacity: 0.8;" title="Recorrente"></i>' : '';
+
+            // NOVO: Sistema inteligente de Tags Visuais Premium nos cards
+            let tagVisualHtml = '';
 
             if (tipo === 'aula') {
-                const aluno = typeof getAluno === 'function' ? getAluno(compromisso.alunoId) : null;
+                const aluno = window.getAluno(compromisso.alunoId);
                 const nome = aluno ? aluno.nome : '❓ Aluno Removido';
                 const objetivo = aluno ? aluno.objetivo : 'Outro';
                 const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
+
+                // Classificação visual de acordo com o tipo real do agendamento
+                if (compromisso.reagendada || compromisso.isReposicao) {
+                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(100, 181, 246, 0.15); color: #64B5F6; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
+                } else if (compromisso.frequencia === 'semanal') {
+                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
+                } else {
+                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(129, 199, 132, 0.15); color: #81C784; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
+                }
                 
                 cardHtml = `
                     <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}${labelRecorrente}</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                            ${tagVisualHtml}
+                        </div>
                         <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
                         <span class="agenda-dia-aula-detalhes">${objetivo} (${periodoExibicao})</span>
                     </div>
                 `;
             } else if (tipo === 'deslocamento') {
+                tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
+                
                 cardHtml = `
                     <div class="agenda-dia-aula slot-deslocamento" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento${labelRecorrente}</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                            ${tagVisualHtml}
+                        </div>
                         <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || 'Trânsito'} (${periodoExibicao})</span>
                     </div>
                 `;
             } else if (tipo === 'bloqueio') {
+                tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> Bloqueio</span>`;
+
                 cardHtml = `
                     <div class="agenda-dia-aula slot-bloqueado" onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                        <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado${labelRecorrente}</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
+                            ${tagVisualHtml}
+                        </div>
                         <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || 'Compromisso'} (${periodoExibicao})</span>
                     </div>
                 `;
@@ -193,7 +227,7 @@ window.somarMinutos = function(horaStr, minutos) {
     return `${novaHora.toString().padStart(2, '0')}:${novosMinutos.toString().padStart(2, '0')}`;
 };
 
-// Calcula a diferença em minutos entre dois horários "HH:MM"
+// Calculates the difference in minutes between two "HH:MM" hours
 window.diferencaMinutos = function(inicio, fim) {
     const [hI, mI] = inicio.split(':').map(Number);
     const [hF, mF] = fim.split(':').map(Number);
@@ -279,7 +313,6 @@ window.inicializarMultiSelectPills = function() {
         });
     });
 
-    // Escuta mudanças nos inputs numéricos e seletores do modal recorrente
     const inputIntervalo = document.getElementById('recorrenciaIntervalo');
     if (inputIntervalo) {
         inputIntervalo.addEventListener('input', () => {
@@ -454,6 +487,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 frequencia: 'uma_vez' // Estritamente único!
             };
 
+            // Se for uma reposição de aula vinda do balde, adicionamos a marcação e limpamos a fila
+            if (window.reposicaoIdEmReagendamento) {
+                novoCompromisso.isReposicao = true;
+                novoCompromisso.reagendada = true;
+                
+                aulasParaRepor = aulasParaRepor.filter(r => r.id !== window.reposicaoIdEmReagendamento);
+                window.reposicaoIdEmReagendamento = null; 
+            }
+
             if (tipo === 'aula') {
                 const alunoId = document.getElementById('agendaAluno').value;
                 if (!alunoId) return;
@@ -469,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('modalAgendamento').style.display = 'none';
             window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Agendado com sucesso!');
+            if (typeof mostrarToast === 'function') mostrarToast('✅ Reagendado com sucesso!');
         });
     }
 
@@ -534,6 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('btnFecharModal')) {
         document.getElementById('btnFecharModal').addEventListener('click', () => {
             document.getElementById('modalAgendamento').style.display = 'none';
+            window.reposicaoIdEmReagendamento = null; // Limpa estado de reposição se cancelar
         });
     }
 });
@@ -556,13 +599,36 @@ window.abrirModalAcaoSlot = function(id) {
     const acoesUnico = document.getElementById('acoesCompromissoUnico');
     const acoesRecorrente = document.getElementById('acoesCompromissoRecorrente');
 
-    // [MODIFICADO]: Ajustes finos de visualização para lidar com a herança de data
-    const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+    // Elementos e containers dos botões de reagendamento para modificação dinâmica de layout
+    const btnMandarReposicao = document.getElementById('btnMandarParaReposicao');
+    const btnReagendarInstancia = document.getElementById('btnReagendarInstancia');
+    const recorrenteTopRow = document.querySelector('#acoesCompromissoRecorrente > div');
 
+    const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+    const tipo = compromisso.tipo || 'aula';
+
+    // MODIFICADO: Remove a opção de "reagendar/reposição" para bloqueios e deslocamentos
+    if (tipo !== 'aula') {
+        // Se for deslocamento ou bloqueio, oculta botões de reposição e ajusta colunas para preenchimento simétrico
+        if (btnMandarReposicao) btnMandarReposicao.style.display = 'none';
+        if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'none';
+        
+        if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr';
+        if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr';
+    } else {
+        // Se for aula de aluno, exibe normalmente os botões e restaura grid simétrico (duas colunas)
+        if (btnMandarReposicao) btnMandarReposicao.style.display = 'inline-flex';
+        if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'inline-flex';
+        
+        if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr 1fr';
+        if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr 1fr';
+    }
+
+    // CORREÇÃO: Usando a nova classe .modal-badge para que ela siga e abrace o tamanho do texto (width: auto)
     if (freq === 'semanal') {
         const padraoNome = compromisso.tipoRecorrencia ? compromisso.tipoRecorrencia.toUpperCase() : "SEMANAL";
         badge.innerHTML = `<i class="fa-solid fa-infinity"></i> ${padraoNome}`;
-        badge.className = "badge-stat-mensal badge-aula"; 
+        badge.className = "modal-badge badge-aula"; 
         
         containerDiaSemana.style.display = 'block';
         document.getElementById('editDiaSemana').value = compromisso.dia || "Segunda";
@@ -573,7 +639,7 @@ window.abrirModalAcaoSlot = function(id) {
         if (acoesRecorrente) acoesRecorrente.style.display = 'flex';
     } else {
         badge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> ÚNICO`;
-        badge.className = "badge-stat-mensal badge-desloc"; 
+        badge.className = "modal-badge badge-desloc"; 
         
         containerDiaSemana.style.display = 'none';
         document.getElementById('editInfoDia').textContent = `Agendado para: ${compromisso.data || compromisso.dia}`;
@@ -593,7 +659,6 @@ window.abrirModalAcaoSlot = function(id) {
     const minutes = window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim);
     selectDuracao.value = minutes.toString();
 
-    const tipo = compromisso.tipo || 'aula';
     const camposAula = document.getElementById('editCamposTipoAula');
     const camposBloqueio = document.getElementById('editCamposTipoBloqueio');
 
@@ -774,6 +839,36 @@ window.togglePainelReposicoes = function() {
     }
 };
 
+// NOVO: Abre fluxo para reagendar um aluno que está na fila de reposição
+window.iniciarReagendamentoReposicao = function(id) {
+    const rep = aulasParaRepor.find(r => r.id === id);
+    if (!rep) return;
+
+    // Define a reposição ativa que será resolvida ao salvar
+    window.reposicaoIdEmReagendamento = id;
+
+    // Aciona abertura da tela padrão de agendamento no dia de hoje às 08:00 (ou hora padrão vaga)
+    const diaTexto = window.getDiaTextoSelecionado();
+    window.abrirAgendamentoModal(diaTexto, "08:00");
+
+    // Trava no modo aula e seleciona o aluno correspondente
+    window.selecionarTipoAgendamento('aula');
+    
+    const selectAluno = document.getElementById('agendaAluno');
+    if (selectAluno) {
+        selectAluno.value = rep.alunoId;
+    }
+
+    // Customiza cabeçalho do agendamento para feedback da personal
+    const helper = document.getElementById('infoHorarioAlvo');
+    if (helper) {
+        const alunoObj = window.getAluno(rep.alunoId);
+        const alunoNome = alunoObj ? alunoObj.nome : 'Aluno';
+        helper.innerHTML = `<span style="color: #64B5F6; font-weight: 800;"><i class="fa-solid fa-arrows-rotate"></i> REAGENDANDO REPOSIÇÃO</span><br>${alunoNome} — Escolha dia/hora`;
+    }
+};
+
+// RENDERIZAÇÃO DA FILA DE REPOSIÇÕES COM BOTÃO DE REAGENDAR E DESCARTAR
 window.renderizarListaReposicoes = function() {
     const container = document.getElementById('listaReposicoesPendentes');
     if (!container) return;
@@ -782,16 +877,24 @@ window.renderizarListaReposicoes = function() {
         return;
     }
     container.innerHTML = aulasParaRepor.map(rep => {
-        const aluno = typeof getAluno === 'function' ? getAluno(rep.alunoId) : null;
+        const aluno = window.getAluno(rep.alunoId);
         return `
-            <div class="aluno-card" style="border-left-color: #FF5252; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #222;">
-                <div>
-                    <strong style="display: block; color: #FFF; font-size: 0.9rem;">${aluno ? aluno.nome : 'Aluno'}</strong>
-                    <span style="font-size: 0.72rem; color: #FF5252; font-weight: 600;">Cancelada em ${rep.dataCancelamento}</span>
+            <div class="aluno-card" style="border-left-color: #FF5252; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: #222;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <strong style="display: block; color: #FFF; font-size: 0.9rem;">${aluno ? aluno.nome : 'Aluno'}</strong>
+                        <span style="font-size: 0.72rem; color: #FF5252; font-weight: 600;">Cancelada em ${rep.dataCancelamento}</span>
+                    </div>
                 </div>
-                <button class="btn btn-secondary btn-sm" onclick="resolverReposicao('${rep.id}')" style="background: #FF5252; color: #FFF; border: none;">
-                    <i class="fa-solid fa-check"></i> Resolvido
-                </button>
+                <!-- NOVO: Ações completas para reencaixar na agenda ou descartar caso seja resolvido verbalmente -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <button class="btn btn-primary btn-sm" onclick="iniciarReagendamentoReposicao('${rep.id}')" style="background: #FFD700; color: #0D0D0D; font-size: 0.7rem; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-calendar-check"></i> Reagendar
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="resolverReposicao('${rep.id}')" style="background: #111; color: #AAA; border: 1px solid #333; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-trash"></i> Descartar
+                    </button>
+                </div>
             </div>
         `;
     }).join('');
