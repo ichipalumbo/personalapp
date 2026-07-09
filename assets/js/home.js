@@ -8,6 +8,9 @@ const DIAS_DA_SEMANA = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feir
 let slotSelecionadoHora = "";
 let slotSelecionadoDiaTexto = "";
 
+// Variável para rastrear a data alvo de uma ação unificada de cancelamento/reagendamento
+window.dataAlvoAcaoStr = null;
+
 window.inicializarHome = function() {
     if (typeof carregarDados === 'function') carregarDados();
     
@@ -28,8 +31,8 @@ window.atualizarDataAtual = function() {
     const dia = String(dataSelecionada.getDate()).padStart(2, '0');
     const mes = String(dataSelecionada.getMonth() + 1).padStart(2, '0');
     const nomeDia = DIAS_DA_SEMANA[dataSelecionada.getDay()];
-    
-    elementoData.innerHTML = `<i class="fa-regular fa-calendar-check" style="color: #FFD700; margin-right: 8px;"></i>${nomeDia}, <span style="color: #FFD700; font-weight: 800;">${dia}/${mes}</span>`;
+
+    elementoData.innerHTML = `<i class="fa-solid fa-calendar-minus" style="color: #FFD700; margin-right: 8px;"></i>${nomeDia} <span style="color: #FFD700; font-weight: 800;">(${dia}/${mes})</span>`;
 };
 
 window.atualizarDashboardStats = function() {
@@ -505,6 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 frequencia: 'semanal', 
                 tipoRecorrencia: padrao,
                 intervaloRecorrencia: intervalo,
+                excecoes: [], // Armazenará as datas das instâncias canceladas/reagendadas
                 dataCriacao: new Date().toISOString() // Data inicial de ancoragem do motor
             };
 
@@ -549,6 +553,12 @@ window.abrirModalAcaoSlot = function(id) {
     const badge = document.getElementById('badgeTipoCompromisso');
     const containerDiaSemana = document.getElementById('editDiaSemanaContainer');
 
+    const acoesUnico = document.getElementById('acoesCompromissoUnico');
+    const acoesRecorrente = document.getElementById('acoesCompromissoRecorrente');
+
+    // [MODIFICADO]: Ajustes finos de visualização para lidar com a herança de data
+    const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+
     if (freq === 'semanal') {
         const padraoNome = compromisso.tipoRecorrencia ? compromisso.tipoRecorrencia.toUpperCase() : "SEMANAL";
         badge.innerHTML = `<i class="fa-solid fa-infinity"></i> ${padraoNome}`;
@@ -556,13 +566,21 @@ window.abrirModalAcaoSlot = function(id) {
         
         containerDiaSemana.style.display = 'block';
         document.getElementById('editDiaSemana').value = compromisso.dia || "Segunda";
-        document.getElementById('editInfoDia').textContent = `Frequência unificada na semana`;
+        document.getElementById('editInfoDia').textContent = `Série Recorrente • Gerenciando dia: ${dataAlvoStr}`;
+
+        // Exibe o painel de botões customizados de recorrência
+        if (acoesUnico) acoesUnico.style.display = 'none';
+        if (acoesRecorrente) acoesRecorrente.style.display = 'flex';
     } else {
         badge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> ÚNICO`;
         badge.className = "badge-stat-mensal badge-desloc"; 
         
         containerDiaSemana.style.display = 'none';
         document.getElementById('editInfoDia').textContent = `Agendado para: ${compromisso.data || compromisso.dia}`;
+
+        // Exibe o painel de botões clássico para compromissos unitários
+        if (acoesUnico) acoesUnico.style.display = 'grid';
+        if (acoesRecorrente) acoesRecorrente.style.display = 'none';
     }
     
     const selectInicio = document.getElementById('editHoraInicio');
@@ -578,12 +596,10 @@ window.abrirModalAcaoSlot = function(id) {
     const tipo = compromisso.tipo || 'aula';
     const camposAula = document.getElementById('editCamposTipoAula');
     const camposBloqueio = document.getElementById('editCamposTipoBloqueio');
-    const btnRepor = document.getElementById('btnMandarParaReposicao');
 
     if (tipo === 'aula') {
         camposAula.style.display = 'block';
         camposBloqueio.style.display = 'none';
-        btnRepor.style.display = 'block'; 
 
         const selectAluno = document.getElementById('editAluno');
         if (selectAluno) {
@@ -593,11 +609,9 @@ window.abrirModalAcaoSlot = function(id) {
     } else if (tipo === 'deslocamento') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'none';
-        btnRepor.style.display = 'none'; 
     } else if (tipo === 'bloqueio') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'block';
-        btnRepor.style.display = 'none'; 
         document.getElementById('editDescricao').value = compromisso.descricao || '';
     }
 
@@ -649,42 +663,103 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Cancelar (Excluir definitivamente)
+    // ========================================================
+    // [TAG-JS-ACOES-SLOTS] - Lógica Refinada de Cancelamentos/Reagendamentos
+    // ========================================================
+
+    // 1. CANCELAR COMPROMISSO ÚNICO (Exclusão total do registro unitário)
     const btnDeletar = document.getElementById('btnDeletarDefinitivo');
     if (btnDeletar) {
         btnDeletar.addEventListener('click', () => {
-            if (confirm("Deseja realmente cancelar este compromisso definitivamente?")) {
-                aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
-                if (typeof salvarDados === 'function') salvarDados();
-                
-                window.fecharModalAcaoSlot();
-                window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('Compromisso cancelado.');
-            }
+            aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
+            if (typeof salvarDados === 'function') salvarDados();
+            
+            window.fecharModalAcaoSlot();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('🗑️ Compromisso único cancelado!');
         });
     }
 
-    // Reagendar (Enviar para reposição pendente)
+    // 2. REAGENDAR COMPROMISSO ÚNICO (Mandar unitário para fila de reposição e deletar)
     const btnMandarReposicao = document.getElementById('btnMandarParaReposicao');
     if (btnMandarReposicao) {
         btnMandarReposicao.addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id !== idCompromissoSelecionado);
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
             if (!compromisso) return;
 
-            if (confirm("Deseja reagendar esta aula (enviar para fila de reposição)?")) {
-                aulasParaRepor.push({
-                    id: Date.now().toString(),
-                    alunoId: compromisso.alunoId,
-                    dataCancelamento: new Date().toLocaleDateString('pt-BR')
-                });
-                
-                aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
-                if (typeof salvarDados === 'function') salvarDados();
+            aulasParaRepor.push({
+                id: Date.now().toString(),
+                alunoId: compromisso.alunoId,
+                dataCancelamento: compromisso.data || new Date().toLocaleDateString('pt-BR')
+            });
+            
+            aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
+            if (typeof salvarDados === 'function') salvarDados();
 
-                window.fecharModalAcaoSlot();
-                window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula enviada para reposição!');
+            window.fecharModalAcaoSlot();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula única enviada para reposição!');
+        });
+    }
+
+    // 3. CANCELAR APENAS HOJE (Recorrente - Adiciona exceção sem quebrar a série)
+    const btnDeletarInstancia = document.getElementById('btnDeletarInstancia');
+    if (btnDeletarInstancia) {
+        btnDeletarInstancia.addEventListener('click', () => {
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            if (!compromisso) return;
+
+            const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+            if (!compromisso.excecoes) compromisso.excecoes = [];
+            if (!compromisso.excecoes.includes(dataAlvoStr)) {
+                compromisso.excecoes.push(dataAlvoStr);
             }
+
+            if (typeof salvarDados === 'function') salvarDados();
+            
+            window.fecharModalAcaoSlot();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast(`📅 Aula de ${dataAlvoStr} cancelada!`);
+        });
+    }
+
+    // 4. REAGENDAR APENAS HOJE (Recorrente - Adiciona exceção hoje E envia o aluno para reposição)
+    const btnReagendarInstancia = document.getElementById('btnReagendarInstancia');
+    if (btnReagendarInstancia) {
+        btnReagendarInstancia.addEventListener('click', () => {
+            const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+            if (!compromisso) return;
+
+            const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
+            if (!compromisso.excecoes) compromisso.excecoes = [];
+            if (!compromisso.excecoes.includes(dataAlvoStr)) {
+                compromisso.excecoes.push(dataAlvoStr);
+            }
+
+            aulasParaRepor.push({
+                id: Date.now().toString(),
+                alunoId: compromisso.alunoId,
+                dataCancelamento: dataAlvoStr
+            });
+
+            if (typeof salvarDados === 'function') salvarDados();
+            
+            window.fecharModalAcaoSlot();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
+        });
+    }
+
+    // 5. CANCELAR SÉRIE COMPLETA (Recorrente - Remove o registro mestre de recorrência)
+    const btnDeletarSerie = document.getElementById('btnDeletarSerie');
+    if (btnDeletarSerie) {
+        btnDeletarSerie.addEventListener('click', () => {
+            aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
+            if (typeof salvarDados === 'function') salvarDados();
+            
+            window.fecharModalAcaoSlot();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('🗑️ Série recorrente excluída do calendário!');
         });
     }
 });
@@ -723,11 +798,9 @@ window.renderizarListaReposicoes = function() {
 };
 
 window.resolverReposicao = function(id) {
-    if (confirm("Dar baixa nesta reposição?")) {
-        aulasParaRepor = aulasParaRepor.filter(r => r.id !== id);
-        if (typeof salvarDados === 'function') salvarDados();
-        window.inicializarHome();
-    }
+    aulasParaRepor = aulasParaRepor.filter(r => r.id !== id);
+    if (typeof salvarDados === 'function') salvarDados();
+    window.inicializarHome();
 };
 
 document.addEventListener('DOMContentLoaded', () => {

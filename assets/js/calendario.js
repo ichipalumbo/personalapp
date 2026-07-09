@@ -15,6 +15,11 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     const diaTexto = diasUteisMap[diaSemana - 1];
     const dataStr = dataAlvo.toLocaleDateString('pt-BR');
     
+    // --- ADICIONADO: Filtro unificado de exceções de recorrência (exclui datas específicas canceladas/reagendadas) ---
+    if (comp.excecoes && comp.excecoes.includes(dataStr)) {
+        return false;
+    }
+    
     if (comp.frequencia === 'semanal') {
         if (comp.tipoRecorrencia) {
             const dataCriacao = comp.dataCriacao ? new Date(comp.dataCriacao) : new Date(2026, 0, 1);

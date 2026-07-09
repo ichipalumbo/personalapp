@@ -83,7 +83,7 @@ window.renderizarCalendarioSemanal = function() {
         const dSabStr = String(sabado.getDate()).padStart(2, '0');
         const mSabStr = String(sabado.getMonth() + 1).padStart(2, '0');
         const anoRef = segundaFeira.getFullYear();
-        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i>Semana: <span style="color: #FFD700;">${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}</span> de ${anoRef}`;
+        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i><span style="color: #FFD700;"> ${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}</span> de ${anoRef}`;
     }
 
     let html = '';
@@ -99,6 +99,7 @@ window.renderizarCalendarioSemanal = function() {
         const diaTexto = diasUteisMap[d];
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
+        const dataAlvoFormatada = diaAtual.toLocaleDateString('pt-BR');
 
         // Identifica se a célula sendo renderizada é HOJE
         const ehHoje = diaAtual.toDateString() === new Date().toDateString();
@@ -122,8 +123,9 @@ window.renderizarCalendarioSemanal = function() {
                     const objetivo = aluno ? aluno.objective || aluno.objetivo : 'Outro';
                     const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
 
+                    // [CORREÇÃO]: Passa a data formatada exata para a ação, assegurando consistência nas exceções de recorrência
                     cardsHtml += `
-                        <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
+                        <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
                             <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
                             <span class="agenda-dia-aula-detalhes">${objetivo} (${periodo})</span>
@@ -131,14 +133,14 @@ window.renderizarCalendarioSemanal = function() {
                     `;
                 } else if (tipo === 'deslocamento') {
                     cardsHtml += `
-                        <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
+                        <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
                             <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'} (${periodo})</span>
                         </div>
                     `;
                 } else if (tipo === 'bloqueio') {
                     cardsHtml += `
-                        <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
+                        <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
                             <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'} (${periodo})</span>
                         </div>
@@ -181,7 +183,10 @@ window.renderizarCalendarioSemanal = function() {
 };
 
 // 5. ATIVAÇÃO DE AÇÕES DO CARD CLICADO (Compartilhado com o modal de exclusão/reagendamento da Home)
-window.abrirCalendarioAcaoSlot = function(id, diaTexto) {
+window.abrirCalendarioAcaoSlot = function(id, dataStr) {
+    // Define a data alvo do calendário de forma segura na série para não perder contexto
+    window.dataAlvoAcaoStr = dataStr;
+
     if (typeof idCompromissoSelecionado !== 'undefined') {
         idCompromissoSelecionado = id;
     }
@@ -190,12 +195,13 @@ window.abrirCalendarioAcaoSlot = function(id, diaTexto) {
         abrirModalAcaoSlot(id);
     }
     
-    // Sobrescreve a escuta de finalização para atualizar as duas visões de calendário imediatamente
+    // Sobrescreve a escuta de finalização para limpar a herança de data e recarregar os dados
     const originalFecharModalAcaoSlot = window.fecharModalAcaoSlot;
     window.fecharModalAcaoSlot = function() {
+        window.dataAlvoAcaoStr = null; // Limpa o estado
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
         window.renderizarCalendarioSemanal();
-        window.renderizarCalendarioMesal(); // Atualiza contadores
+        if (typeof window.renderizarCalendarioMensal === 'function') window.renderizarCalendarioMensal();
     };
 };
 
