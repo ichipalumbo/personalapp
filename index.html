@@ -278,7 +278,7 @@
         </div>
     </div>
 
-    <!-- B. NOVO: MODAL DE CADASTRO/AGENDAMENTO EXCLUSIVO PARA RECORRÊNCIAS -->
+    <!-- B. NOVO: MODAL DE CADASTRO/AGENDAMENTO EXCLUSIVO PARA RECORRÊNCIAS (OUTLOOK STYLE) -->
     <div class="modal-overlay" id="modalRecorrencia" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <h3><i class="fa-solid fa-infinity" style="color: #FFD700; margin-right: 8px;"></i>Agendar Horário Recorrente</h3>
@@ -298,20 +298,48 @@
             <form id="formRecorrencia">
                 <input type="hidden" id="recorrenciaTipo" value="aula">
                 
-                <!-- Seleção do dia de semana fixo -->
+                <!-- Outlook Style: Padrão de Recorrência -->
                 <div class="form-grupo-spa">
-                    <label for="recorrenciaDiaSemana">Dia da Semana Fixo *</label>
-                    <select id="recorrenciaDiaSemana" required>
-                        <option value="Segunda">Segunda-feira</option>
-                        <option value="Terça">Terça-feira</option>
-                        <option value="Quarta">Quarta-feira</option>
-                        <option value="Quinta">Quinta-feira</option>
-                        <option value="Sexta">Sexta-feira</option>
+                    <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
+                    <select id="recorrenciaPadrao" onchange="window.mudarPadraoRecorrencia()" required>
+                        <option value="semanal" selected>Semanal</option>
+                        <option value="diaria">Diária</option>
+                        <option value="mensal">Mensal</option>
+                        <option value="anual">Anual</option>
                     </select>
                 </div>
 
+                <!-- Outlook Style: Intervalo de Repetição -->
+                <div class="form-grupo-spa" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label for="recorrenciaIntervalo">Repetir a cada *</label>
+                        <input type="number" id="recorrenciaIntervalo" value="1" min="1" required style="text-align: center;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label>Unidade</label>
+                        <div id="labelUnidadeRecorrencia" style="height: 45px; display: flex; align-items: center; color: #FFF; font-size: 0.9rem; font-weight: 700; background: #0D0D0D; padding-left: 12px; border: 1px solid #333; border-radius: 8px;">semana(s)</div>
+                    </div>
+                </div>
+
+                <!-- Outlook Style: Seleção Múltipla de Dias da Semana -->
+                <div class="form-grupo-spa" id="containerDiasSemanaRecorrencia" style="margin-bottom: 16px;">
+                    <label style="margin-bottom: 4px;">Selecione os dias da semana *</label>
+                    <div style="display: flex; gap: 6px; justify-content: space-between;">
+                        <button type="button" class="btn-dia-pill" data-dia="Segunda">Seg</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Terça">Ter</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Quarta">Qua</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Quinta">Qui</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Sexta">Sex</button>
+                    </div>
+                </div>
+
+                <!-- Outlook Style: Caixa de Exibição Dinâmica do Resumo -->
+                <div id="infoRecorrenciaMensalAnual" style="background: rgba(255, 215, 0, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 14px; border: 1px dashed rgba(255, 215, 0, 0.2);">
+                    <p style="font-size: 0.75rem; color: #FFD700; margin: 0; line-height: 1.4; font-weight: 600;" id="textoInfoMensalAnual"></p>
+                </div>
+
                 <!-- Escolha de Horário de Início + Duração -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; margin-top: 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="recorrenciaHoraInicio">Início *</label>
                         <select id="recorrenciaHoraInicio" required></select>
@@ -363,7 +391,7 @@
                 <!-- Informações do dia -->
                 <p id="editInfoDia" style="font-size: 0.8rem; color: #FFF; margin-bottom: 15px; font-weight: 600;"></p>
 
-                <!-- CORREÇÃO: Permite alterar o Dia da Semana somente se o compromisso for RECORRENTE -->
+                <!-- Permite alterar o Dia da Semana somente se o compromisso for RECORRENTE -->
                 <div class="form-grupo-spa" id="editDiaSemanaContainer" style="display: none; margin-bottom: 14px;">
                     <label for="editDiaSemana">Dia da Semana *</label>
                     <select id="editDiaSemana">

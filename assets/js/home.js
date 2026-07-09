@@ -18,6 +18,7 @@ window.inicializarHome = function() {
     window.atualizarDashboardStats();
     window.renderizarAgendaDia();
     window.renderizarListaReposicoes();
+    window.inicializarMultiSelectPills();
 };
 
 // Renderiza a data com ícone de calendário flat e realce de cores
@@ -37,17 +38,9 @@ window.atualizarDashboardStats = function() {
     const diaTexto = window.getDiaTextoSelecionado();
 
     if (elAulasHoje && typeof aulas !== 'undefined') {
-        const dataSelecionadaStr = dataSelecionada.toLocaleDateString('pt-BR');
         const aulasHoje = aulas.filter(a => {
             if (a.tipo && a.tipo !== 'aula') return false;
-            
-            if (a.frequencia === 'semanal') {
-                return a.dia === diaTexto;
-            }
-            if (!a.data) {
-                return a.dia === diaTexto;
-            }
-            return a.data === dataSelecionadaStr;
+            return window.checarCompromissoNaData(a, dataSelecionada);
         });
         elAulasHoje.textContent = aulasHoje.length;
     }
@@ -66,7 +59,6 @@ window.renderizarAgendaDia = function() {
     if (!grid) return;
 
     const diaTexto = window.getDiaTextoSelecionado();
-    const dataSelecionadaStr = dataSelecionada.toLocaleDateString('pt-BR');
     let html = '';
 
     const inicio = agendaConfig.horaInicio;
@@ -81,17 +73,8 @@ window.renderizarAgendaDia = function() {
     while (i < slotsDoDia.length) {
         const horaStr = slotsDoDia[i];
         
-        const compromisso = aulas.find(a => {
-            if (a.horarioInicio !== horaStr) return false;
-            
-            if (a.frequencia === 'semanal') {
-                return a.dia === diaTexto;
-            }
-            if (!a.data) {
-                return a.dia === diaTexto;
-            }
-            return a.data === dataSelecionadaStr;
-        });
+        // Busca compromisso respeitando o novo motor unificado do Canvas
+        const compromisso = aulas.find(a => window.checarCompromissoNaData(a, dataSelecionada, horaStr));
 
         if (compromisso) {
             let cardHtml = '';
@@ -236,7 +219,95 @@ window.selecionarTipoAgendamento = function(tipo) {
     }
 };
 
-// NOVO: ABRE O MODAL DE RECORRÊNCIA SEMANAL
+// NOVO: ATIVA INTERAÇÃO NOS BOTÕES DE SELEÇÃO MÚLTIPLA DE DIA (Outlook Style)
+window.inicializarMultiSelectPills = function() {
+    document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill').forEach(btn => {
+        // Remove listeners duplicados recriando o botão
+        const novoBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(novoBtn, btn);
+        
+        novoBtn.addEventListener('click', () => {
+            novoBtn.classList.toggle('active');
+            window.atualizarTextoPreviewRecorrencia();
+        });
+    });
+
+    // Escuta mudanças nos inputs numéricos e seletores do modal recorrente
+    const inputIntervalo = document.getElementById('recorrenciaIntervalo');
+    if (inputIntervalo) {
+        inputIntervalo.addEventListener('input', () => {
+            window.atualizarTextoPreviewRecorrencia();
+        });
+    }
+};
+
+// NOVO: ATUALIZA RESUMO EXPLICATIVO DINÂMICO DA RECORRÊNCIA (Outlook Style)
+window.atualizarTextoPreviewRecorrencia = function() {
+    const padrao = document.getElementById('recorrenciaPadrao').value;
+    const intervalo = parseInt(document.getElementById('recorrenciaIntervalo').value) || 1;
+    const infoText = document.getElementById('textoInfoMensalAnual');
+    
+    const diasSelecionados = [];
+    document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill.active').forEach(btn => {
+        diasSelecionados.push(btn.getAttribute('data-dia'));
+    });
+
+    let msg = "";
+    if (padrao === 'diaria') {
+        msg = `Repetir a cada ${intervalo} dia(s) útil/úteis (Segunda a Sexta-feira) sem interrupções.`;
+    } else if (padrao === 'semanal') {
+        const diasStr = diasSelecionados.length > 0 ? diasSelecionados.join(', ') : "[Nenhum selecionado]";
+        msg = `Repetir a cada ${intervalo} semana(s) na(s) seguinte(s) data(s): ${diasStr}.`;
+    } else if (padrao === 'mensal') {
+        const diasStr = diasSelecionados.length > 0 ? ` na(s) ${diasSelecionados.join(', ')}` : " no mesmo dia";
+        msg = `Repetir a cada ${intervalo} mês(es)${diasStr} (com base no dia da criação do compromisso).`;
+    } else if (padrao === 'anual') {
+        msg = `Repetir a cada ${intervalo} ano(s) no mesmo dia e mês em que foi criado.`;
+    }
+
+    if (infoText) {
+        infoText.innerHTML = `<i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>${msg}`;
+    }
+};
+
+// NOVO: ALTERNA VISUALIZAÇÃO DE PADRÕES DINAMICAMENTE NO MODAL
+window.mudarPadraoRecorrencia = function() {
+    const padrao = document.getElementById('recorrenciaPadrao').value;
+    const containerDias = document.getElementById('containerDiasSemanaRecorrencia');
+    const labelUnidade = document.getElementById('labelUnidadeRecorrencia');
+    const infoContainer = document.getElementById('infoRecorrenciaMensalAnual');
+
+    if (infoContainer) infoContainer.style.display = 'block';
+
+    // Limpa seleções anteriores para evitar contaminações de formulário
+    document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    if (padrao === 'diaria') {
+        containerDias.style.display = 'none';
+        labelUnidade.textContent = 'dia(s)';
+    } else if (padrao === 'semanal') {
+        containerDias.style.display = 'block';
+        labelUnidade.textContent = 'semana(s)';
+        
+        // Pré-seleciona por padrão o dia corrente para agilizar o clique da personal
+        const diaHoje = window.getDiaTextoSelecionado();
+        document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill').forEach(btn => {
+            if (btn.getAttribute('data-dia') === diaHoje) btn.classList.add('active');
+        });
+    } else if (padrao === 'mensal') {
+        containerDias.style.display = 'block';
+        labelUnidade.textContent = 'mês(es)';
+    } else if (padrao === 'anual') {
+        containerDias.style.display = 'none';
+        labelUnidade.textContent = 'ano(s)';
+    }
+
+    window.atualizarTextoPreviewRecorrencia();
+};
+
+// ABRE O NOVO MODAL DE RECORRÊNCIA SEMANAL (OUTLOOK STYLE)
 window.abrirModalRecorrencia = function() {
     const modal = document.getElementById('modalRecorrencia');
     if (document.getElementById('formRecorrencia')) {
@@ -245,19 +316,14 @@ window.abrirModalRecorrencia = function() {
 
     const selectInicio = document.getElementById('recorrenciaHoraInicio');
     const selectDuracao = document.getElementById('recorrenciaDuracao');
-    const selectDia = document.getElementById('recorrenciaDiaSemana');
     
     const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
     selectInicio.innerHTML = optionsHtml;
     selectInicio.value = "08:00";
     selectDuracao.value = "60";
 
-    const diaTexto = window.getDiaTextoSelecionado();
-    if (['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'].includes(diaTexto)) {
-        selectDia.value = diaTexto;
-    } else {
-        selectDia.value = "Segunda";
-    }
+    document.getElementById('recorrenciaPadrao').value = "semanal";
+    document.getElementById('recorrenciaIntervalo').value = "1";
 
     const selectAluno = document.getElementById('recorrenciaAluno');
     if (selectAluno) {
@@ -265,7 +331,9 @@ window.abrirModalRecorrencia = function() {
             alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
     }
 
+    window.mudarPadraoRecorrencia();
     window.selecionarTipoRecorrente('aula');
+    
     if (modal) modal.style.display = 'flex';
 };
 
@@ -358,7 +426,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Gravação do Novo Evento Recorrente
+    // Gravação do Novo Evento Recorrente ( Outlook Style )
     const formRecorrencia = document.getElementById('formRecorrencia');
     if (formRecorrencia) {
         formRecorrencia.addEventListener('submit', (e) => {
@@ -368,15 +436,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const hInicio = document.getElementById('recorrenciaHoraInicio').value;
             const duracaoMinutos = document.getElementById('recorrenciaDuracao').value;
             const hFim = window.somarMinutos(hInicio, duracaoMinutos);
-            const diaSemana = document.getElementById('recorrenciaDiaSemana').value;
+            
+            const padrao = document.getElementById('recorrenciaPadrao').value;
+            const intervalo = parseInt(document.getElementById('recorrenciaIntervalo').value) || 1;
 
+            const diasSelecionados = [];
+            document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill.active').forEach(btn => {
+                diasSelecionados.push(btn.getAttribute('data-dia'));
+            });
+
+            if ((padrao === 'semanal' || padrao === 'mensal') && diasSelecionados.length === 0) {
+                alert("Por favor, selecione ao menos um dia da semana para o padrão semanal/mensal!");
+                return;
+            }
+
+            // Cria o evento recorrente principal de alta fidelidade
             let novoCompromisso = {
                 id: Date.now().toString(),
-                dia: diaSemana,
+                dia: diasSelecionados.length > 0 ? diasSelecionados[0] : "Segunda", 
+                diasSemana: diasSelecionados, // Salva múltiplos dias selecionados
                 horarioInicio: hInicio,
                 horarioFim: hFim,
                 tipo: tipo,
-                frequencia: 'semanal' // Estritamente recorrente semanal!
+                frequencia: 'semanal', 
+                tipoRecorrencia: padrao,
+                intervaloRecorrencia: intervalo,
+                dataCriacao: new Date().toISOString() // Data inicial de ancoragem do motor do Canvas
             };
 
             if (tipo === 'aula') {
@@ -394,7 +479,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('modalRecorrencia').style.display = 'none';
             window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('♾️ Recorrência salva com sucesso!');
+            if (typeof mostrarToast === 'function') mostrarToast('♾️ Recorrência Outlook configurada!');
         });
     }
 
@@ -417,28 +502,25 @@ window.abrirModalAcaoSlot = function(id) {
     const freq = compromisso.frequencia || 'uma_vez';
     document.getElementById('editCompromissoFrequencia').value = freq;
 
-    // Configura a badge de tipo de compromisso
     const badge = document.getElementById('badgeTipoCompromisso');
     const containerDiaSemana = document.getElementById('editDiaSemanaContainer');
 
     if (freq === 'semanal') {
-        badge.innerHTML = `<i class="fa-solid fa-infinity"></i> Recorrente`;
-        badge.className = "badge-stat-mensal badge-aula"; // Estilo amarelo
+        const padraoNome = compromisso.tipoRecorrencia ? compromisso.tipoRecorrencia.toUpperCase() : "SEMANAL";
+        badge.innerHTML = `<i class="fa-solid fa-infinity"></i> ${padraoNome}`;
+        badge.className = "badge-stat-mensal badge-aula"; 
         
-        // Exibe o seletor para permitir mudar o dia de trabalho fixo da recorrência
         containerDiaSemana.style.display = 'block';
-        document.getElementById('editDiaSemana').value = compromisso.dia;
-        document.getElementById('editInfoDia').textContent = `Definido para toda semana`;
+        document.getElementById('editDiaSemana').value = compromisso.dia || "Segunda";
+        document.getElementById('editInfoDia').textContent = `Frequência unificada na semana`;
     } else {
-        badge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> Único`;
-        badge.className = "badge-stat-mensal badge-desloc"; // Estilo laranja
+        badge.innerHTML = `<i class="fa-solid fa-calendar-day"></i> ÚNICO`;
+        badge.className = "badge-stat-mensal badge-desloc"; 
         
-        // Oculta o seletor de dias da semana (dia fixado na data real)
         containerDiaSemana.style.display = 'none';
         document.getElementById('editInfoDia').textContent = `Agendado para: ${compromisso.data || compromisso.dia}`;
     }
     
-    // Configura e popula o seletor de horários de início
     const selectInicio = document.getElementById('editHoraInicio');
     const selectDuracao = document.getElementById('editDuracao');
     
@@ -446,7 +528,6 @@ window.abrirModalAcaoSlot = function(id) {
     selectInicio.innerHTML = optionsHtml;
     selectInicio.value = compromisso.horarioInicio;
 
-    // Calcula a duração atual e marca o correto no select
     const minutos = window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim);
     selectDuracao.value = minutos.toString();
 
@@ -455,11 +536,10 @@ window.abrirModalAcaoSlot = function(id) {
     const camposBloqueio = document.getElementById('editCamposTipoBloqueio');
     const btnRepor = document.getElementById('btnMandarParaReposicao');
 
-    // Carrega e oculta as seções de campos com base no tipo ativo do bloco
     if (tipo === 'aula') {
         camposAula.style.display = 'block';
         camposBloqueio.style.display = 'none';
-        btnRepor.style.display = 'block'; // Mostra Reagendar somente para aulas
+        btnRepor.style.display = 'block'; 
 
         const selectAluno = document.getElementById('editAluno');
         if (selectAluno) {
@@ -469,7 +549,7 @@ window.abrirModalAcaoSlot = function(id) {
     } else if (tipo === 'deslocamento') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'none';
-        btnRepor.style.display = 'none'; // Deslocamento não se reagenda
+        btnRepor.style.display = 'none'; 
     } else if (tipo === 'bloqueio') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'block';
@@ -504,11 +584,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            // Grava os novos horários
             compromisso.horarioInicio = hInicio;
             compromisso.horarioFim = hFim;
 
-            // Se for recorrente, permite salvar o novo dia da semana
             if (freq === 'semanal') {
                 compromisso.dia = document.getElementById('editDiaSemana').value;
                 delete compromisso.data;
@@ -556,9 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     dataCancelamento: new Date().toLocaleDateString('pt-BR')
                 });
                 
-                // Remove o compromisso da agenda atual
                 aulas = aulas.filter(a => a.id !== idCompromissoSelecionado);
-                
                 if (typeof salvarDados === 'function') salvarDados();
 
                 window.fecharModalAcaoSlot();

@@ -156,6 +156,31 @@ body {
 .btn-success { background: #4CAF50; color: #fff; }
 .btn-sm { padding: 6px 12px; font-size: 0.75rem; }
 
+/* Botões de seleção múltipla de dia da semana (Multi-Select Pills) */
+.btn-dia-pill {
+    flex: 1;
+    background: #111111;
+    color: #A0A0A0;
+    border: 1px solid #2D2D2D;
+    border-radius: 8px;
+    padding: 10px 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-dia-pill:hover {
+    border-color: #444;
+    color: #FFF;
+}
+.btn-dia-pill.active {
+    background: #FFD700 !important;
+    color: #0D0D0D !important;
+    border-color: #FFD700 !important;
+    box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+}
+
 /* ========================================================
    [STYLE-ALUNOS] - Cards de Alunos
    ======================================================== */

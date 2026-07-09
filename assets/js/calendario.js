@@ -2,6 +2,83 @@
 // [TAG-JS-CALENDARIO-CORE] - Motor Matemático do Grid Mensal (Com Contadores)
 // ========================================================
 
+// Centralizador de validação síncrona de ocorrências (Outlook Style)
+// Usado na Home, Visão Semanal e Visão Mensal para garantir uniformidade total de dados
+window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
+    if (horaStr && comp.horarioInicio !== horaStr) return false;
+    
+    const diaSemana = dataAlvo.getDay();
+    if (diaSemana < 1 || diaSemana > 5) return false; // Mostra apenas segunda a sexta
+    
+    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    const diaTexto = diasUteisMap[diaSemana - 1];
+    const dataStr = dataAlvo.toLocaleDateString('pt-BR');
+    
+    if (comp.frequencia === 'semanal') {
+        if (comp.tipoRecorrencia) {
+            const dataCriacao = comp.dataCriacao ? new Date(comp.dataCriacao) : new Date(2026, 0, 1);
+            
+            // Zera horas para comparação matemática de dias exatos
+            const d1 = new Date(dataCriacao.getFullYear(), dataCriacao.getMonth(), dataCriacao.getDate());
+            const d2 = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
+            
+            const diffTime = d2 - d1;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            const intervalo = parseInt(comp.intervaloRecorrencia || 1);
+
+            // 1. Recorrência Diária
+            if (comp.tipoRecorrencia === 'diaria') {
+                return diffDays >= 0 && (diffDays % intervalo === 0);
+            }
+            
+            // 2. Recorrência Semanal (Suporta seleção de múltiplos dias da semana e intervalos de X semanas)
+            if (comp.tipoRecorrencia === 'semanal') {
+                const dataCriacaoSegunda = new Date(d1);
+                const d1SemanaDay = dataCriacaoSegunda.getDay();
+                dataCriacaoSegunda.setDate(d1.getDate() - d1SemanaDay + (d1SemanaDay === 0 ? -6 : 1));
+                
+                const dataSegunda = new Date(d2);
+                const d2SemanaDay = dataSegunda.getDay();
+                dataSegunda.setDate(d2.getDate() - d2SemanaDay + (d2SemanaDay === 0 ? -6 : 1));
+                
+                const diffSemanasTime = dataSegunda - dataCriacaoSegunda;
+                const diffSemanas = Math.round(diffSemanasTime / (1000 * 60 * 60 * 24 * 7));
+                
+                const pertenceNaSemana = diffSemanas >= 0 && (diffSemanas % intervalo === 0);
+                const diaSelecionadoValido = Array.isArray(comp.diasSemana) && comp.diasSemana.includes(diaTexto);
+                
+                return pertenceNaSemana && diaSelecionadoValido;
+            }
+            
+            // 3. Recorrência Mensal (Suporta dias específicos da semana e intervalos de X meses)
+            if (comp.tipoRecorrencia === 'mensal') {
+                const diffMeses = (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
+                if (diffMeses >= 0 && (diffMeses % intervalo === 0)) {
+                    if (Array.isArray(comp.diasSemana) && comp.diasSemana.length > 0) {
+                        return comp.diasSemana.includes(diaTexto);
+                    }
+                    return dataAlvo.getDate() === d1.getDate();
+                }
+                return false;
+            }
+            
+            // 4. Recorrência Anual
+            if (comp.tipoRecorrencia === 'anual') {
+                const diffAnos = d2.getFullYear() - d1.getFullYear();
+                return diffAnos >= 0 && (diffAnos % intervalo === 0) && d2.getDate() === d1.getDate() && d2.getMonth() === d1.getMonth();
+            }
+        }
+        // Fallback para as recorrências legadas simples
+        return comp.dia === diaTexto;
+    }
+    
+    if (!comp.data) {
+        return comp.dia === diaTexto;
+    }
+    return comp.data === dataStr;
+};
+
 function getDiasNoMes(mes, ano) {
     return new Date(ano, mes + 1, 0).getDate();
 }
@@ -18,31 +95,10 @@ function getNomeMes(mes) {
     return nomes[mes];
 }
 
-// Filtra e retorna as aulas cadastradas em determinado dia da semana
-// CORREÇÃO: Suporta compromissos únicos (pela data específica) e recorrentes (pelo dia da semana)
+// Filtra e retorna as aulas cadastradas em determinado dia usando o motor matemático unificado
 function getAulasDoDia(dia, mes, ano) {
     const data = new Date(ano, mes, dia);
-    const diaSemana = data.getDay();
-    
-    // Mostramos apenas compromissos de segunda a sexta na agenda de trabalho (1 a 5)
-    if (diaSemana < 1 || diaSemana > 5) return [];
-    
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-    const diaTexto = diasUteisMap[diaSemana - 1];
-    const dataStr = data.toLocaleDateString('pt-BR'); // ex: "06/07/2026"
-    
-    return aulas.filter(a => {
-        // Se for recorrente semanal, bate pelo dia da semana
-        if (a.frequencia === 'semanal') {
-            return a.dia === diaTexto;
-        }
-        // Se não houver data salva por segurança (compromissos antigos), bate pelo dia
-        if (!a.data) {
-            return a.dia === diaTexto;
-        }
-        // Se for único, bate pela data exata
-        return a.data === dataStr;
-    });
+    return aulas.filter(a => window.checarCompromissoNaData(a, data));
 }
 
 // Constrói visualmente as células do Mês de forma super informativa com estatísticas
@@ -71,7 +127,7 @@ function renderizarCalendario() {
         html += `<div class="dia-header">${d}</div>`;
     });
     
-    // CORREÇÃO: Alinhamento das células do mês. Como DIAS_SEMANA começa no domingo,
+    // Alinhamento das células do mês. Como DIAS_SEMANA começa no domingo,
     // o número de células de preenchimento inicial é exatamente igual a 'primeiroDia'.
     const inicioPreenchimento = primeiroDia;
     for (let i = inicioPreenchimento; i > 0; i--) {

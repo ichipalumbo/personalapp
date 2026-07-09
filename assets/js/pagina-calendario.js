@@ -11,8 +11,6 @@ window.semanaReferencia = new Date();
 // 1. INICIALIZADOR DA ABA CALENDÁRIO (Chamado ao mudar de aba)
 window.inicializarPaginaCalendario = function() {
     if (typeof carregarDados === 'function') carregarDados();
-    
-    // Força a exibição do modo salvo/ativo (que por padrão será o semanal)
     window.alternarModoCalendario(window.modoCalendarioAtivo);
 };
 
@@ -62,7 +60,7 @@ window.renderizarCalendarioMensal = function() {
 };
 
 // 4. RENDERIZADOR DO CALENDÁRIO SEMANAL (Focado em Mobile-First, Empilhado Verticalmente)
-// CORREÇÃO: Resolve a recorrência indesejada filtrando compromissos pela data específica ou recorrência semanal
+// CORREÇÃO: Resolve a recorrência indesejada filtrando compromissos pela lógica matemática universal unificada do Canvas
 window.renderizarCalendarioSemanal = function() {
     const gridSemanal = document.getElementById('calendarioSemanalGrid');
     const labelPeriodo = document.getElementById('periodoSemanaLabel');
@@ -101,19 +99,10 @@ window.renderizarCalendarioSemanal = function() {
         const diaTexto = diasUteisMap[d];
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
-        const dataStr = diaAtual.toLocaleDateString('pt-BR'); // ex: "06/07/2026"
 
-        // CORREÇÃO: Filtra os compromissos deste dia específico (se únicos) ou recorrentes semanais
+        // CORREÇÃO: Filtra os compromissos deste dia usando a função central de datas
         const compromissosDoDia = aulas
-            .filter(a => {
-                if (a.frequencia === 'semanal') {
-                    return a.dia === diaTexto;
-                }
-                if (!a.data) {
-                    return a.dia === diaTexto;
-                }
-                return a.data === dataStr;
-            })
+            .filter(a => window.checarCompromissoNaData(a, diaAtual))
             .sort((a, b) => a.horarioInicio.localeCompare(b.horarioInicio));
 
         let cardsHtml = '';
@@ -122,8 +111,8 @@ window.renderizarCalendarioSemanal = function() {
             compromissosDoDia.forEach(comp => {
                 const tipo = comp.tipo || 'aula';
                 const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
+                const labelRecorrente = comp.frequencia === 'semanal' ? ' <i class="fa-solid fa-infinity" style="font-size: 0.65rem; opacity: 0.8;" title="Recorrente"></i>' : '';
 
-                // REUSO IDÊNTICO DO DESIGN DA HOME
                 if (tipo === 'aula') {
                     const aluno = typeof getAluno === 'function' ? getAluno(comp.alunoId) : null;
                     const nome = aluno ? aluno.nome : '❓ Aluno Removido';
@@ -132,7 +121,7 @@ window.renderizarCalendarioSemanal = function() {
 
                     cardsHtml += `
                         <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
                             <span class="agenda-dia-aula-detalhes">${objetivo} (${periodo})</span>
                         </div>
@@ -140,14 +129,14 @@ window.renderizarCalendarioSemanal = function() {
                 } else if (tipo === 'deslocamento') {
                     cardsHtml += `
                         <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'} (${periodo})</span>
                         </div>
                     `;
                 } else if (tipo === 'bloqueio') {
                     cardsHtml += `
                         <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
+                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'} (${periodo})</span>
                         </div>
                     `;
@@ -161,7 +150,6 @@ window.renderizarCalendarioSemanal = function() {
             `;
         }
 
-        // Adiciona o dia com seu cabeçalho e sua lista de cards idêntica à Home
         html += `
             <div style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2A2A2A; padding-bottom: 8px; margin-bottom: 12px;">
@@ -188,7 +176,6 @@ window.abrirCalendarioAcaoSlot = function(id, diaTexto) {
         abrirModalAcaoSlot(id);
     }
     
-    // Sobrescreve a escuta de finalização para atualizar as duas visões de calendário imediatamente
     const originalFecharModalAcaoSlot = window.fecharModalAcaoSlot;
     window.fecharModalAcaoSlot = function() {
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
