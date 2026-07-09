@@ -11,8 +11,11 @@ let slotSelecionadoDiaTexto = "";
 // Variável para rastrear a data alvo de uma ação unificada de cancelamento/reagendamento
 window.dataAlvoAcaoStr = null;
 
-// Variável para controlar se o agendamento atual é uma reposição que veio do balde
-window.reposicaoIdEmReagendamento = null;
+// Variável para controlar a hora selecionada a partir do clique no ecrã
+window.horarioSelecionadoSlot = null;
+
+// Variável para controlar o reagendamento vindo direto da lista de pendentes
+window.reagendamentoDirectCardId = null;
 
 // Helper global para buscar dados de aluno com segurança em qualquer escopo
 window.getAluno = function(id) {
@@ -122,7 +125,7 @@ window.renderizarAgendaDia = function() {
             const tipo = compromisso.tipo || 'aula';
             const periodoExibicao = `${compromisso.horarioInicio} - ${compromisso.horarioFim}`;
 
-            // NOVO: Sistema inteligente de Tags Visuais Premium nos cards
+            // Sistema inteligente de Tags Visuais Premium nos cards
             let tagVisualHtml = '';
 
             if (tipo === 'aula') {
@@ -190,13 +193,14 @@ window.renderizarAgendaDia = function() {
                 i++;
             }
         } else {
+            // MODIFICADO: Agora ao clicar num slot vago abre o modal intermédio de escolha de tipo
             html += `
                 <div class="agenda-dia-linha ${destacarLinha ? 'linha-hora-atual' : ''}" ${atribuirIdScroll ? 'id="slot-hora-atual"' : ''}>
                     <div class="agenda-dia-horario">
                         ${horaStr}
                         ${destacarLinha ? '<span class="pulse-indicador-agora"></span>' : ''}
                     </div>
-                    <div class="agenda-dia-vago" onclick="abrirAgendamentoModal('${diaTexto}', '${horaStr}')">
+                    <div class="agenda-dia-vago" onclick="window.abrirEscolhaTipoModal('${diaTexto}', '${horaStr}')">
                         <span class="agenda-dia-vago-texto"><i class="fa-regular fa-calendar-plus" style="color: #FFD700;"></i> Vago — Toque para agendar</span>
                     </div>
                 </div>
@@ -227,11 +231,31 @@ window.somarMinutos = function(horaStr, minutos) {
     return `${novaHora.toString().padStart(2, '0')}:${novosMinutos.toString().padStart(2, '0')}`;
 };
 
-// Calculates the difference in minutes between two "HH:MM" hours
+// Calcula a diferença em minutos entre dois horários
 window.diferencaMinutos = function(inicio, fim) {
     const [hI, mI] = inicio.split(':').map(Number);
     const [hF, mF] = fim.split(':').map(Number);
     return (hF * 60 + mF) - (hI * 60 + mI);
+};
+
+// NOVO: Abre o modal de escolha do tipo de agendamento (Fluxo Intermédio)
+window.abrirEscolhaTipoModal = function(dia, hora) {
+    slotSelecionadoHora = hora;
+    slotSelecionadoDiaTexto = dia;
+    window.horarioSelecionadoSlot = hora; // Memoriza para pré-seleção em qualquer modal subsequente
+
+    const modal = document.getElementById('modalEscolhaTipo');
+    if (modal) {
+        document.getElementById('infoEscolhaSlot').textContent = `Agendar às ${hora} de ${dia}-feira`;
+        modal.style.display = 'flex';
+    }
+};
+
+window.fecharEscolhaTipoModal = function() {
+    const modal = document.getElementById('modalEscolhaTipo');
+    if (modal) {
+        modal.style.display = 'none';
+    }
 };
 
 // RENDERIZAÇÃO DO MODAL PARA EVENTO ÚNICO
@@ -252,7 +276,8 @@ window.abrirAgendamentoModal = function(dia, hora) {
     const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
     selectInicio.innerHTML = optionsHtml;
 
-    selectInicio.value = hora;
+    // CORREÇÃO DO BUG: Atribui a hora exata selecionada no slot ao select de início!
+    selectInicio.value = hora || window.horarioSelecionadoSlot || "08:00";
     if (selectDuracao) {
         selectDuracao.value = "60"; 
     }
@@ -388,7 +413,7 @@ window.mudarPadraoRecorrencia = function() {
 };
 
 // ABRE O MODAL DE RECORRÊNCIA SEMANAL (OUTLOOK STYLE)
-window.abrirModalRecorrencia = function() {
+window.abrirModalRecorrencia = function(dia, hora) {
     const modal = document.getElementById('modalRecorrencia');
     if (document.getElementById('formRecorrencia')) {
         document.getElementById('formRecorrencia').reset();
@@ -399,7 +424,10 @@ window.abrirModalRecorrencia = function() {
     
     const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
     selectInicio.innerHTML = optionsHtml;
-    selectInicio.value = "08:00";
+
+    // CORREÇÃO DO BUG: Atribui a hora exata selecionada no slot ao select de início da Recorrência!
+    const hAlvo = hora || window.horarioSelecionadoSlot || "08:00";
+    selectInicio.value = hAlvo;
     selectDuracao.value = "60";
 
     document.getElementById('recorrenciaPadrao').value = "semanal";
@@ -412,6 +440,20 @@ window.abrirModalRecorrencia = function() {
     }
 
     window.mudarPadraoRecorrencia();
+
+    // CORREÇÃO DO BUG DO DIA DA SEMANA: Ativa a pill correspondente ao slot clicado por padrão
+    const dAlvo = dia || slotSelecionadoDiaTexto;
+    if (dAlvo) {
+        document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill').forEach(btn => {
+            if (btn.getAttribute('data-dia') === dAlvo) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+        window.atualizarTextoPreviewRecorrencia();
+    }
+
     window.selecionarTipoRecorrente('aula');
     
     if (modal) modal.style.display = 'flex';
@@ -450,6 +492,95 @@ window.selecionarTipoRecorrente = function(tipo) {
     }
 };
 
+// NOVO: Abre o modal de reagendamento específico a partir de um slot vazio
+window.abrirReagendarAulaModalSlot = function(dia, hora) {
+    window.reagendamentoDirectCardId = null; // Indica que a origem foi o clique num slot livre
+
+    const modal = document.getElementById('modalReagendarAula');
+    if (!modal) return;
+
+    // Exibe o select completo e esconde o campo estático travado
+    document.getElementById('containerSeletorReagendarAluno').style.display = 'block';
+    document.getElementById('containerLockReagendarAluno').style.display = 'none';
+
+    // Filtra e popula de forma única os alunos com reposições pendentes na fila
+    const selectAluno = document.getElementById('reagendarAluno');
+    if (selectAluno) {
+        const alunosComFila = [];
+        const idsUnicos = new Set();
+        
+        aulasParaRepor.forEach(rep => {
+            if (!idsUnicos.has(rep.alunoId)) {
+                idsUnicos.add(rep.alunoId);
+                const alunoObj = window.getAluno(rep.alunoId);
+                if (alunoObj) {
+                    alunosComFila.push(alunoObj);
+                }
+            }
+        });
+
+        if (alunosComFila.length === 0) {
+            selectAluno.innerHTML = '<option value="">Não existem alunos com reposição pendente!</option>';
+        } else {
+            selectAluno.innerHTML = '<option value="">Selecione o aluno...</option>' + 
+                alunosComFila.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+        }
+    }
+
+    // Configura os valores de dia e hora de início de acordo com o slot clicado
+    document.getElementById('reagendarDia').value = dia;
+
+    const selectInicio = document.getElementById('reagendarHoraInicio');
+    const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
+    selectInicio.innerHTML = optionsHtml;
+    selectInicio.value = hora;
+
+    document.getElementById('infoReagendamentoSlot').textContent = `Encaixar reposição às ${hora} de ${dia}-feira`;
+
+    modal.style.display = 'flex';
+};
+
+// NOVO: Abre o modal específico a partir do botão "Reagendar" no card da fila
+window.iniciarReagendamentoReposicao = function(id) {
+    const rep = aulasParaRepor.find(r => r.id === id);
+    if (!rep) return;
+
+    // Salva o ID da reposição para remoção da fila após submissão do formulário
+    window.reagendamentoDirectCardId = id;
+
+    const modal = document.getElementById('modalReagendarAula');
+    if (!modal) return;
+
+    // Esconde o select e exibe apenas a informação travada com o nome do aluno selecionado
+    document.getElementById('containerSeletorReagendarAluno').style.display = 'none';
+    document.getElementById('containerLockReagendarAluno').style.display = 'block';
+
+    const aluno = window.getAluno(rep.alunoId);
+    document.getElementById('reagendarAlunoLockedNome').textContent = aluno ? aluno.nome : 'Aluno';
+    document.getElementById('reagendarAlunoIdLocked').value = rep.alunoId;
+
+    // Configura dia e hora com valores atuais confortáveis
+    const diaTexto = window.getDiaTextoSelecionado();
+    document.getElementById('reagendarDia').value = diaTexto;
+
+    const selectInicio = document.getElementById('reagendarHoraInicio');
+    const optionsHtml = HORARIOS.map(h => `<option value="${h}">${h}</option>`).join('');
+    selectInicio.innerHTML = optionsHtml;
+    selectInicio.value = window.horarioSelecionadoSlot || "08:00"; 
+
+    document.getElementById('infoReagendamentoSlot').textContent = `Reagendamento Directo • Fila de espera`;
+
+    modal.style.display = 'flex';
+};
+
+window.fecharReagendarAulaModal = function() {
+    const modal = document.getElementById('modalReagendarAula');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    window.reagendamentoDirectCardId = null;
+};
+
 document.addEventListener('DOMContentLoaded', () => {
     // Escuta do Botão Infinito de Recorrência
     const btnRecorrencia = document.getElementById('btnRecorrenciaAgenda');
@@ -463,6 +594,93 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnFecharRecorrencia) {
         btnFecharRecorrencia.addEventListener('click', () => {
             document.getElementById('modalRecorrencia').style.display = 'none';
+        });
+    }
+
+    // Configuração dos eventos de clique no modal intermédio de escolha de tipo
+    const btnEscolhaUnico = document.getElementById('btnEscolhaUnico');
+    if (btnEscolhaUnico) {
+        btnEscolhaUnico.addEventListener('click', () => {
+            window.fecharEscolhaTipoModal();
+            window.abrirAgendamentoModal(slotSelecionadoDiaTexto, slotSelecionadoHora);
+        });
+    }
+
+    const btnEscolhaRecorrente = document.getElementById('btnEscolhaRecorrente');
+    if (btnEscolhaRecorrente) {
+        btnEscolhaRecorrente.addEventListener('click', () => {
+            window.fecharEscolhaTipoModal();
+            window.abrirModalRecorrencia(slotSelecionadoDiaTexto, slotSelecionadoHora);
+        });
+    }
+
+    const btnEscolhaReposicao = document.getElementById('btnEscolhaReposicao');
+    if (btnEscolhaReposicao) {
+        btnEscolhaReposicao.addEventListener('click', () => {
+            window.fecharEscolhaTipoModal();
+            window.abrirReagendarAulaModalSlot(slotSelecionadoDiaTexto, slotSelecionadoHora);
+        });
+    }
+
+    // Submissão do formulário específico do novo modal de reagendamento
+    const formReagendarAula = document.getElementById('formReagendarAula');
+    if (formReagendarAula) {
+        formReagendarAula.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            let alunoId = "";
+            let repId = "";
+
+            if (window.reagendamentoDirectCardId) {
+                // Origem: Fila de reposição pendente
+                const repObj = aulasParaRepor.find(r => r.id === window.reagendamentoDirectCardId);
+                if (!repObj) return;
+                alunoId = repObj.alunoId;
+                repId = repObj.id;
+            } else {
+                // Origem: Clique no slot vazio
+                alunoId = document.getElementById('reagendarAluno').value;
+                if (!alunoId) {
+                    alert("Por favor, selecione um aluno para agendar a reposição!");
+                    return;
+                }
+                const repObj = aulasParaRepor.find(r => r.alunoId === alunoId);
+                if (repObj) {
+                    repId = repObj.id;
+                }
+            }
+
+            const dia = document.getElementById('reagendarDia').value;
+            const hInicio = document.getElementById('reagendarHoraInicio').value;
+            const duracao = document.getElementById('reagendarDuracao').value;
+            const hFim = window.somarMinutos(hInicio, duracao);
+
+            // Adiciona a nova aula de reposição única na agenda
+            let novoCompromisso = {
+                id: Date.now().toString(),
+                dia: dia,
+                data: dataSelecionada.toLocaleDateString('pt-BR'),
+                horarioInicio: hInicio,
+                horarioFim: hFim,
+                tipo: 'aula',
+                alunoId: alunoId,
+                frequencia: 'uma_vez',
+                isReposicao: true,
+                reagendada: true
+            };
+
+            aulas.push(novoCompromisso);
+
+            // Remove o aluno da fila de reposições pendentes
+            if (repId) {
+                aulasParaRepor = aulasParaRepor.filter(r => r.id !== repId);
+            }
+
+            if (typeof salvarDados === 'function') salvarDados();
+
+            window.fecharReagendarAulaModal();
+            window.inicializarHome();
+            if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição agendada com sucesso!');
         });
     }
 
@@ -487,15 +705,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 frequencia: 'uma_vez' // Estritamente único!
             };
 
-            // Se for uma reposição de aula vinda do balde, adicionamos a marcação e limpamos a fila
-            if (window.reposicaoIdEmReagendamento) {
-                novoCompromisso.isReposicao = true;
-                novoCompromisso.reagendada = true;
-                
-                aulasParaRepor = aulasParaRepor.filter(r => r.id !== window.reposicaoIdEmReagendamento);
-                window.reposicaoIdEmReagendamento = null; 
-            }
-
             if (tipo === 'aula') {
                 const alunoId = document.getElementById('agendaAluno').value;
                 if (!alunoId) return;
@@ -511,7 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             document.getElementById('modalAgendamento').style.display = 'none';
             window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Reagendado com sucesso!');
+            if (typeof mostrarToast === 'function') mostrarToast('✅ Horário agendado com sucesso!');
         });
     }
 
@@ -576,7 +785,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.getElementById('btnFecharModal')) {
         document.getElementById('btnFecharModal').addEventListener('click', () => {
             document.getElementById('modalAgendamento').style.display = 'none';
-            window.reposicaoIdEmReagendamento = null; // Limpa estado de reposição se cancelar
+            window.reposicaoIdEmReagendamento = null; 
         });
     }
 });
@@ -607,7 +816,7 @@ window.abrirModalAcaoSlot = function(id) {
     const dataAlvoStr = window.dataAlvoAcaoStr || dataSelecionada.toLocaleDateString('pt-BR');
     const tipo = compromisso.tipo || 'aula';
 
-    // MODIFICADO: Remove a opção de "reagendar/reposição" para bloqueios e deslocamentos
+    // Remove a opção de "reagendar/reposição" para bloqueios e deslocamentos
     if (tipo !== 'aula') {
         // Se for deslocamento ou bloqueio, oculta botões de reposição e ajusta colunas para preenchimento simétrico
         if (btnMandarReposicao) btnMandarReposicao.style.display = 'none';
@@ -624,7 +833,7 @@ window.abrirModalAcaoSlot = function(id) {
         if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr 1fr';
     }
 
-    // CORREÇÃO: Usando a nova classe .modal-badge para que ela siga e abrace o tamanho do texto (width: auto)
+    // Usando a nova classe .modal-badge para que ela siga e abrace o tamanho do texto (width: auto)
     if (freq === 'semanal') {
         const padraoNome = compromisso.tipoRecorrencia ? compromisso.tipoRecorrencia.toUpperCase() : "SEMANAL";
         badge.innerHTML = `<i class="fa-solid fa-infinity"></i> ${padraoNome}`;
@@ -645,6 +854,7 @@ window.abrirModalAcaoSlot = function(id) {
         document.getElementById('editInfoDia').textContent = `Agendado para: ${compromisso.data || compromisso.dia}`;
 
         // Exibe o painel de botões clássico para compromissos unitários
+        if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr 1fr';
         if (acoesUnico) acoesUnico.style.display = 'grid';
         if (acoesRecorrente) acoesRecorrente.style.display = 'none';
     }
@@ -839,35 +1049,6 @@ window.togglePainelReposicoes = function() {
     }
 };
 
-// NOVO: Abre fluxo para reagendar um aluno que está na fila de reposição
-window.iniciarReagendamentoReposicao = function(id) {
-    const rep = aulasParaRepor.find(r => r.id === id);
-    if (!rep) return;
-
-    // Define a reposição ativa que será resolvida ao salvar
-    window.reposicaoIdEmReagendamento = id;
-
-    // Aciona abertura da tela padrão de agendamento no dia de hoje às 08:00 (ou hora padrão vaga)
-    const diaTexto = window.getDiaTextoSelecionado();
-    window.abrirAgendamentoModal(diaTexto, "08:00");
-
-    // Trava no modo aula e seleciona o aluno correspondente
-    window.selecionarTipoAgendamento('aula');
-    
-    const selectAluno = document.getElementById('agendaAluno');
-    if (selectAluno) {
-        selectAluno.value = rep.alunoId;
-    }
-
-    // Customiza cabeçalho do agendamento para feedback da personal
-    const helper = document.getElementById('infoHorarioAlvo');
-    if (helper) {
-        const alunoObj = window.getAluno(rep.alunoId);
-        const alunoNome = alunoObj ? alunoObj.nome : 'Aluno';
-        helper.innerHTML = `<span style="color: #64B5F6; font-weight: 800;"><i class="fa-solid fa-arrows-rotate"></i> REAGENDANDO REPOSIÇÃO</span><br>${alunoNome} — Escolha dia/hora`;
-    }
-};
-
 // RENDERIZAÇÃO DA FILA DE REPOSIÇÕES COM BOTÃO DE REAGENDAR E DESCARTAR
 window.renderizarListaReposicoes = function() {
     const container = document.getElementById('listaReposicoesPendentes');
@@ -886,7 +1067,7 @@ window.renderizarListaReposicoes = function() {
                         <span style="font-size: 0.72rem; color: #FF5252; font-weight: 600;">Cancelada em ${rep.dataCancelamento}</span>
                     </div>
                 </div>
-                <!-- NOVO: Ações completas para reencaixar na agenda ou descartar caso seja resolvido verbalmente -->
+                <!-- Ações completas para reencaixar na agenda através do novo modal exclusivo -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                     <button class="btn btn-primary btn-sm" onclick="iniciarReagendamentoReposicao('${rep.id}')" style="background: #FFD700; color: #0D0D0D; font-size: 0.7rem; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
                         <i class="fa-solid fa-calendar-check"></i> Reagendar

@@ -765,7 +765,7 @@ body {
 }
 
 /* ========================================================
-   [STYLE-MODAL-BADGE] - Badge compacto ajustado à palavra (NOVO)
+   [STYLE-MODAL-BADGE] - Badge compacto ajustado à palavra
    ======================================================== */
 .modal-badge {
     display: inline-flex;
@@ -781,6 +781,18 @@ body {
     white-space: nowrap;
     flex-shrink: 0;
     text-align: center;
+}
+
+/* MODIFICADO: Hover nos cartões de escolha do ecrã intermédio */
+#btnEscolhaUnico, #btnEscolhaRecorrente, #btnEscolhaReposicao {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+#btnEscolhaUnico:hover, #btnEscolhaRecorrente:hover, #btnEscolhaReposicao:hover {
+    border-color: #FFD700 !important;
+    background: #252525 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15) !important;
 }
 
 /* ========================================================
