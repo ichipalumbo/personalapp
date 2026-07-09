@@ -21,11 +21,10 @@
             <!-- Título Principal + Subtítulo da Empresa -->
             <div class="brand-container">
                 <h1 class="marca-titulo">
-                    <i class="fa-solid fa-dumbbell text-bounce"></i><span class="marca-ativa">Ativa</span><span class="marca-mente">Mente</span>
+                    </i><span class="marca-ativa"><i class="fa-solid fa-dumbbell"></i> Prô</span><span class="marca-mente"> Josy</span>
                 </h1>
                 <p class="marca-subtitulo">
-                    <i class="fa-solid fa-calendar-days"></i>
-                    Personal Trainer
+                    <i class="fa-solid fa-hand-fist"></i>Personal Trainer
                 </p>
             </div>
             
@@ -36,7 +35,7 @@
                         <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
                     </a>
                     <a href="#" class="nav-link inativo" data-target="tela-calendario">
-                        <i class="fa-solid fa-calendar-week nav-icon-anim"></i> Calendário
+                        <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
                     </a>
                     <a href="#" class="nav-link inativo" data-target="tela-alunos">
                         <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
@@ -54,11 +53,11 @@
             <section class="alunos-grid" style="margin-bottom: 20px;">
                 <div class="card-stat">
                     <span class="stat-numero" id="totalAulasHoje">0</span>
-                    <span class="stat-label">Aulas Hoje</span>
+                    <span class="stat-label"><i class="fa-solid fa-stopwatch" style="color: #FFD700; margin-right: 8px;"></i>Aulas Hoje</span>
                 </div>
                 <div class="card-stat" style="border-color: #FF5252; background: rgba(255, 82, 82, 0.05);" onclick="togglePainelReposicoes()">
                     <span class="stat-numero" id="totalAulasRepor" style="color: #FF5252;">0</span>
-                    <span class="stat-label">Aulas para Repor</span>
+                    <span class="stat-label"><i class="fa-solid fa-rotate-left" style="color: #FF5252; margin-right: 8px;"></i>Aulas para Repor</span>
                 </div>
             </section>
 
@@ -73,33 +72,35 @@
 
             <!-- Subseção: Grade Horária Diária -->
             <div class="agenda-panel">
-                <div class="agenda-header-wrapper">
-                    <div class="agenda-header-info">
-                        <h2><i class="fa-solid fa-circle-check" style="color: #FFD700; margin-right: 8px;"></i>AtivaMente • Agenda</h2>
-                        <span>Sua rotina de treinos bem organizada! <i class="fa-solid fa-bolt" style="color: #FFD700;"></i></span>
+                <!-- REFAZIMENTO: Grupo Unificado de Cabeçalho Sticky para preservar contexto visual -->
+                <div class="agenda-sticky-container">
+                    <div class="agenda-header-wrapper">
+                        <div class="agenda-header-info">
+                            <h2><i class="fa-solid fa-calendar-day" style="color: #FFD700; margin-right: 8px;"></i>Agenda do Dia</h2>
+                            <span>Sua rotina de treinos bem organizada!</i></span>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="btnRecorrenciaAgenda" class="btn-config-icon" title="Agendar Horário Recorrente">
+                                <i class="fa-solid fa-infinity" style="color: #FFD700;"></i>
+                            </button>
+                            <button id="btnConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
+                                <i class="fa-solid fa-gear fa-spin-hover" style="color: #FFD700;"></i>
+                            </button>
+                        </div>
                     </div>
-                    <!-- CONTROLE DE BOTÕES ATUALIZADO: Inclui botão global para agendar Recorrências -->
-                    <div style="display: flex; gap: 8px;">
-                        <button id="btnRecorrenciaAgenda" class="btn-config-icon" title="Agendar Horário Recorrente">
-                            <i class="fa-solid fa-infinity" style="color: #FFD700;"></i>
-                        </button>
-                        <button id="btnConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
-                            <i class="fa-solid fa-gear fa-spin-hover" style="color: #FFD700;"></i>
-                        </button>
-                    </div>
-                </div>
 
-                <!-- Cabeçalho de Navegação Diária -->
-                <div class="agenda-header-navegacao">
-                    <div class="nav-calendario">
-                        <button id="btnAnterior" class="btn-nav-dia" title="Dia Anterior">
-                            <i class="fa-solid fa-circle-arrow-left"></i>
-                        </button>
-                        <span id="dataAtual" class="agenda-data-principal">Carregando...</span>
-                        <button id="btnProximo" class="btn-nav-dia" title="Próximo Dia">
-                            <i class="fa-solid fa-circle-arrow-right"></i>
-                        </button>
-                        <button id="btnHoje" class="btn-hoje-pill">📍 Hoje</button>
+                    <!-- Cabeçalho de Navegação Diária -->
+                    <div class="agenda-header-navegacao">
+                        <div class="nav-calendario">
+                            <button id="btnAnterior" class="btn-nav-dia" title="Dia Anterior">
+                                <i class="fa-solid fa-circle-arrow-left"></i>
+                            </button>
+                            <span id="dataAtual" class="agenda-data-principal">Carregando...</span>
+                            <button id="btnProximo" class="btn-nav-dia" title="Próximo Dia">
+                                <i class="fa-solid fa-circle-arrow-right"></i>
+                            </button>
+                            <button id="btnHoje" class="btn-hoje-pill"><i class="fa-solid fa-bullseye"></i></i>Hoje</button>
+                        </div>
                     </div>
                 </div>
 
@@ -127,7 +128,7 @@
                 <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <div style="display: flex; flex-direction: column;">
                         <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
-                        <span>Resumo de treinos estruturado <i class="fa-solid fa-bolt" style="color: #FFD700;"></i></span>
+                        <!-- <span>Resumo de treinos estruturado <i class="fa-solid fa-bolt" style="color: #FFD700;"></i></span> -->
                     </div>
                     <div class="mes-nav" style="display: flex; gap: 6px;">
                         <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
@@ -278,7 +279,7 @@
         </div>
     </div>
 
-    <!-- B. NOVO: MODAL DE CADASTRO/AGENDAMENTO EXCLUSIVO PARA RECORRÊNCIAS -->
+    <!-- B. MODAL DE CADASTRO/AGENDAMENTO EXCLUSIVO PARA RECORRÊNCIAS (OUTLOOK STYLE) -->
     <div class="modal-overlay" id="modalRecorrencia" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <h3><i class="fa-solid fa-infinity" style="color: #FFD700; margin-right: 8px;"></i>Agendar Horário Recorrente</h3>
@@ -298,20 +299,49 @@
             <form id="formRecorrencia">
                 <input type="hidden" id="recorrenciaTipo" value="aula">
                 
-                <!-- Seleção do dia de semana fixo -->
+                <!-- Outlook Style: Padrão de Recorrência -->
                 <div class="form-grupo-spa">
-                    <label for="recorrenciaDiaSemana">Dia da Semana Fixo *</label>
-                    <select id="recorrenciaDiaSemana" required>
-                        <option value="Segunda">Segunda-feira</option>
-                        <option value="Terça">Terça-feira</option>
-                        <option value="Quarta">Quarta-feira</option>
-                        <option value="Quinta">Quinta-feira</option>
-                        <option value="Sexta">Sexta-feira</option>
+                    <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
+                    <select id="recorrenciaPadrao" onchange="window.mudarPadraoRecorrencia()" required>
+                        <option value="semanal" selected>Semanal</option>
+                        <option value="diaria">Diária</option>
+                        <option value="mensal">Mensal</option>
+                        <option value="anual">Anual</option>
                     </select>
                 </div>
 
+                <!-- Outlook Style: Intervalo de Repetição -->
+                <div class="form-grupo-spa" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label for="recorrenciaIntervalo">Repetir a cada *</label>
+                        <input type="number" id="recorrenciaIntervalo" value="1" min="1" required style="text-align: center;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label>Unidade</label>
+                        <div id="labelUnidadeRecorrencia" style="height: 45px; display: flex; align-items: center; color: #FFF; font-size: 0.9rem; font-weight: 700; background: #0D0D0D; padding-left: 12px; border: 1px solid #333; border-radius: 8px;">semana(s)</div>
+                    </div>
+                </div>
+
+                <!-- Grid Interativo de Dias Incluindo Sábado -->
+                <div class="form-grupo-spa" id="containerDiasSemanaRecorrencia" style="margin-bottom: 16px;">
+                    <label style="margin-bottom: 4px;">Selecione os dias da semana *</label>
+                    <div style="display: flex; gap: 4px; justify-content: space-between; flex-wrap: wrap;">
+                        <button type="button" class="btn-dia-pill" data-dia="Segunda">Seg</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Terça">Ter</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Quarta">Qua</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Quinta">Qui</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Sexta">Sex</button>
+                        <button type="button" class="btn-dia-pill" data-dia="Sábado">Sáb</button>
+                    </div>
+                </div>
+
+                <!-- Outlook Style: Caixa de Exibição Dinâmica do Resumo -->
+                <div id="infoRecorrenciaMensalAnual" style="background: rgba(255, 215, 0, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 14px; border: 1px dashed rgba(255, 215, 0, 0.2);">
+                    <p style="font-size: 0.75rem; color: #FFD700; margin: 0; line-height: 1.4; font-weight: 600;" id="textoInfoMensalAnual"></p>
+                </div>
+
                 <!-- Escolha de Horário de Início + Duração -->
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; margin-top: 14px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="recorrenciaHoraInicio">Início *</label>
                         <select id="recorrenciaHoraInicio" required></select>
@@ -341,6 +371,19 @@
                     <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
                 </div>
 
+                <!-- Seleção Unificada de Dia de Semana Fixo -->
+                <div class="form-grupo-spa" id="containerDiaRecorrenteUnico" style="display: none; margin-bottom: 14px;">
+                    <label for="recorrenciaDiaSemana">Dia da Semana Fixo *</label>
+                    <select id="recorrenciaDiaSemana" required>
+                        <option value="Segunda">Segunda-feira</option>
+                        <option value="Terça">Terça-feira</option>
+                        <option value="Quarta">Quarta-feira</option>
+                        <option value="Quinta">Quinta-feira</option>
+                        <option value="Sexta">Sexta-feira</option>
+                        <option value="Sábado">Sábado</option>
+                    </select>
+                </div>
+
                 <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
                     <button type="button" class="btn btn-secondary" id="btnFecharModalRecorrencia">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Salvar Recorrência</button>
@@ -349,7 +392,7 @@
         </div>
     </div>
 
-    <!-- C. MODAL DE EDIÇÃO DE COMPROMISSO (Com Badge Informativa de Tipo) -->
+    <!-- C. MODAL DE EDIÇÃO DE COMPROMISSO -->
     <div class="modal-overlay" id="modalAcaoSlot" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -363,7 +406,7 @@
                 <!-- Informações do dia -->
                 <p id="editInfoDia" style="font-size: 0.8rem; color: #FFF; margin-bottom: 15px; font-weight: 600;"></p>
 
-                <!-- CORREÇÃO: Permite alterar o Dia da Semana somente se o compromisso for RECORRENTE -->
+                <!-- Permite alterar o Dia da Semana se o compromisso for RECORRENTE -->
                 <div class="form-grupo-spa" id="editDiaSemanaContainer" style="display: none; margin-bottom: 14px;">
                     <label for="editDiaSemana">Dia da Semana *</label>
                     <select id="editDiaSemana">
@@ -372,6 +415,7 @@
                         <option value="Quarta">Quarta-feira</option>
                         <option value="Quinta">Quinta-feira</option>
                         <option value="Sexta">Sexta-feira</option>
+                        <option value="Sábado">Sábado</option>
                     </select>
                 </div>
 
@@ -406,7 +450,8 @@
 
                 <!-- Botões de Ações -->
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <!-- [MODIFICADO]: Seção exclusiva para compromissos ÚNICOS normais -->
+                    <div id="acoesCompromissoUnico" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <button type="button" class="btn btn-danger" id="btnDeletarDefinitivo" title="Cancelar Compromisso">
                             <i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Cancelar
                         </button>
@@ -414,6 +459,22 @@
                             <i class="fa-solid fa-rotate-left" style="margin-right: 6px;"></i> Reagendar
                         </button>
                     </div>
+
+                    <!-- [MODIFICADO]: Seção premium exclusiva para compromissos RECORRENTES (Outlook-style) -->
+                    <div id="acoesCompromissoRecorrente" style="display: none; flex-direction: column; gap: 8px;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <button type="button" class="btn btn-danger" id="btnDeletarInstancia" title="Cancelar apenas essa aula">
+                                <i class="fa-solid fa-calendar-minus" style="margin-right: 4px;"></i> Cancelar
+                            </button>
+                            <button type="button" class="btn" id="btnReagendarInstancia" style="background: #FF9800; color: #FFF; border: none;" title="Mandar essa aula para reposição">
+                                <i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i> Reagendar
+                            </button>
+                        </div>
+                        <button type="button" class="btn" id="btnDeletarSerie" style="background: #D32F2F; color: #FFF; border: none;" title="Cancelar toda a série de recorrências">
+                            <i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Cancelar Série Completa
+                        </button>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <button type="button" class="btn btn-secondary" onclick="fecharModalAcaoSlot()">Voltar</button>
                         <button type="submit" class="btn btn-primary">Salvar Alterações</button>

@@ -11,8 +11,6 @@ window.semanaReferencia = new Date();
 // 1. INICIALIZADOR DA ABA CALENDÁRIO (Chamado ao mudar de aba)
 window.inicializarPaginaCalendario = function() {
     if (typeof carregarDados === 'function') carregarDados();
-    
-    // Força a exibição do modo salvo/ativo (que por padrão será o semanal)
     window.alternarModoCalendario(window.modoCalendarioAtivo);
 };
 
@@ -62,7 +60,7 @@ window.renderizarCalendarioMensal = function() {
 };
 
 // 4. RENDERIZADOR DO CALENDÁRIO SEMANAL (Focado em Mobile-First, Empilhado Verticalmente)
-// CORREÇÃO: Resolve a recorrência indesejada filtrando compromissos pela data específica ou recorrência semanal
+// CORREÇÃO: Resolve a recorrência indesejada filtrando compromissos pela lógica matemática universal unificada do Canvas
 window.renderizarCalendarioSemanal = function() {
     const gridSemanal = document.getElementById('calendarioSemanalGrid');
     const labelPeriodo = document.getElementById('periodoSemanaLabel');
@@ -71,49 +69,44 @@ window.renderizarCalendarioSemanal = function() {
     // Acha a Segunda-feira da semana de referência
     const dataRef = new Date(window.semanaReferencia);
     const diaSemana = dataRef.getDay();
-    const diferencaSegunda = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
-    const segundaFeira = new Date(dataRef.setDate(diferencaSegunda));
+    const dSeg = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+    const segundaFeira = new Date(dataRef.setDate(dSeg));
 
-    // Acha a Sexta-feira da semana de referência
-    const sextaFeira = new Date(segundaFeira);
-    sextaFeira.setDate(segundaFeira.getDate() + 4);
+    // CORREÇÃO: Acha o Sábado da semana de referência (segunda + 5 dias)
+    const sabado = new Date(segundaFeira);
+    sabado.setDate(segundaFeira.getDate() + 5);
 
-    // Atualiza a Label de Período (ex: "Semana: 06/07 a 10/07 de 2026")
+    // Atualiza a Label de Período (ex: "Semana: 06/07 a 11/07 de 2026")
     if (labelPeriodo) {
-        const dSeg = String(segundaFeira.getDate()).padStart(2, '0');
-        const mSeg = String(segundaFeira.getMonth() + 1).padStart(2, '0');
-        const dSex = String(sextaFeira.getDate()).padStart(2, '0');
-        const mSex = String(sextaFeira.getMonth() + 1).padStart(2, '0');
+        const dSegStr = String(segundaFeira.getDate()).padStart(2, '0');
+        const mSegStr = String(segundaFeira.getMonth() + 1).padStart(2, '0');
+        const dSabStr = String(sabado.getDate()).padStart(2, '0');
+        const mSabStr = String(sabado.getMonth() + 1).padStart(2, '0');
         const anoRef = segundaFeira.getFullYear();
-        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i>Semana: <span style="color: #FFD700;">${dSeg}/${mSeg} a ${dSex}/${mSex}</span> de ${anoRef}`;
+        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i><span style="color: #FFD700;"> ${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}</span> de ${anoRef}`;
     }
 
     let html = '';
 
-    // Mapeamento textual dos dias úteis
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
+    // Mapeamento textual dos dias úteis + Sábado
+    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
-    // Varre os 5 dias úteis (Segunda a Sexta) para desenhar os blocos
-    for (let d = 0; d < 5; d++) {
+    // CORREÇÃO: Varre os 6 dias úteis de trabalho (Segunda a Sábado) para desenhar os blocos
+    for (let d = 0; d < 6; d++) {
         const diaAtual = new Date(segundaFeira);
         diaAtual.setDate(segundaFeira.getDate() + d);
 
         const diaTexto = diasUteisMap[d];
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
-        const dataStr = diaAtual.toLocaleDateString('pt-BR'); // ex: "06/07/2026"
+        const dataAlvoFormatada = diaAtual.toLocaleDateString('pt-BR');
 
-        // CORREÇÃO: Filtra os compromissos deste dia específico (se únicos) ou recorrentes semanais
+        // Identifica se a célula sendo renderizada é HOJE
+        const ehHoje = diaAtual.toDateString() === new Date().toDateString();
+
+        // Filtra os compromissos deste dia usando a função unificada
         const compromissosDoDia = aulas
-            .filter(a => {
-                if (a.frequencia === 'semanal') {
-                    return a.dia === diaTexto;
-                }
-                if (!a.data) {
-                    return a.dia === diaTexto;
-                }
-                return a.data === dataStr;
-            })
+            .filter(a => window.checarCompromissoNaData(a, diaAtual))
             .sort((a, b) => a.horarioInicio.localeCompare(b.horarioInicio));
 
         let cardsHtml = '';
@@ -122,32 +115,33 @@ window.renderizarCalendarioSemanal = function() {
             compromissosDoDia.forEach(comp => {
                 const tipo = comp.tipo || 'aula';
                 const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
+                const labelRecorrente = comp.frequencia === 'semanal' ? ' <i class="fa-solid fa-infinity" style="font-size: 0.65rem; opacity: 0.8;" title="Recorrente"></i>' : '';
 
-                // REUSO IDÊNTICO DO DESIGN DA HOME
                 if (tipo === 'aula') {
                     const aluno = typeof getAluno === 'function' ? getAluno(comp.alunoId) : null;
                     const nome = aluno ? aluno.nome : '❓ Aluno Removido';
                     const objetivo = aluno ? aluno.objective || aluno.objetivo : 'Outro';
                     const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
 
+                    // [CORREÇÃO]: Passa a data formatada exata para a ação, assegurando consistência nas exceções de recorrência
                     cardsHtml += `
-                        <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                        <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
+                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
                             <span class="agenda-dia-aula-detalhes">${objetivo} (${periodo})</span>
                         </div>
                     `;
                 } else if (tipo === 'deslocamento') {
                     cardsHtml += `
-                        <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                        <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
+                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'} (${periodo})</span>
                         </div>
                     `;
                 } else if (tipo === 'bloqueio') {
                     cardsHtml += `
-                        <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${diaTexto}')" style="margin-bottom: 8px;">
-                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
+                        <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
+                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado${labelRecorrente}</span>
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'} (${periodo})</span>
                         </div>
                     `;
@@ -161,12 +155,14 @@ window.renderizarCalendarioSemanal = function() {
             `;
         }
 
-        // Adiciona o dia com seu cabeçalho e sua lista de cards idêntica à Home
+        // Adiciona o dia com seu cabeçalho, destaque sutil e ID dinâmico para rolagem síncrona
         html += `
-            <div style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+            <div class="semana-dia-box ${ehHoje ? 'dia-semana-hoje-card' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}" style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                 <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2A2A2A; padding-bottom: 8px; margin-bottom: 12px;">
-                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem;">🎯 ${diaTexto}-feira</span>
-                    <span style="font-size: 0.8rem; background: #2D2D2D; color: #FFF; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
+                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem;">
+                        🎯 ${diaTexto}-feira ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; font-weight: 900;">HOJE</span>' : ''}
+                    </span>
+                    <span style="font-size: 0.8rem; background: ${ehHoje ? '#FFD700' : '#2D2D2D'}; color: ${ehHoje ? '#0D0D0D' : '#FFF'}; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
                 </div>
                 <div style="display: flex; flex-direction: column;">
                     ${cardsHtml}
@@ -176,10 +172,21 @@ window.renderizarCalendarioSemanal = function() {
     }
 
     gridSemanal.innerHTML = html;
+
+    // CORREÇÃO: Auto-Rolagem Inteligente (Auto-Scroll) para focar no dia de hoje automaticamente
+    setTimeout(() => {
+        const hojeEl = document.getElementById('semana-dia-hoje-elemento');
+        if (hojeEl) {
+            hojeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 120);
 };
 
 // 5. ATIVAÇÃO DE AÇÕES DO CARD CLICADO (Compartilhado com o modal de exclusão/reagendamento da Home)
-window.abrirCalendarioAcaoSlot = function(id, diaTexto) {
+window.abrirCalendarioAcaoSlot = function(id, dataStr) {
+    // Define a data alvo do calendário de forma segura na série para não perder contexto
+    window.dataAlvoAcaoStr = dataStr;
+
     if (typeof idCompromissoSelecionado !== 'undefined') {
         idCompromissoSelecionado = id;
     }
@@ -188,12 +195,13 @@ window.abrirCalendarioAcaoSlot = function(id, diaTexto) {
         abrirModalAcaoSlot(id);
     }
     
-    // Sobrescreve a escuta de finalização para atualizar as duas visões de calendário imediatamente
+    // Sobrescreve a escuta de finalização para limpar a herança de data e recarregar os dados
     const originalFecharModalAcaoSlot = window.fecharModalAcaoSlot;
     window.fecharModalAcaoSlot = function() {
+        window.dataAlvoAcaoStr = null; // Limpa o estado
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
         window.renderizarCalendarioSemanal();
-        window.renderizarCalendarioMensal();
+        if (typeof window.renderizarCalendarioMensal === 'function') window.renderizarCalendarioMensal();
     };
 };
 
