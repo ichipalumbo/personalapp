@@ -10,11 +10,16 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Conexão com o MongoDB Atlas
-const mongoURI = process.env.MONGO_URI;
-mongoose.connect(mongoURI)
-  .then(() => console.log('✅ Conectado ao MongoDB com sucesso!'))
-  .catch(err => console.error('❌ Erro ao conectar ao MongoDB:', err));
+// Conexão dinâmica com o MongoDB (aceita MONGODB_URI da Vercel ou MONGO_URI padrão)
+const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+
+if (!mongoURI) {
+  console.error('❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada (MONGODB_URI ou MONGO_URI).');
+} else {
+  mongoose.connect(mongoURI)
+    .then(() => console.log('✅ Conectado ao MongoDB com sucesso!'))
+    .catch(err => console.error('❌ Erro ao conectar ao MongoDB:', err));
+}
 
 // --- MONGODB SCHEMAS & MODELS ---
 
