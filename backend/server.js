@@ -19,6 +19,7 @@ mongoose.connect(mongoURI)
 // --- MONGODB SCHEMAS & MODELS ---
 
 // 1. Schema de Alunos
+// Adicionado { strict: false } para permitir que qualquer campo dinâmico do front-end (como local, valorHora, etc.) seja salvo sem filtragem!
 const AlunoSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true }, // Mantém o ID gerado pelo front
   nome: { type: String, required: true },
@@ -29,10 +30,11 @@ const AlunoSchema = new mongoose.Schema({
   aulasSemanais: Number,
   historicoPagamentos: Array,
   criadoEm: { type: Date, default: Date.now }
-});
+}, { strict: false });
 const Aluno = mongoose.model('Aluno', AlunoSchema);
 
 // 2. Schema de Agendamentos (Aulas)
+// Adicionado { strict: false } para dar flexibilidade total ao agendamento
 const AgendamentoSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   alunoId: String,
@@ -43,15 +45,16 @@ const AgendamentoSchema = new mongoose.Schema({
   status: { type: String, default: 'confirmado' }, // 'confirmado', 'cancelado', 'realizado', 'reposicao-pendente'
   diaSemana: Number,
   semanasRecorrencia: Number
-});
+}, { strict: false });
 const Agendamento = mongoose.model('Agendamento', AgendamentoSchema);
 
 // 3. Schema de Configurações da Grade da Agenda
+// Adicionado { strict: false } para garantir paridade
 const ConfigSchema = new mongoose.Schema({
   chave: { type: String, default: 'grade_horarios', unique: true },
   horaInicio: { type: String, default: '06:00' },
   horaFim: { type: String, default: '22:00' }
-});
+}, { strict: false });
 const Config = mongoose.model('Config', ConfigSchema);
 
 
