@@ -1,3 +1,11 @@
+/* [TAG-STYLE-OBJETIVOS] - Cores dos objetivos de treino */
+.objetivo-Hipertrofia { color: #FFD700; }
+.objetivo-Emagrecimento { color: #81C784; }
+.objetivo-Condicionamento { color: #64B5F6; }
+.objetivo-Funcional { color: #FF7043; }
+.objetivo-PersonalTrainer { color: #C2185B; font-weight: 700; }
+.objetivo-Outro { color: #B39DDB; }
+
 /* [TAG-STYLE-BASE] - Reset e estilos base (Focado em Mobile) */
 * {
     margin: 0;

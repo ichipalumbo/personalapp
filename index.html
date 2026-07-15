@@ -126,22 +126,6 @@
         </main>
     <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
         <main id="tela-alunos" class="view-section" style="display: none; padding-bottom: 80px;">
-            <section class="alunos-panel" style="margin-bottom: 20px; border-color: rgba(255, 215, 0, 0.2);">
-                <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
-                    <i class="fa-solid fa-chart-line" style="color: #FFD700;"></i> Painel de Receita & Auditoria
-                </h3>
-                <div class="alunos-grid" style="grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0;">
-                    <div class="card-stat" style="border-color: #FFD700; background: rgba(255, 215, 0, 0.02); padding: 12px 10px; text-align: left;">
-                        <span class="stat-numero" id="faturamentoProjetado" style="font-size: 1.35rem;">R$ 0,00</span>
-                        <span class="stat-label" style="font-size: 0.72rem; color: #AAA;"><i class="fa-solid fa-coins" style="color: #FFD700; margin-right: 4px;"></i>Faturamento Esperado / mês</span>
-                    </div>
-                    <div class="card-stat" id="cardAuditoriaGrade" style="border-color: #81C784; background: rgba(129, 199, 132, 0.02); padding: 12px 10px; text-align: left;">
-                        <span class="stat-numero" id="totalPendenciasGrade" style="font-size: 1.35rem; color: #81C784;">0</span>
-                        <span class="stat-label" style="font-size: 0.72rem; color: #AAA;"><i class="fa-solid fa-triangle-exclamation" style="margin-right: 4px;"></i>Pendências de agendamento</span>
-                    </div>
-                </div>
-            </section>
-
             <section class="alunos-panel">
                 <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px;"><i class="fa-solid fa-address-book" style="color: #FFD700; margin-right: 8px;"></i>Seus Alunos</h3>
                 <div class="alunos-grid" id="listaAlunos"></div>
@@ -186,9 +170,9 @@
                             <input type="tel" id="alunoTelefone" placeholder="(11) 99999-9999">
                         </div>
                         <div class="form-grupo-spa">
-                            <label for="alunoObjetivo">Objetivo *</label>
-                            <select id="alunoObjetivo" required>
-                                <option value="">Selecione...</option>
+                            <label for="alunoObjetivo">Objetivo</label>
+                            <select id="alunoObjetivo">
+                                <option value="">Personal Trainer</option>
                                 <option value="Hipertrofia">Hipertrofia</option>
                                 <option value="Emagrecimento">Emagrecimento</option>
                                 <option value="Condicionamento">Condicionamento</option>

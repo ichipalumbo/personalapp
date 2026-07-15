@@ -62,10 +62,170 @@ app.get('/', (req, res) => {
   res.send('🚀 API da Agenda Personal Trainer rodando e pronta!');
 });
 
+// [TAG-BACKEND-FUNCOES-KPIS] - Funções de cálculo de KPIs (persistentes)
+
+/**
+ * Calcula a projeção do MÊS INTEIRO baseado em recorrências
+ * @param {Object} aluno - Objeto com preco e frequenciaSemanal
+ * @param {Array} aulas - Array de aulas agendadas
+ * @returns {Number} Valor total previsto para o mês
+ */
+function calcularProjecaoMensalCompleta(aluno, aulas) {
+  const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+  const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+  
+  // Fallback: usar aproximação (frequência × 4 semanas × preço)
+  return freqAcordada * 4 * preco;
+}
+
+/**
+ * Calcula quantas aulas já foram realizadas até hoje
+ * @param {Object} aluno - Objeto com preco
+ * @param {Array} aulas - Array de aulas agendadas
+ * @returns {Number} Valor total realizado
+ */
+function calcularProjecaoRealizadaAteHoje(aluno, aulas) {
+  const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+  const alunoId = aluno.id;
+  
+  // Contar aulas do aluno que já passaram (tipo 'aula')
+  const aulasAluno = aulas.filter(a => a.alunoId === alunoId && a.tipo === 'aula');
+  
+  // Aproximação: contar dias de recorrência × preço
+  let totalAulasPrevistas = 0;
+  aulasAluno.forEach(a => {
+    if (a.diasSemana && Array.isArray(a.diasSemana)) {
+      totalAulasPrevistas += a.diasSemana.length;
+    } else {
+      totalAulasPrevistas += 1;
+    }
+  });
+  
+  return totalAulasPrevistas * preco;
+}
+
+/**
+ * Calcula projeção aproximada
+ * @param {Object} aluno - Objeto do aluno
+ * @returns {Number} Valor aproximado mensal
+ */
+function calcularProjecaoAproximada(aluno) {
+  const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+  const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+  return freqAcordada * 4 * preco;
+}
+
+/**
+ * Calcula aulas faltando agendar
+ * @param {Object} aluno - Objeto do aluno
+ * @param {Array} aulas - Array de aulas
+ * @returns {Number} Quantidade de aulas faltando
+ */
+function calcularAulasFaltamAgendar(aluno, aulas) {
+  const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+  
+  const aulasRecorrentes = aulas.filter(a => 
+    a.alunoId === aluno.id && 
+    a.tipo === 'aula' && 
+    a.frequencia === 'semanal'
+  );
+  
+  let totalAgendado = 0;
+  aulasRecorrentes.forEach(a => {
+    if (a.diasSemana && Array.isArray(a.diasSemana)) {
+      totalAgendado += a.diasSemana.length;
+    } else {
+      totalAgendado += 1;
+    }
+  });
+  
+  return Math.max(0, freqAcordada - totalAgendado);
+}
+
+/**
+ * Conta reposições devidas
+ * @param {String} alunoId - ID do aluno
+ * @param {Array} aulas - Array de aulas
+ * @returns {Number} Total de reposições
+ */
+function contarReposicoesPorAluno(alunoId, aulas) {
+  return aulas.filter(a => a.alunoId === alunoId && a.tipo === 'reposição').length;
+}
+
 app.get('/api/alunos', async (req, res) => {
   try {
     const alunos = await Aluno.find();
     res.json(alunos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * NOVA ROTA: Retorna KPIs calculados para um aluno específico
+ * GET /api/alunos/:alunoId/kpis
+ */
+app.get('/api/alunos/:alunoId/kpis', async (req, res) => {
+  try {
+    const { alunoId } = req.params;
+    
+    // Buscar aluno
+    const aluno = await Aluno.findOne({ id: alunoId });
+    if (!aluno) {
+      return res.status(404).json({ error: 'Aluno não encontrado' });
+    }
+    
+    // Buscar todas as aulas
+    const aulas = await Agendamento.find();
+    
+    // Calcular KPIs
+    const projecaoMesCompleto = calcularProjecaoMensalCompleta(aluno, aulas);
+    const realizadoAteHoje = calcularProjecaoRealizadaAteHoje(aluno, aulas);
+    const projecaoAproximada = calcularProjecaoAproximada(aluno);
+    const aulasFaltam = calcularAulasFaltamAgendar(aluno, aulas);
+    const reposicoes = contarReposicoesPorAluno(aluno.id, aulas);
+    
+    res.json({
+      alunoId: aluno.id,
+      aluno: aluno.nome,
+      kpis: {
+        projecaoMesCompleto,
+        realizadoAteHoje,
+        projecaoAproximada,
+        aulasFaltam,
+        reposicoes
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/**
+ * NOVA ROTA: Retorna KPIs para TODOS os alunos
+ * GET /api/alunos/kpis/todos
+ * Útil para dashboards e relatórios
+ */
+app.get('/api/alunos/kpis/todos', async (req, res) => {
+  try {
+    const alunos = await Aluno.find();
+    const aulas = await Agendamento.find();
+    
+    const kpisCompletos = alunos.map(aluno => ({
+      alunoId: aluno.id,
+      aluno: aluno.nome,
+      preco: aluno.preco,
+      frequenciaSemanal: aluno.frequenciaSemanal,
+      kpis: {
+        projecaoMesCompleto: calcularProjecaoMensalCompleta(aluno, aulas),
+        realizadoAteHoje: calcularProjecaoRealizadaAteHoje(aluno, aulas),
+        projecaoAproximada: calcularProjecaoAproximada(aluno),
+        aulasFaltam: calcularAulasFaltamAgendar(aluno, aulas),
+        reposicoes: contarReposicoesPorAluno(aluno.id, aulas)
+      }
+    }));
+    
+    res.json(kpisCompletos);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

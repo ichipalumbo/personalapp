@@ -37,9 +37,6 @@ window.abrirCadastroParaNovo = function() {
 };
 window.renderizarListaAlunos = function() {
     const listaContainer = document.getElementById('listaAlunos');
-    const faturamentoEl = document.getElementById('faturamentoProjetado');
-    const pendenciasEl = document.getElementById('totalPendenciasGrade');
-    const cardAuditoria = document.getElementById('cardAuditoriaGrade');
     
     if (!listaContainer) return;
 
@@ -51,62 +48,32 @@ window.renderizarListaAlunos = function() {
                     <p style="font-size: 0.95rem;">Nenhum aluno cadastrado no momento.</p>
                 </div>
             `;
-            if (faturamentoEl) faturamentoEl.textContent = 'R$ 0,00';
-            if (pendenciasEl) pendenciasEl.textContent = '0';
             return;
         }
-
-        let faturamentoAcumuladoMes = 0;
-        let totalAlunosComPendencia = 0;
         listaContainer.innerHTML = alunos.map(aluno => {
             const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
             const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
             const local = aluno.local || 'Não definido';
-            const telefone = aluno.telefone || 'Sem tel.';
-            const receitaProjetadaAluno = preco * freqAcordada * 4;
-            faturamentoAcumuladoMes += receitaProjetadaAluno;
-            const aulasRecorrentesDoAluno = aulas.filter(a => a.alunoId === aluno.id && a.tipo === 'aula' && a.frequencia === 'semanal');
-            let totalAgendadoSemana = 0;
+            const objetivo = aluno.objetivo || 'Personal Trainer';
+            const objetivoClass = objetivo.replace(/\s+/g, '');
             
-            aulasRecorrentesDoAluno.forEach(a => {
-                if (a.diasSemana && Array.isArray(a.diasSemana)) {
-                    totalAgendadoSemana += a.diasSemana.length;
-                } else {
-                    totalAgendadoSemana += 1;
-                }
-            });
-            let statusBadgeHtml = "";
-            if (totalAgendadoSemana < freqAcordada) {
-                totalAlunosComPendencia++;
-                const emFalta = freqAcordada - totalAgendadoSemana;
-                statusBadgeHtml = `
-                    <span style="background: rgba(255, 152, 0, 0.12); color: #FF9800; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(255, 152, 0, 0.25);">
-                        <i class="fa-solid fa-triangle-exclamation"></i> Pendente: falta agendar ${emFalta}x
-                    </span>
-                `;
-            } else if (totalAgendadoSemana === freqAcordada) {
-                statusBadgeHtml = `
-                    <span style="background: rgba(76, 175, 80, 0.12); color: #81C784; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(76, 175, 80, 0.25);">
-                        <i class="fa-solid fa-circle-check"></i> Grade Completa (${totalAgendadoSemana}x)
-                    </span>
-                `;
-            } else {
-                statusBadgeHtml = `
-                    <span style="background: rgba(100, 181, 246, 0.12); color: #64B5F6; font-size: 0.68rem; font-weight: 800; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid rgba(100, 181, 246, 0.25);">
-                        <i class="fa-solid fa-circle-plus"></i> Grade Extra (${totalAgendadoSemana}x / ${freqAcordada}x)
-                    </span>
-                `;
-            }
-
+            // Calcular KPIs usando as novas funções
+            const projecaoMes = calcularProjecaoMensalCompleta(aluno, aulas);
+            const realizadoAteHoje = calcularProjecaoRealizadaAteHoje(aluno, aulas);
+            const projecaoAproximada = calcularProjecaoAproximada(aluno);
+            const aulasFaltam = calcularAulasFaltamAgendar(aluno, aulas);
+            const reposicoes = contarReposicoesPorAluno(aluno.id, aulas);
+            
             return `
                 <div class="aluno-card" style="display: flex; flex-direction: column; gap: 10px; position: relative;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                         <div>
                             <strong style="display: block; color: #FFF; font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
-                            <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px;">
-                                <span style="font-size: 0.72rem; color: #FFD700; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${aluno.objetivo}</span>
+                            <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
+                                <span class="objetivo-${objetivoClass}" style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${objetivo}</span>
                                 <span style="color: #444; font-size: 0.75rem;">•</span>
                                 <span style="font-size: 0.72rem; color: #AAA; font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
+                                <span style="font-size: 0.72rem; color: #81C784; font-weight: 600;">~R$ ${projecaoAproximada.toFixed(2)}</span>
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px; flex-shrink: 0;">
@@ -118,41 +85,40 @@ window.renderizarListaAlunos = function() {
                             </button>
                         </div>
                     </div>
-
-                    <div style="display: flex; align-items: center; gap: 8px; background: #131313; padding: 6px 10px; border-radius: 8px; margin: 2px 0;">
-                        <span style="font-size: 0.72rem; color: #888;">Grade:</span>
-                        ${statusBadgeHtml}
-                    </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.78rem; color: #B0B0B0; border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
                         <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
-                            <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> R$ ${preco.toFixed(2)} / hora</div>
-                            <div style="color: #FFD700; font-weight: 700;"><i class="fa-solid fa-chart-pie"></i> Projeção: R$ ${receitaProjetadaAluno.toFixed(2)}/mês</div>
+                        <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> R$ ${preco.toFixed(2)} / hora</div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px;">
+                        <div style="background: rgba(129, 199, 132, 0.12); border: 1px solid rgba(129, 199, 132, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
+                            <div style="font-size: 0.65rem; color: #81C784; font-weight: 700;">💰 PROJEÇÃO</div>
+                            <div style="font-size: 0.7rem; color: #A5D6A7; margin-top: 3px;">
+                                <div style="font-weight: 600;">R$ ${projecaoMes.toFixed(2)}</div>
+                                <div style="font-size: 0.55rem; color: #AAA; margin-top: 1px;">Mês inteiro</div>
+                            </div>
+                            <div style="font-size: 0.7rem; color: #B0B0B0; margin-top: 4px; border-top: 1px solid rgba(129, 199, 132, 0.2); padding-top: 3px;">
+                                <div style="font-weight: 600;">R$ ${realizadoAteHoje.toFixed(2)}</div>
+                                <div style="font-size: 0.55rem; color: #888;">Realizado</div>
+                            </div>
                         </div>
-                        <div><i class="fa-solid fa-phone" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${telefone}</div>
+                        
+                        <div style="background: rgba(255, 152, 0, 0.12); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
+                            <div style="font-size: 0.65rem; color: #FF9800; font-weight: 700;">📅 FALTAM</div>
+                            <div style="font-size: 1.4rem; color: #FFB74D; font-weight: 700; margin-top: 4px;">${aulasFaltam}</div>
+                            <div style="font-size: 0.6rem; color: #AAA; margin-top: 2px;">aula(s) / sem</div>
+                        </div>
+                        
+                        <div style="background: rgba(100, 181, 246, 0.12); border: 1px solid rgba(100, 181, 246, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
+                            <div style="font-size: 0.65rem; color: #64B5F6; font-weight: 700;">🔄 REPOSIÇÃO</div>
+                            <div style="font-size: 1.4rem; color: #90CAF9; font-weight: 700; margin-top: 4px;">${reposicoes}</div>
+                            <div style="font-size: 0.6rem; color: #AAA; margin-top: 2px;">devida(s)</div>
+                        </div>
                     </div>
                 </div>
             `;
         }).join('');
-        if (faturamentoEl) {
-            faturamentoEl.innerHTML = `<span style="font-size: 0.8rem; color: #FFF; display: block; margin-bottom: 2px; font-weight: 500;">R$ ${faturamentoAcumuladoMes.toFixed(2)}</span><span style="font-size: 0.65rem; color: #AAA; display: block;">Projeção total (com base em 4 semanas)</span>`;
-        }
-        
-        if (pendenciasEl) {
-            pendenciasEl.textContent = totalAlunosComPendencia;
-            if (cardAuditoria) {
-                if (totalAlunosComPendencia > 0) {
-                    cardAuditoria.style.borderColor = '#FF9800';
-                    cardAuditoria.style.background = 'rgba(255, 152, 0, 0.04)';
-                    pendenciasEl.style.color = '#FF9800';
-                } else {
-                    cardAuditoria.style.borderColor = '#81C784';
-                    cardAuditoria.style.background = 'rgba(129, 199, 132, 0.04)';
-                    pendenciasEl.style.color = '#81C784';
-                }
-            }
-        }
     }
 };
 window.prepararEdicaoAluno = function(id) {
@@ -202,7 +168,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const local = document.getElementById('alunoLocal').value.trim();
             const preco = parseFloat(document.getElementById('alunoPreco').value) || 0;
             const telefone = document.getElementById('alunoTelefone').value.trim();
-            const objetivo = document.getElementById('alunoObjetivo').value;
+            let objetivo = document.getElementById('alunoObjetivo').value.trim();
+            // Se objetivo vazio, preencher com padrão "Personal Trainer"
+            if (!objetivo) objetivo = 'Personal Trainer';
             const frequenciaSemanal = parseInt(document.getElementById('alunoFrequenciaSemanal').value, 10) || 2;
 
             if (typeof alunos === 'undefined') return;
