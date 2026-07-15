@@ -1,12 +1,5 @@
-// =================================================================
-// [JS-STORAGE] - Integração do Front-end com a API no Render & MongoDB
-// =================================================================
-
-// URL base da sua API hospedada no Render
+// [TAG-JS-STORAGE] - Integração do Front-end com a API no Render & MongoDB
 const API_BASE_URL = "https://personalapp-api.onrender.com/api";
-
-// --- HELPERS DE ESCOPO GLOBAL ---
-// Estas funções garantem paridade de referência entre variáveis léxicas locais (let/var) e o objeto window
 
 function obterAlunos() {
     try {
@@ -69,13 +62,9 @@ function atualizarLimitesGrade(novaGrade) {
     } catch(e) {}
     window.limitesGrade = grade;
 }
-
-// --- FUNÇÃO DE CARREGAMENTO (GET) ---
 async function carregarDados() {
     try {
         console.log("🔄 Iniciando sincronização com o banco de dados online...");
-        
-        // Faz requisições simultâneas para otimizar o tempo de carregamento
         const [resAlunos, resAgendamentos, resConfig] = await Promise.all([
             fetch(`${API_BASE_URL}/alunos`).catch(err => { throw new Error("API Alunos fora do ar"); }),
             fetch(`${API_BASE_URL}/agendamentos`).catch(err => { throw new Error("API Agendamentos fora do ar"); }),
@@ -89,14 +78,8 @@ async function carregarDados() {
         const dadosAlunos = await resAlunos.json();
         const dadosAgendamentos = await resAgendamentos.json();
         const dadosConfig = await resConfig.json();
-
-        // Mapeia os dados vindo da API
         const listaAlunosAPI = Array.isArray(dadosAlunos) ? dadosAlunos : [];
         const listaAulasAPI = Array.isArray(dadosAgendamentos) ? dadosAgendamentos : [];
-
-        // --- SISTEMA DE MIGRAÇÃO ONLINE ---
-        // Se o MongoDB remoto estiver zerado, mas o usuário possui dados locais prévios no navegador,
-        // nós migramos automaticamente do localStorage para o MongoDB na primeira execução!
         if (listaAlunosAPI.length === 0 && listaAulasAPI.length === 0) {
             const backupUnificado = localStorage.getItem('personalTrainerData');
             const backupAlunos = localStorage.getItem('personal_alunos');
@@ -126,21 +109,15 @@ async function carregarDados() {
 
                 atualizarAlunos(alunosLocais);
                 atualizarAulas(aulasLocais);
-                
-                // Envia os dados para a API silenciosamente para persistir no MongoDB
                 await salvarDados(true);
                 
                 if (typeof mostrarToast === 'function') {
                     mostrarToast("Seus dados locais foram migrados com sucesso para a nuvem!", "success");
                 }
-                
-                // Atualiza a interface
                 forçarRenderizacaoInterface();
                 return;
             }
         }
-
-        // Caso comum: Atualiza o estado global com os dados vindos do banco de dados MongoDB
         atualizarAlunos(listaAlunosAPI);
         atualizarAulas(listaAulasAPI);
 
@@ -152,8 +129,6 @@ async function carregarDados() {
         } else {
             atualizarLimitesGrade({ inicio: "06:00", fim: "22:00" });
         }
-
-        // Carrega faturamentoMeta (local ou do localStorage)
         window.faturamentoMeta = parseFloat(localStorage.getItem('faturamentoMeta')) || 0;
 
         console.log("✅ Dados sincronizados do MongoDB com sucesso!", {
@@ -174,10 +149,7 @@ async function carregarDados() {
         forçarRenderizacaoInterface();
     }
 }
-
-// --- FUNÇÃO DE PERSISTÊNCIA (POST) ---
 async function salvarDados(silencioso = false) {
-    // 1. Salva sempre no localStorage primeiro como segurança de redundância
     salvarNoLocalStorage();
 
     try {
@@ -186,8 +158,6 @@ async function salvarDados(silencioso = false) {
         const alunosData = obterAlunos();
         const aulasData = obterAulas();
         const gradeData = obterLimitesGrade();
-
-        // Envia de forma limpa para as rotas do seu backend
         const [resAlunos, resAgendamentos, resConfig] = await Promise.all([
             fetch(`${API_BASE_URL}/alunos/sincronizar`, {
                 method: "POST",
@@ -226,8 +196,6 @@ async function salvarDados(silencioso = false) {
         }
     }
 }
-
-// --- SECUNDÁRIAS / AUXILIARES ---
 
 function carregarDadosDoLocalStorage() {
     const backupAlunos = localStorage.getItem('personal_alunos');

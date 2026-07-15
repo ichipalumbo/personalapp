@@ -1,7 +1,4 @@
-// ========================================================
-// [JS-AGENDA] - Renderização da agenda semanal
-// ========================================================
-
+// [TAG-JS-AGENDA] - Renderização da agenda semanal
 function getAulaNoIntervalo(dia, horario) {
     return aulas.find(a => {
         if (a.dia !== dia) return false;
@@ -61,3 +58,4 @@ function renderizarAgenda() {
 
     grid.innerHTML = html;
 }
+

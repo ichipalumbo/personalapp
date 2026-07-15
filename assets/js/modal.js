@@ -1,7 +1,4 @@
-// ========================================================
-// [JS-MODAL] - Modal de agendamento (com horário duplo)
-// ========================================================
-
+// [TAG-JS-MODAL] - Modal de agendamento (com horário duplo)
 let modalDia = '';
 let modalHorarioClick = '';
 
@@ -23,8 +20,6 @@ function abrirModal(dia, horario) {
     modalHorarioClick = horario;
 
     document.getElementById('modalInfo').textContent = dia;
-
-    // Sempre popula o select, mesmo que vazio
     const select = document.getElementById('modalSelectAluno');
     if (alunos.length > 0) {
         select.innerHTML = getAlunosParaSelect();
@@ -35,8 +30,6 @@ function abrirModal(dia, horario) {
     }
 
     preencherSelectHorarios();
-    
-    // Garantir que o cadastro rápido comece oculto
     const container = document.getElementById('cadastroRapidoContainer');
     const btn = document.getElementById('btnCadastroRapido');
     if (container) container.style.display = 'none';
@@ -64,16 +57,12 @@ function confirmarAgendamento() {
         mostrarToast('Cadastre um aluno primeiro! Use o botão "➕ Novo"', 'error');
         return;
     }
-
-    // Validar ordem dos horários
     const idxInicio = HORARIOS.indexOf(horarioInicio);
     const idxFim = HORARIOS.indexOf(horarioFim);
     if (idxInicio > idxFim) {
         mostrarToast('Horário final deve ser após o horário inicial!', 'error');
         return;
     }
-
-    // Verificar conflito com outras aulas no intervalo
     for (let i = idxInicio; i <= idxFim; i++) {
         const h = HORARIOS[i];
         const conflito = getAulaNoIntervalo(modalDia, h);
@@ -91,8 +80,6 @@ function confirmarAgendamento() {
         horarioInicio,
         horarioFim
     };
-
-    // Se já existir uma aula do mesmo aluno no mesmo dia, atualiza
     const aulaExistente = aulas.find(a => a.alunoId === alunoId && a.dia === modalDia);
     if (aulaExistente) {
         if (confirm(`O aluno já tem aula na ${modalDia}. Deseja atualizar o horário?`)) {
@@ -118,11 +105,6 @@ function confirmarAgendamento() {
     const aluno = getAluno(alunoId);
     mostrarToast(`🎯 Aula agendada: ${aluno ? aluno.nome : 'Aluno'} — ${modalDia} ${horarioInicio}-${horarioFim}`);
 }
-
-// ========================================================
-// [JS-CANCELAR] - Cancelamento de aula
-// ========================================================
-
 function cancelarAula(aulaId) {
     if (!confirm('Cancelar esta aula?')) return;
     aulas = aulas.filter(a => a.id !== aulaId);

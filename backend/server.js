@@ -6,11 +6,10 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
-// Conexão dinâmica com o MongoDB (aceita MONGODB_URI da Vercel ou MONGO_URI padrão)
+// [TAG-BACKEND-MONGO-CONN] - Conexao dinamica via MONGODB_URI/MONGO_URI
 const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
 if (!mongoURI) {
@@ -21,12 +20,10 @@ if (!mongoURI) {
     .catch(err => console.error('❌ Erro ao conectar ao MongoDB:', err));
 }
 
-// --- MONGODB SCHEMAS & MODELS ---
+// [TAG-BACKEND-SCHEMAS] - Definicao de schemas e models
 
-// 1. Schema de Alunos
-// Adicionado { strict: false } para permitir que qualquer campo dinâmico do front-end (como local, valorHora, etc.) seja salvo sem filtragem!
 const AlunoSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true }, // Mantém o ID gerado pelo front
+  id: { type: String, required: true, unique: true },
   nome: { type: String, required: true },
   telefone: String,
   status: { type: String, default: 'ativo' },
@@ -38,23 +35,19 @@ const AlunoSchema = new mongoose.Schema({
 }, { strict: false });
 const Aluno = mongoose.model('Aluno', AlunoSchema);
 
-// 2. Schema de Agendamentos (Aulas)
-// Adicionado { strict: false } para dar flexibilidade total ao agendamento
 const AgendamentoSchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true },
   alunoId: String,
   alunoNome: String,
-  data: String,         // Formato YYYY-MM-DD
-  horario: String,      // Formato HH:MM
-  tipo: String,         // 'recorrente', 'unico', 'reposicao'
-  status: { type: String, default: 'confirmado' }, // 'confirmado', 'cancelado', 'realizado', 'reposicao-pendente'
+  data: String,
+  horario: String,
+  tipo: String,
+  status: { type: String, default: 'confirmado' },
   diaSemana: Number,
   semanasRecorrencia: Number
 }, { strict: false });
 const Agendamento = mongoose.model('Agendamento', AgendamentoSchema);
 
-// 3. Schema de Configurações da Grade da Agenda
-// Adicionado { strict: false } para garantir paridade
 const ConfigSchema = new mongoose.Schema({
   chave: { type: String, default: 'grade_horarios', unique: true },
   horaInicio: { type: String, default: '06:00' },
@@ -63,13 +56,12 @@ const ConfigSchema = new mongoose.Schema({
 const Config = mongoose.model('Config', ConfigSchema);
 
 
-// --- ROTAS DA API ---
+// [TAG-BACKEND-ROTAS] - Rotas principais da API
 
 app.get('/', (req, res) => {
   res.send('🚀 API da Agenda Personal Trainer rodando e pronta!');
 });
 
-// === ROTAS DE ALUNOS ===
 app.get('/api/alunos', async (req, res) => {
   try {
     const alunos = await Aluno.find();
@@ -81,10 +73,7 @@ app.get('/api/alunos', async (req, res) => {
 
 app.post('/api/alunos/sincronizar', async (req, res) => {
   try {
-    // Sincroniza a lista completa vinda do front
     const { alunos } = req.body;
-    
-    // Abordagem simples: limpa a coleção e reinsere para garantir paridade com o front
     await Aluno.deleteMany({});
     if (alunos && alunos.length > 0) {
       await Aluno.insertMany(alunos);
@@ -96,7 +85,6 @@ app.post('/api/alunos/sincronizar', async (req, res) => {
   }
 });
 
-// === ROTAS DE AGENDAMENTOS ===
 app.get('/api/agendamentos', async (req, res) => {
   try {
     const agendamentos = await Agendamento.find();
@@ -119,7 +107,6 @@ app.post('/api/agendamentos/sincronizar', async (req, res) => {
   }
 });
 
-// === ROTAS DE CONFIGURAÇÃO ===
 app.get('/api/configuracao', async (req, res) => {
   try {
     let config = await Config.findOne({ chave: 'grade_horarios' });
@@ -146,7 +133,7 @@ app.post('/api/configuracao', async (req, res) => {
   }
 });
 
-// Inicialização
+// [TAG-BACKEND-BOOT] - Inicializacao do servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
 });

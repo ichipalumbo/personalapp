@@ -1,7 +1,4 @@
-// ========================================================
-// [JS-TOAST] - Função de exibição de toast
-// ========================================================
-
+// [TAG-JS-TOAST] - Função de exibição de toast
 function mostrarToast(msg, tipo = 'success') {
     const toast = document.getElementById('toast');
     if (!toast) return;
@@ -11,11 +8,6 @@ function mostrarToast(msg, tipo = 'success') {
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => toast.classList.remove('show'), 3000);
 }
-
-// ========================================================
-// [JS-EXPORT] - Exportar e Importar dados
-// ========================================================
-
 function exportarDados() {
     const dados = JSON.stringify({ alunos, aulas }, null, 2);
     const blob = new Blob([dados], { type: 'application/json' });
@@ -60,11 +52,6 @@ function handleImport(event) {
     reader.readAsText(file);
     event.target.value = '';
 }
-
-// ========================================================
-// [JS-LIMPAR] - Limpar todos os dados
-// ========================================================
-
 function limparTudo() {
     if (!confirm('☠️ TEM CERTEZA? Isso vai apagar TODOS os dados (alunos e agenda)!')) return;
     if (!confirm('Última chance! Confirma a limpeza total?')) return;
@@ -76,11 +63,6 @@ function limparTudo() {
     renderizarCalendario();
     mostrarToast('🗑️ Todos os dados foram removidos!');
 }
-
-// ========================================================
-// [JS-TOGGLE-CADASTRO] - Alternar entre tela de cadastro e agenda
-// ========================================================
-
 function toggleTelaCadastro() {
     telaCadastroAberta = !telaCadastroAberta;
     
@@ -90,7 +72,6 @@ function toggleTelaCadastro() {
     const btnToggle = document.getElementById('btnToggleCadastro');
 
     if (telaCadastroAberta) {
-        // Modo CADASTRO: só mostra o painel de alunos
         if (painelCadastro) painelCadastro.style.display = 'block';
         if (painelAgenda) painelAgenda.style.display = 'none';
         if (painelCalendario) painelCalendario.style.display = 'none';
@@ -99,7 +80,6 @@ function toggleTelaCadastro() {
             btnToggle.className = 'btn btn-secondary';
         }
     } else {
-        // Modo AGENDA: mostra calendário + agenda
         if (painelCadastro) painelCadastro.style.display = 'none';
         if (painelAgenda) painelAgenda.style.display = 'block';
         if (painelCalendario) painelCalendario.style.display = 'block';
@@ -109,4 +89,3 @@ function toggleTelaCadastro() {
         }
     }
 }
-

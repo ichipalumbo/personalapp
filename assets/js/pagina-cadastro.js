@@ -1,25 +1,12 @@
-// ========================================================
 // [TAG-JS-CADASTRO] - Lógica de Alunos na SPA (Prô Josy)
-// ========================================================
-
-// 1. INICIALIZAÇÃO DA PÁGINA (Chamada pelo app.js ao navegar)
 window.inicializarPaginaCadastro = function() {
-    // Recarrega do Storage para garantir dados sempre atualizados
     if (typeof carregarDados === 'function') carregarDados();
-    
-    // Desenha a listagem de alunos e atualiza o novo faturamento acumulado
     window.renderizarListaAlunos();
-    
-    // Garante que o modal começa fechado
     window.togglePainelCadastro(false);
 };
-
-// Cria o elo de compatibilidade (alias) com a chamada do app.js
 window.inicializarAlunos = function() {
     window.inicializarPaginaCadastro();
 };
-
-// 2. CONTROLE DO MODAL DE CADASTRO/EDIÇÃO (Abre e fecha de forma limpa)
 window.togglePainelCadastro = function(mostrar) {
     const modal = document.getElementById('modalFormAluno');
     if (!modal) return;
@@ -28,8 +15,6 @@ window.togglePainelCadastro = function(mostrar) {
         modal.style.display = 'flex'; // Exibe o overlay centralizado
     } else {
         modal.style.display = 'none'; // Esconde o modal
-        
-        // Limpa o formulário para evitar que resquícios de edição continuem salvos
         const form = document.getElementById('formNovoAluno');
         if (form) form.reset();
         
@@ -37,8 +22,6 @@ window.togglePainelCadastro = function(mostrar) {
         if (idEdicao) idEdicao.value = '';
     }
 };
-
-// Reseta o modal para o estado de "Novo Cadastro"
 window.abrirCadastroParaNovo = function() {
     const titulo = document.getElementById('tituloFormAluno');
     const botao = document.getElementById('btnSalvarAluno');
@@ -48,8 +31,6 @@ window.abrirCadastroParaNovo = function() {
     
     window.togglePainelCadastro(true);
 };
-
-// 3. RENDERIZAÇÃO DA LISTA DE ALUNOS (Cards ultra-responsivos com novas informações)
 window.renderizarListaAlunos = function() {
     const listaContainer = document.getElementById('listaAlunos');
     const faturamentoEl = document.getElementById('faturamentoProjetado');
@@ -73,21 +54,13 @@ window.renderizarListaAlunos = function() {
 
         let faturamentoAcumuladoMes = 0;
         let totalAlunosComPendencia = 0;
-
-        // Gera o HTML de cada card incluindo Local, Valor Hora, Telefone e Auditoria Contratual
         listaContainer.innerHTML = alunos.map(aluno => {
             const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
             const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
             const local = aluno.local || 'Não definido';
             const telefone = aluno.telefone || 'Sem tel.';
-            
-            // Faturamento Projetado para este aluno com base nas aulas semanais acordadas
-            // Considera-se a média padrão de 4 semanas de cobrança por mês comercial
             const receitaProjetadaAluno = preco * freqAcordada * 4;
             faturamentoAcumuladoMes += receitaProjetadaAluno;
-
-            // --- MOTOR DE AUDITORIA DE GRADE ---
-            // Conta quantas aulas recorrentes ativas esse aluno tem agendadas no sistema
             const aulasRecorrentesDoAluno = aulas.filter(a => a.alunoId === aluno.id && a.tipo === 'aula' && a.frequencia === 'semanal');
             let totalAgendadoSemana = 0;
             
@@ -98,8 +71,6 @@ window.renderizarListaAlunos = function() {
                     totalAgendadoSemana += 1;
                 }
             });
-
-            // Criação do Badge de Status de Auditoria
             let statusBadgeHtml = "";
             if (totalAgendadoSemana < freqAcordada) {
                 totalAlunosComPendencia++;
@@ -125,7 +96,6 @@ window.renderizarListaAlunos = function() {
 
             return `
                 <div class="aluno-card" style="display: flex; flex-direction: column; gap: 10px; position: relative;">
-                    <!-- Topo do Card: Nome e Ações -->
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                         <div>
                             <strong style="display: block; color: #FFF; font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
@@ -136,24 +106,20 @@ window.renderizarListaAlunos = function() {
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px; flex-shrink: 0;">
-                            <!-- Botão Editar -->
                             <button class="btn btn-secondary btn-sm" onclick="prepararEdicaoAluno('${aluno.id}')" style="padding: 6px 10px; background: #333;" title="Editar Aluno">
                                 <i class="fa-solid fa-pen"></i>
                             </button>
-                            <!-- Botão Excluir -->
                             <button class="btn btn-danger btn-sm" onclick="deletarAlunoSPA('${aluno.id}')" style="padding: 6px 10px;" title="Excluir Aluno">
                                 <i class="fa-solid fa-trash"></i>
                             </button>
                         </div>
                     </div>
 
-                    <!-- Visualizador da Saúde de Grade / Match Acordado vs Agendado -->
                     <div style="display: flex; align-items: center; gap: 8px; background: #131313; padding: 6px 10px; border-radius: 8px; margin: 2px 0;">
                         <span style="font-size: 0.72rem; color: #888;">Grade:</span>
                         ${statusBadgeHtml}
                     </div>
                     
-                    <!-- Rodapé do Card: Informações de Logística e Valores -->
                     <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.78rem; color: #B0B0B0; border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
                         <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 4px;">
@@ -165,8 +131,6 @@ window.renderizarListaAlunos = function() {
                 </div>
             `;
         }).join('');
-
-        // Atualiza os contadores globais do painel financeiro & auditoria
         if (faturamentoEl) {
             faturamentoEl.innerHTML = `<span style="font-size: 0.8rem; color: #FFF; display: block; margin-bottom: 2px; font-weight: 500;">R$ ${faturamentoAcumuladoMes.toFixed(2)}</span><span style="font-size: 0.65rem; color: #AAA; display: block;">Projeção total (com base em 4 semanas)</span>`;
         }
@@ -187,14 +151,10 @@ window.renderizarListaAlunos = function() {
         }
     }
 };
-
-// 4. PREPARAÇÃO DO MODAL PARA EDIÇÃO (Puxa os dados antigos para os inputs)
 window.prepararEdicaoAluno = function(id) {
     if (typeof alunos === 'undefined') return;
     const aluno = alunos.find(a => a.id === id);
     if (!aluno) return;
-
-    // Popula todos os campos do modal
     const elId = document.getElementById('alunoIdEdicao');
     const elNome = document.getElementById('alunoNome');
     const elLocal = document.getElementById('alunoLocal');
@@ -210,36 +170,23 @@ window.prepararEdicaoAluno = function(id) {
     if (elTelefone) elTelefone.value = aluno.telefone || '';
     if (elObjetivo) elObjetivo.value = aluno.objetivo || '';
     if (elFrequencia) elFrequencia.value = aluno.frequenciaSemanal || '2';
-
-    // Atualiza os títulos visuais do modal
     const titulo = document.getElementById('tituloFormAluno');
     const botao = document.getElementById('btnSalvarAluno');
     if (titulo) titulo.textContent = 'Editar Aluno';
     if (botao) botao.textContent = 'Atualizar';
-
-    // Abre o modal
     window.togglePainelCadastro(true);
 };
-
-// 5. APAGAR ALUNO (Remove o aluno e avisa o treinador de forma suave)
 window.deletarAlunoSPA = function(id) {
     if (confirm("Tem certeza que deseja remover este aluno? Suas aulas futuras não serão mais associadas a ele.")) {
         if (typeof alunos !== 'undefined') {
-            // Remove do array principal
             alunos = alunos.filter(a => a.id !== id);
-            
-            // Salva as alterações no LocalStorage
             if (typeof salvarDados === 'function') salvarDados();
-            
-            // Atualiza a tela de listagem e atualiza estatísticas em background
             window.renderizarListaAlunos();
             if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats();
             if (typeof mostrarToast === 'function') mostrarToast('Aluno removido com sucesso!');
         }
     }
 };
-
-// 6. EVENT LISTENER DO SUBMIT (Sempre ativo para salvar ou atualizar)
 document.addEventListener('DOMContentLoaded', () => {
     const formAluno = document.getElementById('formNovoAluno');
     if (formAluno) {
@@ -257,7 +204,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof alunos === 'undefined') return;
 
             if (idEdicao) {
-                // Modo Edição: Atualiza as informações do aluno correspondente
                 const index = alunos.findIndex(a => a.id === idEdicao);
                 if (index !== -1) {
                     alunos[index].nome = nome;
@@ -269,7 +215,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno atualizado com sucesso!');
                 }
             } else {
-                // Modo Cadastro: Cria um novo ID e adiciona ao array
                 const novoAluno = {
                     id: Date.now().toString(),
                     nome: nome,
@@ -282,8 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 alunos.push(novoAluno);
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno cadastrado com sucesso!');
             }
-
-            // Grava os dados finais no LocalStorage e atualiza o app
             if (typeof salvarDados === 'function') salvarDados();
             window.togglePainelCadastro(false); // Fecha o modal
             window.renderizarListaAlunos(); // Atualiza a lista na tela

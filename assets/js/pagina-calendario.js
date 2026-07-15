@@ -1,20 +1,10 @@
-// ========================================================
 // [TAG-JS-PAGINA-CALENDARIO] - Controle Mensal & Semanal na SPA
-// ========================================================
-
-// A aba Calendário agora abre a Visão Semanal por padrão!
 window.modoCalendarioAtivo = 'semanal';
-
-// Data de referência para navigation na visão semanal (inicia na data de hoje)
 window.semanaReferencia = new Date();
-
-// 1. INICIALIZADOR DA ABA CALENDÁRIO (Chamado ao mudar de aba)
 window.inicializarPaginaCalendario = function() {
     if (typeof carregarDados === 'function') carregarDados();
     window.alternarModoCalendario(window.modoCalendarioAtivo);
 };
-
-// 2. ALTERNADOR DE ABAS (SEMANAL VS MENSAL)
 window.alternarModoCalendario = function(modo) {
     window.modoCalendarioAtivo = modo;
     
@@ -42,24 +32,16 @@ window.alternarModoCalendario = function(modo) {
         window.renderizarCalendarioMensal();
     }
 };
-
-// 3. RENDERIZADOR DO CALENDÁRIO MENSAL (Sincronizado com o calendario.js original)
 window.renderizarCalendarioMensal = function() {
     const gridSPA = document.getElementById('calendarioMonthlyGrid');
     if (!gridSPA) return;
-
-    // Alinha temporariamente o ID do contêiner para o motor original renderizar
     gridSPA.id = 'calendarioGrid';
 
     if (typeof renderizarCalendario === 'function') {
         renderizarCalendario();
     }
-
-    // Devolve o ID específico do contêiner SPA
     gridSPA.id = 'calendarioMonthlyGrid';
 };
-
-// NOVO: Função para transportar o utilizador da Semana para o Dia específico na Home
 window.irParaDiaDestaSemana = function(dataStr) {
     const parts = dataStr.split('/');
     if (parts.length === 3) {
@@ -68,8 +50,6 @@ window.irParaDiaDestaSemana = function(dataStr) {
         const ano = parseInt(parts[2], 10);
         window.dataSelecionada = new Date(ano, mes, dia);
     }
-
-    // Aciona a simulação SPA de clique na aba "Home" para mudar de ecrã instantaneamente
     const navLinkHome = document.querySelector('.header-nav .nav-link[data-target="tela-home"]');
     if (navLinkHome) {
         navLinkHome.click();
@@ -79,24 +59,16 @@ window.irParaDiaDestaSemana = function(dataStr) {
         mostrarToast(`📅 Agenda do dia ${dataStr} aberta!`);
     }
 };
-
-// 4. RENDERIZADOR DO CALENDÁRIO SEMANAL (Focado em Mobile-First, Empilhado Verticalmente)
 window.renderizarCalendarioSemanal = function() {
     const gridSemanal = document.getElementById('calendarioSemanalGrid');
     const labelPeriodo = document.getElementById('periodoSemanaLabel');
     if (!gridSemanal) return;
-
-    // Acha a Segunda-feira da semana de referência
     const dataRef = new Date(window.semanaReferencia);
     const diaSemana = dataRef.getDay();
     const dSeg = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
     const segundaFeira = new Date(dataRef.setDate(dSeg));
-
-    // Acha o Sábado da semana de referência (segunda + 5 dias)
     const sabado = new Date(segundaFeira);
     sabado.setDate(segundaFeira.getDate() + 5);
-
-    // Atualiza a Label de Período (ex: "Semana: 06/07 a 11/07 de 2026")
     if (labelPeriodo) {
         const dSegStr = String(segundaFeira.getDate()).padStart(2, '0');
         const mSegStr = String(segundaFeira.getMonth() + 1).padStart(2, '0');
@@ -107,11 +79,7 @@ window.renderizarCalendarioSemanal = function() {
     }
 
     let html = '';
-
-    // Mapeamento textual dos dias úteis + Sábado
     const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-
-    // Varre os 6 dias úteis de trabalho (Segunda a Sábado) para desenhar os blocos
     for (let d = 0; d < 6; d++) {
         const diaAtual = new Date(segundaFeira);
         diaAtual.setDate(segundaFeira.getDate() + d);
@@ -120,11 +88,7 @@ window.renderizarCalendarioSemanal = function() {
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
         const dataAlvoFormatada = diaAtual.toLocaleDateString('pt-BR');
-
-        // Identifica se a célula sendo renderizada é HOJE
         const ehHoje = diaAtual.toDateString() === new Date().toDateString();
-
-        // Filtra os compromissos deste dia usando a função unificada
         const compromissosDoDia = aulas
             .filter(a => window.checarCompromissoNaData(a, diaAtual))
             .sort((a, b) => a.horarioInicio.localeCompare(b.horarioInicio));
@@ -135,8 +99,6 @@ window.renderizarCalendarioSemanal = function() {
             compromissosDoDia.forEach(comp => {
                 const tipo = comp.tipo || 'aula';
                 const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
-
-                // Sistema idêntico de Tags Visuais Premium nos cards para consistência total da SPA
                 let tagVisualHtml = '';
 
                 if (tipo === 'aula') {
@@ -196,13 +158,11 @@ window.renderizarCalendarioSemanal = function() {
                 </div>
             `;
         }
-
-        // MODIFICADO: Adicionado cabeçalho do bloco de dia clicável (.semana-dia-header) para transporte de ecrã dinâmico
         html += `
             <div class="semana-dia-box ${ehHoje ? 'dia-semana-hoje-card' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}" style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
                 <div class="semana-dia-header" onclick="window.irParaDiaDestaSemana('${dataAlvoFormatada}')">
                     <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-                        🎯 ${diaTexto}-feira ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 900;">HOJE</span>' : ''}
+                        🎯 ${diaTexto === 'Sábado' ? diaTexto : `${diaTexto}-feira`} ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 900;">HOJE</span>' : ''}
                     </span>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="btn-semana-ir-dia"><i class="fa-regular fa-folder-open"></i> Abrir dia</span>
@@ -217,8 +177,6 @@ window.renderizarCalendarioSemanal = function() {
     }
 
     gridSemanal.innerHTML = html;
-
-    // Auto-Rolagem Inteligente (Auto-Scroll) para focar no dia de hoje automaticamente
     setTimeout(() => {
         const hojeEl = document.getElementById('semana-dia-hoje-elemento');
         if (hojeEl) {
@@ -226,10 +184,7 @@ window.renderizarCalendarioSemanal = function() {
         }
     }, 120);
 };
-
-// 5. ATIVAÇÃO DE AÇÕES DO CARD CLICADO (Compartilhado com o modal de exclusão/reagendamento da Home)
 window.abrirCalendarioAcaoSlot = function(id, dataStr) {
-    // Define a data alvo do calendário de forma segura na série para não perder contexto
     window.dataAlvoAcaoStr = dataStr;
 
     if (typeof idCompromissoSelecionado !== 'undefined') {
@@ -239,8 +194,6 @@ window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     if (typeof abrirModalAcaoSlot === 'function') {
         abrirModalAcaoSlot(id);
     }
-    
-    // Sobrescreve a escuta de finalização para limpar a herança de data e recarregar os dados
     const originalFecharModalAcaoSlot = window.fecharModalAcaoSlot;
     window.fecharModalAcaoSlot = function() {
         window.dataAlvoAcaoStr = null; // Limpa o estado
@@ -249,10 +202,7 @@ window.abrirCalendarioAcaoSlot = function(id, dataStr) {
         if (typeof window.renderizarCalendarioMensal === 'function') window.renderizarCalendarioMensal();
     };
 };
-
-// 6. OUVINTES DE EVENTOS DE NAVEGAÇÃO DA PÁGINA DO CALENDÁRIO (Mensal e Semanal)
 document.addEventListener('DOMContentLoaded', () => {
-    // A) Controles do Mês
     const btnMesAnterior = document.getElementById('btnMesAnterior');
     const btnMesProximo = document.getElementById('btnMesProximo');
     const btnMesHoje = document.getElementById('btnMesHoje');
@@ -283,8 +233,6 @@ document.addEventListener('DOMContentLoaded', () => {
             window.renderizarCalendarioMesal();
         });
     }
-
-    // B) Controles da Semana
     const btnSemanaAnterior = document.getElementById('btnSemanaAnterior');
     const btnSemanaProxima = document.getElementById('btnSemanaProxima');
     const btnSemanaHoje = document.getElementById('btnSemanaHoje');

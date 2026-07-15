@@ -1,24 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <!-- ========================================================
-         [TAG-HEAD] - Metadados, Título e Estilos Externos
-         ======================================================== -->
+    <!-- [TAG-HTML-HEAD] - Metadados, Título e Estilos Externos -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AtivaMente - Agenda Personal Trainer</title>
+    <title>Prô Josy - Agenda Personal Trainer</title>
     <link rel="stylesheet" href="assets/css/style.css">
-    <!-- Font Awesome para Ícones Modernos -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        
-        <!-- ========================================================
-             [TAG-HEADER] - Menu e Controle Global de Navegação (SPA)
-             ======================================================== -->
+    <!-- [TAG-HTML-HEADER] - Menu e Controle Global de Navegação (SPA) -->
         <header class="header">
-            <!-- Título Principal + Subtítulo da Empresa -->
             <div class="brand-container">
                 <h1 class="marca-titulo">
                     <span class="marca-ativa"><i class="fa-solid fa-dumbbell"></i> Prô</span><span class="marca-mente"> Josy</span>
@@ -27,8 +20,6 @@
                     <i class="fa-solid fa-hand-fist"></i>Personal Trainer
                 </p>
             </div>
-            
-            <!-- Barra de Ações com Menu Integrado -->
             <div class="header-actions">
                 <nav class="header-nav">
                     <a href="#" class="nav-link ativo" data-target="tela-home">
@@ -43,13 +34,8 @@
                 </nav>
             </div>
         </header>
-
-        <!-- ========================================================
-             [TAG-TELA-HOME] - Visão Operacional Diária e Dashboard
-             ======================================================== -->
+        <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
         <main id="tela-home" class="view-section">
-            
-            <!-- Subseção: Dashboard de Estatísticas Otimizado -->
             <section class="alunos-grid" style="margin-bottom: 20px;">
                 <div class="card-stat">
                     <span class="stat-numero" id="totalAulasHoje">0</span>
@@ -60,8 +46,6 @@
                     <span class="stat-label"><i class="fa-solid fa-rotate-left" style="color: #FF5252; margin-right: 8px;"></i>Aulas para Repor</span>
                 </div>
             </section>
-
-            <!-- Painel de Reposições Pendentes (Ocultável) -->
             <div id="painelReposicoesPendentes" class="agenda-panel" style="display: none; border-color: #FF5252; margin-bottom: 20px;">
                 <h3 style="font-size: 1.05rem; color: #FF5252; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
                     <span><i class="fa-solid fa-rotate-left"></i> Alunos aguardando reposição</span>
@@ -69,10 +53,7 @@
                 </h3>
                 <div id="listaReposicoesPendentes" style="display: flex; flex-direction: column; gap: 8px;"></div>
             </div>
-
-            <!-- Subseção: Grade Horária Diária -->
             <div class="agenda-panel">
-                <!-- REFAZIMENTO: Grupo Unificado de Cabeçalho Sticky para preservar contexto visual -->
                 <div class="agenda-sticky-container">
                     <div class="agenda-header-wrapper">
                         <div class="agenda-header-info">
@@ -88,8 +69,6 @@
                             </button>
                         </div>
                     </div>
-
-                    <!-- Cabeçalho de Navegação Diária -->
                     <div class="agenda-header-navegacao">
                         <div class="nav-calendario">
                             <button id="btnAnterior" class="btn-nav-dia" title="Dia Anterior">
@@ -103,15 +82,10 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Contêiner preenchido dinamicamente via JS -->
                 <div class="agenda-dia-container" id="agendaGridHome"></div>
             </div>
         </main>
-
-        <!-- ========================================================
-             [TAG-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica
-             ======================================================== -->
+        <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
         <main id="tela-calendario" class="view-section" style="display: none;">
             
             <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; margin-bottom: 18px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
@@ -122,10 +96,7 @@
                     <i class="fa-solid fa-calendar-days"></i> Mês
                 </button>
             </div>
-
-            <!-- CONTAINER 1: VISÃO SEMANAL -->
             <div id="containerCalendarioSemanal" class="agenda-panel" style="display: block;">
-                <!-- REFAZIMENTO: Grupo Unificado de Cabeçalho Sticky para preservar contexto visual também na Semana -->
                 <div class="agenda-sticky-container">
                     <div class="mes-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
                         <div style="display: flex; flex-direction: column;">
@@ -138,11 +109,8 @@
                         </div>
                     </div>
                 </div>
-                <!-- Lista de Blocos Diários da Semana Corrente -->
                 <div id="calendarioSemanalGrid" style="display: flex; flex-direction: column; gap: 16px;"></div>
             </div>
-
-            <!-- CONTAINER 2: VISÃO MENSAL -->
             <div id="containerCalendarioMensal" class="calendario-mensal" style="display: none;">
                 <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <h2 id="nomeMesAno" style="font-size: 1.2rem; color: #FFD700; margin: 0; font-weight: 800;">Carregando...</h2>
@@ -152,17 +120,12 @@
                         <button id="btnMesProximo" class="btn btn-secondary btn-sm" title="Próximo Mês"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
-                <!-- Grid Mensal de Células -->
                 <div class="calendario-grid" id="calendarioMonthlyGrid"></div>
             </div>
 
         </main>
-
-        <!-- ========================================================
-             [TAG-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM)
-             ======================================================== -->
+    <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
         <main id="tela-alunos" class="view-section" style="display: none; padding-bottom: 80px;">
-            <!-- NOVO: Resumo Financeiro & Metas de Grade de Horário -->
             <section class="alunos-panel" style="margin-bottom: 20px; border-color: rgba(255, 215, 0, 0.2);">
                 <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px;">
                     <i class="fa-solid fa-chart-line" style="color: #FFD700;"></i> Painel de Receita & Auditoria
@@ -206,7 +169,6 @@
                                 <label for="alunoPreco">Valor Hora/Aula (R$) *</label>
                                 <input type="number" id="alunoPreco" placeholder="Ex: 80" step="0.01" required>
                             </div>
-                            <!-- NOVO: Frequência contratada de aulas semanais para cálculos matemáticos reais -->
                             <div class="form-grupo-spa">
                                 <label for="alunoFrequenciaSemanal">Aulas / Semana *</label>
                                 <select id="alunoFrequenciaSemanal" required>
@@ -244,12 +206,7 @@
         </main>
 
     </div>
-
-    <!-- ========================================================
-         [TAG-MODAIS] - Modais Compartilhados
-         ======================================================== -->
-    
-    <!-- MODAL INTERMÉDIO DE ESCOLHA DE TIPO DE COMPROMISSO -->
+    <!-- [TAG-HTML-MODAIS] - Modais Compartilhados -->
     <div class="modal-overlay" id="modalEscolhaTipo" style="display: none;">
         <div class="modal" style="max-width: 400px; text-align: center;">
             <h3><i class="fa-solid fa-circle-question" style="color: #FFD700; margin-right: 8px;"></i>Qual o tipo de agendamento?</h3>
@@ -282,30 +239,22 @@
             </div>
         </div>
     </div>
-
-    <!-- MODAL EXCLUSIVO E DEDICADO PARA REAGENDAR AULAS DE REPOSIÇÃO -->
     <div class="modal-overlay" id="modalReagendarAula" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <h3><i class="fa-solid fa-arrows-rotate" style="color: #64B5F6; margin-right: 8px;"></i>Reagendar Aula de Reposição</h3>
             <p id="infoReagendamentoSlot" style="font-size: 0.8rem; color: #64B5F6; margin-bottom: 15px; font-weight: 600;"></p>
             <form id="formReagendarAula">
-                
-                <!-- Origem: Seleção no slot vazio (apresenta apenas alunos na fila) -->
                 <div class="form-grupo-spa" id="containerSeletorReagendarAluno">
                     <label for="reagendarAluno">Aluno com Reposição Pendente *</label>
                     <select id="reagendarAluno">
                         <option value="">Selecione um aluno...</option>
                     </select>
                 </div>
-
-                <!-- Origem: Clique em "Reagendar" no card de fila (bloqueia o aluno selecionado) -->
                 <div class="form-grupo-spa" id="containerLockReagendarAluno" style="display: none;">
                     <label>Aluno Selecionado</label>
                     <div id="reagendarAlunoLockedNome" style="padding: 12px; background: #0D0D0D; color: #FFF; border: 1px solid #333; border-radius: 8px; font-weight: 700; font-size: 0.95rem;">Nome do Aluno</div>
                     <input type="hidden" id="reagendarAlunoIdLocked">
                 </div>
-
-                <!-- Escolha de dia do reencaixe -->
                 <div class="form-grupo-spa" style="margin-bottom: 14px;">
                     <label for="reagendarDia">Dia da Semana *</label>
                     <select id="reagendarDia" required>
@@ -317,8 +266,6 @@
                         <option value="Sábado">Sábado</option>
                     </select>
                 </div>
-
-                <!-- Escolha de hora de início e duração -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="reagendarHoraInicio">Início *</label>
@@ -342,8 +289,6 @@
             </form>
         </div>
     </div>
-         
-    <!-- A. MODAL DE CADASTRO/AGENDAMENTO RÁPIDO (EXCLUSIVO PARA EVENTOS ÚNICOS) -->
     <div class="modal-overlay" id="modalAgendamento" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <h3><i class="fa-solid fa-calendar-day" style="color: #FFD700; margin-right: 8px;"></i>Agendar Horário Único</h3>
@@ -366,8 +311,6 @@
                 <input type="hidden" id="agendaTipo" value="aula">
                 
                 <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
-
-                <!-- Escolha de Horário de Início + Duração -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="agendaHoraInicio">Início *</label>
@@ -383,16 +326,12 @@
                         </select>
                     </div>
                 </div>
-
-                <!-- Campo exclusivo para AULA -->
                 <div id="camposTipoAula" class="form-grupo-spa">
                     <label for="agendaAluno">Aluno *</label>
                     <select id="agendaAluno">
                         <option value="">Selecione um aluno...</option>
                     </select>
                 </div>
-
-                <!-- Campo exclusivo para BLOQUEIO -->
                 <div id="camposTipoBloqueio" class="form-grupo-spa" style="display: none;">
                     <label for="agendaDescricao">Motivo / Descrição do Bloqueio *</label>
                     <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular / Médico">
@@ -405,8 +344,6 @@
             </form>
         </div>
     </div>
-
-    <!-- B. MODAL DE CADASTRO/AGENDAMENTO EXCLUSIVO PARA RECORRÊNCIAS (OUTLOOK STYLE) -->
     <div class="modal-overlay" id="modalRecorrencia" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <h3><i class="fa-solid fa-infinity" style="color: #FFD700; margin-right: 8px;"></i>Agendar Horário Recorrente</h3>
@@ -425,8 +362,6 @@
 
             <form id="formRecorrencia">
                 <input type="hidden" id="recorrenciaTipo" value="aula">
-                
-                <!-- Outlook Style: Padrão de Recorrência -->
                 <div class="form-grupo-spa">
                     <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
                     <select id="recorrenciaPadrao" onchange="window.mudarPadraoRecorrencia()" required>
@@ -436,8 +371,6 @@
                         <option value="anual">Anual</option>
                     </select>
                 </div>
-
-                <!-- Outlook Style: Intervalo de Repetição -->
                 <div class="form-grupo-spa" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <label for="recorrenciaIntervalo">Repetir a cada *</label>
@@ -448,8 +381,6 @@
                         <div id="labelUnidadeRecorrencia" style="height: 45px; display: flex; align-items: center; color: #FFF; font-size: 0.9rem; font-weight: 700; background: #0D0D0D; padding-left: 12px; border: 1px solid #333; border-radius: 8px;">semana(s)</div>
                     </div>
                 </div>
-
-                <!-- Grid Interativo de Dias Incluindo Sábado -->
                 <div class="form-grupo-spa" id="containerDiasSemanaRecorrencia" style="margin-bottom: 16px;">
                     <label style="margin-bottom: 4px;">Selecione os dias da semana *</label>
                     <div style="display: flex; gap: 4px; justify-content: space-between; flex-wrap: wrap;">
@@ -461,13 +392,9 @@
                         <button type="button" class="btn-dia-pill" data-dia="Sábado">Sáb</button>
                     </div>
                 </div>
-
-                <!-- Outlook Style: Caixa de Exibição Dinâmica do Resumo -->
                 <div id="infoRecorrenciaMensalAnual" style="background: rgba(255, 215, 0, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 14px; border: 1px dashed rgba(255, 215, 0, 0.2);">
                     <p style="font-size: 0.75rem; color: #FFD700; margin: 0; line-height: 1.4; font-weight: 600;" id="textoInfoMensalAnual"></p>
                 </div>
-
-                <!-- Escolha de Horário de Início + Duração -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="recorrenciaHoraInicio">Início *</label>
@@ -483,22 +410,16 @@
                         </select>
                     </div>
                 </div>
-
-                <!-- Campo exclusivo para AULA Recorrente -->
                 <div id="camposRecorrenteAula" class="form-grupo-spa">
                     <label for="recorrenciaAluno">Aluno *</label>
                     <select id="recorrenciaAluno">
                         <option value="">Selecione um aluno...</option>
                     </select>
                 </div>
-
-                <!-- Campo exclusivo para BLOQUEIO Recorrente -->
                 <div id="camposRecorrenteBloqueio" class="form-grupo-spa" style="display: none;">
                     <label for="recorrenciaDescricao">Motivo / Descrição do Bloqueio *</label>
                     <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
                 </div>
-
-                <!-- @TODO: Seleção Unificada de Dia de Semana Fixo -->
                 <div class="form-grupo-spa" id="containerDiaRecorrenteUnico" style="display: none; margin-bottom: 14px;">
                     <label for="recorrenciaDiaSemana">Dia da Semana Fixo *</label>
                     <select id="recorrenciaDiaSemana" required>
@@ -518,8 +439,6 @@
             </form>
         </div>
     </div>
-
-    <!-- C. MODAL DE EDIÇÃO DE COMPROMISSO -->
     <div class="modal-overlay" id="modalAcaoSlot" style="display: none;">
         <div class="modal" style="max-width: 440px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 12px; width: 100%;">
@@ -529,11 +448,7 @@
             
             <form id="formEditarCompromisso">
                 <input type="hidden" id="editCompromissoFrequencia" value="uma_vez">
-
-                <!-- Informações do dia -->
                 <p id="editInfoDia" style="font-size: 0.8rem; color: #FFF; margin-bottom: 15px; font-weight: 600;"></p>
-
-                <!-- Permite alterar o Dia da Semana se o compromisso for RECORRENTE -->
                 <div class="form-grupo-spa" id="editDiaSemanaContainer" style="display: none; margin-bottom: 14px;">
                     <label for="editDiaSemana">Dia da Semana *</label>
                     <select id="editDiaSemana">
@@ -545,8 +460,6 @@
                         <option value="Sábado">Sábado</option>
                     </select>
                 </div>
-
-                <!-- Edição de Horário de Início e Duração -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="editHoraInicio">Início *</label>
@@ -562,22 +475,15 @@
                         </select>
                     </div>
                 </div>
-
-                <!-- Campo exclusivo para AULA -->
                 <div id="editCamposTipoAula" class="form-grupo-spa">
                     <label for="editAluno">Aluno</label>
                     <select id="editAluno" disabled style="background: #111; color: #888; border-color: #222; cursor: not-allowed;"></select>
                 </div>
-
-                <!-- Campo exclusivo para BLOQUEIO -->
                 <div id="editCamposTipoBloqueio" class="form-grupo-spa" style="display: none;">
                     <label for="editDescricao">Motivo / Descrição do Bloqueio *</label>
                     <input type="text" id="editDescricao" placeholder="Ex: Almoço / Particular / Médico">
                 </div>
-
-                <!-- Botões de Ações -->
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
-                    <!-- Seção exclusiva para compromissos ÚNICOS normais -->
                     <div id="acoesCompromissoUnico" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                         <button type="button" class="btn btn-danger" id="btnDeletarDefinitivo" title="Cancelar Compromisso">
                             <i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Cancelar
@@ -586,8 +492,6 @@
                             <i class="fa-solid fa-rotate-left" style="margin-right: 6px;"></i> Reagendar
                         </button>
                     </div>
-
-                    <!-- Seção premium exclusiva para compromissos RECORRENTES -->
                     <div id="acoesCompromissoRecorrente" style="display: none; flex-direction: column; gap: 8px;">
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
                             <button type="button" class="btn btn-danger" id="btnDeletarInstancia" title="Cancelar apenas essa aula">
@@ -610,8 +514,6 @@
             </form>
         </div>
     </div>
-
-    <!-- CONFIGURAÇÃO DE LIMITES DA AGENDA -->
     <div class="modal-overlay" id="modalConfigAgenda" style="display: none;">
         <div class="modal" style="max-width: 380px;">
             <h3>Configurar Grade Horária</h3>
@@ -634,8 +536,6 @@
             </form>
         </div>
     </div>
-
-    <!-- NATIVO: Botão Flutuante Voltar ao Topo Premium -->
     <button id="btnBackToTop" class="btn-back-to-top" title="Voltar ao Topo">
         <i class="fa-solid fa-arrow-up"></i>
     </button>
