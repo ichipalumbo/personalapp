@@ -7,6 +7,9 @@ let slotSelecionadoDiaTexto = "";
 window.dataAlvoAcaoStr = null;
 window.horarioSelecionadoSlot = null;
 window.reagendamentoDirectCardId = null;
+window.__sincronizacaoInicialConcluida = window.__sincronizacaoInicialConcluida || false;
+window.__homeCarregando = window.__homeCarregando || false;
+
 window.getAluno = function(id) {
     if (typeof alunos !== 'undefined') {
         return alunos.find(a => a.id === id);
@@ -14,11 +17,50 @@ window.getAluno = function(id) {
     return null;
 };
 
-window.inicializarHome = function() {
-    if (typeof carregarDados === 'function') carregarDados();
-    
+window.renderizarLoadingHome = function() {
+    const elementoData = document.getElementById('dataAtual');
+    const elAulasHoje = document.getElementById('totalAulasHoje');
+    const elAulasRepor = document.getElementById('totalAulasRepor');
+    const grid = document.getElementById('agendaGridHome');
+
+    if (elementoData) {
+        elementoData.innerHTML = `<i class="fa-solid fa-calendar-minus" style="color: #FFD700; margin-right: 8px;"></i>Sincronizando agenda...`;
+    }
+    if (elAulasHoje) elAulasHoje.textContent = '...';
+    if (elAulasRepor) elAulasRepor.textContent = '...';
+    if (grid) {
+        const htmlLoading = Array.from({ length: 6 }).map((_, idx) => {
+            const hora = String(7 + idx).padStart(2, '0') + ':00';
+            return `
+                <div class="agenda-dia-linha home-loading-line">
+                    <div class="agenda-dia-horario home-loading-pill">${hora}</div>
+                    <div class="home-loading-block"></div>
+                </div>
+            `;
+        }).join('');
+        grid.innerHTML = htmlLoading;
+    }
+};
+
+window.inicializarHome = async function(opcoes = {}) {
+    const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
+
     if (!agendaConfig) agendaConfig = { horaInicio: 7, horaFim: 21 };
     if (!aulasParaRepor) aulasParaRepor = [];
+
+    if (deveSincronizar) {
+        window.__homeCarregando = true;
+        window.renderizarLoadingHome();
+
+        try {
+            if (typeof carregarDados === 'function') {
+                await carregarDados({ forcarRender: false });
+            }
+            window.__sincronizacaoInicialConcluida = true;
+        } finally {
+            window.__homeCarregando = false;
+        }
+    }
 
     window.atualizarDataAtual();
     window.atualizarDashboardStats();

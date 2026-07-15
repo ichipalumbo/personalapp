@@ -810,6 +810,31 @@ body {
 .btn-back-to-top:active {
     transform: scale(0.9);
 }
+
+.home-loading-line {
+    opacity: 0.9;
+}
+
+.home-loading-pill {
+    color: #D4B200;
+    border-color: #2A2A2A;
+}
+
+.home-loading-block {
+    height: 48px;
+    border-radius: 8px;
+    border: 1px solid #232323;
+    background: linear-gradient(110deg, #1A1A1A 8%, #242424 18%, #1A1A1A 33%);
+    background-size: 200% 100%;
+    animation: homeShimmer 1.1s linear infinite;
+}
+
+@keyframes homeShimmer {
+    to {
+        background-position-x: -200%;
+    }
+}
+
 /* [TAG-STYLE-RESPONSIVO-DESKTOP] */
 @media (min-width: 768px) {
     body { padding: 20px; }

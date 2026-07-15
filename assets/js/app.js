@@ -1,10 +1,10 @@
 // [TAG-JS-APP] - Gerenciamento Centralizado de Abas e SPA
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const navLinks = document.querySelectorAll('.header-nav .nav-link');
     const views = document.querySelectorAll('.view-section');
 
     navLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
+        link.addEventListener('click', async (e) => {
             e.preventDefault();
             const targetId = link.getAttribute('data-target');
             navLinks.forEach(l => {
@@ -21,17 +21,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 activeView.style.display = 'block';
             }
             if (targetId === 'tela-home') {
-                if (typeof window.inicializarHome === 'function') window.inicializarHome();
+                if (typeof window.inicializarHome === 'function') await window.inicializarHome();
             } else if (targetId === 'tela-calendario') {
-                if (typeof window.inicializarPaginaCalendario === 'function') window.inicializarPaginaCalendario();
+                if (typeof window.inicializarPaginaCalendario === 'function') await window.inicializarPaginaCalendario();
             } else if (targetId === 'tela-alunos') {
-                if (typeof window.inicializarAlunos === 'function') window.inicializarAlunos();
+                if (typeof window.inicializarAlunos === 'function') await window.inicializarAlunos();
             }
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
     if (typeof window.inicializarHome === 'function') {
-        window.inicializarHome();
+        await window.inicializarHome();
     }
     const btnToTop = document.getElementById('btnBackToTop');
     

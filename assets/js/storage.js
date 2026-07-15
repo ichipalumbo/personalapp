@@ -1,5 +1,22 @@
 // [TAG-JS-STORAGE] - Integração do Front-end com a API no Render & MongoDB
 const API_BASE_URL = "https://personalapp-api.onrender.com/api";
+const API_TIMEOUT_MS = 8000;
+
+async function fetchComTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+        return await fetch(url, { ...options, signal: controller.signal });
+    } catch (error) {
+        if (error && error.name === 'AbortError') {
+            throw new Error(`Tempo limite de ${timeoutMs}ms excedido para ${url}`);
+        }
+        throw error;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
 
 function obterAlunos() {
     try {
@@ -62,13 +79,15 @@ function atualizarLimitesGrade(novaGrade) {
     } catch(e) {}
     window.limitesGrade = grade;
 }
-async function carregarDados() {
+async function carregarDados(opcoes = {}) {
+    const deveForcarRender = opcoes.forcarRender !== false;
+
     try {
         console.log("🔄 Iniciando sincronização com o banco de dados online...");
         const [resAlunos, resAgendamentos, resConfig] = await Promise.all([
-            fetch(`${API_BASE_URL}/alunos`).catch(err => { throw new Error("API Alunos fora do ar"); }),
-            fetch(`${API_BASE_URL}/agendamentos`).catch(err => { throw new Error("API Agendamentos fora do ar"); }),
-            fetch(`${API_BASE_URL}/configuracao`).catch(err => { throw new Error("API Configuração fora do ar"); })
+            fetchComTimeout(`${API_BASE_URL}/alunos`).catch(() => { throw new Error("API Alunos fora do ar ou lenta (timeout)"); }),
+            fetchComTimeout(`${API_BASE_URL}/agendamentos`).catch(() => { throw new Error("API Agendamentos fora do ar ou lenta (timeout)"); }),
+            fetchComTimeout(`${API_BASE_URL}/configuracao`).catch(() => { throw new Error("API Configuração fora do ar ou lenta (timeout)"); })
         ]);
 
         if (!resAlunos.ok || !resAgendamentos.ok || !resConfig.ok) {
@@ -114,7 +133,9 @@ async function carregarDados() {
                 if (typeof mostrarToast === 'function') {
                     mostrarToast("Seus dados locais foram migrados com sucesso para a nuvem!", "success");
                 }
-                forçarRenderizacaoInterface();
+                if (deveForcarRender) {
+                    forçarRenderizacaoInterface();
+                }
                 return;
             }
         }
@@ -137,7 +158,9 @@ async function carregarDados() {
             grade: obterLimitesGrade()
         });
 
-        forçarRenderizacaoInterface();
+        if (deveForcarRender) {
+            forçarRenderizacaoInterface();
+        }
 
     } catch (error) {
         console.error("❌ Falha na conexão com a API. Usando localStorage temporariamente.", error);
@@ -146,7 +169,9 @@ async function carregarDados() {
         if (typeof mostrarToast === 'function') {
             mostrarToast("Trabalhando offline. Dados salvos no navegador.", "warning");
         }
-        forçarRenderizacaoInterface();
+        if (deveForcarRender) {
+            forçarRenderizacaoInterface();
+        }
     }
 }
 async function salvarDados(silencioso = false) {

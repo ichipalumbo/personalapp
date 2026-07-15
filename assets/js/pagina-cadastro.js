@@ -1,11 +1,15 @@
 // [TAG-JS-CADASTRO] - Lógica de Alunos na SPA (Prô Josy)
-window.inicializarPaginaCadastro = function() {
-    if (typeof carregarDados === 'function') carregarDados();
+window.inicializarPaginaCadastro = async function(opcoes = {}) {
+    const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
+    if (deveSincronizar && typeof carregarDados === 'function') {
+        await carregarDados({ forcarRender: false });
+        window.__sincronizacaoInicialConcluida = true;
+    }
     window.renderizarListaAlunos();
     window.togglePainelCadastro(false);
 };
-window.inicializarAlunos = function() {
-    window.inicializarPaginaCadastro();
+window.inicializarAlunos = async function() {
+    await window.inicializarPaginaCadastro();
 };
 window.togglePainelCadastro = function(mostrar) {
     const modal = document.getElementById('modalFormAluno');

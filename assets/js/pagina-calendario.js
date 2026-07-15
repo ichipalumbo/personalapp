@@ -1,8 +1,12 @@
 // [TAG-JS-PAGINA-CALENDARIO] - Controle Mensal & Semanal na SPA
 window.modoCalendarioAtivo = 'semanal';
 window.semanaReferencia = new Date();
-window.inicializarPaginaCalendario = function() {
-    if (typeof carregarDados === 'function') carregarDados();
+window.inicializarPaginaCalendario = async function(opcoes = {}) {
+    const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
+    if (deveSincronizar && typeof carregarDados === 'function') {
+        await carregarDados({ forcarRender: false });
+        window.__sincronizacaoInicialConcluida = true;
+    }
     window.alternarModoCalendario(window.modoCalendarioAtivo);
 };
 window.alternarModoCalendario = function(modo) {
