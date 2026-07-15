@@ -83,9 +83,6 @@ personalapp/
 |  |  |- view-alunos.js            <- aba Alunos: CRM de cadastro/edicao
 |  |  |  --- [7] SPA Router ---
 |  |  |- app.js                    <- roteador de abas (DOMContentLoaded)
-|  |  |  --- [8] Legado ---
-|  |  |- _legado-modal.js          <- ⚠️ modal original da grade semanal (#modalAgendar)
-|  |  |- _legado-agenda.js         <- ⚠️ grade semanal original (#agendaGrid)
 |- backend/
 |  |- package.json
 |  |- server.js
@@ -108,7 +105,6 @@ Os arquivos seguem prefixos que indicam sua camada:
 | `modal-` | Controladores de modais | `modal-agendamento.js` |
 | `view-` | Views de paginas (abas SPA) | `view-home.js` |
 | `app` | Roteador SPA | `app.js` |
-| `_legado-` | Codigo legado — revisar antes de remover | `_legado-modal.js` |
 
 ## Ordem de Carregamento dos Scripts (index.html)
 
@@ -124,14 +120,12 @@ A ordem importa porque os scripts usam globais `window.xxx` definidos em outros 
 7.  agenda-conflitos.js        <- depende de state.js + calendario-engine.js
 8.  widget-stepper-duracao.js  <- depende de state.js + widget-bloqueio.js (runtime)
 9.  widget-bloqueio.js         <- depende de widget-stepper-duracao.js
-10. _legado-modal.js           <- legado
-11. _legado-agenda.js          <- legado
-12. modal-agendamento.js       <- depende de layers 1-9
-13. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js
-14. view-home.js               <- depende de layers 1-13
-15. view-calendario.js         <- depende de layers 1-14
-16. view-alunos.js             <- depende de layers 1-14
-17. app.js                     <- depende de tudo (deve ser o ultimo)
+10. modal-agendamento.js       <- depende de layers 1-9
+11. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js
+12. view-home.js               <- depende de layers 1-11
+13. view-calendario.js         <- depende de layers 1-12
+14. view-alunos.js             <- depende de layers 1-12
+15. app.js                     <- depende de tudo (deve ser o ultimo)
 ```
 
 ## Papel dos Arquivos Principais
@@ -155,8 +149,7 @@ Frontend:
 - `assets/js/view-home.js` [TAG-VIEW-HOME]: aba Home — agenda diaria, dashboard e navegacao de datas.
 - `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — alternancia semanal/mensal, filtros e KPI dashboard.
 - `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
-- `assets/js/_legado-modal.js` [TAG-LEGADO-MODAL]: ⚠️ modal original da grade semanal — verificar uso antes de remover.
-- `assets/js/_legado-agenda.js` [TAG-LEGADO-AGENDA]: ⚠️ grade semanal original (#agendaGrid) — verificar uso antes de remover.
+
 
 Backend:
 
