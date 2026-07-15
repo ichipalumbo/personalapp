@@ -87,14 +87,15 @@
         </main>
         <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
         <main id="tela-calendario" class="view-section" style="display: none;">
-            
-            <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; margin-bottom: 18px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
-                <button type="button" class="tab-btn active" id="tabCalendarioSemanal" onclick="alternarModoCalendario('semanal')">
-                    <i class="fa-solid fa-calendar-minus"></i> Semana
-                </button>
-                <button type="button" class="tab-btn" id="tabCalendarioMensal" onclick="alternarModoCalendario('mensal')">
-                    <i class="fa-solid fa-calendar-days"></i> Mês
-                </button>
+            <div class="calendario-tabs-sticky">
+                <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
+                    <button type="button" class="tab-btn active" id="tabCalendarioSemanal" onclick="alternarModoCalendario('semanal')">
+                        <i class="fa-solid fa-calendar-minus"></i> Semana
+                    </button>
+                    <button type="button" class="tab-btn" id="tabCalendarioMensal" onclick="alternarModoCalendario('mensal')">
+                        <i class="fa-solid fa-calendar-days"></i> Mês
+                    </button>
+                </div>
             </div>
             <div id="containerCalendarioSemanal" class="agenda-panel" style="display: block;">
                 <div class="agenda-sticky-container">
@@ -102,7 +103,12 @@
                         <div style="display: flex; flex-direction: column;">
                             <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
                         </div>
-                        <div class="mes-nav" style="display: flex; gap: 6px;">
+                        <div class="mes-nav" style="display: flex; gap: 6px; align-items: center;">
+                            <div class="filtro-aluno-container" style="min-width: 180px;">
+                                <select id="filtroAlunoSemanal" class="filtro-aluno-select" onchange="window.atualizarFiltroCalendarioSemanal()">
+                                    <option value="">👥 Todos os Alunos</option>
+                                </select>
+                            </div>
                             <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
                             <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">Hoje</button>
                             <button id="btnSemanaProxima" class="btn btn-secondary btn-sm" title="Próxima Semana"><i class="fa-solid fa-chevron-right"></i></button>
@@ -114,12 +120,18 @@
             <div id="containerCalendarioMensal" class="calendario-mensal" style="display: none;">
                 <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                     <h2 id="nomeMesAno" style="font-size: 1.2rem; color: #FFD700; margin: 0; font-weight: 800;">Carregando...</h2>
-                    <div class="mes-nav" style="display: flex; gap: 6px;">
+                    <div class="mes-nav" style="display: flex; gap: 6px; align-items: center;">
+                        <div class="filtro-aluno-container" style="min-width: 180px;">
+                            <select id="filtroAlunoMensal" class="filtro-aluno-select" onchange="window.atualizarFiltroCalendarioMensal()">
+                                <option value="">👥 Todos os Alunos</option>
+                            </select>
+                        </div>
                         <button id="btnMesAnterior" class="btn btn-secondary btn-sm" title="Mês Anterior"><i class="fa-solid fa-chevron-left"></i></button>
                         <button id="btnMesHoje" class="btn btn-secondary btn-sm">Hoje</button>
                         <button id="btnMesProximo" class="btn btn-secondary btn-sm" title="Próximo Mês"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
+                <div id="kpiDashboardContainer" style="display: none; margin-bottom: 20px;"></div>
                 <div class="calendario-grid" id="calendarioMonthlyGrid"></div>
             </div>
 
@@ -304,21 +316,51 @@
                     <label for="agendaDescricao">Motivo / Descrição do Bloqueio *</label>
                     <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular / Médico">
                 </div>
+                <div id="camposTipoBloqueioDiaInteiro" class="form-grupo-spa" style="display: none; margin-top: -6px; margin-bottom: 10px;">
+                    <label class="full-day-toggle" for="agendaBloqueioDiaInteiro">
+                        <input type="checkbox" id="agendaBloqueioDiaInteiro">
+                        <span class="full-day-toggle-ui">
+                            <span class="full-day-toggle-text"><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span>
+                            <span class="full-day-toggle-pill">OFF</span>
+                        </span>
+                    </label>
+                </div>
                 
                 <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div id="agendaHorarioDuracaoGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="agendaHoraInicio">Início *</label>
                         <select id="agendaHoraInicio" required></select>
                     </div>
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="agendaDuracao">Duração *</label>
-                        <select id="agendaDuracao" required>
+                        <select id="agendaDuracao" required style="display: none;">
                             <option value="30">30 min</option>
                             <option value="60" selected>1h 00min</option>
                             <option value="90">1h 30min</option>
                             <option value="120">2h 00min</option>
+                            <option value="150">2h 30min</option>
+                            <option value="180">3h 00min</option>
+                            <option value="210">3h 30min</option>
+                            <option value="240">4h 00min</option>
+                            <option value="270">4h 30min</option>
+                            <option value="300">5h 00min</option>
+                            <option value="330">5h 30min</option>
+                            <option value="360">6h 00min</option>
+                            <option value="390">6h 30min</option>
+                            <option value="420">7h 00min</option>
+                            <option value="450">7h 30min</option>
+                            <option value="480">8h 00min</option>
                         </select>
+                        <div class="duracao-stepper" data-target-select="agendaDuracao">
+                            <button type="button" class="duracao-stepper-btn" data-action="decrease" aria-label="Diminuir duração">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <span class="duracao-stepper-value">1h 00min</span>
+                            <button type="button" class="duracao-stepper-btn" data-action="increase" aria-label="Aumentar duração">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -358,24 +400,54 @@
                     <label for="recorrenciaDescricao">Motivo / Descrição do Bloqueio *</label>
                     <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
                 </div>
+                <div id="camposRecorrenteBloqueioDiaInteiro" class="form-grupo-spa" style="display: none; margin-top: -6px; margin-bottom: 10px;">
+                    <label class="full-day-toggle" for="recorrenciaBloqueioDiaInteiro">
+                        <input type="checkbox" id="recorrenciaBloqueioDiaInteiro">
+                        <span class="full-day-toggle-ui">
+                            <span class="full-day-toggle-text"><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span>
+                            <span class="full-day-toggle-pill">OFF</span>
+                        </span>
+                    </label>
+                </div>
                 <div class="form-grupo-spa" style="margin-bottom: 14px;">
                     <label for="recorrenciaDataInicio">Início da recorrência *</label>
                     <input type="date" id="recorrenciaDataInicio" required>
                     <small style="display:block; margin-top: 6px; color: #888; font-size: 0.75rem;">Clique no campo para abrir o calendário e escolher a data.</small>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div id="recorrenciaHorarioDuracaoGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="recorrenciaHoraInicio">Início *</label>
                         <select id="recorrenciaHoraInicio" required></select>
                     </div>
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="recorrenciaDuracao">Duração *</label>
-                        <select id="recorrenciaDuracao" required>
+                        <select id="recorrenciaDuracao" required style="display: none;">
                             <option value="30">30 min</option>
                             <option value="60" selected>1h 00min</option>
                             <option value="90">1h 30min</option>
                             <option value="120">2h 00min</option>
+                            <option value="150">2h 30min</option>
+                            <option value="180">3h 00min</option>
+                            <option value="210">3h 30min</option>
+                            <option value="240">4h 00min</option>
+                            <option value="270">4h 30min</option>
+                            <option value="300">5h 00min</option>
+                            <option value="330">5h 30min</option>
+                            <option value="360">6h 00min</option>
+                            <option value="390">6h 30min</option>
+                            <option value="420">7h 00min</option>
+                            <option value="450">7h 30min</option>
+                            <option value="480">8h 00min</option>
                         </select>
+                        <div class="duracao-stepper" data-target-select="recorrenciaDuracao">
+                            <button type="button" class="duracao-stepper-btn" data-action="decrease" aria-label="Diminuir duração">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <span class="duracao-stepper-value">1h 00min</span>
+                            <button type="button" class="duracao-stepper-btn" data-action="increase" aria-label="Aumentar duração">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="form-grupo-spa" id="recorrenciaEscopoCriacaoContainer" style="margin-bottom: 14px;">
@@ -451,6 +523,15 @@
                     <label for="editDescricao">Motivo / Descrição do Bloqueio *</label>
                     <input type="text" id="editDescricao" placeholder="Ex: Almoço / Particular / Médico">
                 </div>
+                <div id="editCamposTipoBloqueioDiaInteiro" class="form-grupo-spa" style="display: none; margin-top: -6px; margin-bottom: 10px;">
+                    <label class="full-day-toggle" for="editBloqueioDiaInteiro">
+                        <input type="checkbox" id="editBloqueioDiaInteiro">
+                        <span class="full-day-toggle-ui">
+                            <span class="full-day-toggle-text"><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span>
+                            <span class="full-day-toggle-pill">OFF</span>
+                        </span>
+                    </label>
+                </div>
                 <p id="editInfoDia" style="font-size: 0.8rem; color: #FFF; margin-bottom: 15px; font-weight: 600;"></p>
                 <div class="form-grupo-spa" id="editEscopoRecorrenciaContainer" style="display: none; margin-bottom: 14px;">
                     <label>Onde você quer aplicar?</label>
@@ -475,19 +556,40 @@
                         <option value="Sábado">Sábado</option>
                     </select>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div id="editHorarioDuracaoGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="editHoraInicio">Início *</label>
                         <select id="editHoraInicio" required></select>
                     </div>
                     <div class="form-grupo-spa" style="margin-bottom:0;">
                         <label for="editDuracao">Duração *</label>
-                        <select id="editDuracao" required>
+                        <select id="editDuracao" required style="display: none;">
                             <option value="30">30 min</option>
                             <option value="60">1h 00min</option>
                             <option value="90">1h 30min</option>
                             <option value="120">2h 00min</option>
+                            <option value="150">2h 30min</option>
+                            <option value="180">3h 00min</option>
+                            <option value="210">3h 30min</option>
+                            <option value="240">4h 00min</option>
+                            <option value="270">4h 30min</option>
+                            <option value="300">5h 00min</option>
+                            <option value="330">5h 30min</option>
+                            <option value="360">6h 00min</option>
+                            <option value="390">6h 30min</option>
+                            <option value="420">7h 00min</option>
+                            <option value="450">7h 30min</option>
+                            <option value="480">8h 00min</option>
                         </select>
+                        <div class="duracao-stepper" data-target-select="editDuracao">
+                            <button type="button" class="duracao-stepper-btn" data-action="decrease" aria-label="Diminuir duração">
+                                <i class="fa-solid fa-minus"></i>
+                            </button>
+                            <span class="duracao-stepper-value">1h 00min</span>
+                            <button type="button" class="duracao-stepper-btn" data-action="increase" aria-label="Aumentar duração">
+                                <i class="fa-solid fa-plus"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">

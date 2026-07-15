@@ -146,6 +146,136 @@ function contarReposicoesPorAluno(alunoId, aulas) {
     return aulas.filter(a => a.alunoId === alunoId && a.tipo === 'reposição').length;
 }
 
+/**
+ * Calcula KPIs consolidados de um aluno para um mês específico
+ * Retorna: Projeção Mensal, Realizado até Hoje, Qtd Aulas a Realizar, Qtd Reposições
+ * @param {String} alunoId - ID do aluno
+ * @param {Number} mes - Mês (0-11)
+ * @param {Number} ano - Ano
+ * @param {Array} aulasArray - Array de aulas
+ * @returns {Object} { projecaoMensal, realizadoAteHoje, aulasARealizarQtd, reposicoes }
+ */
+function calcularKPIsAluno(alunoId, mes, ano, aulasArray = window.aulas) {
+    const aluno = window.alunos?.find(a => a.id === alunoId);
+    if (!aluno) {
+        return { projecaoMensal: 0, realizadoAteHoje: 0, aulasARealizarQtd: 0, reposicoes: 0 };
+    }
+
+    const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+    const aulasAluno = aulasArray.filter(a => 
+        a.alunoId === alunoId && 
+        (a.tipo === 'aula' || a.tipo === 'reposição')
+    );
+
+    let projecaoMensal = 0;
+    let realizadoAteHoje = 0;
+    let aulasARealizarQtd = 0;
+
+    const inicioMes = new Date(ano, mes, 1);
+    const fimMes = new Date(ano, mes + 1, 0);
+    const hoje = new Date();
+    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+    aulasAluno.forEach(aula => {
+        const diasNoMes = fimMes.getDate();
+        for (let i = 1; i <= diasNoMes; i++) {
+            const dataAtual = new Date(ano, mes, i);
+            const diaSemana = dataAtual.getDay();
+            
+            if (diaSemana < 1 || diaSemana > 6) continue; // Pula fins de semana
+            
+            const diaTexto = diasUteisMap[diaSemana - 1];
+            
+            if (typeof resolverCompromissoRecorrenteNaData === 'function' && 
+                resolverCompromissoRecorrenteNaData(aula, dataAtual, diaTexto)) {
+                
+                // Contar para projeção mensal (apenas "aula", não reposição)
+                if (aula.tipo === 'aula') {
+                    projecaoMensal++;
+                    
+                    // Contar para realizado até hoje (completo: < hoje)
+                    if (dataAtual < hoje) {
+                        realizadoAteHoje++;
+                    }
+                    
+                    // Contar para aulas a realizar (>= hoje)
+                    if (dataAtual >= hoje) {
+                        aulasARealizarQtd++;
+                    }
+                } else if (aula.tipo === 'reposição' && dataAtual >= hoje) {
+                    // Reposição futura conta como "a realizar"
+                    aulasARealizarQtd++;
+                }
+            }
+        }
+    });
+
+    // Reposições pendentes no array aulasParaRepor
+    const reposicoesPendentes = (window.aulasParaRepor || []).filter(r => r.alunoId === alunoId).length;
+
+    return {
+        projecaoMensal: projecaoMensal * preco,
+        realizadoAteHoje: realizadoAteHoje * preco,
+        aulasARealizarQtd: aulasARealizarQtd,
+        reposicoes: reposicoesPendentes
+    };
+}
+
+/**
+ * Calcula KPIs consolidados de TODOS os alunos para um mês específico
+ * Retorna somatório: Projeção Mensal, Realizado até Hoje, Qtd Aulas a Realizar, Qtd Reposições
+ * @param {Number} mes - Mês (0-11)
+ * @param {Number} ano - Ano
+ * @param {Array} aulasArray - Array de aulas
+ * @param {Array} alunosArray - Array de alunos
+ * @returns {Object} { projecaoMensal, realizadoAteHoje, aulasARealizarQtd, reposicoes }
+ */
+function calcularKPIsTodosAlunos(mes, ano, aulasArray = window.aulas, alunosArray = window.alunos) {
+    if (!alunosArray || alunosArray.length === 0) {
+        return { projecaoMensal: 0, realizadoAteHoje: 0, aulasARealizarQtd: 0, reposicoes: 0 };
+    }
+    
+    let totalProjecao = 0;
+    let totalRealizado = 0;
+    let totalARealizarQtd = 0;
+    let totalReposicoes = 0;
+    
+    // Soma KPIs de cada aluno
+    alunosArray.forEach(aluno => {
+        const kpis = calcularKPIsAluno(aluno.id, mes, ano, aulasArray);
+        totalProjecao += kpis.projecaoMensal;
+        totalRealizado += kpis.realizadoAteHoje;
+        totalARealizarQtd += kpis.aulasARealizarQtd;
+        totalReposicoes += kpis.reposicoes;
+    });
+    
+    return {
+        projecaoMensal: totalProjecao,
+        realizadoAteHoje: totalRealizado,
+        aulasARealizarQtd: totalARealizarQtd,
+        reposicoes: totalReposicoes
+    };
+}
+
+/**
+ * Filtra aulas para exibição no calendário
+ * Remove deslocamento e bloqueio; filtra por aluno se especificado
+ * @param {String|null} alunoIdFiltro - ID do aluno para filtrar (null = todos)
+ * @param {Array} aulasArray - Array de aulas
+ * @returns {Array} Aulas filtradas (apenas aula + reposição)
+ */
+function filtrarAulasCalendario(alunoIdFiltro = null, aulasArray = window.aulas) {
+    let aulasFiltered = aulasArray.filter(a => 
+        a.tipo === 'aula' || a.tipo === 'reposição'
+    );
+    
+    if (alunoIdFiltro) {
+        aulasFiltered = aulasFiltered.filter(a => a.alunoId === alunoIdFiltro);
+    }
+    
+    return aulasFiltered;
+}
+
 // [TAG-JS-TOAST] - Função de exibição de toast
 function mostrarToast(msg, tipo = 'success') {
     const toast = document.getElementById('toast');

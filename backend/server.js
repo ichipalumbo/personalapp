@@ -55,6 +55,49 @@ const ConfigSchema = new mongoose.Schema({
 }, { strict: false });
 const Config = mongoose.model('Config', ConfigSchema);
 
+const BLOQUEIO_MAX_MINUTOS = 480;
+
+function converterHorarioParaMinutos(horario) {
+  if (typeof horario !== 'string') return null;
+  const partes = horario.split(':').map(Number);
+  if (partes.length !== 2 || Number.isNaN(partes[0]) || Number.isNaN(partes[1])) return null;
+  const [h, m] = partes;
+  if (h === 24 && m === 0) return 1440;
+  if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return h * 60 + m;
+}
+
+function normalizarBloqueio(agendamento) {
+  if (!agendamento || agendamento.tipo !== 'bloqueio') return agendamento;
+
+  const inicio = converterHorarioParaMinutos(agendamento.horarioInicio);
+  const fim = converterHorarioParaMinutos(agendamento.horarioFim);
+  const ehJanelaDiaInteiro = agendamento.horarioInicio === '00:00'
+    && (agendamento.horarioFim === '23:59' || agendamento.horarioFim === '24:00');
+  const duracao = (inicio === null || fim === null) ? null : (fim - inicio);
+
+  if (agendamento.fullDay === true || ehJanelaDiaInteiro || duracao === 1439 || duracao === 1440) {
+    return {
+      ...agendamento,
+      fullDay: true,
+      horarioInicio: '00:00',
+      horarioFim: '23:59'
+    };
+  }
+
+  if (duracao === null || duracao <= 0) {
+    throw new Error(`Bloqueio inválido no agendamento ${agendamento.id || '[sem-id]'}: horário final precisa ser maior que o inicial.`);
+  }
+
+  if (duracao > BLOQUEIO_MAX_MINUTOS) {
+    throw new Error(`Bloqueio inválido no agendamento ${agendamento.id || '[sem-id]'}: máximo de 8h para bloqueios por hora.`);
+  }
+
+  const normalizado = { ...agendamento };
+  delete normalizado.fullDay;
+  return normalizado;
+}
+
 
 // [TAG-BACKEND-ROTAS] - Rotas principais da API
 
@@ -257,13 +300,18 @@ app.get('/api/agendamentos', async (req, res) => {
 app.post('/api/agendamentos/sincronizar', async (req, res) => {
   try {
     const { agendamentos } = req.body;
+    const agendamentosNormalizados = Array.isArray(agendamentos)
+      ? agendamentos.map(normalizarBloqueio)
+      : [];
+
     await Agendamento.deleteMany({});
-    if (agendamentos && agendamentos.length > 0) {
-      await Agendamento.insertMany(agendamentos);
+    if (agendamentosNormalizados.length > 0) {
+      await Agendamento.insertMany(agendamentosNormalizados);
     }
     res.json({ message: 'Agendamentos sincronizados com sucesso!' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    const statusCode = (err.message && err.message.includes('Bloqueio inválido')) ? 400 : 500;
+    res.status(statusCode).json({ error: err.message });
   }
 });
 

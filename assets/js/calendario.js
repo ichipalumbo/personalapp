@@ -82,7 +82,11 @@ window.resolverCompromissoRecorrenteNaData = function(comp, dataAlvo, diaTexto) 
 };
 
 window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
-    if (horaStr && comp.horarioInicio !== horaStr) return false;
+    if (horaStr) {
+        const ehDiaInteiro = comp.tipo === 'bloqueio'
+            && (comp.fullDay === true || (comp.horarioInicio === '00:00' && comp.horarioFim === '23:59'));
+        if (!ehDiaInteiro && comp.horarioInicio !== horaStr) return false;
+    }
     
     const diaSemana = dataAlvo.getDay();
     if (diaSemana < 1 || diaSemana > 6) return false; 
@@ -170,36 +174,24 @@ function renderizarCalendario() {
     }
     for (let d = 1; d <= totalDias; d++) {
         const ehHoje = d === hoje.getDate() && mesAtual === hoje.getMonth() && anoAtual === hoje.getFullYear();
-        const aulasDoDia = getAulasDoDia(d, mesAtual, anoAtual);
-        const totalAulas = aulasDoDia.filter(a => !a.tipo || a.tipo === 'aula').length;
-        const totalDesloc = aulasDoDia.filter(a => a.tipo === 'deslocamento').length;
-        const totalBloqueios = aulasDoDia.filter(a => a.tipo === 'bloqueio').length;
+        let aulasDoDia = getAulasDoDia(d, mesAtual, anoAtual);
+        
+        // [FILTERED] Apply student filter if set and hide deslocamento/bloqueio types
+        if (window.filtroAlunoMensalId) {
+            aulasDoDia = aulasDoDia.filter(a => a.alunoId === window.filtroAlunoMensalId);
+        }
+        
+        // Only count aulas (hide deslocamento/bloqueio in month view)
+        const totalAulas = aulasDoDia.filter(a => !a.tipo || a.tipo === 'aula' || a.tipo === 'reposição').length;
 
         let aulasHtml = '';
-        if (aulasDoDia.length > 0) {
+        if (totalAulas > 0) {
             aulasHtml += `<div class="dia-stats-badges">`;
-            if (totalAulas > 0) {
-                aulasHtml += `
-                    <div class="badge-stat-mensal badge-aula" title="${totalAulas} Aula(s)">
-                        <i class="fa-solid fa-graduation-cap"></i><span>${totalAulas}</span>
-                    </div>
-                `;
-            }
-            if (totalDesloc > 0) {
-                aulasHtml += `
-                    <div class="badge-stat-mensal badge-desloc" title="${totalDesloc} Deslocamento(s)">
-                        <i class="fa-solid fa-car-side"></i><span>${totalDesloc}</span>
-                    </div>
-                `;
-            }
-            if (totalBloqueios > 0) {
-                aulasHtml += `
-                    <div class="badge-stat-mensal badge-bloqueio" title="${totalBloqueios} Bloqueio(s)">
-                        <i class="fa-solid fa-lock"></i><span>${totalBloqueios}</span>
-                    </div>
-                `;
-            }
-            
+            aulasHtml += `
+                <div class="badge-stat-mensal badge-aula" title="${totalAulas} Aula(s)">
+                    <i class="fa-solid fa-graduation-cap"></i><span>${totalAulas}</span>
+                </div>
+            `;
             aulasHtml += `</div>`;
         }
         html += `

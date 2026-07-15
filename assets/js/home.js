@@ -142,7 +142,10 @@ window.renderizarAgendaDia = function() {
         if (compromisso) {
             let cardHtml = '';
             const tipo = compromisso.tipo || 'aula';
-            const periodoExibicao = `${compromisso.horarioInicio} - ${compromisso.horarioFim}`;
+            const bloqueioDiaInteiro = window.ehBloqueioDiaInteiroCompromisso(compromisso);
+            const periodoExibicao = bloqueioDiaInteiro
+                ? 'Dia inteiro'
+                : `${compromisso.horarioInicio} - ${compromisso.horarioFim}`;
             let tagVisualHtml = '';
 
             if (tipo === 'aula') {
@@ -181,12 +184,12 @@ window.renderizarAgendaDia = function() {
                     </div>
                 `;
             } else if (tipo === 'bloqueio') {
-                tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> Bloqueio</span>`;
+                tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia inteiro' : 'Bloqueio'}</span>`;
 
                 cardHtml = `
                     <div class="agenda-dia-aula slot-bloqueado" onclick="abrirModalAcaoSlot('${compromisso.id}')">
                         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
-                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
+                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
                             ${tagVisualHtml}
                         </div>
                         <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || 'Compromisso'} (${periodoExibicao})</span>
@@ -231,6 +234,174 @@ window.somarMinutos = function(horaStr, minutos) {
     const novaHora = Math.floor(totalMinutos / 60) % 24;
     const novosMinutos = totalMinutos % 60;
     return `${novaHora.toString().padStart(2, '0')}:${novosMinutos.toString().padStart(2, '0')}`;
+};
+window.BLOQUEIO_MAX_MINUTOS = 480;
+window.DURACAO_MAX_AULA_DESLOCAMENTO = 120;
+window.BLOQUEIO_DIA_INTEIRO_INICIO = '00:00';
+window.BLOQUEIO_DIA_INTEIRO_FIM = '23:59';
+window.BLOQUEIO_DIA_INTEIRO_DURACAO = 1439;
+window.ehBloqueioDiaInteiroCompromisso = function(compromisso) {
+    if (!compromisso || compromisso.tipo !== 'bloqueio') return false;
+    if (compromisso.fullDay === true) return true;
+    return compromisso.horarioInicio === window.BLOQUEIO_DIA_INTEIRO_INICIO
+        && compromisso.horarioFim === window.BLOQUEIO_DIA_INTEIRO_FIM;
+};
+window.atualizarEstadoCamposBloqueioDiaInteiro = function(cfg) {
+    const checkbox = document.getElementById(cfg.checkboxId);
+    const campoHora = document.getElementById(cfg.horaId);
+    const campoDuracao = document.getElementById(cfg.duracaoId);
+    const grid = document.getElementById(cfg.gridId);
+    if (!checkbox || !campoHora || !campoDuracao || !grid) return;
+
+    const ativo = checkbox.checked;
+    if (ativo) {
+        if (!campoHora.dataset.valorAnterior) campoHora.dataset.valorAnterior = campoHora.value;
+        if (!campoDuracao.dataset.valorAnterior) campoDuracao.dataset.valorAnterior = campoDuracao.value;
+        campoHora.value = window.BLOQUEIO_DIA_INTEIRO_INICIO;
+        campoDuracao.value = String(window.BLOQUEIO_MAX_MINUTOS);
+    } else {
+        if (campoHora.dataset.valorAnterior) campoHora.value = campoHora.dataset.valorAnterior;
+        if (campoDuracao.dataset.valorAnterior) campoDuracao.value = campoDuracao.dataset.valorAnterior;
+        delete campoHora.dataset.valorAnterior;
+        delete campoDuracao.dataset.valorAnterior;
+    }
+
+    campoHora.disabled = ativo;
+    campoDuracao.disabled = ativo;
+    grid.classList.toggle('bloqueio-dia-inteiro-ativo', ativo);
+    if (cfg.duracaoId === 'agendaDuracao') window.aplicarLimitesDuracaoPorContexto('agenda');
+    if (cfg.duracaoId === 'recorrenciaDuracao') window.aplicarLimitesDuracaoPorContexto('recorrencia');
+    if (cfg.duracaoId === 'editDuracao') window.aplicarLimitesDuracaoPorContexto('edicao');
+    window.sincronizarSteppersDuracao();
+};
+window.atualizarEstadoBloqueioDiaInteiroAgenda = function() {
+    window.atualizarEstadoCamposBloqueioDiaInteiro({
+        checkboxId: 'agendaBloqueioDiaInteiro',
+        horaId: 'agendaHoraInicio',
+        duracaoId: 'agendaDuracao',
+        gridId: 'agendaHorarioDuracaoGrid'
+    });
+};
+window.atualizarEstadoBloqueioDiaInteiroRecorrencia = function() {
+    window.atualizarEstadoCamposBloqueioDiaInteiro({
+        checkboxId: 'recorrenciaBloqueioDiaInteiro',
+        horaId: 'recorrenciaHoraInicio',
+        duracaoId: 'recorrenciaDuracao',
+        gridId: 'recorrenciaHorarioDuracaoGrid'
+    });
+    window.atualizarResumoRecorrenciaCadastro();
+};
+window.atualizarEstadoBloqueioDiaInteiroEdicao = function() {
+    window.atualizarEstadoCamposBloqueioDiaInteiro({
+        checkboxId: 'editBloqueioDiaInteiro',
+        horaId: 'editHoraInicio',
+        duracaoId: 'editDuracao',
+        gridId: 'editHorarioDuracaoGrid'
+    });
+    window.atualizarAvisoConflitoEdicao();
+};
+window.formatarDuracaoMinutosLabel = function(valor) {
+    const minutos = parseInt(valor, 10);
+    if (Number.isNaN(minutos) || minutos <= 0) return '--';
+    const horas = Math.floor(minutos / 60);
+    const resto = minutos % 60;
+    if (horas === 0) return `${resto} min`;
+    return `${horas}h ${resto.toString().padStart(2, '0')}min`;
+};
+window.getValoresDuracaoDisponiveis = function(select) {
+    const valoresBase = Array.from(select.options)
+        .map(opt => parseInt(opt.value, 10))
+        .filter(v => !Number.isNaN(v));
+    const maxDuracao = parseInt(select.dataset.maxDuracao || '', 10);
+    if (Number.isNaN(maxDuracao) || maxDuracao <= 0) return valoresBase;
+    return valoresBase.filter(v => v <= maxDuracao);
+};
+window.aplicarMaxDuracaoSelect = function(selectId, maxDuracao) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    select.dataset.maxDuracao = String(maxDuracao);
+    const valoresPermitidos = window.getValoresDuracaoDisponiveis(select);
+    if (valoresPermitidos.length === 0) return;
+
+    const atual = parseInt(select.value, 10);
+    if (Number.isNaN(atual) || !valoresPermitidos.includes(atual)) {
+        select.value = String(valoresPermitidos[valoresPermitidos.length - 1]);
+    }
+};
+window.aplicarLimitesDuracaoPorContexto = function(contexto) {
+    if (contexto === 'agenda') {
+        const tipo = document.getElementById('agendaTipo')?.value || 'aula';
+        const max = tipo === 'bloqueio' ? window.BLOQUEIO_MAX_MINUTOS : window.DURACAO_MAX_AULA_DESLOCAMENTO;
+        window.aplicarMaxDuracaoSelect('agendaDuracao', max);
+        window.sincronizarSteppersDuracao();
+        return;
+    }
+
+    if (contexto === 'recorrencia') {
+        const tipo = document.getElementById('recorrenciaTipo')?.value || 'aula';
+        const max = tipo === 'bloqueio' ? window.BLOQUEIO_MAX_MINUTOS : window.DURACAO_MAX_AULA_DESLOCAMENTO;
+        window.aplicarMaxDuracaoSelect('recorrenciaDuracao', max);
+        window.sincronizarSteppersDuracao();
+        return;
+    }
+
+    if (contexto === 'edicao') {
+        const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+        const tipo = compromisso?.tipo || 'aula';
+        const max = tipo === 'bloqueio' ? window.BLOQUEIO_MAX_MINUTOS : window.DURACAO_MAX_AULA_DESLOCAMENTO;
+        window.aplicarMaxDuracaoSelect('editDuracao', max);
+        window.sincronizarSteppersDuracao();
+    }
+};
+window.atualizarLabelStepperDuracao = function(stepper) {
+    if (!stepper) return;
+    const selectId = stepper.getAttribute('data-target-select');
+    const select = selectId ? document.getElementById(selectId) : null;
+    const label = stepper.querySelector('.duracao-stepper-value');
+    if (!select || !label) return;
+    label.textContent = window.formatarDuracaoMinutosLabel(select.value);
+};
+window.configurarStepperDuracao = function(stepper) {
+    if (!stepper || stepper.dataset.stepperReady === 'true') return;
+    const selectId = stepper.getAttribute('data-target-select');
+    const select = selectId ? document.getElementById(selectId) : null;
+    if (!select) return;
+
+    const getValores = () => window.getValoresDuracaoDisponiveis(select);
+
+    stepper.querySelectorAll('.duracao-stepper-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (select.disabled) return;
+            const valores = getValores();
+            if (valores.length === 0) return;
+
+            let atual = parseInt(select.value, 10);
+            if (Number.isNaN(atual) || !valores.includes(atual)) atual = valores[0];
+            const idx = valores.indexOf(atual);
+            const acao = btn.getAttribute('data-action');
+            const novoIdx = acao === 'decrease'
+                ? Math.max(0, idx - 1)
+                : Math.min(valores.length - 1, idx + 1);
+
+            select.value = String(valores[novoIdx]);
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            select.dispatchEvent(new Event('input', { bubbles: true }));
+            window.atualizarLabelStepperDuracao(stepper);
+        });
+    });
+
+    select.addEventListener('change', () => window.atualizarLabelStepperDuracao(stepper));
+    select.addEventListener('input', () => window.atualizarLabelStepperDuracao(stepper));
+
+    stepper.dataset.stepperReady = 'true';
+    window.atualizarLabelStepperDuracao(stepper);
+};
+window.inicializarSteppersDuracao = function() {
+    document.querySelectorAll('.duracao-stepper').forEach(window.configurarStepperDuracao);
+};
+window.sincronizarSteppersDuracao = function() {
+    document.querySelectorAll('.duracao-stepper').forEach(window.atualizarLabelStepperDuracao);
 };
 window.getDataSelecionadaPtBr = function() {
     if (!window.dataSelecionada) return '';
@@ -491,6 +662,7 @@ window.abrirAgendamentoModal = function(dia, hora) {
     if (selectDuracao) {
         selectDuracao.value = "60"; 
     }
+    window.sincronizarSteppersDuracao();
 
     const selectAluno = document.getElementById('agendaAluno');
     if (selectAluno) {
@@ -500,6 +672,9 @@ window.abrirAgendamentoModal = function(dia, hora) {
 
     const bloqueioDesc = document.getElementById('agendaDescricao');
     if (bloqueioDesc) bloqueioDesc.value = '';
+    const checkDiaInteiro = document.getElementById('agendaBloqueioDiaInteiro');
+    if (checkDiaInteiro) checkDiaInteiro.checked = false;
+    window.atualizarEstadoBloqueioDiaInteiroAgenda();
 
     window.selecionarTipoAgendamento('aula');
     if (modal) modal.style.display = 'flex';
@@ -512,6 +687,8 @@ window.selecionarTipoAgendamento = function(tipo) {
     const tabBloqueio = document.getElementById('tabAgendarBloqueio');
     const camposAula = document.getElementById('camposTipoAula');
     const camposBloqueio = document.getElementById('camposTipoBloqueio');
+    const camposBloqueioDiaInteiro = document.getElementById('camposTipoBloqueioDiaInteiro');
+    const checkDiaInteiro = document.getElementById('agendaBloqueioDiaInteiro');
 
     tabAula.classList.remove('active');
     tabDeslocamento.classList.remove('active');
@@ -521,18 +698,29 @@ window.selecionarTipoAgendamento = function(tipo) {
         tabAula.classList.add('active');
         camposAula.style.display = 'block';
         camposBloqueio.style.display = 'none';
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'none';
+        if (checkDiaInteiro) checkDiaInteiro.checked = false;
+        window.atualizarEstadoBloqueioDiaInteiroAgenda();
+        window.aplicarLimitesDuracaoPorContexto('agenda');
         document.getElementById('agendaAluno').required = true;
         document.getElementById('agendaDescricao').required = false;
     } else if (tipo === 'deslocamento') {
         tabDeslocamento.classList.add('active');
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'none'; 
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'none';
+        if (checkDiaInteiro) checkDiaInteiro.checked = false;
+        window.atualizarEstadoBloqueioDiaInteiroAgenda();
+        window.aplicarLimitesDuracaoPorContexto('agenda');
         document.getElementById('agendaAluno').required = false;
         document.getElementById('agendaDescricao').required = false;
     } else if (tipo === 'bloqueio') {
         tabBloqueio.classList.add('active');
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'block'; 
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'block';
+        window.atualizarEstadoBloqueioDiaInteiroAgenda();
+        window.aplicarLimitesDuracaoPorContexto('agenda');
         document.getElementById('agendaAluno').required = false;
         document.getElementById('agendaDescricao').required = true;
     }
@@ -595,9 +783,17 @@ window.atualizarResumoRecorrenciaCadastro = function() {
     const dataInicioPtBr = window.formatarDataPtBr(dataInicioISO);
     const inicioFmt = dataInicioPtBr ? window.formatarDataPtBrLegivel(dataInicioPtBr) : 'sem data';
 
-    const hIni = document.getElementById('recorrenciaHoraInicio')?.value || '--:--';
-    const dur = parseInt(document.getElementById('recorrenciaDuracao')?.value || '0', 10) || 0;
-    const hFim = hIni !== '--:--' ? window.somarMinutos(hIni, dur) : '--:--';
+    const ehBloqueioDiaInteiro = document.getElementById('recorrenciaTipo')?.value === 'bloqueio'
+        && document.getElementById('recorrenciaBloqueioDiaInteiro')?.checked;
+    const hIni = ehBloqueioDiaInteiro
+        ? window.BLOQUEIO_DIA_INTEIRO_INICIO
+        : (document.getElementById('recorrenciaHoraInicio')?.value || '--:--');
+    const dur = ehBloqueioDiaInteiro
+        ? window.BLOQUEIO_DIA_INTEIRO_DURACAO
+        : (parseInt(document.getElementById('recorrenciaDuracao')?.value || '0', 10) || 0);
+    const hFim = ehBloqueioDiaInteiro
+        ? window.BLOQUEIO_DIA_INTEIRO_FIM
+        : (hIni !== '--:--' ? window.somarMinutos(hIni, dur) : '--:--');
 
     const padrao = document.getElementById('recorrenciaPadrao')?.value || 'semanal';
     const intervalo = parseInt(document.getElementById('recorrenciaIntervalo')?.value || '1', 10) || 1;
@@ -659,6 +855,10 @@ window.abrirModalRecorrencia = function(dia, hora) {
     const hAlvo = hora || window.horarioSelecionadoSlot || "08:00";
     selectInicio.value = hAlvo;
     selectDuracao.value = "60";
+    window.sincronizarSteppersDuracao();
+    const checkDiaInteiro = document.getElementById('recorrenciaBloqueioDiaInteiro');
+    if (checkDiaInteiro) checkDiaInteiro.checked = false;
+    window.atualizarEstadoBloqueioDiaInteiroRecorrencia();
 
     const inputPadrao = document.getElementById('recorrenciaPadrao');
     const inputIntervalo = document.getElementById('recorrenciaIntervalo');
@@ -710,6 +910,8 @@ window.selecionarTipoRecorrente = function(tipo) {
     const tabBloqueio = document.getElementById('tabRecorrenteBloqueio');
     const camposAula = document.getElementById('camposRecorrenteAula');
     const camposBloqueio = document.getElementById('camposRecorrenteBloqueio');
+    const camposBloqueioDiaInteiro = document.getElementById('camposRecorrenteBloqueioDiaInteiro');
+    const checkDiaInteiro = document.getElementById('recorrenciaBloqueioDiaInteiro');
 
     tabAula.classList.remove('active');
     tabDeslocamento.classList.remove('active');
@@ -719,18 +921,29 @@ window.selecionarTipoRecorrente = function(tipo) {
         tabAula.classList.add('active');
         camposAula.style.display = 'block';
         camposBloqueio.style.display = 'none';
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'none';
+        if (checkDiaInteiro) checkDiaInteiro.checked = false;
+        window.atualizarEstadoBloqueioDiaInteiroRecorrencia();
+        window.aplicarLimitesDuracaoPorContexto('recorrencia');
         document.getElementById('recorrenciaAluno').required = true;
         document.getElementById('recorrenciaDescricao').required = false;
     } else if (tipo === 'deslocamento') {
         tabDeslocamento.classList.add('active');
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'none'; 
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'none';
+        if (checkDiaInteiro) checkDiaInteiro.checked = false;
+        window.atualizarEstadoBloqueioDiaInteiroRecorrencia();
+        window.aplicarLimitesDuracaoPorContexto('recorrencia');
         document.getElementById('recorrenciaAluno').required = false;
         document.getElementById('recorrenciaDescricao').required = false;
     } else if (tipo === 'bloqueio') {
         tabBloqueio.classList.add('active');
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'block'; 
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'block';
+        window.atualizarEstadoBloqueioDiaInteiroRecorrencia();
+        window.aplicarLimitesDuracaoPorContexto('recorrencia');
         document.getElementById('recorrenciaAluno').required = false;
         document.getElementById('recorrenciaDescricao').required = true;
     }
@@ -907,9 +1120,21 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const tipo = document.getElementById('agendaTipo').value;
-            const hInicio = document.getElementById('agendaHoraInicio').value;
-            const duracaoMinutos = document.getElementById('agendaDuracao').value;
-            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+            const diaInteiro = tipo === 'bloqueio' && document.getElementById('agendaBloqueioDiaInteiro')?.checked;
+            const hInicio = diaInteiro ? window.BLOQUEIO_DIA_INTEIRO_INICIO : document.getElementById('agendaHoraInicio').value;
+            const duracaoMinutos = diaInteiro
+                ? window.BLOQUEIO_DIA_INTEIRO_DURACAO
+                : parseInt(document.getElementById('agendaDuracao').value, 10);
+            const hFim = diaInteiro ? window.BLOQUEIO_DIA_INTEIRO_FIM : window.somarMinutos(hInicio, duracaoMinutos);
+
+            if (tipo === 'bloqueio' && !diaInteiro && duracaoMinutos > window.BLOQUEIO_MAX_MINUTOS) {
+                alert('Bloqueios por hora podem ter no máximo 8h. Para mais tempo, use dia inteiro.');
+                return;
+            }
+            if ((tipo === 'aula' || tipo === 'deslocamento') && duracaoMinutos > window.DURACAO_MAX_AULA_DESLOCAMENTO) {
+                alert('Aulas e deslocamentos podem ter no máximo 2h.');
+                return;
+            }
 
             let novoCompromisso = {
                 id: Date.now().toString(),
@@ -929,6 +1154,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 novoCompromisso.descricao = "Trânsito / Deslocamento"; 
             } else if (tipo === 'bloqueio') {
                 novoCompromisso.descricao = document.getElementById('agendaDescricao').value.trim();
+                if (diaInteiro) novoCompromisso.fullDay = true;
             }
 
             aulas.push(novoCompromisso);
@@ -945,9 +1171,21 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const tipo = document.getElementById('recorrenciaTipo').value;
-            const hInicio = document.getElementById('recorrenciaHoraInicio').value;
-            const duracaoMinutos = document.getElementById('recorrenciaDuracao').value;
-            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+            const diaInteiro = tipo === 'bloqueio' && document.getElementById('recorrenciaBloqueioDiaInteiro')?.checked;
+            const hInicio = diaInteiro ? window.BLOQUEIO_DIA_INTEIRO_INICIO : document.getElementById('recorrenciaHoraInicio').value;
+            const duracaoMinutos = diaInteiro
+                ? window.BLOQUEIO_DIA_INTEIRO_DURACAO
+                : parseInt(document.getElementById('recorrenciaDuracao').value, 10);
+            const hFim = diaInteiro ? window.BLOQUEIO_DIA_INTEIRO_FIM : window.somarMinutos(hInicio, duracaoMinutos);
+
+            if (tipo === 'bloqueio' && !diaInteiro && duracaoMinutos > window.BLOQUEIO_MAX_MINUTOS) {
+                alert('Bloqueios por hora podem ter no máximo 8h. Para mais tempo, use dia inteiro.');
+                return;
+            }
+            if ((tipo === 'aula' || tipo === 'deslocamento') && duracaoMinutos > window.DURACAO_MAX_AULA_DESLOCAMENTO) {
+                alert('Aulas e deslocamentos podem ter no máximo 2h.');
+                return;
+            }
             
             const padrao = document.getElementById('recorrenciaPadrao').value;
             const intervalo = parseInt(document.getElementById('recorrenciaIntervalo').value) || 1;
@@ -995,6 +1233,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 novoCompromisso.descricao = "Trânsito / Deslocamento"; 
             } else if (tipo === 'bloqueio') {
                 novoCompromisso.descricao = document.getElementById('recorrenciaDescricao').value.trim();
+                if (diaInteiro) novoCompromisso.fullDay = true;
             }
 
             const datasConflito = window.getDatasConflitoRecorrencia(novoCompromisso, 24);
@@ -1028,6 +1267,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (el) el.addEventListener('change', () => window.atualizarResumoRecorrenciaCadastro());
         if (el) el.addEventListener('input', () => window.atualizarResumoRecorrenciaCadastro());
     });
+    const checkAgendaDiaInteiro = document.getElementById('agendaBloqueioDiaInteiro');
+    if (checkAgendaDiaInteiro) checkAgendaDiaInteiro.addEventListener('change', () => window.atualizarEstadoBloqueioDiaInteiroAgenda());
+    const checkRecorrenciaDiaInteiro = document.getElementById('recorrenciaBloqueioDiaInteiro');
+    if (checkRecorrenciaDiaInteiro) checkRecorrenciaDiaInteiro.addEventListener('change', () => window.atualizarEstadoBloqueioDiaInteiroRecorrencia());
+    window.inicializarSteppersDuracao();
+    window.sincronizarSteppersDuracao();
 
     window.configurarEscopoCriacaoRecorrencia();
     window.configurarEscopoRecorrenciaEdicao();
@@ -1119,13 +1364,21 @@ window.abrirModalAcaoSlot = function(id) {
 
     const minutes = window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim);
     selectDuracao.value = minutes.toString();
+    window.aplicarLimitesDuracaoPorContexto('edicao');
+    window.sincronizarSteppersDuracao();
 
     const camposAula = document.getElementById('editCamposTipoAula');
     const camposBloqueio = document.getElementById('editCamposTipoBloqueio');
+    const camposBloqueioDiaInteiro = document.getElementById('editCamposTipoBloqueioDiaInteiro');
+    const checkDiaInteiro = document.getElementById('editBloqueioDiaInteiro');
+    const ehDiaInteiro = window.ehBloqueioDiaInteiroCompromisso(compromisso);
 
     if (tipo === 'aula') {
         camposAula.style.display = 'block';
         camposBloqueio.style.display = 'none';
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'none';
+        if (checkDiaInteiro) checkDiaInteiro.checked = false;
+        window.atualizarEstadoBloqueioDiaInteiroEdicao();
 
         const selectAluno = document.getElementById('editAluno');
         if (selectAluno) {
@@ -1135,9 +1388,15 @@ window.abrirModalAcaoSlot = function(id) {
     } else if (tipo === 'deslocamento') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'none';
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'none';
+        if (checkDiaInteiro) checkDiaInteiro.checked = false;
+        window.atualizarEstadoBloqueioDiaInteiroEdicao();
     } else if (tipo === 'bloqueio') {
         camposAula.style.display = 'none';
         camposBloqueio.style.display = 'block';
+        if (camposBloqueioDiaInteiro) camposBloqueioDiaInteiro.style.display = 'block';
+        if (checkDiaInteiro) checkDiaInteiro.checked = ehDiaInteiro;
+        window.atualizarEstadoBloqueioDiaInteiroEdicao();
         document.getElementById('editDescricao').value = compromisso.descricao || '';
     }
 
@@ -1159,13 +1418,22 @@ window.atualizarAvisoConflitoEdicao = function() {
     if (freq !== 'semanal') return;
 
     const dataAlvoStr = window.dataAlvoAcaoStr || window.getDataSelecionadaPtBr();
+    const ehDiaInteiroEdicao = document.getElementById('editBloqueioDiaInteiro')?.checked
+        && (compromisso.tipo || 'aula') === 'bloqueio';
+    const horarioInicio = ehDiaInteiroEdicao
+        ? window.BLOQUEIO_DIA_INTEIRO_INICIO
+        : (document.getElementById('editHoraInicio')?.value || compromisso.horarioInicio);
+    const horarioFim = ehDiaInteiroEdicao
+        ? window.BLOQUEIO_DIA_INTEIRO_FIM
+        : window.somarMinutos(
+            horarioInicio,
+            document.getElementById('editDuracao')?.value || window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim)
+        );
     const candidato = window.getCompromissoSerializadoParaConflito({
         ...compromisso,
-        horarioInicio: document.getElementById('editHoraInicio')?.value || compromisso.horarioInicio,
-        horarioFim: window.somarMinutos(
-            document.getElementById('editHoraInicio')?.value || compromisso.horarioInicio,
-            document.getElementById('editDuracao')?.value || window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim)
-        )
+        horarioInicio,
+        horarioFim,
+        fullDay: ehDiaInteiroEdicao
     }, dataAlvoStr);
 
     if (escopo === 'occurrence') {
@@ -1194,22 +1462,35 @@ document.addEventListener('DOMContentLoaded', () => {
             const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
             if (!compromisso) return;
 
-            const hInicio = document.getElementById('editHoraInicio').value;
-            const duracaoMinutos = document.getElementById('editDuracao').value;
-            const hFim = window.somarMinutos(hInicio, duracaoMinutos);
+            const tipo = compromisso.tipo || 'aula';
+            const diaInteiro = tipo === 'bloqueio' && document.getElementById('editBloqueioDiaInteiro')?.checked;
+            const hInicio = diaInteiro ? window.BLOQUEIO_DIA_INTEIRO_INICIO : document.getElementById('editHoraInicio').value;
+            const duracaoMinutos = diaInteiro
+                ? window.BLOQUEIO_DIA_INTEIRO_DURACAO
+                : parseInt(document.getElementById('editDuracao').value, 10);
+            const hFim = diaInteiro ? window.BLOQUEIO_DIA_INTEIRO_FIM : window.somarMinutos(hInicio, duracaoMinutos);
             const freq = document.getElementById('editCompromissoFrequencia').value;
             const escopoRecorrencia = document.getElementById('editEscopoRecorrencia')?.value || 'fromDate';
             const dataAlvoStr = window.dataAlvoAcaoStr || window.getDataSelecionadaPtBr();
 
-            if (hInicio >= hFim) {
+            if (!diaInteiro && hInicio >= hFim) {
                 alert("O horário de término deve ser posterior ao início!");
+                return;
+            }
+            if (tipo === 'bloqueio' && !diaInteiro && duracaoMinutos > window.BLOQUEIO_MAX_MINUTOS) {
+                alert('Bloqueios por hora podem ter no máximo 8h. Para mais tempo, use dia inteiro.');
+                return;
+            }
+            if ((tipo === 'aula' || tipo === 'deslocamento') && duracaoMinutos > window.DURACAO_MAX_AULA_DESLOCAMENTO) {
+                alert('Aulas e deslocamentos podem ter no máximo 2h.');
                 return;
             }
 
             const candidato = window.getCompromissoSerializadoParaConflito({
                 ...compromisso,
                 horarioInicio: hInicio,
-                horarioFim: hFim
+                horarioFim: hFim,
+                fullDay: diaInteiro
             }, dataAlvoStr);
 
             if (freq === 'semanal') {
@@ -1239,6 +1520,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         dia: compromisso.dia,
                         horarioInicio: hInicio,
                         horarioFim: hFim,
+                        fullDay: diaInteiro,
                         excecoes: [],
                         excecoesDetalhadas: []
                     };
@@ -1254,6 +1536,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     compromisso.horarioInicio = hInicio;
                     compromisso.horarioFim = hFim;
+                    compromisso.fullDay = diaInteiro;
                     compromisso.recorrenciaEscopo = escopoRecorrencia;
                     compromisso.recorrenciaDataInicio = dataAlvoStr;
                     if (escopoRecorrencia === 'monthOfDate') {
@@ -1272,6 +1555,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 compromisso.horarioInicio = hInicio;
                 compromisso.horarioFim = hFim;
+                compromisso.fullDay = diaInteiro;
             }
 
             if (freq === 'semanal') {
@@ -1279,9 +1563,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 delete compromisso.data;
             }
 
-            const tipo = compromisso.tipo || 'aula';
             if (tipo === 'bloqueio') {
                 compromisso.descricao = document.getElementById('editDescricao').value.trim();
+                if (!diaInteiro) delete compromisso.fullDay;
             }
 
             if (typeof salvarDados === 'function') salvarDados();
@@ -1296,6 +1580,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const inputEditDuracao = document.getElementById('editDuracao');
     if (inputEditHora) inputEditHora.addEventListener('change', () => window.atualizarAvisoConflitoEdicao());
     if (inputEditDuracao) inputEditDuracao.addEventListener('change', () => window.atualizarAvisoConflitoEdicao());
+    const checkEditDiaInteiro = document.getElementById('editBloqueioDiaInteiro');
+    if (checkEditDiaInteiro) checkEditDiaInteiro.addEventListener('change', () => window.atualizarEstadoBloqueioDiaInteiroEdicao());
     // [TAG-JS-ACOES-SLOTS] - Lógica Refinada de Cancelamentos/Reagendamentos
     const btnDeletar = document.getElementById('btnDeletarDefinitivo');
     if (btnDeletar) {
