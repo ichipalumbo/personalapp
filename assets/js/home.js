@@ -1007,12 +1007,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnConfig.addEventListener('click', () => {
             const selectInicio = document.getElementById('configHoraInicio');
             const selectFim = document.getElementById('configHoraFim');
-            let options = '';
-            for (let i = 0; i <= 23; i++) {
-                options += `<option value="${i}">${i.toString().padStart(2, '0')}:00</option>`;
-            }
-            selectInicio.innerHTML = options;
-            selectFim.innerHTML = options;
             selectInicio.value = agendaConfig.horaInicio;
             selectFim.value = agendaConfig.horaFim;
             document.getElementById('modalConfigAgenda').style.display = 'flex';
