@@ -651,16 +651,30 @@
 
     <div class="toast" id="toast"></div>
 
-    <script src="assets/js/dados.js"></script>
+    <!-- [1] Core State & Data -->
+    <script src="assets/js/state.js"></script>
     <script src="assets/js/storage.js"></script>
-    <script src="assets/js/utils.js"></script>
-    <script src="assets/js/modal.js"></script>
-    <script src="assets/js/agenda.js"></script>
-    <script src="assets/js/alunos.js"></script>
-    <script src="assets/js/calendario.js"></script>
-    <script src="assets/js/home.js"></script>
-    <script src="assets/js/pagina-calendario.js"></script>
-    <script src="assets/js/pagina-cadastro.js"></script>
+    <!-- [2] Pure Utilities (no DOM) -->
+    <script src="assets/js/utils-kpi.js"></script>
+    <script src="assets/js/utils-datetime.js"></script>
+    <!-- [3] Domain Helpers -->
+    <script src="assets/js/alunos-helpers.js"></script>
+    <script src="assets/js/calendario-engine.js"></script>
+    <script src="assets/js/agenda-conflitos.js"></script>
+    <!-- [4] UI Widgets -->
+    <script src="assets/js/widget-stepper-duracao.js"></script>
+    <script src="assets/js/widget-bloqueio.js"></script>
+    <!-- [5] Legacy (grade semanal original — manter enquanto #agendaGrid existir no HTML) -->
+    <script src="assets/js/_legado-modal.js"></script>
+    <script src="assets/js/_legado-agenda.js"></script>
+    <!-- [6] Modais de Agendamento -->
+    <script src="assets/js/modal-agendamento.js"></script>
+    <script src="assets/js/modal-acao-slot.js"></script>
+    <!-- [7] Page Views -->
+    <script src="assets/js/view-home.js"></script>
+    <script src="assets/js/view-calendario.js"></script>
+    <script src="assets/js/view-alunos.js"></script>
+    <!-- [8] SPA Router (deve ser o último) -->
     <script src="assets/js/app.js"></script>
 </body>
 </html>

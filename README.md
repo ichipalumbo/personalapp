@@ -13,29 +13,36 @@ Este README foi estruturado para facilitar onboarding tecnico e navegacao rapida
 ## Mapa Rapido para Agentes
 
 - Ponto de entrada da interface: `index.html`
-- Orquestracao da SPA (abas Home/Calendario/Alunos): `assets/js/app.js`
-- Estado global compartilhado: `assets/js/dados.js`
+- Roteador SPA (abas Home/Calendario/Alunos): `assets/js/app.js`
+- Estado global compartilhado: `assets/js/state.js`
 - Sincronizacao e persistencia (API + localStorage): `assets/js/storage.js`
 - API e modelos MongoDB: `backend/server.js`
 
 Se o objetivo for:
 
 - Ajustar navegacao/UX entre telas: comecar em `assets/js/app.js` e `index.html`
-- Ajustar regras de agendamento: comecar em `assets/js/modal.js`, `assets/js/agenda.js`, `assets/js/calendario.js`
-- Ajustar cadastro de alunos: comecar em `assets/js/pagina-cadastro.js` e `assets/js/alunos.js`
+- Ajustar a agenda diaria (Home): comecar em `assets/js/view-home.js`
+- Ajustar modais de criacao de agendamento: comecar em `assets/js/modal-agendamento.js`
+- Ajustar edicao/cancelamento/reagendamento: comecar em `assets/js/modal-acao-slot.js`
+- Ajustar regras de recorrencia ou grid mensal: comecar em `assets/js/calendario-engine.js`
+- Ajustar view do calendario (semanal/mensal/KPIs): comecar em `assets/js/view-calendario.js`
+- Ajustar cadastro de alunos: comecar em `assets/js/view-alunos.js`
+- Ajustar calculos de KPI: comecar em `assets/js/utils-kpi.js`
 - Ajustar persistencia/sincronizacao: comecar em `assets/js/storage.js` e `backend/server.js`
 
 ## Arquitetura (Visao Geral)
 
 ```text
 [Frontend SPA - browser]
-	|- telas e renderizacao (app.js, home.js, agenda.js, pagina-calendario.js)
-	|- estado em memoria (dados.js)
-	|- persistencia/sync (storage.js)
-	v
+    |- roteamento (app.js)
+    |- views: view-home.js, view-calendario.js, view-alunos.js
+    |- modais: modal-agendamento.js, modal-acao-slot.js
+    |- estado em memoria (state.js)
+    |- persistencia/sync (storage.js)
+    v
 [API Express - backend/server.js]
-	|- rotas /api/alunos, /api/agendamentos, /api/configuracao
-	v
+    |- rotas /api/alunos, /api/agendamentos, /api/configuracao
+    v
 [MongoDB - via Mongoose]
 ```
 
@@ -54,21 +61,77 @@ personalapp/
 |  |- css/
 |  |  |- style.css
 |  |- js/
-|  |  |- agenda.js
-|  |  |- alunos.js
-|  |  |- app.js
-|  |  |- calendario.js
-|  |  |- dados.js
-|  |  |- home.js
-|  |  |- modal.js
-|  |  |- pagina-cadastro.js
-|  |  |- pagina-calendario.js
-|  |  |- storage.js
-|  |  |- utils.js
+|  |  |  --- [1] Core State & Data ---
+|  |  |- state.js                  <- estado global (alunos, aulas, constantes)
+|  |  |- storage.js                <- sync API + fallback localStorage
+|  |  |  --- [2] Pure Utilities ---
+|  |  |- utils-kpi.js              <- calculos de KPI, toast, exportacao
+|  |  |- utils-datetime.js         <- helpers de data e hora
+|  |  |  --- [3] Domain Helpers ---
+|  |  |- alunos-helpers.js         <- lookup e select de alunos
+|  |  |- calendario-engine.js      <- motor de recorrencia + grid mensal
+|  |  |- agenda-conflitos.js       <- deteccao de conflitos de horario
+|  |  |  --- [4] UI Widgets ---
+|  |  |- widget-stepper-duracao.js <- widget +/- de duracao
+|  |  |- widget-bloqueio.js        <- helpers de estado "dia inteiro"
+|  |  |  --- [5] Modais ---
+|  |  |- modal-agendamento.js      <- modais: tipo, agendamento unico, recorrente
+|  |  |- modal-acao-slot.js        <- modais: edicao, cancelamento, reagendamento, reposicao
+|  |  |  --- [6] Page Views ---
+|  |  |- view-home.js              <- aba Home: agenda diaria + dashboard
+|  |  |- view-calendario.js        <- aba Calendario: semanal/mensal + KPI dashboard
+|  |  |- view-alunos.js            <- aba Alunos: CRM de cadastro/edicao
+|  |  |  --- [7] SPA Router ---
+|  |  |- app.js                    <- roteador de abas (DOMContentLoaded)
+|  |  |  --- [8] Legado ---
+|  |  |- _legado-modal.js          <- ⚠️ modal original da grade semanal (#modalAgendar)
+|  |  |- _legado-agenda.js         <- ⚠️ grade semanal original (#agendaGrid)
 |- backend/
 |  |- package.json
 |  |- server.js
 |  |- vercel.json
+```
+
+## Convencao de Nomes dos Arquivos JS
+
+Os arquivos seguem prefixos que indicam sua camada:
+
+| Prefixo | Camada | Exemplo |
+|---|---|---|
+| `state` | Estado global | `state.js` |
+| `storage` | Persistencia | `storage.js` |
+| `utils-` | Utilitarios puros (sem DOM) | `utils-kpi.js`, `utils-datetime.js` |
+| `alunos-` | Helpers de dominio (alunos) | `alunos-helpers.js` |
+| `calendario-` | Motor de calendario/recorrencia | `calendario-engine.js` |
+| `agenda-` | Logica de agenda | `agenda-conflitos.js` |
+| `widget-` | Componentes UI reutilizaveis | `widget-stepper-duracao.js` |
+| `modal-` | Controladores de modais | `modal-agendamento.js` |
+| `view-` | Views de paginas (abas SPA) | `view-home.js` |
+| `app` | Roteador SPA | `app.js` |
+| `_legado-` | Codigo legado — revisar antes de remover | `_legado-modal.js` |
+
+## Ordem de Carregamento dos Scripts (index.html)
+
+A ordem importa porque os scripts usam globais `window.xxx` definidos em outros arquivos:
+
+```
+1.  state.js                   <- sem dependencias
+2.  storage.js                 <- depende de state.js
+3.  utils-kpi.js               <- depende de state.js
+4.  utils-datetime.js          <- depende de state.js (em runtime)
+5.  alunos-helpers.js          <- depende de state.js
+6.  calendario-engine.js       <- depende de state.js
+7.  agenda-conflitos.js        <- depende de state.js + calendario-engine.js
+8.  widget-stepper-duracao.js  <- depende de state.js + widget-bloqueio.js (runtime)
+9.  widget-bloqueio.js         <- depende de widget-stepper-duracao.js
+10. _legado-modal.js           <- legado
+11. _legado-agenda.js          <- legado
+12. modal-agendamento.js       <- depende de layers 1-9
+13. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js
+14. view-home.js               <- depende de layers 1-13
+15. view-calendario.js         <- depende de layers 1-14
+16. view-alunos.js             <- depende de layers 1-14
+17. app.js                     <- depende de tudo (deve ser o ultimo)
 ```
 
 ## Papel dos Arquivos Principais
@@ -77,17 +140,23 @@ Frontend:
 
 - `index.html`: estrutura da SPA, containers das telas e modais.
 - `assets/css/style.css`: estilos globais e responsividade.
-- `assets/js/app.js`: controle de abas e inicializacao das telas.
-- `assets/js/dados.js`: variaveis de estado global (alunos, aulas e configuracoes).
-- `assets/js/storage.js`: GET/POST na API e fallback para localStorage.
-- `assets/js/home.js`: visao operacional diaria.
-- `assets/js/agenda.js`: grade semanal e renderizacao de horarios.
-- `assets/js/calendario.js`: regras de calendario e recorrencias.
-- `assets/js/pagina-calendario.js`: alternancia entre modo semanal e mensal.
-- `assets/js/pagina-cadastro.js`: cadastro/edicao/listagem de alunos.
-- `assets/js/alunos.js`: funcoes auxiliares de gestao de alunos.
-- `assets/js/modal.js`: fluxo de criacao/edicao de agendamentos via modal.
-- `assets/js/utils.js`: utilitarios (toast, import/export etc.).
+- `assets/js/app.js` [TAG-APP-ROUTER]: roteador de abas, chama inicializadores das views.
+- `assets/js/state.js` [TAG-STATE]: variaveis de estado global (alunos, aulas, agendaConfig, constantes).
+- `assets/js/storage.js` [TAG-STORAGE]: GET/POST na API e fallback para localStorage.
+- `assets/js/utils-kpi.js` [TAG-UTILS-KPI]: calculos de KPI por aluno/mes, toast, exportacao JSON.
+- `assets/js/utils-datetime.js` [TAG-UTILS-DATETIME]: formatacao, conversao e calculo de datas e horas.
+- `assets/js/alunos-helpers.js` [TAG-ALUNOS-HELPERS]: lookup de aluno por ID, HTML de selects.
+- `assets/js/calendario-engine.js` [TAG-CALENDARIO-ENGINE]: math de recorrencia (diaria/semanal/mensal/anual) + grid mensal.
+- `assets/js/agenda-conflitos.js` [TAG-AGENDA-CONFLITOS]: detecta sobreposicao de horarios entre compromissos.
+- `assets/js/widget-stepper-duracao.js` [TAG-WIDGET-STEPPER]: widget +/- de duracao com labels formatadas.
+- `assets/js/widget-bloqueio.js` [TAG-WIDGET-BLOQUEIO]: constantes de bloqueio e toggle "Dia Inteiro" nos modais.
+- `assets/js/modal-agendamento.js` [TAG-MODAL-AGENDAMENTO]: modais de criacao — escolha de tipo, agendamento unico e recorrente.
+- `assets/js/modal-acao-slot.js` [TAG-MODAL-ACAO-SLOT]: modais de acao — edicao, cancelamento, reagendamento e fila de reposicao.
+- `assets/js/view-home.js` [TAG-VIEW-HOME]: aba Home — agenda diaria, dashboard e navegacao de datas.
+- `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — alternancia semanal/mensal, filtros e KPI dashboard.
+- `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
+- `assets/js/_legado-modal.js` [TAG-LEGADO-MODAL]: ⚠️ modal original da grade semanal — verificar uso antes de remover.
+- `assets/js/_legado-agenda.js` [TAG-LEGADO-AGENDA]: ⚠️ grade semanal original (#agendaGrid) — verificar uso antes de remover.
 
 Backend:
 
