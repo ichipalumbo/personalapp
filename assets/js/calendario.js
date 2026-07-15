@@ -1,4 +1,86 @@
 // [TAG-JS-CALENDARIO-CORE] - Motor Matemático do Grid Mensal (Com Contadores)
+window.parseDataFlex = function(valor) {
+    if (!valor) return null;
+    if (valor instanceof Date) return new Date(valor.getFullYear(), valor.getMonth(), valor.getDate());
+    if (typeof valor !== 'string') return null;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(valor)) {
+        const data = new Date(`${valor}T12:00:00`);
+        if (!Number.isNaN(data.getTime())) return new Date(data.getFullYear(), data.getMonth(), data.getDate());
+        return null;
+    }
+
+    const partes = valor.split('/');
+    if (partes.length === 3) {
+        const [dia, mes, ano] = partes.map(Number);
+        if (dia && mes && ano) {
+            const data = new Date(ano, mes - 1, dia);
+            if (!Number.isNaN(data.getTime())) return new Date(data.getFullYear(), data.getMonth(), data.getDate());
+        }
+    }
+
+    const dataGenerica = new Date(valor);
+    if (!Number.isNaN(dataGenerica.getTime())) {
+        return new Date(dataGenerica.getFullYear(), dataGenerica.getMonth(), dataGenerica.getDate());
+    }
+    return null;
+};
+
+window.resolverCompromissoRecorrenteNaData = function(comp, dataAlvo, diaTexto) {
+    const dataCriacao = window.parseDataFlex(comp.dataCriacao) || window.parseDataFlex(comp.recorrenciaDataInicio) || window.parseDataFlex(comp.data);
+    if (!dataCriacao) return false;
+
+    const dataRef = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
+    const diffMs = dataRef - dataCriacao;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return false;
+
+    const padrao = comp.tipoRecorrencia || 'semanal';
+    const intervalo = Math.max(1, parseInt(comp.intervaloRecorrencia || 1, 10));
+
+    if (padrao === 'diaria') {
+        return diffDays % intervalo === 0;
+    }
+
+    if (padrao === 'semanal') {
+        const dias = Array.isArray(comp.diasSemana) && comp.diasSemana.length > 0
+            ? comp.diasSemana
+            : (comp.dia ? [comp.dia] : []);
+        if (!dias.includes(diaTexto)) return false;
+
+        const inicioSemana = new Date(dataCriacao);
+        const diaSemanaInicio = inicioSemana.getDay();
+        inicioSemana.setDate(inicioSemana.getDate() - diaSemanaInicio + (diaSemanaInicio === 0 ? -6 : 1));
+
+        const alvoSemana = new Date(dataRef);
+        const diaSemanaAlvo = alvoSemana.getDay();
+        alvoSemana.setDate(alvoSemana.getDate() - diaSemanaAlvo + (diaSemanaAlvo === 0 ? -6 : 1));
+
+        const diffSemanas = Math.round((alvoSemana - inicioSemana) / (1000 * 60 * 60 * 24 * 7));
+        return diffSemanas >= 0 && (diffSemanas % intervalo === 0);
+    }
+
+    if (padrao === 'mensal') {
+        const diffMeses = (dataRef.getFullYear() - dataCriacao.getFullYear()) * 12 + (dataRef.getMonth() - dataCriacao.getMonth());
+        if (diffMeses < 0 || (diffMeses % intervalo !== 0)) return false;
+
+        if (Array.isArray(comp.diasSemana) && comp.diasSemana.length > 0) {
+            return comp.diasSemana.includes(diaTexto);
+        }
+        return dataRef.getDate() === dataCriacao.getDate();
+    }
+
+    if (padrao === 'anual') {
+        const diffAnos = dataRef.getFullYear() - dataCriacao.getFullYear();
+        return diffAnos >= 0
+            && (diffAnos % intervalo === 0)
+            && dataRef.getDate() === dataCriacao.getDate()
+            && dataRef.getMonth() === dataCriacao.getMonth();
+    }
+
+    return false;
+};
+
 window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     if (horaStr && comp.horarioInicio !== horaStr) return false;
     
@@ -13,49 +95,26 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     }
     
     if (comp.frequencia === 'semanal') {
-        if (comp.tipoRecorrencia) {
-            const dataCriacao = comp.dataCriacao ? new Date(comp.dataCriacao) : new Date(2026, 0, 1);
-            const d1 = new Date(dataCriacao.getFullYear(), dataCriacao.getMonth(), dataCriacao.getDate());
-            const d2 = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
-            
-            const diffTime = d2 - d1;
-            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-            
-            const intervalo = parseInt(comp.intervaloRecorrencia || 1);
-            if (comp.tipoRecorrencia === 'diaria') {
-                return diffDays >= 0 && (diffDays % intervalo === 0);
-            }
-            if (comp.tipoRecorrencia === 'semanal') {
-                const dataCriacaoSegunda = new Date(d1);
-                const d1SemanaDay = dataCriacaoSegunda.getDay();
-                dataCriacaoSegunda.setDate(d1.getDate() - d1SemanaDay + (d1SemanaDay === 0 ? -6 : 1));
-                
-                const dataSegunda = new Date(d2);
-                const d2SemanaDay = dataSegunda.getDay();
-                dataSegunda.setDate(d2.getDate() - d2SemanaDay + (d2SemanaDay === 0 ? -6 : 1));
-                
-                const diffSemanasTime = dataSegunda - dataCriacaoSegunda;
-                const diffSemanas = Math.round(diffSemanasTime / (1000 * 60 * 60 * 24 * 7));
-                
-                const pertenceNaSemana = diffSemanas >= 0 && (diffSemanas % intervalo === 0);
-                const diaSelecionadoValido = Array.isArray(comp.diasSemana) && comp.diasSemana.includes(diaTexto);
-                
-                return pertenceNaSemana && diaSelecionadoValido;
-            }
-            if (comp.tipoRecorrencia === 'mensal') {
-                const diffMeses = (d2.getFullYear() - d1.getFullYear()) * 12 + (d2.getMonth() - d1.getMonth());
-                if (diffMeses >= 0 && (diffMeses % intervalo === 0)) {
-                    if (Array.isArray(comp.diasSemana) && comp.diasSemana.length > 0) {
-                        return comp.diasSemana.includes(diaTexto);
-                    }
-                    return dataAlvo.getDate() === d1.getDate();
+        const recorrenciaDataInicio = window.parseDataFlex(comp.recorrenciaDataInicio) || window.parseDataFlex(comp.data);
+        const dataAlvoPura = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
+        if (recorrenciaDataInicio) {
+            if ((comp.recorrenciaEscopo || 'fromDate') === 'monthOfDate') {
+                if (dataAlvoPura.getFullYear() !== recorrenciaDataInicio.getFullYear() || dataAlvoPura.getMonth() !== recorrenciaDataInicio.getMonth()) {
+                    return false;
                 }
-                return false;
+            } else {
+                if (dataAlvoPura < recorrenciaDataInicio) {
+                    return false;
+                }
             }
-            if (comp.tipoRecorrencia === 'anual') {
-                const diffAnos = d2.getFullYear() - d1.getFullYear();
-                return diffAnos >= 0 && (diffAnos % intervalo === 0) && d2.getDate() === d1.getDate() && d2.getMonth() === d1.getMonth();
-            }
+        }
+
+        if (comp.tipoRecorrencia) {
+            return window.resolverCompromissoRecorrenteNaData(comp, dataAlvoPura, diaTexto);
+        }
+
+        if (Array.isArray(comp.diasSemana) && comp.diasSemana.length > 0) {
+            return comp.diasSemana.includes(diaTexto);
         }
         return comp.dia === diaTexto;
     }

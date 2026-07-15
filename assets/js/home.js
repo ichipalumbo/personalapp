@@ -232,6 +232,219 @@ window.somarMinutos = function(horaStr, minutos) {
     const novosMinutos = totalMinutos % 60;
     return `${novaHora.toString().padStart(2, '0')}:${novosMinutos.toString().padStart(2, '0')}`;
 };
+window.getDataSelecionadaPtBr = function() {
+    if (!window.dataSelecionada) return '';
+    return window.dataSelecionada.toLocaleDateString('pt-BR');
+};
+window.formatarDataPtBr = function(dataISO) {
+    if (!dataISO || typeof dataISO !== 'string') return '';
+    const partes = dataISO.split('-');
+    if (partes.length !== 3) return '';
+    return `${partes[2]}/${partes[1]}/${partes[0]}`;
+};
+window.converterPtBrParaISO = function(dataPtBr) {
+    if (!dataPtBr || typeof dataPtBr !== 'string') return '';
+    const partes = dataPtBr.split('/');
+    if (partes.length !== 3) return '';
+    const [dia, mes, ano] = partes;
+    return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+};
+window.formatarDataPtBrLegivel = function(dataPtBr) {
+    if (!dataPtBr) return '';
+    const iso = window.converterPtBrParaISO(dataPtBr);
+    if (!iso) return dataPtBr;
+    const data = new Date(`${iso}T12:00:00`);
+    if (Number.isNaN(data.getTime())) return dataPtBr;
+    return data.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+};
+window.abrirDatePickerNativo = function(input) {
+    if (!input) return;
+    try {
+        if (typeof input.showPicker === 'function') {
+            input.showPicker();
+            return;
+        }
+    } catch (_) {}
+    input.focus();
+    input.click();
+};
+window.obterResumoEscopoCriacaoRecorrencia = function(escopo) {
+    if (escopo === 'monthOfDate') return 'Vai criar a série para o mês da data escolhida.';
+    return 'Vai criar a série da data escolhida em diante.';
+};
+window.atualizarResumoEscopoCriacaoRecorrencia = function() {
+    const inputEscopo = document.getElementById('recorrenciaEscopoCriacao');
+    const resumo = document.getElementById('recorrenciaEscopoCriacaoResumo');
+    if (!inputEscopo || !resumo) return;
+    resumo.textContent = window.obterResumoEscopoCriacaoRecorrencia(inputEscopo.value || 'fromDate');
+};
+window.configurarEscopoCriacaoRecorrencia = function() {
+    const grid = document.getElementById('recorrenciaEscopoCriacaoGrid');
+    const inputEscopo = document.getElementById('recorrenciaEscopoCriacao');
+    if (!grid || !inputEscopo) return;
+    grid.querySelectorAll('.btn-escopo-recorrencia').forEach(btn => {
+        const novoBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(novoBtn, btn);
+        novoBtn.addEventListener('click', () => {
+            grid.querySelectorAll('.btn-escopo-recorrencia').forEach(b => b.classList.remove('active'));
+            novoBtn.classList.add('active');
+            inputEscopo.value = novoBtn.dataset.escopoCriacao || 'fromDate';
+            window.atualizarResumoEscopoCriacaoRecorrencia();
+            window.atualizarResumoRecorrenciaCadastro();
+        });
+    });
+    window.atualizarResumoEscopoCriacaoRecorrencia();
+};
+window.getLabelEscopoRecorrencia = function(escopo) {
+    if (escopo === 'occurrence') return 'Somente esta aula';
+    if (escopo === 'monthOfDate') return 'Este mês todo';
+    if (escopo === 'entireSeries') return 'Todas as aulas da série';
+    return 'Daqui pra frente';
+};
+window.getResumoEscopoRecorrencia = function(escopo) {
+    if (escopo === 'occurrence') return 'Vai aplicar somente nesta aula específica.';
+    if (escopo === 'monthOfDate') return 'Vai aplicar nas aulas deste mês.';
+    if (escopo === 'entireSeries') return 'Vai aplicar na série inteira.';
+    return 'Vai aplicar nesta aula e nas próximas da série.';
+};
+window.atualizarResumoEscopoRecorrencia = function() {
+    const inputEscopo = document.getElementById('editEscopoRecorrencia');
+    const resumo = document.getElementById('editEscopoResumo');
+    if (!inputEscopo || !resumo) return;
+    resumo.textContent = window.getResumoEscopoRecorrencia(inputEscopo.value || 'fromDate');
+};
+window.configurarEscopoRecorrenciaEdicao = function() {
+    const grid = document.getElementById('editEscopoRecorrenciaGrid');
+    const inputEscopo = document.getElementById('editEscopoRecorrencia');
+    if (!grid || !inputEscopo) return;
+
+    grid.querySelectorAll('.btn-escopo-recorrencia').forEach(btn => {
+        const novoBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(novoBtn, btn);
+        novoBtn.addEventListener('click', () => {
+            const escopo = novoBtn.dataset.escopo || 'fromDate';
+            inputEscopo.value = escopo;
+            grid.querySelectorAll('.btn-escopo-recorrencia').forEach(b => {
+                b.classList.toggle('active', b.dataset.escopo === escopo);
+            });
+            window.atualizarResumoEscopoRecorrencia();
+            window.atualizarAvisoConflitoEdicao();
+        });
+    });
+
+    inputEscopo.value = 'fromDate';
+    window.atualizarResumoEscopoRecorrencia();
+};
+window.getCompromissoSerializadoParaConflito = function(compromisso, dataAlvoPtBr) {
+    return {
+        id: compromisso.id,
+        tipo: compromisso.tipo || 'aula',
+        frequencia: compromisso.frequencia || 'uma_vez',
+        data: compromisso.data || dataAlvoPtBr,
+        dia: compromisso.dia || '',
+        diasSemana: Array.isArray(compromisso.diasSemana) ? compromisso.diasSemana.slice() : [],
+        horarioInicio: compromisso.horarioInicio,
+        horarioFim: compromisso.horarioFim,
+        tipoRecorrencia: compromisso.tipoRecorrencia || 'semanal',
+        intervaloRecorrencia: Number(compromisso.intervaloRecorrencia || 1),
+        dataCriacao: compromisso.dataCriacao || new Date().toISOString(),
+        recorrenciaEscopo: compromisso.recorrenciaEscopo || 'fromDate',
+        recorrenciaDataInicio: compromisso.recorrenciaDataInicio || compromisso.data || dataAlvoPtBr,
+        excecoes: Array.isArray(compromisso.excecoes) ? compromisso.excecoes.slice() : [],
+        excecoesDetalhadas: Array.isArray(compromisso.excecoesDetalhadas) ? compromisso.excecoesDetalhadas.slice() : []
+    };
+};
+window.getConflitosNoDia = function(candidato, dataAlvo, opcoes = {}) {
+    if (!Array.isArray(aulas)) return [];
+    const ignorarIds = Array.isArray(opcoes.ignorarIds) ? opcoes.ignorarIds : [];
+    const dataStr = dataAlvo.toLocaleDateString('pt-BR');
+
+    return aulas
+        .filter(existente => existente && !ignorarIds.includes(existente.id))
+        .filter(existente => {
+            const ocorreExistente = window.checarCompromissoNaData(existente, dataAlvo);
+            const ocorreCandidato = window.checarCompromissoNaData(candidato, dataAlvo);
+            if (!ocorreExistente || !ocorreCandidato) return false;
+
+            const inicioA = existente.horarioInicio;
+            const fimA = existente.horarioFim;
+            const inicioB = candidato.horarioInicio;
+            const fimB = candidato.horarioFim;
+            return inicioA < fimB && inicioB < fimA;
+        })
+        .map(existente => {
+            const aluno = window.getAluno(existente.alunoId);
+            const nome = aluno ? aluno.nome : (existente.tipo === 'aula' ? 'Aula' : (existente.descricao || 'Compromisso'));
+            return {
+                id: existente.id,
+                data: dataStr,
+                faixa: `${existente.horarioInicio} - ${existente.horarioFim}`,
+                nome
+            };
+        });
+};
+window.getConflitosRecorrenciaEmDatas = function(candidato, datasPtBr, opcoes = {}) {
+    const unicas = Array.from(new Set((datasPtBr || []).filter(Boolean)));
+    const conflitos = [];
+    unicas.forEach(dataPtBr => {
+        const iso = window.converterPtBrParaISO(dataPtBr);
+        if (!iso) return;
+        const data = new Date(`${iso}T12:00:00`);
+        if (Number.isNaN(data.getTime())) return;
+        const conflDia = window.getConflitosNoDia(candidato, data, opcoes);
+        conflDia.forEach(c => conflitos.push(c));
+    });
+    return conflitos;
+};
+window.getDatasConflitoRecorrencia = function(compromisso, limite = 20) {
+    const inicioPtBr = compromisso.recorrenciaDataInicio || compromisso.data || window.getDataSelecionadaPtBr();
+    const inicioIso = window.converterPtBrParaISO(inicioPtBr);
+    if (!inicioIso) return [];
+
+    const inicio = new Date(`${inicioIso}T12:00:00`);
+    if (Number.isNaN(inicio.getTime())) return [];
+
+    const datas = [];
+    const cursor = new Date(inicio);
+    const maxDias = compromisso.recorrenciaEscopo === 'monthOfDate' ? 40 : 120;
+    const mesAlvo = inicio.getMonth();
+    const anoAlvo = inicio.getFullYear();
+
+    for (let i = 0; i <= maxDias && datas.length < limite; i++) {
+        const d = new Date(cursor);
+        d.setDate(inicio.getDate() + i);
+        if (compromisso.recorrenciaEscopo === 'monthOfDate' && (d.getMonth() !== mesAlvo || d.getFullYear() !== anoAlvo)) {
+            break;
+        }
+        if (window.checarCompromissoNaData(compromisso, d)) {
+            datas.push(d.toLocaleDateString('pt-BR'));
+        }
+    }
+    return datas;
+};
+window.gerarResumoConflitosDatas = function(conflitos, limite = 6) {
+    if (!Array.isArray(conflitos) || conflitos.length === 0) return '';
+    const vistos = new Set();
+    const datas = [];
+    conflitos.forEach(c => {
+        if (c && c.data && !vistos.has(c.data)) {
+            vistos.add(c.data);
+            datas.push(c.data);
+        }
+    });
+    if (datas.length === 0) return '';
+    const preview = datas.slice(0, limite).map(window.formatarDataPtBrLegivel).join(', ');
+    const resto = datas.length - limite;
+    return resto > 0 ? `${preview} e mais ${resto}` : preview;
+};
+window.abrirNovoAgendamento = function(opcoes = {}) {
+    const dia = opcoes.dia || window.getDiaTextoSelecionado();
+    const hora = opcoes.hora || window.horarioSelecionadoSlot || '08:00';
+    window.horarioSelecionadoSlot = hora;
+    slotSelecionadoDiaTexto = dia;
+    slotSelecionadoHora = hora;
+    window.abrirEscolhaTipoModal(dia, hora);
+};
 window.diferencaMinutos = function(inicio, fim) {
     const [hI, mI] = inicio.split(':').map(Number);
     const [hF, mF] = fim.split(':').map(Number);
@@ -245,7 +458,8 @@ window.abrirEscolhaTipoModal = function(dia, hora) {
     const modal = document.getElementById('modalEscolhaTipo');
     if (modal) {
         const nomeDiaEscolha = (dia === 'Sábado' || dia === 'Domingo') ? dia : `${dia}-feira`;
-    document.getElementById('infoEscolhaSlot').textContent = `Agendar às ${hora} de ${nomeDiaEscolha}`;
+        const info = document.getElementById('infoEscolhaSlot');
+        if (info) info.textContent = `Agendar às ${hora} de ${nomeDiaEscolha}`;
         modal.style.display = 'flex';
     }
 };
@@ -261,7 +475,8 @@ window.abrirAgendamentoModal = function(dia, hora) {
     slotSelecionadoDiaTexto = dia;
 
     const modal = document.getElementById('modalAgendamento');
-    document.getElementById('infoHorarioAlvo').textContent = `${dia} — Definir Período`;
+    const infoHorario = document.getElementById('infoHorarioAlvo');
+    if (infoHorario) infoHorario.textContent = `${dia} — Definir Período`;
 
     if (document.getElementById('formAgendamento')) {
         document.getElementById('formAgendamento').reset();
@@ -282,6 +497,9 @@ window.abrirAgendamentoModal = function(dia, hora) {
         selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>' + 
             alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
     }
+
+    const bloqueioDesc = document.getElementById('agendaDescricao');
+    if (bloqueioDesc) bloqueioDesc.value = '';
 
     window.selecionarTipoAgendamento('aula');
     if (modal) modal.style.display = 'flex';
@@ -363,6 +581,38 @@ window.atualizarTextoPreviewRecorrencia = function() {
     if (infoText) {
         infoText.innerHTML = `<i class="fa-solid fa-circle-info" style="margin-right: 6px;"></i>${msg}`;
     }
+
+    window.atualizarResumoRecorrenciaCadastro();
+};
+window.atualizarResumoRecorrenciaCadastro = function() {
+    const container = document.getElementById('resumoRecorrenciaCadastro');
+    if (!container) return;
+
+    const alunoSelect = document.getElementById('recorrenciaAluno');
+    const alunoNome = alunoSelect && alunoSelect.value ? (alunoSelect.options[alunoSelect.selectedIndex]?.text || 'Aluno') : 'Aluno não selecionado';
+
+    const dataInicioISO = document.getElementById('recorrenciaDataInicio')?.value || '';
+    const dataInicioPtBr = window.formatarDataPtBr(dataInicioISO);
+    const inicioFmt = dataInicioPtBr ? window.formatarDataPtBrLegivel(dataInicioPtBr) : 'sem data';
+
+    const hIni = document.getElementById('recorrenciaHoraInicio')?.value || '--:--';
+    const dur = parseInt(document.getElementById('recorrenciaDuracao')?.value || '0', 10) || 0;
+    const hFim = hIni !== '--:--' ? window.somarMinutos(hIni, dur) : '--:--';
+
+    const padrao = document.getElementById('recorrenciaPadrao')?.value || 'semanal';
+    const intervalo = parseInt(document.getElementById('recorrenciaIntervalo')?.value || '1', 10) || 1;
+    const dias = [];
+    document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill.active').forEach(btn => dias.push(btn.getAttribute('data-dia')));
+    const diasTxt = dias.length ? dias.join(', ') : 'dias automáticos';
+
+    const escopo = document.getElementById('recorrenciaEscopoCriacao')?.value || 'fromDate';
+    const escopoTxt = escopo === 'monthOfDate' ? 'Este mês todo' : 'Daqui pra frente';
+
+    container.innerHTML = `
+        <strong style="display:block; margin-bottom:4px; color:#FFD700;">Resumo da criação</strong>
+        <span style="display:block; font-size:0.78rem; color:#DDD;">${alunoNome} • ${inicioFmt} • ${hIni} - ${hFim}</span>
+        <span style="display:block; font-size:0.78rem; color:#BBB; margin-top:2px;">${padrao} a cada ${intervalo} (${diasTxt}) • ${escopoTxt}</span>
+    `;
 };
 window.mudarPadraoRecorrencia = function() {
     const padrao = document.getElementById('recorrenciaPadrao').value;
@@ -410,8 +660,22 @@ window.abrirModalRecorrencia = function(dia, hora) {
     selectInicio.value = hAlvo;
     selectDuracao.value = "60";
 
-    document.getElementById('recorrenciaPadrao').value = "semanal";
-    document.getElementById('recorrenciaIntervalo').value = "1";
+    const inputPadrao = document.getElementById('recorrenciaPadrao');
+    const inputIntervalo = document.getElementById('recorrenciaIntervalo');
+    if (inputPadrao) inputPadrao.value = 'semanal';
+    if (inputIntervalo) inputIntervalo.value = '1';
+
+    const dataInicioInput = document.getElementById('recorrenciaDataInicio');
+    if (dataInicioInput) {
+        const basePtBr = window.getDataSelecionadaPtBr();
+        dataInicioInput.value = window.converterPtBrParaISO(basePtBr);
+    }
+
+    const escopoCriacaoInput = document.getElementById('recorrenciaEscopoCriacao');
+    if (escopoCriacaoInput) escopoCriacaoInput.value = 'fromDate';
+    document.querySelectorAll('#recorrenciaEscopoCriacaoGrid .btn-escopo-recorrencia').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.escopoCriacao === 'fromDate');
+    });
 
     const selectAluno = document.getElementById('recorrenciaAluno');
     if (selectAluno) {
@@ -433,6 +697,8 @@ window.abrirModalRecorrencia = function(dia, hora) {
     }
 
     window.selecionarTipoRecorrente('aula');
+    window.atualizarResumoEscopoCriacaoRecorrencia();
+    window.atualizarResumoRecorrenciaCadastro();
     
     if (modal) modal.style.display = 'flex';
 };
@@ -506,7 +772,7 @@ window.abrirReagendarAulaModalSlot = function(dia, hora) {
     selectInicio.value = hora;
 
     const nomeDiaReagendamento = (dia === 'Sábado' || dia === 'Domingo') ? dia : `${dia}-feira`;
-    document.getElementById('infoReagendamentoSlot').textContent = `Encaixar reposição às ${hora} de ${nomeDiaReagendamento}`;
+    document.getElementById('infoReagendamentoSlot').textContent = `Agendar reposição às ${hora} de ${nomeDiaReagendamento}`;
 
     modal.style.display = 'flex';
 };
@@ -531,7 +797,7 @@ window.iniciarReagendamentoReposicao = function(id) {
     selectInicio.innerHTML = optionsHtml;
     selectInicio.value = window.horarioSelecionadoSlot || "08:00"; 
 
-    document.getElementById('infoReagendamentoSlot').textContent = `Reagendamento Direto • Fila de espera`;
+    document.getElementById('infoReagendamentoSlot').textContent = `Agendamento direto • Fila de espera`;
 
     modal.style.display = 'flex';
 };
@@ -548,7 +814,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnRecorrencia = document.getElementById('btnRecorrenciaAgenda');
     if (btnRecorrencia) {
         btnRecorrencia.addEventListener('click', () => {
-            window.abrirModalRecorrencia();
+            window.abrirNovoAgendamento();
         });
     }
 
@@ -597,7 +863,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alunoId = document.getElementById('reagendarAluno').value;
                 if (!alunoId) {
-                    alert("Por favor, selecione um aluno para agendar a reposição!");
+                    alert("Selecione um aluno para agendar a reposição.");
                     return;
                 }
                 const repObj = aulasParaRepor.find(r => r.alunoId === alunoId);
@@ -632,7 +898,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             window.fecharReagendarAulaModal();
             window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição agendada com sucesso!');
+            if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição marcada com sucesso!');
         });
     }
     const formAgendamento = document.getElementById('formAgendamento');
@@ -685,6 +951,14 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const padrao = document.getElementById('recorrenciaPadrao').value;
             const intervalo = parseInt(document.getElementById('recorrenciaIntervalo').value) || 1;
+            const dataInicioISO = document.getElementById('recorrenciaDataInicio').value;
+            const dataInicioPtBr = window.formatarDataPtBr(dataInicioISO);
+            const recorrenciaEscopo = document.getElementById('recorrenciaEscopoCriacao')?.value || 'fromDate';
+
+            if (!dataInicioPtBr) {
+                alert('Selecione a data de início da recorrência.');
+                return;
+            }
 
             const diasSelecionados = [];
             document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill.active').forEach(btn => {
@@ -706,7 +980,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 tipoRecorrencia: padrao,
                 intervaloRecorrencia: intervalo,
                 excecoes: [], // Armazenará as datas das instâncias canceladas/reagendadas
-                dataCriacao: new Date().toISOString() // Data inicial de ancoragem do motor
+                excecoesDetalhadas: [],
+                recorrenciaEscopo,
+                recorrenciaDataInicio: dataInicioPtBr,
+                dataCriacao: new Date(`${dataInicioISO}T12:00:00`).toISOString(),
+                data: dataInicioPtBr
             };
 
             if (tipo === 'aula') {
@@ -719,6 +997,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 novoCompromisso.descricao = document.getElementById('recorrenciaDescricao').value.trim();
             }
 
+            const datasConflito = window.getDatasConflitoRecorrencia(novoCompromisso, 24);
+            const conflitos = window.getConflitosRecorrenciaEmDatas(novoCompromisso, datasConflito);
+            if (conflitos.length > 0) {
+                const resumo = window.gerarResumoConflitosDatas(conflitos);
+                alert(`Não foi possível salvar. Existem conflitos de horário em: ${resumo}.`);
+                return;
+            }
+
             aulas.push(novoCompromisso);
             if (typeof salvarDados === 'function') salvarDados();
 
@@ -727,6 +1013,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof mostrarToast === 'function') mostrarToast('♾️ Recorrência Outlook configurada!');
         });
     }
+
+    const inputDataRecorrencia = document.getElementById('recorrenciaDataInicio');
+    if (inputDataRecorrencia) {
+        inputDataRecorrencia.addEventListener('focus', () => window.abrirDatePickerNativo(inputDataRecorrencia));
+        inputDataRecorrencia.addEventListener('click', () => window.abrirDatePickerNativo(inputDataRecorrencia));
+        inputDataRecorrencia.addEventListener('change', () => {
+            window.atualizarResumoRecorrenciaCadastro();
+        });
+    }
+
+    ['recorrenciaHoraInicio', 'recorrenciaDuracao', 'recorrenciaPadrao', 'recorrenciaIntervalo', 'recorrenciaAluno'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => window.atualizarResumoRecorrenciaCadastro());
+        if (el) el.addEventListener('input', () => window.atualizarResumoRecorrenciaCadastro());
+    });
+
+    window.configurarEscopoCriacaoRecorrencia();
+    window.configurarEscopoRecorrenciaEdicao();
 
     if (document.getElementById('btnFecharModal')) {
         document.getElementById('btnFecharModal').addEventListener('click', () => {
@@ -756,6 +1060,9 @@ window.abrirModalAcaoSlot = function(id) {
     const recorrenteTopRow = document.querySelector('#acoesCompromissoRecorrente > div');
 
     const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
+    const containerEscopo = document.getElementById('editEscopoRecorrenciaContainer');
+    const inputEscopo = document.getElementById('editEscopoRecorrencia');
+    const impactoEscopo = document.getElementById('editEscopoImpacto');
     const tipo = compromisso.tipo || 'aula';
     if (tipo !== 'aula') {
         if (btnMandarReposicao) btnMandarReposicao.style.display = 'none';
@@ -778,6 +1085,16 @@ window.abrirModalAcaoSlot = function(id) {
         containerDiaSemana.style.display = 'block';
         document.getElementById('editDiaSemana').value = compromisso.dia || "Segunda";
         document.getElementById('editInfoDia').textContent = `Série Recorrente • Gerenciando dia: ${dataAlvoStr}`;
+        if (containerEscopo) containerEscopo.style.display = 'block';
+        if (inputEscopo) inputEscopo.value = 'fromDate';
+        document.querySelectorAll('#editEscopoRecorrenciaGrid .btn-escopo-recorrencia').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.escopo === 'fromDate');
+        });
+        if (impactoEscopo) {
+            impactoEscopo.textContent = `Escopo atual: ${window.getLabelEscopoRecorrencia('fromDate')}`;
+        }
+        window.atualizarResumoEscopoRecorrencia();
+        window.atualizarAvisoConflitoEdicao();
         if (acoesUnico) acoesUnico.style.display = 'none';
         if (acoesRecorrente) acoesRecorrente.style.display = 'flex';
     } else {
@@ -786,6 +1103,8 @@ window.abrirModalAcaoSlot = function(id) {
         
         containerDiaSemana.style.display = 'none';
         document.getElementById('editInfoDia').textContent = `Agendado para: ${compromisso.data || compromisso.dia}`;
+        if (containerEscopo) containerEscopo.style.display = 'none';
+        if (impactoEscopo) impactoEscopo.textContent = '';
         if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr 1fr';
         if (acoesUnico) acoesUnico.style.display = 'grid';
         if (acoesRecorrente) acoesRecorrente.style.display = 'none';
@@ -828,6 +1147,44 @@ window.abrirModalAcaoSlot = function(id) {
 window.fecharModalAcaoSlot = function() {
     document.getElementById('modalAcaoSlot').style.display = 'none';
 };
+window.atualizarAvisoConflitoEdicao = function() {
+    const impacto = document.getElementById('editEscopoImpacto');
+    const compromisso = aulas.find(a => a.id === idCompromissoSelecionado);
+    if (!impacto || !compromisso) return;
+
+    const freq = compromisso.frequencia || 'uma_vez';
+    const escopo = document.getElementById('editEscopoRecorrencia')?.value || 'fromDate';
+    impacto.textContent = `Escopo atual: ${window.getLabelEscopoRecorrencia(escopo)}`;
+
+    if (freq !== 'semanal') return;
+
+    const dataAlvoStr = window.dataAlvoAcaoStr || window.getDataSelecionadaPtBr();
+    const candidato = window.getCompromissoSerializadoParaConflito({
+        ...compromisso,
+        horarioInicio: document.getElementById('editHoraInicio')?.value || compromisso.horarioInicio,
+        horarioFim: window.somarMinutos(
+            document.getElementById('editHoraInicio')?.value || compromisso.horarioInicio,
+            document.getElementById('editDuracao')?.value || window.diferencaMinutos(compromisso.horarioInicio, compromisso.horarioFim)
+        )
+    }, dataAlvoStr);
+
+    if (escopo === 'occurrence') {
+        const iso = window.converterPtBrParaISO(dataAlvoStr);
+        if (!iso) return;
+        const data = new Date(`${iso}T12:00:00`);
+        const conflitos = window.getConflitosNoDia(candidato, data, { ignorarIds: [compromisso.id] });
+        if (conflitos.length > 0) {
+            impacto.textContent = `Conflito detectado em ${window.formatarDataPtBrLegivel(dataAlvoStr)}.`;
+        }
+        return;
+    }
+
+    const datas = window.getDatasConflitoRecorrencia(candidato, 16);
+    const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, { ignorarIds: [compromisso.id] });
+    if (conflitos.length > 0) {
+        impacto.textContent = `Conflitos previstos em: ${window.gerarResumoConflitosDatas(conflitos, 4)}.`;
+    }
+};
 document.addEventListener('DOMContentLoaded', () => {
     const formEditar = document.getElementById('formEditarCompromisso');
     if (formEditar) {
@@ -841,14 +1198,81 @@ document.addEventListener('DOMContentLoaded', () => {
             const duracaoMinutos = document.getElementById('editDuracao').value;
             const hFim = window.somarMinutos(hInicio, duracaoMinutos);
             const freq = document.getElementById('editCompromissoFrequencia').value;
+            const escopoRecorrencia = document.getElementById('editEscopoRecorrencia')?.value || 'fromDate';
+            const dataAlvoStr = window.dataAlvoAcaoStr || window.getDataSelecionadaPtBr();
 
             if (hInicio >= hFim) {
                 alert("O horário de término deve ser posterior ao início!");
                 return;
             }
 
-            compromisso.horarioInicio = hInicio;
-            compromisso.horarioFim = hFim;
+            const candidato = window.getCompromissoSerializadoParaConflito({
+                ...compromisso,
+                horarioInicio: hInicio,
+                horarioFim: hFim
+            }, dataAlvoStr);
+
+            if (freq === 'semanal') {
+                if (escopoRecorrencia === 'occurrence') {
+                    const iso = window.converterPtBrParaISO(dataAlvoStr);
+                    if (!iso) {
+                        alert('Não foi possível identificar a data da aula.');
+                        return;
+                    }
+                    const data = new Date(`${iso}T12:00:00`);
+                    const conflitos = window.getConflitosNoDia(candidato, data, { ignorarIds: [compromisso.id] });
+                    if (conflitos.length > 0) {
+                        alert(`Conflito detectado com ${conflitos[0].nome} (${conflitos[0].faixa}).`);
+                        return;
+                    }
+
+                    if (!Array.isArray(compromisso.excecoes)) compromisso.excecoes = [];
+                    if (!Array.isArray(compromisso.excecoesDetalhadas)) compromisso.excecoesDetalhadas = [];
+                    if (!compromisso.excecoes.includes(dataAlvoStr)) compromisso.excecoes.push(dataAlvoStr);
+
+                    const novoId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                    const novoCompromisso = {
+                        ...compromisso,
+                        id: novoId,
+                        frequencia: 'uma_vez',
+                        data: dataAlvoStr,
+                        dia: compromisso.dia,
+                        horarioInicio: hInicio,
+                        horarioFim: hFim,
+                        excecoes: [],
+                        excecoesDetalhadas: []
+                    };
+                    aulas.push(novoCompromisso);
+                } else {
+                    const datas = window.getDatasConflitoRecorrencia(candidato, 20);
+                    const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, { ignorarIds: [compromisso.id] });
+                    if (conflitos.length > 0) {
+                        const resumo = window.gerarResumoConflitosDatas(conflitos, 5);
+                        alert(`Não foi possível salvar. Existem conflitos em: ${resumo}.`);
+                        return;
+                    }
+
+                    compromisso.horarioInicio = hInicio;
+                    compromisso.horarioFim = hFim;
+                    compromisso.recorrenciaEscopo = escopoRecorrencia;
+                    compromisso.recorrenciaDataInicio = dataAlvoStr;
+                    if (escopoRecorrencia === 'monthOfDate') {
+                        compromisso.dataCriacao = new Date(`${window.converterPtBrParaISO(dataAlvoStr)}T12:00:00`).toISOString();
+                    }
+                }
+            } else {
+                const iso = window.converterPtBrParaISO(dataAlvoStr);
+                if (iso) {
+                    const data = new Date(`${iso}T12:00:00`);
+                    const conflitos = window.getConflitosNoDia(candidato, data, { ignorarIds: [compromisso.id] });
+                    if (conflitos.length > 0) {
+                        alert(`Conflito detectado com ${conflitos[0].nome} (${conflitos[0].faixa}).`);
+                        return;
+                    }
+                }
+                compromisso.horarioInicio = hInicio;
+                compromisso.horarioFim = hFim;
+            }
 
             if (freq === 'semanal') {
                 compromisso.dia = document.getElementById('editDiaSemana').value;
@@ -867,6 +1291,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof mostrarToast === 'function') mostrarToast('✅ Alterações salvas com sucesso!');
         });
     }
+
+    const inputEditHora = document.getElementById('editHoraInicio');
+    const inputEditDuracao = document.getElementById('editDuracao');
+    if (inputEditHora) inputEditHora.addEventListener('change', () => window.atualizarAvisoConflitoEdicao());
+    if (inputEditDuracao) inputEditDuracao.addEventListener('change', () => window.atualizarAvisoConflitoEdicao());
     // [TAG-JS-ACOES-SLOTS] - Lógica Refinada de Cancelamentos/Reagendamentos
     const btnDeletar = document.getElementById('btnDeletarDefinitivo');
     if (btnDeletar) {

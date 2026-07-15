@@ -61,8 +61,8 @@
                             <span>Sua rotina de treinos bem organizada!</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button id="btnRecorrenciaAgenda" class="btn-config-icon" title="Agendar Horário Recorrente">
-                                <i class="fa-solid fa-infinity" style="color: #FFD700;"></i>
+                            <button id="btnRecorrenciaAgenda" class="btn-config-icon" title="Novo Agendamento">
+                                <i class="fa-solid fa-calendar-plus" style="color: #FFD700;"></i>
                             </button>
                             <button id="btnConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
                                 <i class="fa-solid fa-gear fa-spin-hover" style="color: #FFD700;"></i>
@@ -229,7 +229,7 @@
                 <button type="button" id="btnEscolhaReposicao" class="btn btn-primary" style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 15px; text-align: left; background: #1E1E1E; color: #FFF; border: 1px solid #2D2D2D; border-radius: 12px; width: 100%;">
                     <span style="font-size: 1.4rem; color: #64B5F6; background: rgba(100, 181, 246, 0.1); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;"><i class="fa-solid fa-arrows-rotate"></i></span>
                     <div>
-                        <strong style="display: block; font-size: 0.95rem; color: #FFF; font-weight: 700;">Reagendar Reposição</strong>
+                        <strong style="display: block; font-size: 0.95rem; color: #FFF; font-weight: 700;">Agendar Reposição</strong>
                         <span style="font-size: 0.72rem; color: #888; font-weight: 400; display: block; margin-top: 2px;">Encaixar um aluno pendente da fila</span>
                     </div>
                 </button>
@@ -241,11 +241,11 @@
     </div>
     <div class="modal-overlay" id="modalReagendarAula" style="display: none;">
         <div class="modal" style="max-width: 440px;">
-            <h3><i class="fa-solid fa-arrows-rotate" style="color: #64B5F6; margin-right: 8px;"></i>Reagendar Aula de Reposição</h3>
+            <h3><i class="fa-solid fa-arrows-rotate" style="color: #64B5F6; margin-right: 8px;"></i>Agendar Reposição</h3>
             <p id="infoReagendamentoSlot" style="font-size: 0.8rem; color: #64B5F6; margin-bottom: 15px; font-weight: 600;"></p>
             <form id="formReagendarAula">
                 <div class="form-grupo-spa" id="containerSeletorReagendarAluno">
-                    <label for="reagendarAluno">Aluno com Reposição Pendente *</label>
+                    <label for="reagendarAluno">Aluno na fila de reposição *</label>
                     <select id="reagendarAluno">
                         <option value="">Selecione um aluno...</option>
                     </select>
@@ -309,6 +309,17 @@
                 <input type="hidden" id="agendaId">
                 <input type="hidden" id="agendaData">
                 <input type="hidden" id="agendaTipo" value="aula">
+
+                <div id="camposTipoAula" class="form-grupo-spa">
+                    <label for="agendaAluno">Aluno *</label>
+                    <select id="agendaAluno">
+                        <option value="">Selecione um aluno...</option>
+                    </select>
+                </div>
+                <div id="camposTipoBloqueio" class="form-grupo-spa" style="display: none;">
+                    <label for="agendaDescricao">Motivo / Descrição do Bloqueio *</label>
+                    <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular / Médico">
+                </div>
                 
                 <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
@@ -325,16 +336,6 @@
                             <option value="120">2h 00min</option>
                         </select>
                     </div>
-                </div>
-                <div id="camposTipoAula" class="form-grupo-spa">
-                    <label for="agendaAluno">Aluno *</label>
-                    <select id="agendaAluno">
-                        <option value="">Selecione um aluno...</option>
-                    </select>
-                </div>
-                <div id="camposTipoBloqueio" class="form-grupo-spa" style="display: none;">
-                    <label for="agendaDescricao">Motivo / Descrição do Bloqueio *</label>
-                    <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular / Médico">
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
@@ -362,38 +363,21 @@
 
             <form id="formRecorrencia">
                 <input type="hidden" id="recorrenciaTipo" value="aula">
-                <div class="form-grupo-spa">
-                    <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
-                    <select id="recorrenciaPadrao" onchange="window.mudarPadraoRecorrencia()" required>
-                        <option value="semanal" selected>Semanal</option>
-                        <option value="diaria">Diária</option>
-                        <option value="mensal">Mensal</option>
-                        <option value="anual">Anual</option>
+                <div class="recorrencia-secao-titulo">1. Dados principais</div>
+                <div id="camposRecorrenteAula" class="form-grupo-spa">
+                    <label for="recorrenciaAluno">Aluno *</label>
+                    <select id="recorrenciaAluno">
+                        <option value="">Selecione um aluno...</option>
                     </select>
                 </div>
-                <div class="form-grupo-spa" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <label for="recorrenciaIntervalo">Repetir a cada *</label>
-                        <input type="number" id="recorrenciaIntervalo" value="1" min="1" required style="text-align: center;">
-                    </div>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
-                        <label>Unidade</label>
-                        <div id="labelUnidadeRecorrencia" style="height: 45px; display: flex; align-items: center; color: #FFF; font-size: 0.9rem; font-weight: 700; background: #0D0D0D; padding-left: 12px; border: 1px solid #333; border-radius: 8px;">semana(s)</div>
-                    </div>
+                <div id="camposRecorrenteBloqueio" class="form-grupo-spa" style="display: none;">
+                    <label for="recorrenciaDescricao">Motivo / Descrição do Bloqueio *</label>
+                    <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
                 </div>
-                <div class="form-grupo-spa" id="containerDiasSemanaRecorrencia" style="margin-bottom: 16px;">
-                    <label style="margin-bottom: 4px;">Selecione os dias da semana *</label>
-                    <div style="display: flex; gap: 4px; justify-content: space-between; flex-wrap: wrap;">
-                        <button type="button" class="btn-dia-pill" data-dia="Segunda">Seg</button>
-                        <button type="button" class="btn-dia-pill" data-dia="Terça">Ter</button>
-                        <button type="button" class="btn-dia-pill" data-dia="Quarta">Qua</button>
-                        <button type="button" class="btn-dia-pill" data-dia="Quinta">Qui</button>
-                        <button type="button" class="btn-dia-pill" data-dia="Sexta">Sex</button>
-                        <button type="button" class="btn-dia-pill" data-dia="Sábado">Sáb</button>
-                    </div>
-                </div>
-                <div id="infoRecorrenciaMensalAnual" style="background: rgba(255, 215, 0, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 14px; border: 1px dashed rgba(255, 215, 0, 0.2);">
-                    <p style="font-size: 0.75rem; color: #FFD700; margin: 0; line-height: 1.4; font-weight: 600;" id="textoInfoMensalAnual"></p>
+                <div class="form-grupo-spa" style="margin-bottom: 14px;">
+                    <label for="recorrenciaDataInicio">Início da recorrência *</label>
+                    <input type="date" id="recorrenciaDataInicio" required>
+                    <small style="display:block; margin-top: 6px; color: #888; font-size: 0.75rem;">Clique no campo para abrir o calendário e escolher a data.</small>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
                     <div class="form-grupo-spa" style="margin-bottom:0;">
@@ -410,27 +394,54 @@
                         </select>
                     </div>
                 </div>
-                <div id="camposRecorrenteAula" class="form-grupo-spa">
-                    <label for="recorrenciaAluno">Aluno *</label>
-                    <select id="recorrenciaAluno">
-                        <option value="">Selecione um aluno...</option>
-                    </select>
+                <div class="form-grupo-spa" id="recorrenciaEscopoCriacaoContainer" style="margin-bottom: 14px;">
+                    <label>Como aplicar no calendário?</label>
+                    <input type="hidden" id="recorrenciaEscopoCriacao" value="fromDate">
+                    <div class="escopo-recorrencia-grid" id="recorrenciaEscopoCriacaoGrid">
+                        <button type="button" class="btn-escopo-recorrencia active" data-escopo-criacao="fromDate">Daqui pra frente</button>
+                        <button type="button" class="btn-escopo-recorrencia" data-escopo-criacao="monthOfDate">Este mês todo</button>
+                    </div>
+                    <small id="recorrenciaEscopoCriacaoResumo" style="display:block; margin-top: 6px; color: #BDBDBD; font-size: 0.78rem;">Vai criar a série da data escolhida em diante.</small>
                 </div>
-                <div id="camposRecorrenteBloqueio" class="form-grupo-spa" style="display: none;">
-                    <label for="recorrenciaDescricao">Motivo / Descrição do Bloqueio *</label>
-                    <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
-                </div>
-                <div class="form-grupo-spa" id="containerDiaRecorrenteUnico" style="display: none; margin-bottom: 14px;">
-                    <label for="recorrenciaDiaSemana">Dia da Semana Fixo *</label>
-                    <select id="recorrenciaDiaSemana" required>
-                        <option value="Segunda">Segunda-feira</option>
-                        <option value="Terça">Terça-feira</option>
-                        <option value="Quarta">Quarta-feira</option>
-                        <option value="Quinta">Quinta-feira</option>
-                        <option value="Sexta">Sexta-feira</option>
-                        <option value="Sábado">Sábado</option>
-                    </select>
-                </div>
+
+                <div class="recorrencia-secao-titulo">2. Repetição</div>
+                <details id="painelRepeticaoRecorrencia" class="recorrencia-painel-opcoes">
+                    <summary>Configurar padrão de repetição</summary>
+                    <div class="form-grupo-spa" style="margin-top: 12px;">
+                        <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
+                        <select id="recorrenciaPadrao" onchange="window.mudarPadraoRecorrencia()" required>
+                            <option value="semanal" selected>Semanal</option>
+                            <option value="diaria">Diária</option>
+                            <option value="mensal">Mensal</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                    <div class="form-grupo-spa" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label for="recorrenciaIntervalo">Repetir a cada *</label>
+                            <input type="number" id="recorrenciaIntervalo" value="1" min="1" required style="text-align: center;">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                            <label>Unidade</label>
+                            <div id="labelUnidadeRecorrencia" style="height: 45px; display: flex; align-items: center; color: #FFF; font-size: 0.9rem; font-weight: 700; background: #0D0D0D; padding-left: 12px; border: 1px solid #333; border-radius: 8px;">semana(s)</div>
+                        </div>
+                    </div>
+                    <div class="form-grupo-spa" id="containerDiasSemanaRecorrencia" style="margin-bottom: 16px;">
+                        <label style="margin-bottom: 4px;">Selecione os dias da semana *</label>
+                        <div style="display: flex; gap: 4px; justify-content: space-between; flex-wrap: wrap;">
+                            <button type="button" class="btn-dia-pill" data-dia="Segunda">Seg</button>
+                            <button type="button" class="btn-dia-pill" data-dia="Terça">Ter</button>
+                            <button type="button" class="btn-dia-pill" data-dia="Quarta">Qua</button>
+                            <button type="button" class="btn-dia-pill" data-dia="Quinta">Qui</button>
+                            <button type="button" class="btn-dia-pill" data-dia="Sexta">Sex</button>
+                            <button type="button" class="btn-dia-pill" data-dia="Sábado">Sáb</button>
+                        </div>
+                    </div>
+                    <div id="infoRecorrenciaMensalAnual" style="background: rgba(255, 215, 0, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 2px; border: 1px dashed rgba(255, 215, 0, 0.2);">
+                        <p style="font-size: 0.75rem; color: #FFD700; margin: 0; line-height: 1.4; font-weight: 600;" id="textoInfoMensalAnual"></p>
+                    </div>
+                </details>
+                <div id="resumoRecorrenciaCadastro" class="resumo-recorrencia-cadastro"></div>
 
                 <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
                     <button type="button" class="btn btn-secondary" id="btnFecharModalRecorrencia">Cancelar</button>
@@ -448,7 +459,27 @@
             
             <form id="formEditarCompromisso">
                 <input type="hidden" id="editCompromissoFrequencia" value="uma_vez">
+                <div id="editCamposTipoAula" class="form-grupo-spa">
+                    <label for="editAluno">Aluno</label>
+                    <select id="editAluno" disabled style="background: #111; color: #888; border-color: #222; cursor: not-allowed;"></select>
+                </div>
+                <div id="editCamposTipoBloqueio" class="form-grupo-spa" style="display: none;">
+                    <label for="editDescricao">Motivo / Descrição do Bloqueio *</label>
+                    <input type="text" id="editDescricao" placeholder="Ex: Almoço / Particular / Médico">
+                </div>
                 <p id="editInfoDia" style="font-size: 0.8rem; color: #FFF; margin-bottom: 15px; font-weight: 600;"></p>
+                <div class="form-grupo-spa" id="editEscopoRecorrenciaContainer" style="display: none; margin-bottom: 14px;">
+                    <label>Onde você quer aplicar?</label>
+                    <input type="hidden" id="editEscopoRecorrencia" value="fromDate">
+                    <div class="escopo-recorrencia-grid" id="editEscopoRecorrenciaGrid">
+                        <button type="button" class="btn-escopo-recorrencia" data-escopo="occurrence">Só esta aula</button>
+                        <button type="button" class="btn-escopo-recorrencia active" data-escopo="fromDate">Daqui pra frente</button>
+                        <button type="button" class="btn-escopo-recorrencia" data-escopo="monthOfDate">Este mês todo</button>
+                        <button type="button" class="btn-escopo-recorrencia" data-escopo="entireSeries">Todas as aulas</button>
+                    </div>
+                    <small id="editEscopoResumo" style="display:block; margin-top: 6px; color: #BDBDBD; font-size: 0.78rem;">Vai atualizar esta aula e as próximas da série.</small>
+                    <small id="editEscopoImpacto" style="display:block; margin-top: 6px; color: #FFD700; font-size: 0.76rem; font-weight: 700;"></small>
+                </div>
                 <div class="form-grupo-spa" id="editDiaSemanaContainer" style="display: none; margin-bottom: 14px;">
                     <label for="editDiaSemana">Dia da Semana *</label>
                     <select id="editDiaSemana">
@@ -474,14 +505,6 @@
                             <option value="120">2h 00min</option>
                         </select>
                     </div>
-                </div>
-                <div id="editCamposTipoAula" class="form-grupo-spa">
-                    <label for="editAluno">Aluno</label>
-                    <select id="editAluno" disabled style="background: #111; color: #888; border-color: #222; cursor: not-allowed;"></select>
-                </div>
-                <div id="editCamposTipoBloqueio" class="form-grupo-spa" style="display: none;">
-                    <label for="editDescricao">Motivo / Descrição do Bloqueio *</label>
-                    <input type="text" id="editDescricao" placeholder="Ex: Almoço / Particular / Médico">
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
                     <div id="acoesCompromissoUnico" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">

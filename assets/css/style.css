@@ -371,6 +371,67 @@ body {
     border-color: #FFD700;
 }
 
+.escopo-recorrencia-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.btn-escopo-recorrencia {
+    border: 1px solid #333;
+    background: #0D0D0D;
+    color: #CFCFCF;
+    border-radius: 10px;
+    padding: 10px 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-escopo-recorrencia.active {
+    border-color: #FFD700;
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.08);
+}
+
+.recorrencia-secao-titulo {
+    margin: 6px 0 10px;
+    font-size: 0.8rem;
+    color: #FFD700;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.recorrencia-painel-opcoes {
+    border: 1px solid #2A2A2A;
+    border-radius: 10px;
+    background: #111;
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
+.recorrencia-painel-opcoes > summary {
+    cursor: pointer;
+    color: #E0E0E0;
+    font-weight: 700;
+    font-size: 0.86rem;
+    list-style: none;
+}
+
+.recorrencia-painel-opcoes > summary::-webkit-details-marker {
+    display: none;
+}
+
+.resumo-recorrencia-cadastro {
+    border: 1px dashed rgba(255, 215, 0, 0.25);
+    background: rgba(255, 215, 0, 0.05);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 12px;
+}
+
 .agenda-header-navegacao {
     background: #0B0B0B;
     border-radius: 12px;
