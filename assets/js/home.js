@@ -1036,6 +1036,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             agendaConfig.horaInicio = inicio;
             agendaConfig.horaFim = fim;
+            if (typeof atualizarLimitesGrade === 'function') {
+                atualizarLimitesGrade({
+                    inicio: `${inicio.toString().padStart(2, '0')}:00`,
+                    fim: `${fim.toString().padStart(2, '0')}:00`
+                });
+            }
             if (typeof salvarDados === 'function') salvarDados();
             document.getElementById('modalConfigAgenda').style.display = 'none';
             window.inicializarHome();

@@ -150,6 +150,11 @@ async function carregarDados(opcoes = {}) {
         } else {
             atualizarLimitesGrade({ inicio: "06:00", fim: "22:00" });
         }
+        const gradeCarregada = obterLimitesGrade();
+        if (typeof agendaConfig !== 'undefined') {
+            agendaConfig.horaInicio = parseInt(gradeCarregada.inicio.split(':')[0]);
+            agendaConfig.horaFim = parseInt(gradeCarregada.fim.split(':')[0]);
+        }
         window.faturamentoMeta = parseFloat(localStorage.getItem('faturamentoMeta')) || 0;
 
         console.log("✅ Dados sincronizados do MongoDB com sucesso!", {
@@ -230,6 +235,11 @@ function carregarDadosDoLocalStorage() {
     atualizarAlunos(backupAlunos ? JSON.parse(backupAlunos) : []);
     atualizarAulas(backupAulas ? JSON.parse(backupAulas) : []);
     atualizarLimitesGrade(backupGrade ? JSON.parse(backupGrade) : { inicio: "06:00", fim: "22:00" });
+    const gradeLocal = obterLimitesGrade();
+    if (typeof agendaConfig !== 'undefined') {
+        agendaConfig.horaInicio = parseInt(gradeLocal.inicio.split(':')[0]);
+        agendaConfig.horaFim = parseInt(gradeLocal.fim.split(':')[0]);
+    }
     window.faturamentoMeta = parseFloat(localStorage.getItem('faturamentoMeta')) || 0;
 }
 
