@@ -1,4 +1,8 @@
-// [TAG-JS-STORAGE] - Integração do Front-end com a API no Render & MongoDB
+// [TAG-STORAGE] storage.js
+// Responsabilidade: Persistência de dados — sync com API REST (Render/MongoDB) e fallback localStorage
+// Depende de: state.js (alunos, aulas, agendaConfig), utils-kpi.js (mostrarToast)
+// Expõe: carregarDados, salvarDados, obterAlunos, obterAulas, obterLimitesGrade,
+//         atualizarAlunos, atualizarAulas, atualizarLimitesGrade, window.faturamentoMeta
 const API_BASE_URL = "https://personalapp-api.onrender.com/api";
 const API_TIMEOUT_MS = 8000;
 

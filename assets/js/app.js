@@ -1,4 +1,7 @@
-// [TAG-JS-APP] - Gerenciamento Centralizado de Abas e SPA
+// [TAG-APP-ROUTER] app.js
+// Responsabilidade: Roteador SPA — controla navegação entre abas e chama inicializadores das views
+// Depende de: view-home.js (inicializarHome), view-calendario.js (inicializarPaginaCalendario), view-alunos.js (inicializarAlunos)
+// Expõe: nada (auto-executa em DOMContentLoaded)
 document.addEventListener('DOMContentLoaded', async () => {
     const navLinks = document.querySelectorAll('.header-nav .nav-link');
     const views = document.querySelectorAll('.view-section');
