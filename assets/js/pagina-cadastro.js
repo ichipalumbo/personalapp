@@ -1,5 +1,5 @@
 // ========================================================
-// [TAG-JS-CADASTRO] - Lógica de Alunos na SPA (AtivaMente)
+// [TAG-JS-CADASTRO] - Lógica de Alunos na SPA (Prô Josy)
 // ========================================================
 
 // 1. INICIALIZAÇÃO DA PÁGINA (Chamada pelo app.js ao navegar)

@@ -1,5 +1,5 @@
 // ========================================================
-// [JS-DADOS] - Estruturas de dados e constantes (AtivaMente)
+// [JS-DADOS] - Estruturas de dados e constantes (Prô Josy)
 // ========================================================
 
 const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];

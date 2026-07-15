@@ -64,7 +64,7 @@ window.atualizarDashboardStats = function() {
     if (elAulasRepor) elAulasRepor.textContent = aulasParaRepor.length;
 };
 
-// Mapeamento direto de dia index do JavaScript para consistência total da AtivaMente
+// Mapeamento direto de dia index do JavaScript para consistência total da Prô Josy
 window.getDiaTextoSelecionado = function() {
     const diaIndex = window.dataSelecionada.getDay();
     const diasMapeados = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
