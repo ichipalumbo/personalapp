@@ -93,18 +93,18 @@ personalapp/
 
 Os arquivos seguem prefixos que indicam sua camada:
 
-| Prefixo | Camada | Exemplo |
-|---|---|---|
-| `state` | Estado global | `state.js` |
-| `storage` | Persistencia | `storage.js` |
-| `utils-` | Utilitarios puros (sem DOM) | `utils-kpi.js`, `utils-datetime.js` |
-| `alunos-` | Helpers de dominio (alunos) | `alunos-helpers.js` |
-| `calendario-` | Motor de calendario/recorrencia | `calendario-engine.js` |
-| `agenda-` | Logica de agenda | `agenda-conflitos.js` |
-| `widget-` | Componentes UI reutilizaveis | `widget-stepper-duracao.js` |
-| `modal-` | Controladores de modais | `modal-agendamento.js` |
-| `view-` | Views de paginas (abas SPA) | `view-home.js` |
-| `app` | Roteador SPA | `app.js` |
+| Prefixo       | Camada                          | Exemplo                             |
+| ------------- | ------------------------------- | ----------------------------------- |
+| `state`       | Estado global                   | `state.js`                          |
+| `storage`     | Persistencia                    | `storage.js`                        |
+| `utils-`      | Utilitarios puros (sem DOM)     | `utils-kpi.js`, `utils-datetime.js` |
+| `alunos-`     | Helpers de dominio (alunos)     | `alunos-helpers.js`                 |
+| `calendario-` | Motor de calendario/recorrencia | `calendario-engine.js`              |
+| `agenda-`     | Logica de agenda                | `agenda-conflitos.js`               |
+| `widget-`     | Componentes UI reutilizaveis    | `widget-stepper-duracao.js`         |
+| `modal-`      | Controladores de modais         | `modal-agendamento.js`              |
+| `view-`       | Views de paginas (abas SPA)     | `view-home.js`                      |
+| `app`         | Roteador SPA                    | `app.js`                            |
 
 ## Ordem de Carregamento dos Scripts (index.html)
 
@@ -149,7 +149,6 @@ Frontend:
 - `assets/js/view-home.js` [TAG-VIEW-HOME]: aba Home — agenda diaria, dashboard e navegacao de datas.
 - `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — alternancia semanal/mensal, filtros e KPI dashboard.
 - `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
-
 
 Backend:
 
