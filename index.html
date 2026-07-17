@@ -1,652 +1,1654 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
+  <head>
     <!-- [TAG-HTML-HEAD] - Metadados, Título e Estilos Externos -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prô Josy - Agenda Personal Trainer</title>
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css">
-</head>
-<body>
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css" />
+  </head>
+  <body>
     <div class="container">
-    <!-- [TAG-HTML-HEADER] - Menu e Controle Global de Navegação (SPA) -->
-        <header class="header">
-            <div class="brand-container">
-                <h1 class="marca-titulo">
-                    <span class="marca-ativa"><i class="fa-solid fa-dumbbell"></i> Prô</span><span class="marca-mente"> Josy</span>
-                </h1>
-                <p class="marca-subtitulo">
-                    <i class="fa-solid fa-hand-fist"></i>Personal Trainer
-                </p>
-            </div>
-            <div class="header-actions">
-                <nav class="header-nav">
-                    <a href="#" class="nav-link ativo" data-target="tela-home">
-                        <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
-                    </a>
-                    <a href="#" class="nav-link inativo" data-target="tela-calendario">
-                        <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
-                    </a>
-                    <a href="#" class="nav-link inativo" data-target="tela-alunos">
-                        <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
-                    </a>
-                </nav>
-            </div>
-        </header>
-        <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
-        <main id="tela-home" class="view-section">
-            <section class="alunos-grid" style="margin-bottom: 20px;">
-                <div class="card-stat">
-                    <span class="stat-numero" id="totalAulasHoje">0</span>
-                    <span class="stat-label"><i class="fa-solid fa-stopwatch" style="color: #FFD700; margin-right: 8px;"></i>Aulas Hoje</span>
-                </div>
-                <div class="card-stat" style="border-color: #FF5252; background: rgba(255, 82, 82, 0.05);" onclick="togglePainelReposicoes()">
-                    <span class="stat-numero" id="totalAulasRepor" style="color: #FF5252;">0</span>
-                    <span class="stat-label"><i class="fa-solid fa-rotate-left" style="color: #FF5252; margin-right: 8px;"></i>Aulas para Repor</span>
-                </div>
-            </section>
-            <div id="painelReposicoesPendentes" class="agenda-panel" style="display: none; border-color: #FF5252; margin-bottom: 20px;">
-                <h3 style="font-size: 1.05rem; color: #FF5252; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
-                    <span><i class="fa-solid fa-rotate-left"></i> Alunos aguardando reposição</span>
-                    <button class="btn btn-secondary btn-sm" onclick="togglePainelReposicoes()" style="padding: 2px 8px; font-size: 0.7rem;">Fechar</button>
-                </h3>
-                <div id="listaReposicoesPendentes" style="display: flex; flex-direction: column; gap: 8px;"></div>
-            </div>
-            <div class="agenda-panel">
-                <div class="agenda-sticky-container">
-                    <div class="agenda-header-wrapper">
-                        <div class="agenda-header-info">
-                            <h2><i class="fa-solid fa-calendar-day" style="color: #FFD700; margin-right: 8px;"></i>Agenda do Dia</h2>
-                            <span>Sua rotina de treinos bem organizada!</span>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button id="btnRecorrenciaAgenda" class="btn-config-icon" title="Novo Agendamento">
-                                <i class="fa-solid fa-calendar-plus" style="color: #FFD700;"></i>
-                            </button>
-                            <button id="btnConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
-                                <i class="fa-solid fa-gear fa-spin-hover" style="color: #FFD700;"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="agenda-header-navegacao">
-                        <div class="nav-calendario">
-                            <button id="btnAnterior" class="btn-nav-dia" title="Dia Anterior">
-                                <i class="fa-solid fa-circle-arrow-left"></i>
-                            </button>
-                            <span id="dataAtual" class="agenda-data-principal">Carregando...</span>
-                            <button id="btnProximo" class="btn-nav-dia" title="Próximo Dia">
-                                <i class="fa-solid fa-circle-arrow-right"></i>
-                            </button>
-                            <button id="btnHoje" class="btn-hoje-pill"><i class="fa-solid fa-bullseye"></i>Hoje</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="agenda-dia-container" id="agendaGridHome"></div>
-            </div>
-        </main>
-        <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
-        <main id="tela-calendario" class="view-section" style="display: none;">
-            <div class="calendario-tabs-sticky">
-                <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
-                    <button type="button" class="tab-btn active" id="tabCalendarioSemanal" onclick="alternarModoCalendario('semanal')">
-                        <i class="fa-solid fa-calendar-minus"></i> Semana
-                    </button>
-                    <button type="button" class="tab-btn" id="tabCalendarioMensal" onclick="alternarModoCalendario('mensal')">
-                        <i class="fa-solid fa-calendar-days"></i> Mês
-                    </button>
-                </div>
-            </div>
-            <div id="containerCalendarioSemanal" class="agenda-panel" style="display: block;">
-                <div class="agenda-sticky-container">
-                    <div class="mes-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; width: 100%;">
-                        <div style="display: flex; flex-direction: column;">
-                            <h2 id="periodoSemanaLabel" style="font-size: 1.15rem; color: #FFD700; margin: 0; font-weight: 800;">Semana de Trabalho</h2>
-                        </div>
-                        <div class="mes-nav" style="display: flex; gap: 6px; align-items: center;">
-                            <div class="filtro-aluno-container" style="min-width: 180px;">
-                                <select id="filtroAlunoSemanal" class="filtro-aluno-select" onchange="window.atualizarFiltroCalendarioSemanal()">
-                                    <option value="">👥 Todos os Alunos</option>
-                                </select>
-                            </div>
-                            <button id="btnSemanaAnterior" class="btn btn-secondary btn-sm" title="Semana Anterior"><i class="fa-solid fa-chevron-left"></i></button>
-                            <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">Hoje</button>
-                            <button id="btnSemanaProxima" class="btn btn-secondary btn-sm" title="Próxima Semana"><i class="fa-solid fa-chevron-right"></i></button>
-                        </div>
-                    </div>
-                </div>
-                <div id="calendarioSemanalGrid" style="display: flex; flex-direction: column; gap: 16px;"></div>
-            </div>
-            <div id="containerCalendarioMensal" class="calendario-mensal" style="display: none;">
-                <div class="mes-header" style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <h2 id="nomeMesAno" style="font-size: 1.2rem; color: #FFD700; margin: 0; font-weight: 800;">Carregando...</h2>
-                    <div class="mes-nav" style="display: flex; gap: 6px; align-items: center;">
-                        <div class="filtro-aluno-container" style="min-width: 180px;">
-                            <select id="filtroAlunoMensal" class="filtro-aluno-select" onchange="window.atualizarFiltroCalendarioMensal()">
-                                <option value="">👥 Todos os Alunos</option>
-                            </select>
-                        </div>
-                        <button id="btnMesAnterior" class="btn btn-secondary btn-sm" title="Mês Anterior"><i class="fa-solid fa-chevron-left"></i></button>
-                        <button id="btnMesHoje" class="btn btn-secondary btn-sm">Hoje</button>
-                        <button id="btnMesProximo" class="btn btn-secondary btn-sm" title="Próximo Mês"><i class="fa-solid fa-chevron-right"></i></button>
-                    </div>
-                </div>
-                <div id="kpiDashboardContainer" style="display: none; margin-bottom: 20px;"></div>
-                <div class="calendario-grid" id="calendarioMonthlyGrid"></div>
-            </div>
-
-        </main>
-    <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
-        <main id="tela-alunos" class="view-section" style="display: none; padding-bottom: 80px;">
-            <section class="alunos-panel">
-                <h3 style="font-size: 1.1rem; color: #E0E0E0; margin-bottom: 15px;"><i class="fa-solid fa-address-book" style="color: #FFD700; margin-right: 8px;"></i>Seus Alunos</h3>
-                <div class="alunos-grid" id="listaAlunos"></div>
-            </section>
-
-            <button id="btnFlutuanteAdicionar" onclick="abrirCadastroParaNovo()">
-                <i class="fa-solid fa-plus"></i>
+      <!-- [TAG-HTML-HEADER] - Menu e Controle Global de Navegação (SPA) -->
+      <header class="header">
+        <div class="brand-container">
+          <h1 class="marca-titulo">
+            <span class="marca-ativa"
+              ><i class="fa-solid fa-dumbbell"></i> Prô</span
+            ><span class="marca-mente"> Josy</span>
+          </h1>
+          <p class="marca-subtitulo">
+            <i class="fa-solid fa-hand-fist"></i>Personal Trainer
+          </p>
+        </div>
+        <div class="header-actions">
+          <nav class="header-nav">
+            <a href="#" class="nav-link ativo" data-target="tela-home">
+              <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
+            </a>
+            <a href="#" class="nav-link inativo" data-target="tela-calendario">
+              <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
+            </a>
+            <a href="#" class="nav-link inativo" data-target="tela-alunos">
+              <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
+            </a>
+          </nav>
+        </div>
+      </header>
+      <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
+      <main id="tela-home" class="view-section">
+        <section class="alunos-grid" style="margin-bottom: 20px">
+          <div class="card-stat">
+            <span class="stat-numero" id="totalAulasHoje">0</span>
+            <span class="stat-label"
+              ><i
+                class="fa-solid fa-stopwatch"
+                style="color: #ffd700; margin-right: 8px"
+              ></i
+              >Aulas Hoje</span
+            >
+          </div>
+          <div
+            class="card-stat"
+            style="border-color: #ff5252; background: rgba(255, 82, 82, 0.05)"
+            onclick="togglePainelReposicoes()"
+          >
+            <span
+              class="stat-numero"
+              id="totalAulasRepor"
+              style="color: #ff5252"
+              >0</span
+            >
+            <span class="stat-label"
+              ><i
+                class="fa-solid fa-rotate-left"
+                style="color: #ff5252; margin-right: 8px"
+              ></i
+              >Aulas para Repor</span
+            >
+          </div>
+        </section>
+        <div
+          id="painelReposicoesPendentes"
+          class="agenda-panel"
+          style="display: none; border-color: #ff5252; margin-bottom: 20px"
+        >
+          <h3
+            style="
+              font-size: 1.05rem;
+              color: #ff5252;
+              margin-bottom: 12px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <span
+              ><i class="fa-solid fa-rotate-left"></i> Alunos aguardando
+              reposição</span
+            >
+            <button
+              class="btn btn-secondary btn-sm"
+              onclick="togglePainelReposicoes()"
+              style="padding: 2px 8px; font-size: 0.7rem"
+            >
+              Fechar
             </button>
-
-            <div class="modal-overlay" id="modalFormAluno" style="display: none;">
-                <div class="modal-alunos-corpo">
-                    <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
-                    <form id="formNovoAluno" class="form-aluno">
-                        <input type="hidden" id="alunoIdEdicao" value="">
-                        <div class="form-grupo-spa">
-                            <label for="alunoNome">Nome completo *</label>
-                            <input type="text" id="alunoNome" placeholder="Ex: João Silva" required>
-                        </div>
-                        <div class="form-grupo-spa">
-                            <label for="alunoLocal">Local de Treino *</label>
-                            <input type="text" id="alunoLocal" placeholder="Ex: Academia X ou Condomínio" required>
-                        </div>
-                        <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
-                            <div class="form-grupo-spa">
-                                <label for="alunoPreco">Valor Hora/Aula (R$) *</label>
-                                <input type="number" id="alunoPreco" placeholder="Ex: 80" step="0.01" required>
-                            </div>
-                            <div class="form-grupo-spa">
-                                <label for="alunoFrequenciaSemanal">Aulas / Semana *</label>
-                                <select id="alunoFrequenciaSemanal" required>
-                                    <option value="1">1x na semana</option>
-                                    <option value="2" selected>2x na semana</option>
-                                    <option value="3">3x na semana</option>
-                                    <option value="4">4x na semana</option>
-                                    <option value="5">5x na semana</option>
-                                    <option value="6">6x na semana</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="form-grupo-spa">
-                            <label for="alunoTelefone">Telefone (Opcional)</label>
-                            <input type="tel" id="alunoTelefone" placeholder="(11) 99999-9999">
-                        </div>
-                        <div class="form-grupo-spa">
-                            <label for="alunoObjetivo">Objetivo</label>
-                            <select id="alunoObjetivo">
-                                <option value="">Personal Trainer</option>
-                                <option value="Hipertrofia">Hipertrofia</option>
-                                <option value="Emagrecimento">Emagrecimento</option>
-                                <option value="Condicionamento">Condicionamento</option>
-                                <option value="Funcional">Funcional</option>
-                                <option value="Outro">Outro</option>
-                            </select>
-                        </div>
-                        <div class="modal-alunos-acoes">
-                            <button type="button" class="btn btn-secondary" onclick="togglePainelCadastro(false)">Cancelar</button>
-                            <button type="submit" class="btn btn-primary" id="btnSalvarAluno">Salvar Aluno</button>
-                        </div>
-                    </form>
-                </div>
+          </h3>
+          <div
+            id="listaReposicoesPendentes"
+            style="display: flex; flex-direction: column; gap: 8px"
+          ></div>
+        </div>
+        <div class="agenda-panel">
+          <div class="agenda-sticky-container">
+            <div class="agenda-header-wrapper">
+              <div class="agenda-header-info">
+                <h2>
+                  <i
+                    class="fa-solid fa-calendar-day"
+                    style="color: #ffd700; margin-right: 8px"
+                  ></i
+                  >Agenda do Dia
+                </h2>
+                <span>Sua rotina de treinos bem organizada!</span>
+              </div>
+              <div style="display: flex; gap: 8px">
+                <button
+                  id="btnRecorrenciaAgenda"
+                  class="btn-config-icon"
+                  title="Novo Agendamento"
+                >
+                  <i
+                    class="fa-solid fa-calendar-plus"
+                    style="color: #ffd700"
+                  ></i>
+                </button>
+                <button
+                  id="btnConfigAgenda"
+                  class="btn-config-icon"
+                  title="Configurar Grade Horária"
+                >
+                  <i
+                    class="fa-solid fa-gear fa-spin-hover"
+                    style="color: #ffd700"
+                  ></i>
+                </button>
+              </div>
             </div>
-        </main>
+            <div class="agenda-header-navegacao">
+              <div class="nav-calendario">
+                <button
+                  id="btnAnterior"
+                  class="btn-nav-dia"
+                  title="Dia Anterior"
+                >
+                  <i class="fa-solid fa-circle-arrow-left"></i>
+                </button>
+                <span id="dataAtual" class="agenda-data-principal"
+                  >Carregando...</span
+                >
+                <button id="btnProximo" class="btn-nav-dia" title="Próximo Dia">
+                  <i class="fa-solid fa-circle-arrow-right"></i>
+                </button>
+                <button id="btnHoje" class="btn-hoje-pill">
+                  <i class="fa-solid fa-bullseye"></i>Hoje
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="agenda-dia-container" id="agendaGridHome"></div>
+        </div>
+      </main>
+      <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
+      <main id="tela-calendario" class="view-section" style="display: none">
+        <div class="calendario-tabs-sticky">
+          <div
+            class="tab-tipo-agendamento"
+            style="
+              display: flex;
+              gap: 6px;
+              background: #0d0d0d;
+              padding: 4px;
+              border-radius: 8px;
+              border: 1px solid #2a2a2a;
+            "
+          >
+            <button
+              type="button"
+              class="tab-btn active"
+              id="tabCalendarioSemanal"
+              onclick="alternarModoCalendario('semanal')"
+            >
+              <i class="fa-solid fa-calendar-minus"></i> Semana
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              id="tabCalendarioMensal"
+              onclick="alternarModoCalendario('mensal')"
+            >
+              <i class="fa-solid fa-calendar-days"></i> Mês
+            </button>
+          </div>
+        </div>
+        <div
+          id="containerCalendarioSemanal"
+          class="agenda-panel"
+          style="display: block"
+        >
+          <div class="agenda-sticky-container">
+            <div
+              class="mes-header"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+                width: 100%;
+              "
+            >
+              <div style="display: flex; flex-direction: column">
+                <h2
+                  id="periodoSemanaLabel"
+                  style="
+                    font-size: 1.15rem;
+                    color: #ffd700;
+                    margin: 0;
+                    font-weight: 800;
+                  "
+                >
+                  Semana de Trabalho
+                </h2>
+              </div>
+              <div
+                class="mes-nav"
+                style="display: flex; gap: 6px; align-items: center"
+              >
+                <div class="filtro-aluno-container" style="min-width: 180px">
+                  <select
+                    id="filtroAlunoSemanal"
+                    class="filtro-aluno-select"
+                    onchange="window.atualizarFiltroCalendarioSemanal()"
+                  >
+                    <option value="">👥 Todos os Alunos</option>
+                  </select>
+                </div>
+                <button
+                  id="btnSemanaAnterior"
+                  class="btn btn-secondary btn-sm"
+                  title="Semana Anterior"
+                >
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">
+                  Hoje
+                </button>
+                <button
+                  id="btnSemanaProxima"
+                  class="btn btn-secondary btn-sm"
+                  title="Próxima Semana"
+                >
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            id="calendarioSemanalGrid"
+            style="display: flex; flex-direction: column; gap: 16px"
+          ></div>
+        </div>
+        <div
+          id="containerCalendarioMensal"
+          class="calendario-mensal"
+          style="display: none"
+        >
+          <div
+            class="mes-header"
+            style="
+              margin-bottom: 15px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              flex-wrap: wrap;
+              gap: 10px;
+            "
+          >
+            <h2
+              id="nomeMesAno"
+              style="
+                font-size: 1.2rem;
+                color: #ffd700;
+                margin: 0;
+                font-weight: 800;
+              "
+            >
+              Carregando...
+            </h2>
+            <div
+              class="mes-nav"
+              style="display: flex; gap: 6px; align-items: center"
+            >
+              <div class="filtro-aluno-container" style="min-width: 180px">
+                <select
+                  id="filtroAlunoMensal"
+                  class="filtro-aluno-select"
+                  onchange="window.atualizarFiltroCalendarioMensal()"
+                >
+                  <option value="">👥 Todos os Alunos</option>
+                </select>
+              </div>
+              <button
+                id="btnMesAnterior"
+                class="btn btn-secondary btn-sm"
+                title="Mês Anterior"
+              >
+                <i class="fa-solid fa-chevron-left"></i>
+              </button>
+              <button id="btnMesHoje" class="btn btn-secondary btn-sm">
+                Hoje
+              </button>
+              <button
+                id="btnMesProximo"
+                class="btn btn-secondary btn-sm"
+                title="Próximo Mês"
+              >
+                <i class="fa-solid fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+          <div
+            id="kpiDashboardContainer"
+            style="display: none; margin-bottom: 20px"
+          ></div>
+          <div class="calendario-grid" id="calendarioMonthlyGrid"></div>
+        </div>
+      </main>
+      <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
+      <main
+        id="tela-alunos"
+        class="view-section"
+        style="display: none; padding-bottom: 80px"
+      >
+        <section class="alunos-panel">
+          <h3 style="font-size: 1.1rem; color: #e0e0e0; margin-bottom: 15px">
+            <i
+              class="fa-solid fa-address-book"
+              style="color: #ffd700; margin-right: 8px"
+            ></i
+            >Seus Alunos
+          </h3>
+          <div class="alunos-grid" id="listaAlunos"></div>
+        </section>
 
+        <button id="btnFlutuanteAdicionar" onclick="abrirCadastroParaNovo()">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+
+        <div class="modal-overlay" id="modalFormAluno" style="display: none">
+          <div class="modal-alunos-corpo">
+            <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
+            <form id="formNovoAluno" class="form-aluno">
+              <input type="hidden" id="alunoIdEdicao" value="" />
+              <div class="form-grupo-spa">
+                <label for="alunoNome">Nome completo *</label>
+                <input
+                  type="text"
+                  id="alunoNome"
+                  placeholder="Ex: João Silva"
+                  required
+                />
+              </div>
+              <div class="form-grupo-spa">
+                <label for="alunoLocal">Local de Treino *</label>
+                <input
+                  type="text"
+                  id="alunoLocal"
+                  placeholder="Ex: Academia X ou Condomínio"
+                  required
+                />
+              </div>
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: 1.2fr 1fr;
+                  gap: 10px;
+                "
+              >
+                <div class="form-grupo-spa">
+                  <label for="alunoPreco">Valor Hora/Aula (R$) *</label>
+                  <input
+                    type="number"
+                    id="alunoPreco"
+                    placeholder="Ex: 80"
+                    step="0.01"
+                    required
+                  />
+                </div>
+                <div class="form-grupo-spa">
+                  <label for="alunoFrequenciaSemanal">Aulas / Semana *</label>
+                  <select id="alunoFrequenciaSemanal" required>
+                    <option value="1">1x na semana</option>
+                    <option value="2" selected>2x na semana</option>
+                    <option value="3">3x na semana</option>
+                    <option value="4">4x na semana</option>
+                    <option value="5">5x na semana</option>
+                    <option value="6">6x na semana</option>
+                  </select>
+                </div>
+              </div>
+              <div class="form-grupo-spa">
+                <label for="alunoTelefone">Telefone (Opcional)</label>
+                <input
+                  type="tel"
+                  id="alunoTelefone"
+                  placeholder="(11) 99999-9999"
+                />
+              </div>
+              <div class="form-grupo-spa">
+                <label for="alunoObjetivo">Objetivo</label>
+                <select id="alunoObjetivo">
+                  <option value="">Personal Trainer</option>
+                  <option value="Hipertrofia">Hipertrofia</option>
+                  <option value="Emagrecimento">Emagrecimento</option>
+                  <option value="Condicionamento">Condicionamento</option>
+                  <option value="Funcional">Funcional</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </div>
+              <div class="modal-alunos-acoes">
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="togglePainelCadastro(false)"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  class="btn btn-primary"
+                  id="btnSalvarAluno"
+                >
+                  Salvar Aluno
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
     </div>
     <!-- [TAG-HTML-MODAIS] - Modais Compartilhados -->
-    <div class="modal-overlay" id="modalEscolhaTipo" style="display: none;">
-        <div class="modal" style="max-width: 400px; text-align: center;">
-            <h3><i class="fa-solid fa-circle-question" style="color: #FFD700; margin-right: 8px;"></i>Qual o tipo de agendamento?</h3>
-            <p id="infoEscolhaSlot" style="font-size: 0.85rem; color: #AAA; margin-bottom: 20px; font-weight: 500;"></p>
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <button type="button" id="btnEscolhaUnico" class="btn btn-primary" style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 15px; text-align: left; background: #1E1E1E; color: #FFF; border: 1px solid #2D2D2D; border-radius: 12px; width: 100%;">
-                    <span style="font-size: 1.4rem; color: #81C784; background: rgba(129, 199, 132, 0.1); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;"><i class="fa-solid fa-calendar-day"></i></span>
-                    <div>
-                        <strong style="display: block; font-size: 0.95rem; color: #FFF; font-weight: 700;">Agendamento Único</strong>
-                        <span style="font-size: 0.72rem; color: #888; font-weight: 400; display: block; margin-top: 2px;">Aula pontual, trânsito ou bloqueio</span>
-                    </div>
-                </button>
-                <button type="button" id="btnEscolhaRecorrente" class="btn btn-primary" style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 15px; text-align: left; background: #1E1E1E; color: #FFF; border: 1px solid #2D2D2D; border-radius: 12px; width: 100%;">
-                    <span style="font-size: 1.4rem; color: #FFD700; background: rgba(255, 215, 0, 0.1); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;"><i class="fa-solid fa-infinity"></i></span>
-                    <div>
-                        <strong style="display: block; font-size: 0.95rem; color: #FFF; font-weight: 700;">Série Recorrente</strong>
-                        <span style="font-size: 0.72rem; color: #888; font-weight: 400; display: block; margin-top: 2px;">Grade recorrente semanal ou diária</span>
-                    </div>
-                </button>
-                <button type="button" id="btnEscolhaReposicao" class="btn btn-primary" style="display: flex; align-items: center; justify-content: flex-start; gap: 14px; padding: 15px; text-align: left; background: #1E1E1E; color: #FFF; border: 1px solid #2D2D2D; border-radius: 12px; width: 100%;">
-                    <span style="font-size: 1.4rem; color: #64B5F6; background: rgba(100, 181, 246, 0.1); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 8px; flex-shrink: 0;"><i class="fa-solid fa-arrows-rotate"></i></span>
-                    <div>
-                        <strong style="display: block; font-size: 0.95rem; color: #FFF; font-weight: 700;">Agendar Reposição</strong>
-                        <span style="font-size: 0.72rem; color: #888; font-weight: 400; display: block; margin-top: 2px;">Encaixar um aluno pendente da fila</span>
-                    </div>
-                </button>
+    <div class="modal-overlay" id="modalEscolhaTipo" style="display: none">
+      <div class="modal" style="max-width: 400px; text-align: center">
+        <h3>
+          <i
+            class="fa-solid fa-circle-question"
+            style="color: #ffd700; margin-right: 8px"
+          ></i
+          >Qual o tipo de agendamento?
+        </h3>
+        <p
+          id="infoEscolhaSlot"
+          style="
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 20px;
+            font-weight: 500;
+          "
+        ></p>
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          <button
+            type="button"
+            id="btnEscolhaUnico"
+            class="btn btn-primary"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 14px;
+              padding: 15px;
+              text-align: left;
+              background: #1e1e1e;
+              color: #fff;
+              border: 1px solid #2d2d2d;
+              border-radius: 12px;
+              width: 100%;
+            "
+          >
+            <span
+              style="
+                font-size: 1.4rem;
+                color: #81c784;
+                background: rgba(129, 199, 132, 0.1);
+                width: 42px;
+                height: 42px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                flex-shrink: 0;
+              "
+              ><i class="fa-solid fa-calendar-day"></i
+            ></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.95rem;
+                  color: #fff;
+                  font-weight: 700;
+                "
+                >Agendamento Único</strong
+              >
+              <span
+                style="
+                  font-size: 0.72rem;
+                  color: #888;
+                  font-weight: 400;
+                  display: block;
+                  margin-top: 2px;
+                "
+                >Aula pontual, trânsito ou bloqueio</span
+              >
             </div>
-            <div style="margin-top: 20px; border-top: 1px solid #222; padding-top: 15px; display: flex; justify-content: flex-end;">
-                <button type="button" class="btn btn-secondary" onclick="window.fecharEscolhaTipoModal()">Cancelar</button>
+          </button>
+          <button
+            type="button"
+            id="btnEscolhaRecorrente"
+            class="btn btn-primary"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 14px;
+              padding: 15px;
+              text-align: left;
+              background: #1e1e1e;
+              color: #fff;
+              border: 1px solid #2d2d2d;
+              border-radius: 12px;
+              width: 100%;
+            "
+          >
+            <span
+              style="
+                font-size: 1.4rem;
+                color: #ffd700;
+                background: rgba(255, 215, 0, 0.1);
+                width: 42px;
+                height: 42px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                flex-shrink: 0;
+              "
+              ><i class="fa-solid fa-infinity"></i
+            ></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.95rem;
+                  color: #fff;
+                  font-weight: 700;
+                "
+                >Série Recorrente</strong
+              >
+              <span
+                style="
+                  font-size: 0.72rem;
+                  color: #888;
+                  font-weight: 400;
+                  display: block;
+                  margin-top: 2px;
+                "
+                >Grade recorrente semanal ou diária</span
+              >
             </div>
+          </button>
+          <button
+            type="button"
+            id="btnEscolhaReposicao"
+            class="btn btn-primary"
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: flex-start;
+              gap: 14px;
+              padding: 15px;
+              text-align: left;
+              background: #1e1e1e;
+              color: #fff;
+              border: 1px solid #2d2d2d;
+              border-radius: 12px;
+              width: 100%;
+            "
+          >
+            <span
+              style="
+                font-size: 1.4rem;
+                color: #64b5f6;
+                background: rgba(100, 181, 246, 0.1);
+                width: 42px;
+                height: 42px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 8px;
+                flex-shrink: 0;
+              "
+              ><i class="fa-solid fa-arrows-rotate"></i
+            ></span>
+            <div>
+              <strong
+                style="
+                  display: block;
+                  font-size: 0.95rem;
+                  color: #fff;
+                  font-weight: 700;
+                "
+                >Agendar Reposição</strong
+              >
+              <span
+                style="
+                  font-size: 0.72rem;
+                  color: #888;
+                  font-weight: 400;
+                  display: block;
+                  margin-top: 2px;
+                "
+                >Encaixar um aluno pendente da fila</span
+              >
+            </div>
+          </button>
         </div>
+        <div
+          style="
+            margin-top: 20px;
+            border-top: 1px solid #222;
+            padding-top: 15px;
+            display: flex;
+            justify-content: flex-end;
+          "
+        >
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="window.fecharEscolhaTipoModal()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </div>
     </div>
-    <div class="modal-overlay" id="modalReagendarAula" style="display: none;">
-        <div class="modal" style="max-width: 440px;">
-            <h3><i class="fa-solid fa-arrows-rotate" style="color: #64B5F6; margin-right: 8px;"></i>Agendar Reposição</h3>
-            <p id="infoReagendamentoSlot" style="font-size: 0.8rem; color: #64B5F6; margin-bottom: 15px; font-weight: 600;"></p>
-            <form id="formReagendarAula">
-                <div class="form-grupo-spa" id="containerSeletorReagendarAluno">
-                    <label for="reagendarAluno">Aluno na fila de reposição *</label>
-                    <select id="reagendarAluno">
-                        <option value="">Selecione um aluno...</option>
-                    </select>
-                </div>
-                <div class="form-grupo-spa" id="containerLockReagendarAluno" style="display: none;">
-                    <label>Aluno Selecionado</label>
-                    <div id="reagendarAlunoLockedNome" style="padding: 12px; background: #0D0D0D; color: #FFF; border: 1px solid #333; border-radius: 8px; font-weight: 700; font-size: 0.95rem;">Nome do Aluno</div>
-                    <input type="hidden" id="reagendarAlunoIdLocked">
-                </div>
-                <div class="form-grupo-spa" style="margin-bottom: 14px;">
-                    <label for="reagendarDia">Dia da Semana *</label>
-                    <select id="reagendarDia" required>
-                        <option value="Segunda">Segunda-feira</option>
-                        <option value="Terça">Terça-feira</option>
-                        <option value="Quarta">Quarta-feira</option>
-                        <option value="Quinta">Quinta-feira</option>
-                        <option value="Sexta">Sexta-feira</option>
-                        <option value="Sábado">Sábado</option>
-                    </select>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="reagendarHoraInicio">Início *</label>
-                        <select id="reagendarHoraInicio" required></select>
-                    </div>
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="reagendarDuracao">Duração *</label>
-                        <select id="reagendarDuracao" required>
-                            <option value="30">30 min</option>
-                            <option value="60" selected>1h 00min</option>
-                            <option value="90">1h 30min</option>
-                            <option value="120">2h 00min</option>
-                        </select>
-                    </div>
-                </div>
+    <div class="modal-overlay" id="modalReagendarAula" style="display: none">
+      <div class="modal" style="max-width: 440px">
+        <h3>
+          <i
+            class="fa-solid fa-arrows-rotate"
+            style="color: #64b5f6; margin-right: 8px"
+          ></i
+          >Agendar Reposição
+        </h3>
+        <p
+          id="infoReagendamentoSlot"
+          style="
+            font-size: 0.8rem;
+            color: #64b5f6;
+            margin-bottom: 15px;
+            font-weight: 600;
+          "
+        ></p>
+        <form id="formReagendarAula">
+          <div class="form-grupo-spa" id="containerSeletorReagendarAluno">
+            <label for="reagendarAluno">Aluno na fila de reposição *</label>
+            <select id="reagendarAluno">
+              <option value="">Selecione um aluno...</option>
+            </select>
+          </div>
+          <div
+            class="form-grupo-spa"
+            id="containerLockReagendarAluno"
+            style="display: none"
+          >
+            <label>Aluno Selecionado</label>
+            <div
+              id="reagendarAlunoLockedNome"
+              style="
+                padding: 12px;
+                background: #0d0d0d;
+                color: #fff;
+                border: 1px solid #333;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 0.95rem;
+              "
+            >
+              Nome do Aluno
+            </div>
+            <input type="hidden" id="reagendarAlunoIdLocked" />
+          </div>
+          <div class="form-grupo-spa" style="margin-bottom: 14px">
+            <label for="reagendarDia">Dia da Semana *</label>
+            <select id="reagendarDia" required>
+              <option value="Segunda">Segunda-feira</option>
+              <option value="Terça">Terça-feira</option>
+              <option value="Quarta">Quarta-feira</option>
+              <option value="Quinta">Quinta-feira</option>
+              <option value="Sexta">Sexta-feira</option>
+              <option value="Sábado">Sábado</option>
+            </select>
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 14px;
+            "
+          >
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="reagendarHoraInicio">Início *</label>
+              <select id="reagendarHoraInicio" required></select>
+            </div>
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="reagendarDuracao">Duração *</label>
+              <select id="reagendarDuracao" required>
+                <option value="30">30 min</option>
+                <option value="60" selected>1h 00min</option>
+                <option value="90">1h 30min</option>
+                <option value="120">2h 00min</option>
+              </select>
+            </div>
+          </div>
 
-                <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
-                    <button type="button" class="btn btn-secondary" onclick="window.fecharReagendarAulaModal()">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" style="background: #64B5F6; color: #0D0D0D; border: none; font-weight: 700;">Confirmar Reagendamento</button>
-                </div>
-            </form>
-        </div>
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              margin-top: 24px;
+              justify-content: flex-end;
+              border-top: 1px solid #222;
+              padding-top: 15px;
+            "
+          >
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="window.fecharReagendarAulaModal()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              class="btn btn-primary"
+              style="
+                background: #64b5f6;
+                color: #0d0d0d;
+                border: none;
+                font-weight: 700;
+              "
+            >
+              Confirmar Reagendamento
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-    <div class="modal-overlay" id="modalAgendamento" style="display: none;">
-        <div class="modal" style="max-width: 440px;">
-            <h3><i class="fa-solid fa-calendar-day" style="color: #FFD700; margin-right: 8px;"></i>Agendar Horário Único</h3>
-            
-            <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; margin-bottom: 18px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
-                <button type="button" class="tab-btn active" id="tabAgendarAula" onclick="selecionarTipoAgendamento('aula')">
-                    <i class="fa-solid fa-graduation-cap"></i> Aula
+    <div class="modal-overlay" id="modalAgendamento" style="display: none">
+      <div class="modal" style="max-width: 440px">
+        <h3>
+          <i
+            class="fa-solid fa-calendar-day"
+            style="color: #ffd700; margin-right: 8px"
+          ></i
+          >Agendar Horário Único
+        </h3>
+
+        <div
+          class="tab-tipo-agendamento"
+          style="
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+            background: #0d0d0d;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+          "
+        >
+          <button
+            type="button"
+            class="tab-btn active"
+            id="tabAgendarAula"
+            onclick="selecionarTipoAgendamento('aula')"
+          >
+            <i class="fa-solid fa-graduation-cap"></i> Aula
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            id="tabAgendarDeslocamento"
+            onclick="selecionarTipoAgendamento('deslocamento')"
+          >
+            <i class="fa-solid fa-car-side"></i> Deslocamento
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            id="tabAgendarBloqueio"
+            onclick="selecionarTipoAgendamento('bloqueio')"
+          >
+            <i class="fa-solid fa-lock"></i> Bloquear
+          </button>
+        </div>
+
+        <form id="formAgendamento">
+          <input type="hidden" id="agendaId" />
+          <input type="hidden" id="agendaData" />
+          <input type="hidden" id="agendaTipo" value="aula" />
+
+          <div id="camposTipoAula" class="form-grupo-spa">
+            <label for="agendaAluno">Aluno *</label>
+            <select id="agendaAluno">
+              <option value="">Selecione um aluno...</option>
+            </select>
+          </div>
+          <div
+            id="camposTipoBloqueio"
+            class="form-grupo-spa"
+            style="display: none"
+          >
+            <label for="agendaDescricao"
+              >Motivo / Descrição do Bloqueio *</label
+            >
+            <input
+              type="text"
+              id="agendaDescricao"
+              placeholder="Ex: Almoço / Particular / Médico"
+            />
+          </div>
+          <div
+            id="camposTipoBloqueioDiaInteiro"
+            class="form-grupo-spa"
+            style="display: none; margin-top: -6px; margin-bottom: 10px"
+          >
+            <label class="full-day-toggle" for="agendaBloqueioDiaInteiro">
+              <input type="checkbox" id="agendaBloqueioDiaInteiro" />
+              <span class="full-day-toggle-ui">
+                <span class="full-day-toggle-text"
+                  ><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span
+                >
+                <span class="full-day-toggle-pill">OFF</span>
+              </span>
+            </label>
+          </div>
+
+          <p
+            id="infoHorarioAlvo"
+            style="
+              font-size: 0.8rem;
+              color: #ffd700;
+              margin-bottom: 15px;
+              font-weight: 600;
+            "
+          ></p>
+          <div
+            id="agendaHorarioDuracaoGrid"
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 14px;
+            "
+          >
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="agendaHoraInicio">Início *</label>
+              <select id="agendaHoraInicio" required></select>
+            </div>
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="agendaDuracao">Duração *</label>
+              <select id="agendaDuracao" required style="display: none">
+                <option value="30">30 min</option>
+                <option value="60" selected>1h 00min</option>
+                <option value="90">1h 30min</option>
+                <option value="120">2h 00min</option>
+                <option value="150">2h 30min</option>
+                <option value="180">3h 00min</option>
+                <option value="210">3h 30min</option>
+                <option value="240">4h 00min</option>
+                <option value="270">4h 30min</option>
+                <option value="300">5h 00min</option>
+                <option value="330">5h 30min</option>
+                <option value="360">6h 00min</option>
+                <option value="390">6h 30min</option>
+                <option value="420">7h 00min</option>
+                <option value="450">7h 30min</option>
+                <option value="480">8h 00min</option>
+              </select>
+              <div class="duracao-stepper" data-target-select="agendaDuracao">
+                <button
+                  type="button"
+                  class="duracao-stepper-btn"
+                  data-action="decrease"
+                  aria-label="Diminuir duração"
+                >
+                  <i class="fa-solid fa-minus"></i>
                 </button>
-                <button type="button" class="tab-btn" id="tabAgendarDeslocamento" onclick="selecionarTipoAgendamento('deslocamento')">
-                    <i class="fa-solid fa-car-side"></i> Deslocamento
+                <span class="duracao-stepper-value">1h 00min</span>
+                <button
+                  type="button"
+                  class="duracao-stepper-btn"
+                  data-action="increase"
+                  aria-label="Aumentar duração"
+                >
+                  <i class="fa-solid fa-plus"></i>
                 </button>
-                <button type="button" class="tab-btn" id="tabAgendarBloqueio" onclick="selecionarTipoAgendamento('bloqueio')">
-                    <i class="fa-solid fa-lock"></i> Bloquear
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              margin-top: 24px;
+              justify-content: flex-end;
+              border-top: 1px solid #222;
+              padding-top: 15px;
+            "
+          >
+            <button type="button" class="btn btn-secondary" id="btnFecharModal">
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">Agendar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="modal-overlay" id="modalRecorrencia" style="display: none">
+      <div class="modal" style="max-width: 440px">
+        <h3>
+          <i
+            class="fa-solid fa-infinity"
+            style="color: #ffd700; margin-right: 8px"
+          ></i
+          >Agendar Horário Recorrente
+        </h3>
+
+        <div
+          class="tab-tipo-agendamento"
+          style="
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+            background: #0d0d0d;
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid #2a2a2a;
+          "
+        >
+          <button
+            type="button"
+            class="tab-btn active"
+            id="tabRecorrenteAula"
+            onclick="selecionarTipoRecorrente('aula')"
+          >
+            <i class="fa-solid fa-graduation-cap"></i> Aula
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            id="tabRecorrenteDeslocamento"
+            onclick="selecionarTipoRecorrente('deslocamento')"
+          >
+            <i class="fa-solid fa-car-side"></i> Deslocamento
+          </button>
+          <button
+            type="button"
+            class="tab-btn"
+            id="tabRecorrenteBloqueio"
+            onclick="selecionarTipoRecorrente('bloqueio')"
+          >
+            <i class="fa-solid fa-lock"></i> Bloquear
+          </button>
+        </div>
+
+        <form id="formRecorrencia">
+          <input type="hidden" id="recorrenciaTipo" value="aula" />
+          <div class="recorrencia-secao-titulo">1. Dados principais</div>
+          <div id="camposRecorrenteAula" class="form-grupo-spa">
+            <label for="recorrenciaAluno">Aluno *</label>
+            <select id="recorrenciaAluno">
+              <option value="">Selecione um aluno...</option>
+            </select>
+          </div>
+          <div
+            id="camposRecorrenteBloqueio"
+            class="form-grupo-spa"
+            style="display: none"
+          >
+            <label for="recorrenciaDescricao"
+              >Motivo / Descrição do Bloqueio *</label
+            >
+            <input
+              type="text"
+              id="recorrenciaDescricao"
+              placeholder="Ex: Almoço fixo / Particular / Aula Teórica"
+            />
+          </div>
+          <div
+            id="camposRecorrenteBloqueioDiaInteiro"
+            class="form-grupo-spa"
+            style="display: none; margin-top: -6px; margin-bottom: 10px"
+          >
+            <label class="full-day-toggle" for="recorrenciaBloqueioDiaInteiro">
+              <input type="checkbox" id="recorrenciaBloqueioDiaInteiro" />
+              <span class="full-day-toggle-ui">
+                <span class="full-day-toggle-text"
+                  ><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span
+                >
+                <span class="full-day-toggle-pill">OFF</span>
+              </span>
+            </label>
+          </div>
+          <div class="form-grupo-spa" style="margin-bottom: 14px">
+            <label for="recorrenciaDataInicio">Início da recorrência *</label>
+            <input type="date" id="recorrenciaDataInicio" required />
+            <small
+              style="
+                display: block;
+                margin-top: 6px;
+                color: #888;
+                font-size: 0.75rem;
+              "
+              >Clique no campo para abrir o calendário e escolher a data.</small
+            >
+          </div>
+          <div
+            id="recorrenciaHorarioDuracaoGrid"
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 14px;
+            "
+          >
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="recorrenciaHoraInicio">Início *</label>
+              <select id="recorrenciaHoraInicio" required></select>
+            </div>
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="recorrenciaDuracao">Duração *</label>
+              <select id="recorrenciaDuracao" required style="display: none">
+                <option value="30">30 min</option>
+                <option value="60" selected>1h 00min</option>
+                <option value="90">1h 30min</option>
+                <option value="120">2h 00min</option>
+                <option value="150">2h 30min</option>
+                <option value="180">3h 00min</option>
+                <option value="210">3h 30min</option>
+                <option value="240">4h 00min</option>
+                <option value="270">4h 30min</option>
+                <option value="300">5h 00min</option>
+                <option value="330">5h 30min</option>
+                <option value="360">6h 00min</option>
+                <option value="390">6h 30min</option>
+                <option value="420">7h 00min</option>
+                <option value="450">7h 30min</option>
+                <option value="480">8h 00min</option>
+              </select>
+              <div
+                class="duracao-stepper"
+                data-target-select="recorrenciaDuracao"
+              >
+                <button
+                  type="button"
+                  class="duracao-stepper-btn"
+                  data-action="decrease"
+                  aria-label="Diminuir duração"
+                >
+                  <i class="fa-solid fa-minus"></i>
                 </button>
+                <span class="duracao-stepper-value">1h 00min</span>
+                <button
+                  type="button"
+                  class="duracao-stepper-btn"
+                  data-action="increase"
+                  aria-label="Aumentar duração"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            class="form-grupo-spa"
+            id="recorrenciaEscopoCriacaoContainer"
+            style="margin-bottom: 14px"
+          >
+            <label>Como aplicar no calendário?</label>
+            <input
+              type="hidden"
+              id="recorrenciaEscopoCriacao"
+              value="fromDate"
+            />
+            <div
+              class="escopo-recorrencia-grid"
+              id="recorrenciaEscopoCriacaoGrid"
+            >
+              <button
+                type="button"
+                class="btn-escopo-recorrencia active"
+                data-escopo-criacao="fromDate"
+              >
+                Daqui pra frente
+              </button>
+              <button
+                type="button"
+                class="btn-escopo-recorrencia"
+                data-escopo-criacao="monthOfDate"
+              >
+                Este mês todo
+              </button>
+            </div>
+            <small
+              id="recorrenciaEscopoCriacaoResumo"
+              style="
+                display: block;
+                margin-top: 6px;
+                color: #bdbdbd;
+                font-size: 0.78rem;
+              "
+              >Vai criar a série da data escolhida em diante.</small
+            >
+          </div>
+
+          <div class="recorrencia-secao-titulo">2. Repetição</div>
+          <details
+            id="painelRepeticaoRecorrencia"
+            class="recorrencia-painel-opcoes"
+          >
+            <summary>Configurar padrão de repetição</summary>
+            <div class="form-grupo-spa" style="margin-top: 12px">
+              <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
+              <select
+                id="recorrenciaPadrao"
+                onchange="window.mudarPadraoRecorrencia()"
+                required
+              >
+                <option value="semanal" selected>Semanal</option>
+                <option value="diaria">Diária</option>
+                <option value="mensal">Mensal</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+            <div
+              class="form-grupo-spa"
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 14px;
+              "
+            >
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label for="recorrenciaIntervalo">Repetir a cada *</label>
+                <input
+                  type="number"
+                  id="recorrenciaIntervalo"
+                  value="1"
+                  min="1"
+                  required
+                  style="text-align: center"
+                />
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <label>Unidade</label>
+                <div
+                  id="labelUnidadeRecorrencia"
+                  style="
+                    height: 45px;
+                    display: flex;
+                    align-items: center;
+                    color: #fff;
+                    font-size: 0.9rem;
+                    font-weight: 700;
+                    background: #0d0d0d;
+                    padding-left: 12px;
+                    border: 1px solid #333;
+                    border-radius: 8px;
+                  "
+                >
+                  semana(s)
+                </div>
+              </div>
+            </div>
+            <div
+              class="form-grupo-spa"
+              id="containerDiasSemanaRecorrencia"
+              style="margin-bottom: 16px"
+            >
+              <label style="margin-bottom: 4px"
+                >Selecione os dias da semana *</label
+              >
+              <div
+                style="
+                  display: flex;
+                  gap: 4px;
+                  justify-content: space-between;
+                  flex-wrap: wrap;
+                "
+              >
+                <button type="button" class="btn-dia-pill" data-dia="Segunda">
+                  Seg
+                </button>
+                <button type="button" class="btn-dia-pill" data-dia="Terça">
+                  Ter
+                </button>
+                <button type="button" class="btn-dia-pill" data-dia="Quarta">
+                  Qua
+                </button>
+                <button type="button" class="btn-dia-pill" data-dia="Quinta">
+                  Qui
+                </button>
+                <button type="button" class="btn-dia-pill" data-dia="Sexta">
+                  Sex
+                </button>
+                <button type="button" class="btn-dia-pill" data-dia="Sábado">
+                  Sáb
+                </button>
+              </div>
+            </div>
+            <div
+              id="infoRecorrenciaMensalAnual"
+              style="
+                background: rgba(255, 215, 0, 0.05);
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 2px;
+                border: 1px dashed rgba(255, 215, 0, 0.2);
+              "
+            >
+              <p
+                style="
+                  font-size: 0.75rem;
+                  color: #ffd700;
+                  margin: 0;
+                  line-height: 1.4;
+                  font-weight: 600;
+                "
+                id="textoInfoMensalAnual"
+              ></p>
+            </div>
+          </details>
+          <div
+            id="resumoRecorrenciaCadastro"
+            class="resumo-recorrencia-cadastro"
+          ></div>
+
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              margin-top: 24px;
+              justify-content: flex-end;
+              border-top: 1px solid #222;
+              padding-top: 15px;
+            "
+          >
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="btnFecharModalRecorrencia"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Salvar Recorrência
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <div class="modal-overlay" id="modalAcaoSlot" style="display: none">
+      <div class="modal" style="max-width: 440px">
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            gap: 12px;
+            width: 100%;
+          "
+        >
+          <h3
+            id="editModalTitle"
+            style="
+              margin: 0;
+              font-size: 1.15rem;
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              flex: 1;
+            "
+          >
+            Gerenciar Horário
+          </h3>
+          <span
+            id="badgeTipoCompromisso"
+            class="modal-badge"
+            style="font-size: 0.7rem"
+          ></span>
+        </div>
+
+        <form id="formEditarCompromisso">
+          <input type="hidden" id="editCompromissoFrequencia" value="uma_vez" />
+          <div id="editCamposTipoAula" class="form-grupo-spa">
+            <label for="editAluno">Aluno</label>
+            <select
+              id="editAluno"
+              disabled
+              style="
+                background: #111;
+                color: #888;
+                border-color: #222;
+                cursor: not-allowed;
+              "
+            ></select>
+          </div>
+          <div
+            id="editCamposTipoBloqueio"
+            class="form-grupo-spa"
+            style="display: none"
+          >
+            <label for="editDescricao">Motivo / Descrição do Bloqueio *</label>
+            <input
+              type="text"
+              id="editDescricao"
+              placeholder="Ex: Almoço / Particular / Médico"
+            />
+          </div>
+          <div
+            id="editCamposTipoBloqueioDiaInteiro"
+            class="form-grupo-spa"
+            style="display: none; margin-top: -6px; margin-bottom: 10px"
+          >
+            <label class="full-day-toggle" for="editBloqueioDiaInteiro">
+              <input type="checkbox" id="editBloqueioDiaInteiro" />
+              <span class="full-day-toggle-ui">
+                <span class="full-day-toggle-text"
+                  ><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span
+                >
+                <span class="full-day-toggle-pill">OFF</span>
+              </span>
+            </label>
+          </div>
+          <p
+            id="editInfoDia"
+            style="
+              font-size: 0.8rem;
+              color: #fff;
+              margin-bottom: 15px;
+              font-weight: 600;
+            "
+          ></p>
+          <div
+            class="form-grupo-spa"
+            id="editEscopoRecorrenciaContainer"
+            style="display: none; margin-bottom: 14px"
+          >
+            <label>Onde você quer aplicar?</label>
+            <input type="hidden" id="editEscopoRecorrencia" value="fromDate" />
+            <div class="escopo-recorrencia-grid" id="editEscopoRecorrenciaGrid">
+              <button
+                type="button"
+                class="btn-escopo-recorrencia"
+                data-escopo="occurrence"
+              >
+                Só esta aula
+              </button>
+              <button
+                type="button"
+                class="btn-escopo-recorrencia active"
+                data-escopo="fromDate"
+              >
+                Daqui pra frente
+              </button>
+              <button
+                type="button"
+                class="btn-escopo-recorrencia"
+                data-escopo="monthOfDate"
+              >
+                Este mês todo
+              </button>
+              <button
+                type="button"
+                class="btn-escopo-recorrencia"
+                data-escopo="entireSeries"
+              >
+                Todas as aulas
+              </button>
+            </div>
+            <small
+              id="editEscopoResumo"
+              style="
+                display: block;
+                margin-top: 6px;
+                color: #bdbdbd;
+                font-size: 0.78rem;
+              "
+              >Vai atualizar esta aula e as próximas da série.</small
+            >
+            <small
+              id="editEscopoImpacto"
+              style="
+                display: block;
+                margin-top: 6px;
+                color: #ffd700;
+                font-size: 0.76rem;
+                font-weight: 700;
+              "
+            ></small>
+          </div>
+          <div
+            class="form-grupo-spa"
+            id="editDiaSemanaContainer"
+            style="display: none; margin-bottom: 14px"
+          >
+            <label for="editDiaSemana">Dia da Semana *</label>
+            <select id="editDiaSemana">
+              <option value="Segunda">Segunda-feira</option>
+              <option value="Terça">Terça-feira</option>
+              <option value="Quarta">Quarta-feira</option>
+              <option value="Quinta">Quinta-feira</option>
+              <option value="Sexta">Sexta-feira</option>
+              <option value="Sábado">Sábado</option>
+            </select>
+          </div>
+          <div
+            id="editHorarioDuracaoGrid"
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 14px;
+            "
+          >
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="editHoraInicio">Início *</label>
+              <select id="editHoraInicio" required></select>
+            </div>
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="editDuracao">Duração *</label>
+              <select id="editDuracao" required style="display: none">
+                <option value="30">30 min</option>
+                <option value="60">1h 00min</option>
+                <option value="90">1h 30min</option>
+                <option value="120">2h 00min</option>
+                <option value="150">2h 30min</option>
+                <option value="180">3h 00min</option>
+                <option value="210">3h 30min</option>
+                <option value="240">4h 00min</option>
+                <option value="270">4h 30min</option>
+                <option value="300">5h 00min</option>
+                <option value="330">5h 30min</option>
+                <option value="360">6h 00min</option>
+                <option value="390">6h 30min</option>
+                <option value="420">7h 00min</option>
+                <option value="450">7h 30min</option>
+                <option value="480">8h 00min</option>
+              </select>
+              <div class="duracao-stepper" data-target-select="editDuracao">
+                <button
+                  type="button"
+                  class="duracao-stepper-btn"
+                  data-action="decrease"
+                  aria-label="Diminuir duração"
+                >
+                  <i class="fa-solid fa-minus"></i>
+                </button>
+                <span class="duracao-stepper-value">1h 00min</span>
+                <button
+                  type="button"
+                  class="duracao-stepper-btn"
+                  data-action="increase"
+                  aria-label="Aumentar duração"
+                >
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            style="
+              display: flex;
+              flex-direction: column;
+              gap: 10px;
+              margin-top: 20px;
+              border-top: 1px solid #222;
+              padding-top: 15px;
+            "
+          >
+            <div
+              id="acoesCompromissoUnico"
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+            >
+              <button
+                type="button"
+                class="btn btn-danger"
+                id="btnDeletarDefinitivo"
+                title="Cancelar Compromisso"
+              >
+                <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                class="btn"
+                id="btnMandarParaReposicao"
+                style="background: #ff9800; color: #fff; border: none"
+                title="Mandar para Reposição"
+              >
+                <i
+                  class="fa-solid fa-rotate-left"
+                  style="margin-right: 6px"
+                ></i>
+                Reagendar
+              </button>
+            </div>
+            <div
+              id="acoesCompromissoRecorrente"
+              style="display: none; flex-direction: column; gap: 8px"
+            >
+              <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px"
+              >
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  id="btnDeletarInstancia"
+                  title="Cancelar apenas essa aula"
+                >
+                  <i
+                    class="fa-solid fa-calendar-minus"
+                    style="margin-right: 4px"
+                  ></i>
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  class="btn"
+                  id="btnReagendarInstancia"
+                  style="background: #ff9800; color: #fff; border: none"
+                  title="Mandar essa aula para reposição"
+                >
+                  <i
+                    class="fa-solid fa-rotate-left"
+                    style="margin-right: 4px"
+                  ></i>
+                  Reagendar
+                </button>
+              </div>
+              <button
+                type="button"
+                class="btn"
+                id="btnDeletarSerie"
+                style="background: #d32f2f; color: #fff; border: none"
+                title="Cancelar toda a série de recorrências"
+              >
+                <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
+                Cancelar Série Completa
+              </button>
             </div>
 
-            <form id="formAgendamento">
-                <input type="hidden" id="agendaId">
-                <input type="hidden" id="agendaData">
-                <input type="hidden" id="agendaTipo" value="aula">
-
-                <div id="camposTipoAula" class="form-grupo-spa">
-                    <label for="agendaAluno">Aluno *</label>
-                    <select id="agendaAluno">
-                        <option value="">Selecione um aluno...</option>
-                    </select>
-                </div>
-                <div id="camposTipoBloqueio" class="form-grupo-spa" style="display: none;">
-                    <label for="agendaDescricao">Motivo / Descrição do Bloqueio *</label>
-                    <input type="text" id="agendaDescricao" placeholder="Ex: Almoço / Particular / Médico">
-                </div>
-                <div id="camposTipoBloqueioDiaInteiro" class="form-grupo-spa" style="display: none; margin-top: -6px; margin-bottom: 10px;">
-                    <label class="full-day-toggle" for="agendaBloqueioDiaInteiro">
-                        <input type="checkbox" id="agendaBloqueioDiaInteiro">
-                        <span class="full-day-toggle-ui">
-                            <span class="full-day-toggle-text"><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span>
-                            <span class="full-day-toggle-pill">OFF</span>
-                        </span>
-                    </label>
-                </div>
-                
-                <p id="infoHorarioAlvo" style="font-size: 0.8rem; color: #FFD700; margin-bottom: 15px; font-weight: 600;"></p>
-                <div id="agendaHorarioDuracaoGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="agendaHoraInicio">Início *</label>
-                        <select id="agendaHoraInicio" required></select>
-                    </div>
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="agendaDuracao">Duração *</label>
-                        <select id="agendaDuracao" required style="display: none;">
-                            <option value="30">30 min</option>
-                            <option value="60" selected>1h 00min</option>
-                            <option value="90">1h 30min</option>
-                            <option value="120">2h 00min</option>
-                            <option value="150">2h 30min</option>
-                            <option value="180">3h 00min</option>
-                            <option value="210">3h 30min</option>
-                            <option value="240">4h 00min</option>
-                            <option value="270">4h 30min</option>
-                            <option value="300">5h 00min</option>
-                            <option value="330">5h 30min</option>
-                            <option value="360">6h 00min</option>
-                            <option value="390">6h 30min</option>
-                            <option value="420">7h 00min</option>
-                            <option value="450">7h 30min</option>
-                            <option value="480">8h 00min</option>
-                        </select>
-                        <div class="duracao-stepper" data-target-select="agendaDuracao">
-                            <button type="button" class="duracao-stepper-btn" data-action="decrease" aria-label="Diminuir duração">
-                                <i class="fa-solid fa-minus"></i>
-                            </button>
-                            <span class="duracao-stepper-value">1h 00min</span>
-                            <button type="button" class="duracao-stepper-btn" data-action="increase" aria-label="Aumentar duração">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
-                    <button type="button" class="btn btn-secondary" id="btnFecharModal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Agendar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    <div class="modal-overlay" id="modalRecorrencia" style="display: none;">
-        <div class="modal" style="max-width: 440px;">
-            <h3><i class="fa-solid fa-infinity" style="color: #FFD700; margin-right: 8px;"></i>Agendar Horário Recorrente</h3>
-            
-            <div class="tab-tipo-agendamento" style="display: flex; gap: 6px; margin-bottom: 18px; background: #0D0D0D; padding: 4px; border-radius: 8px; border: 1px solid #2A2A2A;">
-                <button type="button" class="tab-btn active" id="tabRecorrenteAula" onclick="selecionarTipoRecorrente('aula')">
-                    <i class="fa-solid fa-graduation-cap"></i> Aula
-                </button>
-                <button type="button" class="tab-btn" id="tabRecorrenteDeslocamento" onclick="selecionarTipoRecorrente('deslocamento')">
-                    <i class="fa-solid fa-car-side"></i> Deslocamento
-                </button>
-                <button type="button" class="tab-btn" id="tabRecorrenteBloqueio" onclick="selecionarTipoRecorrente('bloqueio')">
-                    <i class="fa-solid fa-lock"></i> Bloquear
-                </button>
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+            >
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onclick="fecharModalAcaoSlot()"
+              >
+                Voltar
+              </button>
+              <button type="submit" class="btn btn-primary">
+                Salvar Alterações
+              </button>
             </div>
-
-            <form id="formRecorrencia">
-                <input type="hidden" id="recorrenciaTipo" value="aula">
-                <div class="recorrencia-secao-titulo">1. Dados principais</div>
-                <div id="camposRecorrenteAula" class="form-grupo-spa">
-                    <label for="recorrenciaAluno">Aluno *</label>
-                    <select id="recorrenciaAluno">
-                        <option value="">Selecione um aluno...</option>
-                    </select>
-                </div>
-                <div id="camposRecorrenteBloqueio" class="form-grupo-spa" style="display: none;">
-                    <label for="recorrenciaDescricao">Motivo / Descrição do Bloqueio *</label>
-                    <input type="text" id="recorrenciaDescricao" placeholder="Ex: Almoço fixo / Particular / Aula Teórica">
-                </div>
-                <div id="camposRecorrenteBloqueioDiaInteiro" class="form-grupo-spa" style="display: none; margin-top: -6px; margin-bottom: 10px;">
-                    <label class="full-day-toggle" for="recorrenciaBloqueioDiaInteiro">
-                        <input type="checkbox" id="recorrenciaBloqueioDiaInteiro">
-                        <span class="full-day-toggle-ui">
-                            <span class="full-day-toggle-text"><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span>
-                            <span class="full-day-toggle-pill">OFF</span>
-                        </span>
-                    </label>
-                </div>
-                <div class="form-grupo-spa" style="margin-bottom: 14px;">
-                    <label for="recorrenciaDataInicio">Início da recorrência *</label>
-                    <input type="date" id="recorrenciaDataInicio" required>
-                    <small style="display:block; margin-top: 6px; color: #888; font-size: 0.75rem;">Clique no campo para abrir o calendário e escolher a data.</small>
-                </div>
-                <div id="recorrenciaHorarioDuracaoGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="recorrenciaHoraInicio">Início *</label>
-                        <select id="recorrenciaHoraInicio" required></select>
-                    </div>
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="recorrenciaDuracao">Duração *</label>
-                        <select id="recorrenciaDuracao" required style="display: none;">
-                            <option value="30">30 min</option>
-                            <option value="60" selected>1h 00min</option>
-                            <option value="90">1h 30min</option>
-                            <option value="120">2h 00min</option>
-                            <option value="150">2h 30min</option>
-                            <option value="180">3h 00min</option>
-                            <option value="210">3h 30min</option>
-                            <option value="240">4h 00min</option>
-                            <option value="270">4h 30min</option>
-                            <option value="300">5h 00min</option>
-                            <option value="330">5h 30min</option>
-                            <option value="360">6h 00min</option>
-                            <option value="390">6h 30min</option>
-                            <option value="420">7h 00min</option>
-                            <option value="450">7h 30min</option>
-                            <option value="480">8h 00min</option>
-                        </select>
-                        <div class="duracao-stepper" data-target-select="recorrenciaDuracao">
-                            <button type="button" class="duracao-stepper-btn" data-action="decrease" aria-label="Diminuir duração">
-                                <i class="fa-solid fa-minus"></i>
-                            </button>
-                            <span class="duracao-stepper-value">1h 00min</span>
-                            <button type="button" class="duracao-stepper-btn" data-action="increase" aria-label="Aumentar duração">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="form-grupo-spa" id="recorrenciaEscopoCriacaoContainer" style="margin-bottom: 14px;">
-                    <label>Como aplicar no calendário?</label>
-                    <input type="hidden" id="recorrenciaEscopoCriacao" value="fromDate">
-                    <div class="escopo-recorrencia-grid" id="recorrenciaEscopoCriacaoGrid">
-                        <button type="button" class="btn-escopo-recorrencia active" data-escopo-criacao="fromDate">Daqui pra frente</button>
-                        <button type="button" class="btn-escopo-recorrencia" data-escopo-criacao="monthOfDate">Este mês todo</button>
-                    </div>
-                    <small id="recorrenciaEscopoCriacaoResumo" style="display:block; margin-top: 6px; color: #BDBDBD; font-size: 0.78rem;">Vai criar a série da data escolhida em diante.</small>
-                </div>
-
-                <div class="recorrencia-secao-titulo">2. Repetição</div>
-                <details id="painelRepeticaoRecorrencia" class="recorrencia-painel-opcoes">
-                    <summary>Configurar padrão de repetição</summary>
-                    <div class="form-grupo-spa" style="margin-top: 12px;">
-                        <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
-                        <select id="recorrenciaPadrao" onchange="window.mudarPadraoRecorrencia()" required>
-                            <option value="semanal" selected>Semanal</option>
-                            <option value="diaria">Diária</option>
-                            <option value="mensal">Mensal</option>
-                            <option value="anual">Anual</option>
-                        </select>
-                    </div>
-                    <div class="form-grupo-spa" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label for="recorrenciaIntervalo">Repetir a cada *</label>
-                            <input type="number" id="recorrenciaIntervalo" value="1" min="1" required style="text-align: center;">
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
-                            <label>Unidade</label>
-                            <div id="labelUnidadeRecorrencia" style="height: 45px; display: flex; align-items: center; color: #FFF; font-size: 0.9rem; font-weight: 700; background: #0D0D0D; padding-left: 12px; border: 1px solid #333; border-radius: 8px;">semana(s)</div>
-                        </div>
-                    </div>
-                    <div class="form-grupo-spa" id="containerDiasSemanaRecorrencia" style="margin-bottom: 16px;">
-                        <label style="margin-bottom: 4px;">Selecione os dias da semana *</label>
-                        <div style="display: flex; gap: 4px; justify-content: space-between; flex-wrap: wrap;">
-                            <button type="button" class="btn-dia-pill" data-dia="Segunda">Seg</button>
-                            <button type="button" class="btn-dia-pill" data-dia="Terça">Ter</button>
-                            <button type="button" class="btn-dia-pill" data-dia="Quarta">Qua</button>
-                            <button type="button" class="btn-dia-pill" data-dia="Quinta">Qui</button>
-                            <button type="button" class="btn-dia-pill" data-dia="Sexta">Sex</button>
-                            <button type="button" class="btn-dia-pill" data-dia="Sábado">Sáb</button>
-                        </div>
-                    </div>
-                    <div id="infoRecorrenciaMensalAnual" style="background: rgba(255, 215, 0, 0.05); padding: 12px; border-radius: 8px; margin-bottom: 2px; border: 1px dashed rgba(255, 215, 0, 0.2);">
-                        <p style="font-size: 0.75rem; color: #FFD700; margin: 0; line-height: 1.4; font-weight: 600;" id="textoInfoMensalAnual"></p>
-                    </div>
-                </details>
-                <div id="resumoRecorrenciaCadastro" class="resumo-recorrencia-cadastro"></div>
-
-                <div style="display: flex; gap: 10px; margin-top: 24px; justify-content: flex-end; border-top: 1px solid #222; padding-top: 15px;">
-                    <button type="button" class="btn btn-secondary" id="btnFecharModalRecorrencia">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Recorrência</button>
-                </div>
-            </form>
-        </div>
+          </div>
+        </form>
+      </div>
     </div>
-    <div class="modal-overlay" id="modalAcaoSlot" style="display: none;">
-        <div class="modal" style="max-width: 440px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; gap: 12px; width: 100%;">
-                <h3 id="editModalTitle" style="margin: 0; font-size: 1.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">Gerenciar Horário</h3>
-                <span id="badgeTipoCompromisso" class="modal-badge" style="font-size: 0.7rem;"></span>
-            </div>
-            
-            <form id="formEditarCompromisso">
-                <input type="hidden" id="editCompromissoFrequencia" value="uma_vez">
-                <div id="editCamposTipoAula" class="form-grupo-spa">
-                    <label for="editAluno">Aluno</label>
-                    <select id="editAluno" disabled style="background: #111; color: #888; border-color: #222; cursor: not-allowed;"></select>
-                </div>
-                <div id="editCamposTipoBloqueio" class="form-grupo-spa" style="display: none;">
-                    <label for="editDescricao">Motivo / Descrição do Bloqueio *</label>
-                    <input type="text" id="editDescricao" placeholder="Ex: Almoço / Particular / Médico">
-                </div>
-                <div id="editCamposTipoBloqueioDiaInteiro" class="form-grupo-spa" style="display: none; margin-top: -6px; margin-bottom: 10px;">
-                    <label class="full-day-toggle" for="editBloqueioDiaInteiro">
-                        <input type="checkbox" id="editBloqueioDiaInteiro">
-                        <span class="full-day-toggle-ui">
-                            <span class="full-day-toggle-text"><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span>
-                            <span class="full-day-toggle-pill">OFF</span>
-                        </span>
-                    </label>
-                </div>
-                <p id="editInfoDia" style="font-size: 0.8rem; color: #FFF; margin-bottom: 15px; font-weight: 600;"></p>
-                <div class="form-grupo-spa" id="editEscopoRecorrenciaContainer" style="display: none; margin-bottom: 14px;">
-                    <label>Onde você quer aplicar?</label>
-                    <input type="hidden" id="editEscopoRecorrencia" value="fromDate">
-                    <div class="escopo-recorrencia-grid" id="editEscopoRecorrenciaGrid">
-                        <button type="button" class="btn-escopo-recorrencia" data-escopo="occurrence">Só esta aula</button>
-                        <button type="button" class="btn-escopo-recorrencia active" data-escopo="fromDate">Daqui pra frente</button>
-                        <button type="button" class="btn-escopo-recorrencia" data-escopo="monthOfDate">Este mês todo</button>
-                        <button type="button" class="btn-escopo-recorrencia" data-escopo="entireSeries">Todas as aulas</button>
-                    </div>
-                    <small id="editEscopoResumo" style="display:block; margin-top: 6px; color: #BDBDBD; font-size: 0.78rem;">Vai atualizar esta aula e as próximas da série.</small>
-                    <small id="editEscopoImpacto" style="display:block; margin-top: 6px; color: #FFD700; font-size: 0.76rem; font-weight: 700;"></small>
-                </div>
-                <div class="form-grupo-spa" id="editDiaSemanaContainer" style="display: none; margin-bottom: 14px;">
-                    <label for="editDiaSemana">Dia da Semana *</label>
-                    <select id="editDiaSemana">
-                        <option value="Segunda">Segunda-feira</option>
-                        <option value="Terça">Terça-feira</option>
-                        <option value="Quarta">Quarta-feira</option>
-                        <option value="Quinta">Quinta-feira</option>
-                        <option value="Sexta">Sexta-feira</option>
-                        <option value="Sábado">Sábado</option>
-                    </select>
-                </div>
-                <div id="editHorarioDuracaoGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="editHoraInicio">Início *</label>
-                        <select id="editHoraInicio" required></select>
-                    </div>
-                    <div class="form-grupo-spa" style="margin-bottom:0;">
-                        <label for="editDuracao">Duração *</label>
-                        <select id="editDuracao" required style="display: none;">
-                            <option value="30">30 min</option>
-                            <option value="60">1h 00min</option>
-                            <option value="90">1h 30min</option>
-                            <option value="120">2h 00min</option>
-                            <option value="150">2h 30min</option>
-                            <option value="180">3h 00min</option>
-                            <option value="210">3h 30min</option>
-                            <option value="240">4h 00min</option>
-                            <option value="270">4h 30min</option>
-                            <option value="300">5h 00min</option>
-                            <option value="330">5h 30min</option>
-                            <option value="360">6h 00min</option>
-                            <option value="390">6h 30min</option>
-                            <option value="420">7h 00min</option>
-                            <option value="450">7h 30min</option>
-                            <option value="480">8h 00min</option>
-                        </select>
-                        <div class="duracao-stepper" data-target-select="editDuracao">
-                            <button type="button" class="duracao-stepper-btn" data-action="decrease" aria-label="Diminuir duração">
-                                <i class="fa-solid fa-minus"></i>
-                            </button>
-                            <span class="duracao-stepper-value">1h 00min</span>
-                            <button type="button" class="duracao-stepper-btn" data-action="increase" aria-label="Aumentar duração">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px; border-top: 1px solid #222; padding-top: 15px;">
-                    <div id="acoesCompromissoUnico" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button type="button" class="btn btn-danger" id="btnDeletarDefinitivo" title="Cancelar Compromisso">
-                            <i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Cancelar
-                        </button>
-                        <button type="button" class="btn" id="btnMandarParaReposicao" style="background: #FF9800; color: #FFF; border: none;" title="Mandar para Reposição">
-                            <i class="fa-solid fa-rotate-left" style="margin-right: 6px;"></i> Reagendar
-                        </button>
-                    </div>
-                    <div id="acoesCompromissoRecorrente" style="display: none; flex-direction: column; gap: 8px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                            <button type="button" class="btn btn-danger" id="btnDeletarInstancia" title="Cancelar apenas essa aula">
-                                <i class="fa-solid fa-calendar-minus" style="margin-right: 4px;"></i> Cancelar
-                            </button>
-                            <button type="button" class="btn" id="btnReagendarInstancia" style="background: #FF9800; color: #FFF; border: none;" title="Mandar essa aula para reposição">
-                                <i class="fa-solid fa-rotate-left" style="margin-right: 4px;"></i> Reagendar
-                            </button>
-                        </div>
-                        <button type="button" class="btn" id="btnDeletarSerie" style="background: #D32F2F; color: #FFF; border: none;" title="Cancelar toda a série de recorrências">
-                            <i class="fa-solid fa-trash-can" style="margin-right: 6px;"></i> Cancelar Série Completa
-                        </button>
-                    </div>
+    <div class="modal-overlay" id="modalConfigAgenda" style="display: none">
+      <div class="modal" style="max-width: 380px">
+        <h3>Configurar Grade Horária</h3>
+        <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px">
+          Defina os limites de exibição de horas de trabalho da sua agenda
+          diária.
+        </p>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                        <button type="button" class="btn btn-secondary" onclick="fecharModalAcaoSlot()">Voltar</button>
-                        <button type="submit" class="btn btn-primary">Salvar Alterações</button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    </div>
-    <div class="modal-overlay" id="modalConfigAgenda" style="display: none;">
-        <div class="modal" style="max-width: 380px;">
-            <h3>Configurar Grade Horária</h3>
-            <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px;">Defina os limites de exibição de horas de trabalho da sua agenda diária.</p>
-            
-            <form id="formConfigAgenda">
-                <div class="form-grupo-spa">
-                    <label for="configHoraInicio">Hora de Início da Agenda <span style="color:#888;font-weight:400">(0–23)</span> *</label>
-                    <input type="number" id="configHoraInicio" min="0" max="23" step="1" inputmode="numeric" required>
-                </div>
-                <div class="form-grupo-spa">
-                    <label for="configHoraFim">Hora de Fim da Agenda <span style="color:#888;font-weight:400">(0–23)</span> *</label>
-                    <input type="number" id="configHoraFim" min="0" max="23" step="1" inputmode="numeric" required>
-                </div>
-                
-                <div style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;">
-                    <button type="button" class="btn btn-secondary" id="btnFecharConfig">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Configuração</button>
-                </div>
-            </form>
-        </div>
+        <form id="formConfigAgenda">
+          <div class="form-grupo-spa">
+            <label for="configHoraInicio"
+              >Hora de Início da Agenda
+              <span style="color: #888; font-weight: 400">(0–23)</span> *</label
+            >
+            <input
+              type="number"
+              id="configHoraInicio"
+              min="0"
+              max="23"
+              step="1"
+              inputmode="numeric"
+              required
+            />
+          </div>
+          <div class="form-grupo-spa">
+            <label for="configHoraFim"
+              >Hora de Fim da Agenda
+              <span style="color: #888; font-weight: 400">(0–23)</span> *</label
+            >
+            <input
+              type="number"
+              id="configHoraFim"
+              min="0"
+              max="23"
+              step="1"
+              inputmode="numeric"
+              required
+            />
+          </div>
+
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              margin-top: 20px;
+              justify-content: flex-end;
+            "
+          >
+            <button
+              type="button"
+              class="btn btn-secondary"
+              id="btnFecharConfig"
+            >
+              Cancelar
+            </button>
+            <button type="submit" class="btn btn-primary">
+              Salvar Configuração
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
     <button id="btnBackToTop" class="btn-back-to-top" title="Voltar ao Topo">
-        <i class="fa-solid fa-arrow-up"></i>
+      <i class="fa-solid fa-arrow-up"></i>
     </button>
 
     <div class="toast" id="toast"></div>
@@ -673,5 +1675,5 @@
     <script src="assets/js/view-alunos.js"></script>
     <!-- [7] SPA Router (deve ser o último) -->
     <script src="assets/js/app.js"></script>
-</body>
+  </body>
 </html>
