@@ -138,21 +138,27 @@
               </div>
             </div>
             <div class="agenda-header-navegacao">
-              <div class="nav-calendario">
-                <button
-                  id="btnAnterior"
-                  class="btn-nav-dia"
-                  title="Dia Anterior"
-                >
-                  <i class="fa-solid fa-circle-arrow-left"></i>
-                </button>
-                <span id="dataAtual" class="agenda-data-principal"
-                  >Carregando...</span
-                >
-                <button id="btnProximo" class="btn-nav-dia" title="Próximo Dia">
-                  <i class="fa-solid fa-circle-arrow-right"></i>
-                </button>
-                <button id="btnHoje" class="btn-hoje-pill">
+              <div class="nav-calendario nav-calendario--home">
+                <div class="nav-calendario-main">
+                  <button
+                    id="btnAnterior"
+                    class="btn-nav-dia"
+                    title="Dia Anterior"
+                  >
+                    <i class="fa-solid fa-circle-arrow-left"></i>
+                  </button>
+                  <span id="dataAtual" class="agenda-data-principal"
+                    >Carregando...</span
+                  >
+                  <button
+                    id="btnProximo"
+                    class="btn-nav-dia"
+                    title="Próximo Dia"
+                  >
+                    <i class="fa-solid fa-circle-arrow-right"></i>
+                  </button>
+                </div>
+                <button id="btnHoje" class="btn-hoje-pill btn-hoje-agenda">
                   <i class="fa-solid fa-bullseye"></i>Hoje
                 </button>
               </div>
@@ -200,7 +206,7 @@
         >
           <div class="agenda-sticky-container">
             <div
-              class="mes-header"
+              class="mes-header calendario-header-toolbar"
               style="
                 display: flex;
                 justify-content: space-between;
@@ -210,9 +216,10 @@
                 width: 100%;
               "
             >
-              <div style="display: flex; flex-direction: column">
+              <div class="calendario-header-title-wrap">
                 <h2
                   id="periodoSemanaLabel"
+                  class="calendario-header-title"
                   style="
                     font-size: 1.15rem;
                     color: #ffd700;
@@ -223,11 +230,11 @@
                   Semana de Trabalho
                 </h2>
               </div>
-              <div
-                class="mes-nav"
-                style="display: flex; gap: 6px; align-items: center"
-              >
-                <div class="filtro-aluno-container" style="min-width: 180px">
+              <div class="mes-nav calendario-header-controls">
+                <div
+                  class="filtro-aluno-container calendario-filtro-container"
+                  style="min-width: 180px"
+                >
                   <select
                     id="filtroAlunoSemanal"
                     class="filtro-aluno-select"
@@ -236,22 +243,27 @@
                     <option value="">👥 Todos os Alunos</option>
                   </select>
                 </div>
+                <div class="calendario-nav-arrows">
+                  <button
+                    id="btnSemanaAnterior"
+                    class="btn btn-secondary btn-sm"
+                    title="Semana Anterior"
+                  >
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <button
+                    id="btnSemanaProxima"
+                    class="btn btn-secondary btn-sm"
+                    title="Próxima Semana"
+                  >
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
                 <button
-                  id="btnSemanaAnterior"
-                  class="btn btn-secondary btn-sm"
-                  title="Semana Anterior"
+                  id="btnSemanaHoje"
+                  class="btn btn-secondary btn-sm btn-calendario-hoje"
                 >
-                  <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <button id="btnSemanaHoje" class="btn btn-secondary btn-sm">
                   Hoje
-                </button>
-                <button
-                  id="btnSemanaProxima"
-                  class="btn btn-secondary btn-sm"
-                  title="Próxima Semana"
-                >
-                  <i class="fa-solid fa-chevron-right"></i>
                 </button>
               </div>
             </div>
@@ -267,7 +279,7 @@
           style="display: none"
         >
           <div
-            class="mes-header"
+            class="mes-header calendario-header-toolbar"
             style="
               margin-bottom: 15px;
               display: flex;
@@ -279,6 +291,7 @@
           >
             <h2
               id="nomeMesAno"
+              class="calendario-header-title"
               style="
                 font-size: 1.2rem;
                 color: #ffd700;
@@ -288,11 +301,11 @@
             >
               Carregando...
             </h2>
-            <div
-              class="mes-nav"
-              style="display: flex; gap: 6px; align-items: center"
-            >
-              <div class="filtro-aluno-container" style="min-width: 180px">
+            <div class="mes-nav calendario-header-controls">
+              <div
+                class="filtro-aluno-container calendario-filtro-container"
+                style="min-width: 180px"
+              >
                 <select
                   id="filtroAlunoMensal"
                   class="filtro-aluno-select"
@@ -301,22 +314,27 @@
                   <option value="">👥 Todos os Alunos</option>
                 </select>
               </div>
+              <div class="calendario-nav-arrows">
+                <button
+                  id="btnMesAnterior"
+                  class="btn btn-secondary btn-sm"
+                  title="Mês Anterior"
+                >
+                  <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button
+                  id="btnMesProximo"
+                  class="btn btn-secondary btn-sm"
+                  title="Próximo Mês"
+                >
+                  <i class="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
               <button
-                id="btnMesAnterior"
-                class="btn btn-secondary btn-sm"
-                title="Mês Anterior"
+                id="btnMesHoje"
+                class="btn btn-secondary btn-sm btn-calendario-hoje"
               >
-                <i class="fa-solid fa-chevron-left"></i>
-              </button>
-              <button id="btnMesHoje" class="btn btn-secondary btn-sm">
                 Hoje
-              </button>
-              <button
-                id="btnMesProximo"
-                class="btn btn-secondary btn-sm"
-                title="Próximo Mês"
-              >
-                <i class="fa-solid fa-chevron-right"></i>
               </button>
             </div>
           </div>

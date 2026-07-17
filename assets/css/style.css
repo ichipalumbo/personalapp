@@ -621,24 +621,38 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+  flex-wrap: nowrap;
   width: 100%;
+}
+
+.nav-calendario-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
 }
 
 .agenda-data-principal {
   font-weight: 700;
   color: #ffffff;
-  font-size: 1.05rem;
+  font-size: 1rem;
   letter-spacing: 0.3px;
   text-transform: capitalize;
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
+  flex: 1;
 }
 
 .btn-nav-dia {
   background: transparent;
   border: none;
   color: #ffd700;
-  font-size: 1.6rem;
+  font-size: 1.35rem;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -673,6 +687,46 @@ body {
 
 .btn-hoje-pill:active {
   transform: scale(0.93);
+}
+
+.calendario-header-title-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.calendario-header-title {
+  margin: 0;
+}
+
+.calendario-header-controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.calendario-filtro-container {
+  min-width: 180px;
+}
+
+.calendario-nav-arrows {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendario-nav-arrows .btn {
+  min-width: 34px;
+  padding: 6px 10px;
+}
+
+.calendario-nav-arrows .btn i {
+  font-size: 0.78rem;
+}
+
+.btn-calendario-hoje {
+  white-space: nowrap;
 }
 .agenda-dia-container {
   width: 100%;
@@ -1109,6 +1163,15 @@ body {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+#calendarioSemanalGrid .agenda-dia-aula {
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+}
+
 .dia-semana-hoje-card {
   border: 2px solid #ffd700 !important;
   background: rgba(255, 215, 0, 0.04) !important;
@@ -1427,6 +1490,57 @@ body {
 @keyframes homeShimmer {
   to {
     background-position-x: -200%;
+  }
+}
+
+@media (max-width: 430px) {
+  .nav-calendario {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .nav-calendario-main {
+    width: 100%;
+  }
+
+  .btn-nav-dia {
+    font-size: 1.18rem;
+  }
+
+  .agenda-data-principal {
+    font-size: 0.95rem;
+  }
+
+  .btn-hoje-agenda {
+    width: 100%;
+    justify-content: center;
+    padding: 5px 12px;
+    font-size: 0.72rem;
+  }
+
+  .calendario-header-controls {
+    justify-content: space-between;
+    row-gap: 8px;
+  }
+
+  .calendario-filtro-container {
+    width: 100%;
+    min-width: 0 !important;
+    flex: 1 1 100%;
+  }
+
+  .calendario-filtro-container .filtro-aluno-select {
+    max-width: none;
+  }
+
+  .calendario-nav-arrows {
+    order: 1;
+  }
+
+  .btn-calendario-hoje {
+    order: 2;
+    flex: 1 1 100%;
+    justify-content: center;
   }
 }
 
