@@ -913,6 +913,14 @@ body {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
+}
+.agenda-semana-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 .agenda-semana-card-bottom {
   width: 100%;
@@ -937,6 +945,16 @@ body {
   font-size: 0.69rem;
   font-weight: 700;
   white-space: nowrap;
+  margin-left: auto;
+}
+.agenda-semana-card-time--completed {
+  color: #81c784;
+}
+.agenda-semana-card--completed {
+  opacity: 0.6;
+}
+.agenda-semana-card--completed:hover {
+  opacity: 0.72;
 }
 
 .agenda-dia-aula:hover {
@@ -955,6 +973,9 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.agenda-semana-card-title-group .agenda-dia-aula-nome {
+  min-width: 0;
 }
 
 .agenda-dia-aula-local {
@@ -991,6 +1012,12 @@ body {
   border-radius: 4px;
   font-weight: 700;
   flex-shrink: 0;
+}
+.badge-tag-tipo--reposicao {
+  background: rgba(100, 181, 246, 0.12);
+  border: 1px dashed rgba(100, 181, 246, 0.75);
+  color: #64b5f6;
+  padding: 2px 7px;
 }
 
 /* Objective category borders */

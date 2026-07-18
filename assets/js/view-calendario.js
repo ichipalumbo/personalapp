@@ -218,6 +218,14 @@ window.renderizarHomeSemana = function() {
     
     let html = '';
     const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const agora = new Date();
+    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const minutosAgora = (agora.getHours() * 60) + agora.getMinutes();
+    const converterHorarioParaMinutos = (horario) => {
+        if (!horario || typeof horario !== 'string') return 0;
+        const [horas, minutos] = horario.split(':').map(Number);
+        return (horas * 60) + minutos;
+    };
     const formatarHoraCheia = (hora) => `${String(hora).padStart(2, '0')}:00`;
     const horaInicioPadrao = formatarHoraCheia(agendaConfig?.horaInicio || 8);
 
@@ -231,6 +239,9 @@ window.renderizarHomeSemana = function() {
         const dataAlvoFormatada = diaAtual.toLocaleDateString('pt-BR');
         const dataIso = `${diaAtual.getFullYear()}-${String(diaAtual.getMonth() + 1).padStart(2, '0')}-${diaNum}`;
         const ehHoje = diaAtual.toDateString() === new Date().toDateString();
+        const diaAtualPuro = new Date(diaAtual.getFullYear(), diaAtual.getMonth(), diaAtual.getDate());
+        const diaJaPassou = diaAtualPuro < hoje;
+        const diaEhHoje = diaAtualPuro.getTime() === hoje.getTime();
         const tituloDia = `${diaTexto === 'Sábado' ? diaTexto : `${diaTexto}-feira`}, ${diaNum}/${mesNum}`;
         
         // [FILTERED] Apply student filter and get only aula/reposição types
@@ -250,6 +261,11 @@ window.renderizarHomeSemana = function() {
                 const tipo = comp.tipo || 'aula';
                 const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
                 let tagVisualHtml = '';
+                let tagNomeHtml = '';
+                const compromissoConcluido = diaJaPassou || (diaEhHoje && converterHorarioParaMinutos(comp.horarioFim) < minutosAgora);
+                const iconePeriodo = compromissoConcluido ? 'fa-solid fa-check' : 'fa-regular fa-clock';
+                const classeCardConcluido = compromissoConcluido ? ' agenda-semana-card--completed' : '';
+                const classeTempoConcluido = compromissoConcluido ? ' agenda-semana-card-time--completed' : '';
 
                 if (tipo === 'aula') {
                     const aluno = typeof window.getAluno === 'function' ? window.getAluno(comp.alunoId) : null;
@@ -258,7 +274,7 @@ window.renderizarHomeSemana = function() {
                     const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
 
                     if (comp.reagendada || comp.isReposicao) {
-                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(100, 181, 246, 0.15); color: #64B5F6; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
+                        tagNomeHtml = `<span class="badge-tag-tipo badge-tag-tipo--reposicao"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
                     } else if (comp.frequencia === 'semanal') {
                         tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
                     } else {
@@ -266,10 +282,13 @@ window.renderizarHomeSemana = function() {
                     }
 
                     cardsHtml += `
-                        <div class="agenda-dia-aula agenda-semana-card objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
+                        <div class="agenda-dia-aula agenda-semana-card objetivo-${objetivo.replace(/\s/g,'')}${classeCardConcluido}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
                             <div class="agenda-semana-card-top">
-                                <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
-                                <span class="agenda-semana-card-time"><i class="fa-regular fa-clock"></i> ${periodo}</span>
+                                <div class="agenda-semana-card-title-group">
+                                    <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                                    ${tagNomeHtml}
+                                </div>
+                                <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                             </div>
                             <div class="agenda-semana-card-bottom">
                                 <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
@@ -284,10 +303,10 @@ window.renderizarHomeSemana = function() {
                     tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
                     
                     cardsHtml += `
-                        <div class="agenda-dia-aula agenda-semana-card slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
+                        <div class="agenda-dia-aula agenda-semana-card slot-deslocamento${classeCardConcluido}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
                             <div class="agenda-semana-card-top">
                                 <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
-                                <span class="agenda-semana-card-time"><i class="fa-regular fa-clock"></i> ${periodo}</span>
+                                <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                             </div>
                             <div class="agenda-semana-card-bottom">
                                 <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'}</span>
@@ -301,10 +320,10 @@ window.renderizarHomeSemana = function() {
                     tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> Bloqueio</span>`;
 
                     cardsHtml += `
-                        <div class="agenda-dia-aula agenda-semana-card slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
+                        <div class="agenda-dia-aula agenda-semana-card slot-bloqueado${classeCardConcluido}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
                             <div class="agenda-semana-card-top">
                                 <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
-                                <span class="agenda-semana-card-time"><i class="fa-regular fa-clock"></i> ${periodo}</span>
+                                <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                             </div>
                             <div class="agenda-semana-card-bottom">
                                 <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'}</span>
