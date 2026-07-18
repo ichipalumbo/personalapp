@@ -479,7 +479,7 @@
             class="fa-solid fa-circle-question"
             style="color: #ffd700; margin-right: 8px"
           ></i
-          >Qual o tipo de agendamento?
+          >O que você deseja criar?
         </h3>
         <p
           id="infoEscolhaSlot"
@@ -490,170 +490,57 @@
             font-weight: 500;
           "
         ></p>
-        <div style="display: flex; flex-direction: column; gap: 12px">
+        <div class="modal-escolha-lista">
           <button
             type="button"
-            id="btnEscolhaUnico"
-            class="btn btn-primary"
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: flex-start;
-              gap: 14px;
-              padding: 15px;
-              text-align: left;
-              background: #1e1e1e;
-              color: #fff;
-              border: 1px solid #2d2d2d;
-              border-radius: 12px;
-              width: 100%;
-            "
+            id="btnEscolhaAula"
+            class="btn btn-primary modal-escolha-opcao"
           >
-            <span
-              style="
-                font-size: 1.4rem;
-                color: #81c784;
-                background: rgba(129, 199, 132, 0.1);
-                width: 42px;
-                height: 42px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 8px;
-                flex-shrink: 0;
-              "
+            <span class="modal-escolha-icone modal-escolha-icone-aula"
               ><i class="fa-solid fa-calendar-day"></i
             ></span>
-            <div>
-              <strong
-                style="
-                  display: block;
-                  font-size: 0.95rem;
-                  color: #fff;
-                  font-weight: 700;
-                "
-                >Agendamento Único</strong
-              >
-              <span
-                style="
-                  font-size: 0.72rem;
-                  color: #888;
-                  font-weight: 400;
-                  display: block;
-                  margin-top: 2px;
-                "
-                >Aula pontual, trânsito ou bloqueio</span
-              >
+            <div class="modal-escolha-texto">
+              <strong>Agendar Aula</strong>
+              <span>Crie uma aula pontual ou recorrente para um aluno</span>
             </div>
           </button>
           <button
             type="button"
-            id="btnEscolhaRecorrente"
-            class="btn btn-primary"
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: flex-start;
-              gap: 14px;
-              padding: 15px;
-              text-align: left;
-              background: #1e1e1e;
-              color: #fff;
-              border: 1px solid #2d2d2d;
-              border-radius: 12px;
-              width: 100%;
-            "
+            id="btnEscolhaBloqueio"
+            class="btn btn-primary modal-escolha-opcao"
           >
-            <span
-              style="
-                font-size: 1.4rem;
-                color: #ffd700;
-                background: rgba(255, 215, 0, 0.1);
-                width: 42px;
-                height: 42px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 8px;
-                flex-shrink: 0;
-              "
-              ><i class="fa-solid fa-infinity"></i
+            <span class="modal-escolha-icone modal-escolha-icone-bloqueio"
+              ><i class="fa-solid fa-lock"></i
             ></span>
-            <div>
-              <strong
-                style="
-                  display: block;
-                  font-size: 0.95rem;
-                  color: #fff;
-                  font-weight: 700;
-                "
-                >Série Recorrente</strong
-              >
-              <span
-                style="
-                  font-size: 0.72rem;
-                  color: #888;
-                  font-weight: 400;
-                  display: block;
-                  margin-top: 2px;
-                "
-                >Grade recorrente semanal ou diária</span
-              >
+            <div class="modal-escolha-texto">
+              <strong>Agendar Bloqueio</strong>
+              <span>Reserve um horário indisponível com ou sem dia inteiro</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            id="btnEscolhaDeslocamento"
+            class="btn btn-primary modal-escolha-opcao"
+          >
+            <span class="modal-escolha-icone modal-escolha-icone-deslocamento"
+              ><i class="fa-solid fa-car-side"></i
+            ></span>
+            <div class="modal-escolha-texto">
+              <strong>Agendar Deslocamento</strong>
+              <span>Bloqueie um intervalo para trânsito ou deslocamento</span>
             </div>
           </button>
           <button
             type="button"
             id="btnEscolhaReposicao"
-            class="btn btn-primary"
-            style="
-              display: flex;
-              align-items: center;
-              justify-content: flex-start;
-              gap: 14px;
-              padding: 15px;
-              text-align: left;
-              background: #1e1e1e;
-              color: #fff;
-              border: 1px solid #2d2d2d;
-              border-radius: 12px;
-              width: 100%;
-            "
+            class="btn btn-primary modal-escolha-opcao"
           >
-            <span
-              style="
-                font-size: 1.4rem;
-                color: #64b5f6;
-                background: rgba(100, 181, 246, 0.1);
-                width: 42px;
-                height: 42px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 8px;
-                flex-shrink: 0;
-              "
+            <span class="modal-escolha-icone modal-escolha-icone-reposicao"
               ><i class="fa-solid fa-arrows-rotate"></i
             ></span>
-            <div>
-              <strong
-                style="
-                  display: block;
-                  font-size: 0.95rem;
-                  color: #fff;
-                  font-weight: 700;
-                "
-                >Agendar Reposição</strong
-              >
-              <span
-                style="
-                  font-size: 0.72rem;
-                  color: #888;
-                  font-weight: 400;
-                  display: block;
-                  margin-top: 2px;
-                "
-                >Encaixar um aluno pendente da fila</span
-              >
+            <div class="modal-escolha-texto">
+              <strong>Agendar Reposição</strong>
+              <span>Encaixe um aluno pendente sem criar recorrência</span>
             </div>
           </button>
         </div>
@@ -792,13 +679,24 @@
     </div>
     <div class="modal-overlay" id="modalAgendamento" style="display: none">
       <div class="modal" style="max-width: 440px">
-        <h3>
+        <h3 id="agendaTituloModal">
           <i
             class="fa-solid fa-calendar-day"
             style="color: #ffd700; margin-right: 8px"
           ></i
-          >Agendar Horário Único
+          >Novo Agendamento
         </h3>
+        <p
+          id="agendaSubtituloModal"
+          style="
+            font-size: 0.78rem;
+            color: #a8a8a8;
+            margin-bottom: 14px;
+            font-weight: 500;
+          "
+        >
+          Escolha o tipo e complete os dados principais do compromisso.
+        </p>
 
         <div
           class="tab-tipo-agendamento"
@@ -888,6 +786,17 @@
               font-weight: 600;
             "
           ></p>
+          <p
+            id="infoTipoAgendamento"
+            style="
+              font-size: 0.75rem;
+              color: #9a9a9a;
+              margin-bottom: 12px;
+              font-weight: 600;
+            "
+          >
+            Aula
+          </p>
           <div
             id="agendaHorarioDuracaoGrid"
             style="
@@ -942,6 +851,24 @@
               </div>
             </div>
           </div>
+          <div class="form-grupo-spa" id="campoRecorrenciaAgendamento">
+            <label for="btnConfigurarRecorrenciaAgendamento">Repetição</label>
+            <button
+              type="button"
+              id="btnConfigurarRecorrenciaAgendamento"
+              class="modal-recorrencia-trigger"
+            >
+              <span class="modal-recorrencia-trigger-texto">
+                <span id="agendaResumoRecorrencia">Não se repete</span>
+                <small id="agendaResumoRecorrenciaAux"
+                  >A configuração detalhada da repetição será conectada no próximo passo.</small
+                >
+              </span>
+              <span class="modal-recorrencia-trigger-icone"
+                ><i class="fa-solid fa-chevron-right"></i
+              ></span>
+            </button>
+          </div>
 
           <div
             style="
@@ -956,332 +883,244 @@
             <button type="button" class="btn btn-secondary" id="btnFecharModal">
               Cancelar
             </button>
-            <button type="submit" class="btn btn-primary">Agendar</button>
+            <button type="submit" class="btn btn-primary" id="btnSalvarAgendamento">
+              Agendar
+            </button>
           </div>
         </form>
       </div>
     </div>
     <div class="modal-overlay" id="modalRecorrencia" style="display: none">
-      <div class="modal" style="max-width: 440px">
+      <div class="modal modal-recorrencia-secundario" style="max-width: 420px">
         <h3>
           <i
             class="fa-solid fa-infinity"
             style="color: #ffd700; margin-right: 8px"
           ></i
-          >Agendar Horário Recorrente
+          >Configurar Repetição
         </h3>
-
-        <div
-          class="tab-tipo-agendamento"
+        <p
+          id="recorrenciaModalSubtitulo"
           style="
-            display: flex;
-            gap: 6px;
-            margin-bottom: 18px;
-            background: #0d0d0d;
-            padding: 4px;
-            border-radius: 8px;
-            border: 1px solid #2a2a2a;
+            font-size: 0.78rem;
+            color: #a8a8a8;
+            margin-bottom: 14px;
+            font-weight: 500;
           "
         >
-          <button
-            type="button"
-            class="tab-btn active"
-            id="tabRecorrenteAula"
-            onclick="selecionarTipoRecorrente('aula')"
-          >
-            <i class="fa-solid fa-graduation-cap"></i> Aula
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            id="tabRecorrenteDeslocamento"
-            onclick="selecionarTipoRecorrente('deslocamento')"
-          >
-            <i class="fa-solid fa-car-side"></i> Deslocamento
-          </button>
-          <button
-            type="button"
-            class="tab-btn"
-            id="tabRecorrenteBloqueio"
-            onclick="selecionarTipoRecorrente('bloqueio')"
-          >
-            <i class="fa-solid fa-lock"></i> Bloquear
-          </button>
-        </div>
+          Configure a repetição sem perder o contexto do formulário principal.
+        </p>
 
         <form id="formRecorrencia">
-          <input type="hidden" id="recorrenciaTipo" value="aula" />
-          <div class="recorrencia-secao-titulo">1. Dados principais</div>
-          <div id="camposRecorrenteAula" class="form-grupo-spa">
-            <label for="recorrenciaAluno">Aluno *</label>
-            <select id="recorrenciaAluno">
-              <option value="">Selecione um aluno...</option>
-            </select>
-          </div>
-          <div
-            id="camposRecorrenteBloqueio"
-            class="form-grupo-spa"
-            style="display: none"
-          >
-            <label for="recorrenciaDescricao"
-              >Motivo / Descrição do Bloqueio *</label
-            >
-            <input
-              type="text"
-              id="recorrenciaDescricao"
-              placeholder="Ex: Almoço fixo / Particular / Aula Teórica"
-            />
-          </div>
-          <div
-            id="camposRecorrenteBloqueioDiaInteiro"
-            class="form-grupo-spa"
-            style="display: none; margin-top: -6px; margin-bottom: 10px"
-          >
-            <label class="full-day-toggle" for="recorrenciaBloqueioDiaInteiro">
-              <input type="checkbox" id="recorrenciaBloqueioDiaInteiro" />
-              <span class="full-day-toggle-ui">
-                <span class="full-day-toggle-text"
-                  ><i class="fa-solid fa-sun"></i> Dia inteiro (24h)</span
-                >
-                <span class="full-day-toggle-pill">OFF</span>
-              </span>
-            </label>
-          </div>
-          <div class="form-grupo-spa" style="margin-bottom: 14px">
-            <label for="recorrenciaDataInicio">Início da recorrência *</label>
-            <input type="date" id="recorrenciaDataInicio" required />
-            <small
-              style="
-                display: block;
-                margin-top: 6px;
-                color: #888;
-                font-size: 0.75rem;
-              "
-              >Clique no campo para abrir o calendário e escolher a data.</small
-            >
-          </div>
-          <div
-            id="recorrenciaHorarioDuracaoGrid"
-            style="
-              display: grid;
-              grid-template-columns: 1fr 1fr;
-              gap: 10px;
-              margin-bottom: 14px;
-            "
-          >
-            <div class="form-grupo-spa" style="margin-bottom: 0">
-              <label for="recorrenciaHoraInicio">Início *</label>
-              <select id="recorrenciaHoraInicio" required></select>
-            </div>
-            <div class="form-grupo-spa" style="margin-bottom: 0">
-              <label for="recorrenciaDuracao">Duração *</label>
-              <select id="recorrenciaDuracao" required style="display: none">
-                <option value="30">30 min</option>
-                <option value="60" selected>1h 00min</option>
-                <option value="90">1h 30min</option>
-                <option value="120">2h 00min</option>
-                <option value="150">2h 30min</option>
-                <option value="180">3h 00min</option>
-                <option value="210">3h 30min</option>
-                <option value="240">4h 00min</option>
-                <option value="270">4h 30min</option>
-                <option value="300">5h 00min</option>
-                <option value="330">5h 30min</option>
-                <option value="360">6h 00min</option>
-                <option value="390">6h 30min</option>
-                <option value="420">7h 00min</option>
-                <option value="450">7h 30min</option>
-                <option value="480">8h 00min</option>
-              </select>
-              <div
-                class="duracao-stepper"
-                data-target-select="recorrenciaDuracao"
+          <div class="modal-recorrencia-body">
+            <div class="recorrencia-secao-titulo">1. Início</div>
+            <div class="form-grupo-spa" style="margin-bottom: 14px">
+              <label for="recorrenciaDataInicio">Início da recorrência *</label>
+              <input type="date" id="recorrenciaDataInicio" required />
+              <small
+                style="
+                  display: block;
+                  margin-top: 6px;
+                  color: #888;
+                  font-size: 0.75rem;
+                "
+                >A série começa a partir da data selecionada no calendário.</small
               >
-                <button
-                  type="button"
-                  class="duracao-stepper-btn"
-                  data-action="decrease"
-                  aria-label="Diminuir duração"
-                >
-                  <i class="fa-solid fa-minus"></i>
-                </button>
-                <span class="duracao-stepper-value">1h 00min</span>
-                <button
-                  type="button"
-                  class="duracao-stepper-btn"
-                  data-action="increase"
-                  aria-label="Aumentar duração"
-                >
-                  <i class="fa-solid fa-plus"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-          <div
-            class="form-grupo-spa"
-            id="recorrenciaEscopoCriacaoContainer"
-            style="margin-bottom: 14px"
-          >
-            <label>Como aplicar no calendário?</label>
-            <input
-              type="hidden"
-              id="recorrenciaEscopoCriacao"
-              value="fromDate"
-            />
-            <div
-              class="escopo-recorrencia-grid"
-              id="recorrenciaEscopoCriacaoGrid"
-            >
-              <button
-                type="button"
-                class="btn-escopo-recorrencia active"
-                data-escopo-criacao="fromDate"
-              >
-                Daqui pra frente
-              </button>
-              <button
-                type="button"
-                class="btn-escopo-recorrencia"
-                data-escopo-criacao="monthOfDate"
-              >
-                Este mês todo
-              </button>
-            </div>
-            <small
-              id="recorrenciaEscopoCriacaoResumo"
-              style="
-                display: block;
-                margin-top: 6px;
-                color: #bdbdbd;
-                font-size: 0.78rem;
-              "
-              >Vai criar a série da data escolhida em diante.</small
-            >
-          </div>
-
-          <div class="recorrencia-secao-titulo">2. Repetição</div>
-          <details
-            id="painelRepeticaoRecorrencia"
-            class="recorrencia-painel-opcoes"
-          >
-            <summary>Configurar padrão de repetição</summary>
-            <div class="form-grupo-spa" style="margin-top: 12px">
-              <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
-              <select
-                id="recorrenciaPadrao"
-                onchange="window.mudarPadraoRecorrencia()"
-                required
-              >
-                <option value="semanal" selected>Semanal</option>
-                <option value="diaria">Diária</option>
-                <option value="mensal">Mensal</option>
-                <option value="anual">Anual</option>
-              </select>
             </div>
             <div
               class="form-grupo-spa"
-              style="
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 10px;
-                margin-bottom: 14px;
-              "
-            >
-              <div style="display: flex; flex-direction: column; gap: 6px">
-                <label for="recorrenciaIntervalo">Repetir a cada *</label>
-                <input
-                  type="number"
-                  id="recorrenciaIntervalo"
-                  value="1"
-                  min="1"
-                  required
-                  style="text-align: center"
-                />
-              </div>
-              <div style="display: flex; flex-direction: column; gap: 6px">
-                <label>Unidade</label>
-                <div
-                  id="labelUnidadeRecorrencia"
-                  style="
-                    height: 45px;
-                    display: flex;
-                    align-items: center;
-                    color: #fff;
-                    font-size: 0.9rem;
-                    font-weight: 700;
-                    background: #0d0d0d;
-                    padding-left: 12px;
-                    border: 1px solid #333;
-                    border-radius: 8px;
-                  "
-                >
-                  semana(s)
-                </div>
-              </div>
-            </div>
-            <div
-              class="form-grupo-spa"
-              id="containerDiasSemanaRecorrencia"
+              id="recorrenciaEscopoCriacaoContainer"
               style="margin-bottom: 16px"
             >
-              <label style="margin-bottom: 4px"
-                >Selecione os dias da semana *</label
-              >
+              <label>Como aplicar no calendário?</label>
+              <input
+                type="hidden"
+                id="recorrenciaEscopoCriacao"
+                value="fromDate"
+              />
               <div
+                class="escopo-recorrencia-grid"
+                id="recorrenciaEscopoCriacaoGrid"
+              >
+                <button
+                  type="button"
+                  class="btn-escopo-recorrencia active"
+                  data-escopo-criacao="fromDate"
+                >
+                  Daqui pra frente
+                </button>
+                <button
+                  type="button"
+                  class="btn-escopo-recorrencia"
+                  data-escopo-criacao="monthOfDate"
+                >
+                  Este mês todo
+                </button>
+              </div>
+              <small
+                id="recorrenciaEscopoCriacaoResumo"
                 style="
-                  display: flex;
-                  gap: 4px;
-                  justify-content: space-between;
-                  flex-wrap: wrap;
+                  display: block;
+                  margin-top: 6px;
+                  color: #bdbdbd;
+                  font-size: 0.78rem;
+                "
+                >Vai criar a série da data escolhida em diante.</small
+              >
+            </div>
+
+            <div class="recorrencia-secao-titulo">2. Repetição</div>
+            <div class="recorrencia-painel-opcoes">
+              <div class="form-grupo-spa" style="margin-top: 2px">
+                <label for="recorrenciaPadrao">Padrão de Recorrência *</label>
+                <select
+                  id="recorrenciaPadrao"
+                  onchange="window.mudarPadraoRecorrencia()"
+                  required
+                >
+                  <option value="semanal" selected>Semanal</option>
+                  <option value="diaria">Diária</option>
+                  <option value="mensal">Mensal</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
+              <div
+                class="form-grupo-spa"
+                style="
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 10px;
+                  margin-bottom: 14px;
                 "
               >
-                <button type="button" class="btn-dia-pill" data-dia="Segunda">
-                  Seg
-                </button>
-                <button type="button" class="btn-dia-pill" data-dia="Terça">
-                  Ter
-                </button>
-                <button type="button" class="btn-dia-pill" data-dia="Quarta">
-                  Qua
-                </button>
-                <button type="button" class="btn-dia-pill" data-dia="Quinta">
-                  Qui
-                </button>
-                <button type="button" class="btn-dia-pill" data-dia="Sexta">
-                  Sex
-                </button>
-                <button type="button" class="btn-dia-pill" data-dia="Sábado">
-                  Sáb
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label for="recorrenciaIntervalo">Repetir a cada *</label>
+                  <input
+                    type="number"
+                    id="recorrenciaIntervalo"
+                    value="1"
+                    min="1"
+                    required
+                    style="text-align: center"
+                  />
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <label>Unidade</label>
+                  <div
+                    id="labelUnidadeRecorrencia"
+                    style="
+                      height: 45px;
+                      display: flex;
+                      align-items: center;
+                      color: #fff;
+                      font-size: 0.9rem;
+                      font-weight: 700;
+                      background: #0d0d0d;
+                      padding-left: 12px;
+                      border: 1px solid #333;
+                      border-radius: 8px;
+                    "
+                  >
+                    semana(s)
+                  </div>
+                </div>
+              </div>
+              <div
+                class="form-grupo-spa"
+                id="containerDiasSemanaRecorrencia"
+                style="margin-bottom: 16px"
+              >
+                <label style="margin-bottom: 4px"
+                  >Selecione os dias da semana *</label
+                >
+                <div
+                  style="
+                    display: flex;
+                    gap: 4px;
+                    justify-content: space-between;
+                    flex-wrap: wrap;
+                  "
+                >
+                  <button type="button" class="btn-dia-pill" data-dia="Segunda">
+                    Seg
+                  </button>
+                  <button type="button" class="btn-dia-pill" data-dia="Terça">
+                    Ter
+                  </button>
+                  <button type="button" class="btn-dia-pill" data-dia="Quarta">
+                    Qua
+                  </button>
+                  <button type="button" class="btn-dia-pill" data-dia="Quinta">
+                    Qui
+                  </button>
+                  <button type="button" class="btn-dia-pill" data-dia="Sexta">
+                    Sex
+                  </button>
+                  <button type="button" class="btn-dia-pill" data-dia="Sábado">
+                    Sáb
+                  </button>
+                </div>
+              </div>
+              <div
+                id="infoRecorrenciaMensalAnual"
+                style="
+                  background: rgba(255, 215, 0, 0.05);
+                  padding: 12px;
+                  border-radius: 8px;
+                  margin-bottom: 2px;
+                  border: 1px dashed rgba(255, 215, 0, 0.2);
+                "
+              >
+                <p
+                  style="
+                    font-size: 0.75rem;
+                    color: #ffd700;
+                    margin: 0;
+                    line-height: 1.4;
+                    font-weight: 600;
+                  "
+                  id="textoInfoMensalAnual"
+                ></p>
+              </div>
+            </div>
+
+            <div class="recorrencia-secao-titulo">3. Término</div>
+            <div class="recorrencia-painel-opcoes">
+              <div class="form-grupo-spa">
+                <label for="recorrenciaEndCondition">Encerrar *</label>
+                <select id="recorrenciaEndCondition" required>
+                  <option value="never" selected>Nunca</option>
+                  <option value="untilDate">Em uma data específica</option>
+                  <option value="occurrences">Após X ocorrências</option>
+                </select>
+              </div>
+              <div
+                class="form-grupo-spa"
+                id="containerDataFimRecorrencia"
+                style="display: none"
+              >
+                <label for="recorrenciaUntilDate">Data final</label>
+                <input type="date" id="recorrenciaUntilDate" />
+              </div>
+              <div
+                class="form-grupo-spa"
+                id="containerOcorrenciasRecorrencia"
+                style="display: none"
+              >
+                <label for="recorrenciaOccurrencesCount">Quantidade de ocorrências</label>
+                <input
+                  type="number"
+                  id="recorrenciaOccurrencesCount"
+                  min="1"
+                  value="1"
+                />
               </div>
             </div>
             <div
-              id="infoRecorrenciaMensalAnual"
-              style="
-                background: rgba(255, 215, 0, 0.05);
-                padding: 12px;
-                border-radius: 8px;
-                margin-bottom: 2px;
-                border: 1px dashed rgba(255, 215, 0, 0.2);
-              "
-            >
-              <p
-                style="
-                  font-size: 0.75rem;
-                  color: #ffd700;
-                  margin: 0;
-                  line-height: 1.4;
-                  font-weight: 600;
-                "
-                id="textoInfoMensalAnual"
-              ></p>
-            </div>
-          </details>
-          <div
-            id="resumoRecorrenciaCadastro"
-            class="resumo-recorrencia-cadastro"
-          ></div>
-
+              id="resumoRecorrenciaCadastro"
+              class="resumo-recorrencia-cadastro"
+            ></div>
+          </div>
           <div
             style="
               display: flex;
@@ -1694,6 +1533,8 @@
     <script src="assets/js/widget-stepper-duracao.js"></script>
     <script src="assets/js/widget-bloqueio.js"></script>
     <!-- [5] Modais de Agendamento -->
+    <script src="assets/js/features/modals/scheduling-flow-state.js"></script>
+    <script src="assets/js/features/modals/scheduling-serializer.js"></script>
     <script src="assets/js/modal-agendamento.js"></script>
     <script src="assets/js/modal-acao-slot.js"></script>
     <!-- [6] Page Views -->
