@@ -1,6 +1,6 @@
 // [TAG-VIEW-CALENDARIO] view-calendario.js
 // Responsabilidade: Orquestração da aba Calendário — alternância Dia/Mês, dashboard KPI e visão semanal da Home
-// Depende de: state.js, storage.js, utils-kpi.js, calendario-engine.js, modal-acao-slot.js (abrirModalAcaoSlot — em runtime), view-home.js (getAluno — em runtime) - Controle Mensal & Semanal na SPA
+// Depende de: state.js, storage.js, utils-kpi.js, alunos-helpers.js (window.getAluno), agenda-card-template.js (window.criarCardAgendamento), calendario-engine.js, modal-acao-slot.js (abrirModalAcaoSlot — em runtime) - Controle Mensal & Semanal na SPA
 window.modoCalendarioAtivo = 'dia';
 window.semanaReferencia = new Date();
 window.filtroAlunoSemanalId = null; // Estado do filtro de aluno na semana exibida na Home
@@ -258,82 +258,12 @@ window.renderizarHomeSemana = function() {
 
         if (compromissosDoDia.length > 0) {
             compromissosDoDia.forEach(comp => {
-                const tipo = comp.tipo || 'aula';
-                const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
-                let tagVisualHtml = '';
-                let tagNomeHtml = '';
                 const compromissoConcluido = diaJaPassou || (diaEhHoje && converterHorarioParaMinutos(comp.horarioFim) < minutosAgora);
-                const iconePeriodo = compromissoConcluido ? 'fa-solid fa-check' : 'fa-regular fa-clock';
-                const classeCardConcluido = compromissoConcluido ? ' agenda-semana-card--completed' : '';
-                const classeTempoConcluido = compromissoConcluido ? ' agenda-semana-card-time--completed' : '';
-
-                if (tipo === 'aula') {
-                    const aluno = typeof window.getAluno === 'function' ? window.getAluno(comp.alunoId) : null;
-                    const nome = aluno ? aluno.nome : '❓ Aluno Removido';
-                    const objetivo = aluno ? aluno.objective || aluno.objetivo : 'Outro';
-                    const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
-
-                    if (comp.reagendada || comp.isReposicao) {
-                        tagNomeHtml = `<span class="badge-tag-tipo badge-tag-tipo--reposicao"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
-                    } else if (comp.frequencia === 'semanal') {
-                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
-                    } else {
-                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(129, 199, 132, 0.15); color: #81C784; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
-                    }
-
-                    cardsHtml += `
-                        <div class="agenda-dia-aula agenda-semana-card objetivo-${objetivo.replace(/\s/g,'')}${classeCardConcluido}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
-                            <div class="agenda-semana-card-top">
-                                <div class="agenda-semana-card-title-group">
-                                    <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
-                                    ${tagNomeHtml}
-                                </div>
-                                <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
-                            </div>
-                            <div class="agenda-semana-card-bottom">
-                                <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
-                                <div class="agenda-semana-card-meta">
-                                    <span class="agenda-dia-aula-detalhes">${objetivo}</span>
-                                    ${tagVisualHtml}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else if (tipo === 'deslocamento') {
-                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
-                    
-                    cardsHtml += `
-                        <div class="agenda-dia-aula agenda-semana-card slot-deslocamento${classeCardConcluido}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
-                            <div class="agenda-semana-card-top">
-                                <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
-                                <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
-                            </div>
-                            <div class="agenda-semana-card-bottom">
-                                <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'}</span>
-                                <div class="agenda-semana-card-meta">
-                                    ${tagVisualHtml}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                } else if (tipo === 'bloqueio') {
-                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> Bloqueio</span>`;
-
-                    cardsHtml += `
-                        <div class="agenda-dia-aula agenda-semana-card slot-bloqueado${classeCardConcluido}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
-                            <div class="agenda-semana-card-top">
-                                <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
-                                <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
-                            </div>
-                            <div class="agenda-semana-card-bottom">
-                                <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'}</span>
-                                <div class="agenda-semana-card-meta">
-                                    ${tagVisualHtml}
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                }
+                cardsHtml += window.criarCardAgendamento(comp, {
+                    dataReferencia: new Date(diaAtual),
+                    compromissoConcluido: compromissoConcluido,
+                    onclick: `abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')`
+                });
             });
         } else {
             cardsHtml = `
