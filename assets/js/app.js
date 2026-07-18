@@ -60,23 +60,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (typeof window.inicializarHome === 'function') {
         await window.inicializarHome();
     }
-    const btnToTop = document.getElementById('btnBackToTop');
-    
-    if (btnToTop) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 250) {
-                btnToTop.classList.add('show');
-            } else {
-                btnToTop.classList.remove('show');
-            }
-        });
-        btnToTop.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        });
-    }
     const atualizarAlturaHeader = () => {
         const header = document.querySelector('.header');
         if (header) {

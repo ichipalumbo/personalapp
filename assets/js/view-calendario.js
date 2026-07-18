@@ -218,6 +218,9 @@ window.renderizarHomeSemana = function() {
     
     let html = '';
     const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const formatarHoraCheia = (hora) => `${String(hora).padStart(2, '0')}:00`;
+    const horaInicioPadrao = formatarHoraCheia(agendaConfig?.horaInicio || 8);
+
     for (let d = 0; d < 6; d++) {
         const diaAtual = new Date(segundaFeira);
         diaAtual.setDate(segundaFeira.getDate() + d);
@@ -226,7 +229,9 @@ window.renderizarHomeSemana = function() {
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
         const dataAlvoFormatada = diaAtual.toLocaleDateString('pt-BR');
+        const dataIso = `${diaAtual.getFullYear()}-${String(diaAtual.getMonth() + 1).padStart(2, '0')}-${diaNum}`;
         const ehHoje = diaAtual.toDateString() === new Date().toDateString();
+        const tituloDia = `${diaTexto === 'Sábado' ? diaTexto : `${diaTexto}-feira`}, ${diaNum}/${mesNum}`;
         
         // [FILTERED] Apply student filter and get only aula/reposição types
         let compromissosDoDia = aulas
@@ -261,63 +266,77 @@ window.renderizarHomeSemana = function() {
                     }
 
                     cardsHtml += `
-                        <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                        <div class="agenda-dia-aula agenda-semana-card objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
+                            <div class="agenda-semana-card-top">
                                 <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
-                                ${tagVisualHtml}
+                                <span class="agenda-semana-card-time"><i class="fa-regular fa-clock"></i> ${periodo}</span>
                             </div>
-                            <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
-                            <span class="agenda-dia-aula-detalhes">${objetivo} (${periodo})</span>
+                            <div class="agenda-semana-card-bottom">
+                                <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
+                                <div class="agenda-semana-card-meta">
+                                    <span class="agenda-dia-aula-detalhes">${objetivo}</span>
+                                    ${tagVisualHtml}
+                                </div>
+                            </div>
                         </div>
                     `;
                 } else if (tipo === 'deslocamento') {
                     tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
                     
                     cardsHtml += `
-                        <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                        <div class="agenda-dia-aula agenda-semana-card slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
+                            <div class="agenda-semana-card-top">
                                 <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
-                                ${tagVisualHtml}
+                                <span class="agenda-semana-card-time"><i class="fa-regular fa-clock"></i> ${periodo}</span>
                             </div>
-                            <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'} (${periodo})</span>
+                            <div class="agenda-semana-card-bottom">
+                                <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'}</span>
+                                <div class="agenda-semana-card-meta">
+                                    ${tagVisualHtml}
+                                </div>
+                            </div>
                         </div>
                     `;
                 } else if (tipo === 'bloqueio') {
                     tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> Bloqueio</span>`;
 
                     cardsHtml += `
-                        <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
+                        <div class="agenda-dia-aula agenda-semana-card slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')">
+                            <div class="agenda-semana-card-top">
                                 <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
-                                ${tagVisualHtml}
+                                <span class="agenda-semana-card-time"><i class="fa-regular fa-clock"></i> ${periodo}</span>
                             </div>
-                            <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'} (${periodo})</span>
+                            <div class="agenda-semana-card-bottom">
+                                <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'}</span>
+                                <div class="agenda-semana-card-meta">
+                                    ${tagVisualHtml}
+                                </div>
+                            </div>
                         </div>
                     `;
                 }
             });
         } else {
             cardsHtml = `
-                <div style="padding: 10px; background: #0F0F0F; border-radius: 8px; border: 1px dashed #222; text-align: center;">
-                    <span style="font-size: 0.75rem; color: #555;"><i class="fa-regular fa-calendar" style="margin-right: 5px;"></i> Sem agendamentos para este dia</span>
-                </div>
+                <button type="button" class="semana-dia-empty-slot" onclick="window.abrirNovoAgendamentoSemana('${dataIso}', '${horaInicioPadrao}')">
+                    <span class="semana-dia-empty-slot-icon"><i class="fa-regular fa-calendar-plus"></i></span>
+                    <span class="semana-dia-empty-slot-text">Sem agendamentos para este dia</span>
+                </button>
             `;
         }
         html += `
-            <div class="semana-dia-box ${ehHoje ? 'dia-semana-hoje-card' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}" style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <div class="semana-dia-header" onclick="window.irParaDiaDestaSemana('${dataAlvoFormatada}')">
-                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-                        🎯 ${diaTexto === 'Sábado' ? diaTexto : `${diaTexto}-feira`} ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 900;">HOJE</span>' : ''}
+            <section class="semana-dia-box ${ehHoje ? 'is-today' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}">
+                <button type="button" class="semana-dia-header" onclick="window.irParaDiaDestaSemana('${dataAlvoFormatada}')">
+                    <span class="semana-dia-header-main">
+                        <span class="semana-dia-title">${tituloDia}</span>
+                        ${ehHoje ? '<span class="semana-dia-today-badge">HOJE</span>' : ''}
                     </span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="btn-semana-ir-dia"><i class="fa-regular fa-folder-open"></i> Abrir dia</span>
-                        <span style="font-size: 0.8rem; background: ${ehHoje ? '#FFD700' : '#2D2D2D'}; color: ${ehHoje ? '#0D0D0D' : '#FFF'}; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column;">
+                    <span class="semana-dia-open-icon"><i class="fa-solid fa-chevron-right"></i></span>
+                </button>
+                <div class="semana-dia-content">
                     ${cardsHtml}
                 </div>
-            </div>
+            </section>
         `;
     }
 
@@ -325,11 +344,35 @@ window.renderizarHomeSemana = function() {
     setTimeout(() => {
         const hojeEl = document.getElementById('semana-dia-hoje-elemento');
         if (hojeEl) {
-            hojeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            hojeEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, 120);
 };
 window.renderizarCalendarioSemanal = window.renderizarHomeSemana;
+window.obterProximaHoraCheiaSemana = function() {
+    const agora = new Date();
+    const horaAlvo = new Date(agora);
+
+    if (horaAlvo.getMinutes() > 0 || horaAlvo.getSeconds() > 0 || horaAlvo.getMilliseconds() > 0) {
+        horaAlvo.setHours(Math.min(horaAlvo.getHours() + 1, 23), 0, 0, 0);
+    } else {
+        horaAlvo.setMinutes(0, 0, 0);
+    }
+
+    return `${String(horaAlvo.getHours()).padStart(2, '0')}:00`;
+};
+window.abrirNovoAgendamentoSemana = function(dataIso, horaPadrao) {
+    const partes = typeof dataIso === 'string' ? dataIso.split('-').map(Number) : [];
+    if (partes.length !== 3) {
+        return;
+    }
+
+    const dataSelecionada = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0, 0);
+    window.abrirNovoAgendamento({
+        dataSelecionada,
+        hora: horaPadrao || `${String(agendaConfig?.horaInicio || 8).padStart(2, '0')}:00`
+    });
+};
 window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     window.dataAlvoAcaoStr = dataStr;
 
@@ -402,6 +445,19 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSemanaHoje.addEventListener('click', () => {
             window.semanaReferencia = new Date();
             window.renderizarHomeSemana();
+        });
+    }
+
+    const btnNovaAgendaSemanal = document.getElementById('btnNovaAgendaSemanal');
+    if (btnNovaAgendaSemanal) {
+        btnNovaAgendaSemanal.addEventListener('click', () => {
+            const hoje = new Date();
+            const dataSelecionada = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 12, 0, 0, 0);
+
+            window.abrirNovoAgendamento({
+                dataSelecionada,
+                hora: window.obterProximaHoraCheiaSemana()
+            });
         });
     }
 });

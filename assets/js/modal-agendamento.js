@@ -22,6 +22,10 @@ let slotSelecionadoDiaTexto = "";
 // ── Modal: Escolha de Tipo ─────────────────────────────────────────────────────────────────────
 
 window.abrirNovoAgendamento = function(opcoes = {}) {
+    if (opcoes.dataSelecionada instanceof Date && !Number.isNaN(opcoes.dataSelecionada.getTime())) {
+        window.dataSelecionada = new Date(opcoes.dataSelecionada);
+    }
+
     const dia = opcoes.dia || window.getDiaTextoSelecionado();
     const hora = opcoes.hora || window.horarioSelecionadoSlot || '08:00';
     window.horarioSelecionadoSlot = hora;
@@ -39,7 +43,14 @@ window.abrirEscolhaTipoModal = function(dia, hora) {
     if (modal) {
         const nomeDiaEscolha = (dia === 'Sábado' || dia === 'Domingo') ? dia : `${dia}-feira`;
         const info = document.getElementById('infoEscolhaSlot');
-        if (info) info.textContent = `Agendar às ${hora} de ${nomeDiaEscolha}`;
+        const dataSelecionadaTexto = typeof window.getDataSelecionadaPtBr === 'function'
+            ? window.getDataSelecionadaPtBr()
+            : '';
+        if (info) {
+            info.textContent = dataSelecionadaTexto
+                ? `Agendar às ${hora} de ${nomeDiaEscolha} • ${dataSelecionadaTexto}`
+                : `Agendar às ${hora} de ${nomeDiaEscolha}`;
+        }
         modal.style.display = 'flex';
     }
 };
@@ -59,7 +70,14 @@ window.abrirAgendamentoModal = function(dia, hora) {
 
     const modal = document.getElementById('modalAgendamento');
     const infoHorario = document.getElementById('infoHorarioAlvo');
-    if (infoHorario) infoHorario.textContent = `${dia} — Definir Período`;
+    const dataSelecionadaTexto = typeof window.getDataSelecionadaPtBr === 'function'
+        ? window.getDataSelecionadaPtBr()
+        : '';
+    if (infoHorario) {
+        infoHorario.textContent = dataSelecionadaTexto
+            ? `${dia} • ${dataSelecionadaTexto} — Definir Período`
+            : `${dia} — Definir Período`;
+    }
 
     if (document.getElementById('formAgendamento')) {
         document.getElementById('formAgendamento').reset();
