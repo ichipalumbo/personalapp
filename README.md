@@ -13,14 +13,17 @@ Este README foi estruturado para facilitar onboarding tecnico e navegacao rapida
 ## Mapa Rapido para Agentes
 
 - Ponto de entrada da interface: `index.html`
-- Roteador SPA (abas Home/Calendario/Alunos): `assets/js/app.js`
+- Entrada SPA compativel: `assets/js/app.js`
+- App shell da interface: `assets/js/app/bootstrap.js`, `assets/js/app/router.js`, `assets/js/app/service-worker.js`
 - Estado global compartilhado: `assets/js/state.js`
 - Sincronizacao e persistencia (API + localStorage): `assets/js/storage.js`
-- API e modelos MongoDB: `backend/server.js`
+- Entrada principal da API: `backend/server.js`
+- Estrutura interna da API: `backend/src/`
 
 Se o objetivo for:
 
 - Ajustar navegacao/UX entre telas: comecar em `assets/js/app.js` e `index.html`
+- Ajustar inicializacao da SPA ou ordem de bootstrap: comecar em `assets/js/app.js`, `assets/js/app/bootstrap.js` e `assets/js/app/router.js`
 - Ajustar a agenda diaria (Home): comecar em `assets/js/view-home.js`
 - Ajustar modais de criacao de agendamento: comecar em `assets/js/modal-agendamento.js`
 - Ajustar edicao/cancelamento/reagendamento: comecar em `assets/js/modal-acao-slot.js`
@@ -28,20 +31,24 @@ Se o objetivo for:
 - Ajustar view do calendario (semanal/mensal/KPIs): comecar em `assets/js/view-calendario.js`
 - Ajustar cadastro de alunos: comecar em `assets/js/view-alunos.js`
 - Ajustar calculos de KPI: comecar em `assets/js/utils-kpi.js`
-- Ajustar persistencia/sincronizacao: comecar em `assets/js/storage.js` e `backend/server.js`
+- Ajustar persistencia/sincronizacao: comecar em `assets/js/storage.js`, `backend/server.js` e `backend/src/`
 
 ## Arquitetura (Visao Geral)
 
 ```text
 [Frontend SPA - browser]
-    |- roteamento (app.js)
+    |- entrada compativel (app.js)
+    |- app shell: bootstrap.js, router.js, service-worker.js
     |- views: view-home.js, view-calendario.js, view-alunos.js
     |- modais: modal-agendamento.js, modal-acao-slot.js
     |- estado em memoria (state.js)
     |- persistencia/sync (storage.js)
     v
 [API Express - backend/server.js]
-    |- rotas /api/alunos, /api/agendamentos, /api/configuracao
+    |- cria app em backend/src/app.js
+    |- config: backend/src/config/
+    |- rotas: backend/src/routes/
+    |- controllers/services/models
     v
 [MongoDB - via Mongoose]
 ```
@@ -81,11 +88,39 @@ personalapp/
 |  |  |- view-home.js              <- aba Home: agenda diaria + dashboard
 |  |  |- view-calendario.js        <- aba Calendario: semanal/mensal + KPI dashboard
 |  |  |- view-alunos.js            <- aba Alunos: CRM de cadastro/edicao
-|  |  |  --- [7] SPA Router ---
-|  |  |- app.js                    <- roteador de abas (DOMContentLoaded)
+|  |  |  --- [7] App Shell ---
+|  |  |- app/
+|  |  |  |- bootstrap.js           <- inicializacao da SPA e ordem de startup
+|  |  |  |- router.js              <- navegacao entre abas Home/Calendario/Alunos
+|  |  |  |- service-worker.js      <- registro do service worker
+|  |  |  --- [8] SPA Entry ---
+|  |  |- app.js                    <- ponto de entrada estavel da interface
 |- backend/
 |  |- package.json
-|  |- server.js
+|  |- server.js                    <- entry point principal do backend
+|  |- src/
+|  |  |- app.js
+|  |  |- config/
+|  |  |  |- database.js
+|  |  |  |- env.js
+|  |  |- controllers/
+|  |  |  |- agendamentoController.js
+|  |  |  |- alunoController.js
+|  |  |  |- configController.js
+|  |  |- models/
+|  |  |  |- Agendamento.js
+|  |  |  |- Aluno.js
+|  |  |  |- Config.js
+|  |  |- routes/
+|  |  |  |- agendamentoRoutes.js
+|  |  |  |- alunoRoutes.js
+|  |  |  |- configRoutes.js
+|  |  |  |- healthRoutes.js
+|  |  |- services/
+|  |  |  |- agendamentoService.js
+|  |  |  |- kpiService.js
+|  |  |- utils/
+|  |  |  |- time.js
 |  |- vercel.json
 ```
 
@@ -104,7 +139,8 @@ Os arquivos seguem prefixos que indicam sua camada:
 | `widget-`     | Componentes UI reutilizaveis    | `widget-stepper-duracao.js`         |
 | `modal-`      | Controladores de modais         | `modal-agendamento.js`              |
 | `view-`       | Views de paginas (abas SPA)     | `view-home.js`                      |
-| `app`         | Roteador SPA                    | `app.js`                            |
+| `app/`        | App shell SPA                   | `app/bootstrap.js`, `app/router.js` |
+| `app`         | Entrada SPA compativel          | `app.js`                            |
 
 ## Ordem de Carregamento dos Scripts (index.html)
 
@@ -122,10 +158,14 @@ A ordem importa porque os scripts usam globais `window.xxx` definidos em outros 
 9.  widget-bloqueio.js         <- depende de widget-stepper-duracao.js
 10. modal-agendamento.js       <- depende de layers 1-9
 11. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js
-12. view-home.js               <- depende de layers 1-11
-13. view-calendario.js         <- depende de layers 1-12
-14. view-alunos.js             <- depende de layers 1-12
-15. app.js                     <- depende de tudo (deve ser o ultimo)
+12. agenda-card-template.js    <- depende de helpers/modais em runtime
+13. view-home.js               <- depende de layers 1-12
+14. view-calendario.js         <- depende de layers 1-13
+15. view-alunos.js             <- depende de layers 1-13
+16. app/service-worker.js      <- sem dependencia de DOM da aplicacao
+17. app/router.js              <- depende dos inicializadores globais das views
+18. app/bootstrap.js           <- depende de app/router.js e service-worker.js
+19. app.js                     <- depende de tudo (deve ser o ultimo)
 ```
 
 ## Papel dos Arquivos Principais
@@ -134,7 +174,10 @@ Frontend:
 
 - `index.html`: estrutura da SPA, containers das telas e modais.
 - `assets/css/style.css`: estilos globais e responsividade.
-- `assets/js/app.js` [TAG-APP-ROUTER]: roteador de abas, chama inicializadores das views.
+- `assets/js/app.js` [TAG-APP-ROUTER]: ponto de entrada estavel que delega a inicializacao para o app shell.
+- `assets/js/app/bootstrap.js`: orquestra startup, bind de navegacao e inicializacao da Home.
+- `assets/js/app/router.js`: controla navegacao entre abas e chama os inicializadores globais das views.
+- `assets/js/app/service-worker.js`: centraliza o registro do service worker.
 - `assets/js/state.js` [TAG-STATE]: variaveis de estado global (alunos, aulas, agendaConfig, constantes).
 - `assets/js/storage.js` [TAG-STORAGE]: GET/POST na API e fallback para localStorage.
 - `assets/js/utils-kpi.js` [TAG-UTILS-KPI]: calculos de KPI por aluno/mes, toast, exportacao JSON.
@@ -152,7 +195,15 @@ Frontend:
 
 Backend:
 
-- `backend/server.js`: servidor Express, conexao MongoDB, schemas e rotas.
+- `backend/server.js`: entry point principal; carrega env, conecta no MongoDB, cria o app e sobe o servidor.
+- `backend/src/app.js`: compoe o app Express, middlewares e montagem das rotas.
+- `backend/src/config/env.js`: leitura das variaveis de ambiente do backend.
+- `backend/src/config/database.js`: inicializacao da conexao MongoDB/Mongoose.
+- `backend/src/routes/*.js`: definicao das rotas HTTP por dominio.
+- `backend/src/controllers/*.js`: handlers HTTP das rotas.
+- `backend/src/services/*.js`: regras compartilhadas de KPI e normalizacao de agendamentos.
+- `backend/src/models/*.js`: models Mongoose.
+- `backend/src/utils/time.js`: helper de conversao de horario para minutos.
 - `backend/package.json`: dependencias e script de execucao.
 - `backend/vercel.json`: configuracao de deploy do backend na Vercel.
 
@@ -217,8 +268,9 @@ const API_BASE_URL = "http://localhost:5000/api";
 Fluxo: carregar a aplicacao
 
 1. `index.html` carrega scripts.
-2. `app.js` registra eventos de navegacao e inicializa Home.
-3. `storage.js` realiza carga/sincronizacao de dados.
+2. `app.js` delega a inicializacao para `assets/js/app/bootstrap.js`.
+3. `bootstrap.js` prepara router, service worker e inicializa Home.
+4. `storage.js` realiza carga/sincronizacao de dados.
 
 Fluxo: salvar alteracoes de negocio
 
