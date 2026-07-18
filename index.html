@@ -45,70 +45,33 @@
       </header>
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section">
-        <section class="alunos-grid" style="margin-bottom: 20px">
-          <div class="card-stat">
-            <span class="stat-numero" id="totalAulasHoje">0</span>
-            <span class="stat-label"
-              ><i
-                class="fa-solid fa-stopwatch"
-                style="color: #ffd700; margin-right: 8px"
-              ></i
-              >Aulas Hoje</span
-            >
-          </div>
-          <div
-            class="card-stat"
-            style="border-color: #ff5252; background: rgba(255, 82, 82, 0.05)"
-            onclick="togglePainelReposicoes()"
-          >
-            <span
-              class="stat-numero"
-              id="totalAulasRepor"
-              style="color: #ff5252"
-              >0</span
-            >
-            <span class="stat-label"
-              ><i
-                class="fa-solid fa-rotate-left"
-                style="color: #ff5252; margin-right: 8px"
-              ></i
-              >Aulas para Repor</span
-            >
-          </div>
-        </section>
-        <div
-          id="painelReposicoesPendentes"
-          class="agenda-panel"
-          style="display: none; border-color: #ff5252; margin-bottom: 20px"
-        >
-          <h3
-            style="
-              font-size: 1.05rem;
-              color: #ff5252;
-              margin-bottom: 12px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            "
-          >
-            <span
-              ><i class="fa-solid fa-rotate-left"></i> Alunos aguardando
-              reposição</span
-            >
-            <button
-              class="btn btn-secondary btn-sm"
+        <div class="home-weekly-topbar">
+          <section class="alunos-grid home-kpi-grid">
+            <div class="card-stat home-kpi-card">
+              <span class="stat-numero home-kpi-value" id="totalAulasHoje">0</span>
+              <span class="stat-label home-kpi-label"
+                ><i class="fa-solid fa-stopwatch home-kpi-icon"></i>Aulas Hoje</span
+              >
+            </div>
+            <div
+              class="card-stat home-kpi-card home-kpi-card-danger"
+              style="
+                border-color: #ff5252;
+                background: rgba(255, 82, 82, 0.05);
+              "
               onclick="togglePainelReposicoes()"
-              style="padding: 2px 8px; font-size: 0.7rem"
             >
-              Fechar
-            </button>
-          </h3>
-          <div
-            id="listaReposicoesPendentes"
-            style="display: flex; flex-direction: column; gap: 8px"
-          ></div>
-        </div>
-        <div class="agenda-panel">
+              <span
+                class="stat-numero home-kpi-value"
+                id="totalAulasRepor"
+                style="color: #ff5252"
+                >0</span
+              >
+              <span class="stat-label home-kpi-label"
+                ><i class="fa-solid fa-rotate-left home-kpi-icon" style="color: #ff5252"></i>Aulas para Repor</span
+              >
+            </div>
+          </section>
           <div class="agenda-sticky-container">
             <div
               class="mes-header calendario-header-toolbar"
@@ -173,11 +136,54 @@
               </div>
             </div>
           </div>
+        </div>
+        <div
+          id="painelReposicoesPendentes"
+          class="agenda-panel"
+          style="display: none; border-color: #ff5252; margin-bottom: 20px"
+        >
+          <h3
+            style="
+              font-size: 1.05rem;
+              color: #ff5252;
+              margin-bottom: 12px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            "
+          >
+            <span
+              ><i class="fa-solid fa-rotate-left"></i> Alunos aguardando
+              reposição</span
+            >
+            <button
+              class="btn btn-secondary btn-sm"
+              onclick="togglePainelReposicoes()"
+              style="padding: 2px 8px; font-size: 0.7rem"
+            >
+              Fechar
+            </button>
+          </h3>
           <div
-            id="calendarioSemanalHomeGrid"
-            style="display: flex; flex-direction: column; gap: 16px"
+            id="listaReposicoesPendentes"
+            style="display: flex; flex-direction: column; gap: 8px"
           ></div>
         </div>
+        <div class="agenda-panel agenda-panel-semana">
+          <div
+            id="calendarioSemanalHomeGrid"
+            class="calendario-semanal-home-grid"
+          ></div>
+        </div>
+        <button
+          id="btnNovaAgendaSemanal"
+          class="btn-weekly-add"
+          type="button"
+          title="Novo agendamento"
+          aria-label="Novo agendamento"
+        >
+          <i class="fa-solid fa-plus"></i>
+        </button>
       </main>
       <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
       <main id="tela-calendario" class="view-section" style="display: none">
@@ -1672,10 +1678,6 @@
         </form>
       </div>
     </div>
-    <button id="btnBackToTop" class="btn-back-to-top" title="Voltar ao Topo">
-      <i class="fa-solid fa-arrow-up"></i>
-    </button>
-
     <div class="toast" id="toast"></div>
 
     <!-- [1] Core State & Data -->
@@ -1695,6 +1697,7 @@
     <script src="assets/js/modal-agendamento.js"></script>
     <script src="assets/js/modal-acao-slot.js"></script>
     <!-- [6] Page Views -->
+    <script src="assets/js/agenda-card-template.js"></script>
     <script src="assets/js/view-home.js"></script>
     <script src="assets/js/view-calendario.js"></script>
     <script src="assets/js/view-alunos.js"></script>

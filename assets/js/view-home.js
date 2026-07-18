@@ -1,12 +1,12 @@
 // [TAG-VIEW-HOME] view-home.js
 // Responsabilidade: View da aba Home — agenda diária, dashboard de stats e navegação de datas
 // Depende de: state.js (aulas, aulasParaRepor, agendaConfig, HORARIOS), storage.js (carregarDados, salvarDados, atualizarLimitesGrade),
-//             utils-datetime.js (getDiaTextoSelecionado), calendario-engine.js (checarCompromissoNaData),
+//             utils-datetime.js (getDiaTextoSelecionado), alunos-helpers.js (window.getAluno), calendario-engine.js (checarCompromissoNaData),
 //             widget-bloqueio.js (ehBloqueioDiaInteiroCompromisso),
 //             modal-agendamento.js (abrirEscolhaTipoModal), modal-acao-slot.js (abrirModalAcaoSlot, renderizarListaReposicoes, inicializarMultiSelectPills)
 // Expõe: window.dataSelecionada, window.dataAlvoAcaoStr, window.horarioSelecionadoSlot,
 //         window.reagendamentoDirectCardId, window.__sincronizacaoInicialConcluida,
-//         window.__homeCarregando, window.getAluno, window.renderizarLoadingHome,
+//         window.__homeCarregando, window.renderizarLoadingHome,
 //         window.inicializarHome, window.atualizarDataAtual, window.atualizarDashboardStats,
 //         window.renderizarAgendaDia
 
@@ -29,15 +29,6 @@ const DIAS_DA_SEMANA = [
   "Sexta-feira",
   "Sábado",
 ];
-
-// ── Lookup de aluno (centralizado aqui, exposto para outros módulos) ───────────────────────────
-
-window.getAluno = function (id) {
-  if (typeof alunos !== "undefined") {
-    return alunos.find((a) => a.id === id);
-  }
-  return null;
-};
 
 // ── Loading State ─────────────────────────────────────────────────────────────────────────────
 
@@ -313,7 +304,6 @@ window.renderizarAgendaDia = function () {
   let htmlEvents = "";
   eventosPosicionados.forEach((ev) => {
     const compromisso = ev.original;
-    const tipo = compromisso.tipo || "aula";
     const bloqueioDiaInteiro =
       window.ehBloqueioDiaInteiroCompromisso(compromisso);
 
@@ -329,70 +319,12 @@ window.renderizarAgendaDia = function () {
     const widthStyle = `calc(${widthPercent}% - ${gapRight}px)`;
     const leftStyle = `${leftPercent}%`;
 
-    const periodoExibicao = bloqueioDiaInteiro
-      ? "Dia inteiro"
-      : `${compromisso.horarioInicio} - ${compromisso.horarioFim}`;
-
-    let tagVisualHtml = "";
-    let cardHtml = "";
-
-    if (tipo === "aula") {
-      const aluno = window.getAluno(compromisso.alunoId);
-      const nome = aluno ? aluno.nome : "❓ Aluno Removido";
-      const objetivo = aluno ? aluno.objetivo : "Outro";
-      const local = aluno ? aluno.local || "Não definido" : "Não definido";
-
-      if (compromisso.reagendada || compromisso.isReposicao) {
-        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(100, 181, 246, 0.15); color: #64B5F6;"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
-      } else if (compromisso.frequencia === "semanal") {
-        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 215, 0, 0.15); color: #FFD700;"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
-      } else {
-        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(129, 199, 132, 0.15); color: #81C784;"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
-      }
-
-      cardHtml = `
-                <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g, "")}" 
-                     style="position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${leftStyle}; width: ${widthStyle};"
-                     onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px; width: 100%;">
-                        <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
-                        ${tagVisualHtml}
-                    </div>
-                    <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
-                    <span class="agenda-dia-aula-detalhes">${objetivo} (${periodoExibicao})</span>
-                </div>
-            `;
-    } else if (tipo === "deslocamento") {
-      tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 152, 0, 0.15); color: #FF9800;"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
-
-      cardHtml = `
-                <div class="agenda-dia-aula slot-deslocamento" 
-                     style="position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${leftStyle}; width: ${widthStyle};"
-                     onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px; width: 100%;">
-                        <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
-                        ${tagVisualHtml}
-                    </div>
-                    <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || "Trânsito"} (${periodoExibicao})</span>
-                </div>
-            `;
-    } else if (tipo === "bloqueio") {
-      tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? "Dia inteiro" : "Bloqueio"}</span>`;
-
-      cardHtml = `
-                <div class="agenda-dia-aula slot-bloqueado" 
-                     style="position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${leftStyle}; width: ${widthStyle};"
-                     onclick="abrirModalAcaoSlot('${compromisso.id}')">
-                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 2px; width: 100%;">
-                        <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? "Dia bloqueado" : "Bloqueado"}</span>
-                        ${tagVisualHtml}
-                    </div>
-                    <span class="agenda-dia-aula-local" style="color: #DDD;">${compromisso.descricao || "Compromisso"} (${periodoExibicao})</span>
-                </div>
-            `;
-    }
-
-    htmlEvents += cardHtml;
+    htmlEvents += window.criarCardAgendamento(compromisso, {
+      dataReferencia: new Date(window.dataSelecionada),
+      bloqueioDiaInteiro: bloqueioDiaInteiro,
+      style: `position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${leftStyle}; width: ${widthStyle};`,
+      onclick: `abrirModalAcaoSlot('${compromisso.id}')`,
+    });
   });
 
   // 4. Indicador de Horário Atual
