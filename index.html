@@ -110,6 +110,113 @@
         </div>
         <div class="agenda-panel">
           <div class="agenda-sticky-container">
+            <div
+              class="mes-header calendario-header-toolbar"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                flex-wrap: wrap;
+                gap: 10px;
+                width: 100%;
+              "
+            >
+              <div class="calendario-header-title-wrap">
+                <h2
+                  id="periodoSemanaHomeLabel"
+                  class="calendario-header-title"
+                  style="
+                    font-size: 1.15rem;
+                    color: #ffd700;
+                    margin: 0;
+                    font-weight: 800;
+                  "
+                >
+                  Semana de Trabalho
+                </h2>
+              </div>
+              <div class="mes-nav calendario-header-controls">
+                <div
+                  class="filtro-aluno-container calendario-filtro-container"
+                  style="min-width: 180px"
+                >
+                  <select
+                    id="filtroAlunoSemanaHome"
+                    class="filtro-aluno-select"
+                    onchange="window.atualizarFiltroSemanaHome()"
+                  >
+                    <option value="">👥 Todos os Alunos</option>
+                  </select>
+                </div>
+                <div class="calendario-nav-arrows">
+                  <button
+                    id="btnSemanaHomeAnterior"
+                    class="btn btn-secondary btn-sm"
+                    title="Semana Anterior"
+                  >
+                    <i class="fa-solid fa-chevron-left"></i>
+                  </button>
+                  <button
+                    id="btnSemanaHomeProxima"
+                    class="btn btn-secondary btn-sm"
+                    title="Próxima Semana"
+                  >
+                    <i class="fa-solid fa-chevron-right"></i>
+                  </button>
+                </div>
+                <button
+                  id="btnSemanaHomeHoje"
+                  class="btn btn-secondary btn-sm btn-calendario-hoje"
+                >
+                  Hoje
+                </button>
+              </div>
+            </div>
+          </div>
+          <div
+            id="calendarioSemanalHomeGrid"
+            style="display: flex; flex-direction: column; gap: 16px"
+          ></div>
+        </div>
+      </main>
+      <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
+      <main id="tela-calendario" class="view-section" style="display: none">
+        <div class="calendario-tabs-sticky">
+          <div
+            class="tab-tipo-agendamento"
+            style="
+              display: flex;
+              gap: 6px;
+              background: #0d0d0d;
+              padding: 4px;
+              border-radius: 8px;
+              border: 1px solid #2a2a2a;
+            "
+          >
+            <button
+              type="button"
+              class="tab-btn active"
+              id="tabCalendarioDia"
+              onclick="alternarModoCalendario('dia')"
+            >
+              <i class="fa-solid fa-calendar-day"></i> Dia
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              id="tabCalendarioMensal"
+              onclick="alternarModoCalendario('mensal')"
+            >
+              <i class="fa-solid fa-calendar-days"></i> Mês
+            </button>
+          </div>
+        </div>
+        <div
+          id="containerCalendarioDia"
+          class="agenda-panel"
+          style="display: block"
+        >
+          <div class="agenda-sticky-container">
             <div class="agenda-header-wrapper">
               <div class="agenda-header-info">
                 <h2>
@@ -172,113 +279,6 @@
             </div>
           </div>
           <div class="agenda-dia-container" id="agendaGridHome"></div>
-        </div>
-      </main>
-      <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
-      <main id="tela-calendario" class="view-section" style="display: none">
-        <div class="calendario-tabs-sticky">
-          <div
-            class="tab-tipo-agendamento"
-            style="
-              display: flex;
-              gap: 6px;
-              background: #0d0d0d;
-              padding: 4px;
-              border-radius: 8px;
-              border: 1px solid #2a2a2a;
-            "
-          >
-            <button
-              type="button"
-              class="tab-btn active"
-              id="tabCalendarioSemanal"
-              onclick="alternarModoCalendario('semanal')"
-            >
-              <i class="fa-solid fa-calendar-minus"></i> Semana
-            </button>
-            <button
-              type="button"
-              class="tab-btn"
-              id="tabCalendarioMensal"
-              onclick="alternarModoCalendario('mensal')"
-            >
-              <i class="fa-solid fa-calendar-days"></i> Mês
-            </button>
-          </div>
-        </div>
-        <div
-          id="containerCalendarioSemanal"
-          class="agenda-panel"
-          style="display: block"
-        >
-          <div class="agenda-sticky-container">
-            <div
-              class="mes-header calendario-header-toolbar"
-              style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: 10px;
-                width: 100%;
-              "
-            >
-              <div class="calendario-header-title-wrap">
-                <h2
-                  id="periodoSemanaLabel"
-                  class="calendario-header-title"
-                  style="
-                    font-size: 1.15rem;
-                    color: #ffd700;
-                    margin: 0;
-                    font-weight: 800;
-                  "
-                >
-                  Semana de Trabalho
-                </h2>
-              </div>
-              <div class="mes-nav calendario-header-controls">
-                <div
-                  class="filtro-aluno-container calendario-filtro-container"
-                  style="min-width: 180px"
-                >
-                  <select
-                    id="filtroAlunoSemanal"
-                    class="filtro-aluno-select"
-                    onchange="window.atualizarFiltroCalendarioSemanal()"
-                  >
-                    <option value="">👥 Todos os Alunos</option>
-                  </select>
-                </div>
-                <div class="calendario-nav-arrows">
-                  <button
-                    id="btnSemanaAnterior"
-                    class="btn btn-secondary btn-sm"
-                    title="Semana Anterior"
-                  >
-                    <i class="fa-solid fa-chevron-left"></i>
-                  </button>
-                  <button
-                    id="btnSemanaProxima"
-                    class="btn btn-secondary btn-sm"
-                    title="Próxima Semana"
-                  >
-                    <i class="fa-solid fa-chevron-right"></i>
-                  </button>
-                </div>
-                <button
-                  id="btnSemanaHoje"
-                  class="btn btn-secondary btn-sm btn-calendario-hoje"
-                >
-                  Hoje
-                </button>
-              </div>
-            </div>
-          </div>
-          <div
-            id="calendarioSemanalGrid"
-            style="display: flex; flex-direction: column; gap: 16px"
-          ></div>
         </div>
         <div
           id="containerCalendarioMensal"

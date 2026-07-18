@@ -42,34 +42,22 @@ window.getAluno = function (id) {
 // ── Loading State ─────────────────────────────────────────────────────────────────────────────
 
 window.renderizarLoadingHome = function () {
-  const elementoData = document.getElementById("dataAtual");
   const elAulasHoje = document.getElementById("totalAulasHoje");
   const elAulasRepor = document.getElementById("totalAulasRepor");
-  const grid = document.getElementById("agendaGridHome");
+  const elementoSemana = document.getElementById("periodoSemanaHomeLabel");
+  const grid = document.getElementById("calendarioSemanalHomeGrid");
 
-  if (elementoData) {
-    elementoData.innerHTML = `<i class="fa-solid fa-calendar-minus" style="color: #FFD700; margin-right: 8px;"></i>Sincronizando agenda...`;
+  if (elementoSemana) {
+    elementoSemana.innerHTML = `<i class="fa-solid fa-calendar-week" style="color: #FFD700; margin-right: 8px;"></i>Sincronizando agenda...`;
   }
   if (elAulasHoje) elAulasHoje.textContent = "...";
   if (elAulasRepor) elAulasRepor.textContent = "...";
   if (grid) {
     grid.innerHTML = `
-            <div class="time-grid-wrapper" style="height: 336px; opacity: 0.5; pointer-events: none;">
-                <div class="time-grid-hours-col">
-                    <div class="time-grid-hour-label" style="position: absolute; top: 0px; width: 100%;">07:00</div>
-                    <div class="time-grid-hour-label" style="position: absolute; top: 84px; width: 100%;">08:00</div>
-                    <div class="time-grid-hour-label" style="position: absolute; top: 168px; width: 100%;">09:00</div>
-                    <div class="time-grid-hour-label" style="position: absolute; top: 252px; width: 100%;">10:00</div>
-                </div>
-                <div class="time-grid-content-col" style="position: relative; height: 100%;">
-                    <div class="time-grid-lines">
-                        <div class="time-grid-line" style="position: absolute; top: 0px; left: 0; right: 0; height: 1px;"></div>
-                        <div class="time-grid-line" style="position: absolute; top: 84px; left: 0; right: 0; height: 1px;"></div>
-                        <div class="time-grid-line" style="position: absolute; top: 168px; left: 0; right: 0; height: 1px;"></div>
-                        <div class="time-grid-line" style="position: absolute; top: 252px; left: 0; right: 0; height: 1px;"></div>
-                    </div>
-                    <div class="home-loading-block" style="position: absolute; top: 20px; left: 10px; right: 10px; height: 60px; border-radius: 6px;"></div>
-                </div>
+            <div style="display: flex; flex-direction: column; gap: 12px; opacity: 0.55; pointer-events: none;">
+                <div style="height: 112px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid #2a2a2a;"></div>
+                <div style="height: 112px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid #2a2a2a;"></div>
+                <div style="height: 112px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid #2a2a2a;"></div>
             </div>
         `;
   }
@@ -98,11 +86,19 @@ window.inicializarHome = async function (opcoes = {}) {
     }
   }
 
-  window.atualizarDataAtual();
   window.atualizarDashboardStats();
-  window.renderizarAgendaDia();
+  if (typeof window.renderizarHomeSemana === "function") {
+    window.renderizarHomeSemana();
+  }
   window.renderizarListaReposicoes();
   window.inicializarMultiSelectPills();
+
+  if (
+    opcoes.atualizarCalendario !== false &&
+    typeof window.renderizarModoCalendarioAtivo === "function"
+  ) {
+    window.renderizarModoCalendarioAtivo();
+  }
 };
 
 // ── Dashboard Stats ───────────────────────────────────────────────────────────────────────────

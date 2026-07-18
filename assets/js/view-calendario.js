@@ -1,9 +1,9 @@
 // [TAG-VIEW-CALENDARIO] view-calendario.js
-// Responsabilidade: Orquestração da aba Calendário — alternância Semanal/Mensal, filtros e dashboard KPI
+// Responsabilidade: Orquestração da aba Calendário — alternância Dia/Mês, dashboard KPI e visão semanal da Home
 // Depende de: state.js, storage.js, utils-kpi.js, calendario-engine.js, modal-acao-slot.js (abrirModalAcaoSlot — em runtime), view-home.js (getAluno — em runtime) - Controle Mensal & Semanal na SPA
-window.modoCalendarioAtivo = 'semanal';
+window.modoCalendarioAtivo = 'dia';
 window.semanaReferencia = new Date();
-window.filtroAlunoSemanalId = null; // Estado do filtro de aluno na aba semanal
+window.filtroAlunoSemanalId = null; // Estado do filtro de aluno na semana exibida na Home
 window.filtroAlunoMensalId = null; // Estado do filtro de aluno na aba mensal
 
 window.inicializarPaginaCalendario = async function(opcoes = {}) {
@@ -15,7 +15,7 @@ window.inicializarPaginaCalendario = async function(opcoes = {}) {
     
     // Populate filter dropdowns
     window.preencherFiltrosAlunos();
-    
+
     window.alternarModoCalendario(window.modoCalendarioAtivo);
 };
 
@@ -37,20 +37,22 @@ window.preencherFiltrosAlunos = function() {
         });
     };
     
-    preencherSelect('filtroAlunoSemanal');
+    preencherSelect('filtroAlunoSemanaHome');
     preencherSelect('filtroAlunoMensal');
 };
 
 /**
- * Atualiza o filtro da aba semanal e re-renderiza
+ * Atualiza o filtro da semana exibida na Home e re-renderiza
  */
-window.atualizarFiltroCalendarioSemanal = function() {
-    const select = document.getElementById('filtroAlunoSemanal');
+window.atualizarFiltroSemanaHome = function() {
+    const select = document.getElementById('filtroAlunoSemanaHome');
     if (select) {
         window.filtroAlunoSemanalId = select.value || null;
-        window.renderizarCalendarioSemanal();
+        window.renderizarHomeSemana();
     }
 };
+
+window.atualizarFiltroCalendarioSemanal = window.atualizarFiltroSemanaHome;
 
 /**
  * Atualiza o filtro da aba mensal e re-renderiza
@@ -67,25 +69,44 @@ window.alternarModoCalendario = function(modo) {
     window.modoCalendarioAtivo = modo;
     
     const tabMensal = document.getElementById('tabCalendarioMensal');
-    const tabSemanal = document.getElementById('tabCalendarioSemanal');
+    const tabDia = document.getElementById('tabCalendarioDia');
     
     const containerMensal = document.getElementById('containerCalendarioMensal');
-    const containerSemanal = document.getElementById('containerCalendarioSemanal');
+    const containerDia = document.getElementById('containerCalendarioDia');
 
-    if (!tabMensal || !tabSemanal) return;
+    if (!tabMensal || !tabDia || !containerMensal || !containerDia) return;
 
-    if (modo === 'semanal') {
-        tabSemanal.classList.add('active');
+    if (modo === 'dia') {
+        tabDia.classList.add('active');
         tabMensal.classList.remove('active');
-        containerSemanal.style.display = 'block';
+        containerDia.style.display = 'block';
         containerMensal.style.display = 'none';
-        window.renderizarCalendarioSemanal();
+        window.renderizarCalendarioDia();
     } else {
         tabMensal.classList.add('active');
-        tabSemanal.classList.remove('active');
+        tabDia.classList.remove('active');
         containerMensal.style.display = 'block';
-        containerSemanal.style.display = 'none';
+        containerDia.style.display = 'none';
         window.renderizarCalendarioMensal();
+    }
+};
+
+window.renderizarModoCalendarioAtivo = function() {
+    if (window.modoCalendarioAtivo === 'mensal') {
+        window.renderizarCalendarioMensal();
+        return;
+    }
+
+    window.renderizarCalendarioDia();
+};
+
+window.renderizarCalendarioDia = function() {
+    if (typeof window.atualizarDataAtual === 'function') {
+        window.atualizarDataAtual();
+    }
+
+    if (typeof window.renderizarAgendaDia === 'function') {
+        window.renderizarAgendaDia();
     }
 };
 window.renderizarCalendarioMensal = function() {
@@ -163,18 +184,22 @@ window.irParaDiaDestaSemana = function(dataStr) {
         const ano = parseInt(parts[2], 10);
         window.dataSelecionada = new Date(ano, mes, dia);
     }
-    const navLinkHome = document.querySelector('.header-nav .nav-link[data-target="tela-home"]');
-    if (navLinkHome) {
-        navLinkHome.click();
+    window.modoCalendarioAtivo = 'dia';
+
+    const navLinkCalendario = document.querySelector('.header-nav .nav-link[data-target="tela-calendario"]');
+    if (navLinkCalendario) {
+        navLinkCalendario.click();
+    } else if (typeof window.alternarModoCalendario === 'function') {
+        window.alternarModoCalendario('dia');
     }
 
     if (typeof mostrarToast === 'function') {
         mostrarToast(`📅 Agenda do dia ${dataStr} aberta!`);
     }
 };
-window.renderizarCalendarioSemanal = function() {
-    const gridSemanal = document.getElementById('calendarioSemanalGrid');
-    const labelPeriodo = document.getElementById('periodoSemanaLabel');
+window.renderizarHomeSemana = function() {
+    const gridSemanal = document.getElementById('calendarioSemanalHomeGrid');
+    const labelPeriodo = document.getElementById('periodoSemanaHomeLabel');
     if (!gridSemanal) return;
     const dataRef = new Date(window.semanaReferencia);
     const diaSemana = dataRef.getDay();
@@ -304,6 +329,7 @@ window.renderizarCalendarioSemanal = function() {
         }
     }, 120);
 };
+window.renderizarCalendarioSemanal = window.renderizarHomeSemana;
 window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     window.dataAlvoAcaoStr = dataStr;
 
@@ -318,8 +344,8 @@ window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     window.fecharModalAcaoSlot = function() {
         window.dataAlvoAcaoStr = null; // Limpa o estado
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
-        window.renderizarCalendarioSemanal();
-        if (typeof window.renderizarCalendarioMensal === 'function') window.renderizarCalendarioMensal();
+        if (typeof window.renderizarHomeSemana === 'function') window.renderizarHomeSemana();
+        if (typeof window.renderizarModoCalendarioAtivo === 'function') window.renderizarModoCalendarioAtivo();
     };
 };
 document.addEventListener('DOMContentLoaded', () => {
@@ -354,28 +380,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnSemanaAnterior = document.getElementById('btnSemanaAnterior');
-    const btnSemanaProxima = document.getElementById('btnSemanaProxima');
-    const btnSemanaHoje = document.getElementById('btnSemanaHoje');
+    const btnSemanaAnterior = document.getElementById('btnSemanaHomeAnterior');
+    const btnSemanaProxima = document.getElementById('btnSemanaHomeProxima');
+    const btnSemanaHoje = document.getElementById('btnSemanaHomeHoje');
 
     if (btnSemanaAnterior) {
         btnSemanaAnterior.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() - 7);
-            window.renderizarCalendarioSemanal();
+            window.renderizarHomeSemana();
         });
     }
 
     if (btnSemanaProxima) {
         btnSemanaProxima.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() + 7);
-            window.renderizarCalendarioSemanal();
+            window.renderizarHomeSemana();
         });
     }
 
     if (btnSemanaHoje) {
         btnSemanaHoje.addEventListener('click', () => {
             window.semanaReferencia = new Date();
-            window.renderizarCalendarioSemanal();
+            window.renderizarHomeSemana();
         });
     }
 });
