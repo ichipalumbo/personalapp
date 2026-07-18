@@ -2,6 +2,30 @@
 // Responsabilidade: Roteador SPA — controla navegação entre abas e chama inicializadores das views
 // Depende de: view-home.js (inicializarHome), view-calendario.js (inicializarPaginaCalendario), view-alunos.js (inicializarAlunos)
 // Expõe: nada (auto-executa em DOMContentLoaded)
+
+// Register Service Worker
+if ('serviceWorker' in navigator) {
+    let hasReloadedForServiceWorkerUpdate = false;
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (hasReloadedForServiceWorkerUpdate) {
+            return;
+        }
+
+        hasReloadedForServiceWorkerUpdate = true;
+        window.location.reload();
+    });
+
+    navigator.serviceWorker.register('/sw.js')
+        .then(registration => {
+            registration.update();
+            console.log('Service Worker registered successfully:', registration);
+        })
+        .catch(error => {
+            console.error('Service Worker registration failed:', error);
+        });
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     const navLinks = document.querySelectorAll('.header-nav .nav-link');
     const views = document.querySelectorAll('.view-section');
