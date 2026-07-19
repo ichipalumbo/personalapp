@@ -205,18 +205,18 @@ window.renderizarHomeSemana = function() {
     const diaSemana = dataRef.getDay();
     const dSeg = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
     const segundaFeira = new Date(dataRef.setDate(dSeg));
-    const sabado = new Date(segundaFeira);
-    sabado.setDate(segundaFeira.getDate() + 5);
+    const domingo = new Date(segundaFeira);
+    domingo.setDate(segundaFeira.getDate() + 6);
     if (labelPeriodo) {
         const dSegStr = String(segundaFeira.getDate()).padStart(2, '0');
         const mSegStr = String(segundaFeira.getMonth() + 1).padStart(2, '0');
-        const dSabStr = String(sabado.getDate()).padStart(2, '0');
-        const mSabStr = String(sabado.getMonth() + 1).padStart(2, '0');
-        labelPeriodo.textContent = `${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}`;
+        const dDomStr = String(domingo.getDate()).padStart(2, '0');
+        const mDomStr = String(domingo.getMonth() + 1).padStart(2, '0');
+        labelPeriodo.textContent = `${dSegStr}/${mSegStr} a ${dDomStr}/${mDomStr}`;
     }
     
     let html = '';
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diasSemanaMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
     const agora = new Date();
     const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
     const minutosAgora = (agora.getHours() * 60) + agora.getMinutes();
@@ -228,11 +228,11 @@ window.renderizarHomeSemana = function() {
     const formatarHoraCheia = (hora) => `${String(hora).padStart(2, '0')}:00`;
     const horaInicioPadrao = formatarHoraCheia(agendaConfig?.horaInicio || 8);
 
-    for (let d = 0; d < 6; d++) {
+    for (let d = 0; d < 7; d++) {
         const diaAtual = new Date(segundaFeira);
         diaAtual.setDate(segundaFeira.getDate() + d);
 
-        const diaTexto = diasUteisMap[d];
+        const diaTexto = diasSemanaMap[d];
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
         const dataAlvoFormatada = diaAtual.toLocaleDateString('pt-BR');
@@ -241,7 +241,9 @@ window.renderizarHomeSemana = function() {
         const diaAtualPuro = new Date(diaAtual.getFullYear(), diaAtual.getMonth(), diaAtual.getDate());
         const diaJaPassou = diaAtualPuro < hoje;
         const diaEhHoje = diaAtualPuro.getTime() === hoje.getTime();
-        const tituloDia = `${diaTexto === 'Sábado' ? diaTexto : `${diaTexto}-feira`}, ${diaNum}/${mesNum}`;
+        const tituloDia = (diaTexto === 'Sábado' || diaTexto === 'Domingo')
+            ? `${diaTexto}, ${diaNum}/${mesNum}`
+            : `${diaTexto}-feira, ${diaNum}/${mesNum}`;
         
         // [FILTERED] Apply student filter and get only aula/reposição types
         let compromissosDoDia = aulas
