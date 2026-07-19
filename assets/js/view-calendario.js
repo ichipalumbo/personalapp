@@ -212,8 +212,7 @@ window.renderizarHomeSemana = function() {
         const mSegStr = String(segundaFeira.getMonth() + 1).padStart(2, '0');
         const dSabStr = String(sabado.getDate()).padStart(2, '0');
         const mSabStr = String(sabado.getMonth() + 1).padStart(2, '0');
-        const anoRef = segundaFeira.getFullYear();
-        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i><span style="color: #FFD700;"> ${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}</span> de ${anoRef}`;
+        labelPeriodo.textContent = `${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}`;
     }
     
     let html = '';

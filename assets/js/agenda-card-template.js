@@ -122,18 +122,20 @@
 
             return `
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
-                    <div class="agenda-semana-card-top">
-                        <div class="agenda-semana-card-title-group">
-                            <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
-                            ${tagNomeHtml}
+                    <div class="card-content-wrapper">
+                        <div class="agenda-semana-card-top">
+                            <div class="agenda-semana-card-title-group">
+                                <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
+                                ${tagNomeHtml}
+                            </div>
+                            <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                         </div>
-                        <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
-                    </div>
-                    <div class="agenda-semana-card-bottom">
-                        <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
-                        <div class="agenda-semana-card-meta">
-                            <span class="agenda-dia-aula-detalhes">${objetivo}</span>
-                            ${tagVisualHtml}
+                        <div class="agenda-semana-card-bottom">
+                            <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
+                            <div class="agenda-semana-card-meta">
+                                <span class="agenda-dia-aula-detalhes">${objetivo}</span>
+                                ${tagVisualHtml}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -145,14 +147,16 @@
 
             return `
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
-                    <div class="agenda-semana-card-top">
-                        <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
-                        <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
-                    </div>
-                    <div class="agenda-semana-card-bottom">
-                        <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'}</span>
-                        <div class="agenda-semana-card-meta">
-                            <span class="badge-tag-tipo" style="${BADGE_STYLES.deslocamento}"><i class="fa-solid fa-car-side"></i> Trânsito</span>
+                    <div class="card-content-wrapper">
+                        <div class="agenda-semana-card-top">
+                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                            <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
+                        </div>
+                        <div class="agenda-semana-card-bottom">
+                            <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'}</span>
+                            <div class="agenda-semana-card-meta">
+                                <span class="badge-tag-tipo" style="${BADGE_STYLES.deslocamento}"><i class="fa-solid fa-car-side"></i> Trânsito</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -164,14 +168,16 @@
 
             return `
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
-                    <div class="agenda-semana-card-top">
-                        <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
-                        <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
-                    </div>
-                    <div class="agenda-semana-card-bottom">
-                        <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'}</span>
-                        <div class="agenda-semana-card-meta">
-                            <span class="badge-tag-tipo" style="${BADGE_STYLES.bloqueio}"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia inteiro' : 'Bloqueio'}</span>
+                    <div class="card-content-wrapper">
+                        <div class="agenda-semana-card-top">
+                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
+                            <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
+                        </div>
+                        <div class="agenda-semana-card-bottom">
+                            <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'}</span>
+                            <div class="agenda-semana-card-meta">
+                                <span class="badge-tag-tipo" style="${BADGE_STYLES.bloqueio}"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia inteiro' : 'Bloqueio'}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -39,7 +39,7 @@ window.renderizarLoadingHome = function () {
   const grid = document.getElementById("calendarioSemanalHomeGrid");
 
   if (elementoSemana) {
-    elementoSemana.innerHTML = `<i class="fa-solid fa-calendar-week" style="color: #FFD700; margin-right: 8px;"></i>Sincronizando agenda...`;
+    elementoSemana.textContent = "Sincronizando agenda...";
   }
   if (elAulasHoje) elAulasHoje.textContent = "...";
   if (elAulasRepor) elAulasRepor.textContent = "...";

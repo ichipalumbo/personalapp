@@ -72,67 +72,47 @@
               >
             </div>
           </section>
-          <div class="agenda-sticky-container">
-            <div
-              class="mes-header calendario-header-toolbar"
-              style="
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                flex-wrap: wrap;
-                gap: 10px;
-                width: 100%;
-              "
-            >
-              <div class="calendario-header-title-wrap">
-                <h2
-                  id="periodoSemanaHomeLabel"
-                  class="calendario-header-title"
-                  style="
-                    font-size: 1.15rem;
-                    color: #ffd700;
-                    margin: 0;
-                    font-weight: 800;
-                  "
+          <div class="home-sticky-header">
+            <div class="home-weekly-toolbar">
+              <div
+                class="filtro-aluno-container calendario-filtro-container home-weekly-filter"
+              >
+                <select
+                  id="filtroAlunoSemanaHome"
+                  class="filtro-aluno-select"
+                  onchange="window.atualizarFiltroSemanaHome()"
                 >
-                  Semana de Trabalho
-                </h2>
+                  <option value="">👥 Todos os Alunos</option>
+                </select>
               </div>
-              <div class="mes-nav calendario-header-controls">
-                <div
-                  class="filtro-aluno-container calendario-filtro-container"
-                  style="min-width: 180px"
-                >
-                  <select
-                    id="filtroAlunoSemanaHome"
-                    class="filtro-aluno-select"
-                    onchange="window.atualizarFiltroSemanaHome()"
-                  >
-                    <option value="">👥 Todos os Alunos</option>
-                  </select>
-                </div>
-                <div class="calendario-nav-arrows">
+              <div class="home-weekly-nav-row">
+                <div class="nav-calendario nav-calendario--home nav-calendario--week-home">
+                  <div class="nav-calendario-main">
+                    <button
+                      id="btnSemanaHomeAnterior"
+                      class="btn btn-secondary btn-sm"
+                      title="Semana Anterior"
+                    >
+                      <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <span id="periodoSemanaHomeLabel" class="home-weekly-periodo"
+                      >Semana de Trabalho</span
+                    >
+                    <button
+                      id="btnSemanaHomeProxima"
+                      class="btn btn-secondary btn-sm"
+                      title="Próxima Semana"
+                    >
+                      <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                  </div>
                   <button
-                    id="btnSemanaHomeAnterior"
-                    class="btn btn-secondary btn-sm"
-                    title="Semana Anterior"
+                    id="btnSemanaHomeHoje"
+                    class="btn btn-secondary btn-sm btn-calendario-hoje"
                   >
-                    <i class="fa-solid fa-chevron-left"></i>
-                  </button>
-                  <button
-                    id="btnSemanaHomeProxima"
-                    class="btn btn-secondary btn-sm"
-                    title="Próxima Semana"
-                  >
-                    <i class="fa-solid fa-chevron-right"></i>
+                    Hoje
                   </button>
                 </div>
-                <button
-                  id="btnSemanaHomeHoje"
-                  class="btn btn-secondary btn-sm btn-calendario-hoje"
-                >
-                  Hoje
-                </button>
               </div>
             </div>
           </div>
