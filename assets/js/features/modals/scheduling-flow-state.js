@@ -7,7 +7,7 @@
     const PADROES_RECORRENCIA = Object.freeze(['diaria', 'semanal', 'mensal', 'anual']);
     const ESCOPOS_RECORRENCIA = Object.freeze(['fromDate', 'monthOfDate']);
     const TERMINOS_RECORRENCIA = Object.freeze(['never', 'untilDate', 'occurrences']);
-    const DIAS_SEMANA_VALIDOS = Object.freeze(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']);
+    const DIAS_SEMANA_VALIDOS = Object.freeze(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']);
 
     function normalizarTipoCriacao(tipo) {
         return TIPOS_CRIACAO.includes(tipo) ? tipo : 'aula';

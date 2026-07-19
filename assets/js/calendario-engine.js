@@ -93,10 +93,9 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     }
     
     const diaSemana = dataAlvo.getDay();
-    if (diaSemana < 1 || diaSemana > 6) return false; 
-    
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    const diaTexto = diasUteisMap[diaSemana - 1];
+    const diasSemanaMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diaTexto = diasSemanaMap[diaSemana];
+    if (!diaTexto) return false;
     const dataStr = dataAlvo.toLocaleDateString('pt-BR');
     if (comp.excecoes && comp.excecoes.includes(dataStr)) {
         return false;

@@ -413,6 +413,7 @@ function getTextoIntervaloRecorrencia(padrao, intervalo) {
 
 function getTextoDiasRecorrencia(diasSemana) {
     const mapa = {
+        Domingo: 'Dom',
         Segunda: 'Seg',
         'Terça': 'Ter',
         Quarta: 'Qua',
