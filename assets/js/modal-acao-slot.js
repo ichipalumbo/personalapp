@@ -581,16 +581,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Ações sobre Slots ─────────────────────────────────────────────────────────────────────
     const btnDeletar = document.getElementById('btnDeletarDefinitivo');
     if (btnDeletar) {
-        btnDeletar.addEventListener('click', () => {
+        btnDeletar.addEventListener('click', async () => {
             const _compDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
             aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
             window.fecharModalAcaoSlot();
             if (_compDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                window.salvarEventoComGCal(_compDeletar, { operacao: 'excluir', snapshotAnterior: _compDeletar }).then(() => window.inicializarHome());
+                window.salvarEventoComGCal(_compDeletar, { operacao: 'excluir', snapshotAnterior: _compDeletar }).then(async () => {
+                    await window.inicializarHome({ sincronizar: true });
+                    if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                    if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+                });
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
-                window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('🗑️ Compromisso único cancelado!');
+                await window.inicializarHome({ sincronizar: true });
+                if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
             }
         });
     }
@@ -621,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnDeletarInstancia = document.getElementById('btnDeletarInstancia');
     if (btnDeletarInstancia) {
-        btnDeletarInstancia.addEventListener('click', () => {
+        btnDeletarInstancia.addEventListener('click', async () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
 
@@ -634,8 +639,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof salvarDados === 'function') salvarDados();
             
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast(`📅 Aula de ${dataAlvoStr} cancelada!`);
+            await window.inicializarHome({ sincronizar: true });
+            if (typeof renderizarCalendario === 'function') renderizarCalendario();
+            if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
         });
     }
 
@@ -667,16 +673,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnDeletarSerie = document.getElementById('btnDeletarSerie');
     if (btnDeletarSerie) {
-        btnDeletarSerie.addEventListener('click', () => {
+        btnDeletarSerie.addEventListener('click', async () => {
             const _serieDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
             aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
             window.fecharModalAcaoSlot();
             if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(() => window.inicializarHome());
+                window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(async () => {
+                    await window.inicializarHome({ sincronizar: true });
+                    if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                    if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+                });
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
-                window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('🗑️ Série recorrente excluída do calendário!');
+                await window.inicializarHome({ sincronizar: true });
+                if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
             }
         });
     }

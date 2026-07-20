@@ -125,6 +125,15 @@
               <div class="home-weekly-nav-row" style="justify-content: flex-end; margin-top: 6px;">
                 <div style="display: flex; flex-direction: row; align-items: center; gap: 12px;">
                   <button
+                    id="btnSyncBanco"
+                    class="btn btn-sm"
+                    style="background:#1e2a18;color:#b7f2b1;border:1px solid #35592f;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
+                    onclick="window.sincronizarBancoDados && window.sincronizarBancoDados({ incluirGoogle: true })"
+                    title="Forçar sincronização com banco remoto e Google Calendar"
+                  >
+                    <i class="fa-solid fa-database"></i> <span id="btnSyncBancoText">Sincronizar Banco</span>
+                  </button>
+                  <button
                     id="btnSyncGoogleCalendar"
                     class="btn btn-sm"
                     style="background:#111820;color:#90CAF9;border:1px solid #1a2535;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
@@ -396,7 +405,22 @@
                 />
               </div>
               <div class="form-grupo-spa">
-                <label for="alunoLocal">Local de Treino *</label>
+                <label for="alunoObjetivoSwitch">Objetivo</label>
+                <label class="full-day-toggle" for="alunoObjetivoSwitch">
+                  <input type="checkbox" id="alunoObjetivoSwitch" />
+                  <span class="full-day-toggle-ui">
+                    <span class="full-day-toggle-text">
+                      <i class="fa-solid fa-bullseye"></i>
+                      <span id="alunoObjetivoSwitchStatus">Personal Trainer</span>
+                    </span>
+                    <span class="full-day-toggle-pill" aria-hidden="true"></span>
+                  </span>
+                </label>
+              </div>
+              <div class="form-grupo-spa">
+                <label for="alunoLocal" id="alunoLocalLabel"
+                  >Local de Treino *</label
+                >
                 <input
                   type="text"
                   id="alunoLocal"
@@ -440,17 +464,6 @@
                   id="alunoTelefone"
                   placeholder="(11) 99999-9999"
                 />
-              </div>
-              <div class="form-grupo-spa">
-                <label for="alunoObjetivo">Objetivo</label>
-                <select id="alunoObjetivo">
-                  <option value="Personal Trainer">Personal Trainer</option>
-                  <option value="Hipertrofia">Hipertrofia</option>
-                  <option value="Emagrecimento">Emagrecimento</option>
-                  <option value="Condicionamento">Condicionamento</option>
-                  <option value="Funcional">Funcional</option>
-                  <option value="Outro">Outro</option>
-                </select>
               </div>
               <div class="modal-alunos-acoes">
                 <button

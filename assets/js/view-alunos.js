@@ -1,10 +1,79 @@
 // [TAG-VIEW-ALUNOS] view-alunos.js
 // Responsabilidade: View da aba Alunos — listagem com KPIs, formulário de cadastro/edição e exclusão
 // Depende de: state.js, storage.js, utils-kpi.js (calcular*), view-home.js (atualizarDashboardStats — em runtime) - Lógica de Alunos na SPA (Prô Josy)
+function normalizarObjetivoAluno(valorObjetivo) {
+    const objetivo = String(valorObjetivo || '').trim();
+    return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+}
+
+function objetivoSwitchEstaAtivo() {
+    const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
+    return !!(elObjetivoSwitch && elObjetivoSwitch.checked);
+}
+
+function obterObjetivoAlunoDoSwitch() {
+    return objetivoSwitchEstaAtivo() ? 'Consultoria Online' : 'Personal Trainer';
+}
+
+function aplicarClasseCampoDesabilitado(campo, desabilitado) {
+    if (!campo || typeof campo.closest !== 'function') return;
+    const grupo = campo.closest('.form-grupo-spa');
+    if (!grupo) return;
+    grupo.classList.toggle('form-grupo-spa--desabilitado', !!desabilitado);
+}
+
+function aplicarRegrasObjetivoNoFormulario() {
+    const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
+    const elLocal = document.getElementById('alunoLocal');
+    const elLocalLabel = document.getElementById('alunoLocalLabel');
+    const elPreco = document.getElementById('alunoPreco');
+    const elFrequencia = document.getElementById('alunoFrequenciaSemanal');
+    const elStatusObjetivo = document.getElementById('alunoObjetivoSwitchStatus');
+
+    if (elStatusObjetivo) {
+        elStatusObjetivo.textContent = ehConsultoriaOnline ? 'Consultoria Online' : 'Personal Trainer';
+    }
+
+    if (elLocal) {
+        elLocal.required = !ehConsultoriaOnline;
+    }
+
+    if (elLocalLabel) {
+        elLocalLabel.textContent = ehConsultoriaOnline
+            ? 'Local de Treino (Opcional)'
+            : 'Local de Treino *';
+    }
+
+    if (elPreco) {
+        elPreco.disabled = ehConsultoriaOnline;
+        elPreco.required = !ehConsultoriaOnline;
+        if (ehConsultoriaOnline) elPreco.value = '';
+        aplicarClasseCampoDesabilitado(elPreco, ehConsultoriaOnline);
+    }
+
+    if (elFrequencia) {
+        elFrequencia.disabled = ehConsultoriaOnline;
+        elFrequencia.required = !ehConsultoriaOnline;
+        if (ehConsultoriaOnline) {
+            elFrequencia.value = '';
+        } else if (!elFrequencia.value) {
+            elFrequencia.value = '2';
+        }
+        aplicarClasseCampoDesabilitado(elFrequencia, ehConsultoriaOnline);
+    }
+}
+
+function montarCorObjetivoTangerina() {
+    return { nome: 'Tangerina', hex: '#FF887C' };
+}
+
 window.inicializarPaginaCadastro = async function(opcoes = {}) {
     const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
     if (deveSincronizar && typeof carregarDados === 'function') {
-        await carregarDados({ forcarRender: false });
+        await carregarDados({
+            forcarRender: false,
+            forcarRemoto: opcoes.sincronizar === true
+        });
         window.__sincronizacaoInicialConcluida = true;
     }
     window.renderizarListaAlunos();
@@ -23,6 +92,10 @@ window.togglePainelCadastro = function(mostrar) {
         modal.style.display = 'none'; // Esconde o modal
         const form = document.getElementById('formNovoAluno');
         if (form) form.reset();
+
+        const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
+        if (elObjetivoSwitch) elObjetivoSwitch.checked = false;
+        aplicarRegrasObjetivoNoFormulario();
         
         const idEdicao = document.getElementById('alunoIdEdicao');
         if (idEdicao) idEdicao.value = '';
@@ -34,6 +107,10 @@ window.abrirCadastroParaNovo = function() {
     
     if (titulo) titulo.textContent = 'Cadastrar Novo Aluno';
     if (botao) botao.textContent = 'Adicionar';
+
+    const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
+    if (elObjetivoSwitch) elObjetivoSwitch.checked = false;
+    aplicarRegrasObjetivoNoFormulario();
     
     window.togglePainelCadastro(true);
 };
@@ -132,7 +209,7 @@ window.prepararEdicaoAluno = function(id) {
     const elLocal = document.getElementById('alunoLocal');
     const elPreco = document.getElementById('alunoPreco');
     const elTelefone = document.getElementById('alunoTelefone');
-    const elObjetivo = document.getElementById('alunoObjetivo');
+    const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
     const elFrequencia = document.getElementById('alunoFrequenciaSemanal');
 
     if (elId) elId.value = aluno.id;
@@ -140,12 +217,13 @@ window.prepararEdicaoAluno = function(id) {
     if (elLocal) elLocal.value = aluno.local || '';
     if (elPreco) elPreco.value = aluno.preco || '';
     if (elTelefone) elTelefone.value = aluno.telefone || '';
-    if (elObjetivo) elObjetivo.value = aluno.objetivo || '';
+    if (elObjetivoSwitch) elObjetivoSwitch.checked = normalizarObjetivoAluno(aluno.objetivo) === 'Consultoria Online';
     if (elFrequencia) elFrequencia.value = aluno.frequenciaSemanal || '2';
     const titulo = document.getElementById('tituloFormAluno');
     const botao = document.getElementById('btnSalvarAluno');
     if (titulo) titulo.textContent = 'Editar Aluno';
     if (botao) botao.textContent = 'Atualizar';
+    aplicarRegrasObjetivoNoFormulario();
     window.togglePainelCadastro(true);
 };
 window.deletarAlunoSPA = function(id) {
@@ -160,20 +238,28 @@ window.deletarAlunoSPA = function(id) {
     }
 };
 document.addEventListener('DOMContentLoaded', () => {
+    const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
+    if (elObjetivoSwitch) {
+        elObjetivoSwitch.addEventListener('change', aplicarRegrasObjetivoNoFormulario);
+    }
+    aplicarRegrasObjetivoNoFormulario();
+
     const formAluno = document.getElementById('formNovoAluno');
     if (formAluno) {
         formAluno.addEventListener('submit', (e) => {
             e.preventDefault();
             
             const idEdicao = document.getElementById('alunoIdEdicao').value;
+            const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
             const nome = document.getElementById('alunoNome').value.trim();
             const local = document.getElementById('alunoLocal').value.trim();
-            const preco = parseFloat(document.getElementById('alunoPreco').value) || 0;
+            const preco = ehConsultoriaOnline ? 0 : (parseFloat(document.getElementById('alunoPreco').value) || 0);
             const telefone = document.getElementById('alunoTelefone').value.trim();
-            let objetivo = document.getElementById('alunoObjetivo').value.trim();
-            // Se objetivo vazio, preencher com padrão "Personal Trainer"
-            if (!objetivo) objetivo = 'Personal Trainer';
-            const frequenciaSemanal = parseInt(document.getElementById('alunoFrequenciaSemanal').value, 10) || 2;
+            const objetivo = obterObjetivoAlunoDoSwitch();
+            const corObjetivo = montarCorObjetivoTangerina();
+            const frequenciaSemanal = ehConsultoriaOnline
+                ? 0
+                : (parseInt(document.getElementById('alunoFrequenciaSemanal').value, 10) || 2);
 
             if (typeof alunos === 'undefined') return;
 
@@ -187,6 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alunos[index].preco = preco;
                     alunos[index].telefone = telefone;
                     alunos[index].objetivo = objetivo;
+                    alunos[index].corObjetivo = corObjetivo;
                     alunos[index].frequenciaSemanal = frequenciaSemanal;
                     
                     // [TAG-CASCADE-SYNC] Se nome ou local mudou, sincroniza agendamentos futuros
@@ -211,6 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     preco: preco,
                     telefone: telefone,
                     objetivo: objetivo,
+                    corObjetivo: corObjetivo,
                     frequenciaSemanal: frequenciaSemanal
                 };
                 alunos.push(novoAluno);

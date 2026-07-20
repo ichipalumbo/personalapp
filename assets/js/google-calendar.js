@@ -28,6 +28,20 @@
     const TOKEN_CACHE_KEY = 'gcal_access_token';
     const EXPIRY_CACHE_KEY = 'gcal_token_expiry';
 
+    function _backendFetchApp(url, options) {
+        if (typeof window.apiFetchBackend === 'function') {
+            return window.apiFetchBackend(url, options);
+        }
+        return fetch(url, options);
+    }
+
+    function _executarComFeedbackConexao(executor, onRetry) {
+        if (typeof window.executarOperacaoRemotaComFeedback === 'function') {
+            return window.executarOperacaoRemotaComFeedback(executor, { onRetry });
+        }
+        return executor();
+    }
+
     // ── Funções para gerenciar cache do token ────────────────────────────────
 
     function _loadTokenFromCache() {
@@ -437,11 +451,15 @@
                 const payload   = externos.map(_gcalEventParaBloqueio);
 
                 // 4. Persiste no backend (coleção bloqueios_externos) com upsert por googleCalendarEventId
-                const res = await fetch(API_BASE_URL + '/bloqueios-externos/sincronizar', {
-                    method:  'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body:    JSON.stringify({ eventos: payload, timeMin, timeMax }),
-                    signal
+                const res = await _executarComFeedbackConexao(async function () {
+                    return _backendFetchApp(API_BASE_URL + '/bloqueios-externos/sincronizar', {
+                        method:  'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body:    JSON.stringify({ eventos: payload, timeMin, timeMax }),
+                        signal
+                    });
+                }, function () {
+                    return global.sincronizarBloqueiosExternos(timeMin, timeMax);
                 });
 
                 if (!res.ok) {
@@ -568,11 +586,15 @@
                 console.log('[gcal-bidi] Sincronizando ' + agendamentosParaSincronizar.length + ' agendamento(s) do GCal.');
 
                 // 4. Envia para o backend para atualizar no MongoDB
-                const res = await fetch(API_BASE_URL + '/agendamentos/sincronizar-do-gcal', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ agendamentos: agendamentosParaSincronizar }),
-                    signal
+                const res = await _executarComFeedbackConexao(async function () {
+                    return _backendFetchApp(API_BASE_URL + '/agendamentos/sincronizar-do-gcal', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ agendamentos: agendamentosParaSincronizar }),
+                        signal
+                    });
+                }, function () {
+                    return _sincronizarAgendamentosDoGCal(timeMin, timeMax);
                 });
 
                 if (!res.ok) {
@@ -674,7 +696,7 @@
                 if (idx !== -1) aulasRef[idx].googleCalendarEventId = gcalEventId;
 
                 // Persiste no backend de forma assíncrona (sem bloquear o overlay)
-                fetch(API_BASE_URL + '/agendamentos/' + encodeURIComponent(agendamento.id), {
+                _backendFetchApp(API_BASE_URL + '/agendamentos/' + encodeURIComponent(agendamento.id), {
                     method:  'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body:    JSON.stringify({ googleCalendarEventId: gcalEventId })

@@ -4,12 +4,52 @@
 // Expõe: window.criarCardAgendamento(comp, opcoes)
 
 (function() {
+    const AULA_COR_FALLBACK = '#6B7280';
+
     const BADGE_STYLES = {
         recorrente: 'background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         unico: 'background: rgba(129, 199, 132, 0.15); color: #81C784; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         deslocamento: 'background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         bloqueio: 'background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;'
     };
+
+    function normalizarHex(valorHex) {
+        if (typeof valorHex !== 'string') {
+            return null;
+        }
+
+        const valorLimpo = valorHex.trim();
+        if (!valorLimpo) {
+            return null;
+        }
+
+        if (/^#([0-9a-fA-F]{3})$/.test(valorLimpo)) {
+            return `#${valorLimpo[1]}${valorLimpo[1]}${valorLimpo[2]}${valorLimpo[2]}${valorLimpo[3]}${valorLimpo[3]}`.toUpperCase();
+        }
+
+        if (/^#([0-9a-fA-F]{6})$/.test(valorLimpo)) {
+            return valorLimpo.toUpperCase();
+        }
+
+        return null;
+    }
+
+    function resolverCorObjetivoAula(aluno) {
+        const corObjetivoHex = aluno && aluno.corObjetivo ? aluno.corObjetivo.hex : null;
+        return normalizarHex(corObjetivoHex) || AULA_COR_FALLBACK;
+    }
+
+    function montarStyleComposto(estilos) {
+        if (!Array.isArray(estilos)) {
+            return '';
+        }
+
+        const partes = estilos
+            .map(estilo => (typeof estilo === 'string' ? estilo.trim() : ''))
+            .filter(Boolean);
+
+        return partes.join(' ');
+    }
 
     function normalizarObjetivo(objetivo) {
         return String(objetivo || 'Outro').replace(/\s/g, '');
@@ -107,6 +147,11 @@
             const nome = aluno ? aluno.nome : '❓ Aluno Removido';
             const objetivo = aluno ? (aluno.objective || aluno.objetivo || 'Outro') : 'Outro';
             const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
+            const corBordaAula = resolverCorObjetivoAula(aluno);
+            const styleCardAula = montarStyleComposto([
+                `border-left-color: ${corBordaAula};`,
+                opcoes.style || ''
+            ]);
             let tagNomeHtml = '';
             let tagVisualHtml = '';
 
@@ -121,7 +166,7 @@
             }
 
             return `
-                <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
+                <div class="${classes.join(' ')}"${montarAtributo('style', styleCardAula)}${montarAtributo('onclick', opcoes.onclick)}>
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
                             <div class="agenda-semana-card-title-group">

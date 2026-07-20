@@ -105,11 +105,24 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
 async function _persistirAgendamentosNoBackend(agendamentos) {
     try {
         const aulasData = agendamentos.filter(a => a.source !== 'google_external');
-        
-        const res = await fetch('https://personal-app-api.vercel.app/api/agendamentos/sincronizar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ agendamentos: aulasData })
+
+        const executar = typeof window.executarOperacaoRemotaComFeedback === 'function'
+            ? window.executarOperacaoRemotaComFeedback
+            : async (fn) => fn();
+        const apiFetch = typeof window.apiFetchBackend === 'function'
+            ? window.apiFetchBackend
+            : fetch;
+
+        const res = await executar(async function () {
+            return apiFetch('https://personal-app-api.vercel.app/api/agendamentos/sincronizar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ agendamentos: aulasData })
+            });
+        }, {
+            onRetry: function () {
+                return _persistirAgendamentosNoBackend(agendamentos);
+            }
         });
 
         if (!res.ok) {

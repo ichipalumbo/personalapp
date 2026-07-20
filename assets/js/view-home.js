@@ -64,16 +64,28 @@ window.inicializarHome = async function (opcoes = {}) {
   if (!aulasParaRepor) aulasParaRepor = [];
 
   if (deveSincronizar) {
-    window.__homeCarregando = true;
-    window.renderizarLoadingHome();
+    const deveMostrarLoading =
+      opcoes.sincronizar === true ||
+      typeof window.temDadosLocaisNoCache !== "function" ||
+      !window.temDadosLocaisNoCache();
+
+    if (deveMostrarLoading) {
+      window.__homeCarregando = true;
+      window.renderizarLoadingHome();
+    }
 
     try {
       if (typeof carregarDados === "function") {
-        await carregarDados({ forcarRender: false });
+        await carregarDados({
+          forcarRender: false,
+          forcarRemoto: opcoes.sincronizar === true,
+        });
       }
       window.__sincronizacaoInicialConcluida = true;
     } finally {
-      window.__homeCarregando = false;
+      if (deveMostrarLoading) {
+        window.__homeCarregando = false;
+      }
     }
   }
 

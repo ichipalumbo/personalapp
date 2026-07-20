@@ -1,16 +1,17 @@
 /* [TAG-STYLE-OBJETIVOS] - Cores dos objetivos de treino (centralizado em CSS Custom Properties) */
 :root {
-  --objetivo-funcional-text: #ff7043;
-  --objetivo-funcional-border: #ffd700;
-  --objetivo-hipertrofia-text: #ffd700;
-  --objetivo-hipertrofia-border: #64b5f6;
-  --objetivo-emagrecimento-text: #81c784;
-  --objetivo-emagrecimento-border: #81c784;
-  --objetivo-condicionamento-text: #64b5f6;
-  --objetivo-condicionamento-border: #ce93d8;
-  --objetivo-outro-text: #b39ddb;
-  --objetivo-outro-border: #78909c;
-  --objetivo-personal-trainer-text: #c2185b;
+  --objetivo-tangerina: #ff887c;
+  --objetivo-funcional-text: var(--objetivo-tangerina);
+  --objetivo-funcional-border: var(--objetivo-tangerina);
+  --objetivo-hipertrofia-text: var(--objetivo-tangerina);
+  --objetivo-hipertrofia-border: var(--objetivo-tangerina);
+  --objetivo-emagrecimento-text: var(--objetivo-tangerina);
+  --objetivo-emagrecimento-border: var(--objetivo-tangerina);
+  --objetivo-condicionamento-text: var(--objetivo-tangerina);
+  --objetivo-condicionamento-border: var(--objetivo-tangerina);
+  --objetivo-outro-text: var(--objetivo-tangerina);
+  --objetivo-outro-border: var(--objetivo-tangerina);
+  --objetivo-personal-trainer-text: var(--objetivo-tangerina);
 }
 
 .objetivo-Hipertrofia {
@@ -31,6 +32,12 @@
 }
 .objetivo-PersonalTrainer {
   color: var(--objetivo-personal-trainer-text);
+  border-left-color: var(--objetivo-personal-trainer-text);
+  font-weight: 700;
+}
+.objetivo-ConsultoriaOnline {
+  color: var(--objetivo-personal-trainer-text);
+  border-left-color: var(--objetivo-personal-trainer-text);
   font-weight: 700;
 }
 .objetivo-Outro {
@@ -360,6 +367,19 @@ body {
 .form-grupo-spa input:focus,
 .form-grupo-spa select:focus {
   border-color: #ffd700;
+}
+.form-grupo-spa.form-grupo-spa--desabilitado {
+  opacity: 0.55;
+}
+.form-grupo-spa.form-grupo-spa--desabilitado label {
+  color: #707070;
+}
+.form-grupo-spa input:disabled,
+.form-grupo-spa select:disabled {
+  background: #111;
+  color: #787878;
+  border-color: #2a2a2a;
+  cursor: not-allowed;
 }
 .duracao-stepper {
   display: grid;
@@ -1026,7 +1046,7 @@ body {
 /* Custom modern event card styling */
 .agenda-dia-aula {
   position: absolute;
-  background: #161618; /* Elegant dark-gray background */
+  background: rgba(255, 136, 124, 0.05); /* Fundo suave com base #FF887C */
   border: 1px solid #222224;
   border-left: 4px solid #ffd700;
   border-radius: 6px !important; /* "diminuir um pouco o arredondamento das bordas" */
@@ -1144,10 +1164,11 @@ body {
 }
 
 .agenda-dia-aula-detalhes {
-  color: #ffd700;
+  color: #ff887c;
   font-size: 0.68rem;
   align-self: flex-start;
-  background: rgba(255, 215, 0, 0.08);
+  background: rgba(255, 136, 124, 0.12);
+  border: 1px solid rgba(255, 136, 124, 0.45);
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -1689,6 +1710,58 @@ body {
   font-size: 0.95rem;
   margin: 0;
   text-align: center;
+}
+.overlay-sinc-erro .overlay-sinc-conteudo {
+  border-color: rgba(229, 57, 53, 0.55);
+}
+.overlay-sinc-erro .overlay-sinc-msg {
+  color: #ffd4d2;
+}
+.overlay-sinc-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+.overlay-sinc-retry {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e53935;
+  color: #fff;
+  background: #e53935;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.overlay-sinc-retry:hover {
+  background: #ff4d4a;
+  border-color: #ff4d4a;
+}
+.overlay-sinc-retry:active {
+  transform: scale(0.98);
+}
+.overlay-sinc-later {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #555;
+  color: #ddd;
+  background: #2b2b2b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.overlay-sinc-later:hover {
+  background: #353535;
+  border-color: #6a6a6a;
+}
+.overlay-sinc-later:active {
+  transform: scale(0.98);
 }
 
 /* [TAG-STYLE-FILTRO-ALUNO-CALENDARIO] - Filter dropdown styling */

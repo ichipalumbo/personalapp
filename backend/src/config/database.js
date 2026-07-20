@@ -1,8 +1,15 @@
 const mongoose = require('mongoose');
 
-let hasConnectionAttempt = false;
+const globalForMongoose = global;
 
-function connectToDatabase(mongoURI) {
+if (!globalForMongoose.__mongooseCache) {
+  globalForMongoose.__mongooseCache = {
+    conn: null,
+    promise: null
+  };
+}
+
+async function connectToDatabase(mongoURI) {
   if (!mongoURI) {
     const errMsg = '❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada (MONGODB_URI ou MONGO_URI).';
     console.error(errMsg);
@@ -12,23 +19,32 @@ function connectToDatabase(mongoURI) {
     return null;
   }
 
-  if (hasConnectionAttempt) {
-    return mongoose.connection;
+  const cache = globalForMongoose.__mongooseCache;
+
+  if (cache.conn) {
+    return cache.conn;
   }
 
-  hasConnectionAttempt = true;
+  if (!cache.promise) {
+    const cleanURI = mongoURI.replace(/:[^:/@]*@/, ':***@'); // remove senha
+    console.log(`📡 Conectando ao MongoDB: ${cleanURI}`);
 
-  const cleanURI = mongoURI.replace(/:[^:/@]*@/, ':***@'); // remove senha
-  console.log(`📡 Conectando ao MongoDB: ${cleanURI}`);
+    cache.promise = mongoose
+      .connect(mongoURI)
+      .then((mongooseInstance) => {
+        console.log('✅ Conectado ao MongoDB com sucesso!');
+        return mongooseInstance.connection;
+      })
+      .catch((err) => {
+        cache.promise = null;
+        console.error('❌ Erro ao conectar ao MongoDB:', err.message);
+        console.error('Detalhes:', err);
+        throw err;
+      });
+  }
 
-  mongoose.connect(mongoURI)
-    .then(() => console.log('✅ Conectado ao MongoDB com sucesso!'))
-    .catch(err => {
-      console.error('❌ Erro ao conectar ao MongoDB:', err.message);
-      console.error('Detalhes:', err);
-    });
-
-  return mongoose.connection;
+  cache.conn = await cache.promise;
+  return cache.conn;
 }
 
 module.exports = {

@@ -5,12 +5,16 @@
 //         atualizarAlunos, atualizarAulas, atualizarLimitesGrade, window.faturamentoMeta
 const API_BASE_URL = "https://personal-app-api.vercel.app/api";
 const API_TIMEOUT_MS = 8000;
+const SLEEP_MODE_THRESHOLD_MS = 3000;
 
 // [TAG-STORAGE-VERCEL-PING] Warm-up para cold start do Vercel — fire-and-forget, sem await
 fetch('https://personal-app-api.vercel.app/').catch(() => {});
 
 // Flag para timeout estendido na primeira requisição (cold start do Vercel + conexão MongoDB)
 let _primeiraRequisicao = true;
+let _cacheInicializado = false;
+let _cachePossuiDados = false;
+let _syncBancoEmAndamento = false;
 
 async function fetchComTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
     const controller = new AbortController();
@@ -26,6 +30,110 @@ async function fetchComTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
     } finally {
         clearTimeout(timeoutId);
     }
+}
+
+function _parseJSONSeguro(valor, fallback) {
+    try {
+        return valor ? JSON.parse(valor) : fallback;
+    } catch (error) {
+        return fallback;
+    }
+}
+
+function _mostrarOverlaySleepMode() {
+    const mensagem = 'Servidor em Sleep Mode. Acordando o banco de dados... (pode levar 15s)';
+    if (typeof mostrarOverlaySleepMode === 'function') {
+        mostrarOverlaySleepMode(mensagem);
+        return;
+    }
+    if (typeof mostrarOverlaySinc === 'function') {
+        mostrarOverlaySinc(mensagem);
+    }
+}
+
+function _mostrarOverlayErroComRetry(onRetry) {
+    const mensagem = 'Falha ao conectar. Banco de dados inativo.';
+    if (typeof mostrarOverlayErroConexao === 'function') {
+        mostrarOverlayErroConexao(mensagem, onRetry, function () {
+            if (typeof mostrarToast === 'function') {
+                mostrarToast('Tudo bem. Você pode sincronizar depois pelo botão "Sincronizar Banco".', 'warning');
+            }
+        });
+        return;
+    }
+    if (typeof mostrarToast === 'function') {
+        mostrarToast(mensagem, 'error');
+    }
+}
+
+function _ocultarOverlayConexao() {
+    if (typeof ocultarOverlayConexao === 'function') {
+        ocultarOverlayConexao();
+        return;
+    }
+    if (typeof ocultarOverlaySinc === 'function') {
+        ocultarOverlaySinc();
+    }
+}
+
+function _setEstadoBotaoSyncBanco(estado) {
+    const btn = document.getElementById('btnSyncBanco');
+    const label = document.getElementById('btnSyncBancoText');
+    if (!btn || !label) return;
+
+    if (estado === 'sincronizando') {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        label.textContent = 'Sincronizando...';
+        return;
+    }
+
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    label.textContent = 'Sincronizar Banco';
+}
+
+function _cacheTemDados(alunosLista, aulasLista) {
+    return (Array.isArray(alunosLista) && alunosLista.length > 0)
+        || (Array.isArray(aulasLista) && aulasLista.length > 0);
+}
+
+function temDadosLocaisNoCache() {
+    const alunosCache = _parseJSONSeguro(localStorage.getItem('personal_alunos'), []);
+    const aulasCache = _parseJSONSeguro(localStorage.getItem('personal_aulas'), []);
+    return _cacheTemDados(alunosCache, aulasCache);
+}
+
+async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
+    const deveExibirFalha = opcoes.exibirFalha !== false;
+    const onRetry = typeof opcoes.onRetry === 'function' ? opcoes.onRetry : null;
+
+    let overlayFoiExibido = false;
+    const sleepTimer = setTimeout(() => {
+        overlayFoiExibido = true;
+        _mostrarOverlaySleepMode();
+    }, SLEEP_MODE_THRESHOLD_MS);
+
+    try {
+        const resultado = await executor();
+        clearTimeout(sleepTimer);
+        if (overlayFoiExibido) {
+            _ocultarOverlayConexao();
+        }
+        return resultado;
+    } catch (error) {
+        clearTimeout(sleepTimer);
+        if (deveExibirFalha) {
+            _mostrarOverlayErroComRetry(onRetry);
+        }
+        throw error;
+    }
+}
+
+async function apiFetchBackend(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
+    return fetchComTimeout(url, options, timeoutMs);
 }
 
 function obterAlunos() {
@@ -121,22 +229,56 @@ function atualizarLimitesGrade(novaGrade) {
     } catch(e) {}
     window.limitesGrade = grade;
 }
+
+function normalizarObjetivoAlunoMigracao(valorObjetivo) {
+    const objetivo = String(valorObjetivo || '').trim();
+    return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+}
+
+function montarCorObjetivoTangerinaMigracao() {
+    return { nome: 'Tangerina', hex: '#FF887C' };
+}
+
 async function carregarDados(opcoes = {}) {
     const deveForcarRender = opcoes.forcarRender !== false;
+    const forcarRemoto = opcoes.forcarRemoto === true;
+
+    if (!_cacheInicializado) {
+        const resultadoLocal = carregarDadosDoLocalStorage();
+        _cacheInicializado = true;
+        _cachePossuiDados = resultadoLocal.temDados;
+
+        if (_cachePossuiDados && !forcarRemoto) {
+            console.log('⚡ Cache local carregado instantaneamente. Sem chamada inicial à API.');
+            if (deveForcarRender) {
+                forçarRenderizacaoInterface();
+            }
+            return { origem: 'local-cache' };
+        }
+    } else if (_cachePossuiDados && !forcarRemoto) {
+        if (deveForcarRender) {
+            forçarRenderizacaoInterface();
+        }
+        return { origem: 'local-cache' };
+    }
 
     try {
         const timeoutAtual = _primeiraRequisicao ? 40000 : API_TIMEOUT_MS;
-        console.log("🔄 Iniciando sincronização com o banco de dados online...");
-        const [resAlunos, resAgendamentos, resConfig, resBloqueiosExt] = await Promise.all([
-            fetchComTimeout(`${API_BASE_URL}/alunos`, {}, timeoutAtual).catch(() => { throw new Error("API Alunos fora do ar ou lenta (timeout)"); }),
-            fetchComTimeout(`${API_BASE_URL}/agendamentos`, {}, timeoutAtual).catch(() => { throw new Error("API Agendamentos fora do ar ou lenta (timeout)"); }),
-            fetchComTimeout(`${API_BASE_URL}/configuracao`, {}, timeoutAtual).catch(() => { throw new Error("API Configuração fora do ar ou lenta (timeout)"); }),
-            // [TAG-STORAGE-BLOQUEIOS-EXT] Sempre resolve para array — qualquer falha (404, 500, rede) devolve []
-            // para não quebrar carregarDados() enquanto a rota do backend ainda não está deployed.
-            fetchComTimeout(`${API_BASE_URL}/bloqueios-externos`, {}, timeoutAtual)
-                .then(res => res.ok ? res.json() : [])
-                .catch(err => { console.warn('⚠️ /bloqueios-externos indisponível:', err.message); return []; })
-        ]);
+        console.log('🔄 Iniciando sincronização com o banco de dados online...');
+        const onRetry = () => carregarDados({ ...opcoes, forcarRemoto: true });
+
+        const [resAlunos, resAgendamentos, resConfig, resBloqueiosExt] = await executarOperacaoRemotaComFeedback(async () => {
+            return Promise.all([
+                apiFetchBackend(`${API_BASE_URL}/alunos`, {}, timeoutAtual).catch(() => { throw new Error('API Alunos fora do ar ou lenta (timeout)'); }),
+                apiFetchBackend(`${API_BASE_URL}/agendamentos`, {}, timeoutAtual).catch(() => { throw new Error('API Agendamentos fora do ar ou lenta (timeout)'); }),
+                apiFetchBackend(`${API_BASE_URL}/configuracao`, {}, timeoutAtual).catch(() => { throw new Error('API Configuração fora do ar ou lenta (timeout)'); }),
+                // [TAG-STORAGE-BLOQUEIOS-EXT] Sempre resolve para array — qualquer falha (404, 500, rede) devolve []
+                // para não quebrar carregarDados() enquanto a rota do backend ainda não está deployed.
+                apiFetchBackend(`${API_BASE_URL}/bloqueios-externos`, {}, timeoutAtual)
+                    .then(res => res.ok ? res.json() : [])
+                    .catch(err => { console.warn('⚠️ /bloqueios-externos indisponível:', err.message); return []; })
+            ]);
+        }, { onRetry });
 
         if (!resAlunos.ok || !resAgendamentos.ok || !resConfig.ok) {
             throw new Error("Uma ou mais requisições falharam no servidor.");
@@ -145,7 +287,22 @@ async function carregarDados(opcoes = {}) {
         const dadosAlunos = await resAlunos.json();
         const dadosAgendamentos = await resAgendamentos.json();
         const dadosConfig = await resConfig.json();
-        const listaAlunosAPI = Array.isArray(dadosAlunos) ? dadosAlunos : [];
+        const listaAlunosAPIOriginal = Array.isArray(dadosAlunos) ? dadosAlunos : [];
+        const listaAlunosAPI = listaAlunosAPIOriginal.map((aluno) => {
+            const objetivoNormalizado = normalizarObjetivoAlunoMigracao(aluno && aluno.objetivo);
+            return {
+                ...aluno,
+                objetivo: objetivoNormalizado,
+                corObjetivo: montarCorObjetivoTangerinaMigracao()
+            };
+        });
+        const houveMigracaoPersistenteAlunos = listaAlunosAPI.some((alunoNormalizado, idx) => {
+            const alunoOriginal = listaAlunosAPIOriginal[idx] || {};
+            const corOriginal = alunoOriginal.corObjetivo || {};
+            return (alunoOriginal.objetivo || '') !== alunoNormalizado.objetivo
+                || corOriginal.nome !== alunoNormalizado.corObjetivo.nome
+                || corOriginal.hex !== alunoNormalizado.corObjetivo.hex;
+        });
         const listaAulasAPI = Array.isArray(dadosAgendamentos) ? dadosAgendamentos : [];
         if (listaAlunosAPI.length === 0 && listaAulasAPI.length === 0) {
             const backupUnificado = localStorage.getItem('personalTrainerData');
@@ -203,6 +360,12 @@ async function carregarDados(opcoes = {}) {
         }
         atualizarAlunos(listaAlunosAPI);
         atualizarAulas(aulasParaCarregar);
+
+        if (houveMigracaoPersistenteAlunos) {
+            console.log('🔁 Migração de objetivos de alunos aplicada. Persistindo no banco remoto...');
+            await salvarDados(true);
+        }
+
         console.log('🔍 Aulas carregadas no frontend (após merge com bloqueios externos):', obterAulas());
 
         if (dadosConfig) {
@@ -218,9 +381,11 @@ async function carregarDados(opcoes = {}) {
             agendaConfig.horaInicio = parseInt(gradeCarregada.inicio.split(':')[0]);
             agendaConfig.horaFim = parseInt(gradeCarregada.fim.split(':')[0]);
         }
+        salvarNoLocalStorage();
         window.faturamentoMeta = parseFloat(localStorage.getItem('faturamentoMeta')) || 0;
 
         _primeiraRequisicao = false;
+        _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
         console.log("✅ Dados sincronizados do MongoDB com sucesso!", {
             alunos: obterAlunos().length,
             aulas: obterAulas().length,
@@ -233,7 +398,8 @@ async function carregarDados(opcoes = {}) {
 
     } catch (error) {
         console.error("❌ Falha na conexão com a API. Usando localStorage temporariamente.", error);
-        carregarDadosDoLocalStorage();
+        const resultadoLocal = carregarDadosDoLocalStorage();
+        _cachePossuiDados = resultadoLocal.temDados;
         
         if (typeof mostrarToast === 'function') {
             mostrarToast("Trabalhando offline. Dados salvos no navegador.", "warning");
@@ -241,72 +407,85 @@ async function carregarDados(opcoes = {}) {
         if (deveForcarRender) {
             forçarRenderizacaoInterface();
         }
+        return { origem: 'local-fallback' };
     }
+
+    return { origem: 'remoto' };
 }
 async function salvarDados(silencioso = false) {
     salvarNoLocalStorage();
 
     try {
-        console.log("💾 Sincronizando alterações com o MongoDB Atlas...");
+        console.log('💾 Sincronizando alterações com o MongoDB Atlas...');
 
         const alunosData = obterAlunos();
         // [TAG-STORAGE-FILTER-EXTERNO] Eventos externos do Google Calendar vivem em `bloqueios_externos`;
         // nunca devem ser enviados para a coleção `agendamentos`.
         const aulasData = obterAulas().filter(a => a.source !== 'google_external');
         const gradeData = obterLimitesGrade();
-        const [resAlunos, resAgendamentos, resConfig] = await Promise.all([
-            fetch(`${API_BASE_URL}/alunos/sincronizar`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ alunos: alunosData })
-            }),
-            fetch(`${API_BASE_URL}/agendamentos/sincronizar`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ agendamentos: aulasData })
-            }),
-            fetch(`${API_BASE_URL}/configuracao`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    horaInicio: gradeData.inicio || "06:00",
-                    horaFim: gradeData.fim || "22:00"
+        const onRetry = () => salvarDados(silencioso);
+
+        const [resAlunos, resAgendamentos, resConfig] = await executarOperacaoRemotaComFeedback(async () => {
+            return Promise.all([
+                apiFetchBackend(`${API_BASE_URL}/alunos/sincronizar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ alunos: alunosData })
+                }),
+                apiFetchBackend(`${API_BASE_URL}/agendamentos/sincronizar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ agendamentos: aulasData })
+                }),
+                apiFetchBackend(`${API_BASE_URL}/configuracao`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        horaInicio: gradeData.inicio || '06:00',
+                        horaFim: gradeData.fim || '22:00'
+                    })
                 })
-            })
-        ]);
+            ]);
+        }, { onRetry, exibirFalha: true });
 
         if (!resAlunos.ok || !resAgendamentos.ok || !resConfig.ok) {
-            throw new Error("Falha ao salvar dados no banco remoto.");
+            throw new Error('Falha ao salvar dados no banco remoto.');
         }
 
-        console.log("☁️ Alterações sincronizadas com o banco remoto!");
+        salvarNoLocalStorage();
+        _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
+        console.log('☁️ Alterações sincronizadas com o banco remoto!');
         
         if (!silencioso && typeof mostrarToast === 'function') {
-            mostrarToast("Alterações salvas na nuvem!", "success");
+            mostrarToast('Alterações salvas na nuvem!', 'success');
         }
 
     } catch (error) {
-        console.error("❌ Erro ao salvar dados na API:", error);
+        console.error('❌ Erro ao salvar dados na API:', error);
         if (!silencioso && typeof mostrarToast === 'function') {
-            mostrarToast("Erro de conexão. Salvo temporariamente no aparelho.", "error");
+            mostrarToast('Erro de conexão. Salvo temporariamente no aparelho.', 'error');
         }
     }
 }
 
 function carregarDadosDoLocalStorage() {
-    const backupAlunos = localStorage.getItem('personal_alunos');
-    const backupAulas = localStorage.getItem('personal_aulas');
-    const backupGrade = localStorage.getItem('personal_limitesGrade');
-    
-    atualizarAlunos(backupAlunos ? JSON.parse(backupAlunos) : []);
-    atualizarAulas(backupAulas ? JSON.parse(backupAulas) : []);
-    atualizarLimitesGrade(backupGrade ? JSON.parse(backupGrade) : { inicio: "06:00", fim: "22:00" });
+    const backupAlunos = _parseJSONSeguro(localStorage.getItem('personal_alunos'), []);
+    const backupAulas = _parseJSONSeguro(localStorage.getItem('personal_aulas'), []);
+    const backupGrade = _parseJSONSeguro(localStorage.getItem('personal_limitesGrade'), { inicio: '06:00', fim: '22:00' });
+
+    atualizarAlunos(Array.isArray(backupAlunos) ? backupAlunos : []);
+    atualizarAulas(Array.isArray(backupAulas) ? backupAulas : []);
+    atualizarLimitesGrade(backupGrade || { inicio: '06:00', fim: '22:00' });
     const gradeLocal = obterLimitesGrade();
     if (typeof agendaConfig !== 'undefined') {
         agendaConfig.horaInicio = parseInt(gradeLocal.inicio.split(':')[0]);
         agendaConfig.horaFim = parseInt(gradeLocal.fim.split(':')[0]);
     }
     window.faturamentoMeta = parseFloat(localStorage.getItem('faturamentoMeta')) || 0;
+
+    return {
+        temDados: _cacheTemDados(backupAlunos, backupAulas)
+    };
 }
 
 function salvarNoLocalStorage() {
@@ -325,3 +504,35 @@ function forçarRenderizacaoInterface() {
         renderizarAgenda();
     }
 }
+
+window.apiFetchBackend = apiFetchBackend;
+window.executarOperacaoRemotaComFeedback = executarOperacaoRemotaComFeedback;
+window.carregarDadosDoLocalStorage = carregarDadosDoLocalStorage;
+window.temDadosLocaisNoCache = temDadosLocaisNoCache;
+
+window.sincronizarBancoDados = async function (opcoes = {}) {
+    if (_syncBancoEmAndamento) {
+        return;
+    }
+
+    _syncBancoEmAndamento = true;
+    _setEstadoBotaoSyncBanco('sincronizando');
+
+    try {
+        await carregarDados({ forcarRender: true, forcarRemoto: true });
+
+        const incluirGoogle = opcoes.incluirGoogle !== false;
+        if (incluirGoogle && typeof window.iniciarSyncGoogleCalendar === 'function') {
+            window.iniciarSyncGoogleCalendar();
+        }
+
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Banco sincronizado com sucesso!', 'success');
+        }
+    } catch (error) {
+        console.error('[storage] Erro na sincronização manual do banco:', error);
+    } finally {
+        _syncBancoEmAndamento = false;
+        _setEstadoBotaoSyncBanco('pronto');
+    }
+};

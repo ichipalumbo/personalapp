@@ -9,7 +9,10 @@ window.filtroAlunoMensalId = null; // Estado do filtro de aluno na aba mensal
 window.inicializarPaginaCalendario = async function(opcoes = {}) {
     const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
     if (deveSincronizar && typeof carregarDados === 'function') {
-        await carregarDados({ forcarRender: false });
+        await carregarDados({
+            forcarRender: false,
+            forcarRemoto: opcoes.sincronizar === true
+        });
         window.__sincronizacaoInicialConcluida = true;
     }
     
