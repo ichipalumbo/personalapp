@@ -10,7 +10,7 @@ const BloqueioExternoSchema = new mongoose.Schema({
   horarioInicio:        { type: String },   // 'HH:MM'
   horarioFim:           { type: String },   // 'HH:MM'
   fullDay:              { type: Boolean, default: false },
-  semanaISO:            { type: String, required: true }, // ex. '2026-W29'
+  semanaISO:            { type: String, default: null }, // ex. '2026-W29' (opcional, calculado automaticamente)
   source:               { type: String, default: 'google_external' }
 });
 

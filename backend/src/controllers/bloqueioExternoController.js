@@ -34,13 +34,24 @@ async function sincronizarBloqueiosExternosHandler(req, res) {
       });
     }
 
-    const resultado = await sincronizarBloqueiosExternos(eventos || [], timeMin, timeMax);
+    // Validação: eventos deve ser array
+    if (!Array.isArray(eventos)) {
+      return res.status(400).json({
+        error: 'eventos deve ser um array.'
+      });
+    }
+
+    const resultado = await sincronizarBloqueiosExternos(eventos, timeMin, timeMax);
     res.json({
       message: 'Bloqueios externos sincronizados com sucesso!',
       ...resultado
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[BloqueioExterno] Erro ao sincronizar:', err);
+    res.status(500).json({ 
+      error: 'Erro ao sincronizar bloqueios externos',
+      details: err.message 
+    });
   }
 }
 
