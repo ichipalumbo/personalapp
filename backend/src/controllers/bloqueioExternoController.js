@@ -4,7 +4,11 @@ const { sincronizarBloqueiosExternos } = require('../services/bloqueioExternoSer
 async function listarBloqueiosExternos(req, res) {
   try {
     const filtro = {};
+    // Support both old (semanaISO) and new (date range) filters for backward compatibility
     if (req.query.semanaISO) filtro.semanaISO = req.query.semanaISO;
+    if (req.query.timeMin && req.query.timeMax) {
+      filtro.data = { $gte: req.query.timeMin, $lte: req.query.timeMax };
+    }
     const bloqueios = await BloqueioExterno.find(filtro);
     res.json(bloqueios);
   } catch (err) {
@@ -14,14 +18,27 @@ async function listarBloqueiosExternos(req, res) {
 
 async function sincronizarBloqueiosExternosHandler(req, res) {
   try {
-    const { eventos, semanaISO } = req.body;
+    const { eventos, timeMin, timeMax } = req.body;
 
-    if (!semanaISO || typeof semanaISO !== 'string') {
-      return res.status(400).json({ error: 'semanaISO é obrigatório (ex. "2026-W29").' });
+    // Validação: precisa de timeMin e timeMax para definir o range
+    if (!timeMin || !timeMax || typeof timeMin !== 'string' || typeof timeMax !== 'string') {
+      return res.status(400).json({
+        error: 'timeMin e timeMax são obrigatórios (formato: YYYY-MM-DD).'
+      });
     }
 
-    const salvos = await sincronizarBloqueiosExternos(eventos || [], semanaISO);
-    res.json({ message: 'Bloqueios externos sincronizados com sucesso!', total: salvos.length });
+    // timeMin deve ser <= timeMax
+    if (timeMin > timeMax) {
+      return res.status(400).json({
+        error: 'timeMin deve ser menor ou igual a timeMax.'
+      });
+    }
+
+    const resultado = await sincronizarBloqueiosExternos(eventos || [], timeMin, timeMax);
+    res.json({
+      message: 'Bloqueios externos sincronizados com sucesso!',
+      ...resultado
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
