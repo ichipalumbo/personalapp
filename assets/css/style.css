@@ -758,6 +758,20 @@ body {
   padding-bottom: 12px;
 }
 
+.recorrencia-escopo-criacao-container {
+  margin-bottom: 16px;
+}
+
+.recorrencia-escopo-toggle-wrap {
+  margin-bottom: 0px;
+}
+
+.recorrencia-escopo-criacao-resumo {
+  display: block;
+  color: #bdbdbd;
+  font-size: 0.78rem;
+}
+
 @media (min-width: 768px) {
   .modal-recorrencia-secundario {
     width: 400px;
@@ -1853,6 +1867,40 @@ body {
 .modal-recorrencia-trigger-icone {
   color: #ffd700;
   flex-shrink: 0;
+}
+.agenda-modal-data-contexto {
+  margin-bottom: 15px;
+}
+.agenda-modal-info-horario {
+  font-size: 0.8rem;
+  color: #ffd700;
+  margin-top: 10px;
+  margin-bottom: 0;
+  font-weight: 600;
+}
+.agenda-modal-data-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.agenda-modal-data-input-wrapper label {
+  font-size: 0.72rem;
+  color: #a8a8a8;
+  font-weight: 600;
+}
+.agenda-modal-data-input-wrapper input[type="date"] {
+  width: 100%;
+  background: #111;
+  color: #f1f1f1;
+  border: 1px solid #333;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.88rem;
+}
+.agenda-modal-data-input-wrapper input[type="date"]:focus {
+  border-color: #ffd700;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
 }
 .btn-weekly-add {
   position: fixed;

@@ -48,17 +48,17 @@
         <div class="home-weekly-topbar">
           <section class="alunos-grid home-kpi-grid">
             <div class="card-stat home-kpi-card">
-              <span class="stat-numero home-kpi-value" id="totalAulasHoje">0</span>
+              <span class="stat-numero home-kpi-value" id="totalAulasHoje"
+                >0</span
+              >
               <span class="stat-label home-kpi-label"
-                ><i class="fa-solid fa-stopwatch home-kpi-icon"></i>Aulas Hoje</span
+                ><i class="fa-solid fa-stopwatch home-kpi-icon"></i>Aulas
+                Hoje</span
               >
             </div>
             <div
               class="card-stat home-kpi-card home-kpi-card-danger"
-              style="
-                border-color: #ff5252;
-                background: rgba(255, 82, 82, 0.05);
-              "
+              style="border-color: #ff5252; background: rgba(255, 82, 82, 0.05)"
               onclick="togglePainelReposicoes()"
             >
               <span
@@ -68,7 +68,11 @@
                 >0</span
               >
               <span class="stat-label home-kpi-label"
-                ><i class="fa-solid fa-rotate-left home-kpi-icon" style="color: #ff5252"></i>Aulas para Repor</span
+                ><i
+                  class="fa-solid fa-rotate-left home-kpi-icon"
+                  style="color: #ff5252"
+                ></i
+                >Aulas para Repor</span
               >
             </div>
           </section>
@@ -86,7 +90,9 @@
                 </select>
               </div>
               <div class="home-weekly-nav-row">
-                <div class="nav-calendario nav-calendario--home nav-calendario--week-home">
+                <div
+                  class="nav-calendario nav-calendario--home nav-calendario--week-home"
+                >
                   <div class="nav-calendario-main">
                     <button
                       id="btnSemanaHomeAnterior"
@@ -95,7 +101,9 @@
                     >
                       <i class="fa-solid fa-chevron-left"></i>
                     </button>
-                    <span id="periodoSemanaHomeLabel" class="home-weekly-periodo"
+                    <span
+                      id="periodoSemanaHomeLabel"
+                      class="home-weekly-periodo"
                       >Semana de Trabalho</span
                     >
                     <button
@@ -494,7 +502,9 @@
             ></span>
             <div class="modal-escolha-texto">
               <strong>Agendar Bloqueio</strong>
-              <span>Reserve um horário indisponível com ou sem dia inteiro</span>
+              <span
+                >Reserve um horário indisponível com ou sem dia inteiro</span
+              >
             </div>
           </button>
           <button
@@ -758,15 +768,15 @@
             </label>
           </div>
 
-          <p
-            id="infoHorarioAlvo"
-            style="
-              font-size: 0.8rem;
-              color: #ffd700;
-              margin-bottom: 15px;
-              font-weight: 600;
-            "
-          ></p>
+          <div class="agenda-modal-data-contexto">
+            <div class="agenda-modal-data-input-wrapper">
+              <label for="agendaDataSelecionadaInput"
+                >Data do Agendamento</label
+              >
+              <input type="date" id="agendaDataSelecionadaInput" />
+            </div>
+            <p id="infoHorarioAlvo" class="agenda-modal-info-horario"></p>
+          </div>
           <p
             id="infoTipoAgendamento"
             style="
@@ -842,7 +852,8 @@
               <span class="modal-recorrencia-trigger-texto">
                 <span id="agendaResumoRecorrencia">Não se repete</span>
                 <small id="agendaResumoRecorrenciaAux"
-                  >A configuração detalhada da repetição será conectada no próximo passo.</small
+                  >A configuração detalhada da repetição será conectada no
+                  próximo passo.</small
                 >
               </span>
               <span class="modal-recorrencia-trigger-icone"
@@ -864,7 +875,11 @@
             <button type="button" class="btn btn-secondary" id="btnFecharModal">
               Cancelar
             </button>
-            <button type="submit" class="btn btn-primary" id="btnSalvarAgendamento">
+            <button
+              type="submit"
+              class="btn btn-primary"
+              id="btnSalvarAgendamento"
+            >
               Agendar
             </button>
           </div>
@@ -898,20 +913,14 @@
             <div class="form-grupo-spa" style="margin-bottom: 14px">
               <label for="recorrenciaDataInicio">Início da recorrência *</label>
               <input type="date" id="recorrenciaDataInicio" required />
-              <small
-                style="
-                  display: block;
-                  margin-top: 6px;
-                  color: #888;
-                  font-size: 0.75rem;
-                "
-                >A série começa a partir da data selecionada no calendário.</small
+              <small style="display: block; color: #888; font-size: 0.75rem"
+                >A série começa a partir da data selecionada no
+                calendário.</small
               >
             </div>
             <div
-              class="form-grupo-spa"
+              class="form-grupo-spa recorrencia-escopo-criacao-container"
               id="recorrenciaEscopoCriacaoContainer"
-              style="margin-bottom: 16px"
             >
               <label>Como aplicar no calendário?</label>
               <input
@@ -919,34 +928,28 @@
                 id="recorrenciaEscopoCriacao"
                 value="fromDate"
               />
-              <div
-                class="escopo-recorrencia-grid"
-                id="recorrenciaEscopoCriacaoGrid"
-              >
-                <button
-                  type="button"
-                  class="btn-escopo-recorrencia active"
-                  data-escopo-criacao="fromDate"
+              <div class="recorrencia-escopo-toggle-wrap">
+                <label
+                  class="full-day-toggle"
+                  for="recorrenciaIncluirMesAtualRetroativo"
                 >
-                  Daqui pra frente
-                </button>
-                <button
-                  type="button"
-                  class="btn-escopo-recorrencia"
-                  data-escopo-criacao="monthOfDate"
-                >
-                  Este mês todo
-                </button>
+                  <input
+                    type="checkbox"
+                    id="recorrenciaIncluirMesAtualRetroativo"
+                  />
+                  <span class="full-day-toggle-ui">
+                    <span class="full-day-toggle-text"
+                      ><i class="fa-solid fa-calendar-days"></i> Incluir mês
+                      atual retroativamente</span
+                    >
+                    <span class="full-day-toggle-pill"></span>
+                  </span>
+                </label>
               </div>
               <small
                 id="recorrenciaEscopoCriacaoResumo"
-                style="
-                  display: block;
-                  margin-top: 6px;
-                  color: #bdbdbd;
-                  font-size: 0.78rem;
-                "
-                >Vai criar a série da data escolhida em diante.</small
+                class="recorrencia-escopo-criacao-resumo"
+                >Cria a série desta data em diante.</small
               >
             </div>
 
@@ -1091,7 +1094,9 @@
                 id="containerOcorrenciasRecorrencia"
                 style="display: none"
               >
-                <label for="recorrenciaOccurrencesCount">Quantidade de ocorrências</label>
+                <label for="recorrenciaOccurrencesCount"
+                  >Quantidade de ocorrências</label
+                >
                 <input
                   type="number"
                   id="recorrenciaOccurrencesCount"

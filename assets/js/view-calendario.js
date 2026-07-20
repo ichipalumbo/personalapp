@@ -401,8 +401,49 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnNovaAgendaSemanal = document.getElementById('btnNovaAgendaSemanal');
     if (btnNovaAgendaSemanal) {
         btnNovaAgendaSemanal.addEventListener('click', () => {
-            const hoje = new Date();
-            const dataSelecionada = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate(), 12, 0, 0, 0);
+            const referenciaSemana = window.semanaReferencia instanceof Date && !Number.isNaN(window.semanaReferencia.getTime())
+                ? new Date(window.semanaReferencia)
+                : new Date();
+            const diaSemanaReferencia = referenciaSemana.getDay();
+            const deslocamentoParaSegunda = diaSemanaReferencia === 0 ? -6 : 1 - diaSemanaReferencia;
+            const inicioSemana = new Date(
+                referenciaSemana.getFullYear(),
+                referenciaSemana.getMonth(),
+                referenciaSemana.getDate() + deslocamentoParaSegunda,
+                0,
+                0,
+                0,
+                0
+            );
+            const fimSemana = new Date(
+                inicioSemana.getFullYear(),
+                inicioSemana.getMonth(),
+                inicioSemana.getDate() + 6,
+                23,
+                59,
+                59,
+                999
+            );
+
+            const dataSelecionadaGlobal = window.dataSelecionada instanceof Date && !Number.isNaN(window.dataSelecionada.getTime())
+                ? new Date(window.dataSelecionada)
+                : null;
+            const dataEstaNaSemanaAtiva = dataSelecionadaGlobal
+                ? dataSelecionadaGlobal >= inicioSemana && dataSelecionadaGlobal <= fimSemana
+                : false;
+
+            const dataBase = dataEstaNaSemanaAtiva
+                ? dataSelecionadaGlobal
+                : referenciaSemana;
+            const dataSelecionada = new Date(
+                dataBase.getFullYear(),
+                dataBase.getMonth(),
+                dataBase.getDate(),
+                0,
+                0,
+                0,
+                0
+            );
 
             window.abrirNovoAgendamento({
                 dataSelecionada,

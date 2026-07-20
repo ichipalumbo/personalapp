@@ -36,6 +36,67 @@ function getDataSelecionadaAtualPtBr() {
     return '';
 }
 
+function normalizarDataLocal(dataReferencia) {
+    if (!(dataReferencia instanceof Date) || Number.isNaN(dataReferencia.getTime())) {
+        return null;
+    }
+    return new Date(
+        dataReferencia.getFullYear(),
+        dataReferencia.getMonth(),
+        dataReferencia.getDate(),
+        0,
+        0,
+        0,
+        0
+    );
+}
+
+function resolverDataContextoAgendamento(opcoes = {}) {
+    const dataOpcional = normalizarDataLocal(opcoes.dataSelecionada);
+    if (dataOpcional) return dataOpcional;
+
+    const dataGlobal = normalizarDataLocal(window.dataSelecionada);
+    if (dataGlobal) return dataGlobal;
+
+    return normalizarDataLocal(new Date());
+}
+
+function getDataSelecionadaAtualIso() {
+    if (typeof window.formatarDataLocalParaISODate === 'function') {
+        return window.formatarDataLocalParaISODate(window.dataSelecionada);
+    }
+    if (!(window.dataSelecionada instanceof Date) || Number.isNaN(window.dataSelecionada.getTime())) {
+        return '';
+    }
+    const ano = window.dataSelecionada.getFullYear();
+    const mes = String(window.dataSelecionada.getMonth() + 1).padStart(2, '0');
+    const dia = String(window.dataSelecionada.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
+}
+
+function atualizarInfoHorarioAlvoModal(dia) {
+    const infoHorario = document.getElementById('infoHorarioAlvo');
+    if (!infoHorario) return;
+    const dataSelecionadaTexto = getDataSelecionadaAtualPtBr();
+    infoHorario.textContent = dataSelecionadaTexto
+        ? `${dia} • ${dataSelecionadaTexto} — Definir Período`
+        : `${dia} — Definir Período`;
+}
+
+function atualizarCampoDataModalAgendamento() {
+    const inputDataAgenda = document.getElementById('agendaDataSelecionadaInput');
+    if (!inputDataAgenda) return;
+    inputDataAgenda.value = getDataSelecionadaAtualIso();
+}
+
+function sincronizarCamposDataModalAgendamento() {
+    atualizarCampoDataModalAgendamento();
+    const campoDataLegada = document.getElementById('agendaData');
+    if (campoDataLegada) {
+        campoDataLegada.value = getDataSelecionadaAtualPtBr();
+    }
+}
+
 function criarContextoSlotAgendamento(dia, hora) {
     const dataPtBr = getDataSelecionadaAtualPtBr();
     return {
@@ -131,9 +192,7 @@ function capturarFormularioPrincipalNoRascunho() {
 // ── Modal: Escolha de Tipo ─────────────────────────────────────────────────────────────────────
 
 window.abrirNovoAgendamento = function(opcoes = {}) {
-    if (opcoes.dataSelecionada instanceof Date && !Number.isNaN(opcoes.dataSelecionada.getTime())) {
-        window.dataSelecionada = new Date(opcoes.dataSelecionada);
-    }
+    window.dataSelecionada = resolverDataContextoAgendamento(opcoes);
 
     const dia = opcoes.dia || window.getDiaTextoSelecionado();
     const hora = opcoes.hora || window.horarioSelecionadoSlot || '08:00';
@@ -194,17 +253,12 @@ window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
     const tipoSelecionado = ['aula', 'bloqueio', 'deslocamento'].includes(tipoInicial) ? tipoInicial : 'aula';
 
     const modal = document.getElementById('modalAgendamento');
-    const infoHorario = document.getElementById('infoHorarioAlvo');
-    const dataSelecionadaTexto = getDataSelecionadaAtualPtBr();
-    if (infoHorario) {
-        infoHorario.textContent = dataSelecionadaTexto
-            ? `${dia} • ${dataSelecionadaTexto} — Definir Período`
-            : `${dia} — Definir Período`;
-    }
+    atualizarInfoHorarioAlvoModal(dia);
 
     if (document.getElementById('formAgendamento')) {
         document.getElementById('formAgendamento').reset();
     }
+    sincronizarCamposDataModalAgendamento();
 
     const selectInicio = document.getElementById('agendaHoraInicio');
     const selectDuracao = document.getElementById('agendaDuracao');
@@ -485,6 +539,7 @@ function preencherFormularioRecorrencia(recorrencia) {
     const inputDataFim = document.getElementById('recorrenciaUntilDate');
     const inputOcorrencias = document.getElementById('recorrenciaOccurrencesCount');
     const inputEscopo = document.getElementById('recorrenciaEscopoCriacao');
+    const inputIncluirMesAtual = document.getElementById('recorrenciaIncluirMesAtualRetroativo');
 
     if (inputPadrao) inputPadrao.value = recurrenceState.pattern || 'semanal';
     if (inputIntervalo) inputIntervalo.value = `${recurrenceState.interval || 1}`;
@@ -493,10 +548,7 @@ function preencherFormularioRecorrencia(recorrencia) {
     if (inputDataFim) inputDataFim.value = recurrenceState.untilDateIso || '';
     if (inputOcorrencias) inputOcorrencias.value = `${recurrenceState.occurrencesCount || 1}`;
     if (inputEscopo) inputEscopo.value = recurrenceState.scope || 'fromDate';
-
-    document.querySelectorAll('#recorrenciaEscopoCriacaoGrid .btn-escopo-recorrencia').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.escopoCriacao === (recurrenceState.scope || 'fromDate'));
-    });
+    if (inputIncluirMesAtual) inputIncluirMesAtual.checked = recurrenceState.includeCurrentMonthBackfill === true;
 
     document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill').forEach((btn) => {
         btn.classList.toggle('active', recurrenceState.daysOfWeek.includes(btn.getAttribute('data-dia')));
@@ -515,7 +567,8 @@ function lerFormularioRecorrencia() {
     const endCondition = document.getElementById('recorrenciaEndCondition')?.value || 'never';
     const untilDateIso = document.getElementById('recorrenciaUntilDate')?.value || '';
     const occurrencesCount = parseInt(document.getElementById('recorrenciaOccurrencesCount')?.value || '1', 10) || 1;
-    const scope = document.getElementById('recorrenciaEscopoCriacao')?.value || 'fromDate';
+    const scope = 'fromDate';
+    const includeCurrentMonthBackfill = document.getElementById('recorrenciaIncluirMesAtualRetroativo')?.checked === true;
     const daysOfWeek = [];
 
     document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill.active').forEach((btn) => {
@@ -533,6 +586,7 @@ function lerFormularioRecorrencia() {
         untilDateIso: endCondition === 'untilDate' ? untilDateIso : '',
         occurrencesCount: endCondition === 'occurrences' ? occurrencesCount : 1,
         scope,
+        includeCurrentMonthBackfill,
         hasCustomSettings: true
     });
 }
@@ -573,7 +627,9 @@ window.atualizarResumoRecorrenciaCadastro = function() {
     const container = document.getElementById('resumoRecorrenciaCadastro');
     if (!container) return;
     const recorrencia = lerFormularioRecorrencia();
-    const escopoTxt = recorrencia.scope === 'monthOfDate' ? 'Este mês todo' : 'Daqui pra frente';
+    const escopoTxt = recorrencia.includeCurrentMonthBackfill
+        ? 'Daqui pra frente + incluir mês atual'
+        : 'Daqui pra frente';
     const inicioFmt = recorrencia.startDateIso
         ? window.formatarDataPtBrLegivel(window.formatarDataPtBr(recorrencia.startDateIso))
         : 'sem data';
@@ -669,35 +725,50 @@ window.selecionarTipoRecorrente = function() {
 
 // ── Escopo de Criação da Recorrência ──────────────────────────────────────────────────────────
 
-window.obterResumoEscopoCriacaoRecorrencia = function(escopo) {
-    if (escopo === 'monthOfDate') return 'Vai criar a série para o mês da data escolhida.';
-    return 'Vai criar a série da data escolhida em diante.';
+window.obterResumoEscopoCriacaoRecorrencia = function(incluirMesAtualRetroativo) {
+    if (incluirMesAtualRetroativo === true) {
+        return 'Cria desta data em diante e inclui datas válidas anteriores neste mês.';
+    }
+    return 'Cria a série desta data em diante.';
 };
 
 window.atualizarResumoEscopoCriacaoRecorrencia = function() {
-    const inputEscopo = document.getElementById('recorrenciaEscopoCriacao');
+    const inputIncluirMesAtual = document.getElementById('recorrenciaIncluirMesAtualRetroativo');
     const resumo = document.getElementById('recorrenciaEscopoCriacaoResumo');
-    if (!inputEscopo || !resumo) return;
-    resumo.textContent = window.obterResumoEscopoCriacaoRecorrencia(inputEscopo.value || 'fromDate');
+    if (!resumo) return;
+    resumo.textContent = window.obterResumoEscopoCriacaoRecorrencia(inputIncluirMesAtual?.checked === true);
 };
 
 window.configurarEscopoCriacaoRecorrencia = function() {
-    const grid = document.getElementById('recorrenciaEscopoCriacaoGrid');
     const inputEscopo = document.getElementById('recorrenciaEscopoCriacao');
-    if (!grid || !inputEscopo) return;
-    grid.querySelectorAll('.btn-escopo-recorrencia').forEach(btn => {
-        const novoBtn = btn.cloneNode(true);
-        btn.parentNode.replaceChild(novoBtn, btn);
-        novoBtn.addEventListener('click', () => {
-            grid.querySelectorAll('.btn-escopo-recorrencia').forEach(b => b.classList.remove('active'));
-            novoBtn.classList.add('active');
-            inputEscopo.value = novoBtn.dataset.escopoCriacao || 'fromDate';
-            window.atualizarResumoEscopoCriacaoRecorrencia();
-            window.atualizarResumoRecorrenciaCadastro();
-        });
+    const inputIncluirMesAtual = document.getElementById('recorrenciaIncluirMesAtualRetroativo');
+    if (inputEscopo) inputEscopo.value = 'fromDate';
+    if (!inputIncluirMesAtual) {
+        window.atualizarResumoEscopoCriacaoRecorrencia();
+        return;
+    }
+    const novoInput = inputIncluirMesAtual.cloneNode(true);
+    inputIncluirMesAtual.parentNode.replaceChild(novoInput, inputIncluirMesAtual);
+    novoInput.addEventListener('change', () => {
+        window.atualizarResumoEscopoCriacaoRecorrencia();
+        window.atualizarResumoRecorrenciaCadastro();
     });
     window.atualizarResumoEscopoCriacaoRecorrencia();
 };
+
+function obterMensagemConfirmacaoConflitosRecorrencia(conflitosResumo) {
+    if (!conflitosResumo) {
+        return 'Foram detectados conflitos na projeção retroativa do mês atual. Deseja salvar mesmo assim?';
+    }
+    return `Foram detectados conflitos na projeção retroativa do mês atual (${conflitosResumo}). Deseja salvar mesmo assim?`;
+}
+
+function confirmarConflitosRecorrenciaSeNecessario(resultadoSerializacao) {
+    if (!resultadoSerializacao?.conflitosPendentesConfirmacao || resultadoSerializacao.conflitosPendentesConfirmacao.length === 0) {
+        return true;
+    }
+    return window.confirm(obterMensagemConfirmacaoConflitosRecorrencia(resultadoSerializacao.conflitosResumo || ''));
+}
 
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
 
@@ -779,6 +850,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (!confirmarConflitosRecorrenciaSeNecessario(resultado)) {
+                return;
+            }
+
             aulas.push(resultado.payload);
             if (typeof salvarDados === 'function') salvarDados();
 
@@ -838,10 +913,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const inputDataRecorrencia = document.getElementById('recorrenciaDataInicio');
     if (inputDataRecorrencia) {
-        inputDataRecorrencia.addEventListener('focus', () => window.abrirDatePickerNativo(inputDataRecorrencia));
         inputDataRecorrencia.addEventListener('click', () => window.abrirDatePickerNativo(inputDataRecorrencia));
         inputDataRecorrencia.addEventListener('change', () => {
             window.atualizarTextoPreviewRecorrencia();
+        });
+    }
+
+    const inputDataAgenda = document.getElementById('agendaDataSelecionadaInput');
+    if (inputDataAgenda) {
+        inputDataAgenda.addEventListener('focus', () => window.abrirDatePickerNativo(inputDataAgenda));
+        inputDataAgenda.addEventListener('click', () => window.abrirDatePickerNativo(inputDataAgenda));
+        inputDataAgenda.addEventListener('change', () => {
+            const dataIso = inputDataAgenda.value || '';
+            const dataLocal = typeof window.converterISODateParaDataLocal === 'function'
+                ? window.converterISODateParaDataLocal(dataIso)
+                : null;
+
+            if (!(dataLocal instanceof Date) || Number.isNaN(dataLocal.getTime())) {
+                alert('Informe uma data válida para o agendamento.');
+                sincronizarCamposDataModalAgendamento();
+                return;
+            }
+
+            window.dataSelecionada = dataLocal;
+            slotSelecionadoDiaTexto = typeof window.getDiaTextoSelecionado === 'function'
+                ? window.getDiaTextoSelecionado()
+                : slotSelecionadoDiaTexto;
+
+            atualizarInfoHorarioAlvoModal(slotSelecionadoDiaTexto);
+
+            sincronizarCamposDataModalAgendamento();
+
+            if (typeof window.aplicarContextoAoFluxoAgendamento === 'function') {
+                const horaAtual = document.getElementById('agendaHoraInicio')?.value
+                    || slotSelecionadoHora
+                    || window.horarioSelecionadoSlot
+                    || '08:00';
+                rascunhoFluxoAgendamento = window.aplicarContextoAoFluxoAgendamento(
+                    rascunhoFluxoAgendamento || window.criarRascunhoFluxoAgendamento(),
+                    criarContextoSlotAgendamento(slotSelecionadoDiaTexto, horaAtual)
+                );
+            }
+
+            capturarFormularioPrincipalNoRascunho();
         });
     }
 
