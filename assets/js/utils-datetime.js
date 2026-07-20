@@ -3,7 +3,8 @@
 // Depende de: state.js (window.dataSelecionada — em runtime)
 // Expõe: window.somarMinutos, window.diferencaMinutos, window.getDiaTextoSelecionado,
 //         window.getDataSelecionadaPtBr, window.formatarDataPtBr, window.converterPtBrParaISO,
-//         window.formatarDataPtBrLegivel, window.abrirDatePickerNativo
+//         window.formatarDataPtBrLegivel, window.converterISODateParaDataLocal,
+//         window.formatarDataLocalParaISODate, window.abrirDatePickerNativo
 
 /** @param {string} horaStr - Ex: "08:30" @param {number} minutos @returns {string} Ex: "09:00" */
 window.somarMinutos = function(horaStr, minutos) {
@@ -59,6 +60,27 @@ window.formatarDataPtBrLegivel = function(dataPtBr) {
     const data = new Date(`${iso}T12:00:00`);
     if (Number.isNaN(data.getTime())) return dataPtBr;
     return data.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+};
+
+/** @param {string} dataISO - Ex: "2026-07-19" @returns {Date|null} Data local 00:00:00 */
+window.converterISODateParaDataLocal = function(dataISO) {
+    if (!dataISO || typeof dataISO !== 'string') return null;
+    const partes = dataISO.split('-').map(Number);
+    if (partes.length !== 3 || partes.some((n) => !Number.isFinite(n))) return null;
+
+    const [ano, mes, dia] = partes;
+    const dataLocal = new Date(ano, mes - 1, dia, 0, 0, 0, 0);
+    if (Number.isNaN(dataLocal.getTime())) return null;
+    return dataLocal;
+};
+
+/** @param {Date} data @returns {string} Ex: "2026-07-19" */
+window.formatarDataLocalParaISODate = function(data) {
+    if (!(data instanceof Date) || Number.isNaN(data.getTime())) return '';
+    const ano = data.getFullYear();
+    const mes = String(data.getMonth() + 1).padStart(2, '0');
+    const dia = String(data.getDate()).padStart(2, '0');
+    return `${ano}-${mes}-${dia}`;
 };
 
 /** Abre o date picker nativo do browser no input informado @param {HTMLInputElement} input */

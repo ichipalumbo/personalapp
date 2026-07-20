@@ -1,9 +1,9 @@
 // [TAG-VIEW-CALENDARIO] view-calendario.js
-// Responsabilidade: Orquestração da aba Calendário — alternância Semanal/Mensal, filtros e dashboard KPI
-// Depende de: state.js, storage.js, utils-kpi.js, calendario-engine.js, modal-acao-slot.js (abrirModalAcaoSlot — em runtime), view-home.js (getAluno — em runtime) - Controle Mensal & Semanal na SPA
-window.modoCalendarioAtivo = 'semanal';
+// Responsabilidade: Orquestração da aba Calendário — alternância Dia/Mês, dashboard KPI e visão semanal da Home
+// Depende de: state.js, storage.js, utils-kpi.js, alunos-helpers.js (window.getAluno), agenda-card-template.js (window.criarCardAgendamento), calendario-engine.js, modal-acao-slot.js (abrirModalAcaoSlot — em runtime) - Controle Mensal & Semanal na SPA
+window.modoCalendarioAtivo = 'dia';
 window.semanaReferencia = new Date();
-window.filtroAlunoSemanalId = null; // Estado do filtro de aluno na aba semanal
+window.filtroAlunoSemanalId = null; // Estado do filtro de aluno na semana exibida na Home
 window.filtroAlunoMensalId = null; // Estado do filtro de aluno na aba mensal
 
 window.inicializarPaginaCalendario = async function(opcoes = {}) {
@@ -15,8 +15,14 @@ window.inicializarPaginaCalendario = async function(opcoes = {}) {
     
     // Populate filter dropdowns
     window.preencherFiltrosAlunos();
-    
+
     window.alternarModoCalendario(window.modoCalendarioAtivo);
+    // Dispara sincronização GCal para a semana atual (se autenticado)
+    _dispararSincGCal();
+    // Carrega e exibe o timestamp da última sincronização
+    if (typeof window.inicializarUltimaSincronizacao === 'function') {
+        window.inicializarUltimaSincronizacao();
+    }
 };
 
 /**
@@ -37,20 +43,22 @@ window.preencherFiltrosAlunos = function() {
         });
     };
     
-    preencherSelect('filtroAlunoSemanal');
+    preencherSelect('filtroAlunoSemanaHome');
     preencherSelect('filtroAlunoMensal');
 };
 
 /**
- * Atualiza o filtro da aba semanal e re-renderiza
+ * Atualiza o filtro da semana exibida na Home e re-renderiza
  */
-window.atualizarFiltroCalendarioSemanal = function() {
-    const select = document.getElementById('filtroAlunoSemanal');
+window.atualizarFiltroSemanaHome = function() {
+    const select = document.getElementById('filtroAlunoSemanaHome');
     if (select) {
         window.filtroAlunoSemanalId = select.value || null;
-        window.renderizarCalendarioSemanal();
+        window.renderizarHomeSemana();
     }
 };
+
+window.atualizarFiltroCalendarioSemanal = window.atualizarFiltroSemanaHome;
 
 /**
  * Atualiza o filtro da aba mensal e re-renderiza
@@ -67,25 +75,44 @@ window.alternarModoCalendario = function(modo) {
     window.modoCalendarioAtivo = modo;
     
     const tabMensal = document.getElementById('tabCalendarioMensal');
-    const tabSemanal = document.getElementById('tabCalendarioSemanal');
+    const tabDia = document.getElementById('tabCalendarioDia');
     
     const containerMensal = document.getElementById('containerCalendarioMensal');
-    const containerSemanal = document.getElementById('containerCalendarioSemanal');
+    const containerDia = document.getElementById('containerCalendarioDia');
 
-    if (!tabMensal || !tabSemanal) return;
+    if (!tabMensal || !tabDia || !containerMensal || !containerDia) return;
 
-    if (modo === 'semanal') {
-        tabSemanal.classList.add('active');
+    if (modo === 'dia') {
+        tabDia.classList.add('active');
         tabMensal.classList.remove('active');
-        containerSemanal.style.display = 'block';
+        containerDia.style.display = 'block';
         containerMensal.style.display = 'none';
-        window.renderizarCalendarioSemanal();
+        window.renderizarCalendarioDia();
     } else {
         tabMensal.classList.add('active');
-        tabSemanal.classList.remove('active');
+        tabDia.classList.remove('active');
         containerMensal.style.display = 'block';
-        containerSemanal.style.display = 'none';
+        containerDia.style.display = 'none';
         window.renderizarCalendarioMensal();
+    }
+};
+
+window.renderizarModoCalendarioAtivo = function() {
+    if (window.modoCalendarioAtivo === 'mensal') {
+        window.renderizarCalendarioMensal();
+        return;
+    }
+
+    window.renderizarCalendarioDia();
+};
+
+window.renderizarCalendarioDia = function() {
+    if (typeof window.atualizarDataAtual === 'function') {
+        window.atualizarDataAtual();
+    }
+
+    if (typeof window.renderizarAgendaDia === 'function') {
+        window.renderizarAgendaDia();
     }
 };
 window.renderizarCalendarioMensal = function() {
@@ -163,48 +190,69 @@ window.irParaDiaDestaSemana = function(dataStr) {
         const ano = parseInt(parts[2], 10);
         window.dataSelecionada = new Date(ano, mes, dia);
     }
-    const navLinkHome = document.querySelector('.header-nav .nav-link[data-target="tela-home"]');
-    if (navLinkHome) {
-        navLinkHome.click();
+    window.modoCalendarioAtivo = 'dia';
+
+    const navLinkCalendario = document.querySelector('.header-nav .nav-link[data-target="tela-calendario"]');
+    if (navLinkCalendario) {
+        navLinkCalendario.click();
+    } else if (typeof window.alternarModoCalendario === 'function') {
+        window.alternarModoCalendario('dia');
     }
 
     if (typeof mostrarToast === 'function') {
         mostrarToast(`📅 Agenda do dia ${dataStr} aberta!`);
     }
 };
-window.renderizarCalendarioSemanal = function() {
-    const gridSemanal = document.getElementById('calendarioSemanalGrid');
-    const labelPeriodo = document.getElementById('periodoSemanaLabel');
+window.renderizarHomeSemana = function() {
+    const gridSemanal = document.getElementById('calendarioSemanalHomeGrid');
+    const labelPeriodo = document.getElementById('periodoSemanaHomeLabel');
     if (!gridSemanal) return;
     const dataRef = new Date(window.semanaReferencia);
     const diaSemana = dataRef.getDay();
     const dSeg = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
     const segundaFeira = new Date(dataRef.setDate(dSeg));
-    const sabado = new Date(segundaFeira);
-    sabado.setDate(segundaFeira.getDate() + 5);
+    const domingo = new Date(segundaFeira);
+    domingo.setDate(segundaFeira.getDate() + 6);
     if (labelPeriodo) {
         const dSegStr = String(segundaFeira.getDate()).padStart(2, '0');
         const mSegStr = String(segundaFeira.getMonth() + 1).padStart(2, '0');
-        const dSabStr = String(sabado.getDate()).padStart(2, '0');
-        const mSabStr = String(sabado.getMonth() + 1).padStart(2, '0');
-        const anoRef = segundaFeira.getFullYear();
-        labelPeriodo.innerHTML = `<i class="fa-regular fa-calendar-days" style="color: #FFD700; margin-right: 6px;"></i><span style="color: #FFD700;"> ${dSegStr}/${mSegStr} a ${dSabStr}/${mSabStr}</span> de ${anoRef}`;
+        const dDomStr = String(domingo.getDate()).padStart(2, '0');
+        const mDomStr = String(domingo.getMonth() + 1).padStart(2, '0');
+        labelPeriodo.textContent = `${dSegStr}/${mSegStr} a ${dDomStr}/${mDomStr}`;
     }
     
     let html = '';
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    for (let d = 0; d < 6; d++) {
+    const diasSemanaMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    const agora = new Date();
+    const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
+    const minutosAgora = (agora.getHours() * 60) + agora.getMinutes();
+    const converterHorarioParaMinutos = (horario) => {
+        if (!horario || typeof horario !== 'string') return 0;
+        const [horas, minutos] = horario.split(':').map(Number);
+        return (horas * 60) + minutos;
+    };
+    const formatarHoraCheia = (hora) => `${String(hora).padStart(2, '0')}:00`;
+    const horaInicioPadrao = formatarHoraCheia(agendaConfig?.horaInicio || 8);
+
+    for (let d = 0; d < 7; d++) {
         const diaAtual = new Date(segundaFeira);
         diaAtual.setDate(segundaFeira.getDate() + d);
 
-        const diaTexto = diasUteisMap[d];
+        const diaTexto = diasSemanaMap[d];
         const diaNum = String(diaAtual.getDate()).padStart(2, '0');
         const mesNum = String(diaAtual.getMonth() + 1).padStart(2, '0');
         const dataAlvoFormatada = diaAtual.toLocaleDateString('pt-BR');
+        const dataIso = `${diaAtual.getFullYear()}-${String(diaAtual.getMonth() + 1).padStart(2, '0')}-${diaNum}`;
         const ehHoje = diaAtual.toDateString() === new Date().toDateString();
+        const diaAtualPuro = new Date(diaAtual.getFullYear(), diaAtual.getMonth(), diaAtual.getDate());
+        const diaJaPassou = diaAtualPuro < hoje;
+        const diaEhHoje = diaAtualPuro.getTime() === hoje.getTime();
+        const tituloDia = (diaTexto === 'Sábado' || diaTexto === 'Domingo')
+            ? `${diaTexto}, ${diaNum}/${mesNum}`
+            : `${diaTexto}-feira, ${diaNum}/${mesNum}`;
         
         // [FILTERED] Apply student filter and get only aula/reposição types
-        let compromissosDoDia = aulas
+        let compromissosDoDia = (window.aulas || [])
             .filter(a => window.checarCompromissoNaData(a, diaAtual))
             .sort((a, b) => a.horarioInicio.localeCompare(b.horarioInicio));
         
@@ -217,82 +265,34 @@ window.renderizarCalendarioSemanal = function() {
 
         if (compromissosDoDia.length > 0) {
             compromissosDoDia.forEach(comp => {
-                const tipo = comp.tipo || 'aula';
-                const periodo = `${comp.horarioInicio} - ${comp.horarioFim}`;
-                let tagVisualHtml = '';
-
-                if (tipo === 'aula') {
-                    const aluno = typeof window.getAluno === 'function' ? window.getAluno(comp.alunoId) : null;
-                    const nome = aluno ? aluno.nome : '❓ Aluno Removido';
-                    const objetivo = aluno ? aluno.objective || aluno.objetivo : 'Outro';
-                    const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
-
-                    if (comp.reagendada || comp.isReposicao) {
-                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(100, 181, 246, 0.15); color: #64B5F6; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
-                    } else if (comp.frequencia === 'semanal') {
-                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
-                    } else {
-                        tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(129, 199, 132, 0.15); color: #81C784; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
-                    }
-
-                    cardsHtml += `
-                        <div class="agenda-dia-aula objetivo-${objetivo.replace(/\s/g,'')}" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
-                                <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nome}</span>
-                                ${tagVisualHtml}
-                            </div>
-                            <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${local}</span>
-                            <span class="agenda-dia-aula-detalhes">${objetivo} (${periodo})</span>
-                        </div>
-                    `;
-                } else if (tipo === 'deslocamento') {
-                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
-                    
-                    cardsHtml += `
-                        <div class="agenda-dia-aula slot-deslocamento" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
-                                <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
-                                ${tagVisualHtml}
-                            </div>
-                            <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Trânsito'} (${periodo})</span>
-                        </div>
-                    `;
-                } else if (tipo === 'bloqueio') {
-                    tagVisualHtml = `<span class="badge-tag-tipo" style="background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-lock"></i> Bloqueio</span>`;
-
-                    cardsHtml += `
-                        <div class="agenda-dia-aula slot-bloqueado" onclick="abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')" style="margin-bottom: 8px;">
-                            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 3px;">
-                                <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> Bloqueado</span>
-                                ${tagVisualHtml}
-                            </div>
-                            <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'} (${periodo})</span>
-                        </div>
-                    `;
-                }
+                const compromissoConcluido = diaJaPassou || (diaEhHoje && converterHorarioParaMinutos(comp.horarioFim) < minutosAgora);
+                cardsHtml += window.criarCardAgendamento(comp, {
+                    dataReferencia: new Date(diaAtual),
+                    compromissoConcluido: compromissoConcluido,
+                    onclick: `abrirCalendarioAcaoSlot('${comp.id}', '${dataAlvoFormatada}')`
+                });
             });
         } else {
             cardsHtml = `
-                <div style="padding: 10px; background: #0F0F0F; border-radius: 8px; border: 1px dashed #222; text-align: center;">
-                    <span style="font-size: 0.75rem; color: #555;"><i class="fa-regular fa-calendar" style="margin-right: 5px;"></i> Sem agendamentos para este dia</span>
-                </div>
+                <button type="button" class="semana-dia-empty-slot" onclick="window.abrirNovoAgendamentoSemana('${dataIso}', '${horaInicioPadrao}')">
+                    <span class="semana-dia-empty-slot-icon"><i class="fa-regular fa-calendar-plus"></i></span>
+                    <span class="semana-dia-empty-slot-text">Sem agendamentos para este dia</span>
+                </button>
             `;
         }
         html += `
-            <div class="semana-dia-box ${ehHoje ? 'dia-semana-hoje-card' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}" style="background: #1A1A1A; border: 1px solid #282828; border-radius: 12px; padding: 14px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
-                <div class="semana-dia-header" onclick="window.irParaDiaDestaSemana('${dataAlvoFormatada}')">
-                    <span style="font-weight: 700; color: #FFD700; font-size: 0.95rem; display: flex; align-items: center; gap: 6px;">
-                        🎯 ${diaTexto === 'Sábado' ? diaTexto : `${diaTexto}-feira`} ${ehHoje ? '<span style="background: #FFD700; color: #0D0D0D; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 900;">HOJE</span>' : ''}
+            <section class="semana-dia-box ${ehHoje ? 'is-today' : ''}" id="${ehHoje ? 'semana-dia-hoje-elemento' : ''}">
+                <button type="button" class="semana-dia-header" onclick="window.irParaDiaDestaSemana('${dataAlvoFormatada}')">
+                    <span class="semana-dia-header-main">
+                        <span class="semana-dia-title">${tituloDia}</span>
+                        ${ehHoje ? '<span class="semana-dia-today-badge">HOJE</span>' : ''}
                     </span>
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span class="btn-semana-ir-dia"><i class="fa-regular fa-folder-open"></i> Abrir dia</span>
-                        <span style="font-size: 0.8rem; background: ${ehHoje ? '#FFD700' : '#2D2D2D'}; color: ${ehHoje ? '#0D0D0D' : '#FFF'}; padding: 2px 8px; border-radius: 20px; font-weight: 600;">${diaNum}/${mesNum}</span>
-                    </div>
-                </div>
-                <div style="display: flex; flex-direction: column;">
+                    <span class="semana-dia-open-icon"><i class="fa-solid fa-chevron-right"></i></span>
+                </button>
+                <div class="semana-dia-content">
                     ${cardsHtml}
                 </div>
-            </div>
+            </section>
         `;
     }
 
@@ -300,9 +300,34 @@ window.renderizarCalendarioSemanal = function() {
     setTimeout(() => {
         const hojeEl = document.getElementById('semana-dia-hoje-elemento');
         if (hojeEl) {
-            hojeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            hojeEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }, 120);
+};
+window.renderizarCalendarioSemanal = window.renderizarHomeSemana;
+window.obterProximaHoraCheiaSemana = function() {
+    const agora = new Date();
+    const horaAlvo = new Date(agora);
+
+    if (horaAlvo.getMinutes() > 0 || horaAlvo.getSeconds() > 0 || horaAlvo.getMilliseconds() > 0) {
+        horaAlvo.setHours(Math.min(horaAlvo.getHours() + 1, 23), 0, 0, 0);
+    } else {
+        horaAlvo.setMinutes(0, 0, 0);
+    }
+
+    return `${String(horaAlvo.getHours()).padStart(2, '0')}:00`;
+};
+window.abrirNovoAgendamentoSemana = function(dataIso, horaPadrao) {
+    const partes = typeof dataIso === 'string' ? dataIso.split('-').map(Number) : [];
+    if (partes.length !== 3) {
+        return;
+    }
+
+    const dataSelecionada = new Date(partes[0], partes[1] - 1, partes[2], 12, 0, 0, 0);
+    window.abrirNovoAgendamento({
+        dataSelecionada,
+        hora: horaPadrao || `${String(agendaConfig?.horaInicio || 8).padStart(2, '0')}:00`
+    });
 };
 window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     window.dataAlvoAcaoStr = dataStr;
@@ -318,10 +343,39 @@ window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     window.fecharModalAcaoSlot = function() {
         window.dataAlvoAcaoStr = null; // Limpa o estado
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
-        window.renderizarCalendarioSemanal();
-        if (typeof window.renderizarCalendarioMensal === 'function') window.renderizarCalendarioMensal();
+        if (typeof window.renderizarHomeSemana === 'function') window.renderizarHomeSemana();
+        if (typeof window.renderizarModoCalendarioAtivo === 'function') window.renderizarModoCalendarioAtivo();
     };
 };
+
+// [TAG-GCAL-HELPERS] Auxiliares para sincronização semanal com Google Calendar
+
+/**
+ * Calcula o range ISO (segunda a domingo) a partir de window.semanaReferencia.
+ * @returns {{ isoStart: string, isoEnd: string }}
+ */
+function _obterRangeSemanaAtual() {
+    const ref = new Date(window.semanaReferencia);
+    const diaSemana = ref.getDay();
+    const dSeg = ref.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+    const segunda = new Date(ref.getFullYear(), ref.getMonth(), dSeg);
+    const domingo = new Date(segunda.getFullYear(), segunda.getMonth(), segunda.getDate() + 6);
+    const pad = n => String(n).padStart(2, '0');
+    const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    return { isoStart: toISO(segunda), isoEnd: toISO(domingo) };
+}
+
+/**
+ * Dispara sincronizarBloqueiosExternos para a semana atual, se o usuário estiver autenticado.
+ * Guard duplo: verifica existência da função e estado de login antes de chamar.
+ */
+function _dispararSincGCal() {
+    if (typeof window.sincronizarBloqueiosExternos !== 'function') return;
+    if (!window.gcal || !window.gcal.isSignedIn()) return;
+    const range = _obterRangeSemanaAtual();
+    window.sincronizarBloqueiosExternos(range.isoStart, range.isoEnd);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const btnMesAnterior = document.getElementById('btnMesAnterior');
     const btnMesProximo = document.getElementById('btnMesProximo');
@@ -354,28 +408,85 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnSemanaAnterior = document.getElementById('btnSemanaAnterior');
-    const btnSemanaProxima = document.getElementById('btnSemanaProxima');
-    const btnSemanaHoje = document.getElementById('btnSemanaHoje');
+    const btnSemanaAnterior = document.getElementById('btnSemanaHomeAnterior');
+    const btnSemanaProxima = document.getElementById('btnSemanaHomeProxima');
+    const btnSemanaHoje = document.getElementById('btnSemanaHomeHoje');
 
     if (btnSemanaAnterior) {
         btnSemanaAnterior.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() - 7);
-            window.renderizarCalendarioSemanal();
+            window.renderizarHomeSemana();
+            _dispararSincGCal();
         });
     }
 
     if (btnSemanaProxima) {
         btnSemanaProxima.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() + 7);
-            window.renderizarCalendarioSemanal();
+            window.renderizarHomeSemana();
+            _dispararSincGCal();
         });
     }
 
     if (btnSemanaHoje) {
         btnSemanaHoje.addEventListener('click', () => {
             window.semanaReferencia = new Date();
-            window.renderizarCalendarioSemanal();
+            window.renderizarHomeSemana();
+            _dispararSincGCal();
+        });
+    }
+
+    const btnNovaAgendaSemanal = document.getElementById('btnNovaAgendaSemanal');
+    if (btnNovaAgendaSemanal) {
+        btnNovaAgendaSemanal.addEventListener('click', () => {
+            const referenciaSemana = window.semanaReferencia instanceof Date && !Number.isNaN(window.semanaReferencia.getTime())
+                ? new Date(window.semanaReferencia)
+                : new Date();
+            const diaSemanaReferencia = referenciaSemana.getDay();
+            const deslocamentoParaSegunda = diaSemanaReferencia === 0 ? -6 : 1 - diaSemanaReferencia;
+            const inicioSemana = new Date(
+                referenciaSemana.getFullYear(),
+                referenciaSemana.getMonth(),
+                referenciaSemana.getDate() + deslocamentoParaSegunda,
+                0,
+                0,
+                0,
+                0
+            );
+            const fimSemana = new Date(
+                inicioSemana.getFullYear(),
+                inicioSemana.getMonth(),
+                inicioSemana.getDate() + 6,
+                23,
+                59,
+                59,
+                999
+            );
+
+            const dataSelecionadaGlobal = window.dataSelecionada instanceof Date && !Number.isNaN(window.dataSelecionada.getTime())
+                ? new Date(window.dataSelecionada)
+                : null;
+            const dataEstaNaSemanaAtiva = dataSelecionadaGlobal
+                ? dataSelecionadaGlobal >= inicioSemana && dataSelecionadaGlobal <= fimSemana
+                : false;
+
+            const dataBase = dataEstaNaSemanaAtiva
+                ? dataSelecionadaGlobal
+                : referenciaSemana;
+            const dataSelecionada = new Date(
+                dataBase.getFullYear(),
+                dataBase.getMonth(),
+                dataBase.getDate(),
+                0,
+                0,
+                0,
+                0
+            );
+
+            window.abrirNovoAgendamento({
+                dataSelecionada,
+                hora: window.obterProximaHoraCheiaSemana()
+            });
         });
     }
 });

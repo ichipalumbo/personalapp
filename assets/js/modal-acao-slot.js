@@ -72,6 +72,14 @@ window.abrirModalAcaoSlot = function(id) {
     const compromisso = aulas.find(a => a.id === id);
     if (!compromisso) return;
 
+    // [TAG-GCAL-READONLY] Eventos externos do Google Calendar são somente leitura
+    if (compromisso.source === 'google_external') {
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('🔒 Este horário está bloqueado por um evento do Google Calendar.', 'warning');
+        }
+        return;
+    }
+
     const freq = compromisso.frequencia || 'uma_vez';
     document.getElementById('editCompromissoFrequencia').value = freq;
 
@@ -413,11 +421,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 aulasParaRepor = aulasParaRepor.filter(r => r.id !== repId);
             }
 
-            if (typeof salvarDados === 'function') salvarDados();
-
             window.fecharReagendarAulaModal();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição marcada com sucesso!');
+            
+            // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
+            if (typeof window.enriquecerAgendamentoComDadosFrescos === 'function') {
+                window.enriquecerAgendamentoComDadosFrescos(novoCompromisso);
+            }
+            
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' }).then(() => window.inicializarHome());
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição marcada com sucesso!');
+            }
         });
     }
 
@@ -428,6 +445,8 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            // [TAG-GCAL] Snapshot antes da mutação para revert se MongoDB falhar
+            const _snapshotEdicao = { ...compromisso };
 
             const tipo = compromisso.tipo || 'aula';
             const diaInteiro = tipo === 'bloqueio' && document.getElementById('editBloqueioDiaInteiro')?.checked;
@@ -535,11 +554,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!diaInteiro) delete compromisso.fullDay;
             }
 
-            if (typeof salvarDados === 'function') salvarDados();
-
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Alterações salvas com sucesso!');
+            
+            // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
+            if (typeof window.enriquecerAgendamentoComDadosFrescos === 'function') {
+                window.enriquecerAgendamentoComDadosFrescos(compromisso);
+            }
+            
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshotEdicao }).then(() => window.inicializarHome());
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Alterações salvas com sucesso!');
+            }
         });
     }
 
@@ -554,12 +582,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDeletar = document.getElementById('btnDeletarDefinitivo');
     if (btnDeletar) {
         btnDeletar.addEventListener('click', () => {
+            const _compDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
             aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
-            if (typeof salvarDados === 'function') salvarDados();
-            
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('🗑️ Compromisso único cancelado!');
+            if (_compDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(_compDeletar, { operacao: 'excluir', snapshotAnterior: _compDeletar }).then(() => window.inicializarHome());
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('🗑️ Compromisso único cancelado!');
+            }
         });
     }
 
@@ -576,11 +608,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             
             aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
-            if (typeof salvarDados === 'function') salvarDados();
-
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula única enviada para reposição!');
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(compromisso, { operacao: 'excluir', snapshotAnterior: compromisso }).then(() => window.inicializarHome());
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula única enviada para reposição!');
+            }
         });
     }
 
@@ -633,12 +668,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDeletarSerie = document.getElementById('btnDeletarSerie');
     if (btnDeletarSerie) {
         btnDeletarSerie.addEventListener('click', () => {
+            const _serieDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
             aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
-            if (typeof salvarDados === 'function') salvarDados();
-            
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('🗑️ Série recorrente excluída do calendário!');
+            if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(() => window.inicializarHome());
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('🗑️ Série recorrente excluída do calendário!');
+            }
         });
     }
 });

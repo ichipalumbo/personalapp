@@ -93,10 +93,9 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     }
     
     const diaSemana = dataAlvo.getDay();
-    if (diaSemana < 1 || diaSemana > 6) return false; 
-    
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    const diaTexto = diasUteisMap[diaSemana - 1];
+    const diasSemanaMap = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diaTexto = diasSemanaMap[diaSemana];
+    if (!diaTexto) return false;
     const dataStr = dataAlvo.toLocaleDateString('pt-BR');
     if (comp.excecoes && comp.excecoes.includes(dataStr)) {
         return false;
@@ -106,12 +105,16 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
         const recorrenciaDataInicio = window.parseDataFlex(comp.recorrenciaDataInicio) || window.parseDataFlex(comp.data);
         const dataAlvoPura = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
         if (recorrenciaDataInicio) {
-            if ((comp.recorrenciaEscopo || 'fromDate') === 'monthOfDate') {
+            const escopoRecorrencia = comp.recorrenciaEscopo || 'fromDate';
+            const incluirMesAtualRetroativo = comp.recorrenciaIncluirMesAtualRetroativo === true;
+            if (escopoRecorrencia === 'monthOfDate') {
                 if (dataAlvoPura.getFullYear() !== recorrenciaDataInicio.getFullYear() || dataAlvoPura.getMonth() !== recorrenciaDataInicio.getMonth()) {
                     return false;
                 }
             } else {
-                if (dataAlvoPura < recorrenciaDataInicio) {
+                const mesmoMesAnoDaDataInicio = dataAlvoPura.getFullYear() === recorrenciaDataInicio.getFullYear()
+                    && dataAlvoPura.getMonth() === recorrenciaDataInicio.getMonth();
+                if (dataAlvoPura < recorrenciaDataInicio && !(incluirMesAtualRetroativo && mesmoMesAnoDaDataInicio)) {
                     return false;
                 }
             }
@@ -130,7 +133,14 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     if (!comp.data) {
         return comp.dia === diaTexto;
     }
-    return comp.data === dataStr;
+    // Handle both ISO format (YYYY-MM-DD) and Brazilian format (DD/MM/YYYY)
+    // External Google Calendar events use ISO format; app events use Brazilian format
+    if (comp.data === dataStr) {
+        return true; // Brazilian format match
+    }
+    // Try ISO format: convert dataAlvo to ISO and compare
+    const isoDate = dataAlvo.getFullYear() + '-' + String(dataAlvo.getMonth() + 1).padStart(2, '0') + '-' + String(dataAlvo.getDate()).padStart(2, '0');
+    return comp.data === isoDate;
 };
 
 function getDiasNoMes(mes, ano) {

@@ -3,7 +3,7 @@
 // Depende de: state.js (alunos, aulas, aulasParaRepor), calendario-engine.js (resolverCompromissoRecorrenteNaData — em runtime)
 // Expõe: calcularProjecaoMensalCompleta, calcularProjecaoRealizadaAteHoje, calcularProjecaoAproximada,
 //         calcularAulasFaltamAgendar, contarReposicoesPorAluno, calcularKPIsAluno, calcularKPIsTodosAlunos,
-//         filtrarAulasCalendario, mostrarToast, exportarDados
+//         filtrarAulasCalendario, mostrarToast, mostrarOverlaySinc, ocultarOverlaySinc, exportarDados
 // ⚠️ As funções de KPI têm versões simplificadas replicadas no backend/server.js (para uso em APIs)
 
 /**
@@ -286,8 +286,41 @@ function mostrarToast(msg, tipo = 'success') {
     toast.textContent = msg;
     toast.className = 'toast';
     if (tipo === 'error') toast.classList.add('error');
+    if (tipo === 'warning') toast.classList.add('warning');
     setTimeout(() => toast.classList.add('show'), 10);
     setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+// [TAG-JS-OVERLAY-SINC] - Overlay bloqueante para operações de sincronização críticas
+function mostrarOverlaySinc(mensagem) {
+    let overlay = document.getElementById('overlay-sinc');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'overlay-sinc';
+        overlay.className = 'overlay-sinc';
+        overlay.innerHTML =
+            '<div class="overlay-sinc-conteudo">' +
+            '<div class="overlay-sinc-spinner"></div>' +
+            '<p class="overlay-sinc-msg"></p>' +
+            '</div>';
+        document.body.appendChild(overlay);
+    }
+    overlay.querySelector('.overlay-sinc-msg').textContent = mensagem || 'Salvando...';
+    overlay.classList.add('ativo');
+    document.body.style.pointerEvents = 'none';
+}
+
+function ocultarOverlaySinc(resultado) {
+    const overlay = document.getElementById('overlay-sinc');
+    if (overlay) overlay.classList.remove('ativo');
+    document.body.style.pointerEvents = '';
+    if (resultado === 'success') {
+        mostrarToast('✅ Salvo com sucesso!', 'success');
+    } else if (resultado === 'partial') {
+        mostrarToast('⚠️ Salvo no banco. Falha no Google Calendar — o evento pode não aparecer no calendário.', 'warning');
+    } else if (resultado === 'error') {
+        mostrarToast('❌ Falha ao salvar. Tente novamente.', 'error');
+    }
 }
 function exportarDados() {
     const dados = JSON.stringify({ alunos, aulas }, null, 2);

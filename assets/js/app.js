@@ -1,70 +1,25 @@
 // [TAG-APP-ROUTER] app.js
-// Responsabilidade: Roteador SPA — controla navegação entre abas e chama inicializadores das views
-// Depende de: view-home.js (inicializarHome), view-calendario.js (inicializarPaginaCalendario), view-alunos.js (inicializarAlunos)
-// Expõe: nada (auto-executa em DOMContentLoaded)
-document.addEventListener('DOMContentLoaded', async () => {
-    const navLinks = document.querySelectorAll('.header-nav .nav-link');
-    const views = document.querySelectorAll('.view-section');
+// Responsabilidade: manter o ponto de entrada estável enquanto o bootstrap SPA
+// é migrado para assets/js/app/* de forma incremental.
 
-    navLinks.forEach(link => {
-        link.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const targetId = link.getAttribute('data-target');
-            navLinks.forEach(l => {
-                l.classList.remove('ativo');
-                l.classList.add('inativo');
-            });
-            link.classList.add('ativo');
-            link.classList.remove('inativo');
-            views.forEach(v => {
-                v.style.display = 'none';
-            });
-            const activeView = document.getElementById(targetId);
-            if (activeView) {
-                activeView.style.display = 'block';
-            }
-            if (targetId === 'tela-home') {
-                if (typeof window.inicializarHome === 'function') await window.inicializarHome();
-            } else if (targetId === 'tela-calendario') {
-                if (typeof window.inicializarPaginaCalendario === 'function') await window.inicializarPaginaCalendario();
-            } else if (targetId === 'tela-alunos') {
-                if (typeof window.inicializarAlunos === 'function') await window.inicializarAlunos();
-            }
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    });
-    if (typeof window.inicializarHome === 'function') {
-        await window.inicializarHome();
-    }
-    const btnToTop = document.getElementById('btnBackToTop');
-    
-    if (btnToTop) {
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 250) {
-                btnToTop.classList.add('show');
-            } else {
-                btnToTop.classList.remove('show');
-            }
-        });
-        btnToTop.addEventListener('click', () => {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-        });
-    }
-    const atualizarAlturaHeader = () => {
-        const header = document.querySelector('.header');
-        if (header) {
-            const height = header.offsetHeight;
-            document.documentElement.style.setProperty('--header-height', `${height}px`);
+(function () {
+    async function initializeApp() {
+        if (!window.__appBootstrap || typeof window.__appBootstrap.initialize !== 'function') {
+            throw new Error('Bootstrap da aplicação não encontrado.');
         }
-    };
-    window.addEventListener('resize', atualizarAlturaHeader);
-    atualizarAlturaHeader();
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            setTimeout(atualizarAlturaHeader, 50);
+
+        await window.__appBootstrap.initialize();
+    }
+
+    function reportBootstrapError(error) {
+        console.error('Falha ao inicializar a aplicação:', error);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeApp().catch(reportBootstrapError);
         });
-    });
-});
+    } else {
+        initializeApp().catch(reportBootstrapError);
+    }
+})();

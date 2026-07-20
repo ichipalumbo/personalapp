@@ -25,6 +25,7 @@ window.getCompromissoSerializadoParaConflito = function(compromisso, dataAlvoPtB
         intervaloRecorrencia: Number(compromisso.intervaloRecorrencia || 1),
         dataCriacao: compromisso.dataCriacao || new Date().toISOString(),
         recorrenciaEscopo: compromisso.recorrenciaEscopo || 'fromDate',
+        recorrenciaIncluirMesAtualRetroativo: compromisso.recorrenciaIncluirMesAtualRetroativo === true,
         recorrenciaDataInicio: compromisso.recorrenciaDataInicio || compromisso.data || dataAlvoPtBr,
         excecoes: Array.isArray(compromisso.excecoes) ? compromisso.excecoes.slice() : [],
         excecoesDetalhadas: Array.isArray(compromisso.excecoesDetalhadas) ? compromisso.excecoesDetalhadas.slice() : []
@@ -55,8 +56,14 @@ window.getConflitosNoDia = function(candidato, dataAlvo, opcoes = {}) {
             return inicioA < fimB && inicioB < fimA;
         })
         .map(existente => {
-            const aluno = window.getAluno(existente.alunoId);
-            const nome = aluno ? aluno.nome : (existente.tipo === 'aula' ? 'Aula' : (existente.descricao || 'Compromisso'));
+            let nome;
+            // [TAG-GCAL-CONFLICT-LABEL] Identifica conflitos com eventos externos do Google Calendar
+            if (existente.source === 'google_external') {
+                nome = (existente.descricao || 'Evento externo') + ' [Google Calendar]';
+            } else {
+                const aluno = window.getAluno(existente.alunoId);
+                nome = aluno ? aluno.nome : (existente.tipo === 'aula' ? 'Aula' : (existente.descricao || 'Compromisso'));
+            }
             return {
                 id: existente.id,
                 data: dataStr,
@@ -100,14 +107,35 @@ window.getDatasConflitoRecorrencia = function(compromisso, limite = 20) {
 
     const datas = [];
     const cursor = new Date(inicio);
-    const maxDias = compromisso.recorrenciaEscopo === 'monthOfDate' ? 40 : 120;
+    const incluirMesAtualRetroativo = compromisso.recorrenciaIncluirMesAtualRetroativo === true;
+    const escopoLegacyMesFechado = compromisso.recorrenciaEscopo === 'monthOfDate';
+    const maxDias = escopoLegacyMesFechado ? 40 : 120;
     const mesAlvo = inicio.getMonth();
     const anoAlvo = inicio.getFullYear();
+
+    if (incluirMesAtualRetroativo) {
+        const datasRetroativas = [];
+        for (let i = 1; i <= 40 && datasRetroativas.length < limite; i++) {
+            const d = new Date(inicio);
+            d.setDate(inicio.getDate() - i);
+            if (d.getMonth() !== mesAlvo || d.getFullYear() !== anoAlvo) {
+                break;
+            }
+            if (window.checarCompromissoNaData(compromisso, d)) {
+                datasRetroativas.push(d.toLocaleDateString('pt-BR'));
+            }
+        }
+        datasRetroativas.reverse().forEach((dataPtBr) => {
+            if (datas.length < limite) {
+                datas.push(dataPtBr);
+            }
+        });
+    }
 
     for (let i = 0; i <= maxDias && datas.length < limite; i++) {
         const d = new Date(cursor);
         d.setDate(inicio.getDate() + i);
-        if (compromisso.recorrenciaEscopo === 'monthOfDate' && (d.getMonth() !== mesAlvo || d.getFullYear() !== anoAlvo)) {
+        if (escopoLegacyMesFechado && (d.getMonth() !== mesAlvo || d.getFullYear() !== anoAlvo)) {
             break;
         }
         if (window.checarCompromissoNaData(compromisso, d)) {

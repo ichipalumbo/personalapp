@@ -180,12 +180,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (idEdicao) {
                 const index = alunos.findIndex(a => a.id === idEdicao);
                 if (index !== -1) {
+                    const alunoAntigo = { ...alunos[index] };
+                    
                     alunos[index].nome = nome;
                     alunos[index].local = local;
                     alunos[index].preco = preco;
                     alunos[index].telefone = telefone;
                     alunos[index].objetivo = objetivo;
                     alunos[index].frequenciaSemanal = frequenciaSemanal;
+                    
+                    // [TAG-CASCADE-SYNC] Se nome ou local mudou, sincroniza agendamentos futuros
+                    if (alunoAntigo.nome !== nome || alunoAntigo.local !== local) {
+                        console.log('[view-alunos] Detectada mudança no nome ou local, acionando cascade sync...');
+                        if (typeof sincronizarAgendamentosDoAluno === 'function') {
+                            sincronizarAgendamentosDoAluno(idEdicao, {
+                                nome: nome,
+                                local: local,
+                                objetivo: objetivo
+                            });
+                        }
+                    }
+                    
                     if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno atualizado com sucesso!');
                 }
             } else {
