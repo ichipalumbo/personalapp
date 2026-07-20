@@ -9,7 +9,13 @@ async function obterConfiguracao(req, res) {
 
     res.json(config);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[ConfigController] Erro ao obter configuração:', err.message);
+    console.error('[ConfigController] Stack:', err.stack);
+    res.status(500).json({ 
+      error: 'Erro ao obter configuração',
+      message: err.message,
+      connectionState: Config.db.readyState
+    });
   }
 }
 

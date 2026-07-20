@@ -13,7 +13,13 @@ async function listarAlunos(req, res) {
     const alunos = await Aluno.find();
     res.json(alunos);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('[AlunoController] Erro ao listar alunos:', err.message);
+    console.error('[AlunoController] Stack:', err.stack);
+    res.status(500).json({ 
+      error: 'Erro ao listar alunos',
+      message: err.message,
+      connectionState: Aluno.db.readyState
+    });
   }
 }
 
