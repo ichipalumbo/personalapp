@@ -64,8 +64,13 @@ async function criarAluno(req, res) {
       return res.status(400).json({ error: 'id e nome são obrigatórios.' });
     }
 
-    const aluno = await Aluno.create({ ...payload, ownerEmail });
-    res.status(201).json(aluno);
+    const aluno = await Aluno.findOneAndUpdate(
+      { ownerEmail, id: payload.id },
+      { $set: { ...payload, id: payload.id, ownerEmail } },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    res.status(200).json(aluno);
   } catch (err) {
     responderErroAluno(res, err, 'criar aluno');
   }

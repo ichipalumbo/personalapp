@@ -58,8 +58,13 @@ async function criarBloqueioExterno(req, res) {
       return res.status(400).json({ error: 'googleCalendarEventId é obrigatório.' });
     }
 
-    const bloqueio = await BloqueioExterno.create({ ...payload, ownerEmail });
-    res.status(201).json(bloqueio);
+    const bloqueio = await BloqueioExterno.findOneAndUpdate(
+      { ownerEmail, googleCalendarEventId: payload.googleCalendarEventId },
+      { $set: { ...payload, ownerEmail, googleCalendarEventId: payload.googleCalendarEventId } },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    res.status(200).json(bloqueio);
   } catch (err) {
     responderErroBloqueio(res, err, 'criar bloqueio externo');
   }
@@ -81,12 +86,8 @@ async function atualizarBloqueioExterno(req, res) {
     const bloqueio = await BloqueioExterno.findOneAndUpdate(
       { ownerEmail, googleCalendarEventId },
       { $set: { ...payload, googleCalendarEventId, ownerEmail } },
-      { new: true, runValidators: true }
+      { new: true, upsert: true, runValidators: true }
     );
-
-    if (!bloqueio) {
-      return res.status(404).json({ error: 'Bloqueio externo não encontrado.' });
-    }
 
     res.json(bloqueio);
   } catch (err) {

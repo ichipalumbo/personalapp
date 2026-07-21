@@ -53,12 +53,19 @@ async function criarAgendamento(req, res) {
       return res.status(400).json({ error: 'id é obrigatório.' });
     }
 
-    const agendamento = await Agendamento.create({
-      ...normalizarBloqueio(payload),
-      ownerEmail
-    });
+    const agendamento = await Agendamento.findOneAndUpdate(
+      { ownerEmail, id: payload.id },
+      {
+        $set: {
+          ...normalizarBloqueio(payload),
+          id: payload.id,
+          ownerEmail
+        }
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
 
-    res.status(201).json(agendamento);
+    res.status(200).json(agendamento);
   } catch (err) {
     responderErroAgendamento(res, err);
   }
@@ -86,12 +93,8 @@ async function atualizarAgendamento(req, res) {
     const atualizado = await Agendamento.findOneAndUpdate(
       { ownerEmail, id },
       { $set: agendamentoNormalizado },
-      { new: true, runValidators: true }
+      { new: true, upsert: true, runValidators: true }
     );
-
-    if (!atualizado) {
-      return res.status(404).json({ error: `Agendamento com id '${id}' não encontrado.` });
-    }
 
     res.json(atualizado);
   } catch (err) {

@@ -1019,6 +1019,25 @@
         _atualizarExibicaoUltimaSincronizacao();
     };
 
+    let _autoSyncJaExecutada = false;
+
+    function _sincronizarCalendarioAutomaticamenteSeNecessario() {
+        if (_autoSyncJaExecutada) {
+            return;
+        }
+
+        if (!global.gcal || !global.gcal.isSignedIn()) {
+            return;
+        }
+
+        _autoSyncJaExecutada = true;
+        global.setTimeout(function () {
+            if (typeof global.iniciarSyncGoogleCalendar === 'function') {
+                global.iniciarSyncGoogleCalendar();
+            }
+        }, 0);
+    }
+
     // ── Botão de sincronização manual ─────────────────────────────────────────────
     // Único ponto de entrada para autenticação + sync.
     // Nunca dispara popup automaticamente — só quando o usuário clica explicitamente.
@@ -1104,6 +1123,10 @@
             // Não autenticado: abre popup de conta do Google, depois sincroniza
             global.gcal.requestSignIn(_doSync);
         }
+    };
+
+    global.iniciarSyncGoogleCalendarAutomatica = function () {
+        _sincronizarCalendarioAutomaticamenteSeNecessario();
     };
 
     // ── Auto-inicialização: carrega timestamp ao recarregar a página (F5) ─────────

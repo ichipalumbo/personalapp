@@ -54,6 +54,14 @@
 
         await router.navigateTo('tela-home');
 
+        if (global.gcal && typeof global.gcal.isSignedIn === 'function' && global.gcal.isSignedIn()) {
+            if (typeof global.iniciarSyncGoogleCalendarAutomatica === 'function') {
+                global.iniciarSyncGoogleCalendarAutomatica();
+            } else if (typeof global.iniciarSyncGoogleCalendar === 'function') {
+                global.iniciarSyncGoogleCalendar();
+            }
+        }
+
         if (global.googleIdentity && typeof global.googleIdentity.addAuthChangeListener === 'function') {
             let ultimoOwnerEmail = global.googleIdentity.getOwnerEmail ? global.googleIdentity.getOwnerEmail() : null;
 

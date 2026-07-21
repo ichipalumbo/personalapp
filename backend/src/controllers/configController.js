@@ -82,8 +82,12 @@ async function criarConfiguracao(req, res) {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const payload = req.body || {};
     const chave = payload.chave || 'grade_horarios';
-    const config = await Config.create({ ...payload, chave, ownerEmail });
-    res.status(201).json(config);
+    const config = await Config.findOneAndUpdate(
+      { ownerEmail, chave },
+      { $set: { ...payload, chave, ownerEmail } },
+      { new: true, upsert: true, runValidators: true }
+    );
+    res.status(200).json(config);
   } catch (err) {
     responderErroConfig(res, err, 'criar configuração');
   }
@@ -137,7 +141,7 @@ async function salvarConfiguracao(req, res) {
     const config = await Config.findOneAndUpdate(
       { ownerEmail, chave: 'grade_horarios' },
       { ownerEmail, chave: 'grade_horarios', horaInicio, horaFim },
-      { new: true, upsert: true }
+      { new: true, upsert: true, runValidators: true }
     );
 
     res.json(config);

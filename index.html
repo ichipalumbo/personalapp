@@ -28,6 +28,19 @@
             </h1>
           </div>
         </div>
+
+        <div class="auth-banner" id="headerSession">
+          <div id="googleSignedOutState" class="header-session-state">
+            <span class="header-readonly-pill"
+              ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para editar.</span
+            >
+            <button id="custom-google-login" type="button" class="btn-google-custom">
+              <i class="fa-brands fa-google"></i>
+              <span>Entrar com Google</span>
+            </button>
+          </div>
+        </div>
+
         <nav class="header-nav">
           <a href="#" class="nav-link ativo" data-target="tela-home">
             <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
@@ -40,31 +53,6 @@
           </a>
         </nav>
       </header>
-
-      <div class="auth-banner" id="headerSession">
-        <div id="googleSignedOutState" class="header-session-state">
-          <span class="header-readonly-pill"
-            ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para editar.</span
-          >
-          <div id="googleSignInButton" class="google-signin-slot"></div>
-        </div>
-        <div id="googleSessionSummary" class="header-session-summary" hidden>
-          <div class="header-session-avatar" id="googleSessionAvatar">G</div>
-          <div class="header-session-copy">
-            <strong id="googleSessionName">Conta Google</strong>
-            <span id="googleSessionEmail">carregando...</span>
-          </div>
-          <button
-            id="btnGoogleSignOut"
-            type="button"
-            class="btn btn-secondary btn-sm"
-            title="Sair"
-            aria-label="Sair"
-          >
-            <i class="fa-solid fa-right-from-bracket"></i>
-          </button>
-        </div>
-      </div>
 
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section">
@@ -151,8 +139,8 @@
                     id="btnSyncBanco"
                     class="btn btn-sm"
                     style="background:#1e2a18;color:#b7f2b1;border:1px solid #35592f;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
-                    onclick="window.sincronizarBancoDados && window.sincronizarBancoDados({ incluirGoogle: true })"
-                    title="Forçar sincronização com banco remoto e Google Calendar"
+                    onclick="window.sincronizarBancoDados && window.sincronizarBancoDados()"
+                    title="Forçar sincronização com o banco remoto"
                   >
                     <i class="fa-solid fa-database"></i> <span id="btnSyncBancoText">Sincronizar Banco</span>
                   </button>

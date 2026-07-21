@@ -795,11 +795,6 @@ window.sincronizarBancoDados = async function (opcoes = {}) {
     try {
         await carregarDados({ forcarRender: true, forcarRemoto: true });
 
-        const incluirGoogle = opcoes.incluirGoogle !== false;
-        if (incluirGoogle && typeof window.iniciarSyncGoogleCalendar === 'function') {
-            window.iniciarSyncGoogleCalendar();
-        }
-
         if (typeof mostrarToast === 'function') {
             mostrarToast('Banco sincronizado com sucesso!', 'success');
         }
