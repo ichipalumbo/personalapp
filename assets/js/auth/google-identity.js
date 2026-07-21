@@ -5,6 +5,7 @@
     const PROFILE_CACHE_KEY = 'gis_profile_cache';
     const READY_TIMEOUT_MS = 1500;
     const AUTO_PROMPT_ON_INIT = false;
+    const AUTO_RESTORE_SESSION_ON_INIT = true;
 
     let _initialized = false;
     let _gisInitialized = false;
@@ -273,6 +274,41 @@
         });
     }
 
+    function _attemptSilentSessionRestore() {
+        if (!global.google || !global.google.accounts || !global.google.accounts.id || _idToken) {
+            return;
+        }
+
+        global.google.accounts.id.prompt(function (notification) {
+            if (!notification) {
+                return;
+            }
+
+            const isNotDisplayed = notification.isNotDisplayed && notification.isNotDisplayed();
+            const isSkipped = notification.isSkippedMoment && notification.isSkippedMoment();
+
+            if (!isNotDisplayed && !isSkipped) {
+                return;
+            }
+
+            const motivo = _obterMotivoPrompt(notification);
+
+            if (motivo === 'unregistered_origin') {
+                _promptBloqueado = true;
+                _showAuthMessage('Origem atual não autorizada no Google Client ID. Adicione este domínio em Authorized JavaScript origins.', 'error');
+                return;
+            }
+
+            if (motivo === 'browser_not_supported') {
+                _promptBloqueado = true;
+                _showAuthMessage('Este ambiente é tratado como WebView e o Google Sign-In pode não funcionar. Abra em navegador padrão (Chrome/Safari).', 'warning');
+                return;
+            }
+
+            console.info('[auth] Restauração silenciosa de sessão não concluída. Motivo:', motivo);
+        });
+    }
+
     function _bindCustomLoginButton() {
         const customLoginButton = document.getElementById('custom-google-login');
         if (!customLoginButton || customLoginButton.dataset.boundAuthClick === 'true') {
@@ -309,6 +345,9 @@
                 _markReady();
             });
         } else {
+            if (AUTO_RESTORE_SESSION_ON_INIT) {
+                _attemptSilentSessionRestore();
+            }
             _markReady();
         }
     }
