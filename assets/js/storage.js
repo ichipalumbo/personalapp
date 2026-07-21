@@ -501,12 +501,18 @@ async function carregarDados(opcoes = {}) {
 
         if (_cachePossuiDados && !forcarRemoto) {
             console.log('⚡ Cache local carregado instantaneamente. Sem chamada inicial à API.');
+            if (typeof window.preencherFiltrosAlunos === 'function') {
+                window.preencherFiltrosAlunos();
+            }
             if (deveForcarRender) {
                 forçarRenderizacaoInterface();
             }
             return { origem: 'local-cache' };
         }
     } else if (_cachePossuiDados && !forcarRemoto) {
+        if (typeof window.preencherFiltrosAlunos === 'function') {
+            window.preencherFiltrosAlunos();
+        }
         if (deveForcarRender) {
             forçarRenderizacaoInterface();
         }
@@ -516,6 +522,10 @@ async function carregarDados(opcoes = {}) {
     if (!usuarioAutenticadoNoApp()) {
         const resultadoLocal = carregarDadosDoLocalStorage();
         _cachePossuiDados = resultadoLocal.temDados;
+
+        if (typeof window.preencherFiltrosAlunos === 'function') {
+            window.preencherFiltrosAlunos();
+        }
 
         if (deveForcarRender) {
             forçarRenderizacaoInterface();
@@ -608,6 +618,9 @@ async function carregarDados(opcoes = {}) {
                 if (typeof mostrarToast === 'function') {
                     mostrarToast("Seus dados locais foram migrados com sucesso para a nuvem!", "success");
                 }
+                if (typeof window.preencherFiltrosAlunos === 'function') {
+                    window.preencherFiltrosAlunos();
+                }
                 if (deveForcarRender) {
                     forçarRenderizacaoInterface();
                 }
@@ -654,6 +667,10 @@ async function carregarDados(opcoes = {}) {
         salvarNoLocalStorage();
         window.faturamentoMeta = parseFloat(localStorage.getItem('faturamentoMeta')) || 0;
 
+        if (typeof window.preencherFiltrosAlunos === 'function') {
+            window.preencherFiltrosAlunos();
+        }
+
         _primeiraRequisicao = false;
         _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
         console.log("✅ Dados sincronizados do MongoDB com sucesso!", {
@@ -675,6 +692,10 @@ async function carregarDados(opcoes = {}) {
             const resultadoLocal = carregarDadosDoLocalStorage();
             _cachePossuiDados = resultadoLocal.temDados;
 
+            if (typeof window.preencherFiltrosAlunos === 'function') {
+                window.preencherFiltrosAlunos();
+            }
+
             if (deveForcarRender) {
                 forçarRenderizacaoInterface();
             }
@@ -684,6 +705,10 @@ async function carregarDados(opcoes = {}) {
         console.error("❌ Falha na conexão com a API. Usando localStorage temporariamente.", error);
         const resultadoLocal = carregarDadosDoLocalStorage();
         _cachePossuiDados = resultadoLocal.temDados;
+
+        if (typeof window.preencherFiltrosAlunos === 'function') {
+            window.preencherFiltrosAlunos();
+        }
         
         if (typeof mostrarToast === 'function') {
             mostrarToast("Trabalhando offline. Dados salvos no navegador.", "warning");

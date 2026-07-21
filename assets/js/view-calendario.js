@@ -37,6 +37,8 @@ window.preencherFiltrosAlunos = function() {
     const preencherSelect = (id) => {
         const select = document.getElementById(id);
         if (!select) return;
+
+        const valorAtual = select.value;
         select.innerHTML = '<option value="">👥 Todos os Alunos</option>';
         alunosLista.forEach(aluno => {
             const option = document.createElement('option');
@@ -44,6 +46,10 @@ window.preencherFiltrosAlunos = function() {
             option.textContent = aluno.nome;
             select.appendChild(option);
         });
+
+        if (valorAtual && alunosLista.some(aluno => aluno.id === valorAtual)) {
+            select.value = valorAtual;
+        }
     };
     
     preencherSelect('filtroAlunoSemanaHome');
