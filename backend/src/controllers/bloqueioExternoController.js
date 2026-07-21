@@ -1,5 +1,4 @@
 const BloqueioExterno = require('../models/BloqueioExterno');
-const { sincronizarBloqueiosExternos } = require('../services/bloqueioExternoService');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 
 function responderErroBloqueio(res, err, contexto) {
@@ -111,44 +110,10 @@ async function excluirBloqueioExterno(req, res) {
   }
 }
 
-async function sincronizarBloqueiosExternosHandler(req, res) {
-  try {
-    const ownerEmail = getOwnerEmailOrThrow(req);
-    const { eventos, timeMin, timeMax } = req.body;
-
-    if (!timeMin || !timeMax || typeof timeMin !== 'string' || typeof timeMax !== 'string') {
-      return res.status(400).json({
-        error: 'timeMin e timeMax são obrigatórios (formato: YYYY-MM-DD).'
-      });
-    }
-
-    if (timeMin > timeMax) {
-      return res.status(400).json({
-        error: 'timeMin deve ser menor ou igual a timeMax.'
-      });
-    }
-
-    if (!Array.isArray(eventos)) {
-      return res.status(400).json({
-        error: 'eventos deve ser um array.'
-      });
-    }
-
-    const resultado = await sincronizarBloqueiosExternos(ownerEmail, eventos, timeMin, timeMax);
-    res.json({
-      message: 'Bloqueios externos sincronizados com sucesso!',
-      ...resultado
-    });
-  } catch (err) {
-    responderErroBloqueio(res, err, 'sincronizar bloqueios externos');
-  }
-}
-
 module.exports = {
   listarBloqueiosExternos,
   obterBloqueioExterno,
   criarBloqueioExterno,
   atualizarBloqueioExterno,
-  excluirBloqueioExterno,
-  sincronizarBloqueiosExternosHandler
+  excluirBloqueioExterno
 };

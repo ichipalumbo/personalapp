@@ -4,15 +4,13 @@ const {
   obterBloqueioExterno,
   criarBloqueioExterno,
   atualizarBloqueioExterno,
-  excluirBloqueioExterno,
-  sincronizarBloqueiosExternosHandler
+  excluirBloqueioExterno
 } = require('../controllers/bloqueioExternoController');
 
 const router = express.Router();
 
 router.get('/', listarBloqueiosExternos);
 router.post('/', criarBloqueioExterno);
-router.post('/sincronizar', sincronizarBloqueiosExternosHandler);
 router.get('/:googleCalendarEventId', obterBloqueioExterno);
 router.put('/:googleCalendarEventId', atualizarBloqueioExterno);
 router.delete('/:googleCalendarEventId', excluirBloqueioExterno);

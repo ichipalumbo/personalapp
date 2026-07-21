@@ -6,15 +6,13 @@ const {
   atualizarAluno,
   excluirAluno,
   obterKpisAluno,
-  obterKpisTodosAlunos,
-  sincronizarAlunos
+  obterKpisTodosAlunos
 } = require('../controllers/alunoController');
 
 const router = express.Router();
 
 router.get('/', listarAlunos);
 router.post('/', criarAluno);
-router.post('/sincronizar', sincronizarAlunos);
 router.get('/kpis/todos', obterKpisTodosAlunos);
 router.get('/:alunoId/kpis', obterKpisAluno);
 router.get('/:alunoId', obterAluno);

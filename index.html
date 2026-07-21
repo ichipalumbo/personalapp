@@ -19,30 +19,53 @@
     <div class="container">
       <!-- [TAG-HTML-HEADER] - Menu e Controle Global de Navegação (SPA) -->
       <header class="header">
-        <div class="brand-container">
-          <h1 class="marca-titulo">
-            <span class="marca-ativa"
-              ><i class="fa-solid fa-dumbbell"></i> Prô</span
-            ><span class="marca-mente"> Josy</span>
-          </h1>
-          <p class="marca-subtitulo">
-            <i class="fa-solid fa-hand-fist"></i>Personal Trainer
-          </p>
+        <div class="header-topline">
+          <div class="brand-container">
+            <h1 class="marca-titulo">
+              <span class="marca-ativa"
+                ><i class="fa-solid fa-dumbbell"></i> Prô</span
+              ><span class="marca-mente"> Josy</span>
+            </h1>
+          </div>
         </div>
-        <div class="header-actions">
-          <nav class="header-nav">
-            <a href="#" class="nav-link ativo" data-target="tela-home">
-              <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
-            </a>
-            <a href="#" class="nav-link inativo" data-target="tela-calendario">
-              <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
-            </a>
-            <a href="#" class="nav-link inativo" data-target="tela-alunos">
-              <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
-            </a>
-          </nav>
-        </div>
+        <nav class="header-nav">
+          <a href="#" class="nav-link ativo" data-target="tela-home">
+            <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
+          </a>
+          <a href="#" class="nav-link inativo" data-target="tela-calendario">
+            <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
+          </a>
+          <a href="#" class="nav-link inativo" data-target="tela-alunos">
+            <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
+          </a>
+        </nav>
       </header>
+
+      <div class="auth-banner" id="headerSession">
+        <div id="googleSignedOutState" class="header-session-state">
+          <span class="header-readonly-pill"
+            ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para editar.</span
+          >
+          <div id="googleSignInButton" class="google-signin-slot"></div>
+        </div>
+        <div id="googleSessionSummary" class="header-session-summary" hidden>
+          <div class="header-session-avatar" id="googleSessionAvatar">G</div>
+          <div class="header-session-copy">
+            <strong id="googleSessionName">Conta Google</strong>
+            <span id="googleSessionEmail">carregando...</span>
+          </div>
+          <button
+            id="btnGoogleSignOut"
+            type="button"
+            class="btn btn-secondary btn-sm"
+            title="Sair"
+            aria-label="Sair"
+          >
+            <i class="fa-solid fa-right-from-bracket"></i>
+          </button>
+        </div>
+      </div>
+
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section">
         <div class="home-weekly-topbar">
@@ -1562,6 +1585,7 @@
     <script src="assets/js/cascade-sync-aluno.js"></script>
     <script src="assets/js/view-alunos.js"></script>
     <!-- [6.5] Google Calendar Integration (deve vir antes do script GIS para definir _onGISLoad) -->
+    <script src="assets/js/auth/google-identity.js"></script>
     <script src="assets/js/google-calendar.js"></script>
     <script src="https://accounts.google.com/gsi/client" async onload="_onGISLoad()"></script>
     <!-- [7] App Shell -->

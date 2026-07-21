@@ -171,21 +171,6 @@ async function obterKpisTodosAlunos(req, res) {
   }
 }
 
-async function sincronizarAlunos(req, res) {
-  try {
-    const ownerEmail = getOwnerEmailOrThrow(req);
-    const { alunos } = req.body;
-    await Aluno.deleteMany({ ownerEmail });
-    if (alunos && alunos.length > 0) {
-      await Aluno.insertMany(alunos.map((aluno) => ({ ...aluno, ownerEmail })));
-    }
-
-    res.json({ message: 'Alunos sincronizados com sucesso!' });
-  } catch (err) {
-    responderErroAluno(res, err, 'sincronizar alunos');
-  }
-}
-
 module.exports = {
   listarAlunos,
   obterAluno,
@@ -193,6 +178,5 @@ module.exports = {
   atualizarAluno,
   excluirAluno,
   obterKpisAluno,
-  obterKpisTodosAlunos,
-  sincronizarAlunos
+  obterKpisTodosAlunos
 };
