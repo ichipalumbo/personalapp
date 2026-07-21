@@ -27,10 +27,11 @@ function _calcularSemanaISO(dataStr) {
  * @param {string} timeMax     - Data máxima (YYYY-MM-DD) para filtro
  * @returns {Object} Resultado com numero de eventos processados
  */
-async function sincronizarBloqueiosExternos(eventos, timeMin, timeMax) {
+async function sincronizarBloqueiosExternos(ownerEmail, eventos, timeMin, timeMax) {
   if (!Array.isArray(eventos) || eventos.length === 0) {
     // Se nenhum evento, apenas limpa o range para evitar stale data
     const deleteResult = await BloqueioExterno.deleteMany({
+      ownerEmail,
       data: { $gte: timeMin, $lte: timeMax }
     });
     return { 
@@ -42,11 +43,13 @@ async function sincronizarBloqueiosExternos(eventos, timeMin, timeMax) {
 
   // Primeiro, delete todos os eventos no range (para evitar orphans se eventos foram deletados no GCal)
   const deleteResult = await BloqueioExterno.deleteMany({
+    ownerEmail,
     data: { $gte: timeMin, $lte: timeMax }
   });
 
   // Enriquece cada evento com semanaISO calculado automaticamente
   const eventosEnriquecidos = eventos.map(e => ({
+    ownerEmail,
     ...e,
     semanaISO: _calcularSemanaISO(e.data) || e.semanaISO || null
   }));

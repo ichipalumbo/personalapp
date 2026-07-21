@@ -1,6 +1,10 @@
 const express = require('express');
 const {
   listarAlunos,
+  obterAluno,
+  criarAluno,
+  atualizarAluno,
+  excluirAluno,
   obterKpisAluno,
   obterKpisTodosAlunos,
   sincronizarAlunos
@@ -9,8 +13,12 @@ const {
 const router = express.Router();
 
 router.get('/', listarAlunos);
+router.post('/', criarAluno);
+router.post('/sincronizar', sincronizarAlunos);
 router.get('/kpis/todos', obterKpisTodosAlunos);
 router.get('/:alunoId/kpis', obterKpisAluno);
-router.post('/sincronizar', sincronizarAlunos);
+router.get('/:alunoId', obterAluno);
+router.put('/:alunoId', atualizarAluno);
+router.delete('/:alunoId', excluirAluno);
 
 module.exports = router;

@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 
 const AgendamentoSchema = new mongoose.Schema({
-  id: { type: String, required: true, unique: true },
+  ownerEmail: { type: String, required: true, index: true },
+  id: { type: String, required: true },
   alunoId: String,
   alunoNome: String,
   data: String,
@@ -12,5 +13,7 @@ const AgendamentoSchema = new mongoose.Schema({
   semanasRecorrencia: Number,
   googleCalendarEventId: { type: String, default: null }
 }, { strict: false });
+
+AgendamentoSchema.index({ ownerEmail: 1, id: 1 }, { unique: true });
 
 module.exports = mongoose.models.Agendamento || mongoose.model('Agendamento', AgendamentoSchema);
