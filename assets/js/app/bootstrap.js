@@ -40,12 +40,46 @@
             global.__appServiceWorker.register();
         }
 
+        if (global.googleIdentity && typeof global.googleIdentity.initialize === 'function') {
+            global.googleIdentity.initialize();
+            if (typeof global.googleIdentity.whenReady === 'function') {
+                await global.googleIdentity.whenReady(1600);
+            }
+        }
+
         router.bindNavigation();
         router.onAfterNavigate(() => {
             setTimeout(atualizarMedidasLayout, 50);
         });
 
         await router.navigateTo('tela-home');
+
+        if (global.googleIdentity && typeof global.googleIdentity.addAuthChangeListener === 'function') {
+            let ultimoOwnerEmail = global.googleIdentity.getOwnerEmail ? global.googleIdentity.getOwnerEmail() : null;
+
+            global.googleIdentity.addAuthChangeListener(async function (session) {
+                const ownerEmailAtual = session && session.ownerEmail ? session.ownerEmail : null;
+                if (ownerEmailAtual === ultimoOwnerEmail) {
+                    return;
+                }
+
+                ultimoOwnerEmail = ownerEmailAtual;
+
+                try {
+                    if (typeof global.carregarDados === 'function') {
+                        await global.carregarDados({ forcarRender: false, forcarRemoto: true });
+                    }
+
+                    if (typeof router.refreshCurrentView === 'function') {
+                        await router.refreshCurrentView();
+                    }
+                } catch (error) {
+                    console.error('Falha ao atualizar a view após mudança de autenticação:', error);
+                }
+
+                atualizarMedidasLayout();
+            });
+        }
 
         global.addEventListener('resize', atualizarMedidasLayout);
         atualizarMedidasLayout();

@@ -13,7 +13,8 @@
     'use strict';
 
     // ── Constantes ───────────────────────────────────────────────────────────────
-    const CLIENT_ID   = '799456461369-r4g75ok414jf9gb104um8j0k0ucimu1g.apps.googleusercontent.com';
+    const CLIENT_ID   = (global.__appGoogleConfig && global.__appGoogleConfig.clientId)
+        || '799456461369-r4g75ok414jf9gb104um8j0k0ucimu1g.apps.googleusercontent.com';
     const SCOPES      = 'https://www.googleapis.com/auth/calendar';
     const GCAL_BASE   = 'https://www.googleapis.com/calendar/v3';
     const APP_SOURCE  = 'personaltrainer'; // extendedProperties.private.appSource
@@ -108,8 +109,7 @@
         _pendingResolvers = [];
     }
 
-    // Chamado quando a biblioteca GIS (accounts.google.com/gsi/client) termina de carregar
-    global._onGISLoad = function () {
+    function _initializeGISCalendar() {
         if (!global.google || !global.google.accounts) {
             console.warn('[gcal] GIS carregado mas google.accounts não encontrado.');
             return;
@@ -126,7 +126,19 @@
         } else {
             console.info('[gcal] GIS inicializado. Use o botão "Sync Calendário" para autenticar.');
         }
-    };
+    }
+
+    if (typeof global.__registerGISReadyHandler === 'function') {
+        global.__registerGISReadyHandler(_initializeGISCalendar);
+    } else {
+        const _previousOnGISLoad = global._onGISLoad;
+        global._onGISLoad = function () {
+            if (typeof _previousOnGISLoad === 'function') {
+                _previousOnGISLoad();
+            }
+            _initializeGISCalendar();
+        };
+    }
 
     // ── Obtenção de token ────────────────────────────────────────────────────────
 

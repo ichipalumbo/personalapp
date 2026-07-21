@@ -157,6 +157,75 @@ body {
   gap: 12px;
 }
 
+.header-session {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(22, 27, 34, 0.92), rgba(14, 18, 24, 0.92));
+  border: 1px solid rgba(255, 215, 0, 0.14);
+}
+
+.header-session-state,
+.header-session-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+
+.header-session-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  text-align: left;
+}
+
+.header-session-copy strong {
+  color: #f7f1cc;
+  font-size: 0.93rem;
+}
+
+.header-session-copy span {
+  color: #b3bcc6;
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.google-signin-slot {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 220px;
+}
+
+.google-signin-slot > div {
+  width: 100%;
+}
+
+.header-session-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(255, 215, 0, 0.16);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #ffd700;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.header-session-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .header-nav {
   display: flex;
   width: 100%;
@@ -818,6 +887,29 @@ body {
 }
 
 @media (min-width: 768px) {
+  .header-session-state,
+  .header-session-summary {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-session-summary {
+    position: relative;
+    padding-left: 54px;
+  }
+
+  .header-session-avatar {
+    position: absolute;
+    left: 0;
+    top: 2px;
+  }
+
+  .google-signin-slot {
+    min-width: 0;
+    width: 100%;
+    justify-content: center;
+  }
+
   .modal-recorrencia-secundario {
     width: 400px;
   }

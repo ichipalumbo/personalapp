@@ -12,6 +12,7 @@
 
     function createRouter() {
         const afterNavigateCallbacks = [];
+        let currentViewId = null;
 
         async function initializeView(targetId) {
             const initializer = getInitializer(targetId);
@@ -24,6 +25,7 @@
             const navLinks = document.querySelectorAll('.header-nav .nav-link');
             const views = document.querySelectorAll('.view-section');
             const activeView = document.getElementById(targetId);
+            currentViewId = targetId;
 
             navLinks.forEach(link => {
                 const isActive = link.getAttribute('data-target') === targetId;
@@ -63,10 +65,23 @@
             }
         }
 
+        async function refreshCurrentView() {
+            if (!currentViewId) {
+                return;
+            }
+
+            await initializeView(currentViewId);
+            afterNavigateCallbacks.forEach(callback => callback(currentViewId));
+        }
+
         return {
             bindNavigation,
             navigateTo,
-            onAfterNavigate
+            onAfterNavigate,
+            refreshCurrentView,
+            getCurrentViewId: function () {
+                return currentViewId;
+            }
         };
     }
 
