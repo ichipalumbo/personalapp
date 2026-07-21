@@ -24,6 +24,14 @@ function responderErroAluno(res, err, contexto) {
   });
 }
 
+function limparPayloadAluno(payload) {
+  const limpo = { ...(payload || {}) };
+  delete limpo._id;
+  delete limpo.__v;
+  delete limpo.ownerEmail;
+  return limpo;
+}
+
 async function listarAlunos(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -53,7 +61,7 @@ async function obterAluno(req, res) {
 async function criarAluno(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const payload = req.body || {};
+    const payload = limparPayloadAluno(req.body);
 
     if (!payload.id || !payload.nome) {
       return res.status(400).json({ error: 'id e nome são obrigatórios.' });
@@ -70,7 +78,7 @@ async function criarAluno(req, res) {
     if (err && err.code === 11000) {
       try {
         const ownerEmail = getOwnerEmailOrThrow(req);
-        const payload = req.body || {};
+        const payload = limparPayloadAluno(req.body);
 
         const aluno = await Aluno.findOneAndUpdate(
           { ownerEmail, id: payload.id },

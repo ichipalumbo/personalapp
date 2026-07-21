@@ -16,6 +16,14 @@ function responderErroConfig(res, err, contexto) {
   });
 }
 
+function limparPayloadConfig(payload) {
+  const limpo = { ...(payload || {}) };
+  delete limpo._id;
+  delete limpo.__v;
+  delete limpo.ownerEmail;
+  return limpo;
+}
+
 async function listarConfiguracoes(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -75,7 +83,7 @@ async function obterConfiguracaoPorChave(req, res) {
 async function criarConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const payload = req.body || {};
+    const payload = limparPayloadConfig(req.body);
     const chave = payload.chave || 'grade_horarios';
     const config = await Config.findOneAndUpdate(
       { ownerEmail, chave },
@@ -84,6 +92,23 @@ async function criarConfiguracao(req, res) {
     );
     res.status(200).json(config);
   } catch (err) {
+    if (err && err.code === 11000) {
+      try {
+        const ownerEmail = getOwnerEmailOrThrow(req);
+        const payload = limparPayloadConfig(req.body);
+        const chave = payload.chave || 'grade_horarios';
+        const config = await Config.findOneAndUpdate(
+          { ownerEmail, chave },
+          { $set: { ...payload, chave, ownerEmail } },
+          { new: true, upsert: true, runValidators: true }
+        );
+
+        return res.status(200).json(config);
+      } catch (fallbackErr) {
+        return responderErroConfig(res, fallbackErr, 'criar configuração');
+      }
+    }
+
     responderErroConfig(res, err, 'criar configuração');
   }
 }
@@ -92,10 +117,7 @@ async function atualizarConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const { chave } = req.params;
-    const payload = { ...req.body };
-
-    delete payload.ownerEmail;
-    delete payload._id;
+    const payload = limparPayloadConfig(req.body);
 
     if (payload.chave && payload.chave !== chave) {
       return res.status(400).json({ error: 'A chave do corpo deve ser igual à chave da rota.' });
@@ -132,7 +154,8 @@ async function excluirConfiguracao(req, res) {
 async function salvarConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { horaInicio, horaFim } = req.body;
+    const payload = limparPayloadConfig(req.body);
+    const { horaInicio, horaFim } = payload;
     const config = await Config.findOneAndUpdate(
       { ownerEmail, chave: 'grade_horarios' },
       { $set: { ownerEmail, chave: 'grade_horarios', horaInicio, horaFim } },
@@ -141,6 +164,23 @@ async function salvarConfiguracao(req, res) {
 
     res.json(config);
   } catch (err) {
+    if (err && err.code === 11000) {
+      try {
+        const ownerEmail = getOwnerEmailOrThrow(req);
+        const payload = limparPayloadConfig(req.body);
+        const { horaInicio, horaFim } = payload;
+        const config = await Config.findOneAndUpdate(
+          { ownerEmail, chave: 'grade_horarios' },
+          { $set: { ownerEmail, chave: 'grade_horarios', horaInicio, horaFim } },
+          { new: true, upsert: true, runValidators: true }
+        );
+
+        return res.json(config);
+      } catch (fallbackErr) {
+        return responderErroConfig(res, fallbackErr, 'salvar configuração padrão');
+      }
+    }
+
     responderErroConfig(res, err, 'salvar configuração padrão');
   }
 }
