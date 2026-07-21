@@ -9,10 +9,13 @@ const {
 
 const router = express.Router();
 
-router.get('/', listarBloqueiosExternos);
-router.post('/', criarBloqueioExterno);
-router.get('/:googleCalendarEventId', obterBloqueioExterno);
-router.put('/:googleCalendarEventId', atualizarBloqueioExterno);
-router.delete('/:googleCalendarEventId', excluirBloqueioExterno);
+router.route('/')
+  .get(listarBloqueiosExternos)
+  .post(criarBloqueioExterno);
+
+router.route('/:id')
+  .get(obterBloqueioExterno)
+  .put(atualizarBloqueioExterno)
+  .delete(excluirBloqueioExterno);
 
 module.exports = router;

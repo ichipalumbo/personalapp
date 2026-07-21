@@ -202,9 +202,6 @@ window.irParaDiaDestaSemana = function(dataStr) {
         window.alternarModoCalendario('dia');
     }
 
-    if (typeof mostrarToast === 'function') {
-        mostrarToast(`📅 Agenda do dia ${dataStr} aberta!`);
-    }
 };
 window.renderizarHomeSemana = function() {
     const gridSemanal = document.getElementById('calendarioSemanalHomeGrid');

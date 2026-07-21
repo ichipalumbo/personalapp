@@ -4,6 +4,7 @@
     const CLIENT_ID = '799456461369-r4g75ok414jf9gb104um8j0k0ucimu1g.apps.googleusercontent.com';
     const PROFILE_CACHE_KEY = 'gis_profile_cache';
     const READY_TIMEOUT_MS = 1500;
+    const AUTO_PROMPT_ON_INIT = false;
 
     let _initialized = false;
     let _gisInitialized = false;
@@ -11,6 +12,7 @@
     let _profile = null;
     let _readyResolved = false;
     let _resolveReady = null;
+    let _promptBloqueado = false;
     const _authListeners = [];
 
     const _readyPromise = new Promise(function (resolve) {
@@ -79,6 +81,69 @@
         }
     }
 
+    function _showAuthMessage(message, level) {
+        const tipo = level || 'warning';
+        if (typeof global.mostrarToast === 'function') {
+            global.mostrarToast(message, tipo);
+            return;
+        }
+        if (tipo === 'error') {
+            console.error('[auth]', message);
+            return;
+        }
+        console.warn('[auth]', message);
+    }
+
+    function _obterMotivoPrompt(notification) {
+        try {
+            if (notification && notification.getNotDisplayedReason && notification.isNotDisplayed && notification.isNotDisplayed()) {
+                return notification.getNotDisplayedReason() || 'not_displayed';
+            }
+            if (notification && notification.getSkippedReason && notification.isSkippedMoment && notification.isSkippedMoment()) {
+                return notification.getSkippedReason() || 'skipped';
+            }
+        } catch (_) {
+            return 'unknown';
+        }
+
+        return 'unknown';
+    }
+
+    function _tratarResultadoPrompt(notification) {
+        if (!notification) {
+            return;
+        }
+
+        const isNotDisplayed = notification.isNotDisplayed && notification.isNotDisplayed();
+        const isSkipped = notification.isSkippedMoment && notification.isSkippedMoment();
+
+        if (!isNotDisplayed && !isSkipped) {
+            return;
+        }
+
+        const motivo = _obterMotivoPrompt(notification);
+        console.warn('[auth] Prompt de login não exibido/ignorado. Motivo:', motivo);
+
+        if (motivo === 'unregistered_origin') {
+            _promptBloqueado = true;
+            _showAuthMessage('Origem atual não autorizada no Google Client ID. Adicione este domínio em Authorized JavaScript origins.', 'error');
+            return;
+        }
+
+        if (motivo === 'browser_not_supported') {
+            _promptBloqueado = true;
+            _showAuthMessage('Este ambiente é tratado como WebView e o Google Sign-In pode não funcionar. Abra em navegador padrão (Chrome/Safari).', 'warning');
+            return;
+        }
+
+        if (motivo === 'suppressed_by_user') {
+            _showAuthMessage('O navegador suprimiu o prompt automático. Use o botão "Entrar com Google".', 'warning');
+            return;
+        }
+
+        _showAuthMessage('Prompt de login não foi exibido neste contexto. Tente no navegador padrão.', 'warning');
+    }
+
     function _persistProfile(profile) {
         try {
             if (profile) {
@@ -131,15 +196,36 @@
 
     function _updateUi() {
         const session = _getSessionSnapshot();
-        const authBanner = document.getElementById('headerSession');
         const signedOutState = document.getElementById('googleSignedOutState');
-
-        if (authBanner) {
-            authBanner.hidden = session.isSignedIn;
-        }
+        const signedInState = document.getElementById('googleSignedInState');
+        const sessionName = document.getElementById('headerSessionName');
+        const sessionEmail = document.getElementById('headerSessionEmail');
+        const sessionAvatar = document.getElementById('headerSessionAvatar');
 
         if (signedOutState) {
             signedOutState.hidden = session.isSignedIn;
+        }
+
+        if (signedInState) {
+            signedInState.hidden = !session.isSignedIn;
+        }
+
+        if (sessionName) {
+            sessionName.textContent = session.name || 'Conectado com Google';
+        }
+
+        if (sessionEmail) {
+            sessionEmail.textContent = session.email || 'Conta ativa';
+        }
+
+        if (sessionAvatar) {
+            if (session.picture) {
+                sessionAvatar.innerHTML = '<img src="' + session.picture + '" alt="Avatar da conta Google" />';
+            } else {
+                const email = session.email || '';
+                const fallback = email ? String(email).charAt(0).toUpperCase() : 'G';
+                sessionAvatar.textContent = fallback;
+            }
         }
     }
 
@@ -176,18 +262,13 @@
             return;
         }
 
+        if (_promptBloqueado) {
+            _showAuthMessage('Login Google bloqueado neste contexto. Verifique origem autorizada ou use navegador padrão.', 'warning');
+            return;
+        }
+
         global.google.accounts.id.prompt(function (notification) {
-            if (!notification) {
-                return;
-            }
-
-            if (notification.isNotDisplayed && notification.isNotDisplayed()) {
-                console.warn('[auth] Prompt de login não foi exibido.');
-            }
-
-            if (notification.isSkippedMoment && notification.isSkippedMoment()) {
-                console.warn('[auth] Prompt de login foi ignorado pelo navegador/usuário.');
-            }
+            _tratarResultadoPrompt(notification);
         });
     }
 
@@ -221,26 +302,14 @@
         _bindCustomLoginButton();
         _updateUi();
 
-        global.google.accounts.id.prompt(function (notification) {
-            if (!notification) {
+        if (AUTO_PROMPT_ON_INIT) {
+            global.google.accounts.id.prompt(function (notification) {
+                _tratarResultadoPrompt(notification);
                 _markReady();
-                return;
-            }
-
-            if (notification.isNotDisplayed && notification.isNotDisplayed()) {
-                _markReady();
-                return;
-            }
-
-            if (notification.isSkippedMoment && notification.isSkippedMoment()) {
-                _markReady();
-                return;
-            }
-
-            if (notification.isDismissedMoment && notification.isDismissedMoment()) {
-                _markReady();
-            }
-        });
+            });
+        } else {
+            _markReady();
+        }
     }
 
     function initialize() {

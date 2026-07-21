@@ -39,6 +39,17 @@
               <span>Entrar com Google</span>
             </button>
           </div>
+          <div id="googleSignedInState" class="header-session-summary" hidden>
+            <span class="header-session-avatar" id="headerSessionAvatar" aria-hidden="true">G</span>
+            <div class="header-session-copy">
+              <strong id="headerSessionName">Conectado com Google</strong>
+              <span id="headerSessionEmail">Conta ativa</span>
+            </div>
+            <button id="btnGoogleSignOut" type="button" class="btn-google-signout" title="Trocar conta Google">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span>Sair</span>
+            </button>
+          </div>
         </div>
 
         <nav class="header-nav">
@@ -140,19 +151,14 @@
                     class="btn btn-sm"
                     style="background:#1e2a18;color:#b7f2b1;border:1px solid #35592f;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
                     onclick="window.sincronizarBancoDados && window.sincronizarBancoDados()"
-                    title="Forçar sincronização com o banco remoto"
+                    title="Forçar sincronização dos dados com o MongoDB"
                   >
-                    <i class="fa-solid fa-database"></i> <span id="btnSyncBancoText">Sincronizar Banco</span>
+                    <i class="fa-solid fa-database"></i> <span id="btnSyncBancoText">Sincronizar Dados</span>
                   </button>
-                  <button
-                    id="btnSyncGoogleCalendar"
-                    class="btn btn-sm"
-                    style="background:#111820;color:#90CAF9;border:1px solid #1a2535;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
-                    onclick="window.iniciarSyncGoogleCalendar && window.iniciarSyncGoogleCalendar()"
-                    title="Autenticar e sincronizar eventos externos do Google Calendar para esta semana"
-                  >
-                    <i class="fa-brands fa-google" style="color:#4285F4;"></i> <span id="btnSyncText">Sync Calendário</span>
-                  </button>
+                  <span class="sync-auto-pill" title="Sincronização de calendário automática após login Google">
+                    <i class="fa-brands fa-google" style="color:#4285F4;"></i>
+                    <span>Calendário em sincronização automática</span>
+                  </span>
                   <small id="ultimaSincronizacao" class="ultima-sincronizacao-label" style="font-size:0.65rem;color:#888;"></small>
                 </div>
               </div>

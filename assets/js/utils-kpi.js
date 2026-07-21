@@ -394,9 +394,7 @@ function ocultarOverlayConexao() {
 
 function ocultarOverlaySinc(resultado) {
     ocultarOverlayConexao();
-    if (resultado === 'success') {
-        mostrarToast('✅ Salvo com sucesso!', 'success');
-    } else if (resultado === 'partial') {
+    if (resultado === 'partial') {
         mostrarToast('⚠️ Salvo no banco. Falha no Google Calendar — o evento pode não aparecer no calendário.', 'warning');
     } else if (resultado === 'error') {
         mostrarToast('❌ Falha ao salvar. Tente novamente.', 'error');

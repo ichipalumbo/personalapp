@@ -10,11 +10,14 @@ const {
 
 const router = express.Router();
 
-router.get('/', listarAgendamentos);
-router.post('/', criarAgendamento);
-router.get('/:id', obterAgendamento);
-router.put('/:id', atualizarAgendamento);
-router.patch('/:id', patchAgendamento);
-router.delete('/:id', excluirAgendamento);
+router.route('/')
+  .get(listarAgendamentos)
+  .post(criarAgendamento);
+
+router.route('/:id')
+  .get(obterAgendamento)
+  .put(atualizarAgendamento)
+  .patch(patchAgendamento)
+  .delete(excluirAgendamento);
 
 module.exports = router;

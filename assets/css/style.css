@@ -161,10 +161,16 @@ body {
 .header-session-summary {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   justify-content: space-between;
+  flex-wrap: wrap;
   width: 100%;
   min-width: 0;
+}
+
+.header-session-state[hidden],
+.header-session-summary[hidden] {
+  display: none !important;
 }
 
 .header-session-copy {
@@ -172,6 +178,7 @@ body {
   flex-direction: column;
   gap: 1px;
   min-width: 0;
+  flex: 1 1 auto;
   text-align: left;
 }
 
@@ -236,6 +243,52 @@ body {
   outline-offset: 2px;
 }
 
+.btn-google-signout {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #4e3a3a;
+  background: #2a1717;
+  color: #ffcbc8;
+  border-radius: 999px;
+  padding: 7px 11px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.btn-google-signout:hover {
+  background: #361f1f;
+  border-color: #7a4d4d;
+}
+
+.btn-google-signout:active {
+  transform: translateY(1px);
+}
+
+.btn-google-signout:focus-visible {
+  outline: 2px solid #ff8b84;
+  outline-offset: 2px;
+}
+
+.sync-auto-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #27405d;
+  background: #0f1925;
+  color: #9bc3ea;
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
 .google-signin-slot > div {
   width: auto;
 }
@@ -272,6 +325,15 @@ body {
   border-radius: 8px;
   padding: 6px 8px;
   line-height: 1.2;
+  flex: 1 1 100%;
+}
+
+.header-session-state .btn-google-custom {
+  width: 100%;
+}
+
+.header-session-summary .btn-google-signout {
+  width: 100%;
 }
 
 .header-nav {
@@ -942,6 +1004,20 @@ body {
   .auth-banner {
     padding: 9px 12px;
     margin: 10px 0 12px;
+  }
+
+  .header-session-state,
+  .header-session-summary {
+    flex-wrap: nowrap;
+  }
+
+  .header-readonly-pill {
+    flex: 1 1 auto;
+  }
+
+  .header-session-state .btn-google-custom,
+  .header-session-summary .btn-google-signout {
+    width: auto;
   }
 
   .header-session-copy strong {
@@ -2382,7 +2458,7 @@ body {
   }
 
   .home-weekly-nav-row .sync-actions-row #btnSyncBanco,
-  .home-weekly-nav-row .sync-actions-row #btnSyncGoogleCalendar {
+  .home-weekly-nav-row .sync-actions-row .sync-auto-pill {
     flex: 0 0 auto;
   }
 

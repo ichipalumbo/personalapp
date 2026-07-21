@@ -11,12 +11,16 @@ const {
 
 const router = express.Router();
 
-router.get('/', listarAlunos);
-router.post('/', criarAluno);
+router.route('/')
+  .get(listarAlunos)
+  .post(criarAluno);
+
 router.get('/kpis/todos', obterKpisTodosAlunos);
-router.get('/:alunoId/kpis', obterKpisAluno);
-router.get('/:alunoId', obterAluno);
-router.put('/:alunoId', atualizarAluno);
-router.delete('/:alunoId', excluirAluno);
+router.get('/:id/kpis', obterKpisAluno);
+
+router.route('/:id')
+  .get(obterAluno)
+  .put(atualizarAluno)
+  .delete(excluirAluno);
 
 module.exports = router;

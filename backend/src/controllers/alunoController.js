@@ -45,8 +45,8 @@ async function listarAlunos(req, res) {
 async function obterAluno(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { alunoId } = req.params;
-    const aluno = await Aluno.findOne({ ownerEmail, id: alunoId });
+    const { id } = req.params;
+    const aluno = await Aluno.findOne({ ownerEmail, id });
 
     if (!aluno) {
       return res.status(404).json({ error: 'Aluno não encontrado' });
@@ -99,19 +99,16 @@ async function criarAluno(req, res) {
 async function atualizarAluno(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { alunoId } = req.params;
-    const payload = { ...req.body };
+    const { id } = req.params;
+    const payload = limparPayloadAluno(req.body);
 
-    delete payload.ownerEmail;
-    delete payload._id;
-
-    if (payload.id && payload.id !== alunoId) {
+    if (payload.id && payload.id !== id) {
       return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
     }
 
     const aluno = await Aluno.findOneAndUpdate(
-      { ownerEmail, id: alunoId },
-      { $set: { ...payload, id: alunoId, ownerEmail } },
+      { ownerEmail, id },
+      { $set: { ...payload, id, ownerEmail } },
       { new: true, runValidators: true }
     );
 
@@ -128,14 +125,14 @@ async function atualizarAluno(req, res) {
 async function excluirAluno(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { alunoId } = req.params;
-    const aluno = await Aluno.findOneAndDelete({ ownerEmail, id: alunoId });
+    const { id } = req.params;
+    const aluno = await Aluno.findOneAndDelete({ ownerEmail, id });
 
     if (!aluno) {
       return res.status(404).json({ error: 'Aluno não encontrado' });
     }
 
-    await Agendamento.deleteMany({ ownerEmail, alunoId });
+    await Agendamento.deleteMany({ ownerEmail, alunoId: id });
     res.status(204).send();
   } catch (err) {
     responderErroAluno(res, err, 'excluir aluno');
@@ -145,8 +142,8 @@ async function excluirAluno(req, res) {
 async function obterKpisAluno(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { alunoId } = req.params;
-    const aluno = await Aluno.findOne({ ownerEmail, id: alunoId });
+    const { id } = req.params;
+    const aluno = await Aluno.findOne({ ownerEmail, id });
 
     if (!aluno) {
       return res.status(404).json({ error: 'Aluno não encontrado' });

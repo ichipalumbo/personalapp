@@ -56,7 +56,7 @@ function _mostrarOverlayErroComRetry(onRetry) {
     if (typeof mostrarOverlayErroConexao === 'function') {
         mostrarOverlayErroConexao(mensagem, onRetry, function () {
             if (typeof mostrarToast === 'function') {
-                mostrarToast('Tudo bem. Você pode sincronizar depois pelo botão "Sincronizar Banco".', 'warning');
+                mostrarToast('Tudo bem. Você pode sincronizar depois pelo botão "Sincronizar Dados".', 'warning');
             }
         });
         return;
@@ -92,7 +92,7 @@ function _setEstadoBotaoSyncBanco(estado) {
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.style.cursor = 'pointer';
-    label.textContent = 'Sincronizar Banco';
+    label.textContent = 'Sincronizar Dados';
 }
 
 function _cacheTemDados(alunosLista, aulasLista) {
@@ -796,7 +796,7 @@ window.sincronizarBancoDados = async function (opcoes = {}) {
         await carregarDados({ forcarRender: true, forcarRemoto: true });
 
         if (typeof mostrarToast === 'function') {
-            mostrarToast('Banco sincronizado com sucesso!', 'success');
+            mostrarToast('Dados sincronizados com sucesso no MongoDB!', 'success');
         }
     } catch (error) {
         console.error('[storage] Erro na sincronização manual do banco:', error);

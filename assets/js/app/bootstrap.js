@@ -58,7 +58,7 @@
             if (typeof global.iniciarSyncGoogleCalendarAutomatica === 'function') {
                 global.iniciarSyncGoogleCalendarAutomatica();
             } else if (typeof global.iniciarSyncGoogleCalendar === 'function') {
-                global.iniciarSyncGoogleCalendar();
+                global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
             }
         }
 
@@ -76,6 +76,10 @@
                 try {
                     if (typeof global.carregarDados === 'function') {
                         await global.carregarDados({ forcarRender: false, forcarRemoto: true });
+                    }
+
+                    if (ownerEmailAtual && typeof global.iniciarSyncGoogleCalendar === 'function') {
+                        global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
                     }
 
                     if (typeof router.refreshCurrentView === 'function') {

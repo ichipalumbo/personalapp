@@ -17,8 +17,10 @@ router.get('/grade_horarios', obterConfiguracaoGradeHorarios);
 router.get('/all', listarConfiguracoes);
 router.post('/', salvarConfiguracao);
 router.post('/item', criarConfiguracao);
-router.get('/:chave', obterConfiguracaoPorChave);
-router.put('/:chave', atualizarConfiguracao);
-router.delete('/:chave', excluirConfiguracao);
+
+router.route('/:id')
+  .get(obterConfiguracaoPorChave)
+  .put(atualizarConfiguracao)
+  .delete(excluirConfiguracao);
 
 module.exports = router;

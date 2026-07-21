@@ -36,9 +36,11 @@
         return fetch(url, options);
     }
 
-    function _executarComFeedbackConexao(executor, onRetry) {
+    function _executarComFeedbackConexao(executor, onRetry, options) {
         if (typeof window.executarOperacaoRemotaComFeedback === 'function') {
-            return window.executarOperacaoRemotaComFeedback(executor, { onRetry });
+            const opts = options && typeof options === 'object' ? options : {};
+            const exibirFalha = opts.exibirFalha === true;
+            return window.executarOperacaoRemotaComFeedback(executor, { onRetry, exibirFalha });
         }
         return executor();
     }
@@ -124,7 +126,7 @@
         if (_loadTokenFromCache()) {
             console.info('[gcal] GIS inicializado com token em cache. Nenhuma autenticação necessária.');
         } else {
-            console.info('[gcal] GIS inicializado. Use o botão "Sync Calendário" para autenticar.');
+            console.info('[gcal] GIS inicializado. A sincronização será acionada automaticamente após login Google.');
         }
     }
 
@@ -149,9 +151,8 @@
                 resolve(_accessToken);
                 return;
             }
-            // Token ausente/expirado — não solicita automaticamente para evitar popups inesperados.
-            // Use window.iniciarSyncGoogleCalendar() para autenticar explicitamente.
-            reject(new Error('[gcal] Token ausente ou expirado. Use o botão "Sync Calendário" para autenticar.'));
+            // Token ausente/expirado — a autenticação pode ser disparada por iniciarSyncGoogleCalendar().
+            reject(new Error('[gcal] Token ausente ou expirado. Faça login Google para iniciar a sincronização automática.'));
         });
     }
 
@@ -384,15 +385,22 @@
 
             const remoto = remotoPorId.get(bloqueioLocal.googleCalendarEventId);
             if (!remoto) {
-                const resCriar = await _backendFetchApp(API_BASE_URL + '/bloqueios-externos', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bloqueioLocal),
-                    signal
-                });
+                const resCriarOuAtualizar = await _backendFetchApp(
+                    API_BASE_URL + '/bloqueios-externos/' + encodeURIComponent(bloqueioLocal.googleCalendarEventId),
+                    {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...bloqueioLocal,
+                            googleCalendarEventId: bloqueioLocal.googleCalendarEventId
+                        }),
+                        signal
+                    }
+                );
 
-                if (!resCriar.ok) {
-                    throw new Error('[gcal] Backend retornou ' + resCriar.status + ' ao criar bloqueio externo.');
+                if (!resCriarOuAtualizar.ok) {
+                    const detalhe = await resCriarOuAtualizar.text().catch(() => '');
+                    throw new Error('[gcal] Backend retornou ' + resCriarOuAtualizar.status + ' ao criar/atualizar bloqueio externo. ' + detalhe);
                 }
 
                 criados += 1;
@@ -414,7 +422,8 @@
                 );
 
                 if (!resAtualizar.ok) {
-                    throw new Error('[gcal] Backend retornou ' + resAtualizar.status + ' ao atualizar bloqueio externo.');
+                    const detalhe = await resAtualizar.text().catch(() => '');
+                    throw new Error('[gcal] Backend retornou ' + resAtualizar.status + ' ao atualizar bloqueio externo. ' + detalhe);
                 }
 
                 atualizados += 1;
@@ -466,8 +475,8 @@
             return !!_accessToken && Date.now() < _tokenExpiry;
         },
 
-        /** Solicita login explícito (abre popup do Google) */
-        requestSignIn(afterAuthCallback) {
+        /** Solicita autorização de calendário, reaproveitando a sessão Google já ativa */
+        requestSignIn(afterAuthCallback, options) {
             if (!_tokenClient) {
                 console.warn('[gcal] requestSignIn: GIS ainda não inicializado. Aguarde o carregamento da página.');
                 return;
@@ -475,7 +484,42 @@
             if (typeof afterAuthCallback === 'function') {
                 _pendingSyncCallback = afterAuthCallback;
             }
-            _tokenClient.requestAccessToken({ prompt: 'select_account' });
+
+            const opts = options && typeof options === 'object' ? options : {};
+            const auto = opts.auto === true;
+            const perfil = window.googleIdentity && typeof window.googleIdentity.getProfile === 'function'
+                ? window.googleIdentity.getProfile()
+                : null;
+            const loginHint = perfil && perfil.email ? String(perfil.email) : null;
+
+            if (auto) {
+                // 1) Tenta silencioso (sem popup) quando já existe consentimento prévio
+                // 2) Se falhar, solicita consentimento com dica de conta para evitar reescolha
+                _tokenClient.callback = function (response) {
+                    if (response && response.error === 'consent_required') {
+                        _tokenClient.callback = _onTokenResponse;
+                        _tokenClient.requestAccessToken({
+                            prompt: 'consent',
+                            ...(loginHint ? { hint: loginHint } : {})
+                        });
+                        return;
+                    }
+
+                    _tokenClient.callback = _onTokenResponse;
+                    _onTokenResponse(response);
+                };
+
+                _tokenClient.requestAccessToken({
+                    prompt: '',
+                    ...(loginHint ? { hint: loginHint } : {})
+                });
+                return;
+            }
+
+            _tokenClient.requestAccessToken({
+                prompt: 'consent',
+                ...(loginHint ? { hint: loginHint } : {})
+            });
         },
 
         /**
@@ -594,7 +638,7 @@
                     return _sincronizarBloqueiosExternosViaCRUD(payload, timeMin, timeMax, signal);
                 }, function () {
                     return global.sincronizarBloqueiosExternos(timeMin, timeMax);
-                });
+                }, { exibirFalha: false });
                 if (signal.aborted) {
                     resolve({ aborted: true });
                     return;
@@ -801,7 +845,7 @@
                     };
                 }, function () {
                     return _sincronizarAgendamentosDoGCal(timeMin, timeMax);
-                });
+                }, { exibirFalha: false });
 
                 if (signal.aborted) {
                     resolve({ aborted: true });
@@ -1033,16 +1077,19 @@
         _autoSyncJaExecutada = true;
         global.setTimeout(function () {
             if (typeof global.iniciarSyncGoogleCalendar === 'function') {
-                global.iniciarSyncGoogleCalendar();
+                global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
             }
         }, 0);
     }
 
-    // ── Botão de sincronização manual ─────────────────────────────────────────────
-    // Único ponto de entrada para autenticação + sync.
-    // Nunca dispara popup automaticamente — só quando o usuário clica explicitamente.
+    // ── Entrada de sincronização ─────────────────────────────────────────────────
+    // Login Google e calendário seguem um único fluxo de UX.
 
-    global.iniciarSyncGoogleCalendar = function () {
+    global.iniciarSyncGoogleCalendar = function (opcoes) {
+        const opts = opcoes && typeof opcoes === 'object' ? opcoes : {};
+        const silencioso = opts.silencioso === true;
+        const auto = opts.auto === true;
+
         async function _doSync() {
             if (typeof window.sincronizarBloqueiosExternos !== 'function') {
                 console.warn('[gcal] sincronizarBloqueiosExternos não está disponível.');
@@ -1053,7 +1100,7 @@
             _desabilitarBotaoSync('sincronizando');
 
             // Mostra feedback ao usuário que o sync está em progresso
-            if (typeof mostrarOverlaySinc === 'function') {
+            if (!silencioso && typeof mostrarOverlaySinc === 'function') {
                 mostrarOverlaySinc('Sincronizando Google Calendar...');
             }
 
@@ -1089,25 +1136,25 @@
                 if (falhas.length === 0) {
                     _salvarUltimaSincronizacao(timeMin, timeMax);
 
-                    if (typeof ocultarOverlaySinc === 'function') {
+                    if (!silencioso && typeof ocultarOverlaySinc === 'function') {
                         ocultarOverlaySinc('success');
                     }
-                    if (typeof mostrarToast === 'function') {
+                    if (!silencioso && typeof mostrarToast === 'function') {
                         mostrarToast('Sincronização concluída!', 'success');
                     }
                 } else {
                     console.warn('[gcal] Sincronização concluída com pendências.', falhas);
-                    if (typeof ocultarOverlaySinc === 'function') {
+                    if (!silencioso && typeof ocultarOverlaySinc === 'function') {
                         ocultarOverlaySinc('partial');
                     }
-                    if (typeof mostrarToast === 'function') {
+                    if (!silencioso && typeof mostrarToast === 'function') {
                         mostrarToast('Sincronização concluída com pendências. Verifique sua conexão.', 'warning');
                     }
                 }
 
             } catch (err) {
                 console.error('[gcal] Erro ao sincronizar:', err);
-                if (typeof ocultarOverlaySinc === 'function') {
+                if (!silencioso && typeof ocultarOverlaySinc === 'function') {
                     ocultarOverlaySinc('error');
                 }
             } finally {
@@ -1120,8 +1167,8 @@
             // Já autenticado: sincroniza imediatamente sem popup
             _doSync();
         } else {
-            // Não autenticado: abre popup de conta do Google, depois sincroniza
-            global.gcal.requestSignIn(_doSync);
+            // Sem token de calendário: pede autorização e sincroniza na sequência
+            global.gcal.requestSignIn(_doSync, { auto: auto || silencioso });
         }
     };
 

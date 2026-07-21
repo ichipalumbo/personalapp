@@ -103,7 +103,7 @@ async function obterConfiguracaoGradeHorarios(req, res) {
 async function obterConfiguracaoPorChave(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { chave } = req.params;
+    const { id: chave } = req.params;
     const config = await Config.findOne({ ownerEmail, chave });
 
     if (!config) {
@@ -152,7 +152,7 @@ async function criarConfiguracao(req, res) {
 async function atualizarConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { chave } = req.params;
+    const { id: chave } = req.params;
     const payload = limparPayloadConfig(req.body);
 
     if (payload.chave && payload.chave !== chave) {
@@ -174,7 +174,7 @@ async function atualizarConfiguracao(req, res) {
 async function excluirConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const { chave } = req.params;
+    const { id: chave } = req.params;
     const config = await Config.findOneAndDelete({ ownerEmail, chave });
 
     if (!config) {
