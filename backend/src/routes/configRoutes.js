@@ -2,6 +2,7 @@ const express = require('express');
 const {
   listarConfiguracoes,
   obterConfiguracao,
+  obterConfiguracaoGradeHorarios,
   obterConfiguracaoPorChave,
   criarConfiguracao,
   atualizarConfiguracao,
@@ -12,6 +13,7 @@ const {
 const router = express.Router();
 
 router.get('/', obterConfiguracao);
+router.get('/grade_horarios', obterConfiguracaoGradeHorarios);
 router.get('/all', listarConfiguracoes);
 router.post('/', salvarConfiguracao);
 router.post('/item', criarConfiguracao);

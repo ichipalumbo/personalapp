@@ -138,11 +138,46 @@ async function apiFetchBackend(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
         ? window.googleIdentity.getIdToken()
         : null;
 
-    if (idToken) {
-        headers.set('Authorization', 'Bearer ' + idToken);
+    if (!idToken) {
+        const error = new Error('AUTH_REQUIRED');
+        error.code = 'AUTH_REQUIRED';
+        error.status = 401;
+        throw error;
     }
 
+    headers.set('Authorization', 'Bearer ' + idToken);
+
     return fetchComTimeout(url, { ...options, headers }, timeoutMs);
+}
+
+async function _carregarConfiguracaoGradeHorarios(timeoutMs) {
+    const rotas = [
+        `${API_BASE_URL}/configuracao/grade_horarios`,
+        `${API_BASE_URL}/configuracao`
+    ];
+
+    for (const rota of rotas) {
+        const res = await apiFetchBackend(rota, {}, timeoutMs);
+
+        if (res.status === 401) {
+            throw new Error('AUTH_REQUIRED');
+        }
+
+        if (res.status === 404) {
+            continue;
+        }
+
+        if (!res.ok) {
+            throw new Error('API Configuração retornou ' + res.status);
+        }
+
+        const dados = await res.json().catch(() => null);
+        if (dados && typeof dados === 'object') {
+            return dados;
+        }
+    }
+
+    return null;
 }
 
 function usuarioAutenticadoNoApp() {
@@ -290,6 +325,23 @@ function _alunosSaoIguais(alunoA, alunoB) {
     }
 }
 
+function _normalizarAgendamentoParaComparacao(agendamento) {
+    const copia = { ...(agendamento || {}) };
+    delete copia.ownerEmail;
+    delete copia._id;
+    delete copia.__v;
+    return copia;
+}
+
+function _agendamentosSaoIguais(agendamentoA, agendamentoB) {
+    try {
+        return JSON.stringify(_normalizarAgendamentoParaComparacao(agendamentoA))
+            === JSON.stringify(_normalizarAgendamentoParaComparacao(agendamentoB));
+    } catch (_) {
+        return false;
+    }
+}
+
 async function _sincronizarAlunosViaCRUD(alunosLocais, timeoutMs) {
     const respostaLista = await apiFetchBackend(`${API_BASE_URL}/alunos`, {}, timeoutMs);
     if (!respostaLista.ok) {
@@ -361,6 +413,65 @@ async function _salvarConfiguracaoViaCRUD(gradeData, timeoutMs) {
     }, timeoutMs);
 }
 
+async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
+    const respostaLista = await apiFetchBackend(`${API_BASE_URL}/agendamentos`, {}, timeoutMs);
+    if (!respostaLista.ok) {
+        return respostaLista;
+    }
+
+    const agendamentosRemotos = await respostaLista.json().catch(() => []);
+    const listaRemota = Array.isArray(agendamentosRemotos) ? agendamentosRemotos : [];
+    const listaLocal = Array.isArray(agendamentosLocais) ? agendamentosLocais : [];
+
+    const remotoPorId = new Map(listaRemota.map((agendamento) => [agendamento.id, agendamento]));
+    const localPorId = new Map(listaLocal.map((agendamento) => [agendamento.id, agendamento]));
+
+    for (const agendamento of listaLocal) {
+        if (!agendamento || !agendamento.id) continue;
+
+        const remoto = remotoPorId.get(agendamento.id);
+        if (!remoto) {
+            const resCriar = await apiFetchBackend(`${API_BASE_URL}/agendamentos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(agendamento)
+            }, timeoutMs);
+
+            if (!resCriar.ok) {
+                return resCriar;
+            }
+            continue;
+        }
+
+        if (!_agendamentosSaoIguais(agendamento, remoto)) {
+            const resAtualizar = await apiFetchBackend(`${API_BASE_URL}/agendamentos/${encodeURIComponent(agendamento.id)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(agendamento)
+            }, timeoutMs);
+
+            if (!resAtualizar.ok) {
+                return resAtualizar;
+            }
+        }
+    }
+
+    for (const agendamentoRemoto of listaRemota) {
+        if (!agendamentoRemoto || !agendamentoRemoto.id) continue;
+        if (localPorId.has(agendamentoRemoto.id)) continue;
+
+        const resExcluir = await apiFetchBackend(`${API_BASE_URL}/agendamentos/${encodeURIComponent(agendamentoRemoto.id)}`, {
+            method: 'DELETE'
+        }, timeoutMs);
+
+        if (!resExcluir.ok && resExcluir.status !== 404) {
+            return resExcluir;
+        }
+    }
+
+    return _respostaVirtual(200);
+}
+
 async function carregarDados(opcoes = {}) {
     const deveForcarRender = opcoes.forcarRender !== false;
     const forcarRemoto = opcoes.forcarRemoto === true;
@@ -404,18 +515,12 @@ async function carregarDados(opcoes = {}) {
         console.log('🔄 Iniciando sincronização com o banco de dados online...');
         const onRetry = () => carregarDados({ ...opcoes, forcarRemoto: true });
 
-        const [resAlunos, resAgendamentos, resConfig, resBloqueiosExt] = await executarOperacaoRemotaComFeedback(async () => {
+        const [resAlunos, resAgendamentos, dadosConfig, resBloqueiosExt] = await executarOperacaoRemotaComFeedback(async () => {
             return Promise.all([
                 apiFetchBackend(`${API_BASE_URL}/alunos`, {}, timeoutAtual).catch(() => { throw new Error('API Alunos fora do ar ou lenta (timeout)'); }),
                 apiFetchBackend(`${API_BASE_URL}/agendamentos`, {}, timeoutAtual).catch(() => { throw new Error('API Agendamentos fora do ar ou lenta (timeout)'); }),
-                apiFetchBackend(`${API_BASE_URL}/configuracao/grade_horarios`, {}, timeoutAtual)
-                    .then((res) => {
-                        if (res.status === 404) {
-                            return apiFetchBackend(`${API_BASE_URL}/configuracao`, {}, timeoutAtual);
-                        }
-                        return res;
-                    })
-                    .catch(() => { throw new Error('API Configuração fora do ar ou lenta (timeout)'); }),
+                _carregarConfiguracaoGradeHorarios(timeoutAtual)
+                    .catch((err) => { throw new Error(err.message || 'API Configuração fora do ar ou lenta (timeout)'); }),
                 // [TAG-STORAGE-BLOQUEIOS-EXT] Sempre resolve para array — qualquer falha (404, 500, rede) devolve []
                 // para não quebrar carregarDados() enquanto a rota do backend ainda não está deployed.
                 apiFetchBackend(`${API_BASE_URL}/bloqueios-externos`, {}, timeoutAtual)
@@ -424,17 +529,16 @@ async function carregarDados(opcoes = {}) {
             ]);
         }, { onRetry });
 
-        if (resAlunos.status === 401 || resAgendamentos.status === 401 || resConfig.status === 401) {
+        if (resAlunos.status === 401 || resAgendamentos.status === 401) {
             throw new Error('AUTH_REQUIRED');
         }
 
-        if (!resAlunos.ok || !resAgendamentos.ok || !resConfig.ok) {
+        if (!resAlunos.ok || !resAgendamentos.ok) {
             throw new Error("Uma ou mais requisições falharam no servidor.");
         }
 
         const dadosAlunos = await resAlunos.json();
         const dadosAgendamentos = await resAgendamentos.json();
-        const dadosConfig = await resConfig.json();
         const listaAlunosAPIOriginal = Array.isArray(dadosAlunos) ? dadosAlunos : [];
         const listaAlunosAPI = listaAlunosAPIOriginal.map((aluno) => {
             const objetivoNormalizado = normalizarObjetivoAlunoMigracao(aluno && aluno.objetivo);
@@ -589,7 +693,7 @@ async function salvarDados(silencioso = false) {
 
         const alunosData = obterAlunos();
         // [TAG-STORAGE-FILTER-EXTERNO] Eventos externos do Google Calendar vivem em `bloqueios_externos`;
-        // nunca devem ser enviados para a coleção `agendamentos`.
+        // não entram no CRUD de `agendamentos`.
         const aulasData = obterAulas().filter(a => a.source !== 'google_external');
         const gradeData = obterLimitesGrade();
         const onRetry = () => salvarDados(silencioso);
@@ -598,11 +702,7 @@ async function salvarDados(silencioso = false) {
         const [resAlunos, resAgendamentos, resConfig] = await executarOperacaoRemotaComFeedback(async () => {
             return Promise.all([
                 _sincronizarAlunosViaCRUD(alunosData, timeoutAtual),
-                apiFetchBackend(`${API_BASE_URL}/agendamentos/sincronizar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ agendamentos: aulasData })
-                }, timeoutAtual),
+                _sincronizarAgendamentosViaCRUD(aulasData, timeoutAtual),
                 _salvarConfiguracaoViaCRUD(gradeData, timeoutAtual)
             ]);
         }, { onRetry, exibirFalha: true });

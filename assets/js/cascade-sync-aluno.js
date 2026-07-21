@@ -91,6 +91,13 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
         }
 
     } catch (err) {
+        if (err && (err.message === 'AUTH_REQUIRED' || err.code === 'AUTH_REQUIRED')) {
+            console.warn('[cascade] Sessão Google ausente ou expirada. Login necessário para sincronizar agendamentos.');
+            if (typeof mostrarToast === 'function') {
+                mostrarToast('Faça login com Google para sincronizar os agendamentos.', 'warning');
+            }
+            return;
+        }
         console.error('[cascade] Erro ao sincronizar agendamentos do aluno:', err);
         if (typeof mostrarToast === 'function') {
             mostrarToast('⚠️ Erro ao atualizar agendamentos. Verifique o console.', 'warning');
@@ -111,14 +118,35 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
             : async (fn) => fn();
         const apiFetch = typeof window.apiFetchBackend === 'function'
             ? window.apiFetchBackend
-            : fetch;
+            : async function () {
+                throw new Error('AUTH_REQUIRED');
+            };
 
         const res = await executar(async function () {
-            return apiFetch('https://personal-app-api.vercel.app/api/agendamentos/sincronizar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ agendamentos: aulasData })
-            });
+            for (const agendamento of aulasData) {
+                if (!agendamento || !agendamento.id) continue;
+
+                const rota = 'https://personal-app-api.vercel.app/api/agendamentos/' + encodeURIComponent(agendamento.id);
+                let resp = await apiFetch(rota, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(agendamento)
+                });
+
+                if (resp.status === 404) {
+                    resp = await apiFetch('https://personal-app-api.vercel.app/api/agendamentos', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(agendamento)
+                    });
+                }
+
+                if (!resp.ok) {
+                    return resp;
+                }
+            }
+
+            return { ok: true, status: 200 };
         }, {
             onRetry: function () {
                 return _persistirAgendamentosNoBackend(agendamentos);
@@ -131,6 +159,9 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
 
         console.log('[cascade] ✅ Agendamentos persistidos no MongoDB');
     } catch (err) {
+        if (err && (err.message === 'AUTH_REQUIRED' || err.code === 'AUTH_REQUIRED')) {
+            throw err;
+        }
         console.error('[cascade] Erro ao persistir agendamentos no backend:', err);
         throw err;
     }

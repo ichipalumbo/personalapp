@@ -34,14 +34,30 @@ async function listarConfiguracoes(req, res) {
 async function obterConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    let config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
+    const config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
+
     if (!config) {
-      config = await Config.create({ ownerEmail, chave: 'grade_horarios' });
+      return res.status(404).json({ error: 'Configuração não encontrada.' });
     }
 
     res.json(config);
   } catch (err) {
     responderErroConfig(res, err, 'obter configuração padrão');
+  }
+}
+
+async function obterConfiguracaoGradeHorarios(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
+
+    if (!config) {
+      return res.status(404).json({ error: 'Configuração grade_horarios não encontrada.' });
+    }
+
+    res.json(config);
+  } catch (err) {
+    responderErroConfig(res, err, 'obter configuração grade_horarios');
   }
 }
 
@@ -133,6 +149,7 @@ async function salvarConfiguracao(req, res) {
 module.exports = {
   listarConfiguracoes,
   obterConfiguracao,
+  obterConfiguracaoGradeHorarios,
   obterConfiguracaoPorChave,
   criarConfiguracao,
   atualizarConfiguracao,

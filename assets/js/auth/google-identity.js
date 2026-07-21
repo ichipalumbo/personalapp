@@ -131,35 +131,15 @@
 
     function _updateUi() {
         const session = _getSessionSnapshot();
-        const buttonContainer = document.getElementById('googleSignInButton');
-        const summary = document.getElementById('googleSessionSummary');
+        const authBanner = document.getElementById('headerSession');
         const signedOutState = document.getElementById('googleSignedOutState');
-        const nameEl = document.getElementById('googleSessionName');
-        const emailEl = document.getElementById('googleSessionEmail');
-        const avatarEl = document.getElementById('googleSessionAvatar');
 
-        if (buttonContainer) {
-            buttonContainer.style.display = session.isSignedIn ? 'none' : 'block';
+        if (authBanner) {
+            authBanner.hidden = session.isSignedIn;
         }
-        if (summary) {
-            summary.hidden = !session.isSignedIn;
-        }
+
         if (signedOutState) {
             signedOutState.hidden = session.isSignedIn;
-        }
-        if (nameEl) {
-            nameEl.textContent = session.name || 'Conta Google';
-        }
-        if (emailEl) {
-            emailEl.textContent = session.email || 'Faça login para sincronizar com a nuvem';
-        }
-        if (avatarEl) {
-            if (session.picture) {
-                avatarEl.innerHTML = '<img src="' + session.picture + '" alt="Foto do usuário" />';
-            } else {
-                const initial = session.name ? session.name.charAt(0).toUpperCase() : 'G';
-                avatarEl.textContent = initial;
-            }
         }
     }
 
@@ -191,20 +171,35 @@
         console.info('[auth] Sessão Google ativa para:', _profile.email);
     }
 
-    function _renderSignInButton() {
-        const buttonContainer = document.getElementById('googleSignInButton');
-        if (!buttonContainer || !global.google || !global.google.accounts || !global.google.accounts.id) {
+    function _requestInteractiveSignIn() {
+        if (!global.google || !global.google.accounts || !global.google.accounts.id) {
             return;
         }
 
-        buttonContainer.innerHTML = '';
-        global.google.accounts.id.renderButton(buttonContainer, {
-            theme: 'outline',
-            size: 'large',
-            shape: 'pill',
-            text: 'signin_with',
-            logo_alignment: 'left',
-            width: 260
+        global.google.accounts.id.prompt(function (notification) {
+            if (!notification) {
+                return;
+            }
+
+            if (notification.isNotDisplayed && notification.isNotDisplayed()) {
+                console.warn('[auth] Prompt de login não foi exibido.');
+            }
+
+            if (notification.isSkippedMoment && notification.isSkippedMoment()) {
+                console.warn('[auth] Prompt de login foi ignorado pelo navegador/usuário.');
+            }
+        });
+    }
+
+    function _bindCustomLoginButton() {
+        const customLoginButton = document.getElementById('custom-google-login');
+        if (!customLoginButton || customLoginButton.dataset.boundAuthClick === 'true') {
+            return;
+        }
+
+        customLoginButton.dataset.boundAuthClick = 'true';
+        customLoginButton.addEventListener('click', function () {
+            _requestInteractiveSignIn();
         });
     }
 
@@ -223,7 +218,7 @@
             use_fedcm_for_prompt: true
         });
 
-        _renderSignInButton();
+        _bindCustomLoginButton();
         _updateUi();
 
         global.google.accounts.id.prompt(function (notification) {
@@ -323,7 +318,7 @@
             return _profile ? { ..._profile } : null;
         },
         addAuthChangeListener: addAuthChangeListener,
-        refreshButton: _renderSignInButton,
+        refreshButton: _bindCustomLoginButton,
         updateUi: _updateUi
     };
 })(window);

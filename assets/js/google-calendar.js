@@ -327,6 +327,122 @@
 
     function _pad(n) { return String(n).padStart(2, '0'); }
 
+    function _normalizarBloqueioParaComparacao(bloqueio) {
+        const copia = { ...(bloqueio || {}) };
+        delete copia.ownerEmail;
+        delete copia._id;
+        delete copia.__v;
+        delete copia.semanaISO;
+        return copia;
+    }
+
+    function _bloqueiosExternosSaoIguais(bloqueioA, bloqueioB) {
+        try {
+            return JSON.stringify(_normalizarBloqueioParaComparacao(bloqueioA))
+                === JSON.stringify(_normalizarBloqueioParaComparacao(bloqueioB));
+        } catch (_) {
+            return false;
+        }
+    }
+
+    async function _sincronizarBloqueiosExternosViaCRUD(payload, timeMin, timeMax, signal) {
+        const query = new URLSearchParams({
+            timeMin,
+            timeMax
+        });
+
+        const respostaLista = await _backendFetchApp(
+            API_BASE_URL + '/bloqueios-externos?' + query.toString(),
+            { signal }
+        );
+
+        if (!respostaLista.ok) {
+            throw new Error('[gcal] Backend retornou ' + respostaLista.status + ' ao listar bloqueios externos.');
+        }
+
+        const bloqueiosRemotos = await respostaLista.json().catch(() => []);
+        const listaRemota = Array.isArray(bloqueiosRemotos) ? bloqueiosRemotos : [];
+        const listaLocal = Array.isArray(payload) ? payload : [];
+
+        const remotoPorId = new Map(
+            listaRemota
+                .filter((bloqueio) => bloqueio && bloqueio.googleCalendarEventId)
+                .map((bloqueio) => [bloqueio.googleCalendarEventId, bloqueio])
+        );
+        const localPorId = new Map(
+            listaLocal
+                .filter((bloqueio) => bloqueio && bloqueio.googleCalendarEventId)
+                .map((bloqueio) => [bloqueio.googleCalendarEventId, bloqueio])
+        );
+
+        let criados = 0;
+        let atualizados = 0;
+        let excluidos = 0;
+
+        for (const bloqueioLocal of listaLocal) {
+            if (!bloqueioLocal || !bloqueioLocal.googleCalendarEventId) continue;
+
+            const remoto = remotoPorId.get(bloqueioLocal.googleCalendarEventId);
+            if (!remoto) {
+                const resCriar = await _backendFetchApp(API_BASE_URL + '/bloqueios-externos', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bloqueioLocal),
+                    signal
+                });
+
+                if (!resCriar.ok) {
+                    throw new Error('[gcal] Backend retornou ' + resCriar.status + ' ao criar bloqueio externo.');
+                }
+
+                criados += 1;
+                continue;
+            }
+
+            if (!_bloqueiosExternosSaoIguais(bloqueioLocal, remoto)) {
+                const resAtualizar = await _backendFetchApp(
+                    API_BASE_URL + '/bloqueios-externos/' + encodeURIComponent(bloqueioLocal.googleCalendarEventId),
+                    {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            ...bloqueioLocal,
+                            googleCalendarEventId: bloqueioLocal.googleCalendarEventId
+                        }),
+                        signal
+                    }
+                );
+
+                if (!resAtualizar.ok) {
+                    throw new Error('[gcal] Backend retornou ' + resAtualizar.status + ' ao atualizar bloqueio externo.');
+                }
+
+                atualizados += 1;
+            }
+        }
+
+        for (const bloqueioRemoto of listaRemota) {
+            if (!bloqueioRemoto || !bloqueioRemoto.googleCalendarEventId) continue;
+            if (localPorId.has(bloqueioRemoto.googleCalendarEventId)) continue;
+
+            const resExcluir = await _backendFetchApp(
+                API_BASE_URL + '/bloqueios-externos/' + encodeURIComponent(bloqueioRemoto.googleCalendarEventId),
+                {
+                    method: 'DELETE',
+                    signal
+                }
+            );
+
+            if (!resExcluir.ok && resExcluir.status !== 404) {
+                throw new Error('[gcal] Backend retornou ' + resExcluir.status + ' ao excluir bloqueio externo.');
+            }
+
+            excluidos += 1;
+        }
+
+        return { criados, atualizados, excluidos };
+    }
+
     // ── ISO Week identifier ──────────────────────────────────────────────────────
     // Converte uma data (segunda-feira) para "YYYY-Www" segundo ISO 8601
 
@@ -436,25 +552,36 @@
 
     let _sincAbortController = null;
     let _sincDebounceTimer   = null;
+    let _sincPendingResolve  = null;
 
     global.sincronizarBloqueiosExternos = function (timeMin, timeMax) {
         if (!global.gcal.isSignedIn()) {
             console.info('[gcal] sincronizarBloqueiosExternos: não autenticado, ignorando.');
-            return;
+            return Promise.resolve({ skipped: true });
         }
 
         // Cancela sincronização anterior se ainda pendente (debounce 300ms)
         clearTimeout(_sincDebounceTimer);
         if (_sincAbortController) _sincAbortController.abort();
+        if (typeof _sincPendingResolve === 'function') {
+            _sincPendingResolve({ canceled: true });
+            _sincPendingResolve = null;
+        }
 
-        _sincDebounceTimer = setTimeout(async function () {
-            _sincAbortController = new AbortController();
-            const signal = _sincAbortController.signal;
+        return new Promise(function (resolve, reject) {
+            _sincPendingResolve = resolve;
 
-            try {
+            _sincDebounceTimer = setTimeout(async function () {
+                _sincAbortController = new AbortController();
+                const signal = _sincAbortController.signal;
+
+                try {
                 // 1. Busca todos os eventos no range do GCal
                 const todosEventos = await global.gcal.fetchWeekEvents(timeMin, timeMax);
-                if (signal.aborted) return;
+                if (signal.aborted) {
+                    resolve({ aborted: true });
+                    return;
+                }
 
                 // 2. Filtra apenas os externos (não criados pelo app)
                 const externos = todosEventos.filter(e => !global.gcal.isAppManaged(e));
@@ -462,22 +589,17 @@
                 // 3. Mapeia para o formato do backend
                 const payload   = externos.map(_gcalEventParaBloqueio);
 
-                // 4. Persiste no backend (coleção bloqueios_externos) com upsert por googleCalendarEventId
-                const res = await _executarComFeedbackConexao(async function () {
-                    return _backendFetchApp(API_BASE_URL + '/bloqueios-externos/sincronizar', {
-                        method:  'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body:    JSON.stringify({ eventos: payload, timeMin, timeMax }),
-                        signal
-                    });
+                // 4. Persiste no backend usando CRUD puro (POST/PUT/DELETE) com diff por googleCalendarEventId
+                const resultadoSync = await _executarComFeedbackConexao(async function () {
+                    return _sincronizarBloqueiosExternosViaCRUD(payload, timeMin, timeMax, signal);
                 }, function () {
                     return global.sincronizarBloqueiosExternos(timeMin, timeMax);
                 });
-
-                if (!res.ok) {
-                    throw new Error('[gcal] Backend retornou ' + res.status + ' ao sincronizar bloqueios externos.');
+                if (signal.aborted) {
+                    resolve({ aborted: true });
+                    return;
                 }
-                if (signal.aborted) return;
+                console.info('[gcal] Bloqueios externos persistidos via CRUD.', resultadoSync);
 
                 // 5. Mescla no window.aulas para que a detecção de conflitos funcione
                 // [TAG-GCAL-MAPEADOR-EXTERNO] Usa mapeamento idêntico a storage.js para consistência
@@ -520,37 +642,60 @@
                     console.warn('[gcal] Nenhuma função de re-renderização disponível.');
                 }
 
+                resolve({
+                    ok: true,
+                    persistencia: resultadoSync,
+                    mesclados: bloqueiosParaMerge.length
+                });
+
             } catch (err) {
-                if (err && err.name === 'AbortError') return; // cancelado pelo debounce
+                if (err && err.name === 'AbortError') {
+                    resolve({ aborted: true });
+                    return;
+                }
                 console.warn('[gcal] Falha ao sincronizar bloqueios externos:', err);
-                // Não mostra toast: operação de fundo, o usuário não precisa ser interrompido
+                reject(err);
+            } finally {
+                _sincPendingResolve = null;
             }
         }, 300);
+        });
     };
 
     // [TAG-BIDIRECIONAL-SYNC] Sincroniza agendamentos que foram editados no Google Calendar
     // Busca eventos gerenciados pelo app (appSource = 'personaltrainer') e sincroniza mudanças de volta
     let _sincAgenAbortController = null;
     let _sincAgenDebounceTimer = null;
+    let _sincAgenPendingResolve = null;
 
-    async function _sincronizarAgendamentosDoGCal(timeMin, timeMax) {
+    function _sincronizarAgendamentosDoGCal(timeMin, timeMax) {
         if (!global.gcal.isSignedIn()) {
             console.info('[gcal-bidi] Não autenticado, sincronização bidirecional ignorada.');
-            return;
+            return Promise.resolve({ skipped: true });
         }
 
         // Cancela sincronização anterior se ainda pendente (debounce 300ms)
         clearTimeout(_sincAgenDebounceTimer);
         if (_sincAgenAbortController) _sincAgenAbortController.abort();
+        if (typeof _sincAgenPendingResolve === 'function') {
+            _sincAgenPendingResolve({ canceled: true });
+            _sincAgenPendingResolve = null;
+        }
 
-        _sincAgenDebounceTimer = setTimeout(async function () {
-            _sincAgenAbortController = new AbortController();
-            const signal = _sincAgenAbortController.signal;
+        return new Promise(function (resolve, reject) {
+            _sincAgenPendingResolve = resolve;
 
-            try {
+            _sincAgenDebounceTimer = setTimeout(async function () {
+                _sincAgenAbortController = new AbortController();
+                const signal = _sincAgenAbortController.signal;
+
+                try {
                 // 1. Busca todos os eventos no range
                 const todosEventos = await global.gcal.fetchWeekEvents(timeMin, timeMax);
-                if (signal.aborted) return;
+                if (signal.aborted) {
+                    resolve({ aborted: true });
+                    return;
+                }
 
                 // 2. Filtra apenas os gerenciados pelo app (appSource = 'personaltrainer')
                 const agendamentosDoApp = todosEventos.filter(function (e) {
@@ -559,6 +704,7 @@
 
                 if (agendamentosDoApp.length === 0) {
                     console.log('[gcal-bidi] Nenhum agendamento do app para sincronizar de volta.');
+                    resolve({ ok: true, atualizados: 0, erros: 0 });
                     return;
                 }
 
@@ -595,39 +741,88 @@
                     };
                 });
 
-                console.log('[gcal-bidi] Sincronizando ' + agendamentosParaSincronizar.length + ' agendamento(s) do GCal.');
+                console.log('[gcal-bidi] Sincronizando ' + agendamentosParaSincronizar.length + ' agendamento(s) do GCal via CRUD.');
 
-                // 4. Envia para o backend para atualizar no MongoDB
-                const res = await _executarComFeedbackConexao(async function () {
-                    return _backendFetchApp(API_BASE_URL + '/agendamentos/sincronizar-do-gcal', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ agendamentos: agendamentosParaSincronizar }),
-                        signal
-                    });
+                // 4. Atualiza um a um via PUT /agendamentos/:id
+                const resultado = await _executarComFeedbackConexao(async function () {
+                    const sucessos = [];
+                    const erros = [];
+
+                    for (const agendamentoGCal of agendamentosParaSincronizar) {
+                        if (signal.aborted) break;
+
+                        if (!agendamentoGCal || !agendamentoGCal.id) {
+                            erros.push({ agendamentoId: null, erro: 'ID obrigatório.' });
+                            continue;
+                        }
+
+                        const agendamentoAtual = (window.aulas || []).find(function (a) {
+                            return a && a.id === agendamentoGCal.id;
+                        }) || {};
+
+                        const payloadAtualizado = {
+                            ...agendamentoAtual,
+                            id: agendamentoGCal.id,
+                            descricao: agendamentoGCal.summary || agendamentoAtual.descricao || '',
+                            data: agendamentoGCal.data || agendamentoAtual.data || '',
+                            horarioInicio: agendamentoGCal.horarioInicio || agendamentoAtual.horarioInicio || '',
+                            horarioFim: agendamentoGCal.horarioFim || agendamentoAtual.horarioFim || '',
+                            local: agendamentoGCal.location || agendamentoAtual.local || ''
+                        };
+
+                        const res = await _backendFetchApp(API_BASE_URL + '/agendamentos/' + encodeURIComponent(agendamentoGCal.id), {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payloadAtualizado),
+                            signal
+                        });
+
+                        if (res.ok) {
+                            sucessos.push({
+                                id: agendamentoGCal.id,
+                                sucesso: true,
+                                camposAtualizados: ['descricao', 'data', 'horarioInicio', 'horarioFim', 'local']
+                            });
+                        } else {
+                            erros.push({
+                                agendamentoId: agendamentoGCal.id,
+                                erro: 'Backend retornou ' + res.status
+                            });
+                        }
+                    }
+
+                    return {
+                        atualizados: sucessos.length,
+                        erros: erros.length,
+                        detalhes: {
+                            sucessos,
+                            erros
+                        }
+                    };
                 }, function () {
                     return _sincronizarAgendamentosDoGCal(timeMin, timeMax);
                 });
 
-                if (!res.ok) {
-                    throw new Error('[gcal-bidi] Backend retornou ' + res.status);
+                if (signal.aborted) {
+                    resolve({ aborted: true });
+                    return;
                 }
 
-                const resultado = await res.json();
-                if (signal.aborted) return;
-
-                console.log('[gcal-bidi] ✅ Sincronização bidirecional concluída:', {
-                    atualizados: resultado.atualizados,
-                    erros: resultado.erros,
-                    detalhes: resultado.detalhes
-                });
+                console.log('[gcal-bidi] ✅ Sincronização bidirecional concluída via CRUD:', resultado);
+                resolve({ ok: true, ...resultado });
 
             } catch (err) {
-                if (err && err.name === 'AbortError') return; // cancelado pelo debounce
+                if (err && err.name === 'AbortError') {
+                    resolve({ aborted: true });
+                    return;
+                }
                 console.warn('[gcal-bidi] Falha ao sincronizar agendamentos do GCal:', err);
-                // Não bloqueia o fluxo principal se esta sincronização falhar
+                reject(err);
+            } finally {
+                _sincAgenPendingResolve = null;
             }
         }, 300);
+        });
     }
 
     // Expõe para teste/debug
@@ -829,7 +1024,7 @@
     // Nunca dispara popup automaticamente — só quando o usuário clica explicitamente.
 
     global.iniciarSyncGoogleCalendar = function () {
-        function _doSync() {
+        async function _doSync() {
             if (typeof window.sincronizarBloqueiosExternos !== 'function') {
                 console.warn('[gcal] sincronizarBloqueiosExternos não está disponível.');
                 return;
@@ -858,17 +1053,21 @@
 
             // Executa a sincronização
             try {
-                // 1. Sincroniza bloqueios externos (eventos de outros calendários)
-                window.sincronizarBloqueiosExternos(timeMin, timeMax);
-                
+                const tarefasSync = [
+                    window.sincronizarBloqueiosExternos(timeMin, timeMax)
+                ];
+
                 // 2. Sincroniza bidirecional (agendamentos do app que foram editados no GCal)
                 if (typeof _sincronizarAgendamentosDoGCal === 'function') {
-                    _sincronizarAgendamentosDoGCal(timeMin, timeMax);
+                    tarefasSync.push(_sincronizarAgendamentosDoGCal(timeMin, timeMax));
                 }
 
-                // Aguarda um pouco para que o debounce de 300ms + operações async completem
-                setTimeout(function() {
-                    // Salva o timestamp da sincronização bem-sucedida
+                const resultados = await Promise.allSettled(tarefasSync);
+                const falhas = resultados.filter(function (item) {
+                    return item.status === 'rejected';
+                });
+
+                if (falhas.length === 0) {
                     _salvarUltimaSincronizacao(timeMin, timeMax);
 
                     if (typeof ocultarOverlaySinc === 'function') {
@@ -877,15 +1076,22 @@
                     if (typeof mostrarToast === 'function') {
                         mostrarToast('Sincronização concluída!', 'success');
                     }
+                } else {
+                    console.warn('[gcal] Sincronização concluída com pendências.', falhas);
+                    if (typeof ocultarOverlaySinc === 'function') {
+                        ocultarOverlaySinc('partial');
+                    }
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast('Sincronização concluída com pendências. Verifique sua conexão.', 'warning');
+                    }
+                }
 
-                    // Re-habilita o botão
-                    _desabilitarBotaoSync('pronto');
-                }, 800);
             } catch (err) {
                 console.error('[gcal] Erro ao sincronizar:', err);
                 if (typeof ocultarOverlaySinc === 'function') {
                     ocultarOverlaySinc('error');
                 }
+            } finally {
                 // Re-habilita o botão mesmo em caso de erro
                 _desabilitarBotaoSync('pronto');
             }
