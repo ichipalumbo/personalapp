@@ -40,7 +40,11 @@
         if (typeof window.executarOperacaoRemotaComFeedback === 'function') {
             const opts = options && typeof options === 'object' ? options : {};
             const exibirFalha = opts.exibirFalha === true;
-            return window.executarOperacaoRemotaComFeedback(executor, { onRetry, exibirFalha });
+            return window.executarOperacaoRemotaComFeedback(executor, {
+                onRetry,
+                exibirFalha,
+                contexto: opts.contexto || 'syncCalendario'
+            });
         }
         return executor();
     }
@@ -638,7 +642,7 @@
                     return _sincronizarBloqueiosExternosViaCRUD(payload, timeMin, timeMax, signal);
                 }, function () {
                     return global.sincronizarBloqueiosExternos(timeMin, timeMax);
-                }, { exibirFalha: false });
+                }, { exibirFalha: false, contexto: 'syncCalendario' });
                 if (signal.aborted) {
                     resolve({ aborted: true });
                     return;
@@ -675,15 +679,17 @@
                 console.info('[gcal] ' + bloqueiosParaMerge.length +
                              ' bloqueio(s) externo(s) mesclado(s) para o período ' + timeMin + ' a ' + timeMax + '.');
 
-                // Força re-renderização imediata do calendário para mostrar os novos bloqueios externos
+                // Atualiza as duas superfícies de UI que mostram agenda:
+                // semana da Home e calendário (dia/mensal).
+                if (typeof window.renderizarHomeSemana === 'function') {
+                    window.renderizarHomeSemana();
+                }
                 if (typeof window.renderizarModoCalendarioAtivo === 'function') {
                     window.renderizarModoCalendarioAtivo();
-                    console.info('[gcal] ✅ Calendário re-renderizado. Bloqueios externos visíveis.');
+                    console.info('[gcal] ✅ Home semanal e calendário re-renderizados.');
                 } else if (typeof renderizarCalendario === 'function') {
                     renderizarCalendario();
                     console.info('[gcal] ✅ Calendário re-renderizado (modo fallback).');
-                } else {
-                    console.warn('[gcal] Nenhuma função de re-renderização disponível.');
                 }
 
                 resolve({
@@ -845,7 +851,7 @@
                     };
                 }, function () {
                     return _sincronizarAgendamentosDoGCal(timeMin, timeMax);
-                }, { exibirFalha: false });
+                }, { exibirFalha: false, contexto: 'syncCalendario' });
 
                 if (signal.aborted) {
                     resolve({ aborted: true });
@@ -1046,12 +1052,12 @@
                 btn.disabled = true;
                 btn.style.opacity = '0.6';
                 btn.style.cursor = 'not-allowed';
-                txtEl.textContent = 'Sincronizando...';
+                txtEl.textContent = 'Atualizando...';
             } else {
                 btn.disabled = false;
                 btn.style.opacity = '1';
                 btn.style.cursor = 'pointer';
-                txtEl.textContent = 'Sync Calendário';
+                txtEl.textContent = 'Atualizar Calendário';
             }
         } catch (e) {
             console.warn('[gcal] Erro ao alterar estado do botão:', e);
@@ -1063,69 +1069,163 @@
         _atualizarExibicaoUltimaSincronizacao();
     };
 
+    const GCAL_SYNC_COOLDOWN_MS = 45000;
     let _autoSyncJaExecutada = false;
+    let _syncInFlightPromise = null;
+    let _syncPendente = false;
+    let _syncUltimaExecucao = 0;
+    let _gatilhosGlobaisRegistrados = false;
 
-    function _sincronizarCalendarioAutomaticamenteSeNecessario() {
-        if (_autoSyncJaExecutada) {
-            return;
-        }
-
-        if (!global.gcal || !global.gcal.isSignedIn()) {
-            return;
-        }
-
-        _autoSyncJaExecutada = true;
-        global.setTimeout(function () {
-            if (typeof global.iniciarSyncGoogleCalendar === 'function') {
-                global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
-            }
-        }, 0);
+    function _calcularRangePadraoSync() {
+        const hoje = new Date();
+        const umMesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 1, hoje.getDate());
+        const umMesFuturo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
+        const pad = function (n) { return String(n).padStart(2, '0'); };
+        const toISO = function (d) {
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        };
+        return { timeMin: toISO(umMesAtras), timeMax: toISO(umMesFuturo) };
     }
 
-    // ── Entrada de sincronização ─────────────────────────────────────────────────
-    // Login Google e calendário seguem um único fluxo de UX.
+    function _normalizarRangeSync(range) {
+        if (!range || typeof range !== 'object') {
+            return _calcularRangePadraoSync();
+        }
+        const timeMin = range.timeMin || range.isoStart;
+        const timeMax = range.timeMax || range.isoEnd;
+        if (timeMin && timeMax) {
+            return { timeMin, timeMax };
+        }
+        return _calcularRangePadraoSync();
+    }
 
-    global.iniciarSyncGoogleCalendar = function (opcoes) {
-        const opts = opcoes && typeof opcoes === 'object' ? opcoes : {};
-        const silencioso = opts.silencioso === true;
-        const auto = opts.auto === true;
+    function _renderizarPosSyncGlobal() {
+        if (typeof window.renderizarHomeSemana === 'function') {
+            window.renderizarHomeSemana();
+        }
+        if (typeof window.atualizarDashboardStats === 'function') {
+            window.atualizarDashboardStats();
+        }
+        if (typeof window.renderizarModoCalendarioAtivo === 'function') {
+            window.renderizarModoCalendarioAtivo();
+        }
+    }
 
-        async function _doSync() {
-            if (typeof window.sincronizarBloqueiosExternos !== 'function') {
-                console.warn('[gcal] sincronizarBloqueiosExternos não está disponível.');
+    function _tentarSincronizacaoSilenciosaToken() {
+        return new Promise(function (resolve, reject) {
+            if (global.gcal && typeof global.gcal.isSignedIn === 'function' && global.gcal.isSignedIn()) {
+                resolve(true);
                 return;
             }
 
-            // Desabilita o botão e mostra estado de sincronização
-            _desabilitarBotaoSync('sincronizando');
-
-            // Mostra feedback ao usuário que o sync está em progresso
-            if (!silencioso && typeof mostrarOverlaySinc === 'function') {
-                mostrarOverlaySinc('Sincronizando Google Calendar...');
+            if (!_tokenClient) {
+                reject(new Error('[gcal] Token client indisponível para renovação silenciosa.'));
+                return;
             }
 
-            // Calcula range: 1 mês no passado até 1 mês no futuro
-            const hoje = new Date();
-            const umMesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 1, hoje.getDate());
-            const umMesFutura = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
-            
-            const pad = function (n) { return String(n).padStart(2, '0'); };
-            const toISO = function (d) {
-                return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-            };
-            
-            const timeMin = toISO(umMesAtras);
-            const timeMax = toISO(umMesFutura);
+            const perfil = window.googleIdentity && typeof window.googleIdentity.getProfile === 'function'
+                ? window.googleIdentity.getProfile()
+                : null;
+            const loginHint = perfil && perfil.email ? String(perfil.email) : null;
+            const callbackOriginal = _tokenClient.callback;
 
-            // Executa a sincronização
+            _tokenClient.callback = function (response) {
+                _tokenClient.callback = callbackOriginal || _onTokenResponse;
+                if (response && response.error) {
+                    reject(new Error('[gcal] Renovação silenciosa recusada: ' + response.error));
+                    return;
+                }
+
+                _onTokenResponse(response);
+                resolve(true);
+            };
+
+            _tokenClient.requestAccessToken({
+                prompt: '',
+                ...(loginHint ? { hint: loginHint } : {})
+            });
+        });
+    }
+
+    async function _executarSyncCentral(opcoes) {
+        const opts = opcoes && typeof opcoes === 'object' ? opcoes : {};
+        const silencioso = opts.silencioso === true;
+        const manual = opts.manual === true;
+        const force = opts.force === true;
+        const allowInteractive = opts.allowInteractive === true;
+        const reason = opts.reason || 'manual';
+
+        if (_syncInFlightPromise) {
+            if (force) {
+                _syncPendente = true;
+            }
+            return _syncInFlightPromise;
+        }
+
+        if (!manual && !force) {
+            const agora = Date.now();
+            if (_syncUltimaExecucao > 0 && (agora - _syncUltimaExecucao) < GCAL_SYNC_COOLDOWN_MS) {
+                return Promise.resolve({ skipped: true, reason: 'cooldown' });
+            }
+        }
+
+        _syncInFlightPromise = (async function () {
             try {
+                if (!window.googleIdentity || typeof window.googleIdentity.isSignedIn !== 'function' || !window.googleIdentity.isSignedIn()) {
+                    if (!silencioso && typeof mostrarToast === 'function') {
+                        mostrarToast('Faça login com Google para sincronizar o calendário.', 'warning');
+                    }
+                    return { skipped: true, reason: 'google-not-signed-in' };
+                }
+
+                if (!global.gcal || typeof global.gcal.isSignedIn !== 'function') {
+                    return { skipped: true, reason: 'gcal-unavailable' };
+                }
+
+                if (!global.gcal.isSignedIn()) {
+                    try {
+                        await _tentarSincronizacaoSilenciosaToken();
+                    } catch (tokenErr) {
+                        if (allowInteractive) {
+                            global.gcal.requestSignIn(function () {
+                                _executarSyncCentral({
+                                    reason: 'post-auth-' + reason,
+                                    silencioso: true,
+                                    manual: false,
+                                    force: true,
+                                    allowInteractive: false,
+                                    range: opts.range
+                                });
+                            }, { auto: true });
+
+                            return { queuedAfterAuth: true, reason };
+                        }
+
+                        if (!silencioso && typeof mostrarToast === 'function') {
+                            mostrarToast('Calendário não autorizado nesta sessão. Entre novamente para reconectar.', 'warning');
+                        }
+                        return { skipped: true, reason: 'calendar-token-missing' };
+                    }
+                }
+
+                if (typeof window.sincronizarBloqueiosExternos !== 'function') {
+                    console.warn('[gcal] sincronizarBloqueiosExternos não está disponível.');
+                    return { skipped: true, reason: 'sync-function-missing' };
+                }
+
+                _desabilitarBotaoSync('sincronizando');
+
+                if (!silencioso && typeof mostrarOverlaySinc === 'function') {
+                    mostrarOverlaySinc('Sincronizando Google Calendar...');
+                }
+
+                const range = _normalizarRangeSync(opts.range);
                 const tarefasSync = [
-                    window.sincronizarBloqueiosExternos(timeMin, timeMax)
+                    window.sincronizarBloqueiosExternos(range.timeMin, range.timeMax)
                 ];
 
-                // 2. Sincroniza bidirecional (agendamentos do app que foram editados no GCal)
                 if (typeof _sincronizarAgendamentosDoGCal === 'function') {
-                    tarefasSync.push(_sincronizarAgendamentosDoGCal(timeMin, timeMax));
+                    tarefasSync.push(_sincronizarAgendamentosDoGCal(range.timeMin, range.timeMax));
                 }
 
                 const resultados = await Promise.allSettled(tarefasSync);
@@ -1133,43 +1233,134 @@
                     return item.status === 'rejected';
                 });
 
-                if (falhas.length === 0) {
-                    _salvarUltimaSincronizacao(timeMin, timeMax);
+                _syncUltimaExecucao = Date.now();
+                _salvarUltimaSincronizacao(range.timeMin, range.timeMax);
+                _renderizarPosSyncGlobal();
 
+                if (falhas.length === 0) {
                     if (!silencioso && typeof ocultarOverlaySinc === 'function') {
                         ocultarOverlaySinc('success');
                     }
                     if (!silencioso && typeof mostrarToast === 'function') {
-                        mostrarToast('Sincronização concluída!', 'success');
+                        mostrarToast('Calendário atualizado com sucesso!', 'success');
                     }
-                } else {
-                    console.warn('[gcal] Sincronização concluída com pendências.', falhas);
-                    if (!silencioso && typeof ocultarOverlaySinc === 'function') {
-                        ocultarOverlaySinc('partial');
-                    }
-                    if (!silencioso && typeof mostrarToast === 'function') {
-                        mostrarToast('Sincronização concluída com pendências. Verifique sua conexão.', 'warning');
-                    }
+                    return { ok: true, reason, range };
                 }
 
+                console.warn('[gcal] Sincronização concluída com pendências.', falhas);
+                if (!silencioso && typeof ocultarOverlaySinc === 'function') {
+                    ocultarOverlaySinc('partial');
+                }
+                if (!silencioso && typeof mostrarToast === 'function') {
+                    mostrarToast('Sincronização concluída com pendências. Verifique sua conexão.', 'warning');
+                }
+                return { ok: false, reason, falhas };
             } catch (err) {
                 console.error('[gcal] Erro ao sincronizar:', err);
                 if (!silencioso && typeof ocultarOverlaySinc === 'function') {
                     ocultarOverlaySinc('error');
                 }
+                if (!silencioso && typeof mostrarToast === 'function') {
+                    mostrarToast('Falha ao sincronizar calendário.', 'error');
+                }
+                return { ok: false, reason, error: err.message };
             } finally {
-                // Re-habilita o botão mesmo em caso de erro
                 _desabilitarBotaoSync('pronto');
+                _syncInFlightPromise = null;
+                if (_syncPendente) {
+                    _syncPendente = false;
+                    global.setTimeout(function () {
+                        _executarSyncCentral({
+                            reason: 'pending-retry',
+                            silencioso: true,
+                            force: true,
+                            manual: false,
+                            allowInteractive: false
+                        });
+                    }, 120);
+                }
             }
+        })();
+
+        return _syncInFlightPromise;
+    }
+
+    function _vincularBotaoSyncCalendario() {
+        const btn = document.getElementById('btnSyncGoogleCalendar');
+        if (!btn || btn.dataset.syncBound === 'true') {
+            return;
         }
 
-        if (global.gcal.isSignedIn()) {
-            // Já autenticado: sincroniza imediatamente sem popup
-            _doSync();
-        } else {
-            // Sem token de calendário: pede autorização e sincroniza na sequência
-            global.gcal.requestSignIn(_doSync, { auto: auto || silencioso });
+        btn.dataset.syncBound = 'true';
+        btn.addEventListener('click', function () {
+            _executarSyncCentral({
+                reason: 'manual-button',
+                silencioso: false,
+                manual: true,
+                force: true,
+                allowInteractive: false
+            });
+        });
+    }
+
+    function _registrarGatilhosGlobaisSync() {
+        if (_gatilhosGlobaisRegistrados) {
+            return;
         }
+
+        _gatilhosGlobaisRegistrados = true;
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState !== 'visible') {
+                return;
+            }
+
+            _executarSyncCentral({
+                reason: 'tab-focus-resume',
+                silencioso: true,
+                manual: false,
+                force: false,
+                allowInteractive: false
+            });
+        });
+    }
+
+    function _sincronizarCalendarioAutomaticamenteSeNecessario() {
+        if (_autoSyncJaExecutada) {
+            return;
+        }
+
+        if (!window.googleIdentity || typeof window.googleIdentity.isSignedIn !== 'function' || !window.googleIdentity.isSignedIn()) {
+            return;
+        }
+
+        _autoSyncJaExecutada = true;
+        global.setTimeout(function () {
+            _executarSyncCentral({
+                reason: 'auto-bootstrap',
+                silencioso: true,
+                manual: false,
+                force: false,
+                allowInteractive: true
+            });
+        }, 0);
+    }
+
+    // ── API pública de orquestração de sync ─────────────────────────────────────
+
+    global.solicitarSyncCalendario = function (opcoes) {
+        return _executarSyncCentral(opcoes || {});
+    };
+
+    global.iniciarSyncGoogleCalendar = function (opcoes) {
+        const opts = opcoes && typeof opcoes === 'object' ? opcoes : {};
+        return _executarSyncCentral({
+            reason: opts.reason || (opts.auto ? 'auto-flow' : 'manual-flow'),
+            silencioso: opts.silencioso === true,
+            manual: opts.auto !== true,
+            force: opts.force === true,
+            allowInteractive: opts.auto === true || opts.allowInteractive === true,
+            range: opts.range
+        });
     };
 
     global.iniciarSyncGoogleCalendarAutomatica = function () {
@@ -1182,6 +1373,8 @@
     // Aguarda um pouco para garantir que o DOM está pronto
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function() {
+            _vincularBotaoSyncCalendario();
+            _registrarGatilhosGlobaisSync();
             if (typeof global.inicializarUltimaSincronizacao === 'function') {
                 global.inicializarUltimaSincronizacao();
                 console.info('[gcal] Timestamp de sincronização carregado do cache no DOMContentLoaded');
@@ -1189,6 +1382,8 @@
         }, { once: true });
     } else {
         // DOM já está pronto (se este arquivo foi carregado após o DOMContentLoaded)
+        _vincularBotaoSyncCalendario();
+        _registrarGatilhosGlobaisSync();
         if (typeof global.inicializarUltimaSincronizacao === 'function') {
             global.inicializarUltimaSincronizacao();
             console.info('[gcal] Timestamp de sincronização carregado do cache imediatamente');

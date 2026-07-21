@@ -292,8 +292,6 @@ function mostrarToast(msg, tipo = 'success') {
 }
 
 // [TAG-JS-OVERLAY-SINC] - Overlay bloqueante para operações de sincronização críticas
-let _overlayRetryHandler = null;
-let _overlayLaterHandler = null;
 
 function _garantirOverlaySinc() {
     let overlay = document.getElementById('overlay-sinc');
@@ -305,34 +303,8 @@ function _garantirOverlaySinc() {
             '<div class="overlay-sinc-conteudo">' +
             '<div class="overlay-sinc-spinner"></div>' +
             '<p class="overlay-sinc-msg"></p>' +
-            '<div class="overlay-sinc-actions">' +
-            '<button type="button" class="overlay-sinc-retry">Tentar Novamente</button>' +
-            '<button type="button" class="overlay-sinc-later">Fazer Depois</button>' +
-            '</div>' +
             '</div>';
         document.body.appendChild(overlay);
-
-        const retryBtn = overlay.querySelector('.overlay-sinc-retry');
-        if (retryBtn) {
-            retryBtn.addEventListener('click', function () {
-                if (typeof _overlayRetryHandler === 'function') {
-                    const handler = _overlayRetryHandler;
-                    _overlayRetryHandler = null;
-                    handler();
-                }
-            });
-        }
-
-        const laterBtn = overlay.querySelector('.overlay-sinc-later');
-        if (laterBtn) {
-            laterBtn.addEventListener('click', function () {
-                const handler = _overlayLaterHandler;
-                ocultarOverlayConexao();
-                if (typeof handler === 'function') {
-                    handler();
-                }
-            });
-        }
     }
     return overlay;
 }
@@ -340,12 +312,8 @@ function _garantirOverlaySinc() {
 function mostrarOverlaySinc(mensagem) {
     const overlay = _garantirOverlaySinc();
     const spinner = overlay.querySelector('.overlay-sinc-spinner');
-    const retryBtn = overlay.querySelector('.overlay-sinc-retry');
-    const laterBtn = overlay.querySelector('.overlay-sinc-later');
 
     if (spinner) spinner.style.display = 'block';
-    if (retryBtn) retryBtn.style.display = 'none';
-    if (laterBtn) laterBtn.style.display = 'none';
     overlay.classList.remove('overlay-sinc-erro');
     overlay.querySelector('.overlay-sinc-msg').textContent = mensagem || 'Salvando...';
     overlay.classList.add('ativo');
@@ -353,20 +321,14 @@ function mostrarOverlaySinc(mensagem) {
 }
 
 function mostrarOverlaySleepMode(mensagem) {
-    mostrarOverlaySinc(mensagem || 'Servidor em Sleep Mode. Acordando o banco de dados... (pode levar 15s)');
+    mostrarOverlaySinc(mensagem || 'Sincronizando... isso pode levar alguns segundos.');
 }
 
-function mostrarOverlayErroConexao(mensagem, onRetry, onLater) {
+function mostrarOverlayErroConexao(mensagem) {
     const overlay = _garantirOverlaySinc();
     const spinner = overlay.querySelector('.overlay-sinc-spinner');
-    const retryBtn = overlay.querySelector('.overlay-sinc-retry');
-    const laterBtn = overlay.querySelector('.overlay-sinc-later');
 
-    _overlayRetryHandler = typeof onRetry === 'function' ? onRetry : null;
-    _overlayLaterHandler = typeof onLater === 'function' ? onLater : null;
     if (spinner) spinner.style.display = 'none';
-    if (retryBtn) retryBtn.style.display = 'inline-flex';
-    if (laterBtn) laterBtn.style.display = 'inline-flex';
 
     overlay.classList.add('overlay-sinc-erro');
     overlay.querySelector('.overlay-sinc-msg').textContent = mensagem || 'Falha ao conectar. Banco de dados inativo.';
@@ -375,17 +337,11 @@ function mostrarOverlayErroConexao(mensagem, onRetry, onLater) {
 }
 
 function ocultarOverlayConexao() {
-    _overlayRetryHandler = null;
-    _overlayLaterHandler = null;
     const overlay = document.getElementById('overlay-sinc');
     if (!overlay) return;
 
     const spinner = overlay.querySelector('.overlay-sinc-spinner');
-    const retryBtn = overlay.querySelector('.overlay-sinc-retry');
-    const laterBtn = overlay.querySelector('.overlay-sinc-later');
     if (spinner) spinner.style.display = 'block';
-    if (retryBtn) retryBtn.style.display = 'none';
-    if (laterBtn) laterBtn.style.display = 'none';
 
     overlay.classList.remove('overlay-sinc-erro');
     overlay.classList.remove('ativo');

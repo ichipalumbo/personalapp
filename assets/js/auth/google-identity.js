@@ -259,6 +259,7 @@
 
     function _requestInteractiveSignIn() {
         if (!global.google || !global.google.accounts || !global.google.accounts.id) {
+            _showAuthMessage('Autenticação Google ainda está carregando (ou foi bloqueada pelo navegador). Tente novamente em alguns segundos.', 'warning');
             return;
         }
 
@@ -320,6 +321,7 @@
         _initialized = true;
         _restoreCachedProfile();
         _updateUi();
+        _bindCustomLoginButton();
 
         const signOutButton = document.getElementById('btnGoogleSignOut');
         if (signOutButton) {

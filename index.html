@@ -27,28 +27,27 @@
               ><span class="marca-mente"> Josy</span>
             </h1>
           </div>
-        </div>
-
-        <div class="auth-banner" id="headerSession">
-          <div id="googleSignedOutState" class="header-session-state">
-            <span class="header-readonly-pill"
-              ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para editar.</span
-            >
-            <button id="custom-google-login" type="button" class="btn-google-custom">
-              <i class="fa-brands fa-google"></i>
-              <span>Entrar com Google</span>
-            </button>
-          </div>
-          <div id="googleSignedInState" class="header-session-summary" hidden>
-            <span class="header-session-avatar" id="headerSessionAvatar" aria-hidden="true">G</span>
-            <div class="header-session-copy">
-              <strong id="headerSessionName">Conectado com Google</strong>
-              <span id="headerSessionEmail">Conta ativa</span>
+          <div class="auth-banner" id="headerSession">
+            <div id="googleSignedOutState" class="header-session-state">
+              <span class="header-readonly-pill"
+                ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para editar.</span
+              >
+              <button id="custom-google-login" type="button" class="btn-google-custom">
+                <i class="fa-brands fa-google"></i>
+                <span>Entrar com Google</span>
+              </button>
             </div>
-            <button id="btnGoogleSignOut" type="button" class="btn-google-signout" title="Trocar conta Google">
-              <i class="fa-solid fa-right-from-bracket"></i>
-              <span>Sair</span>
-            </button>
+            <div id="googleSignedInState" class="header-session-summary" hidden>
+              <span class="header-session-avatar" id="headerSessionAvatar" aria-hidden="true">G</span>
+              <div class="header-session-copy">
+                <strong id="headerSessionName">Conectado com Google</strong>
+                <span id="headerSessionEmail">Conta ativa</span>
+              </div>
+              <button id="btnGoogleSignOut" type="button" class="btn-google-signout" title="Trocar conta Google">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Sair</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -155,10 +154,14 @@
                   >
                     <i class="fa-solid fa-database"></i> <span id="btnSyncBancoText">Sincronizar Dados</span>
                   </button>
-                  <span class="sync-auto-pill" title="Sincronização de calendário automática após login Google">
-                    <i class="fa-brands fa-google" style="color:#4285F4;"></i>
-                    <span>Calendário em sincronização automática</span>
-                  </span>
+                  <button
+                    id="btnSyncGoogleCalendar"
+                    class="btn btn-sm"
+                    style="background:#152236;color:#bcd9ff;border:1px solid #2f4f7a;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
+                    title="Atualizar calendário Google agora, sem depender de mudar de tela"
+                  >
+                    <i class="fa-brands fa-google"></i> <span id="btnSyncText">Atualizar Calendário</span>
+                  </button>
                   <small id="ultimaSincronizacao" class="ultima-sincronizacao-label" style="font-size:0.65rem;color:#888;"></small>
                 </div>
               </div>

@@ -370,9 +370,24 @@ function _obterRangeSemanaAtual() {
  * Guard duplo: verifica existência da função e estado de login antes de chamar.
  */
 function _dispararSincGCal() {
+    const range = _obterRangeSemanaAtual();
+    if (typeof window.solicitarSyncCalendario === 'function') {
+        window.solicitarSyncCalendario({
+            reason: 'calendar-week-range',
+            silencioso: true,
+            manual: false,
+            force: false,
+            allowInteractive: false,
+            range: {
+                timeMin: range.isoStart,
+                timeMax: range.isoEnd
+            }
+        });
+        return;
+    }
+
     if (typeof window.sincronizarBloqueiosExternos !== 'function') return;
     if (!window.gcal || !window.gcal.isSignedIn()) return;
-    const range = _obterRangeSemanaAtual();
     window.sincronizarBloqueiosExternos(range.isoStart, range.isoEnd);
 }
 

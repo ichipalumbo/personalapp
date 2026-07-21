@@ -41,7 +41,7 @@ function _parseJSONSeguro(valor, fallback) {
 }
 
 function _mostrarOverlaySleepMode() {
-    const mensagem = 'Servidor em Sleep Mode. Acordando o banco de dados... (pode levar 15s)';
+    const mensagem = 'Sincronizando... isso pode levar alguns segundos.';
     if (typeof mostrarOverlaySleepMode === 'function') {
         mostrarOverlaySleepMode(mensagem);
         return;
@@ -51,18 +51,14 @@ function _mostrarOverlaySleepMode() {
     }
 }
 
-function _mostrarOverlayErroComRetry(onRetry) {
-    const mensagem = 'Falha ao conectar. Banco de dados inativo.';
+function _mostrarOverlayErroComRetry(mensagem) {
+    const texto = mensagem || 'Falha na API. Tente "Sincronizar Dados" novamente em alguns segundos.';
     if (typeof mostrarOverlayErroConexao === 'function') {
-        mostrarOverlayErroConexao(mensagem, onRetry, function () {
-            if (typeof mostrarToast === 'function') {
-                mostrarToast('Tudo bem. Você pode sincronizar depois pelo botão "Sincronizar Dados".', 'warning');
-            }
-        });
+        mostrarOverlayErroConexao(texto);
         return;
     }
     if (typeof mostrarToast === 'function') {
-        mostrarToast(mensagem, 'error');
+        mostrarToast(texto, 'error');
     }
 }
 
@@ -108,11 +104,32 @@ function temDadosLocaisNoCache() {
 
 async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
     const deveExibirFalha = opcoes.exibirFalha !== false;
-    const onRetry = typeof opcoes.onRetry === 'function' ? opcoes.onRetry : null;
+    const contexto = opcoes.contexto || 'carregando';
+
+    const mensagens = {
+        carregando: {
+            lenta: 'Carregando dados... isso pode levar alguns segundos.',
+            erro: 'Falha na API ao carregar dados. Tente "Sincronizar Dados" novamente em alguns segundos.'
+        },
+        syncDados: {
+            lenta: 'Sincronizando dados... isso pode levar alguns segundos.',
+            erro: 'Falha na API ao sincronizar dados. Tente "Sincronizar Dados" novamente em alguns segundos.'
+        },
+        syncCalendario: {
+            lenta: 'Atualizando calendário... isso pode levar alguns segundos.',
+            erro: 'Falha na API ao atualizar calendário. Tente "Sincronizar Dados" novamente em alguns segundos.'
+        }
+    };
+
+    const mensagensContexto = mensagens[contexto] || mensagens.carregando;
 
     let overlayFoiExibido = false;
     const sleepTimer = setTimeout(() => {
         overlayFoiExibido = true;
+        if (typeof mostrarOverlaySinc === 'function') {
+            mostrarOverlaySinc(mensagensContexto.lenta);
+            return;
+        }
         _mostrarOverlaySleepMode();
     }, SLEEP_MODE_THRESHOLD_MS);
 
@@ -126,8 +143,9 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
     } catch (error) {
         clearTimeout(sleepTimer);
         if (deveExibirFalha) {
-            _mostrarOverlayErroComRetry(onRetry);
+            _mostrarOverlayErroComRetry(mensagensContexto.erro);
         }
+        _setEstadoBotaoSyncBanco('pronto');
         throw error;
     }
 }
@@ -527,7 +545,7 @@ async function carregarDados(opcoes = {}) {
                     .then(res => res.ok ? res.json() : [])
                     .catch(err => { console.warn('⚠️ /bloqueios-externos indisponível:', err.message); return []; })
             ]);
-        }, { onRetry });
+        }, { contexto: 'carregando', onRetry });
 
         if (resAlunos.status === 401 || resAgendamentos.status === 401) {
             throw new Error('AUTH_REQUIRED');
@@ -705,7 +723,7 @@ async function salvarDados(silencioso = false) {
                 _sincronizarAgendamentosViaCRUD(aulasData, timeoutAtual),
                 _salvarConfiguracaoViaCRUD(gradeData, timeoutAtual)
             ]);
-        }, { onRetry, exibirFalha: true });
+        }, { contexto: 'syncDados', onRetry, exibirFalha: true });
 
         if (resAlunos.status === 401 || resAgendamentos.status === 401 || resConfig.status === 401) {
             throw new Error('AUTH_REQUIRED');

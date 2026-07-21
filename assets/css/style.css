@@ -102,17 +102,21 @@ body {
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
+  width: 100%;
 }
 
 .auth-banner {
-  width: 100%;
+  width: auto;
+  max-width: 72%;
   display: flex;
   align-items: center;
-  margin: 2px 0;
-  padding: 8px 10px;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid #2a2a2a;
   background: linear-gradient(135deg, rgba(18, 22, 28, 0.92), rgba(14, 18, 24, 0.92));
+  min-width: 0;
 }
 
 .brand-container {
@@ -162,9 +166,9 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  width: 100%;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  width: auto;
   min-width: 0;
 }
 
@@ -315,7 +319,7 @@ body {
 }
 
 .header-readonly-pill {
-  display: inline-flex;
+  display: none;
   align-items: center;
   gap: 6px;
   font-size: 0.7rem;
@@ -325,15 +329,15 @@ body {
   border-radius: 8px;
   padding: 6px 8px;
   line-height: 1.2;
-  flex: 1 1 100%;
+  flex: 0 0 auto;
 }
 
 .header-session-state .btn-google-custom {
-  width: 100%;
+  width: auto;
 }
 
 .header-session-summary .btn-google-signout {
-  width: 100%;
+  width: auto;
 }
 
 .header-nav {
@@ -1002,8 +1006,9 @@ body {
 
 @media (min-width: 768px) {
   .auth-banner {
-    padding: 9px 12px;
-    margin: 10px 0 12px;
+    max-width: 68%;
+    padding: 7px 10px;
+    margin: 0;
   }
 
   .header-session-state,
@@ -2328,30 +2333,35 @@ body {
 
   .header-topline {
     gap: 8px;
+    align-items: center;
   }
 
   .auth-banner {
-    padding: 8px;
-    margin-top: 6px;
+    max-width: 60%;
+    padding: 4px 6px;
+    margin: 0;
+    border-radius: 8px;
   }
 
   .header-session-state {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 7px;
-  }
-
-  .header-readonly-pill {
-    justify-content: center;
-    text-align: center;
-  }
-
-  .google-signin-slot {
-    justify-content: center;
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
   }
 
   .btn-google-custom {
-    width: 100%;
+    width: auto;
+    padding: 7px 10px;
+    font-size: 0.72rem;
+    gap: 6px;
+  }
+
+  .header-session-summary {
+    gap: 6px;
+  }
+
+  .header-session-copy strong {
+    max-width: 120px;
   }
 
   .header-session-copy span {
@@ -2458,7 +2468,7 @@ body {
   }
 
   .home-weekly-nav-row .sync-actions-row #btnSyncBanco,
-  .home-weekly-nav-row .sync-actions-row .sync-auto-pill {
+  .home-weekly-nav-row .sync-actions-row #btnSyncGoogleCalendar {
     flex: 0 0 auto;
   }
 
