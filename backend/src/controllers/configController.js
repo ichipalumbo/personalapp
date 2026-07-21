@@ -24,6 +24,21 @@ function limparPayloadConfig(payload) {
   return limpo;
 }
 
+async function obterOuCriarConfigPadraoGrade(ownerEmail) {
+  return Config.findOneAndUpdate(
+    { ownerEmail, chave: 'grade_horarios' },
+    {
+      $setOnInsert: {
+        ownerEmail,
+        chave: 'grade_horarios',
+        horaInicio: '06:00',
+        horaFim: '22:00'
+      }
+    },
+    { new: true, upsert: true, runValidators: true }
+  );
+}
+
 async function listarConfiguracoes(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -37,10 +52,9 @@ async function listarConfiguracoes(req, res) {
 async function obterConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
-
+    let config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
     if (!config) {
-      return res.status(404).json({ error: 'Configuração não encontrada.' });
+      config = await obterOuCriarConfigPadraoGrade(ownerEmail);
     }
 
     res.json(config);
@@ -52,10 +66,9 @@ async function obterConfiguracao(req, res) {
 async function obterConfiguracaoGradeHorarios(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
-
+    let config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
     if (!config) {
-      return res.status(404).json({ error: 'Configuração grade_horarios não encontrada.' });
+      config = await obterOuCriarConfigPadraoGrade(ownerEmail);
     }
 
     res.json(config);
