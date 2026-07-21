@@ -4,16 +4,19 @@ const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 function responderErroBloqueio(res, err, contexto) {
   const statusCode = err && err.statusCode ? err.statusCode : 500;
 
-  if (err && err.code === 11000) {
-    res.status(409).json({ error: 'Já existe um bloqueio externo com esse googleCalendarEventId para este usuário.' });
-    return;
-  }
-
   console.error(`[BloqueioExterno] Erro ao ${contexto}:`, err);
   res.status(statusCode).json({
     error: `Erro ao ${contexto}`,
     details: err.message
   });
+}
+
+function limparPayloadBloqueio(payload) {
+  const limpo = { ...(payload || {}) };
+  delete limpo._id;
+  delete limpo.__v;
+  delete limpo.ownerEmail;
+  return limpo;
 }
 
 async function listarBloqueiosExternos(req, res) {
@@ -52,7 +55,7 @@ async function obterBloqueioExterno(req, res) {
 async function criarBloqueioExterno(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const payload = req.body || {};
+    const payload = limparPayloadBloqueio(req.body);
 
     if (!payload.googleCalendarEventId) {
       return res.status(400).json({ error: 'googleCalendarEventId é obrigatório.' });
@@ -66,6 +69,23 @@ async function criarBloqueioExterno(req, res) {
 
     res.status(200).json(bloqueio);
   } catch (err) {
+    if (err && err.code === 11000) {
+      try {
+        const ownerEmail = getOwnerEmailOrThrow(req);
+        const payload = limparPayloadBloqueio(req.body);
+
+        const bloqueio = await BloqueioExterno.findOneAndUpdate(
+          { ownerEmail, googleCalendarEventId: payload.googleCalendarEventId },
+          { $set: { ...payload, ownerEmail, googleCalendarEventId: payload.googleCalendarEventId } },
+          { new: true, upsert: true, runValidators: true }
+        );
+
+        return res.status(200).json(bloqueio);
+      } catch (fallbackErr) {
+        return responderErroBloqueio(res, fallbackErr, 'criar bloqueio externo');
+      }
+    }
+
     responderErroBloqueio(res, err, 'criar bloqueio externo');
   }
 }
@@ -74,10 +94,7 @@ async function atualizarBloqueioExterno(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const { googleCalendarEventId } = req.params;
-    const payload = { ...req.body };
-
-    delete payload.ownerEmail;
-    delete payload._id;
+    const payload = limparPayloadBloqueio(req.body);
 
     if (payload.googleCalendarEventId && payload.googleCalendarEventId !== googleCalendarEventId) {
       return res.status(400).json({ error: 'O googleCalendarEventId do corpo deve ser igual ao da rota.' });
