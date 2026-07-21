@@ -12,11 +12,6 @@ const {
 function responderErroAluno(res, err, contexto) {
   const statusCode = err && err.statusCode ? err.statusCode : 500;
 
-  if (err && err.code === 11000) {
-    res.status(409).json({ error: 'Já existe um aluno com esse id para este usuário.' });
-    return;
-  }
-
   console.error(`[AlunoController] Erro ao ${contexto}:`, err.message);
   if (err && err.stack) {
     console.error('[AlunoController] Stack:', err.stack);
@@ -72,6 +67,23 @@ async function criarAluno(req, res) {
 
     res.status(200).json(aluno);
   } catch (err) {
+    if (err && err.code === 11000) {
+      try {
+        const ownerEmail = getOwnerEmailOrThrow(req);
+        const payload = req.body || {};
+
+        const aluno = await Aluno.findOneAndUpdate(
+          { ownerEmail, id: payload.id },
+          { $set: { ...payload, id: payload.id, ownerEmail } },
+          { new: true, upsert: true, runValidators: true }
+        );
+
+        return res.status(200).json(aluno);
+      } catch (fallbackErr) {
+        return responderErroAluno(res, fallbackErr, 'criar aluno');
+      }
+    }
+
     responderErroAluno(res, err, 'criar aluno');
   }
 }

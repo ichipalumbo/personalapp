@@ -4,11 +4,6 @@ const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 function responderErroConfig(res, err, contexto) {
   const statusCode = err && err.statusCode ? err.statusCode : 500;
 
-  if (err && err.code === 11000) {
-    res.status(409).json({ error: 'Já existe uma configuração com essa chave para este usuário.' });
-    return;
-  }
-
   console.error(`[ConfigController] Erro ao ${contexto}:`, err.message);
   if (err && err.stack) {
     console.error('[ConfigController] Stack:', err.stack);
@@ -140,7 +135,7 @@ async function salvarConfiguracao(req, res) {
     const { horaInicio, horaFim } = req.body;
     const config = await Config.findOneAndUpdate(
       { ownerEmail, chave: 'grade_horarios' },
-      { ownerEmail, chave: 'grade_horarios', horaInicio, horaFim },
+      { $set: { ownerEmail, chave: 'grade_horarios', horaInicio, horaFim } },
       { new: true, upsert: true, runValidators: true }
     );
 
