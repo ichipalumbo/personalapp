@@ -289,6 +289,19 @@
             evento.location = localizacao;
         }
 
+        // [TAG-GCAL-COR-TIPO] Mapeamento tipo → colorId do Google Calendar:
+        //   aula normal  → '3' Tangerine (#F4511E)
+        //   reposição    → '7' Peacock   (#039BE5)
+        //   demais tipos → sem colorId (cor padrão do calendário)
+        const tipoNorm = (agendamento.tipo || '').trim().toLowerCase();
+        if (tipoNorm === 'aula') {
+            if (agendamento.reagendada || agendamento.isReposicao) {
+                evento.colorId = '7'; // Peacock — reposição
+            } else {
+                evento.colorId = '3'; // Tangerine — aula normal
+            }
+        }
+
         if (agendamento.fullDay) {
             evento.start = { date: dataISO };
             evento.end   = { date: dataISO };

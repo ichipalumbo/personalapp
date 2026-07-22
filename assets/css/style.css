@@ -1,6 +1,6 @@
 /* [TAG-STYLE-OBJETIVOS] - Cores dos objetivos de treino (centralizado em CSS Custom Properties) */
 :root {
-  --objetivo-tangerina: #ff887c;
+  --objetivo-tangerina: #F4511E;
   --objetivo-funcional-text: var(--objetivo-tangerina);
   --objetivo-funcional-border: var(--objetivo-tangerina);
   --objetivo-hipertrofia-text: var(--objetivo-tangerina);
@@ -1272,7 +1272,7 @@ body {
 /* Custom modern event card styling */
 .agenda-dia-aula {
   position: absolute;
-  background: rgba(255, 136, 124, 0.05); /* Fundo suave com base #FF887C */
+  background: rgba(244, 81, 30, 0.05); /* Fundo suave com base #F4511E — Tangerine GCal */
   border: 1px solid #222224;
   border-left: 4px solid #ffd700;
   border-radius: 6px !important; /* "diminuir um pouco o arredondamento das bordas" */
@@ -1390,11 +1390,11 @@ body {
 }
 
 .agenda-dia-aula-detalhes {
-  color: #ff887c;
+  color: #F4511E;
   font-size: 0.68rem;
   align-self: flex-start;
-  background: rgba(255, 136, 124, 0.12);
-  border: 1px solid rgba(255, 136, 124, 0.45);
+  background: rgba(244, 81, 30, 0.12);
+  border: 1px solid rgba(244, 81, 30, 0.45);
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -1415,9 +1415,9 @@ body {
   flex-shrink: 0;
 }
 .badge-tag-tipo--reposicao {
-  background: rgba(100, 181, 246, 0.12);
-  border: 1px dashed rgba(100, 181, 246, 0.75);
-  color: #64b5f6;
+  background: rgba(3, 155, 229, 0.12);
+  border: 1px dashed rgba(3, 155, 229, 0.75);
+  color: #039BE5;
   padding: 2px 7px;
 }
 
@@ -2169,8 +2169,8 @@ body {
   background: rgba(179, 157, 219, 0.12);
 }
 .modal-escolha-icone-reposicao {
-  color: #64b5f6;
-  background: rgba(100, 181, 246, 0.1);
+  color: #039BE5;
+  background: rgba(3, 155, 229, 0.1);
 }
 .modal-escolha-texto strong {
   display: block;
