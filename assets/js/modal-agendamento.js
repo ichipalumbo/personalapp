@@ -627,9 +627,6 @@ window.atualizarResumoRecorrenciaCadastro = function() {
     const container = document.getElementById('resumoRecorrenciaCadastro');
     if (!container) return;
     const recorrencia = lerFormularioRecorrencia();
-    const escopoTxt = recorrencia.includeCurrentMonthBackfill
-        ? 'Daqui pra frente + incluir mês atual'
-        : 'Daqui pra frente';
     const inicioFmt = recorrencia.startDateIso
         ? window.formatarDataPtBrLegivel(window.formatarDataPtBr(recorrencia.startDateIso))
         : 'sem data';
@@ -637,7 +634,7 @@ window.atualizarResumoRecorrenciaCadastro = function() {
     container.innerHTML = `
         <strong style="display:block; margin-bottom:4px; color:#FFD700;">Resumo da repetição</strong>
         <span style="display:block; font-size:0.78rem; color:#DDD;">${montarResumoRecorrencia({ ...recorrencia, enabled: true })}</span>
-        <span style="display:block; font-size:0.78rem; color:#BBB; margin-top:2px;">Início: ${inicioFmt} • Escopo: ${escopoTxt}</span>
+        <span style="display:block; font-size:0.78rem; color:#BBB; margin-top:2px;">Início: ${inicioFmt}</span>
     `;
 };
 
@@ -727,7 +724,7 @@ window.selecionarTipoRecorrente = function() {
 
 window.obterResumoEscopoCriacaoRecorrencia = function(incluirMesAtualRetroativo) {
     if (incluirMesAtualRetroativo === true) {
-        return 'Cria desta data em diante e inclui datas válidas anteriores neste mês.';
+        return 'Início da série recuado para o 1º dia do mês — inclui todas as datas válidas do mês.';
     }
     return 'Cria a série desta data em diante.';
 };
@@ -740,9 +737,7 @@ window.atualizarResumoEscopoCriacaoRecorrencia = function() {
 };
 
 window.configurarEscopoCriacaoRecorrencia = function() {
-    const inputEscopo = document.getElementById('recorrenciaEscopoCriacao');
     const inputIncluirMesAtual = document.getElementById('recorrenciaIncluirMesAtualRetroativo');
-    if (inputEscopo) inputEscopo.value = 'fromDate';
     if (!inputIncluirMesAtual) {
         window.atualizarResumoEscopoCriacaoRecorrencia();
         return;
@@ -750,20 +745,32 @@ window.configurarEscopoCriacaoRecorrencia = function() {
     const novoInput = inputIncluirMesAtual.cloneNode(true);
     inputIncluirMesAtual.parentNode.replaceChild(novoInput, inputIncluirMesAtual);
     novoInput.addEventListener('change', () => {
+        const inputDataInicio = document.getElementById('recorrenciaDataInicio');
+        if (inputDataInicio) {
+            if (novoInput.checked) {
+                // Recua o início da série para o 1º dia do mês corrente
+                const hoje = new Date();
+                const primeiroDia = hoje.getFullYear() + '-'
+                    + String(hoje.getMonth() + 1).padStart(2, '0') + '-01';
+                inputDataInicio.value = primeiroDia;
+            } else {
+                // Restaura para a data original do slot clicado
+                const dataOriginal = rascunhoFluxoAgendamento && rascunhoFluxoAgendamento.slotContext
+                    ? rascunhoFluxoAgendamento.slotContext.dataIso || ''
+                    : '';
+                inputDataInicio.value = dataOriginal;
+            }
+        }
+        window.atualizarTextoPreviewRecorrencia();
         window.atualizarResumoEscopoCriacaoRecorrencia();
         window.atualizarResumoRecorrenciaCadastro();
     });
     window.atualizarResumoEscopoCriacaoRecorrencia();
 };
 
-function obterMensagemConfirmacaoConflitosRecorrencia(conflitosResumo) {
-    if (!conflitosResumo) {
-        return 'Foram detectados conflitos na projeção retroativa do mês atual. Deseja salvar mesmo assim?';
-    }
-    return `Foram detectados conflitos na projeção retroativa do mês atual (${conflitosResumo}). Deseja salvar mesmo assim?`;
-}
-
 function confirmarConflitosRecorrenciaSeNecessario(resultadoSerializacao) {
+    // Mantido para compatibilidade — com a remoção do backfill retroativo,
+    // conflitosPendentesConfirmacao nunca é preenchido e esta função sempre retorna true.
     if (!resultadoSerializacao?.conflitosPendentesConfirmacao || resultadoSerializacao.conflitosPendentesConfirmacao.length === 0) {
         return true;
     }

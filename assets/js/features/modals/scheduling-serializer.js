@@ -38,15 +38,6 @@
         return data.toISOString();
     }
 
-    function converterDataPtBrParaNumero(dataPtBr) {
-        if (!dataPtBr || typeof window.converterPtBrParaISO !== 'function') return NaN;
-        const iso = window.converterPtBrParaISO(dataPtBr);
-        if (!iso) return NaN;
-        const data = new Date(`${iso}T12:00:00`);
-        if (Number.isNaN(data.getTime())) return NaN;
-        return data.getTime();
-    }
-
     function obterDiaSemanaPorIso(dataIso) {
         if (!dataIso) return '';
         const data = new Date(`${dataIso}T12:00:00`);
@@ -223,7 +214,6 @@
         payload.intervaloRecorrencia = Number(recurrence.interval || 1);
         payload.diasSemana = daysOfWeek;
         payload.recorrenciaEscopo = recurrence.scope || 'fromDate';
-        payload.recorrenciaIncluirMesAtualRetroativo = recurrence.includeCurrentMonthBackfill === true;
         payload.recorrenciaDataInicio = startDatePtBr;
         payload.data = startDatePtBr || payload.data;
         if (daysOfWeek.length > 0) {
@@ -246,7 +236,7 @@
         }
     }
 
-    function validarConflitos(payload, opcoes = {}) {
+    function validarConflitos(payload) {
         if (typeof window.getConflitosNoDia !== 'function') {
             return { ok: true };
         }
@@ -275,30 +265,9 @@
             return { ok: true };
         }
 
-        const limiteDatasConflito = payload.recorrenciaIncluirMesAtualRetroativo === true ? 120 : 20;
-        const datas = window.getDatasConflitoRecorrencia(payload, limiteDatasConflito);
+        const datas = window.getDatasConflitoRecorrencia(payload, 20);
         const conflitos = window.getConflitosRecorrenciaEmDatas(payload, datas);
         if (conflitos.length > 0) {
-            if (opcoes.permitirConflitosComConfirmacao === true) {
-                const inicioMs = converterDataPtBrParaNumero(payload.recorrenciaDataInicio);
-                if (Number.isFinite(inicioMs)) {
-                    const conflitosRetroativos = conflitos.filter((conflito) => converterDataPtBrParaNumero(conflito.data) < inicioMs);
-                    const conflitosNaoRetroativos = conflitos.filter((conflito) => converterDataPtBrParaNumero(conflito.data) >= inicioMs);
-                    if (conflitosNaoRetroativos.length > 0) {
-                        const resumoNaoRetroativo = window.gerarResumoConflitosDatas(conflitosNaoRetroativos, 5);
-                        return criarResultadoErro(`Não foi possível salvar. Existem conflitos em: ${resumoNaoRetroativo}.`);
-                    }
-                    if (conflitosRetroativos.length > 0) {
-                        const resumoRetroativo = window.gerarResumoConflitosDatas(conflitosRetroativos, 5);
-                        return {
-                            ok: true,
-                            conflitoDatas: datas,
-                            conflitosPendentesConfirmacao: conflitosRetroativos,
-                            conflitosResumo: resumoRetroativo
-                        };
-                    }
-                }
-            }
             const resumo = window.gerarResumoConflitosDatas(conflitos, 5);
             return criarResultadoErro(`Não foi possível salvar. Existem conflitos em: ${resumo}.`);
         }
@@ -336,17 +305,13 @@
         // mesmo para padroes diaria, mensal e anual.
         aplicarRecorrenciaLegada(payload, normalizedDraft, slotContext);
 
-        const conflitos = validarConflitos(payload, {
-            permitirConflitosComConfirmacao: payload.recorrenciaIncluirMesAtualRetroativo === true
-        });
+        const conflitos = validarConflitos(payload);
         if (!conflitos.ok) return conflitos;
 
         return {
             ok: true,
             payload,
-            conflitoDatas: conflitos.conflitoDatas || [],
-            conflitosPendentesConfirmacao: conflitos.conflitosPendentesConfirmacao || [],
-            conflitosResumo: conflitos.conflitosResumo || ''
+            conflitoDatas: conflitos.conflitoDatas || []
         };
     };
 })();

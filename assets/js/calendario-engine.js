@@ -106,17 +106,12 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
         const dataAlvoPura = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
         if (recorrenciaDataInicio) {
             const escopoRecorrencia = comp.recorrenciaEscopo || 'fromDate';
-            const incluirMesAtualRetroativo = comp.recorrenciaIncluirMesAtualRetroativo === true;
             if (escopoRecorrencia === 'monthOfDate') {
                 if (dataAlvoPura.getFullYear() !== recorrenciaDataInicio.getFullYear() || dataAlvoPura.getMonth() !== recorrenciaDataInicio.getMonth()) {
                     return false;
                 }
-            } else {
-                const mesmoMesAnoDaDataInicio = dataAlvoPura.getFullYear() === recorrenciaDataInicio.getFullYear()
-                    && dataAlvoPura.getMonth() === recorrenciaDataInicio.getMonth();
-                if (dataAlvoPura < recorrenciaDataInicio && !(incluirMesAtualRetroativo && mesmoMesAnoDaDataInicio)) {
-                    return false;
-                }
+            } else if (dataAlvoPura < recorrenciaDataInicio) {
+                return false;
             }
         }
 

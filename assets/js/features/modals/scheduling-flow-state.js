@@ -5,7 +5,7 @@
 (function () {
     const TIPOS_CRIACAO = Object.freeze(['aula', 'bloqueio', 'deslocamento', 'reposicao']);
     const PADROES_RECORRENCIA = Object.freeze(['diaria', 'semanal', 'mensal', 'anual']);
-    const ESCOPOS_RECORRENCIA = Object.freeze(['fromDate', 'monthOfDate']);
+    const ESCOPOS_RECORRENCIA = Object.freeze(['fromDate']);
     const TERMINOS_RECORRENCIA = Object.freeze(['never', 'untilDate', 'occurrences']);
     const DIAS_SEMANA_VALIDOS = Object.freeze(['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']);
 
