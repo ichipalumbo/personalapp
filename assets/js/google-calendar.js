@@ -399,8 +399,14 @@
         }
 
         if (agendamento.fullDay) {
+            // GCal API: para eventos de dia inteiro, end.date deve ser o dia seguinte (exclusivo)
+            const dtFim = new Date(dataISO + 'T12:00:00');
+            dtFim.setDate(dtFim.getDate() + 1);
+            const dataISOFim = dtFim.getFullYear() + '-'
+                + String(dtFim.getMonth() + 1).padStart(2, '0') + '-'
+                + String(dtFim.getDate()).padStart(2, '0');
             evento.start = { date: dataISO };
-            evento.end   = { date: dataISO };
+            evento.end   = { date: dataISOFim };
         } else {
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             evento.start = { dateTime: dataISO + 'T' + (agendamento.horarioInicio || '00:00') + ':00', timeZone: tz };
