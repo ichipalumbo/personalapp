@@ -147,23 +147,23 @@ Os arquivos seguem prefixos que indicam sua camada:
 A ordem importa porque os scripts usam globais `window.xxx` definidos em outros arquivos:
 
 ```
-1.  state.js                   <- sem dependencias
-2.  storage.js                 <- depende de state.js
+1.  state.js                   <- sem dependencias  // vars module-scope: alunos, aulas, agendaConfig (sem window.X proprio)
+2.  storage.js                 <- depende de state.js  // window.sincronizarBancoDados, window.apiFetchBackend, window.carregarDadosDoLocalStorage; seta window.alunos e window.aulas ao carregar
 3.  utils-kpi.js               <- depende de state.js
-4.  utils-datetime.js          <- depende de state.js (em runtime)
-5.  alunos-helpers.js          <- depende de state.js
-6.  calendario-engine.js       <- depende de state.js
-7.  agenda-conflitos.js        <- depende de state.js + calendario-engine.js
-8.  widget-stepper-duracao.js  <- depende de state.js + widget-bloqueio.js (runtime)
-9.  widget-bloqueio.js         <- depende de widget-stepper-duracao.js
-10. modal-agendamento.js       <- depende de layers 1-9
-11. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js
+4.  utils-datetime.js          <- depende de state.js (em runtime)  // window.somarMinutos, window.diferencaMinutos, window.getDiaTextoSelecionado, window.formatarDataPtBr
+5.  alunos-helpers.js          <- depende de state.js  // window.getAluno, window.getAlunosParaSelect
+6.  calendario-engine.js       <- depende de state.js  // window.parseDataFlex, window.resolverCompromissoRecorrenteNaData, window.checarCompromissoNaData
+7.  agenda-conflitos.js        <- depende de state.js + calendario-engine.js  // window.getConflitosNoDia, window.getDatasConflitoRecorrencia
+8.  widget-stepper-duracao.js  <- depende de state.js + widget-bloqueio.js (runtime)  // window.configurarStepperDuracao, window.inicializarSteppersDuracao
+9.  widget-bloqueio.js         <- depende de widget-stepper-duracao.js  // window.BLOQUEIO_MAX_MINUTOS, window.ehBloqueioDiaInteiroCompromisso
+10. modal-agendamento.js       <- depende de layers 1-9  // window.abrirNovoAgendamento, window.abrirAgendamentoModal, window.abrirModalRecorrencia
+11. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js  // window.abrirModalAcaoSlot, window.fecharModalAcaoSlot
 12. agenda-card-template.js    <- depende de helpers/modais em runtime
-13. view-home.js               <- depende de layers 1-12
-14. view-calendario.js         <- depende de layers 1-13
-15. view-alunos.js             <- depende de layers 1-13
+13. view-home.js               <- depende de layers 1-12  // window.inicializarHome, window.renderizarAgendaDia, window.dataSelecionada
+14. view-calendario.js         <- depende de layers 1-13  // window.inicializarPaginaCalendario, window.renderizarHomeSemana, window.modoCalendarioAtivo, window.preencherFiltrosAlunos
+15. view-alunos.js             <- depende de layers 1-13  // window.inicializarAlunos, window.inicializarPaginaCadastro, window.renderizarListaAlunos
 16. app/service-worker.js      <- sem dependencia de DOM da aplicacao
-17. app/router.js              <- depende dos inicializadores globais das views
+17. app/router.js              <- depende dos inicializadores globais das views  // window.__appRouter
 18. app/bootstrap.js           <- depende de app/router.js e service-worker.js
 19. app.js                     <- depende de tudo (deve ser o ultimo)
 ```
@@ -211,16 +211,31 @@ Backend:
 
 Base path: `/api`
 
-- `GET /alunos`: lista alunos
-- `POST /alunos/sincronizar`: substitui colecao de alunos com payload completo
-- `GET /agendamentos`: lista agendamentos
-- `POST /agendamentos/sincronizar`: substitui colecao de agendamentos com payload completo
-- `GET /configuracao`: retorna configuracao da grade
-- `POST /configuracao`: atualiza configuracao da grade (upsert)
+- `GET  /alunos` — lista alunos
+- `POST /alunos` — cria aluno; `PUT /alunos/:id` — atualiza; `DELETE /alunos/:id` — remove
+- `GET  /agendamentos` — lista agendamentos
+- `POST /agendamentos` — cria agendamento; `PUT /agendamentos/:id` — atualiza; `PATCH /agendamentos/:id` — parcial; `DELETE /agendamentos/:id` — remove
+- `GET  /configuracao` — retorna configuracao da grade
+- `POST /configuracao` — cria/upsert configuracao; `PUT /configuracao/grade_horarios` — atualiza grade
 
 Observacao importante:
 
-- O modelo de sincronizacao atual e bulk (reescreve colecao), nao CRUD granular por item.
+- O modelo de sincronizacao e CRUD granular por item (POST/PUT/DELETE individual). O frontend compara estado local vs remoto e opera item a item — nao ha rota `/sincronizar` bulk.
+
+Payload de escrita — `POST`/`PUT /alunos[/:id]`:
+
+```json
+{ "id": "uuid", "nome": "Ana Souza", "telefone": "11999990000",
+  "status": "ativo", "tipoPreco": "mensal", "valorAlinhado": 350, "aulasSemanais": 3 }
+```
+
+Payload de escrita — `POST`/`PUT /agendamentos[/:id]`:
+
+```json
+{ "id": "uuid", "alunoId": "uuid-aluno", "alunoNome": "Ana Souza",
+  "data": "2025-07-21", "horario": "07:00", "tipo": "aula",
+  "status": "confirmado", "diaSemana": 1 }
+```
 
 ## Como Executar Localmente
 
