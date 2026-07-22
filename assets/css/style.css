@@ -1,6 +1,7 @@
 /* [TAG-STYLE-OBJETIVOS] - Cores dos objetivos de treino (centralizado em CSS Custom Properties) */
 :root {
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
+  --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
   --objetivo-funcional-text: var(--objetivo-tangerina);
   --objetivo-funcional-border: var(--objetivo-tangerina);
   --objetivo-hipertrofia-text: var(--objetivo-tangerina);
@@ -36,9 +37,15 @@
   font-weight: 700;
 }
 .objetivo-ConsultoriaOnline {
-  color: var(--objetivo-personal-trainer-text);
-  border-left-color: var(--objetivo-personal-trainer-text);
+  color: var(--objetivo-consultoria-online);
+  border-left-color: var(--objetivo-consultoria-online);
   font-weight: 700;
+}
+/* Badge de objetivo para Consultoria Online */
+.objetivo-ConsultoriaOnline .agenda-dia-aula-detalhes {
+  color: var(--objetivo-consultoria-online);
+  background: rgba(84, 132, 237, 0.12);
+  border-color: rgba(84, 132, 237, 0.45);
 }
 .objetivo-Outro {
   color: var(--objetivo-outro-text);
@@ -1423,15 +1430,15 @@ body {
 
 /* Non-class event slots */
 .slot-deslocamento {
-  border-left-color: #ff9800;
-  background: #1a1510;
-  border-color: #2d2218;
+  border-left-color: #51b749; /* GCal Basil — colorId '10' */
+  background: #111a11;
+  border-color: #1b2d1a;
 }
 
 .slot-bloqueado {
-  border-left-color: #ef5350;
-  background: #181212;
-  border-color: #2e1b1b;
+  border-left-color: #dc2127; /* GCal Tomato — colorId '11' */
+  background: #180f0f;
+  border-color: #2e1515;
 }
 
 /* [TAG-STYLE-BLOQUEIO-EXTERNO] - Eventos externos (somente leitura) do Google Calendar */
@@ -2157,19 +2164,19 @@ body {
   flex-shrink: 0;
 }
 .modal-escolha-icone-aula {
-  color: #81c784;
-  background: rgba(129, 199, 132, 0.1);
+  color: #ffb878; /* Tangerine — aula */
+  background: rgba(255, 184, 120, 0.1);
 }
 .modal-escolha-icone-bloqueio {
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.1);
+  color: #dc2127; /* Tomato — bloqueio */
+  background: rgba(220, 33, 39, 0.1);
 }
 .modal-escolha-icone-deslocamento {
-  color: #b39ddb;
-  background: rgba(179, 157, 219, 0.12);
+  color: #51b749; /* Basil — deslocamento */
+  background: rgba(81, 183, 73, 0.1);
 }
 .modal-escolha-icone-reposicao {
-  color: #fbd75b;
+  color: #fbd75b; /* Banana — reposição */
   background: rgba(251, 215, 91, 0.1);
 }
 .modal-escolha-texto strong {

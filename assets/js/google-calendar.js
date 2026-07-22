@@ -42,8 +42,11 @@
      * |'11' | Tomato     | #dc2127              | #1d1d1d    | Tomate      |
      *
      * Cores usadas neste app:
-     *   tipo 'aula' normal  → TANGERINE '6' (#ffb878) — CSS: --objetivo-tangerina
-     *   tipo 'aula' reposta → BANANA    '5' (#fbd75b) — CSS: badge/ícone reposição
+     *   tipo 'aula' normal        → TANGERINE '6' (#ffb878) — CSS: --objetivo-tangerina
+     *   tipo 'aula' reposição     → BANANA    '5' (#fbd75b) — CSS: badge/ícone reposição
+     *   tipo 'aula' + obj CO      → BLUEBERRY '9' (#5484ed) — CSS: --objetivo-consultoria-online
+     *   tipo 'deslocamento'       → BASIL     '10'(#51b749) — CSS: .slot-deslocamento
+     *   tipo 'bloqueio'           → TOMATO    '11'(#dc2127) — CSS: .slot-bloqueado
      */
     const GCAL_COLOR_IDS = {
         LAVENDER:  '1',
@@ -332,9 +335,19 @@
         // [TAG-GCAL-COR-TIPO] colorId de evento — ver tabela GCAL_COLOR_IDS acima.
         const tipoNorm = (agendamento.tipo || '').trim().toLowerCase();
         if (tipoNorm === 'aula') {
-            evento.colorId = (agendamento.reagendada || agendamento.isReposicao)
-                ? GCAL_COLOR_IDS.BANANA     // '5' #fbd75b — reposição
-                : GCAL_COLOR_IDS.TANGERINE; // '6' #ffb878 — aula normal
+            if (agendamento.reagendada || agendamento.isReposicao) {
+                evento.colorId = GCAL_COLOR_IDS.BANANA;     // '5' #fbd75b — reposição
+            } else if (objetivo && objetivo.trim().toLowerCase() === 'consultoria online') {
+                evento.colorId = GCAL_COLOR_IDS.BLUEBERRY;  // '9' #5484ed — consultoria online
+            } else {
+                evento.colorId = GCAL_COLOR_IDS.TANGERINE;  // '6' #ffb878 — aula normal
+            }
+        } else if (tipoNorm === 'deslocamento') {
+            evento.colorId = GCAL_COLOR_IDS.BASIL;          // '10' #51b749 — deslocamento
+        } else if (tipoNorm === 'bloqueio') {
+            evento.colorId = GCAL_COLOR_IDS.TOMATO;         // '11' #dc2127 — bloqueio
+        } else {
+            evento.colorId = null; // reseta cor de eventos que antes foram coloridos
         }
 
         if (agendamento.fullDay) {
