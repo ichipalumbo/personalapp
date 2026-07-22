@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="AgendaPersonalTrainer" />
+    <link rel="icon" type="image/png" href="assets/icon-192x192.png?v=1" />
     <title>Prô Josy - Agenda Personal Trainer</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/icon-192x192.png" />
@@ -30,20 +31,35 @@
           <div class="auth-banner" id="headerSession">
             <div id="googleSignedOutState" class="header-session-state">
               <span class="header-readonly-pill"
-                ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para editar.</span
+                ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para
+                editar.</span
               >
-              <button id="custom-google-login" type="button" class="btn-google-custom">
+              <button
+                id="custom-google-login"
+                type="button"
+                class="btn-google-custom"
+              >
                 <i class="fa-brands fa-google"></i>
                 <span>Entrar com Google</span>
               </button>
             </div>
             <div id="googleSignedInState" class="header-session-summary" hidden>
-              <span class="header-session-avatar" id="headerSessionAvatar" aria-hidden="true">G</span>
+              <span
+                class="header-session-avatar"
+                id="headerSessionAvatar"
+                aria-hidden="true"
+                >G</span
+              >
               <div class="header-session-copy">
                 <strong id="headerSessionName">Conectado com Google</strong>
                 <span id="headerSessionEmail">Conta ativa</span>
               </div>
-              <button id="btnGoogleSignOut" type="button" class="btn-google-signout" title="Trocar conta Google">
+              <button
+                id="btnGoogleSignOut"
+                type="button"
+                class="btn-google-signout"
+                title="Trocar conta Google"
+              >
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span>Sair</span>
               </button>
@@ -67,7 +83,7 @@
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section">
         <div class="home-weekly-topbar">
-          <section class="alunos-grid home-kpi-grid" style="display: none;">
+          <section class="alunos-grid home-kpi-grid" style="display: none">
             <div class="card-stat home-kpi-card">
               <span class="stat-numero home-kpi-value" id="totalAulasHoje"
                 >0</span
@@ -143,26 +159,70 @@
                   </button>
                 </div>
               </div>
-              <div class="home-weekly-nav-row" style="justify-content: flex-end; margin-top: 6px;">
-                <div class="sync-actions-row" style="display: flex; flex-direction: row; align-items: center; gap: 12px;">
+              <div
+                class="home-weekly-nav-row"
+                style="justify-content: flex-end; margin-top: 6px"
+              >
+                <div
+                  class="sync-actions-row"
+                  style="
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    gap: 12px;
+                  "
+                >
                   <button
                     id="btnSyncBanco"
                     class="btn btn-sm"
-                    style="background:#1e2a18;color:#b7f2b1;border:1px solid #35592f;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
-                    onclick="window.sincronizarBancoDados && window.sincronizarBancoDados()"
+                    style="
+                      background: #1e2a18;
+                      color: #b7f2b1;
+                      border: 1px solid #35592f;
+                      font-size: 0.78rem;
+                      padding: 5px 12px;
+                      border-radius: 8px;
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 6px;
+                      cursor: pointer;
+                      transition: all 0.3s ease;
+                    "
+                    onclick="
+                      window.sincronizarBancoDados &&
+                        window.sincronizarBancoDados()
+                    "
                     title="Forçar sincronização dos dados com o MongoDB"
                   >
-                    <i class="fa-solid fa-database"></i> <span id="btnSyncBancoText">Sincronizar Dados</span>
+                    <i class="fa-solid fa-database"></i>
+                    <span id="btnSyncBancoText">Sincronizar Dados</span>
                   </button>
                   <button
                     id="btnSyncGoogleCalendar"
                     class="btn btn-sm"
-                    style="background:#152236;color:#bcd9ff;border:1px solid #2f4f7a;font-size:0.78rem;padding:5px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.3s ease;"
+                    style="
+                      background: #152236;
+                      color: #bcd9ff;
+                      border: 1px solid #2f4f7a;
+                      font-size: 0.78rem;
+                      padding: 5px 12px;
+                      border-radius: 8px;
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 6px;
+                      cursor: pointer;
+                      transition: all 0.3s ease;
+                    "
                     title="Atualizar calendário Google agora, sem depender de mudar de tela"
                   >
-                    <i class="fa-brands fa-google"></i> <span id="btnSyncText">Atualizar Calendário</span>
+                    <i class="fa-brands fa-google"></i>
+                    <span id="btnSyncText">Atualizar Calendário</span>
                   </button>
-                  <small id="ultimaSincronizacao" class="ultima-sincronizacao-label" style="font-size:0.65rem;color:#888;"></small>
+                  <small
+                    id="ultimaSincronizacao"
+                    class="ultima-sincronizacao-label"
+                    style="font-size: 0.65rem; color: #888"
+                  ></small>
                 </div>
               </div>
             </div>
@@ -431,9 +491,14 @@
                   <span class="full-day-toggle-ui">
                     <span class="full-day-toggle-text">
                       <i class="fa-solid fa-bullseye"></i>
-                      <span id="alunoObjetivoSwitchStatus">Personal Trainer</span>
+                      <span id="alunoObjetivoSwitchStatus"
+                        >Personal Trainer</span
+                      >
                     </span>
-                    <span class="full-day-toggle-pill" aria-hidden="true"></span>
+                    <span
+                      class="full-day-toggle-pill"
+                      aria-hidden="true"
+                    ></span>
                   </span>
                 </label>
               </div>
@@ -1577,7 +1642,11 @@
     <!-- [6.5] Google Calendar Integration (deve vir antes do script GIS para definir _onGISLoad) -->
     <script src="assets/js/auth/google-identity.js"></script>
     <script src="assets/js/google-calendar.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async onload="_onGISLoad()"></script>
+    <script
+      src="https://accounts.google.com/gsi/client"
+      async
+      onload="_onGISLoad()"
+    ></script>
     <!-- [7] App Shell -->
     <script src="assets/js/app/service-worker.js"></script>
     <script src="assets/js/app/router.js"></script>
