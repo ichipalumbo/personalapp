@@ -289,16 +289,15 @@
             evento.location = localizacao;
         }
 
-        // [TAG-GCAL-COR-TIPO] Cor RGB via colorRgbFormat=true (requer ?colorRgbFormat=true na URL):
-        //   aula normal  → Tangerine #F4511E
-        //   reposição    → Manga     #F09300
-        //   demais tipos → sem campo color (cor padrão do calendário)
+        // [TAG-GCAL-COR-TIPO] colorId de evento (API Events só suporta IDs predefinidos, sem RGB livre):
+        //   aula normal  → '3' Tangerine (#F4511E)
+        //   reposição    → '4' Banana    (#F6BF26)
+        //   demais tipos → sem colorId (cor padrão do calendário)
         const tipoNorm = (agendamento.tipo || '').trim().toLowerCase();
         if (tipoNorm === 'aula') {
-            const bgHex = (agendamento.reagendada || agendamento.isReposicao)
-                ? '#f09300'  // Manga — reposição
-                : '#f4511e'; // Tangerine — aula normal
-            evento.color = { background: bgHex, foreground: '#ffffff' };
+            evento.colorId = (agendamento.reagendada || agendamento.isReposicao)
+                ? '4'  // Banana — reposição
+                : '3'; // Tangerine — aula normal
         }
 
         if (agendamento.fullDay) {
@@ -573,7 +572,7 @@
          */
         async createEvent(agendamento) {
             const body   = _agendamentoParaGCalEvent(agendamento);
-            const criado = await _calendarFetch('/calendars/primary/events?colorRgbFormat=true', {
+            const criado = await _calendarFetch('/calendars/primary/events', {
                 method: 'POST',
                 body:   JSON.stringify(body)
             });
@@ -589,7 +588,7 @@
         async updateEvent(gcalId, agendamento) {
             const body       = _agendamentoParaGCalEvent(agendamento);
             const atualizado = await _calendarFetch(
-                '/calendars/primary/events/' + encodeURIComponent(gcalId) + '?colorRgbFormat=true',
+                '/calendars/primary/events/' + encodeURIComponent(gcalId),
                 { method: 'PUT', body: JSON.stringify(body) }
             );
             return atualizado.id;
