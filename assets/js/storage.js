@@ -124,9 +124,16 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
 
     const mensagensContexto = mensagens[contexto] || mensagens.carregando;
 
+    const usarIndicadorSilencioso = contexto === 'syncCalendario';
     let overlayFoiExibido = false;
     const sleepTimer = setTimeout(() => {
         overlayFoiExibido = true;
+        if (usarIndicadorSilencioso) {
+            if (typeof mostrarIndicadorSyncBackground === 'function') {
+                mostrarIndicadorSyncBackground(mensagensContexto.lenta);
+            }
+            return;
+        }
         if (typeof mostrarOverlaySinc === 'function') {
             mostrarOverlaySinc(mensagensContexto.lenta);
             return;
@@ -138,11 +145,22 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
         const resultado = await executor();
         clearTimeout(sleepTimer);
         if (overlayFoiExibido) {
-            _ocultarOverlayConexao();
+            if (usarIndicadorSilencioso) {
+                if (typeof ocultarIndicadorSyncBackground === 'function') {
+                    ocultarIndicadorSyncBackground();
+                }
+            } else {
+                _ocultarOverlayConexao();
+            }
         }
         return resultado;
     } catch (error) {
         clearTimeout(sleepTimer);
+        if (overlayFoiExibido && usarIndicadorSilencioso) {
+            if (typeof ocultarIndicadorSyncBackground === 'function') {
+                ocultarIndicadorSyncBackground();
+            }
+        }
         if (deveExibirFalha) {
             _mostrarOverlayErroComRetry(mensagensContexto.erro);
         }

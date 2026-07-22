@@ -356,6 +356,34 @@ function ocultarOverlaySinc(resultado) {
         mostrarToast('❌ Falha ao salvar. Tente novamente.', 'error');
     }
 }
+
+// [TAG-JS-INDICADOR-SYNC-BG] — Indicador não-bloqueante para sincronizações em background.
+// Exibe um pequeno badge no canto inferior-direito sem bloquear a interação do usuário.
+let _indicadorBgHideTimer = null;
+
+function mostrarIndicadorSyncBackground(mensagem) {
+    clearTimeout(_indicadorBgHideTimer);
+    let badge = document.getElementById('indicador-sync-bg');
+    if (!badge) {
+        badge = document.createElement('div');
+        badge.id = 'indicador-sync-bg';
+        badge.className = 'indicador-sync-bg';
+        badge.innerHTML =
+            '<span class="indicador-sync-bg-spinner"></span>' +
+            '<span class="indicador-sync-bg-msg"></span>';
+        document.body.appendChild(badge);
+    }
+    badge.querySelector('.indicador-sync-bg-msg').textContent = mensagem || 'Sincronizando calendário...';
+    badge.classList.add('ativo');
+}
+
+function ocultarIndicadorSyncBackground() {
+    clearTimeout(_indicadorBgHideTimer);
+    _indicadorBgHideTimer = setTimeout(function () {
+        const badge = document.getElementById('indicador-sync-bg');
+        if (badge) badge.classList.remove('ativo');
+    }, 600);
+}
 function exportarDados() {
     const dados = JSON.stringify({ alunos, aulas }, null, 2);
     const blob = new Blob([dados], { type: 'application/json' });

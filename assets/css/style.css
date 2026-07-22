@@ -1997,6 +1997,40 @@ body {
   transform: scale(0.98);
 }
 
+/* [TAG-CSS-INDICADOR-SYNC-BG] — Non-blocking background sync indicator (pill badge) */
+.indicador-sync-bg {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 20px;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: rgba(26, 26, 26, 0.92);
+  border: 1px solid #333;
+  border-radius: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  z-index: 1500;
+  pointer-events: none;
+}
+.indicador-sync-bg.ativo {
+  display: flex;
+}
+.indicador-sync-bg-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #2a2a2a;
+  border-top-color: #4caf50;
+  border-radius: 50%;
+  animation: girar-sinc 0.8s linear infinite;
+  flex-shrink: 0;
+}
+.indicador-sync-bg-msg {
+  color: #bdbdbd;
+  font-size: 0.76rem;
+  white-space: nowrap;
+}
+
 /* [TAG-STYLE-FILTRO-ALUNO-CALENDARIO] - Filter dropdown styling */
 .filtro-aluno-container {
   display: flex;

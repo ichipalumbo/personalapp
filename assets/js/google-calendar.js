@@ -956,6 +956,22 @@
                             local: agendamentoGCal.location || agendamentoAtual.local || ''
                         };
 
+                        // [TAG-GCAL-BIDI-DIFF] Skip PUT when no GCal-editable field changed.
+                        // Only skips when the local record was found (agendamentoAtual.id truthy);
+                        // if the record is missing locally we fall through and let the PUT run.
+                        if (agendamentoAtual.id) {
+                            const semMudancas =
+                                payloadAtualizado.descricao     === (agendamentoAtual.descricao     || '') &&
+                                payloadAtualizado.data          === (agendamentoAtual.data          || '') &&
+                                payloadAtualizado.horarioInicio === (agendamentoAtual.horarioInicio || '') &&
+                                payloadAtualizado.horarioFim    === (agendamentoAtual.horarioFim    || '') &&
+                                payloadAtualizado.local         === (agendamentoAtual.local         || '');
+                            if (semMudancas) {
+                                console.log('[gcal-bidi] Sem mudanças para ' + agendamentoGCal.id + ', PUT ignorado.');
+                                continue;
+                            }
+                        }
+
                         const res = await _backendFetchApp(API_BASE_URL + '/agendamentos/' + encodeURIComponent(agendamentoGCal.id), {
                             method: 'PUT',
                             headers: { 'Content-Type': 'application/json' },
@@ -1242,7 +1258,7 @@
     function _calcularRangePadraoSync() {
         const hoje = new Date();
         const umMesAtras = new Date(hoje.getFullYear(), hoje.getMonth() - 1, hoje.getDate());
-        const umMesFuturo = new Date(hoje.getFullYear(), hoje.getMonth() + 1, hoje.getDate());
+        const umMesFuturo = new Date(hoje.getFullYear(), hoje.getMonth() + 2, hoje.getDate());
         const pad = function (n) { return String(n).padStart(2, '0'); };
         const toISO = function (d) {
             return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
@@ -1381,10 +1397,6 @@
                 }
 
                 _desabilitarBotaoSync('sincronizando');
-
-                if (!silencioso && typeof mostrarOverlaySinc === 'function') {
-                    mostrarOverlaySinc('Sincronizando Google Calendar...');
-                }
 
                 const range = _normalizarRangeSync(opts.range);
                 const tarefasSync = [
