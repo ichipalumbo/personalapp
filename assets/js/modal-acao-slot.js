@@ -21,7 +21,6 @@ window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
 /** @param {string} escopo @returns {string} label curto do escopo */
 window.getLabelEscopoRecorrencia = function(escopo) {
     if (escopo === 'occurrence') return 'Somente esta aula';
-    if (escopo === 'monthOfDate') return 'Este mês todo';
     if (escopo === 'entireSeries') return 'Todas as aulas da série';
     return 'Daqui pra frente';
 };
@@ -29,7 +28,6 @@ window.getLabelEscopoRecorrencia = function(escopo) {
 /** @param {string} escopo @returns {string} descrição completa do escopo */
 window.getResumoEscopoRecorrencia = function(escopo) {
     if (escopo === 'occurrence') return 'Vai aplicar somente nesta aula específica.';
-    if (escopo === 'monthOfDate') return 'Vai aplicar nas aulas deste mês.';
     if (escopo === 'entireSeries') return 'Vai aplicar na série inteira.';
     return 'Vai aplicar nesta aula e nas próximas da série.';
 };
@@ -116,7 +114,10 @@ window.abrirModalAcaoSlot = function(id) {
         badge.className = "modal-badge badge-aula"; 
         
         containerDiaSemana.style.display = 'block';
-        document.getElementById('editDiaSemana').value = compromisso.dia || "Segunda";
+        const _isoAlvoDia = typeof window.converterPtBrParaISO === 'function' ? window.converterPtBrParaISO(dataAlvoStr) : null;
+        const _idxDiaAlvo = _isoAlvoDia ? new Date(_isoAlvoDia + 'T12:00:00').getDay() : -1;
+        const _nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        document.getElementById('editDiaSemana').value = (_idxDiaAlvo >= 0 ? _nomesDias[_idxDiaAlvo] : null) || compromisso.dia || 'Segunda';
         document.getElementById('editInfoDia').textContent = `Série Recorrente • Gerenciando dia: ${dataAlvoStr}`;
         if (containerEscopo) containerEscopo.style.display = 'block';
         if (inputEscopo) inputEscopo.value = 'fromDate';
@@ -446,7 +447,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
             // [TAG-GCAL] Snapshot antes da mutação para revert se MongoDB falhar
-            const _snapshotEdicao = { ...compromisso };
+            const _snapshotEdicao = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
+            // Captura nova ocorrência avulsa criada no escopo 'occurrence' para GCal sync duplo
+            let _novaOcorrenciaSerie = null;
 
             const tipo = compromisso.tipo || 'aula';
             const diaInteiro = tipo === 'bloqueio' && document.getElementById('editBloqueioDiaInteiro')?.checked;
@@ -498,19 +501,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!compromisso.excecoes.includes(dataAlvoStr)) compromisso.excecoes.push(dataAlvoStr);
 
                     const novoId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                    // Determina o dia da semana correto da ocorrência clicada (não o primeiro dia da série)
+                    const _isoOcorrencia = window.converterPtBrParaISO(dataAlvoStr);
+                    const _idxOcorrencia = _isoOcorrencia ? new Date(_isoOcorrencia + 'T12:00:00').getDay() : -1;
+                    const _nomesDiasOcorrencia = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _diaOcorrencia = _idxOcorrencia >= 0 ? _nomesDiasOcorrencia[_idxOcorrencia] : (compromisso.dia || 'Segunda');
                     const novoCompromisso = {
                         ...compromisso,
                         id: novoId,
                         frequencia: 'uma_vez',
                         data: dataAlvoStr,
-                        dia: compromisso.dia,
+                        dia: _diaOcorrencia,
                         horarioInicio: hInicio,
                         horarioFim: hFim,
                         fullDay: diaInteiro,
                         excecoes: [],
-                        excecoesDetalhadas: []
+                        excecoesDetalhadas: [],
+                        googleCalendarEventId: null  // novo evento — não herdar o ID da série
                     };
                     aulas.push(novoCompromisso);
+                    _novaOcorrenciaSerie = novoCompromisso;
                 } else {
                     const datas = window.getDatasConflitoRecorrencia(candidato, 20);
                     const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, { ignorarIds: [compromisso.id] });
@@ -544,7 +554,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 compromisso.fullDay = diaInteiro;
             }
 
-            if (freq === 'semanal') {
+            if (freq === 'semanal' && escopoRecorrencia !== 'occurrence') {
                 compromisso.dia = document.getElementById('editDiaSemana').value;
                 delete compromisso.data;
             }
@@ -562,7 +572,15 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshotEdicao }).then(() => window.inicializarHome());
+                const _gcalSeriePromise = window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshotEdicao });
+                if (_novaOcorrenciaSerie) {
+                    // occurrence: depois de adicionar EXDATE na série, cria o evento avulso com novo horário
+                    _gcalSeriePromise
+                        .then(() => window.salvarEventoComGCal(_novaOcorrenciaSerie, { operacao: 'criar' }))
+                        .then(() => window.inicializarHome());
+                } else {
+                    _gcalSeriePromise.then(() => window.inicializarHome());
+                }
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
                 window.inicializarHome();
@@ -626,22 +644,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnDeletarInstancia = document.getElementById('btnDeletarInstancia');
     if (btnDeletarInstancia) {
-        btnDeletarInstancia.addEventListener('click', async () => {
+        btnDeletarInstancia.addEventListener('click', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
+            const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
             if (!compromisso.excecoes) compromisso.excecoes = [];
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
             }
 
-            if (typeof salvarDados === 'function') salvarDados();
-            
             window.fecharModalAcaoSlot();
-            await window.inicializarHome({ sincronizar: true });
-            if (typeof renderizarCalendario === 'function') renderizarCalendario();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+
+            const _posDeletar = async () => {
+                await window.inicializarHome({ sincronizar: true });
+                if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+            };
+
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshot }).then(_posDeletar);
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                _posDeletar();
+            }
         });
     }
 
@@ -652,6 +679,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!compromisso) return;
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
+            const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
             if (!compromisso.excecoes) compromisso.excecoes = [];
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
@@ -663,11 +691,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataCancelamento: dataAlvoStr
             });
 
-            if (typeof salvarDados === 'function') salvarDados();
-            
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
+
+            const _posReagendar = () => {
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
+            };
+
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshot }).then(_posReagendar);
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                _posReagendar();
+            }
         });
     }
 

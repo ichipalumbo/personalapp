@@ -62,6 +62,46 @@
         TOMATO:    '11'
     };
 
+    // ── RRULE: mapeamento dias da semana → RFC 5545 ──────────────────────────────
+    const _DIA_PARA_RRULE = {
+        'Segunda': 'MO', 'Terça': 'TU', 'Quarta': 'WE',
+        'Quinta':  'TH', 'Sexta': 'FR', 'Sábado': 'SA', 'Domingo': 'SU'
+    };
+
+    /**
+     * Gera a string RRULE para um agendamento semanal recorrente.
+     * Campos do agendamento usados:
+     *   diasSemana[]           → BYDAY
+     *   intervaloRecorrencia   → INTERVAL (omitido se 1)
+     *   recorrenciaFimCondicao → 'untilDate' | 'occurrences' | ausente
+     *   recorrenciaDataFim     → UNTIL (DD/MM/YYYY, só se untilDate)
+     *   recorrenciaQuantidadeOcorrencias → COUNT (só se occurrences)
+     * @returns {string|null}
+     */
+    function _gerarRRULE(agendamento) {
+        const dias = agendamento.diasSemana;
+        if (!Array.isArray(dias) || dias.length === 0) return null;
+
+        const byday = dias.map(d => _DIA_PARA_RRULE[d]).filter(Boolean).join(',');
+        if (!byday) return null;
+
+        const intervalo = Number(agendamento.intervaloRecorrencia) || 1;
+        let rrule = 'RRULE:FREQ=WEEKLY';
+        if (intervalo > 1) rrule += ';INTERVAL=' + intervalo;
+        rrule += ';BYDAY=' + byday;
+
+        const fim = agendamento.recorrenciaFimCondicao;
+        if (fim === 'untilDate' && agendamento.recorrenciaDataFim) {
+            const isoUntil = (typeof converterPtBrParaISO === 'function')
+                ? converterPtBrParaISO(agendamento.recorrenciaDataFim) : null;
+            if (isoUntil) rrule += ';UNTIL=' + isoUntil.replace(/-/g, '') + 'T235959Z';
+        } else if (fim === 'occurrences' && agendamento.recorrenciaQuantidadeOcorrencias) {
+            rrule += ';COUNT=' + agendamento.recorrenciaQuantidadeOcorrencias;
+        }
+
+        return rrule;
+    }
+
     // ── Estado privado ───────────────────────────────────────────────────────────
     let _tokenClient       = null;
     let _accessToken       = null;
@@ -357,6 +397,27 @@
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             evento.start = { dateTime: dataISO + 'T' + (agendamento.horarioInicio || '00:00') + ':00', timeZone: tz };
             evento.end   = { dateTime: dataISO + 'T' + (agendamento.horarioFim    || '01:00') + ':00', timeZone: tz };
+        }
+
+        // [TAG-GCAL-RRULE] Série semanal: gera RRULE + EXDATE das exceções canceladas
+        if (agendamento.frequencia === 'semanal') {
+            const rrule = _gerarRRULE(agendamento);
+            if (rrule) {
+                const recurrence = [rrule];
+                const excecoes = Array.isArray(agendamento.excecoes) ? agendamento.excecoes : [];
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                excecoes.forEach(function(dataPtBr) {
+                    const isoExc = (typeof converterPtBrParaISO === 'function') ? converterPtBrParaISO(dataPtBr) : null;
+                    if (!isoExc) return;
+                    if (agendamento.fullDay) {
+                        recurrence.push('EXDATE;VALUE=DATE:' + isoExc.replace(/-/g, ''));
+                    } else {
+                        const horario = (agendamento.horarioInicio || '00:00').replace(':', '') + '00';
+                        recurrence.push('EXDATE;TZID=' + tz + ':' + isoExc.replace(/-/g, '') + 'T' + horario);
+                    }
+                });
+                evento.recurrence = recurrence;
+            }
         }
 
         return evento;
