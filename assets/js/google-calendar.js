@@ -19,6 +19,46 @@
     const GCAL_BASE   = 'https://www.googleapis.com/calendar/v3';
     const APP_SOURCE  = 'personaltrainer'; // extendedProperties.private.appSource
 
+    /**
+     * Mapeamento completo dos colorIds da API Google Calendar Events v3.
+     * Hex values: fonte oficial GET /calendar/v3/colors (campo "event").
+     * Confirmados empiricamente com testes reais no app GCal (julho/2025):
+     *   '3' = Uva ✅  |  '4' = Flamingo ✅  |  '6' = Tangerina ✅
+     * A API Events NÃO aceita RGB livre — apenas estes 11 IDs predefinidos.
+     * Referência: https://developers.google.com/workspace/calendar/api/v3/reference/colors
+     *
+     * | ID  | Nome (EN)  | Background (oficial) | Foreground | Nome PT-BR  |
+     * |-----|------------|----------------------|------------|-------------|
+     * | '1' | Lavender   | #a4bdfc              | #1d1d1d    | Lavanda     |
+     * | '2' | Sage       | #7ae7bf              | #1d1d1d    | Sálvia      |
+     * | '3' | Grape      | #dbadff              | #1d1d1d    | Uva         | ← ✅
+     * | '4' | Flamingo   | #ff887c              | #1d1d1d    | Flamingo    | ← ✅
+     * | '5' | Banana     | #fbd75b              | #1d1d1d    | Banana      |
+     * | '6' | Tangerine  | #ffb878              | #1d1d1d    | Tangerina   | ← ✅
+     * | '7' | Peacock    | #46d6db              | #1d1d1d    | Pavão       |
+     * | '8' | Graphite   | #e1e1e1              | #1d1d1d    | Grafite     |
+     * | '9' | Blueberry  | #5484ed              | #1d1d1d    | Mirtilo     |
+     * |'10' | Basil      | #51b749              | #1d1d1d    | Manjericão  |
+     * |'11' | Tomato     | #dc2127              | #1d1d1d    | Tomate      |
+     *
+     * Cores usadas neste app:
+     *   tipo 'aula' normal  → TANGERINE '6' (#ffb878) — CSS: --objetivo-tangerina
+     *   tipo 'aula' reposta → BANANA    '5' (#fbd75b) — CSS: badge/ícone reposição
+     */
+    const GCAL_COLOR_IDS = {
+        LAVENDER:  '1',
+        SAGE:      '2',
+        GRAPE:     '3',
+        FLAMINGO:  '4',
+        BANANA:    '5',
+        TANGERINE: '6',
+        PEACOCK:   '7',
+        GRAPHITE:  '8',
+        BLUEBERRY: '9',
+        BASIL:     '10',
+        TOMATO:    '11'
+    };
+
     // ── Estado privado ───────────────────────────────────────────────────────────
     let _tokenClient       = null;
     let _accessToken       = null;
@@ -289,15 +329,12 @@
             evento.location = localizacao;
         }
 
-        // [TAG-GCAL-COR-TIPO] colorId de evento (API Events só suporta IDs predefinidos, sem RGB livre):
-        //   aula normal  → '3' Tangerine (#F4511E)
-        //   reposição    → '4' Banana    (#F6BF26)
-        //   demais tipos → sem colorId (cor padrão do calendário)
+        // [TAG-GCAL-COR-TIPO] colorId de evento — ver tabela GCAL_COLOR_IDS acima.
         const tipoNorm = (agendamento.tipo || '').trim().toLowerCase();
         if (tipoNorm === 'aula') {
             evento.colorId = (agendamento.reagendada || agendamento.isReposicao)
-                ? '4'  // Banana — reposição
-                : '3'; // Tangerine — aula normal
+                ? GCAL_COLOR_IDS.BANANA     // '5' #fbd75b — reposição
+                : GCAL_COLOR_IDS.TANGERINE; // '6' #ffb878 — aula normal
         }
 
         if (agendamento.fullDay) {
@@ -1080,11 +1117,17 @@
         _atualizarExibicaoUltimaSincronizacao();
     };
 
-    const GCAL_SYNC_COOLDOWN_MS = 45000;
+    // Cooldown para syncs automáticos (bootstrap, troca de aba): 5 minutos.
+    // Syncs manuais (botão do usuário) ignoram o cooldown (manual=true).
+    const GCAL_SYNC_COOLDOWN_MS = 5 * 60 * 1000;
+    const GCAL_SYNC_LS_KEY = 'gcal_ultima_execucao_ts';
     let _autoSyncJaExecutada = false;
     let _syncInFlightPromise = null;
     let _syncPendente = false;
-    let _syncUltimaExecucao = 0;
+    // Lê o timestamp persistido para que o cooldown sobreviva a reloads de página.
+    let _syncUltimaExecucao = (function () {
+        try { return parseInt(localStorage.getItem(GCAL_SYNC_LS_KEY) || '0', 10) || 0; } catch (e) { return 0; }
+    }());
     let _gatilhosGlobaisRegistrados = false;
 
     function _calcularRangePadraoSync() {
@@ -1245,6 +1288,7 @@
                 });
 
                 _syncUltimaExecucao = Date.now();
+                try { localStorage.setItem(GCAL_SYNC_LS_KEY, String(_syncUltimaExecucao)); } catch (e) { /* storage indisponível */ }
                 _salvarUltimaSincronizacao(range.timeMin, range.timeMax);
                 _renderizarPosSyncGlobal();
 
