@@ -1035,32 +1035,52 @@
             return;
         }
 
-        const operacao        = opcoes.operacao || (agendamento.googleCalendarEventId ? 'atualizar' : 'criar');
+        const operacao         = opcoes.operacao || (agendamento.googleCalendarEventId ? 'atualizar' : 'criar');
         const snapshotAnterior = opcoes.snapshotAnterior || null;
 
-        // Bloqueia UI
-        if (typeof mostrarOverlaySinc === 'function') mostrarOverlaySinc('Salvando...');
+        // Deep clone taken BEFORE any further mutation — this is the bulletproof revert target
+        // if MongoDB fails. snapshotAnterior from the caller may be a shallow object; this clone
+        // is always a full independent copy of the state at call time.
+        const _snapshotDeepClone = (function () {
+            try { return JSON.parse(JSON.stringify(agendamento)); } catch (_) { return snapshotAnterior; }
+        })();
+
+        // ── Optimistic UI: render the updated state immediately ──────────────────
+        // The caller has already mutated window.aulas before calling this function.
+        // Invalidate the dirty-check key so the renders below see the new state.
+        if (typeof window.invalidarChaveRenderAgenda === 'function') window.invalidarChaveRenderAgenda();
+        if (typeof window.atualizarDashboardStats === 'function') window.atualizarDashboardStats();
+        if (typeof window.renderizarHomeSemana === 'function') window.renderizarHomeSemana();
+        if (typeof window.renderizarListaReposicoes === 'function') window.renderizarListaReposicoes();
+        if (typeof window.renderizarModoCalendarioAtivo === 'function') window.renderizarModoCalendarioAtivo();
 
         // ── PASSO 1: MongoDB (fonte da verdade) ──────────────────────────────────
         try {
             if (typeof salvarDados !== 'function') throw new Error('salvarDados não disponível.');
-            await salvarDados(true /* silencioso — overlay já está ativo */);
+            await salvarDados(true /* silencioso — sem overlay */);
         } catch (mongoErr) {
-            console.error('[gcal] Falha no MongoDB — GCal não será chamado:', mongoErr);
+            console.error('[gcal] Falha no MongoDB — revertendo estado otimista:', mongoErr);
 
-            // Reverte a mutação em memória para não deixar estado inconsistente
+            // Revert using deep clone to restore the exact pre-mutation state.
             const aulasRef = window.aulas || [];
             if (operacao === 'criar') {
                 const idx = aulasRef.findIndex(function (a) { return a.id === agendamento.id; });
                 if (idx !== -1) aulasRef.splice(idx, 1);
-            } else if (operacao === 'atualizar' && snapshotAnterior) {
+            } else if (operacao === 'atualizar' && _snapshotDeepClone) {
                 const idx = aulasRef.findIndex(function (a) { return a.id === agendamento.id; });
-                if (idx !== -1) aulasRef[idx] = snapshotAnterior;
-            } else if (operacao === 'excluir' && snapshotAnterior) {
+                if (idx !== -1) aulasRef[idx] = _snapshotDeepClone;
+            } else if (operacao === 'excluir' && _snapshotDeepClone) {
                 // Restaura o evento removido caso o MongoDB tenha falhado
-                aulasRef.push(snapshotAnterior);
+                aulasRef.push(_snapshotDeepClone);
             }
             if (typeof salvarNoLocalStorage === 'function') salvarNoLocalStorage();
+
+            // Re-render to display the reverted (original) state.
+            if (typeof window.invalidarChaveRenderAgenda === 'function') window.invalidarChaveRenderAgenda();
+            if (typeof window.atualizarDashboardStats === 'function') window.atualizarDashboardStats();
+            if (typeof window.renderizarHomeSemana === 'function') window.renderizarHomeSemana();
+            if (typeof window.renderizarListaReposicoes === 'function') window.renderizarListaReposicoes();
+            if (typeof window.renderizarModoCalendarioAtivo === 'function') window.renderizarModoCalendarioAtivo();
 
             if (typeof ocultarOverlaySinc === 'function') ocultarOverlaySinc('error');
             return; // Abort — GCal nunca é chamado, estado limpo
@@ -1088,7 +1108,7 @@
                 const idx = aulasRef.findIndex(function (a) { return a.id === agendamento.id; });
                 if (idx !== -1) aulasRef[idx].googleCalendarEventId = gcalEventId;
 
-                // Persiste no backend de forma assíncrona (sem bloquear o overlay)
+                // Persiste no backend de forma assíncrona (sem bloquear)
                 _backendFetchApp(API_BASE_URL + '/agendamentos/' + encodeURIComponent(agendamento.id), {
                     method:  'PATCH',
                     headers: { 'Content-Type': 'application/json' },
@@ -1098,6 +1118,7 @@
                 });
             }
 
+            // Dismisses any slow-connection overlay that may have appeared during salvarDados.
             if (typeof ocultarOverlaySinc === 'function') ocultarOverlaySinc('success');
 
         } catch (gcalErr) {
@@ -1242,15 +1263,19 @@
     }
 
     function _renderizarPosSyncGlobal() {
-        if (typeof window.renderizarHomeSemana === 'function') {
-            window.renderizarHomeSemana();
-        }
-        if (typeof window.atualizarDashboardStats === 'function') {
-            window.atualizarDashboardStats();
-        }
-        if (typeof window.renderizarModoCalendarioAtivo === 'function') {
-            window.renderizarModoCalendarioAtivo();
-        }
+        // Batch all post-sync renders into one browser paint cycle.
+        var _rAF = typeof requestAnimationFrame === 'function' ? requestAnimationFrame : function (fn) { fn(); };
+        _rAF(function () {
+            if (typeof window.renderizarHomeSemana === 'function') {
+                window.renderizarHomeSemana();
+            }
+            if (typeof window.atualizarDashboardStats === 'function') {
+                window.atualizarDashboardStats();
+            }
+            if (typeof window.renderizarModoCalendarioAtivo === 'function') {
+                window.renderizarModoCalendarioAtivo();
+            }
+        });
     }
 
     function _tentarSincronizacaoSilenciosaToken() {

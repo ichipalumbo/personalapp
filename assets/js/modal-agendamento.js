@@ -866,10 +866,8 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modalAgendamento').style.display = 'none';
 
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                // MongoDB primeiro, GCal segundo — overlay bloqueia até ambos resolverem
-                window.salvarEventoComGCal(resultado.payload, { operacao: 'criar' }).then(() => {
-                    window.inicializarHome();
-                });
+                // Optimistic UI in salvarEventoComGCal renders the new event immediately.
+                window.salvarEventoComGCal(resultado.payload, { operacao: 'criar' });
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
                 window.inicializarHome();

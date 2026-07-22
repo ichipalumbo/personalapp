@@ -430,7 +430,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' }).then(() => window.inicializarHome());
+                // Optimistic UI in salvarEventoComGCal renders immediately — no inicializarHome needed.
+                window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' });
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
                 window.inicializarHome();
@@ -665,16 +666,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (_novaOcorrenciaSerie) {
                     // occurrence: depois de adicionar EXDATE na série, cria o evento avulso com novo horário
                     _gcalSeriePromise
-                        .then(() => window.salvarEventoComGCal(_novaOcorrenciaSerie, { operacao: 'criar' }))
-                        .then(() => window.inicializarHome());
+                        .then(() => window.salvarEventoComGCal(_novaOcorrenciaSerie, { operacao: 'criar' }));
                 } else if (_novaSerieSplit) {
                     // fromDate: termina série original com UNTIL, depois cria nova série a partir da data clicada
                     _gcalSeriePromise
-                        .then(() => window.salvarEventoComGCal(_novaSerieSplit, { operacao: 'criar' }))
-                        .then(() => window.inicializarHome());
-                } else {
-                    _gcalSeriePromise.then(() => window.inicializarHome());
+                        .then(() => window.salvarEventoComGCal(_novaSerieSplit, { operacao: 'criar' }));
                 }
+                // Optimistic UI in salvarEventoComGCal already rendered the result — no inicializarHome needed.
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
                 window.inicializarHome();
@@ -795,7 +793,11 @@ document.addEventListener('DOMContentLoaded', () => {
             };
 
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshot }).then(_posReagendar);
+                // Optimistic UI already rendered — show only the toast, skip inicializarHome.
+                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshot })
+                    .then(function () {
+                        if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
+                    });
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
                 _posReagendar();
