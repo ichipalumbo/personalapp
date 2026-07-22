@@ -82,7 +82,7 @@
         const dias = agendamento.diasSemana;
         if (!Array.isArray(dias) || dias.length === 0) return null;
 
-        const byday = dias.map(d => _DIA_PARA_RRULE[d]).filter(Boolean).join(',');
+        const byday = dias.map(function(d) { return _DIA_PARA_RRULE[d]; }).filter(Boolean).join(',');
         if (!byday) return null;
 
         const intervalo = Number(agendamento.intervaloRecorrencia) || 1;
@@ -92,9 +92,17 @@
 
         const fim = agendamento.recorrenciaFimCondicao;
         if (fim === 'untilDate' && agendamento.recorrenciaDataFim) {
-            const isoUntil = (typeof converterPtBrParaISO === 'function')
-                ? converterPtBrParaISO(agendamento.recorrenciaDataFim) : null;
-            if (isoUntil) rrule += ';UNTIL=' + isoUntil.replace(/-/g, '') + 'T235959Z';
+            const isoUntil = typeof window.converterPtBrParaISO === 'function'
+                ? window.converterPtBrParaISO(agendamento.recorrenciaDataFim) : null;
+            if (isoUntil) {
+                // UNTIL deve ser UTC. Para cobrir o dia inteiro no Brasil (UTC-3),
+                // usamos o dia seguinte às 02:59:59 UTC = 23:59:59 BRT (horário local).
+                // Isso garante que aulas de qualquer horário no último dia sejam incluídas.
+                const dtDiaSeguinte = new Date(isoUntil + 'T00:00:00Z');
+                dtDiaSeguinte.setUTCDate(dtDiaSeguinte.getUTCDate() + 1);
+                const untilBase = dtDiaSeguinte.toISOString().replace(/[-:]/g, '').slice(0, 8);
+                rrule += ';UNTIL=' + untilBase + 'T025959Z';
+            }
         } else if (fim === 'occurrences' && agendamento.recorrenciaQuantidadeOcorrencias) {
             rrule += ';COUNT=' + agendamento.recorrenciaQuantidadeOcorrencias;
         }
@@ -407,7 +415,7 @@
                 const excecoes = Array.isArray(agendamento.excecoes) ? agendamento.excecoes : [];
                 const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
                 excecoes.forEach(function(dataPtBr) {
-                    const isoExc = (typeof converterPtBrParaISO === 'function') ? converterPtBrParaISO(dataPtBr) : null;
+                    const isoExc = typeof window.converterPtBrParaISO === 'function' ? window.converterPtBrParaISO(dataPtBr) : null;
                     if (!isoExc) return;
                     if (agendamento.fullDay) {
                         recurrence.push('EXDATE;VALUE=DATE:' + isoExc.replace(/-/g, ''));
