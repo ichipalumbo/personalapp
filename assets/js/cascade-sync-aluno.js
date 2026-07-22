@@ -54,13 +54,33 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
     }
 
     try {
-        // 1. Encontra agendamentos futuros deste aluno
-        const hoje = new Date().toISOString().slice(0, 10);
+        // 1. Encontra agendamentos deste aluno que precisam ser atualizados.
+        //
+        // Regras de inclusão:
+        //   - Séries recorrentes (frequencia === 'semanal'): sempre incluídas — o documento
+        //     representa a série inteira (passado + futuro). O GCal recebe um único evento
+        //     recorrente, então deve ser atualizado independente da data do campo `data`.
+        //   - Eventos pontuais (frequencia === 'uma_vez'): incluídos apenas se a data for
+        //     hoje ou futura. `aula.data` está em PT-BR (dd/mm/yyyy), então convertemos
+        //     para ISO antes de comparar com a data de hoje.
+        //
+        // Bloqueios sem alunoId já são excluídos pelo primeiro predicado (alunoId ===).
+        // Eventos externos (source === 'google_external') são filtrados em _persistirAgendamentosNoBackend.
+        const hojeIso = new Date().toISOString().slice(0, 10);
+
+        function _dataAulaEhFutura(aula) {
+            if (aula.frequencia === 'semanal') return true;
+            if (!aula.data) return false;
+            const iso = typeof window.converterPtBrParaISO === 'function'
+                ? window.converterPtBrParaISO(aula.data)
+                : null;
+            return iso ? iso >= hojeIso : false;
+        }
+
         const agendamentosFuturos = (window.aulas || []).filter(function (aula) {
-            return aula.alunoId === alunoId 
-                && aula.data 
-                && aula.data >= hoje
-                && aula.tipo === 'aula'; // Só atualiza aulas, não bloqueios
+            return aula.alunoId === alunoId
+                && aula.tipo !== 'bloqueio'
+                && _dataAulaEhFutura(aula);
         });
 
         if (agendamentosFuturos.length === 0) {
@@ -68,7 +88,9 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
             return;
         }
 
-        console.log('[cascade] Encontrados ' + agendamentosFuturos.length + ' agendamento(s) futuro(s) para atualizar.');
+        const series = agendamentosFuturos.filter(function (a) { return a.frequencia === 'semanal'; }).length;
+        const pontuais = agendamentosFuturos.length - series;
+        console.log('[cascade] Encontrados ' + agendamentosFuturos.length + ' agendamento(s) para atualizar (' + series + ' série(s), ' + pontuais + ' pontual(is)).');
 
         // 2. Atualiza cada agendamento localmente com os novos dados
         agendamentosFuturos.forEach(function (aula) {
