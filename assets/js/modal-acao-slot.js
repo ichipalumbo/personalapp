@@ -601,7 +601,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDeletar) {
         btnDeletar.addEventListener('click', async () => {
             const _compDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
-            aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
+            const _idxDeletar = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+            if (_idxDeletar !== -1) aulas.splice(_idxDeletar, 1);
             window.fecharModalAcaoSlot();
             if (_compDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 window.salvarEventoComGCal(_compDeletar, { operacao: 'excluir', snapshotAnterior: _compDeletar }).then(async () => {
@@ -630,7 +631,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataCancelamento: compromisso.data || new Date().toLocaleDateString('pt-BR')
             });
             
-            aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
+            const _idxReposicao = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+            if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
             window.fecharModalAcaoSlot();
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 window.salvarEventoComGCal(compromisso, { operacao: 'excluir', snapshotAnterior: compromisso }).then(() => window.inicializarHome());
@@ -711,7 +713,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDeletarSerie) {
         btnDeletarSerie.addEventListener('click', async () => {
             const _serieDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
-            aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
+            const _idxSerie = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+            if (_idxSerie !== -1) aulas.splice(_idxSerie, 1);
             window.fecharModalAcaoSlot();
             if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(async () => {

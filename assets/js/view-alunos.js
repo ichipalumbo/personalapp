@@ -229,7 +229,8 @@ window.prepararEdicaoAluno = function(id) {
 window.deletarAlunoSPA = function(id) {
     if (confirm("Tem certeza que deseja remover este aluno? Suas aulas futuras não serão mais associadas a ele.")) {
         if (typeof alunos !== 'undefined') {
-            alunos = alunos.filter(a => a.id !== id);
+            const _idxDeletar = alunos.findIndex(a => a.id === id);
+            if (_idxDeletar !== -1) alunos.splice(_idxDeletar, 1);
             if (typeof salvarDados === 'function') salvarDados();
             window.renderizarListaAlunos();
             if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats();
