@@ -15,6 +15,7 @@ let _primeiraRequisicao = true;
 let _cacheInicializado = false;
 let _cachePossuiDados = false;
 let _syncBancoEmAndamento = false;
+let _renderDebounceTimer = null;
 
 async function fetchComTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
     const controller = new AbortController();
@@ -808,13 +809,19 @@ function salvarNoLocalStorage() {
 }
 
 function forçarRenderizacaoInterface() {
-    if (typeof renderizarTudo === 'function') {
-        renderizarTudo();
-    } else if (typeof atualizarInterface === 'function') {
-        atualizarInterface();
-    } else if (typeof renderizarAgenda === 'function') {
-        renderizarAgenda();
-    }
+    // Skip if the home view is already managing its own loading state.
+    if (window.__homeCarregando === true) return;
+    // Debounce: collapse multiple synchronous calls within the same tick into a single render.
+    clearTimeout(_renderDebounceTimer);
+    _renderDebounceTimer = setTimeout(function () {
+        if (typeof renderizarTudo === 'function') {
+            renderizarTudo();
+        } else if (typeof atualizarInterface === 'function') {
+            atualizarInterface();
+        } else if (typeof renderizarAgenda === 'function') {
+            renderizarAgenda();
+        }
+    }, 0);
 }
 
 window.apiFetchBackend = apiFetchBackend;

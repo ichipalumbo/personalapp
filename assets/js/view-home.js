@@ -20,6 +20,10 @@ window.__sincronizacaoInicialConcluida =
   window.__sincronizacaoInicialConcluida || false;
 window.__homeCarregando = window.__homeCarregando || false;
 
+// Dirty-check key for renderizarAgendaDia.
+// Set to null by window.invalidarChaveRenderAgenda() to force a re-render on next call.
+let _ultimaChaveRenderAgenda = null;
+
 const DIAS_DA_SEMANA = [
   "Domingo",
   "Segunda-feira",
@@ -43,7 +47,10 @@ window.renderizarLoadingHome = function () {
   }
   if (elAulasHoje) elAulasHoje.textContent = "...";
   if (elAulasRepor) elAulasRepor.textContent = "...";
-  if (grid) {
+  // Only replace with skeleton if the weekly grid is genuinely empty (no rendered content yet).
+  // Skipping when content already exists prevents wiping a valid render, which would cause a
+  // visible flicker before the real data renders.
+  if (grid && grid.children.length === 0) {
     grid.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 12px; opacity: 0.55; pointer-events: none;">
                 <div style="height: 112px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid #2a2a2a;"></div>
@@ -56,39 +63,35 @@ window.renderizarLoadingHome = function () {
 
 // ── Inicialização da Home ─────────────────────────────────────────────────────────────────────
 
-window.inicializarHome = async function (opcoes = {}) {
-  const deveSincronizar =
-    opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
+// ── Internal helpers for inicializarHome ─────────────────────────────────────────────────────
 
-  if (!agendaConfig) agendaConfig = { horaInicio: 7, horaFim: 21 };
-  if (!aulasParaRepor) aulasParaRepor = [];
+async function _sincronizarDadosHome(opcoes) {
+  const deveMostrarLoading =
+    opcoes.sincronizar === true ||
+    typeof window.temDadosLocaisNoCache !== "function" ||
+    !window.temDadosLocaisNoCache();
 
-  if (deveSincronizar) {
-    const deveMostrarLoading =
-      opcoes.sincronizar === true ||
-      typeof window.temDadosLocaisNoCache !== "function" ||
-      !window.temDadosLocaisNoCache();
-
-    if (deveMostrarLoading) {
-      window.__homeCarregando = true;
-      window.renderizarLoadingHome();
-    }
-
-    try {
-      if (typeof carregarDados === "function") {
-        await carregarDados({
-          forcarRender: false,
-          forcarRemoto: opcoes.sincronizar === true,
-        });
-      }
-      window.__sincronizacaoInicialConcluida = true;
-    } finally {
-      if (deveMostrarLoading) {
-        window.__homeCarregando = false;
-      }
-    }
+  if (deveMostrarLoading) {
+    window.__homeCarregando = true;
+    window.renderizarLoadingHome();
   }
 
+  try {
+    if (typeof carregarDados === "function") {
+      await carregarDados({
+        forcarRender: false,
+        forcarRemoto: opcoes.sincronizar === true,
+      });
+    }
+    window.__sincronizacaoInicialConcluida = true;
+  } finally {
+    if (deveMostrarLoading) {
+      window.__homeCarregando = false;
+    }
+  }
+}
+
+function _renderizarHome(opcoes) {
   window.atualizarDashboardStats();
   if (typeof window.renderizarHomeSemana === "function") {
     window.renderizarHomeSemana();
@@ -102,6 +105,23 @@ window.inicializarHome = async function (opcoes = {}) {
   ) {
     window.renderizarModoCalendarioAtivo();
   }
+}
+
+window.inicializarHome = async function (opcoes = {}) {
+  if (!agendaConfig) agendaConfig = { horaInicio: 7, horaFim: 21 };
+  if (!aulasParaRepor) aulasParaRepor = [];
+
+  // Sync only when explicitly requested (sincronizar: true) or on first load.
+  // Navigation buttons call inicializarHome() with no args — once __sincronizacaoInicialConcluida
+  // is true they skip this block entirely and go straight to the render path.
+  const deveSincronizar =
+    opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
+
+  if (deveSincronizar) {
+    await _sincronizarDadosHome(opcoes);
+  }
+
+  _renderizarHome(opcoes);
 };
 
 // ── Dashboard Stats ───────────────────────────────────────────────────────────────────────────
@@ -378,6 +398,27 @@ window.renderizarAgendaDia = function () {
         </div>
     `;
 
+  // Dirty-check: skip DOM update if date, grid config, and event data are all unchanged.
+  // Uses JSON.stringify for a full deep comparison — any field change (time, title, status, etc.)
+  // will produce a different key and trigger a re-render.
+  // Defensive fallback: if JSON.stringify throws for any reason, novaChave is null
+  // and the render always runs unconditionally.
+  const _novaChaveAgenda = (function () {
+    try {
+      return (
+        window.dataSelecionada.toDateString() +
+        "|" +
+        (agendaConfig ? agendaConfig.horaInicio + "-" + agendaConfig.horaFim : "") +
+        "|" +
+        JSON.stringify(compromissosDoDia)
+      );
+    } catch (_) {
+      return null;
+    }
+  })();
+  if (_novaChaveAgenda !== null && _novaChaveAgenda === _ultimaChaveRenderAgenda) return;
+  _ultimaChaveRenderAgenda = _novaChaveAgenda;
+
   grid.innerHTML = wrapperHtml;
 
   // Scroll inteligente para o horário atual
@@ -392,6 +433,12 @@ window.renderizarAgendaDia = function () {
       }
     }
   }
+};
+
+// Exposed so other modules can force a re-render on the next renderizarAgendaDia call,
+// for example after Optimistic UI mutations or calendar config changes.
+window.invalidarChaveRenderAgenda = function () {
+  _ultimaChaveRenderAgenda = null;
 };
 
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
