@@ -289,17 +289,16 @@
             evento.location = localizacao;
         }
 
-        // [TAG-GCAL-COR-TIPO] Mapeamento tipo → colorId do Google Calendar:
-        //   aula normal  → '3' Tangerine (#F4511E)
-        //   reposição    → '7' Peacock   (#039BE5)
-        //   demais tipos → sem colorId (cor padrão do calendário)
+        // [TAG-GCAL-COR-TIPO] Cor RGB via colorRgbFormat=true (requer ?colorRgbFormat=true na URL):
+        //   aula normal  → Tangerine #F4511E
+        //   reposição    → Manga     #F09300
+        //   demais tipos → sem campo color (cor padrão do calendário)
         const tipoNorm = (agendamento.tipo || '').trim().toLowerCase();
         if (tipoNorm === 'aula') {
-            if (agendamento.reagendada || agendamento.isReposicao) {
-                evento.colorId = '7'; // Peacock — reposição
-            } else {
-                evento.colorId = '3'; // Tangerine — aula normal
-            }
+            const bgHex = (agendamento.reagendada || agendamento.isReposicao)
+                ? '#f09300'  // Manga — reposição
+                : '#f4511e'; // Tangerine — aula normal
+            evento.color = { background: bgHex, foreground: '#ffffff' };
         }
 
         if (agendamento.fullDay) {
@@ -573,8 +572,8 @@
          * @returns {string} ID do evento criado no GCal
          */
         async createEvent(agendamento) {
-            const body    = _agendamentoParaGCalEvent(agendamento);
-            const criado  = await _calendarFetch('/calendars/primary/events', {
+            const body   = _agendamentoParaGCalEvent(agendamento);
+            const criado = await _calendarFetch('/calendars/primary/events?colorRgbFormat=true', {
                 method: 'POST',
                 body:   JSON.stringify(body)
             });
@@ -590,7 +589,7 @@
         async updateEvent(gcalId, agendamento) {
             const body       = _agendamentoParaGCalEvent(agendamento);
             const atualizado = await _calendarFetch(
-                '/calendars/primary/events/' + encodeURIComponent(gcalId),
+                '/calendars/primary/events/' + encodeURIComponent(gcalId) + '?colorRgbFormat=true',
                 { method: 'PUT', body: JSON.stringify(body) }
             );
             return atualizado.id;

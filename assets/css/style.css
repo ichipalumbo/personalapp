@@ -1415,9 +1415,9 @@ body {
   flex-shrink: 0;
 }
 .badge-tag-tipo--reposicao {
-  background: rgba(3, 155, 229, 0.12);
-  border: 1px dashed rgba(3, 155, 229, 0.75);
-  color: #039BE5;
+  background: rgba(240, 147, 0, 0.12);
+  border: 1px dashed rgba(240, 147, 0, 0.75);
+  color: #f09300;
   padding: 2px 7px;
 }
 
@@ -2169,8 +2169,8 @@ body {
   background: rgba(179, 157, 219, 0.12);
 }
 .modal-escolha-icone-reposicao {
-  color: #039BE5;
-  background: rgba(3, 155, 229, 0.1);
+  color: #f09300;
+  background: rgba(240, 147, 0, 0.1);
 }
 .modal-escolha-texto strong {
   display: block;
