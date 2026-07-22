@@ -450,6 +450,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const _snapshotEdicao = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
             // Captura nova ocorrência avulsa criada no escopo 'occurrence' para GCal sync duplo
             let _novaOcorrenciaSerie = null;
+            // Captura nova série criada no escopo 'fromDate' para GCal sync duplo
+            let _novaSerieSplit = null;
 
             const tipo = compromisso.tipo || 'aula';
             const diaInteiro = tipo === 'bloqueio' && document.getElementById('editBloqueioDiaInteiro')?.checked;
@@ -521,7 +523,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                     aulas.push(novoCompromisso);
                     _novaOcorrenciaSerie = novoCompromisso;
-                } else {
+                } else if (escopoRecorrencia === 'entireSeries') {
                     const datas = window.getDatasConflitoRecorrencia(candidato, 20);
                     const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, { ignorarIds: [compromisso.id] });
                     if (conflitos.length > 0) {
@@ -530,6 +532,93 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
+                    compromisso.horarioInicio = hInicio;
+                    compromisso.horarioFim = hFim;
+                    compromisso.fullDay = diaInteiro;
+                    compromisso.recorrenciaEscopo = escopoRecorrencia;
+                    // Não altera recorrenciaDataInicio — GCal deve manter o DTSTART original
+
+                    // Atualiza diasSemana se o dia da semana foi alterado
+                    const _selDiaEs = document.getElementById('editDiaSemana').value;
+                    const _isoAlvoEs = window.converterPtBrParaISO(dataAlvoStr);
+                    const _idxAlvoEs = _isoAlvoEs ? new Date(_isoAlvoEs + 'T12:00:00').getDay() : -1;
+                    const _nomesDiasEs = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _diaClicadoEs = _idxAlvoEs >= 0 ? _nomesDiasEs[_idxAlvoEs] : compromisso.dia;
+                    if (_diaClicadoEs && _selDiaEs && _diaClicadoEs !== _selDiaEs && Array.isArray(compromisso.diasSemana)) {
+                        compromisso.diasSemana = compromisso.diasSemana.map(d => d === _diaClicadoEs ? _selDiaEs : d);
+                    }
+                } else if (escopoRecorrencia === 'fromDate') {
+                    // Calcula o dia anterior à data clicada para UNTIL da série original
+                    const _isoAlvoFd = window.converterPtBrParaISO(dataAlvoStr);
+                    const _dtAlvoFd = new Date(_isoAlvoFd + 'T12:00:00');
+                    _dtAlvoFd.setDate(_dtAlvoFd.getDate() - 1);
+                    const _isoAnteriorFd = _dtAlvoFd.getFullYear() + '-'
+                        + String(_dtAlvoFd.getMonth() + 1).padStart(2, '0') + '-'
+                        + String(_dtAlvoFd.getDate()).padStart(2, '0');
+                    const _ptBrAnteriorFd = _isoAnteriorFd.split('-').reverse().join('/');
+
+                    // Determina o dia clicado e o novo dia selecionado pelo usuário
+                    const _selDiaFd = document.getElementById('editDiaSemana').value;
+                    const _idxAlvoFd = _isoAlvoFd ? new Date(_isoAlvoFd + 'T12:00:00').getDay() : -1;
+                    const _nomesDiasFd = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _diaClicadoFd = _idxAlvoFd >= 0 ? _nomesDiasFd[_idxAlvoFd] : compromisso.dia;
+                    const _diasSemanaNova = Array.isArray(compromisso.diasSemana)
+                        ? compromisso.diasSemana.map(d => (_diaClicadoFd && d === _diaClicadoFd) ? _selDiaFd : d)
+                        : compromisso.diasSemana;
+
+                    // Verifica conflitos para a nova série
+                    const _candidatoFd = window.getCompromissoSerializadoParaConflito(Object.assign({}, compromisso, {
+                        data: dataAlvoStr,
+                        recorrenciaDataInicio: dataAlvoStr,
+                        diasSemana: _diasSemanaNova,
+                        dia: _selDiaFd,
+                        horarioInicio: hInicio,
+                        horarioFim: hFim
+                    }), dataAlvoStr);
+                    const _datasFd = window.getDatasConflitoRecorrencia(_candidatoFd, 20);
+                    const _conflitosFd = window.getConflitosRecorrenciaEmDatas(_candidatoFd, _datasFd, { ignorarIds: [compromisso.id] });
+                    if (_conflitosFd.length > 0) {
+                        const _resumoFd = window.gerarResumoConflitosDatas(_conflitosFd, 5);
+                        alert(`Não foi possível salvar. Existem conflitos em: ${_resumoFd}.`);
+                        return;
+                    }
+
+                    // Encerra a série original um dia antes da data clicada
+                    compromisso.recorrenciaFimCondicao = 'untilDate';
+                    compromisso.recorrenciaDataFim = _ptBrAnteriorFd;
+                    // Não altera horário nem diasSemana da série original — as mudanças ficam na nova série
+
+                    // Cria nova série a partir da data clicada
+                    const _novoIdFd = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                    const _novaSerieFd = Object.assign({}, compromisso, {
+                        id: _novoIdFd,
+                        data: dataAlvoStr,
+                        recorrenciaDataInicio: dataAlvoStr,
+                        horarioInicio: hInicio,
+                        horarioFim: hFim,
+                        fullDay: diaInteiro,
+                        dia: _selDiaFd,
+                        diasSemana: _diasSemanaNova,
+                        googleCalendarEventId: null,
+                        excecoes: [],
+                        excecoesDetalhadas: [],
+                        serieOrigemId: compromisso.id,
+                        recorrenciaEscopo: 'fromDate'
+                    });
+                    // Nova série não tem prazo de término — remove campos de encerramento herdados
+                    delete _novaSerieFd.recorrenciaFimCondicao;
+                    delete _novaSerieFd.recorrenciaDataFim;
+                    aulas.push(_novaSerieFd);
+                    _novaSerieSplit = _novaSerieFd;
+                } else {
+                    // monthOfDate e outros escopos futuros
+                    const datas = window.getDatasConflitoRecorrencia(candidato, 20);
+                    const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, { ignorarIds: [compromisso.id] });
+                    if (conflitos.length > 0) {
+                        const resumo = window.gerarResumoConflitosDatas(conflitos, 5);
+                        alert(`Não foi possível salvar. Existem conflitos em: ${resumo}.`);
+                        return;
+                    }
                     compromisso.horarioInicio = hInicio;
                     compromisso.horarioFim = hFim;
                     compromisso.fullDay = diaInteiro;
@@ -554,7 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 compromisso.fullDay = diaInteiro;
             }
 
-            if (freq === 'semanal' && escopoRecorrencia !== 'occurrence') {
+            if (freq === 'semanal' && escopoRecorrencia !== 'occurrence' && escopoRecorrencia !== 'fromDate') {
                 compromisso.dia = document.getElementById('editDiaSemana').value;
                 delete compromisso.data;
             }
@@ -577,6 +666,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     // occurrence: depois de adicionar EXDATE na série, cria o evento avulso com novo horário
                     _gcalSeriePromise
                         .then(() => window.salvarEventoComGCal(_novaOcorrenciaSerie, { operacao: 'criar' }))
+                        .then(() => window.inicializarHome());
+                } else if (_novaSerieSplit) {
+                    // fromDate: termina série original com UNTIL, depois cria nova série a partir da data clicada
+                    _gcalSeriePromise
+                        .then(() => window.salvarEventoComGCal(_novaSerieSplit, { operacao: 'criar' }))
                         .then(() => window.inicializarHome());
                 } else {
                     _gcalSeriePromise.then(() => window.inicializarHome());
@@ -714,6 +808,17 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDeletarSerie.addEventListener('click', async () => {
             const _serieDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
             const _idxSerie = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+
+            if (_serieDeletar && _serieDeletar.serieOrigemId) {
+                const _continuar = confirm(
+                    'Esta série é uma continuação de uma série histórica anterior.\n\n' +
+                    'Ao excluí-la, a série original (períodos anteriores) continuará existindo separadamente no app. ' +
+                    'Caso queira removê-la também, exclua manualmente a série marcada como "Recorrente".\n\n' +
+                    'Deseja excluir esta série de continuação?'
+                );
+                if (!_continuar) return;
+            }
+
             if (_idxSerie !== -1) aulas.splice(_idxSerie, 1);
             window.fecharModalAcaoSlot();
             if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {

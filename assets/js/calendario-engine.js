@@ -115,6 +115,16 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
             }
         }
 
+        if (comp.recorrenciaFimCondicao === 'untilDate' && comp.recorrenciaDataFim) {
+            const _fimISO = typeof window.converterPtBrParaISO === 'function'
+                ? window.converterPtBrParaISO(comp.recorrenciaDataFim) : null;
+            if (_fimISO) {
+                const _fimData = new Date(_fimISO + 'T12:00:00');
+                const _fimPura = new Date(_fimData.getFullYear(), _fimData.getMonth(), _fimData.getDate());
+                if (dataAlvoPura > _fimPura) return false;
+            }
+        }
+
         if (comp.tipoRecorrencia) {
             return window.resolverCompromissoRecorrenteNaData(comp, dataAlvoPura, diaTexto);
         }
