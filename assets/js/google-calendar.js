@@ -592,6 +592,50 @@
         return { criados, atualizados, excluidos };
     }
 
+    /**
+     * [TAG-GCAL-DELTA-CRUD] Persiste um delta incremental de bloqueios externos.
+     * Chamado quando o fetch foi feito via syncToken — o payload só contém eventos
+     * alterados desde o último sync, não o conjunto completo.
+     * Ao contrário de _sincronizarBloqueiosExternosViaCRUD, não faz GET remoto:
+     * apenas PUT nos eventos ativos/atualizados e DELETE nos cancelados.
+     */
+    async function _sincronizarBloqueiosExternosDelta(payloadAtivos, cancelledExternos, signal) {
+        let atualizados = 0;
+        let excluidos   = 0;
+
+        for (const bloqueio of payloadAtivos) {
+            if (!bloqueio || !bloqueio.googleCalendarEventId) continue;
+            const res = await _backendFetchApp(
+                API_BASE_URL + '/bloqueios-externos/' + encodeURIComponent(bloqueio.googleCalendarEventId),
+                {
+                    method:  'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ ...bloqueio, googleCalendarEventId: bloqueio.googleCalendarEventId }),
+                    signal
+                }
+            );
+            if (!res.ok) {
+                const detalhe = await res.text().catch(() => '');
+                throw new Error('[gcal] Backend retornou ' + res.status + ' ao upsert bloqueio externo. ' + detalhe);
+            }
+            atualizados += 1;
+        }
+
+        for (const event of cancelledExternos) {
+            if (!event || !event.id) continue;
+            const res = await _backendFetchApp(
+                API_BASE_URL + '/bloqueios-externos/' + encodeURIComponent(event.id),
+                { method: 'DELETE', signal }
+            );
+            if (!res.ok && res.status !== 404) {
+                throw new Error('[gcal] Backend retornou ' + res.status + ' ao excluir bloqueio externo cancelado.');
+            }
+            excluidos += 1;
+        }
+
+        return { criados: 0, atualizados, excluidos };
+    }
+
     // ── ISO Week identifier ──────────────────────────────────────────────────────
     // Converte uma data (segunda-feira) para "YYYY-Www" segundo ISO 8601
 
@@ -734,6 +778,125 @@
     // ── Sincronização de bloqueios externos ──────────────────────────────────────
     // Busca eventos externos no GCal, persiste no backend e injeta em window.aulas.
 
+    // ── syncToken: fetch incremental do Google Calendar ──────────────────────────
+    // Persiste o nextSyncToken no localStorage para que a próxima sincronização
+    // busque apenas os eventos alterados desde o último sync (delta), reduzindo
+    // drasticamente o payload de rede. Em caso de expiração (HTTP 410), apaga o
+    // token e volta ao fetch completo por timeMin/timeMax automaticamente.
+
+    const SYNC_TOKEN_KEY = 'gcal_sync_token';
+
+    function _getSyncToken() {
+        try { return localStorage.getItem(SYNC_TOKEN_KEY) || null; } catch (e) { return null; }
+    }
+    function _saveSyncToken(token) {
+        try { localStorage.setItem(SYNC_TOKEN_KEY, token); } catch (e) {}
+    }
+    function _clearSyncToken() {
+        try { localStorage.removeItem(SYNC_TOKEN_KEY); } catch (e) {}
+    }
+
+    /**
+     * Pagina um endpoint de eventos do GCal a partir de uma URL já construída.
+     * Separa eventos activos dos cancelados e persiste o nextSyncToken da última página.
+     * @param {string} primeiroUrl - URL completa da primeira página
+     * @returns {{ activeItems: Array, cancelledItems: Array }}
+     */
+    async function _paginacaoEventos(primeiroUrl) {
+        const activeItems    = [];
+        const cancelledItems = [];
+        let   pageUrl        = primeiroUrl;
+
+        while (pageUrl) {
+            const data  = await _calendarFetch(pageUrl);
+            const items = (data && Array.isArray(data.items)) ? data.items : [];
+
+            for (const event of items) {
+                if (event.status === 'cancelled') {
+                    cancelledItems.push(event);
+                } else {
+                    activeItems.push(event);
+                }
+            }
+
+            if (data && data.nextPageToken) {
+                const next = new URL(pageUrl.startsWith('http') ? pageUrl : GCAL_BASE + pageUrl);
+                next.searchParams.set('pageToken', data.nextPageToken);
+                pageUrl = next.toString();
+            } else {
+                if (data && data.nextSyncToken) {
+                    _saveSyncToken(data.nextSyncToken);
+                    console.info('[gcal] nextSyncToken salvo para fetch incremental futuro.');
+                }
+                pageUrl = null;
+            }
+        }
+
+        return { activeItems, cancelledItems };
+    }
+
+    /**
+     * Fetch completo via timeMin/timeMax (sem syncToken).
+     * @returns {{ items: Array, cancelledItems: Array, isDelta: false }}
+     */
+    async function _fetchComRangeCompleto(timeMin, timeMax) {
+        const params = new URLSearchParams({
+            singleEvents: 'true',
+            orderBy:      'startTime',
+            timeMin:      timeMin + 'T00:00:00Z',
+            timeMax:      timeMax + 'T23:59:59Z',
+            maxResults:   '250'
+        });
+        const url = GCAL_BASE + '/calendars/primary/events?' + params.toString();
+        const { activeItems, cancelledItems } = await _paginacaoEventos(url);
+        return { items: activeItems, cancelledItems, isDelta: false };
+    }
+
+    /**
+     * Fetch incremental via syncToken armazenado.
+     * Nota: a API GCal rejeita timeMin/timeMax quando syncToken é fornecido.
+     * @returns {{ items: Array, cancelledItems: Array, isDelta: true }}
+     */
+    async function _fetchComSyncToken(syncToken) {
+        const params = new URLSearchParams({
+            syncToken:    syncToken,
+            singleEvents: 'true',
+            maxResults:   '250'
+        });
+        const url = GCAL_BASE + '/calendars/primary/events?' + params.toString();
+        const { activeItems, cancelledItems } = await _paginacaoEventos(url);
+        return { items: activeItems, cancelledItems, isDelta: true };
+    }
+
+    /**
+     * Ponto de entrada para busca de eventos: usa syncToken se disponível,
+     * fazendo fallback para fetch completo se o token expirou (HTTP 410).
+     * @param {string} timeMin - YYYY-MM-DD (apenas para fetch completo)
+     * @param {string} timeMax - YYYY-MM-DD (apenas para fetch completo)
+     * @returns {{ items: Array, cancelledItems: Array, isDelta: boolean }}
+     */
+    async function _fetchEventsDelta(timeMin, timeMax) {
+        const storedToken = _getSyncToken();
+        if (storedToken) {
+            try {
+                const resultado = await _fetchComSyncToken(storedToken);
+                console.info('[gcal] Fetch incremental (syncToken): ' + resultado.items.length +
+                             ' ativo(s), ' + resultado.cancelledItems.length + ' cancelado(s).');
+                return resultado;
+            } catch (err) {
+                if (err && /\b410\b/.test(err.message)) {
+                    console.info('[gcal] syncToken expirado (HTTP 410) — limpando e fazendo fetch completo.');
+                    _clearSyncToken();
+                } else {
+                    throw err;
+                }
+            }
+        }
+        const resultado = await _fetchComRangeCompleto(timeMin, timeMax);
+        console.info('[gcal] Fetch completo: ' + resultado.items.length + ' evento(s) no período.');
+        return resultado;
+    }
+
     let _sincAbortController = null;
     let _sincDebounceTimer   = null;
     let _sincPendingResolve  = null;
@@ -760,21 +923,28 @@
                 const signal = _sincAbortController.signal;
 
                 try {
-                // 1. Busca todos os eventos no range do GCal
-                const todosEventos = await global.gcal.fetchWeekEvents(timeMin, timeMax);
+                // 1. Busca eventos do GCal (incremental se syncToken disponível, completo se não)
+                const fetchResult = await _fetchEventsDelta(timeMin, timeMax);
                 if (signal.aborted) {
                     resolve({ aborted: true });
                     return;
                 }
 
-                // 2. Filtra apenas os externos (não criados pelo app)
-                const externos = todosEventos.filter(e => !global.gcal.isAppManaged(e));
+                // 2. Separa externos (não criados pelo app) em ativos e cancelados
+                const externos           = fetchResult.items.filter(e => !global.gcal.isAppManaged(e));
+                const cancelledExternos  = fetchResult.cancelledItems.filter(e => !global.gcal.isAppManaged(e));
+                const isDelta            = fetchResult.isDelta;
 
-                // 3. Mapeia para o formato do backend
-                const payload   = externos.map(_gcalEventParaBloqueio);
+                // 3. Mapeia eventos ativos para o formato do backend
+                const payload = externos.map(_gcalEventParaBloqueio);
 
-                // 4. Persiste no backend usando CRUD puro (POST/PUT/DELETE) com diff por googleCalendarEventId
+                // 4. Persiste no backend:
+                //    • Fetch completo → diff CRUD (POST/PUT/DELETE contra lista remota completa)
+                //    • Fetch delta    → upsert ativos + delete cancelados diretamente
                 const resultadoSync = await _executarComFeedbackConexao(async function () {
+                    if (isDelta) {
+                        return _sincronizarBloqueiosExternosDelta(payload, cancelledExternos, signal);
+                    }
                     return _sincronizarBloqueiosExternosViaCRUD(payload, timeMin, timeMax, signal);
                 }, function () {
                     return global.sincronizarBloqueiosExternos(timeMin, timeMax);
@@ -783,37 +953,54 @@
                     resolve({ aborted: true });
                     return;
                 }
-                console.info('[gcal] Bloqueios externos persistidos via CRUD.', resultadoSync);
+                console.info('[gcal] Bloqueios externos persistidos' +
+                    (isDelta ? ' via delta' : ' via CRUD') + '.', resultadoSync);
 
                 // 5. Mescla no window.aulas para que a detecção de conflitos funcione
                 // [TAG-GCAL-MAPEADOR-EXTERNO] Usa mapeamento idêntico a storage.js para consistência
-                const bloqueiosParaMerge = payload.map(function (b) {
+                function _mapearParaAula(b) {
                     return {
-                        id:                   'gcal_ext_' + b.googleCalendarEventId,
-                        tipo:                 'bloqueio',
-                        source:               'google_external',
-                        readonly:             true,
-                        descricao:            b.titulo || 'Evento externo',
+                        id:                    'gcal_ext_' + b.googleCalendarEventId,
+                        tipo:                  'bloqueio',
+                        source:                'google_external',
+                        readonly:              true,
+                        descricao:             b.titulo || 'Evento externo',
                         googleCalendarEventId: b.googleCalendarEventId,
-                        data:                 b.data || '',
-                        horarioInicio:        b.horarioInicio || '00:00',
-                        horarioFim:           b.horarioFim || '23:59',
-                        fullDay:              b.fullDay === true
+                        data:                  b.data || '',
+                        horarioInicio:         b.horarioInicio || '00:00',
+                        horarioFim:            b.horarioFim || '23:59',
+                        fullDay:               b.fullDay === true
                     };
-                });
-
-                const aulasApp = (window.aulas || []).filter(function (a) {
-                    return a.source !== 'google_external';
-                });
-
-                if (typeof atualizarAulas === 'function') {
-                    atualizarAulas(aulasApp.concat(bloqueiosParaMerge));
-                } else {
-                    window.aulas = aulasApp.concat(bloqueiosParaMerge);
                 }
 
-                console.info('[gcal] ' + bloqueiosParaMerge.length +
-                             ' bloqueio(s) externo(s) mesclado(s) para o período ' + timeMin + ' a ' + timeMax + '.');
+                let aulasAtualizadas;
+                if (isDelta) {
+                    // Delta: cirurgia pontual — remove cancelados, faz upsert dos ativos
+                    const cancelledIds = new Set(cancelledExternos.map(e => e.id).filter(Boolean));
+                    const activeIds    = new Set(payload.map(b => b.googleCalendarEventId).filter(Boolean));
+                    aulasAtualizadas = (window.aulas || []).filter(function (a) {
+                        if (a.source !== 'google_external') return true;
+                        if (cancelledIds.has(a.googleCalendarEventId)) return false; // removido
+                        if (activeIds.has(a.googleCalendarEventId))    return false; // será re-inserido
+                        return true;
+                    }).concat(payload.map(_mapearParaAula));
+                } else {
+                    // Fetch completo: substitui todos os externos pelo conjunto atual
+                    const aulasApp = (window.aulas || []).filter(function (a) {
+                        return a.source !== 'google_external';
+                    });
+                    aulasAtualizadas = aulasApp.concat(payload.map(_mapearParaAula));
+                }
+
+                if (typeof atualizarAulas === 'function') {
+                    atualizarAulas(aulasAtualizadas);
+                } else {
+                    window.aulas = aulasAtualizadas;
+                }
+
+                const mesclados = payload.length;
+                console.info('[gcal] ' + mesclados + ' bloqueio(s) externo(s) mesclado(s) ' +
+                    (isDelta ? '(delta)' : '') + ' para o período ' + timeMin + ' a ' + timeMax + '.');
 
                 // Atualiza as duas superfícies de UI que mostram agenda:
                 // semana da Home e calendário (dia/mensal).
@@ -831,7 +1018,7 @@
                 resolve({
                     ok: true,
                     persistencia: resultadoSync,
-                    mesclados: bloqueiosParaMerge.length
+                    mesclados
                 });
 
             } catch (err) {
@@ -876,15 +1063,29 @@
                 const signal = _sincAgenAbortController.signal;
 
                 try {
-                // 1. Busca todos os eventos no range
-                const todosEventos = await global.gcal.fetchWeekEvents(timeMin, timeMax);
+                // 1. Busca eventos do GCal (incremental se syncToken disponível, completo se não)
+                // Nota: _fetchEventsDelta compartilha o token com sincronizarBloqueiosExternos —
+                // ambos correm em Promise.allSettled, então o segundo a terminar receberá
+                // isDelta:false (token já foi salvo/consumido pelo primeiro). Isso é seguro
+                // porque o token é salvo apenas quando a página final é recebida com sucesso.
+                const fetchResult = await _fetchEventsDelta(timeMin, timeMax);
                 if (signal.aborted) {
                     resolve({ aborted: true });
                     return;
                 }
 
                 // 2. Filtra apenas os gerenciados pelo app (appSource = 'personaltrainer')
-                const agendamentosDoApp = todosEventos.filter(function (e) {
+                //    Eventos cancelados são separados — não têm start/end e devem ser ignorados
+                //    (remoção deliberada no GCal não implica exclusão automática no banco do app)
+                const cancelledApp = fetchResult.cancelledItems.filter(function (e) {
+                    return global.gcal.isAppManaged(e);
+                });
+                if (cancelledApp.length > 0) {
+                    console.info('[gcal-bidi] ' + cancelledApp.length +
+                        ' agendamento(s) cancelado(s) no GCal (não processados automaticamente).');
+                }
+
+                const agendamentosDoApp = fetchResult.items.filter(function (e) {
                     return global.gcal.isAppManaged(e);
                 });
 
@@ -1029,6 +1230,7 @@
 
     // Expõe para teste/debug
     global._sincronizarAgendamentosDoGCal = _sincronizarAgendamentosDoGCal;
+    global._gcalClearSyncToken = _clearSyncToken; // força re-sync completo na próxima execução
 
     // ── Salvamento orquestrado: MongoDB primeiro, depois GCal ────────────────────
     // Garante que nenhum dado seja perdido se o Vercel/GCal estiver indisponível.
