@@ -16,6 +16,9 @@
 // Exposto em window para acesso cross-módulo (widget-stepper-duracao usa para edicao)
 window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
 
+// Dirty-check key for renderizarListaReposicoes — null forces a render on the next call.
+let _ultimaChaveRenderReposicoes = null;
+
 // ── Escopo de Edição da Recorrência ───────────────────────────────────────────────────────────
 
 /** @param {string} escopo @returns {string} label curto do escopo */
@@ -337,6 +340,14 @@ window.togglePainelReposicoes = function() {
 window.renderizarListaReposicoes = function() {
     const container = document.getElementById('listaReposicoesPendentes');
     if (!container) return;
+
+    // Dirty-check: skip the DOM write if the list is unchanged.
+    const _chaveAtual = (function () {
+        try { return JSON.stringify(aulasParaRepor); } catch (_) { return null; }
+    })();
+    if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderReposicoes) return;
+    _ultimaChaveRenderReposicoes = _chaveAtual;
+
     if (!aulasParaRepor || aulasParaRepor.length === 0) {
         container.innerHTML = `<p style="font-size: 0.8rem; color: #666; text-align: center; padding: 10px;">Sem reposições pendentes.</p>`;
         return;

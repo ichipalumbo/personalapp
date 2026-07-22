@@ -1,6 +1,12 @@
 // [TAG-VIEW-ALUNOS] view-alunos.js
 // Responsabilidade: View da aba Alunos — listagem com KPIs, formulário de cadastro/edição e exclusão
 // Depende de: state.js, storage.js, utils-kpi.js (calcular*), view-home.js (atualizarDashboardStats — em runtime) - Lógica de Alunos na SPA (Prô Josy)
+
+// Dirty-check key for renderizarListaAlunos — null forces a render on the next call.
+let _ultimaChaveRenderAlunos = null;
+// Exposto para que mutações externas possam forçar um re-render na próxima chamada.
+window.invalidarChaveRenderAlunos = function () { _ultimaChaveRenderAlunos = null; };
+
 function normalizarObjetivoAluno(valorObjetivo) {
     const objetivo = String(valorObjetivo || '').trim();
     return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
@@ -120,6 +126,13 @@ window.renderizarListaAlunos = function() {
     if (!listaContainer) return;
 
     if (typeof alunos !== 'undefined') {
+        // Dirty-check: skip the DOM write if the student list is unchanged.
+        const _chaveAtual = (function () {
+            try { return JSON.stringify(alunos); } catch (_) { return null; }
+        })();
+        if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderAlunos) return;
+        _ultimaChaveRenderAlunos = _chaveAtual;
+
         if (alunos.length === 0) {
             listaContainer.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #666;">

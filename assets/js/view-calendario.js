@@ -6,6 +6,9 @@ window.semanaReferencia = new Date();
 window.filtroAlunoSemanalId = null; // Estado do filtro de aluno na semana exibida na Home
 window.filtroAlunoMensalId = null; // Estado do filtro de aluno na aba mensal
 
+// Dirty-check key for renderizarKPIDashboard — null forces a render on the next call.
+let _ultimaChaveRenderKPI = null;
+
 window.inicializarPaginaCalendario = async function(opcoes = {}) {
     const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
     if (deveSincronizar && typeof carregarDados === 'function') {
@@ -33,25 +36,70 @@ window.inicializarPaginaCalendario = async function(opcoes = {}) {
  */
 window.preencherFiltrosAlunos = function() {
     const alunosLista = window.alunos || [];
-    
+
     const preencherSelect = (id) => {
         const select = document.getElementById(id);
         if (!select) return;
 
         const valorAtual = select.value;
-        select.innerHTML = '<option value="">👥 Todos os Alunos</option>';
-        alunosLista.forEach(aluno => {
-            const option = document.createElement('option');
-            option.value = aluno.id;
-            option.textContent = aluno.nome;
-            select.appendChild(option);
+
+        // Ensure the "Todos" placeholder is at index 0 — add it once, never touch again.
+        if (select.options.length === 0 || select.options[0].value !== '') {
+            select.innerHTML = '<option value="">👥 Todos os Alunos</option>';
+        }
+
+        // Build a Set of IDs that belong in the new list.
+        const novosIds = new Set(alunosLista.map(function (a) { return a.id; }));
+
+        // Remove stale options (iterate in reverse to preserve indices during removal).
+        for (let i = select.options.length - 1; i >= 1; i--) {
+            if (!novosIds.has(select.options[i].value)) {
+                select.remove(i);
+            }
+        }
+
+        // Build a Set of IDs already present after the removal pass.
+        const existingIds = new Set();
+        for (let i = 1; i < select.options.length; i++) {
+            existingIds.add(select.options[i].value);
+        }
+
+        // Add missing options; update text for existing ones if the name changed.
+        alunosLista.forEach(function (aluno) {
+            if (!existingIds.has(aluno.id)) {
+                const option = document.createElement('option');
+                option.value = aluno.id;
+                option.textContent = aluno.nome;
+                select.appendChild(option);
+            } else {
+                for (let i = 1; i < select.options.length; i++) {
+                    if (select.options[i].value === aluno.id) {
+                        if (select.options[i].textContent !== aluno.nome) {
+                            select.options[i].textContent = aluno.nome;
+                        }
+                        break;
+                    }
+                }
+            }
         });
 
-        if (valorAtual && alunosLista.some(aluno => aluno.id === valorAtual)) {
+        // Defensive fallback: if count still doesn't match, fall back to a full reset.
+        if (select.options.length !== alunosLista.length + 1) {
+            select.innerHTML = '<option value="">👥 Todos os Alunos</option>';
+            alunosLista.forEach(function (aluno) {
+                const option = document.createElement('option');
+                option.value = aluno.id;
+                option.textContent = aluno.nome;
+                select.appendChild(option);
+            });
+        }
+
+        // Restore the previously selected value if it is still valid.
+        if (valorAtual && alunosLista.some(function (a) { return a.id === valorAtual; })) {
             select.value = valorAtual;
         }
     };
-    
+
     preencherSelect('filtroAlunoSemanaHome');
     preencherSelect('filtroAlunoMensal');
 };
@@ -162,6 +210,15 @@ window.renderizarKPIDashboard = function() {
         kpis = window.calcularKPIsTodosAlunos(mes, ano, window.aulas, window.alunos);
         nomeAluno = 'Todos os Alunos';
     }
+
+    // Dirty-check: skip the DOM write if inputs + computed values are unchanged.
+    const _chaveAtual = (function () {
+        try {
+            return (window.filtroAlunoMensalId || '') + '|' + mes + '|' + ano + '|' + JSON.stringify(kpis);
+        } catch (_) { return null; }
+    })();
+    if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderKPI) return;
+    _ultimaChaveRenderKPI = _chaveAtual;
     
     // Format currency
     const formatMoeda = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`;
