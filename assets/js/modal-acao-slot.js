@@ -19,6 +19,39 @@ window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
 // Dirty-check key for renderizarListaReposicoes — null forces a render on the next call.
 let _ultimaChaveRenderReposicoes = null;
 
+function compromissoTemAlunoInativo(compromisso) {
+    if (!compromisso || (compromisso.tipo || 'aula') !== 'aula') return false;
+    if (typeof window.getAluno !== 'function' || typeof window.alunoEstaAtivo !== 'function') return false;
+    const aluno = window.getAluno(compromisso.alunoId);
+    return !window.alunoEstaAtivo(aluno);
+}
+
+function aplicarModoSomenteLeituraAlunoInativo(compromisso) {
+    const aviso = document.getElementById('editAvisoAlunoInativo');
+    const btnSalvar = document.querySelector('#formEditarCompromisso button[type="submit"]');
+    const acoesUnico = document.getElementById('acoesCompromissoUnico');
+    const acoesRecorrente = document.getElementById('acoesCompromissoRecorrente');
+    const campos = [
+        'editHoraInicio',
+        'editDuracao',
+        'editDiaSemana',
+        'editDescricao',
+        'editBloqueioDiaInteiro'
+    ];
+
+    const somenteLeitura = compromissoTemAlunoInativo(compromisso);
+    if (aviso) aviso.style.display = somenteLeitura ? 'block' : 'none';
+    if (btnSalvar) btnSalvar.style.display = somenteLeitura ? 'none' : 'inline-flex';
+    if (acoesUnico) acoesUnico.style.display = somenteLeitura ? 'none' : acoesUnico.style.display;
+    if (acoesRecorrente) acoesRecorrente.style.display = somenteLeitura ? 'none' : acoesRecorrente.style.display;
+
+    campos.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = somenteLeitura;
+    });
+}
+
 // ── Escopo de Edição da Recorrência ───────────────────────────────────────────────────────────
 
 /** @param {string} escopo @returns {string} label curto do escopo */
@@ -82,6 +115,7 @@ window.abrirModalAcaoSlot = function(id) {
     }
 
     const freq = compromisso.frequencia || 'uma_vez';
+    const alunoInativo = compromissoTemAlunoInativo(compromisso);
     document.getElementById('editCompromissoFrequencia').value = freq;
 
     const badge = document.getElementById('badgeTipoCompromisso');
@@ -104,11 +138,16 @@ window.abrirModalAcaoSlot = function(id) {
         if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'none';
         if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr';
         if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr';
-    } else {
+    } else if (!alunoInativo) {
         if (btnMandarReposicao) btnMandarReposicao.style.display = 'inline-flex';
         if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'inline-flex';
         if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr 1fr';
         if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr 1fr';
+    } else {
+        if (btnMandarReposicao) btnMandarReposicao.style.display = 'none';
+        if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'none';
+        if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr';
+        if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr';
     }
 
     if (freq === 'semanal') {
@@ -193,6 +232,7 @@ window.abrirModalAcaoSlot = function(id) {
     }
 
     if (modal) modal.style.display = 'flex';
+    aplicarModoSomenteLeituraAlunoInativo(compromisso);
 };
 
 window.fecharModalAcaoSlot = function() {
@@ -265,14 +305,14 @@ window.abrirReagendarAulaModalSlot = function(dia, hora) {
             if (!idsUnicos.has(rep.alunoId)) {
                 idsUnicos.add(rep.alunoId);
                 const alunoObj = window.getAluno(rep.alunoId);
-                if (alunoObj) {
+                if (alunoObj && (typeof window.alunoEstaAtivo !== 'function' || window.alunoEstaAtivo(alunoObj))) {
                     alunosComFila.push(alunoObj);
                 }
             }
         });
 
         if (alunosComFila.length === 0) {
-            selectAluno.innerHTML = '<option value="">Não existem alunos com reposição pendente!</option>';
+            selectAluno.innerHTML = '<option value="">Não existem alunos ativos com reposição pendente.</option>';
         } else {
             selectAluno.innerHTML = '<option value="">Selecione o aluno...</option>' + 
                 alunosComFila.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
@@ -294,6 +334,13 @@ window.abrirReagendarAulaModalSlot = function(dia, hora) {
 window.iniciarReagendamentoReposicao = function(id) {
     const rep = aulasParaRepor.find(r => r.id === id);
     if (!rep) return;
+    const alunoRep = typeof window.getAluno === 'function' ? window.getAluno(rep.alunoId) : null;
+    if (typeof window.alunoEstaAtivo === 'function' && !window.alunoEstaAtivo(alunoRep)) {
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Não é possível reagendar para aluno inativo.', 'warning');
+        }
+        return;
+    }
     window.reagendamentoDirectCardId = id;
 
     const modal = document.getElementById('modalReagendarAula');
@@ -415,6 +462,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const hInicio = document.getElementById('reagendarHoraInicio').value;
             const duracao = document.getElementById('reagendarDuracao').value;
             const hFim = window.somarMinutos(hInicio, duracao);
+            const alunoAgendamento = typeof window.getAluno === 'function' ? window.getAluno(alunoId) : null;
+            if (typeof window.alunoEstaAtivo === 'function' && !window.alunoEstaAtivo(alunoAgendamento)) {
+                alert('Não é possível agendar reposição para aluno inativo.');
+                return;
+            }
             let novoCompromisso = {
                 id: Date.now().toString(),
                 dia: dia,
@@ -458,6 +510,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: compromisso disponível somente para visualização.');
+                return;
+            }
             // [TAG-GCAL] Snapshot antes da mutação para revert se MongoDB falhar
             const _snapshotEdicao = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
             // Captura nova ocorrência avulsa criada no escopo 'occurrence' para GCal sync duplo
@@ -704,6 +760,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDeletar) {
         btnDeletar.addEventListener('click', async () => {
             const _compDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            if (compromissoTemAlunoInativo(_compDeletar)) {
+                alert('Aluno inativo: não é possível cancelar ou excluir este compromisso.');
+                return;
+            }
             const _idxDeletar = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
             if (_idxDeletar !== -1) aulas.splice(_idxDeletar, 1);
             window.fecharModalAcaoSlot();
@@ -727,6 +787,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnMandarReposicao.addEventListener('click', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: não é possível reagendar este compromisso.');
+                return;
+            }
 
             aulasParaRepor.push({
                 id: Date.now().toString(),
@@ -752,6 +816,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDeletarInstancia.addEventListener('click', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: não é possível cancelar este compromisso.');
+                return;
+            }
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
             const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
@@ -782,6 +850,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnReagendarInstancia.addEventListener('click', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: não é possível reagendar este compromisso.');
+                return;
+            }
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
             const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
@@ -820,6 +892,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnDeletarSerie) {
         btnDeletarSerie.addEventListener('click', async () => {
             const _serieDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            if (compromissoTemAlunoInativo(_serieDeletar)) {
+                alert('Aluno inativo: não é possível cancelar esta série.');
+                return;
+            }
             const _idxSerie = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
 
             if (_serieDeletar && _serieDeletar.serieOrigemId) {

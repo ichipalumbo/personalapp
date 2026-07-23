@@ -463,6 +463,31 @@
             ></i
             >Seus Alunos
           </h3>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 14px;
+            "
+          >
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="filtroAlunosStatus">Filtrar por status</label>
+              <select id="filtroAlunosStatus">
+                <option value="todos" selected>Todos</option>
+                <option value="ativo">Ativos</option>
+                <option value="inativo">Inativos</option>
+              </select>
+            </div>
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="filtroAlunosObjetivo">Filtrar por objetivo</label>
+              <select id="filtroAlunosObjetivo">
+                <option value="todos" selected>Todos</option>
+                <option value="Personal Trainer">Personal Trainer</option>
+                <option value="Consultoria Online">Consultoria Online</option>
+              </select>
+            </div>
+          </div>
           <div class="alunos-grid" id="listaAlunos"></div>
         </section>
 
@@ -472,7 +497,21 @@
 
         <div class="modal-overlay" id="modalFormAluno" style="display: none">
           <div class="modal-alunos-corpo">
-            <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
+            <div class="modal-alunos-header">
+              <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
+              <label
+                class="status-toggle modal-aluno-status-toggle"
+                for="alunoStatusSwitch"
+              >
+                <input type="checkbox" id="alunoStatusSwitch" checked />
+                <span class="status-toggle-track" aria-hidden="true">
+                  <span class="status-toggle-knob"></span>
+                </span>
+                <span id="alunoStatusSwitchStatus" class="status-toggle-label"
+                  >Ativo</span
+                >
+              </label>
+            </div>
             <form id="formNovoAluno" class="form-aluno">
               <input type="hidden" id="alunoIdEdicao" value="" />
               <div class="form-grupo-spa">
@@ -551,6 +590,15 @@
                 />
               </div>
               <div class="modal-alunos-acoes">
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  id="btnExcluirAlunoModal"
+                  style="margin-right: auto; display: none"
+                  title="Excluir Aluno"
+                >
+                  <i class="fa-solid fa-trash"></i>
+                </button>
                 <button
                   type="button"
                   class="btn btn-secondary"
@@ -1380,6 +1428,17 @@
               "
             ></small>
           </div>
+          <small
+            id="editAvisoAlunoInativo"
+            style="
+              display: none;
+              margin: -4px 0 12px;
+              color: #ff8a80;
+              font-size: 0.78rem;
+              font-weight: 700;
+            "
+            >Aluno inativo — compromisso disponível somente para visualização.</small
+          >
           <div
             class="form-grupo-spa"
             id="editDiaSemanaContainer"

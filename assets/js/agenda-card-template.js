@@ -144,12 +144,14 @@
 
         if (tipo === 'aula') {
             const aluno = typeof window.getAluno === 'function' ? window.getAluno(comp.alunoId) : null;
+            const alunoInativo = typeof window.alunoEstaAtivo === 'function' ? !window.alunoEstaAtivo(aluno) : false;
             const nome = aluno ? aluno.nome : '❓ Aluno Removido';
             const objetivo = aluno ? (aluno.objective || aluno.objetivo || 'Outro') : 'Outro';
             const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
             const corBordaAula = resolverCorObjetivoAula(aluno);
             const styleCardAula = montarStyleComposto([
                 `border-left-color: ${corBordaAula};`,
+                alunoInativo ? 'opacity: 0.9;' : '',
                 opcoes.style || ''
             ]);
             let tagNomeHtml = '';
@@ -166,6 +168,9 @@
                 tagVisualHtml = `<span class="badge-tag-tipo" style="${BADGE_STYLES.recorrente}">${badgeLabel}</span>`;
             } else {
                 tagVisualHtml = `<span class="badge-tag-tipo" style="${BADGE_STYLES.unico}"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
+            }
+            if (alunoInativo) {
+                tagVisualHtml += `<span class="badge-tag-tipo" style="background: rgba(255, 138, 128, 0.15); color: #FF8A80; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash"></i> Aluno inativo</span>`;
             }
 
             return `

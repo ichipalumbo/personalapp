@@ -273,8 +273,11 @@ window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
 
     const selectAluno = document.getElementById('agendaAluno');
     if (selectAluno) {
+        const alunosAtivos = typeof window.getAlunosAtivos === 'function'
+            ? window.getAlunosAtivos()
+            : alunos;
         selectAluno.innerHTML = '<option value="">Selecione um aluno...</option>' + 
-            alunos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
+            alunosAtivos.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
     }
 
     const bloqueioDesc = document.getElementById('agendaDescricao');

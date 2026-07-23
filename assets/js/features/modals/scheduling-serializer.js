@@ -96,6 +96,13 @@
             return criarResultadoErro('Selecione um aluno para agendar a aula.');
         }
 
+        if (tipo === 'aula' && typeof window.getAluno === 'function' && typeof window.alunoEstaAtivo === 'function') {
+            const aluno = window.getAluno(draft.mainForm && draft.mainForm.alunoId);
+            if (!window.alunoEstaAtivo(aluno)) {
+                return criarResultadoErro('Não é possível agendar aula para aluno inativo.');
+            }
+        }
+
         if (tipo === 'bloqueio' && !(draft.mainForm && draft.mainForm.descricao && draft.mainForm.descricao.trim())) {
             return criarResultadoErro('Informe uma descrição para o bloqueio.');
         }

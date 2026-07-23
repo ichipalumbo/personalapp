@@ -5,7 +5,7 @@ const AlunoSchema = new mongoose.Schema({
   id: { type: String, required: true },
   nome: { type: String, required: true },
   telefone: String,
-  status: { type: String, default: 'ativo' },
+  status: { type: String, enum: ['ativo', 'inativo'], default: 'ativo' },
   tipoPreco: String,
   valorAlinhado: Number,
   aulasSemanais: Number,

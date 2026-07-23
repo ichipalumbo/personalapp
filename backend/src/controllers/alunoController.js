@@ -32,11 +32,23 @@ function limparPayloadAluno(payload) {
   return limpo;
 }
 
+function normalizarStatusAluno(status) {
+  return String(status || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo';
+}
+
+function garantirStatusAluno(aluno) {
+  if (!aluno || typeof aluno !== 'object') return aluno;
+  return {
+    ...aluno,
+    status: normalizarStatusAluno(aluno.status)
+  };
+}
+
 async function listarAlunos(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const alunos = await Aluno.find({ ownerEmail });
-    res.json(alunos);
+    res.json(alunos.map((aluno) => garantirStatusAluno(aluno.toObject ? aluno.toObject() : aluno)));
   } catch (err) {
     responderErroAluno(res, err, 'listar alunos');
   }
@@ -52,7 +64,7 @@ async function obterAluno(req, res) {
       return res.status(404).json({ error: 'Aluno não encontrado' });
     }
 
-    res.json(aluno);
+    res.json(garantirStatusAluno(aluno.toObject ? aluno.toObject() : aluno));
   } catch (err) {
     responderErroAluno(res, err, 'obter aluno');
   }
@@ -67,18 +79,21 @@ async function criarAluno(req, res) {
       return res.status(400).json({ error: 'id e nome são obrigatórios.' });
     }
 
+    payload.status = normalizarStatusAluno(payload.status);
+
     const aluno = await Aluno.findOneAndUpdate(
       { ownerEmail, id: payload.id },
       { $set: { ...payload, id: payload.id, ownerEmail } },
       { new: true, upsert: true, runValidators: true }
     );
 
-    res.status(200).json(aluno);
+    res.status(200).json(garantirStatusAluno(aluno.toObject ? aluno.toObject() : aluno));
   } catch (err) {
     if (err && err.code === 11000) {
       try {
         const ownerEmail = getOwnerEmailOrThrow(req);
         const payload = limparPayloadAluno(req.body);
+        payload.status = normalizarStatusAluno(payload.status);
 
         const aluno = await Aluno.findOneAndUpdate(
           { ownerEmail, id: payload.id },
@@ -86,7 +101,7 @@ async function criarAluno(req, res) {
           { new: true, upsert: true, runValidators: true }
         );
 
-        return res.status(200).json(aluno);
+        return res.status(200).json(garantirStatusAluno(aluno.toObject ? aluno.toObject() : aluno));
       } catch (fallbackErr) {
         return responderErroAluno(res, fallbackErr, 'criar aluno');
       }
@@ -106,6 +121,10 @@ async function atualizarAluno(req, res) {
       return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
     }
 
+    if (Object.prototype.hasOwnProperty.call(payload, 'status')) {
+      payload.status = normalizarStatusAluno(payload.status);
+    }
+
     const aluno = await Aluno.findOneAndUpdate(
       { ownerEmail, id },
       { $set: { ...payload, id, ownerEmail } },
@@ -116,7 +135,7 @@ async function atualizarAluno(req, res) {
       return res.status(404).json({ error: 'Aluno não encontrado' });
     }
 
-    res.json(aluno);
+    res.json(garantirStatusAluno(aluno.toObject ? aluno.toObject() : aluno));
   } catch (err) {
     responderErroAluno(res, err, 'atualizar aluno');
   }

@@ -12,6 +12,39 @@ function normalizarObjetivoAluno(valorObjetivo) {
     return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
 }
 
+function normalizarStatusAlunoLocal(valorStatus) {
+    if (typeof window.normalizarStatusAluno === 'function') {
+        return window.normalizarStatusAluno(valorStatus);
+    }
+    return String(valorStatus || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo';
+}
+
+function atualizarStatusSwitchFormulario(ativo) {
+    const elStatusSwitch = document.getElementById('alunoStatusSwitch');
+    const elStatusTexto = document.getElementById('alunoStatusSwitchStatus');
+    if (elStatusSwitch) elStatusSwitch.checked = !!ativo;
+    if (elStatusTexto) elStatusTexto.textContent = ativo ? 'Ativo' : 'Inativo';
+}
+
+function statusSwitchEstaAtivo() {
+    const elStatusSwitch = document.getElementById('alunoStatusSwitch');
+    return !(elStatusSwitch && elStatusSwitch.checked === false);
+}
+
+function obterStatusAlunoDoSwitch() {
+    return statusSwitchEstaAtivo() ? 'ativo' : 'inativo';
+}
+
+function obterFiltroStatusAlunos() {
+    const select = document.getElementById('filtroAlunosStatus');
+    return select ? (select.value || 'todos') : 'todos';
+}
+
+function obterFiltroObjetivoAlunos() {
+    const select = document.getElementById('filtroAlunosObjetivo');
+    return select ? (select.value || 'todos') : 'todos';
+}
+
 function objetivoSwitchEstaAtivo() {
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
     return !!(elObjetivoSwitch && elObjetivoSwitch.checked);
@@ -102,6 +135,9 @@ window.togglePainelCadastro = function(mostrar) {
         const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
         if (elObjetivoSwitch) elObjetivoSwitch.checked = false;
         aplicarRegrasObjetivoNoFormulario();
+        atualizarStatusSwitchFormulario(true);
+        const btnExcluirAlunoModal = document.getElementById('btnExcluirAlunoModal');
+        if (btnExcluirAlunoModal) btnExcluirAlunoModal.style.display = 'none';
         
         const idEdicao = document.getElementById('alunoIdEdicao');
         if (idEdicao) idEdicao.value = '';
@@ -117,6 +153,9 @@ window.abrirCadastroParaNovo = function() {
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
     if (elObjetivoSwitch) elObjetivoSwitch.checked = false;
     aplicarRegrasObjetivoNoFormulario();
+    atualizarStatusSwitchFormulario(true);
+    const btnExcluirAlunoModal = document.getElementById('btnExcluirAlunoModal');
+    if (btnExcluirAlunoModal) btnExcluirAlunoModal.style.display = 'none';
     
     window.togglePainelCadastro(true);
 };
@@ -126,9 +165,12 @@ window.renderizarListaAlunos = function() {
     if (!listaContainer) return;
 
     if (typeof alunos !== 'undefined') {
+        const filtroStatus = obterFiltroStatusAlunos();
+        const filtroObjetivo = obterFiltroObjetivoAlunos();
+
         // Dirty-check: skip the DOM write if the student list is unchanged.
         const _chaveAtual = (function () {
-            try { return JSON.stringify(alunos); } catch (_) { return null; }
+            try { return JSON.stringify(alunos) + '|' + filtroStatus + '|' + filtroObjetivo; } catch (_) { return null; }
         })();
         if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderAlunos) return;
         _ultimaChaveRenderAlunos = _chaveAtual;
@@ -142,12 +184,32 @@ window.renderizarListaAlunos = function() {
             `;
             return;
         }
-        listaContainer.innerHTML = alunos.map(aluno => {
+        const alunosFiltrados = alunos.filter((aluno) => {
+            const statusAluno = normalizarStatusAlunoLocal(aluno.status);
+            const objetivoAluno = normalizarObjetivoAluno(aluno.objetivo);
+            const passaStatus = filtroStatus === 'todos' || filtroStatus === statusAluno;
+            const passaObjetivo = filtroObjetivo === 'todos' || filtroObjetivo === objetivoAluno;
+            return passaStatus && passaObjetivo;
+        });
+
+        if (alunosFiltrados.length === 0) {
+            listaContainer.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: #8A8A8A;">
+                    <i class="fa-solid fa-filter-circle-xmark" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                    <p style="font-size: 0.92rem;">Nenhum aluno encontrado com os filtros selecionados.</p>
+                </div>
+            `;
+            return;
+        }
+
+        listaContainer.innerHTML = alunosFiltrados.map(aluno => {
             const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
             const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
             const local = aluno.local || 'Não definido';
-            const objetivo = aluno.objetivo || 'Personal Trainer';
+            const objetivo = normalizarObjetivoAluno(aluno.objetivo);
             const objetivoClass = objetivo.replace(/\s+/g, '');
+            const statusAluno = normalizarStatusAlunoLocal(aluno.status);
+            const statusLabel = statusAluno === 'inativo' ? 'Inativo' : 'Ativo';
             
             // Calcular KPIs usando as novas funções
             const projecaoMes = calcularProjecaoMensalCompleta(aluno, aulas);
@@ -157,7 +219,7 @@ window.renderizarListaAlunos = function() {
             const reposicoes = contarReposicoesPorAluno(aluno.id, aulas);
             
             return `
-                <div class="aluno-card" style="display: flex; flex-direction: column; gap: 10px; position: relative;">
+                <div class="aluno-card aluno-card--gerenciavel" onclick="prepararEdicaoAluno('${aluno.id}')" style="display: flex; flex-direction: column; gap: 10px; position: relative; cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                         <div>
                             <strong style="display: block; color: #FFF; font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
@@ -168,13 +230,12 @@ window.renderizarListaAlunos = function() {
                                 <span style="font-size: 0.72rem; color: #81C784; font-weight: 600;">~R$ ${projecaoAproximada.toFixed(2)}</span>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 8px; flex-shrink: 0;">
-                            <button class="btn btn-secondary btn-sm" onclick="prepararEdicaoAluno('${aluno.id}')" style="padding: 6px 10px; background: #333;" title="Editar Aluno">
-                                <i class="fa-solid fa-pen"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="deletarAlunoSPA('${aluno.id}')" style="padding: 6px 10px;" title="Excluir Aluno">
-                                <i class="fa-solid fa-trash"></i>
-                            </button>
+                        <div onclick="event.stopPropagation();" style="margin-left: auto; display: flex; justify-content: flex-end; flex-shrink: 0;">
+                            <label class="status-toggle status-toggle--card" for="alunoStatusCard-${aluno.id}" style="margin: 0;">
+                                <input type="checkbox" id="alunoStatusCard-${aluno.id}" ${statusAluno === 'ativo' ? 'checked' : ''} onchange="alternarStatusAluno('${aluno.id}', this.checked)" />
+                                <span class="status-toggle-track" aria-hidden="true"><span class="status-toggle-knob"></span></span>
+                                <span class="status-toggle-label">${statusLabel}</span>
+                            </label>
                         </div>
                     </div>
                     
@@ -232,23 +293,54 @@ window.prepararEdicaoAluno = function(id) {
     if (elTelefone) elTelefone.value = aluno.telefone || '';
     if (elObjetivoSwitch) elObjetivoSwitch.checked = normalizarObjetivoAluno(aluno.objetivo) === 'Consultoria Online';
     if (elFrequencia) elFrequencia.value = aluno.frequenciaSemanal || '2';
+    atualizarStatusSwitchFormulario(normalizarStatusAlunoLocal(aluno.status) === 'ativo');
     const titulo = document.getElementById('tituloFormAluno');
     const botao = document.getElementById('btnSalvarAluno');
+    const btnExcluirAlunoModal = document.getElementById('btnExcluirAlunoModal');
     if (titulo) titulo.textContent = 'Editar Aluno';
     if (botao) botao.textContent = 'Atualizar';
+    if (btnExcluirAlunoModal) btnExcluirAlunoModal.style.display = 'inline-flex';
     aplicarRegrasObjetivoNoFormulario();
     window.togglePainelCadastro(true);
 };
 window.deletarAlunoSPA = function(id) {
-    if (confirm("Tem certeza que deseja remover este aluno? Suas aulas futuras não serão mais associadas a ele.")) {
+    if (confirm("Excluir remove permanentemente o cadastro e os vínculos atuais de agenda. Para preservar histórico operacional, prefira inativar. Deseja realmente excluir este aluno?")) {
         if (typeof alunos !== 'undefined') {
             const _idxDeletar = alunos.findIndex(a => a.id === id);
             if (_idxDeletar !== -1) alunos.splice(_idxDeletar, 1);
             if (typeof salvarDados === 'function') salvarDados();
             window.renderizarListaAlunos();
             if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats();
+            if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
             if (typeof mostrarToast === 'function') mostrarToast('Aluno removido com sucesso!');
+            return true;
         }
+    }
+    return false;
+};
+window.excluirAlunoViaModal = function() {
+    const idEdicao = document.getElementById('alunoIdEdicao').value;
+    if (!idEdicao) return;
+    const excluiu = window.deletarAlunoSPA(idEdicao);
+    if (excluiu) window.togglePainelCadastro(false);
+};
+window.alternarStatusAluno = function(id, ativoForcado) {
+    if (typeof alunos === 'undefined') return;
+    const index = alunos.findIndex(a => a.id === id);
+    if (index === -1) return;
+
+    const statusAtual = normalizarStatusAlunoLocal(alunos[index].status);
+    const proximoStatus = typeof ativoForcado === 'boolean'
+        ? (ativoForcado ? 'ativo' : 'inativo')
+        : (statusAtual === 'inativo' ? 'ativo' : 'inativo');
+    if (statusAtual === proximoStatus) return;
+
+    alunos[index].status = proximoStatus;
+    if (typeof salvarDados === 'function') salvarDados();
+    window.renderizarListaAlunos();
+    if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
+    if (typeof mostrarToast === 'function') {
+        mostrarToast(proximoStatus === 'inativo' ? 'Aluno inativado com sucesso.' : 'Aluno ativado com sucesso!');
     }
 };
 document.addEventListener('DOMContentLoaded', () => {
@@ -256,7 +348,22 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elObjetivoSwitch) {
         elObjetivoSwitch.addEventListener('change', aplicarRegrasObjetivoNoFormulario);
     }
+    const elStatusSwitch = document.getElementById('alunoStatusSwitch');
+    if (elStatusSwitch) {
+        elStatusSwitch.addEventListener('change', () => atualizarStatusSwitchFormulario(elStatusSwitch.checked));
+    }
+    atualizarStatusSwitchFormulario(true);
     aplicarRegrasObjetivoNoFormulario();
+
+    const filtroStatus = document.getElementById('filtroAlunosStatus');
+    const filtroObjetivo = document.getElementById('filtroAlunosObjetivo');
+    if (filtroStatus) filtroStatus.addEventListener('change', () => window.renderizarListaAlunos());
+    if (filtroObjetivo) filtroObjetivo.addEventListener('change', () => window.renderizarListaAlunos());
+
+    const btnExcluirAlunoModal = document.getElementById('btnExcluirAlunoModal');
+    if (btnExcluirAlunoModal) {
+        btnExcluirAlunoModal.addEventListener('click', window.excluirAlunoViaModal);
+    }
 
     const formAluno = document.getElementById('formNovoAluno');
     if (formAluno) {
@@ -274,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const frequenciaSemanal = ehConsultoriaOnline
                 ? 0
                 : (parseInt(document.getElementById('alunoFrequenciaSemanal').value, 10) || 2);
+            const status = normalizarStatusAlunoLocal(obterStatusAlunoDoSwitch());
 
             if (typeof alunos === 'undefined') return;
 
@@ -289,6 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alunos[index].objetivo = objetivo;
                     alunos[index].corObjetivo = corObjetivo;
                     alunos[index].frequenciaSemanal = frequenciaSemanal;
+                    alunos[index].status = status;
                     
                     // [TAG-CASCADE-SYNC] Se nome ou local mudou, sincroniza agendamentos futuros
                     if (alunoAntigo.nome !== nome || alunoAntigo.local !== local) {
@@ -313,7 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     telefone: telefone,
                     objetivo: objetivo,
                     corObjetivo: corObjetivo,
-                    frequenciaSemanal: frequenciaSemanal
+                    frequenciaSemanal: frequenciaSemanal,
+                    status: status
                 };
                 alunos.push(novoAluno);
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno cadastrado com sucesso!');

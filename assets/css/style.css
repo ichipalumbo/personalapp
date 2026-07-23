@@ -122,7 +122,11 @@ body {
   padding: 6px 8px;
   border-radius: 10px;
   border: 1px solid #2a2a2a;
-  background: linear-gradient(135deg, rgba(18, 22, 28, 0.92), rgba(14, 18, 24, 0.92));
+  background: linear-gradient(
+    135deg,
+    rgba(18, 22, 28, 0.92),
+    rgba(14, 18, 24, 0.92)
+  );
   min-width: 0;
 }
 
@@ -233,7 +237,10 @@ body {
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .btn-google-custom i {
@@ -269,7 +276,10 @@ body {
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .btn-google-signout:hover {
@@ -531,9 +541,19 @@ body {
   font-size: 1.3rem;
   color: #ffd700;
   margin-top: 0;
-  margin-bottom: 20px;
+  margin-bottom: 0;
   font-weight: 700;
   letter-spacing: 0.5px;
+}
+.modal-alunos-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.modal-aluno-status-toggle {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 .form-grupo-spa {
   display: flex;
@@ -549,7 +569,8 @@ body {
 .form-grupo-spa input,
 .form-grupo-spa select {
   width: 100%;
-  padding: 12px;
+  height: 60%;
+  padding: 10px;
   border: 1px solid #333;
   border-radius: 8px;
   background: #0d0d0d;
@@ -700,6 +721,114 @@ body {
   + .full-day-toggle-ui
   .full-day-toggle-pill {
   font-size: 0;
+}
+.status-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.status-toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+.status-toggle-track {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  border-radius: 999px;
+  background: #1a1a1a;
+  border: 1px solid #3a3a3a;
+  transition: all 0.2s ease;
+}
+.status-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #8d8d8d;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  transition: all 0.2s ease;
+}
+.status-toggle-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #bdbdbd;
+}
+.status-toggle:hover .status-toggle-track {
+  border-color: #555;
+}
+.status-toggle input:focus-visible + .status-toggle-track {
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+}
+.status-toggle input:checked + .status-toggle-track {
+  background: rgba(255, 215, 0, 0.2);
+  border-color: #ffd700;
+}
+.status-toggle input:checked + .status-toggle-track .status-toggle-knob {
+  transform: translateX(20px);
+  background: #ffd700;
+}
+.status-toggle input:checked + .status-toggle-track + .status-toggle-label {
+  color: #ffd700;
+}
+.status-toggle
+  input:not(:checked)
+  + .status-toggle-track
+  + .status-toggle-label {
+  color: #ff8a80;
+}
+.status-toggle.status-toggle--compact {
+  gap: 7px;
+}
+.status-toggle.status-toggle--compact .status-toggle-track {
+  width: 42px;
+  height: 24px;
+}
+.status-toggle.status-toggle--compact .status-toggle-knob {
+  width: 16px;
+  height: 16px;
+  top: 3px;
+  left: 3px;
+}
+.status-toggle.status-toggle--compact
+  input:checked
+  + .status-toggle-track
+  .status-toggle-knob {
+  transform: translateX(18px);
+}
+.status-toggle.status-toggle--compact .status-toggle-label {
+  font-size: 0.72rem;
+}
+.status-toggle.status-toggle--card {
+  gap: 6px;
+  justify-content: flex-end;
+}
+.status-toggle.status-toggle--card .status-toggle-track {
+  width: 34px;
+  height: 20px;
+}
+.status-toggle.status-toggle--card .status-toggle-knob {
+  width: 14px;
+  height: 14px;
+  top: 2px;
+  left: 2px;
+}
+.status-toggle.status-toggle--card
+  input:checked
+  + .status-toggle-track
+  .status-toggle-knob {
+  transform: translateX(14px);
+}
+.status-toggle.status-toggle--card .status-toggle-label {
+  font-size: 0.66rem;
 }
 .modal-alunos-acoes {
   display: flex;
@@ -1279,7 +1408,12 @@ body {
 /* Custom modern event card styling */
 .agenda-dia-aula {
   position: absolute;
-  background: rgba(255, 184, 120, 0.05); /* Fundo suave com base #ffb878 — Tangerine GCal colorId '6' */
+  background: rgba(
+    255,
+    184,
+    120,
+    0.05
+  ); /* Fundo suave com base #ffb878 — Tangerine GCal colorId '6' */
   border: 1px solid #222224;
   border-left: 4px solid #ffd700;
   border-radius: 6px !important; /* "diminuir um pouco o arredondamento das bordas" */
@@ -1443,7 +1577,7 @@ body {
 
 /* [TAG-STYLE-BLOQUEIO-EXTERNO] - Eventos externos (somente leitura) do Google Calendar */
 .card-bloqueio-externo {
-  border-left-color: #4285F4;
+  border-left-color: #4285f4;
   background: #111820;
   border-color: #1a2535;
   cursor: default;
@@ -1452,7 +1586,7 @@ body {
   border-left-color: #5c9cf5;
 }
 .card-bloqueio-externo-nome {
-  color: #90CAF9;
+  color: #90caf9;
 }
 
 /* Indicador de Agora (Linha vermelha estilo Outlook) */
@@ -1936,7 +2070,9 @@ body {
   animation: girar-sinc 0.8s linear infinite;
 }
 @keyframes girar-sinc {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 .overlay-sinc-msg {
   color: #e0e0e0;
