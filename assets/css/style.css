@@ -1209,12 +1209,83 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   text-align: center;
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.agenda-data-linha-topo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+.agenda-data-linha-topo i {
+  color: #ffd700;
+  flex-shrink: 0;
+}
+.agenda-data-data-topo {
+  color: #ffd700;
+  font-weight: 800;
+}
+.agenda-data-dia-mobile {
+  display: none;
+}
+.agenda-dia-semana-mobile {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .agenda-header-navegacao .nav-calendario--home {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: 2px;
+  }
+
+  .agenda-header-navegacao .nav-calendario--home .nav-calendario-main {
+    order: 1;
+    width: auto;
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .agenda-header-navegacao .nav-calendario--home .btn-hoje-agenda {
+    order: 2;
+  }
+
+  .agenda-header-navegacao .nav-calendario--home .agenda-data-principal {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+
+  .agenda-header-navegacao .nav-calendario--home .agenda-data-linha-topo {
+    display: none;
+  }
+
+  .agenda-header-navegacao .nav-calendario--home .agenda-data-dia-mobile {
+    display: inline;
+    font-size: 1.05rem;
+    color: #ffd700;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .agenda-header-navegacao .nav-calendario--home .agenda-dia-semana-mobile {
+    order: 3;
+    display: block;
+    flex: 1 1 100%;
+    font-size: 1.05rem;
+    color: #d3d3d3;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.1;
+    margin-top: 5px;
+  }
 }
 
 .btn-nav-dia {
@@ -2575,17 +2646,6 @@ body {
     padding: 5px 12px;
     font-size: 0.72rem;
     white-space: nowrap;
-  }
-
-  .agenda-header-navegacao .nav-calendario {
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-
-  .agenda-header-navegacao .nav-calendario-main {
-    width: auto;
-    min-width: 0;
-    flex: 1 1 auto;
   }
 
   .calendario-header-controls {

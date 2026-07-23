@@ -128,12 +128,21 @@ window.inicializarHome = async function (opcoes = {}) {
 
 window.atualizarDataAtual = function () {
   const elementoData = document.getElementById("dataAtual");
+  const elementoDiaSemana = document.getElementById("diaSemanaAtual");
   if (!elementoData) return;
   const dia = String(window.dataSelecionada.getDate()).padStart(2, "0");
   const mes = String(window.dataSelecionada.getMonth() + 1).padStart(2, "0");
   const nomeDia = DIAS_DA_SEMANA[window.dataSelecionada.getDay()];
 
-  elementoData.innerHTML = `<i class="fa-solid fa-calendar-minus" style="color: #FFD700; margin-right: 8px;"></i>${nomeDia} <span style="color: #FFD700; font-weight: 800;">(${dia}/${mes})</span>`;
+  elementoData.innerHTML = `
+    <span class="agenda-data-linha-topo">
+      <i class="fa-solid fa-calendar-minus" aria-hidden="true"></i>
+      <span class="agenda-data-dia-topo">${nomeDia}</span>
+      <span class="agenda-data-data-topo">(${dia}/${mes})</span>
+    </span>
+    <span class="agenda-data-dia-mobile">(${dia}/${mes})</span>
+  `;
+  if (elementoDiaSemana) elementoDiaSemana.textContent = nomeDia;
 };
 
 window.atualizarDashboardStats = function () {
