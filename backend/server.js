@@ -11,9 +11,13 @@ console.log('🔧 Inicializando servidor...');
 console.log(`📦 Environment: ${process.env.NODE_ENV || 'desenvolvimento'}`);
 console.log(`📡 Porta: ${port}`);
 
-connectToDatabase(mongoURI).catch((err) => {
-  console.error('❌ Falha ao conectar ao MongoDB:', err && err.message ? err.message : err);
-});
+// Warmup opcional: em Vercel serverless, a conexão efetiva é garantida pelo middleware em /api.
+connectToDatabase(mongoURI).catch((err) => {
+
+  console.warn('⚠️ Warmup opcional do MongoDB falhou:', err && err.message ? err.message : err);
+
+});
+
 
 if (require.main === module) {
   app.listen(port, () => {
