@@ -386,10 +386,18 @@ async function listCalendarEvents(oauth2Client, connection) {
     return fetchCalendarPage(oauth2Client, `/calendars/${encodeURIComponent(connection.calendarId || 'primary')}/events?${params.toString()}`);
   }
 
+  const timeMin = new Date();
+  timeMin.setMonth(timeMin.getMonth() - 1);
+  const timeMax = new Date();
+  timeMax.setMonth(timeMax.getMonth() + 2);
+
   const params = new URLSearchParams({
     singleEvents: 'true',
     orderBy: 'startTime',
-    maxResults: '250'
+    maxResults: '250',
+    showDeleted: 'false',
+    timeMin: timeMin.toISOString(),
+    timeMax: timeMax.toISOString()
   });
 
   return fetchCalendarPage(oauth2Client, `/calendars/${encodeURIComponent(connection.calendarId || 'primary')}/events?${params.toString()}`);
@@ -432,6 +440,12 @@ async function persistSyncResults(connection, payload) {
 
   for (const event of activeEvents) {
     if (!event || !event.id) {
+      continue;
+    }
+
+    if (event.status === 'cancelled') {
+      await deleteBloqueio(ownerEmail, event.id);
+      await deleteAgendamento(ownerEmail, event.id);
       continue;
     }
 
