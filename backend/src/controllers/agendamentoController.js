@@ -59,16 +59,41 @@ function montarRespostaFalhaGcal(res, err, contexto, dados) {
 }
 
 function montarPayloadGCal(agendamento) {
+  const alunoPopulado = agendamento && agendamento.aluno && typeof agendamento.aluno === 'object'
+    ? agendamento.aluno
+    : null;
+
+  const alunoNome = (
+    (agendamento && agendamento.alunoNome)
+    || (agendamento && agendamento.nomeAluno)
+    || (alunoPopulado && alunoPopulado.nome)
+    || ''
+  );
+
+  const objetivo = (
+    (agendamento && agendamento.objetivo)
+    || (agendamento && agendamento.alunoObjetivo)
+    || (alunoPopulado && alunoPopulado.objetivo)
+    || ''
+  );
+
+  const local = (
+    (agendamento && agendamento.local)
+    || (alunoPopulado && alunoPopulado.local)
+    || ''
+  );
+
   return {
     id: agendamento.id,
-    alunoId: agendamento.alunoId,
-    alunoNome: agendamento.alunoNome,
+    alunoId: agendamento.alunoId || (alunoPopulado && (alunoPopulado.id || alunoPopulado._id)) || null,
+    alunoNome: alunoNome ? String(alunoNome) : '',
+    objetivo: objetivo ? String(objetivo) : '',
     data: agendamento.data,
     horarioInicio: agendamento.horarioInicio,
     horarioFim: agendamento.horarioFim,
     tipo: agendamento.tipo,
     descricao: agendamento.descricao,
-    local: agendamento.local,
+    local: local ? String(local) : '',
     fullDay: agendamento.fullDay,
     googleCalendarEventId: agendamento.googleCalendarEventId
   };

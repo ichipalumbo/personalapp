@@ -103,20 +103,48 @@ function resolverDataISO(agendamento) {
 }
 
 function montarTituloEvento(agendamento) {
+  const alunoPopulado = agendamento && agendamento.aluno && typeof agendamento.aluno === 'object'
+    ? agendamento.aluno
+    : null;
+
+  const alunoNome = (
+    (agendamento && agendamento.alunoNome)
+    || (agendamento && agendamento.nomeAluno)
+    || (alunoPopulado && alunoPopulado.nome)
+    || ''
+  );
+
+  const objetivo = (
+    (agendamento && agendamento.objetivo)
+    || (agendamento && agendamento.alunoObjetivo)
+    || (alunoPopulado && alunoPopulado.objetivo)
+    || ''
+  );
+
+  const nomeLimpo = String(alunoNome || '').trim();
+  const objetivoLimpo = String(objetivo || '').trim();
+
+  if (objetivoLimpo && nomeLimpo) {
+    return objetivoLimpo + ' - ' + nomeLimpo;
+  }
+
+  if (objetivoLimpo) {
+    return objetivoLimpo;
+  }
+
   const descricao = agendamento && agendamento.descricao ? String(agendamento.descricao).trim() : '';
   if (descricao) {
     return descricao;
   }
 
   const tipo = agendamento && agendamento.tipo ? String(agendamento.tipo).trim().toLowerCase() : '';
-  const alunoNome = agendamento && agendamento.alunoNome ? String(agendamento.alunoNome).trim() : '';
 
   if (tipo === 'aula') {
-    return alunoNome ? `Aula - ${alunoNome}` : 'Aula';
+    return nomeLimpo ? 'Aula - ' + nomeLimpo : 'Aula';
   }
 
   if (tipo === 'deslocamento') {
-    return 'Deslocamento';
+    return nomeLimpo ? 'Deslocamento - ' + nomeLimpo : 'Deslocamento';
   }
 
   if (tipo === 'bloqueio') {
@@ -124,10 +152,10 @@ function montarTituloEvento(agendamento) {
   }
 
   if (tipo === 'reposicao') {
-    return alunoNome ? `Reposição - ${alunoNome}` : 'Reposição';
+    return nomeLimpo ? 'Reposição - ' + nomeLimpo : 'Reposição';
   }
 
-  return 'Compromisso';
+  return nomeLimpo ? nomeLimpo : 'Compromisso';
 }
 
 function montarExtendedProperties(agendamento) {
@@ -143,9 +171,13 @@ function montarEventoGoogle(agendamento) {
   const dataISO = resolverDataISO(agendamento);
   const titulo = montarTituloEvento(agendamento);
   const timezone = process.env.GCAL_TIMEZONE || 'America/Sao_Paulo';
-  const fullDay = agendamento && (agendamento.fullDay === true || agendamento.horarioInicio === '00:00' && (agendamento.horarioFim === '23:59' || agendamento.horarioFim === '24:00'));
+  const fullDay = agendamento && (
+    agendamento.fullDay === true
+    || (agendamento.horarioInicio === '00:00' && (agendamento.horarioFim === '23:59' || agendamento.horarioFim === '24:00'))
+  );
   const evento = {
     summary: titulo,
+    colorId: '6',
     extendedProperties: montarExtendedProperties(agendamento)
   };
 
@@ -164,11 +196,11 @@ function montarEventoGoogle(agendamento) {
   }
 
   evento.start = {
-    dateTime: `${dataISO}T${getHorarioPadraoInicio(agendamento)}:00`,
+    dateTime: dataISO + 'T' + getHorarioPadraoInicio(agendamento) + ':00',
     timeZone: timezone
   };
   evento.end = {
-    dateTime: `${dataISO}T${getHorarioPadraoFim(agendamento)}:00`,
+    dateTime: dataISO + 'T' + getHorarioPadraoFim(agendamento) + ':00',
     timeZone: timezone
   };
 
