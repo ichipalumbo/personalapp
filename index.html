@@ -63,6 +63,15 @@
                 <i class="fa-solid fa-right-from-bracket"></i>
                 <span>Sair</span>
               </button>
+              <button
+                id="btnAppSettings"
+                type="button"
+                class="btn-app-settings"
+                title="Configurações do App"
+                hidden
+              >
+                <i class="fa-solid fa-gear"></i>
+              </button>
             </div>
           </div>
         </div>
@@ -1677,6 +1686,7 @@
     <script src="assets/js/view-alunos.js"></script>
     <!-- [6.5] Google Calendar Integration (deve vir antes do script GIS para definir _onGISLoad) -->
     <script src="assets/js/auth/google-identity.js"></script>
+    <script src="assets/js/settings-modal.js"></script>
     <script src="assets/js/google-calendar.js"></script>
     <script
       src="https://accounts.google.com/gsi/client"
@@ -1689,5 +1699,44 @@
     <script src="assets/js/app/bootstrap.js"></script>
     <!-- [8] SPA Entry (deve ser o último) -->
     <script src="assets/js/app.js"></script>
+    
+    <!-- [TAG-HTML-SETTINGS-MODAL] - Modal de Configurações da Aplicação -->
+    <div class="modal-overlay" id="appSettingsModal" style="display: none">
+      <div class="modal" style="max-width: 500px">
+        <h2 class="modal-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+          <span>Configurações</span>
+          <button id="btnCloseSettings" class="btn-modal-close" type="button" title="Fechar">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </h2>
+        
+        <div class="modal-body">
+          <!-- Google Calendar Section -->
+          <div class="settings-section">
+            <h3 class="settings-section-title">Google Calendar</h3>
+            <p class="settings-description">Conecte seu Google Calendar para sincronizar automaticamente as aulas agendadas.</p>
+            
+            <!-- Connect Button (shown when disconnected) -->
+            <button id="btnConnectGoogleCalendar" class="btn-gcal-connect" hidden>
+              <i class="fa-solid fa-calendar"></i>
+              <span>Conectar Google Calendar</span>
+            </button>
+            
+            <!-- Connected State (shown when connected) -->
+            <div id="gcalConnectedState" class="gcal-status-connected" hidden>
+              <span class="gcal-status-indicator">
+                <i class="fa-solid fa-circle"></i> Google Calendar Conectado
+              </span>
+              <button id="btnDisconnectGoogleCalendar" class="btn-gcal-disconnect" type="button">
+                <i class="fa-solid fa-trash"></i>
+                <span>Desconectar</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal Backdrop -->
+    <div id="appSettingsBackdrop" class="modal-backdrop" style="display: none"></div>
   </body>
 </html>

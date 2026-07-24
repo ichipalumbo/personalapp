@@ -260,10 +260,42 @@ async function renewWebhookChannel(req, res) {
   }
 }
 
+async function desconectarGoogleCalendar(req, res) {
+  try {
+    const payload = limparPayloadAuth(req.query);
+    const ownerEmail = obterValor(payload, ['ownerEmail', 'email']);
+
+    if (!ownerEmail) {
+      return res.status(400).json({ error: 'ownerEmail é obrigatório.' });
+    }
+
+    const connection = await GoogleCalendarConnection.findOneAndDelete({ 
+      ownerEmail: String(ownerEmail).toLowerCase() 
+    });
+
+    if (!connection) {
+      return res.status(404).json({
+        success: false,
+        error: 'Google Calendar connection not found.',
+        message: 'Nenhuma conexão do Google Calendar foi encontrada para este email.'
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: 'Google Calendar connection disconnected successfully.',
+      disconnected: true
+    });
+  } catch (err) {
+    responderErroGcalAuth(res, err, 'desconectar Google Calendar');
+  }
+}
+
 module.exports = {
   exchangeAuthCode,
   obterConexaoGoogleCalendar,
   renewWebhookChannel,
+  desconectarGoogleCalendar,
   encryptRefreshToken,
   decryptRefreshToken
 };

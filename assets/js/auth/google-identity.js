@@ -208,6 +208,7 @@
         const sessionName = document.getElementById('headerSessionName');
         const sessionEmail = document.getElementById('headerSessionEmail');
         const sessionAvatar = document.getElementById('headerSessionAvatar');
+        const btnAppSettings = document.getElementById('btnAppSettings');
 
         if (signedOutState) {
             signedOutState.hidden = session.isSignedIn;
@@ -215,6 +216,10 @@
 
         if (signedInState) {
             signedInState.hidden = !session.isSignedIn;
+        }
+
+        if (btnAppSettings) {
+            btnAppSettings.hidden = !session.isSignedIn;
         }
 
         if (sessionName) {
@@ -508,6 +513,68 @@
         return { connected: true, connectedNow: true };
     }
 
+    async function checkCalendarConnectionStatus() {
+        try {
+            const status = await _consultarConexaoCalendario();
+            return status;
+        } catch (error) {
+            console.error('[auth] Erro ao verificar status da conexão do Google Calendar:', error);
+            return { connected: false };
+        }
+    }
+
+    async function deleteCalendarConnection() {
+        const ownerEmail = _getSessionSnapshot().ownerEmail;
+
+        if (!ownerEmail) {
+            throw new Error('Não há sessão ativa para desconectar Google Calendar.');
+        }
+
+        const endpoint = `${API_BASE_URL}/gcal/connection?ownerEmail=${encodeURIComponent(ownerEmail)}`;
+
+        try {
+            const resposta = typeof global.apiFetchBackend === 'function'
+                ? await global.apiFetchBackend(endpoint, { method: 'DELETE' })
+                : await fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: {
+                        ...(global.googleIdentity && global.googleIdentity.getIdToken && global.googleIdentity.getIdToken()
+                            ? { Authorization: 'Bearer ' + global.googleIdentity.getIdToken() }
+                            : {})
+                    }
+                });
+
+            if (!resposta.ok) {
+                const errorData = await resposta.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Falha ao desconectar Google Calendar.');
+            }
+
+            const dados = await resposta.json().catch(() => ({}));
+            _calendarConnected = false;
+            return { disconnected: true, details: dados };
+        } catch (error) {
+            console.error('[auth] Erro ao desconectar Google Calendar:', error);
+            throw error;
+        }
+    }
+
+    function updateGoogleCalendarStatusUI(status) {
+        const btnConnect = document.getElementById('btnConnectGoogleCalendar');
+        const connectedState = document.getElementById('gcalConnectedState');
+
+        if (!btnConnect || !connectedState) {
+            return;
+        }
+
+        if (status && status.connected === true) {
+            btnConnect.hidden = true;
+            connectedState.hidden = false;
+        } else {
+            btnConnect.hidden = false;
+            connectedState.hidden = true;
+        }
+    }
+
     function _initializeGISIdentity() {
         if (_gisInitialized || !global.google || !global.google.accounts || !global.google.accounts.id) {
             return;
@@ -561,6 +628,12 @@
                 _profile = null;
                 _calendarConnected = false;
                 _persistProfile(null);
+                
+                // Close settings modal on sign-out
+                if (typeof global.closeAppSettingsModal === 'function') {
+                    global.closeAppSettingsModal();
+                }
+                
                 _updateUi();
                 _notifyAuthListeners();
                 console.info('[auth] Sessão Google encerrada localmente.');
@@ -617,6 +690,9 @@
             return _profile ? { ..._profile } : null;
         },
         ensureCalendarConnection: ensureCalendarConnection,
+        checkCalendarConnectionStatus: checkCalendarConnectionStatus,
+        deleteCalendarConnection: deleteCalendarConnection,
+        updateGoogleCalendarStatusUI: updateGoogleCalendarStatusUI,
         connectCalendar: function () {
             return ensureCalendarConnection({ interactive: true, force: false });
         },
