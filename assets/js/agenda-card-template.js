@@ -220,12 +220,21 @@
             // [TAG-GCAL-CARD-EXTERNO] Eventos externos do Google Calendar: card somente leitura, sem onclick
             if (comp.source === 'google_external') {
                 classes.push('slot-bloqueado', 'card-bloqueio-externo');
-                const tituloExterno = (comp.descricao || 'Evento externo').replace(/"/g, '&quot;');
+
+                const descricaoExterna = String(comp.descricao || 'Evento externo');
+                const escapeHtml = (value) => String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+                const descricaoExternaSafe = escapeHtml(descricaoExterna);
+                const tituloExterno = descricaoExternaSafe;
                 return `
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)} title="${tituloExterno}">
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
-                            <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-solid fa-lock"></i> ${comp.descricao || 'Evento externo'}</span>
+                            <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-solid fa-lock"></i> ${descricaoExternaSafe}</span>
                             <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
