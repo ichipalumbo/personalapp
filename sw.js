@@ -58,7 +58,12 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
 
-          return caches.match('/index.html');
+          const acceptsHtml = (request.headers.get('accept') || '').includes('text/html');
+          if (request.mode === 'navigate' || acceptsHtml) {
+            return caches.match('/index.html');
+          }
+
+          return new Response('', { status: 504, statusText: 'Offline' });
         })
       )
   );
