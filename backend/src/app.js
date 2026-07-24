@@ -19,6 +19,10 @@ function createApp() {
   app.use(cors());
   app.use(express.json());
 
+  app.get('/google66565d4ae85c3fd9.html', (req, res) => {
+    res.type('text/plain').send('google-site-verification: google66565d4ae85c3fd9.html');
+  });
+
   app.use('/api/gcal', gcalAuthRoutes);
   app.use('/api/auth', gcalAuthRoutes);
   app.use('/api/webhooks', gcalWebhookRoutes);
