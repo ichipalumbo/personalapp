@@ -256,7 +256,12 @@ async function excluirAgendamento(req, res) {
     const excluido = await Agendamento.findOneAndDelete({ ownerEmail, id });
 
     if (!excluido) {
-      return res.status(404).json({ error: `Agendamento com id '${id}' não encontrado.` });
+      return res.status(200).json({
+        ok: true,
+        deleted: false,
+        id,
+        message: 'Agendamento já não existia. Operação idempotente concluída.'
+      });
     }
 
     const excluidoParaGCal = normalizarAgendamentoParaResposta(excluido);
@@ -266,8 +271,22 @@ async function excluirAgendamento(req, res) {
         await deleteEventFromGoogle(ownerEmail, excluidoParaGCal.googleCalendarEventId);
       }
 
-      return res.status(204).send();
+      return res.status(200).json({
+        ok: true,
+        deleted: true,
+        id
+      });
     } catch (gcalErr) {
+      const status = gcalErr && (gcalErr.statusCode || gcalErr.status);
+      if (status === 404 || status === 410) {
+        return res.status(200).json({
+          ok: true,
+          deleted: true,
+          id,
+          message: 'Agendamento removido no MongoDB e evento Google já inexistente.'
+        });
+      }
+
       return montarRespostaFalhaGcal(res, gcalErr, 'excluir', excluidoParaGCal);
     }
   } catch (err) {
