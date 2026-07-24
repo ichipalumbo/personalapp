@@ -19,8 +19,9 @@ function createApp() {
   app.use(cors());
   app.use(express.json());
 
-  app.use('/api/auth', gcalAuthRoutes); // O prefixo pode ser /api/auth/gcal se preferir
-  app.use('/api/webhooks', gcalWebhookRoutes); // Isso vai criar a rota /api/webhooks/gcal
+  app.use('/api/gcal', gcalAuthRoutes);
+  app.use('/api/auth', gcalAuthRoutes);
+  app.use('/api/webhooks', gcalWebhookRoutes);
   app.use('/', healthRoutes);
   app.use('/api/alunos', requireAuth, alunoRoutes);
   app.use('/api/agendamentos', requireAuth, agendamentoRoutes);
