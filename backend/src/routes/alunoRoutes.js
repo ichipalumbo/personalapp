@@ -1,16 +1,26 @@
 const express = require('express');
 const {
   listarAlunos,
+  obterAluno,
+  criarAluno,
+  atualizarAluno,
+  excluirAluno,
   obterKpisAluno,
-  obterKpisTodosAlunos,
-  sincronizarAlunos
+  obterKpisTodosAlunos
 } = require('../controllers/alunoController');
 
 const router = express.Router();
 
-router.get('/', listarAlunos);
+router.route('/')
+  .get(listarAlunos)
+  .post(criarAluno);
+
 router.get('/kpis/todos', obterKpisTodosAlunos);
-router.get('/:alunoId/kpis', obterKpisAluno);
-router.post('/sincronizar', sincronizarAlunos);
+router.get('/:id/kpis', obterKpisAluno);
+
+router.route('/:id')
+  .get(obterAluno)
+  .put(atualizarAluno)
+  .delete(excluirAluno);
 
 module.exports = router;

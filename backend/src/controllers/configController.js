@@ -1,34 +1,233 @@
 const Config = require('../models/Config');
+const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
+
+function responderErroConfig(res, err, contexto) {
+  const statusCode = err && err.statusCode ? err.statusCode : 500;
+
+  console.error(`[ConfigController] Erro ao ${contexto}:`, err.message);
+  if (err && err.stack) {
+    console.error('[ConfigController] Stack:', err.stack);
+  }
+
+  res.status(statusCode).json({
+    error: `Erro ao ${contexto}`,
+    message: err.message,
+    connectionState: Config.db.readyState
+  });
+}
+
+function limparPayloadConfig(payload) {
+  const limpo = { ...(payload || {}) };
+  delete limpo._id;
+  delete limpo.__v;
+  delete limpo.ownerEmail;
+  return limpo;
+}
+
+function montarConfigPadraoGrade(ownerEmail) {
+  return {
+    ownerEmail,
+    chave: 'grade_horarios',
+    horaInicio: '06:00',
+    horaFim: '22:00'
+  };
+}
+
+async function obterOuCriarConfigPadraoGrade(ownerEmail) {
+  return Config.findOneAndUpdate(
+    { ownerEmail, chave: 'grade_horarios' },
+    {
+      $setOnInsert: {
+        ownerEmail,
+        chave: 'grade_horarios',
+        horaInicio: '06:00',
+        horaFim: '22:00'
+      }
+    },
+    { new: true, upsert: true, runValidators: true }
+  );
+}
+
+async function listarConfiguracoes(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const configuracoes = await Config.find({ ownerEmail });
+    res.json(configuracoes);
+  } catch (err) {
+    responderErroConfig(res, err, 'listar configurações');
+  }
+}
 
 async function obterConfiguracao(req, res) {
   try {
-    let config = await Config.findOne({ chave: 'grade_horarios' });
-    if (!config) {
-      config = await Config.create({ chave: 'grade_horarios' });
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    let config = null;
+
+    try {
+      config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
+      if (!config) {
+        config = await obterOuCriarConfigPadraoGrade(ownerEmail);
+      }
+    } catch (dbErr) {
+      console.warn('[ConfigController] Falha ao ler/criar configuração padrão. Usando fallback em memória:', dbErr.message);
+      config = montarConfigPadraoGrade(ownerEmail);
     }
 
     res.json(config);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    responderErroConfig(res, err, 'obter configuração padrão');
+  }
+}
+
+async function obterConfiguracaoGradeHorarios(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    let config = null;
+
+    try {
+      config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
+      if (!config) {
+        config = await obterOuCriarConfigPadraoGrade(ownerEmail);
+      }
+    } catch (dbErr) {
+      console.warn('[ConfigController] Falha ao ler/criar grade_horarios. Usando fallback em memória:', dbErr.message);
+      config = montarConfigPadraoGrade(ownerEmail);
+    }
+
+    res.json(config);
+  } catch (err) {
+    responderErroConfig(res, err, 'obter configuração grade_horarios');
+  }
+}
+
+async function obterConfiguracaoPorChave(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const { id: chave } = req.params;
+    const config = await Config.findOne({ ownerEmail, chave });
+
+    if (!config) {
+      return res.status(404).json({ error: 'Configuração não encontrada.' });
+    }
+
+    res.json(config);
+  } catch (err) {
+    responderErroConfig(res, err, 'obter configuração por chave');
+  }
+}
+
+async function criarConfiguracao(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const payload = limparPayloadConfig(req.body);
+    const chave = payload.chave || 'grade_horarios';
+    const config = await Config.findOneAndUpdate(
+      { ownerEmail, chave },
+      { $set: { ...payload, chave, ownerEmail } },
+      { new: true, upsert: true, runValidators: true }
+    );
+    res.status(200).json(config);
+  } catch (err) {
+    if (err && err.code === 11000) {
+      try {
+        const ownerEmail = getOwnerEmailOrThrow(req);
+        const payload = limparPayloadConfig(req.body);
+        const chave = payload.chave || 'grade_horarios';
+        const config = await Config.findOneAndUpdate(
+          { ownerEmail, chave },
+          { $set: { ...payload, chave, ownerEmail } },
+          { new: true, upsert: true, runValidators: true }
+        );
+
+        return res.status(200).json(config);
+      } catch (fallbackErr) {
+        return responderErroConfig(res, fallbackErr, 'criar configuração');
+      }
+    }
+
+    responderErroConfig(res, err, 'criar configuração');
+  }
+}
+
+async function atualizarConfiguracao(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const { id: chave } = req.params;
+    const payload = limparPayloadConfig(req.body);
+
+    if (payload.chave && payload.chave !== chave) {
+      return res.status(400).json({ error: 'A chave do corpo deve ser igual à chave da rota.' });
+    }
+
+    const config = await Config.findOneAndUpdate(
+      { ownerEmail, chave },
+      { $set: { ...payload, ownerEmail, chave } },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    res.json(config);
+  } catch (err) {
+    responderErroConfig(res, err, 'atualizar configuração');
+  }
+}
+
+async function excluirConfiguracao(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const { id: chave } = req.params;
+    const config = await Config.findOneAndDelete({ ownerEmail, chave });
+
+    if (!config) {
+      return res.status(404).json({ error: 'Configuração não encontrada.' });
+    }
+
+    res.status(204).send();
+  } catch (err) {
+    responderErroConfig(res, err, 'excluir configuração');
   }
 }
 
 async function salvarConfiguracao(req, res) {
   try {
-    const { horaInicio, horaFim } = req.body;
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const payload = limparPayloadConfig(req.body);
+    const { horaInicio, horaFim } = payload;
     const config = await Config.findOneAndUpdate(
-      { chave: 'grade_horarios' },
-      { horaInicio, horaFim },
-      { new: true, upsert: true }
+      { ownerEmail, chave: 'grade_horarios' },
+      { $set: { ownerEmail, chave: 'grade_horarios', horaInicio, horaFim } },
+      { new: true, upsert: true, runValidators: true }
     );
 
     res.json(config);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    if (err && err.code === 11000) {
+      try {
+        const ownerEmail = getOwnerEmailOrThrow(req);
+        const payload = limparPayloadConfig(req.body);
+        const { horaInicio, horaFim } = payload;
+        const config = await Config.findOneAndUpdate(
+          { ownerEmail, chave: 'grade_horarios' },
+          { $set: { ownerEmail, chave: 'grade_horarios', horaInicio, horaFim } },
+          { new: true, upsert: true, runValidators: true }
+        );
+
+        return res.json(config);
+      } catch (fallbackErr) {
+        return responderErroConfig(res, fallbackErr, 'salvar configuração padrão');
+      }
+    }
+
+    responderErroConfig(res, err, 'salvar configuração padrão');
   }
 }
 
 module.exports = {
+  listarConfiguracoes,
   obterConfiguracao,
+  obterConfiguracaoGradeHorarios,
+  obterConfiguracaoPorChave,
+  criarConfiguracao,
+  atualizarConfiguracao,
+  excluirConfiguracao,
   salvarConfiguracao
 };

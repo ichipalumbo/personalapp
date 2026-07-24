@@ -4,12 +4,52 @@
 // Expõe: window.criarCardAgendamento(comp, opcoes)
 
 (function() {
+    const AULA_COR_FALLBACK = '#6B7280';
+
     const BADGE_STYLES = {
         recorrente: 'background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         unico: 'background: rgba(129, 199, 132, 0.15); color: #81C784; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
-        deslocamento: 'background: rgba(255, 152, 0, 0.15); color: #FF9800; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
-        bloqueio: 'background: rgba(239, 83, 80, 0.15); color: #EF5350; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;'
+        deslocamento: 'background: rgba(81, 183, 73, 0.15); color: #51b749; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
+        bloqueio: 'background: rgba(220, 33, 39, 0.15); color: #dc2127; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;'
     };
+
+    function normalizarHex(valorHex) {
+        if (typeof valorHex !== 'string') {
+            return null;
+        }
+
+        const valorLimpo = valorHex.trim();
+        if (!valorLimpo) {
+            return null;
+        }
+
+        if (/^#([0-9a-fA-F]{3})$/.test(valorLimpo)) {
+            return `#${valorLimpo[1]}${valorLimpo[1]}${valorLimpo[2]}${valorLimpo[2]}${valorLimpo[3]}${valorLimpo[3]}`.toUpperCase();
+        }
+
+        if (/^#([0-9a-fA-F]{6})$/.test(valorLimpo)) {
+            return valorLimpo.toUpperCase();
+        }
+
+        return null;
+    }
+
+    function resolverCorObjetivoAula(aluno) {
+        const corObjetivoHex = aluno && aluno.corObjetivo ? aluno.corObjetivo.hex : null;
+        return normalizarHex(corObjetivoHex) || AULA_COR_FALLBACK;
+    }
+
+    function montarStyleComposto(estilos) {
+        if (!Array.isArray(estilos)) {
+            return '';
+        }
+
+        const partes = estilos
+            .map(estilo => (typeof estilo === 'string' ? estilo.trim() : ''))
+            .filter(Boolean);
+
+        return partes.join(' ');
+    }
 
     function normalizarObjetivo(objetivo) {
         return String(objetivo || 'Outro').replace(/\s/g, '');
@@ -104,9 +144,16 @@
 
         if (tipo === 'aula') {
             const aluno = typeof window.getAluno === 'function' ? window.getAluno(comp.alunoId) : null;
+            const alunoInativo = typeof window.alunoEstaAtivo === 'function' ? !window.alunoEstaAtivo(aluno) : false;
             const nome = aluno ? aluno.nome : '❓ Aluno Removido';
             const objetivo = aluno ? (aluno.objective || aluno.objetivo || 'Outro') : 'Outro';
             const local = aluno ? (aluno.local || 'Não definido') : 'Não definido';
+            const corBordaAula = resolverCorObjetivoAula(aluno);
+            const styleCardAula = montarStyleComposto([
+                `border-left-color: ${corBordaAula};`,
+                alunoInativo ? 'opacity: 0.9;' : '',
+                opcoes.style || ''
+            ]);
             let tagNomeHtml = '';
             let tagVisualHtml = '';
 
@@ -115,13 +162,19 @@
             if (comp.reagendada || comp.isReposicao) {
                 tagNomeHtml = `<span class="badge-tag-tipo badge-tag-tipo--reposicao"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
             } else if (comp.frequencia === 'semanal') {
-                tagVisualHtml = `<span class="badge-tag-tipo" style="${BADGE_STYLES.recorrente}"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
+                const badgeLabel = comp.serieOrigemId
+                    ? `<i class="fa-solid fa-arrow-turn-down-right"></i> Continuação`
+                    : `<i class="fa-solid fa-infinity"></i> Recorrente`;
+                tagVisualHtml = `<span class="badge-tag-tipo" style="${BADGE_STYLES.recorrente}">${badgeLabel}</span>`;
             } else {
                 tagVisualHtml = `<span class="badge-tag-tipo" style="${BADGE_STYLES.unico}"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
             }
+            if (alunoInativo) {
+                tagVisualHtml += `<span class="badge-tag-tipo" style="background: rgba(255, 138, 128, 0.15); color: #FF8A80; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash"></i> Aluno inativo</span>`;
+            }
 
             return `
-                <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
+                <div class="${classes.join(' ')}"${montarAtributo('style', styleCardAula)}${montarAtributo('onclick', opcoes.onclick)}>
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
                             <div class="agenda-semana-card-title-group">
@@ -149,7 +202,7 @@
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
-                            <span class="agenda-dia-aula-nome" style="color: #FF9800;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
+                            <span class="agenda-dia-aula-nome" style="color: #51b749;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
                             <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
@@ -164,13 +217,44 @@
         }
 
         if (tipo === 'bloqueio') {
+            // [TAG-GCAL-CARD-EXTERNO] Eventos externos do Google Calendar: card somente leitura, sem onclick
+            if (comp.source === 'google_external') {
+                classes.push('slot-bloqueado', 'card-bloqueio-externo');
+
+                const descricaoExterna = String(comp.descricao || 'Evento externo');
+                const escapeHtml = (value) => String(value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+                const descricaoExternaSafe = escapeHtml(descricaoExterna);
+                const tituloExterno = descricaoExternaSafe;
+                return `
+                <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)} title="${tituloExterno}">
+                    <div class="card-content-wrapper">
+                        <div class="agenda-semana-card-top">
+                            <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-solid fa-lock"></i> ${descricaoExternaSafe}</span>
+                            <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
+                        </div>
+                        <div class="agenda-semana-card-bottom">
+                            <span class="agenda-dia-aula-local"><i class="fa-brands fa-google" style="color: #4285F4;"></i> Google Calendar</span>
+                            <div class="agenda-semana-card-meta">
+                                <span class="badge-tag-tipo" style="${BADGE_STYLES.bloqueio}"><i class="fa-solid fa-lock"></i> Externo</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            }
+
             classes.push('slot-bloqueado');
 
             return `
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
-                            <span class="agenda-dia-aula-nome" style="color: #EF5350;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
+                            <span class="agenda-dia-aula-nome" style="color: #dc2127;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
                             <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">

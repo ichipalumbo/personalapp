@@ -106,17 +106,22 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
         const dataAlvoPura = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
         if (recorrenciaDataInicio) {
             const escopoRecorrencia = comp.recorrenciaEscopo || 'fromDate';
-            const incluirMesAtualRetroativo = comp.recorrenciaIncluirMesAtualRetroativo === true;
             if (escopoRecorrencia === 'monthOfDate') {
                 if (dataAlvoPura.getFullYear() !== recorrenciaDataInicio.getFullYear() || dataAlvoPura.getMonth() !== recorrenciaDataInicio.getMonth()) {
                     return false;
                 }
-            } else {
-                const mesmoMesAnoDaDataInicio = dataAlvoPura.getFullYear() === recorrenciaDataInicio.getFullYear()
-                    && dataAlvoPura.getMonth() === recorrenciaDataInicio.getMonth();
-                if (dataAlvoPura < recorrenciaDataInicio && !(incluirMesAtualRetroativo && mesmoMesAnoDaDataInicio)) {
-                    return false;
-                }
+            } else if (dataAlvoPura < recorrenciaDataInicio) {
+                return false;
+            }
+        }
+
+        if (comp.recorrenciaFimCondicao === 'untilDate' && comp.recorrenciaDataFim) {
+            const _fimISO = typeof window.converterPtBrParaISO === 'function'
+                ? window.converterPtBrParaISO(comp.recorrenciaDataFim) : null;
+            if (_fimISO) {
+                const _fimData = new Date(_fimISO + 'T12:00:00');
+                const _fimPura = new Date(_fimData.getFullYear(), _fimData.getMonth(), _fimData.getDate());
+                if (dataAlvoPura > _fimPura) return false;
             }
         }
 
@@ -133,7 +138,14 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     if (!comp.data) {
         return comp.dia === diaTexto;
     }
-    return comp.data === dataStr;
+    // Handle both ISO format (YYYY-MM-DD) and Brazilian format (DD/MM/YYYY)
+    // External Google Calendar events use ISO format; app events use Brazilian format
+    if (comp.data === dataStr) {
+        return true; // Brazilian format match
+    }
+    // Try ISO format: convert dataAlvo to ISO and compare
+    const isoDate = dataAlvo.getFullYear() + '-' + String(dataAlvo.getMonth() + 1).padStart(2, '0') + '-' + String(dataAlvo.getDate()).padStart(2, '0');
+    return comp.data === isoDate;
 };
 
 function getDiasNoMes(mes, ano) {

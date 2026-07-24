@@ -29,22 +29,25 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const requestUrl = new URL(request.url);
 
-  if (
-    request.method !== 'GET' ||
-    (requestUrl.protocol !== 'http:' && requestUrl.protocol !== 'https:')
-  ) {
+  const isSameOrigin = requestUrl.origin === self.location.origin;
+  const isApiRequest = isSameOrigin && requestUrl.pathname.startsWith('/api/');
+  const isCacheableGet =
+    request.method === 'GET' &&
+    (requestUrl.protocol === 'http:' || requestUrl.protocol === 'https:') &&
+    isSameOrigin &&
+    !isApiRequest;
+
+  if (!isCacheableGet) {
     return;
   }
 
   event.respondWith(
     fetch(request)
       .then((networkResponse) => {
-        if (requestUrl.protocol === 'http:' || requestUrl.protocol === 'https:') {
+        // Cache only successful same-origin "basic" responses (avoid caching opaque/error responses).
+        if (networkResponse && networkResponse.ok && networkResponse.type === 'basic') {
           const responseToCache = networkResponse.clone();
-
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseToCache));
         }
 
         return networkResponse;
@@ -55,7 +58,12 @@ self.addEventListener('fetch', (event) => {
             return cachedResponse;
           }
 
-          return caches.match('/index.html');
+          const acceptsHtml = (request.headers.get('accept') || '').includes('text/html');
+          if (request.mode === 'navigate' || acceptsHtml) {
+            return caches.match('/index.html');
+          }
+
+          return new Response('', { status: 504, statusText: 'Offline' });
         })
       )
   );

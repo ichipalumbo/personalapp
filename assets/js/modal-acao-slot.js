@@ -16,12 +16,47 @@
 // Exposto em window para acesso cross-módulo (widget-stepper-duracao usa para edicao)
 window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
 
+// Dirty-check key for renderizarListaReposicoes — null forces a render on the next call.
+let _ultimaChaveRenderReposicoes = null;
+
+function compromissoTemAlunoInativo(compromisso) {
+    if (!compromisso || (compromisso.tipo || 'aula') !== 'aula') return false;
+    if (typeof window.getAluno !== 'function' || typeof window.alunoEstaAtivo !== 'function') return false;
+    const aluno = window.getAluno(compromisso.alunoId);
+    return !window.alunoEstaAtivo(aluno);
+}
+
+function aplicarModoSomenteLeituraAlunoInativo(compromisso) {
+    const aviso = document.getElementById('editAvisoAlunoInativo');
+    const btnSalvar = document.querySelector('#formEditarCompromisso button[type="submit"]');
+    const acoesUnico = document.getElementById('acoesCompromissoUnico');
+    const acoesRecorrente = document.getElementById('acoesCompromissoRecorrente');
+    const campos = [
+        'editHoraInicio',
+        'editDuracao',
+        'editDiaSemana',
+        'editDescricao',
+        'editBloqueioDiaInteiro'
+    ];
+
+    const somenteLeitura = compromissoTemAlunoInativo(compromisso);
+    if (aviso) aviso.style.display = somenteLeitura ? 'block' : 'none';
+    if (btnSalvar) btnSalvar.style.display = somenteLeitura ? 'none' : 'inline-flex';
+    if (acoesUnico) acoesUnico.style.display = somenteLeitura ? 'none' : acoesUnico.style.display;
+    if (acoesRecorrente) acoesRecorrente.style.display = somenteLeitura ? 'none' : acoesRecorrente.style.display;
+
+    campos.forEach((id) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = somenteLeitura;
+    });
+}
+
 // ── Escopo de Edição da Recorrência ───────────────────────────────────────────────────────────
 
 /** @param {string} escopo @returns {string} label curto do escopo */
 window.getLabelEscopoRecorrencia = function(escopo) {
     if (escopo === 'occurrence') return 'Somente esta aula';
-    if (escopo === 'monthOfDate') return 'Este mês todo';
     if (escopo === 'entireSeries') return 'Todas as aulas da série';
     return 'Daqui pra frente';
 };
@@ -29,7 +64,6 @@ window.getLabelEscopoRecorrencia = function(escopo) {
 /** @param {string} escopo @returns {string} descrição completa do escopo */
 window.getResumoEscopoRecorrencia = function(escopo) {
     if (escopo === 'occurrence') return 'Vai aplicar somente nesta aula específica.';
-    if (escopo === 'monthOfDate') return 'Vai aplicar nas aulas deste mês.';
     if (escopo === 'entireSeries') return 'Vai aplicar na série inteira.';
     return 'Vai aplicar nesta aula e nas próximas da série.';
 };
@@ -72,7 +106,16 @@ window.abrirModalAcaoSlot = function(id) {
     const compromisso = aulas.find(a => a.id === id);
     if (!compromisso) return;
 
+    // [TAG-GCAL-READONLY] Eventos externos do Google Calendar são somente leitura
+    if (compromisso.source === 'google_external') {
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('🔒 Este horário está bloqueado por um evento do Google Calendar.', 'warning');
+        }
+        return;
+    }
+
     const freq = compromisso.frequencia || 'uma_vez';
+    const alunoInativo = compromissoTemAlunoInativo(compromisso);
     document.getElementById('editCompromissoFrequencia').value = freq;
 
     const badge = document.getElementById('badgeTipoCompromisso');
@@ -95,11 +138,16 @@ window.abrirModalAcaoSlot = function(id) {
         if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'none';
         if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr';
         if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr';
-    } else {
+    } else if (!alunoInativo) {
         if (btnMandarReposicao) btnMandarReposicao.style.display = 'inline-flex';
         if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'inline-flex';
         if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr 1fr';
         if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr 1fr';
+    } else {
+        if (btnMandarReposicao) btnMandarReposicao.style.display = 'none';
+        if (btnReagendarInstancia) btnReagendarInstancia.style.display = 'none';
+        if (acoesUnico) acoesUnico.style.gridTemplateColumns = '1fr';
+        if (recorrenteTopRow) recorrenteTopRow.style.gridTemplateColumns = '1fr';
     }
 
     if (freq === 'semanal') {
@@ -108,7 +156,10 @@ window.abrirModalAcaoSlot = function(id) {
         badge.className = "modal-badge badge-aula"; 
         
         containerDiaSemana.style.display = 'block';
-        document.getElementById('editDiaSemana').value = compromisso.dia || "Segunda";
+        const _isoAlvoDia = typeof window.converterPtBrParaISO === 'function' ? window.converterPtBrParaISO(dataAlvoStr) : null;
+        const _idxDiaAlvo = _isoAlvoDia ? new Date(_isoAlvoDia + 'T12:00:00').getDay() : -1;
+        const _nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        document.getElementById('editDiaSemana').value = (_idxDiaAlvo >= 0 ? _nomesDias[_idxDiaAlvo] : null) || compromisso.dia || 'Segunda';
         document.getElementById('editInfoDia').textContent = `Série Recorrente • Gerenciando dia: ${dataAlvoStr}`;
         if (containerEscopo) containerEscopo.style.display = 'block';
         if (inputEscopo) inputEscopo.value = 'fromDate';
@@ -181,6 +232,7 @@ window.abrirModalAcaoSlot = function(id) {
     }
 
     if (modal) modal.style.display = 'flex';
+    aplicarModoSomenteLeituraAlunoInativo(compromisso);
 };
 
 window.fecharModalAcaoSlot = function() {
@@ -253,14 +305,14 @@ window.abrirReagendarAulaModalSlot = function(dia, hora) {
             if (!idsUnicos.has(rep.alunoId)) {
                 idsUnicos.add(rep.alunoId);
                 const alunoObj = window.getAluno(rep.alunoId);
-                if (alunoObj) {
+                if (alunoObj && (typeof window.alunoEstaAtivo !== 'function' || window.alunoEstaAtivo(alunoObj))) {
                     alunosComFila.push(alunoObj);
                 }
             }
         });
 
         if (alunosComFila.length === 0) {
-            selectAluno.innerHTML = '<option value="">Não existem alunos com reposição pendente!</option>';
+            selectAluno.innerHTML = '<option value="">Não existem alunos ativos com reposição pendente.</option>';
         } else {
             selectAluno.innerHTML = '<option value="">Selecione o aluno...</option>' + 
                 alunosComFila.map(a => `<option value="${a.id}">${a.nome}</option>`).join('');
@@ -282,6 +334,13 @@ window.abrirReagendarAulaModalSlot = function(dia, hora) {
 window.iniciarReagendamentoReposicao = function(id) {
     const rep = aulasParaRepor.find(r => r.id === id);
     if (!rep) return;
+    const alunoRep = typeof window.getAluno === 'function' ? window.getAluno(rep.alunoId) : null;
+    if (typeof window.alunoEstaAtivo === 'function' && !window.alunoEstaAtivo(alunoRep)) {
+        if (typeof mostrarToast === 'function') {
+            mostrarToast('Não é possível reagendar para aluno inativo.', 'warning');
+        }
+        return;
+    }
     window.reagendamentoDirectCardId = id;
 
     const modal = document.getElementById('modalReagendarAula');
@@ -328,6 +387,14 @@ window.togglePainelReposicoes = function() {
 window.renderizarListaReposicoes = function() {
     const container = document.getElementById('listaReposicoesPendentes');
     if (!container) return;
+
+    // Dirty-check: skip the DOM write if the list is unchanged.
+    const _chaveAtual = (function () {
+        try { return JSON.stringify(aulasParaRepor); } catch (_) { return null; }
+    })();
+    if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderReposicoes) return;
+    _ultimaChaveRenderReposicoes = _chaveAtual;
+
     if (!aulasParaRepor || aulasParaRepor.length === 0) {
         container.innerHTML = `<p style="font-size: 0.8rem; color: #666; text-align: center; padding: 10px;">Sem reposições pendentes.</p>`;
         return;
@@ -395,6 +462,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const hInicio = document.getElementById('reagendarHoraInicio').value;
             const duracao = document.getElementById('reagendarDuracao').value;
             const hFim = window.somarMinutos(hInicio, duracao);
+            const alunoAgendamento = typeof window.getAluno === 'function' ? window.getAluno(alunoId) : null;
+            if (typeof window.alunoEstaAtivo === 'function' && !window.alunoEstaAtivo(alunoAgendamento)) {
+                alert('Não é possível agendar reposição para aluno inativo.');
+                return;
+            }
             let novoCompromisso = {
                 id: Date.now().toString(),
                 dia: dia,
@@ -413,11 +485,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 aulasParaRepor = aulasParaRepor.filter(r => r.id !== repId);
             }
 
-            if (typeof salvarDados === 'function') salvarDados();
-
             window.fecharReagendarAulaModal();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição marcada com sucesso!');
+            
+            // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
+            if (typeof window.enriquecerAgendamentoComDadosFrescos === 'function') {
+                window.enriquecerAgendamentoComDadosFrescos(novoCompromisso);
+            }
+            
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                // Optimistic UI in salvarEventoComGCal renders immediately — no inicializarHome needed.
+                window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' });
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição marcada com sucesso!');
+            }
         });
     }
 
@@ -428,6 +510,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: compromisso disponível somente para visualização.');
+                return;
+            }
+            // [TAG-GCAL] Snapshot antes da mutação para revert se MongoDB falhar
+            const _snapshotEdicao = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
+            // Captura nova ocorrência avulsa criada no escopo 'occurrence' para GCal sync duplo
+            let _novaOcorrenciaSerie = null;
+            // Captura nova série criada no escopo 'fromDate' para GCal sync duplo
+            let _novaSerieSplit = null;
 
             const tipo = compromisso.tipo || 'aula';
             const diaInteiro = tipo === 'bloqueio' && document.getElementById('editBloqueioDiaInteiro')?.checked;
@@ -479,20 +571,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!compromisso.excecoes.includes(dataAlvoStr)) compromisso.excecoes.push(dataAlvoStr);
 
                     const novoId = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                    // Determina o dia da semana correto da ocorrência clicada (não o primeiro dia da série)
+                    const _isoOcorrencia = window.converterPtBrParaISO(dataAlvoStr);
+                    const _idxOcorrencia = _isoOcorrencia ? new Date(_isoOcorrencia + 'T12:00:00').getDay() : -1;
+                    const _nomesDiasOcorrencia = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _diaOcorrencia = _idxOcorrencia >= 0 ? _nomesDiasOcorrencia[_idxOcorrencia] : (compromisso.dia || 'Segunda');
                     const novoCompromisso = {
                         ...compromisso,
                         id: novoId,
                         frequencia: 'uma_vez',
                         data: dataAlvoStr,
-                        dia: compromisso.dia,
+                        dia: _diaOcorrencia,
                         horarioInicio: hInicio,
                         horarioFim: hFim,
                         fullDay: diaInteiro,
                         excecoes: [],
-                        excecoesDetalhadas: []
+                        excecoesDetalhadas: [],
+                        googleCalendarEventId: null  // novo evento — não herdar o ID da série
                     };
                     aulas.push(novoCompromisso);
-                } else {
+                    _novaOcorrenciaSerie = novoCompromisso;
+                } else if (escopoRecorrencia === 'entireSeries') {
                     const datas = window.getDatasConflitoRecorrencia(candidato, 20);
                     const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, { ignorarIds: [compromisso.id] });
                     if (conflitos.length > 0) {
@@ -501,6 +600,93 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
+                    compromisso.horarioInicio = hInicio;
+                    compromisso.horarioFim = hFim;
+                    compromisso.fullDay = diaInteiro;
+                    compromisso.recorrenciaEscopo = escopoRecorrencia;
+                    // Não altera recorrenciaDataInicio — GCal deve manter o DTSTART original
+
+                    // Atualiza diasSemana se o dia da semana foi alterado
+                    const _selDiaEs = document.getElementById('editDiaSemana').value;
+                    const _isoAlvoEs = window.converterPtBrParaISO(dataAlvoStr);
+                    const _idxAlvoEs = _isoAlvoEs ? new Date(_isoAlvoEs + 'T12:00:00').getDay() : -1;
+                    const _nomesDiasEs = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _diaClicadoEs = _idxAlvoEs >= 0 ? _nomesDiasEs[_idxAlvoEs] : compromisso.dia;
+                    if (_diaClicadoEs && _selDiaEs && _diaClicadoEs !== _selDiaEs && Array.isArray(compromisso.diasSemana)) {
+                        compromisso.diasSemana = compromisso.diasSemana.map(d => d === _diaClicadoEs ? _selDiaEs : d);
+                    }
+                } else if (escopoRecorrencia === 'fromDate') {
+                    // Calcula o dia anterior à data clicada para UNTIL da série original
+                    const _isoAlvoFd = window.converterPtBrParaISO(dataAlvoStr);
+                    const _dtAlvoFd = new Date(_isoAlvoFd + 'T12:00:00');
+                    _dtAlvoFd.setDate(_dtAlvoFd.getDate() - 1);
+                    const _isoAnteriorFd = _dtAlvoFd.getFullYear() + '-'
+                        + String(_dtAlvoFd.getMonth() + 1).padStart(2, '0') + '-'
+                        + String(_dtAlvoFd.getDate()).padStart(2, '0');
+                    const _ptBrAnteriorFd = _isoAnteriorFd.split('-').reverse().join('/');
+
+                    // Determina o dia clicado e o novo dia selecionado pelo usuário
+                    const _selDiaFd = document.getElementById('editDiaSemana').value;
+                    const _idxAlvoFd = _isoAlvoFd ? new Date(_isoAlvoFd + 'T12:00:00').getDay() : -1;
+                    const _nomesDiasFd = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _diaClicadoFd = _idxAlvoFd >= 0 ? _nomesDiasFd[_idxAlvoFd] : compromisso.dia;
+                    const _diasSemanaNova = Array.isArray(compromisso.diasSemana)
+                        ? compromisso.diasSemana.map(d => (_diaClicadoFd && d === _diaClicadoFd) ? _selDiaFd : d)
+                        : compromisso.diasSemana;
+
+                    // Verifica conflitos para a nova série
+                    const _candidatoFd = window.getCompromissoSerializadoParaConflito(Object.assign({}, compromisso, {
+                        data: dataAlvoStr,
+                        recorrenciaDataInicio: dataAlvoStr,
+                        diasSemana: _diasSemanaNova,
+                        dia: _selDiaFd,
+                        horarioInicio: hInicio,
+                        horarioFim: hFim
+                    }), dataAlvoStr);
+                    const _datasFd = window.getDatasConflitoRecorrencia(_candidatoFd, 20);
+                    const _conflitosFd = window.getConflitosRecorrenciaEmDatas(_candidatoFd, _datasFd, { ignorarIds: [compromisso.id] });
+                    if (_conflitosFd.length > 0) {
+                        const _resumoFd = window.gerarResumoConflitosDatas(_conflitosFd, 5);
+                        alert(`Não foi possível salvar. Existem conflitos em: ${_resumoFd}.`);
+                        return;
+                    }
+
+                    // Encerra a série original um dia antes da data clicada
+                    compromisso.recorrenciaFimCondicao = 'untilDate';
+                    compromisso.recorrenciaDataFim = _ptBrAnteriorFd;
+                    // Não altera horário nem diasSemana da série original — as mudanças ficam na nova série
+
+                    // Cria nova série a partir da data clicada
+                    const _novoIdFd = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+                    const _novaSerieFd = Object.assign({}, compromisso, {
+                        id: _novoIdFd,
+                        data: dataAlvoStr,
+                        recorrenciaDataInicio: dataAlvoStr,
+                        horarioInicio: hInicio,
+                        horarioFim: hFim,
+                        fullDay: diaInteiro,
+                        dia: _selDiaFd,
+                        diasSemana: _diasSemanaNova,
+                        googleCalendarEventId: null,
+                        excecoes: [],
+                        excecoesDetalhadas: [],
+                        serieOrigemId: compromisso.id,
+                        recorrenciaEscopo: 'fromDate'
+                    });
+                    // Nova série não tem prazo de término — remove campos de encerramento herdados
+                    delete _novaSerieFd.recorrenciaFimCondicao;
+                    delete _novaSerieFd.recorrenciaDataFim;
+                    aulas.push(_novaSerieFd);
+                    _novaSerieSplit = _novaSerieFd;
+                } else {
+                    // monthOfDate e outros escopos futuros
+                    const datas = window.getDatasConflitoRecorrencia(candidato, 20);
+                    const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, { ignorarIds: [compromisso.id] });
+                    if (conflitos.length > 0) {
+                        const resumo = window.gerarResumoConflitosDatas(conflitos, 5);
+                        alert(`Não foi possível salvar. Existem conflitos em: ${resumo}.`);
+                        return;
+                    }
                     compromisso.horarioInicio = hInicio;
                     compromisso.horarioFim = hFim;
                     compromisso.fullDay = diaInteiro;
@@ -525,7 +711,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 compromisso.fullDay = diaInteiro;
             }
 
-            if (freq === 'semanal') {
+            if (freq === 'semanal' && escopoRecorrencia !== 'occurrence' && escopoRecorrencia !== 'fromDate') {
                 compromisso.dia = document.getElementById('editDiaSemana').value;
                 delete compromisso.data;
             }
@@ -535,11 +721,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!diaInteiro) delete compromisso.fullDay;
             }
 
-            if (typeof salvarDados === 'function') salvarDados();
-
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('✅ Alterações salvas com sucesso!');
+            
+            // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
+            if (typeof window.enriquecerAgendamentoComDadosFrescos === 'function') {
+                window.enriquecerAgendamentoComDadosFrescos(compromisso);
+            }
+            
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                const _gcalSeriePromise = window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshotEdicao });
+                if (_novaOcorrenciaSerie) {
+                    // occurrence: depois de adicionar EXDATE na série, cria o evento avulso com novo horário
+                    _gcalSeriePromise
+                        .then(() => window.salvarEventoComGCal(_novaOcorrenciaSerie, { operacao: 'criar' }));
+                } else if (_novaSerieSplit) {
+                    // fromDate: termina série original com UNTIL, depois cria nova série a partir da data clicada
+                    _gcalSeriePromise
+                        .then(() => window.salvarEventoComGCal(_novaSerieSplit, { operacao: 'criar' }));
+                }
+                // Optimistic UI in salvarEventoComGCal already rendered the result — no inicializarHome needed.
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Alterações salvas com sucesso!');
+            }
         });
     }
 
@@ -553,13 +758,27 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── Ações sobre Slots ─────────────────────────────────────────────────────────────────────
     const btnDeletar = document.getElementById('btnDeletarDefinitivo');
     if (btnDeletar) {
-        btnDeletar.addEventListener('click', () => {
-            aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
-            if (typeof salvarDados === 'function') salvarDados();
-            
+        btnDeletar.addEventListener('click', async () => {
+            const _compDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            if (compromissoTemAlunoInativo(_compDeletar)) {
+                alert('Aluno inativo: não é possível cancelar ou excluir este compromisso.');
+                return;
+            }
+            const _idxDeletar = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+            if (_idxDeletar !== -1) aulas.splice(_idxDeletar, 1);
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('🗑️ Compromisso único cancelado!');
+            if (_compDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(_compDeletar, { operacao: 'excluir', snapshotAnterior: _compDeletar }).then(async () => {
+                    await window.inicializarHome({ sincronizar: true });
+                    if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                    if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+                });
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                await window.inicializarHome({ sincronizar: true });
+                if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+            }
         });
     }
 
@@ -568,6 +787,10 @@ document.addEventListener('DOMContentLoaded', () => {
         btnMandarReposicao.addEventListener('click', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: não é possível reagendar este compromisso.');
+                return;
+            }
 
             aulasParaRepor.push({
                 id: Date.now().toString(),
@@ -575,12 +798,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataCancelamento: compromisso.data || new Date().toLocaleDateString('pt-BR')
             });
             
-            aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
-            if (typeof salvarDados === 'function') salvarDados();
-
+            const _idxReposicao = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+            if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula única enviada para reposição!');
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(compromisso, { operacao: 'excluir', snapshotAnterior: compromisso }).then(() => window.inicializarHome());
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula única enviada para reposição!');
+            }
         });
     }
 
@@ -589,18 +816,32 @@ document.addEventListener('DOMContentLoaded', () => {
         btnDeletarInstancia.addEventListener('click', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: não é possível cancelar este compromisso.');
+                return;
+            }
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
+            const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
             if (!compromisso.excecoes) compromisso.excecoes = [];
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
             }
 
-            if (typeof salvarDados === 'function') salvarDados();
-            
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast(`📅 Aula de ${dataAlvoStr} cancelada!`);
+
+            const _posDeletar = async () => {
+                await window.inicializarHome({ sincronizar: true });
+                if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+            };
+
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshot }).then(_posDeletar);
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                _posDeletar();
+            }
         });
     }
 
@@ -609,8 +850,13 @@ document.addEventListener('DOMContentLoaded', () => {
         btnReagendarInstancia.addEventListener('click', () => {
             const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
             if (!compromisso) return;
+            if (compromissoTemAlunoInativo(compromisso)) {
+                alert('Aluno inativo: não é possível reagendar este compromisso.');
+                return;
+            }
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
+            const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
             if (!compromisso.excecoes) compromisso.excecoes = [];
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
@@ -622,23 +868,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 dataCancelamento: dataAlvoStr
             });
 
-            if (typeof salvarDados === 'function') salvarDados();
-            
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
+
+            const _posReagendar = () => {
+                window.inicializarHome();
+                if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
+            };
+
+            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                // Optimistic UI already rendered — show only the toast, skip inicializarHome.
+                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshot })
+                    .then(function () {
+                        if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
+                    });
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                _posReagendar();
+            }
         });
     }
 
     const btnDeletarSerie = document.getElementById('btnDeletarSerie');
     if (btnDeletarSerie) {
-        btnDeletarSerie.addEventListener('click', () => {
-            aulas = aulas.filter(a => a.id !== window.idCompromissoSelecionado);
-            if (typeof salvarDados === 'function') salvarDados();
-            
+        btnDeletarSerie.addEventListener('click', async () => {
+            const _serieDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            if (compromissoTemAlunoInativo(_serieDeletar)) {
+                alert('Aluno inativo: não é possível cancelar esta série.');
+                return;
+            }
+            const _idxSerie = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+
+            if (_serieDeletar && _serieDeletar.serieOrigemId) {
+                const _continuar = confirm(
+                    'Esta série é uma continuação de uma série histórica anterior.\n\n' +
+                    'Ao excluí-la, a série original (períodos anteriores) continuará existindo separadamente no app. ' +
+                    'Caso queira removê-la também, exclua manualmente a série marcada como "Recorrente".\n\n' +
+                    'Deseja excluir esta série de continuação?'
+                );
+                if (!_continuar) return;
+            }
+
+            if (_idxSerie !== -1) aulas.splice(_idxSerie, 1);
             window.fecharModalAcaoSlot();
-            window.inicializarHome();
-            if (typeof mostrarToast === 'function') mostrarToast('🗑️ Série recorrente excluída do calendário!');
+            if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(async () => {
+                    await window.inicializarHome({ sincronizar: true });
+                    if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                    if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+                });
+            } else {
+                if (typeof salvarDados === 'function') salvarDados();
+                await window.inicializarHome({ sincronizar: true });
+                if (typeof renderizarCalendario === 'function') renderizarCalendario();
+                if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
+            }
         });
     }
 });

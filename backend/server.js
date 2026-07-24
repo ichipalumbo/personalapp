@@ -7,7 +7,13 @@ const { connectToDatabase } = require('./src/config/database');
 const { port, mongoURI } = getEnvConfig();
 const app = createApp();
 
-connectToDatabase(mongoURI);
+console.log('🔧 Inicializando servidor...');
+console.log(`📦 Environment: ${process.env.NODE_ENV || 'desenvolvimento'}`);
+console.log(`📡 Porta: ${port}`);
+
+connectToDatabase(mongoURI).catch((err) => {
+  console.error('❌ Falha ao conectar ao MongoDB:', err && err.message ? err.message : err);
+});
 
 if (require.main === module) {
   app.listen(port, () => {

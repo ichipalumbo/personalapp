@@ -9,6 +9,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="AgendaPersonalTrainer" />
+    <link rel="icon" type="image/png" href="assets/icon-192x192.png?v=1" />
     <title>Prô Josy - Agenda Personal Trainer</title>
     <link rel="manifest" href="manifest.json" />
     <link rel="apple-touch-icon" href="assets/icon-192x192.png" />
@@ -19,34 +20,70 @@
     <div class="container">
       <!-- [TAG-HTML-HEADER] - Menu e Controle Global de Navegação (SPA) -->
       <header class="header">
-        <div class="brand-container">
-          <h1 class="marca-titulo">
-            <span class="marca-ativa"
-              ><i class="fa-solid fa-dumbbell"></i> Prô</span
-            ><span class="marca-mente"> Josy</span>
-          </h1>
-          <p class="marca-subtitulo">
-            <i class="fa-solid fa-hand-fist"></i>Personal Trainer
-          </p>
+        <div class="header-topline">
+          <div class="brand-container">
+            <h1 class="marca-titulo">
+              <span class="marca-ativa"
+                ><i class="fa-solid fa-dumbbell"></i> Prô</span
+              ><span class="marca-mente"> Josy</span>
+            </h1>
+          </div>
+          <div class="auth-banner" id="headerSession">
+            <div id="googleSignedOutState" class="header-session-state">
+              <span class="header-readonly-pill"
+                ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para
+                editar.</span
+              >
+              <button
+                id="custom-google-login"
+                type="button"
+                class="btn-google-custom"
+              >
+                <i class="fa-brands fa-google"></i>
+                <span>Entrar com Google</span>
+              </button>
+            </div>
+            <div id="googleSignedInState" class="header-session-summary" hidden>
+              <span
+                class="header-session-avatar"
+                id="headerSessionAvatar"
+                aria-hidden="true"
+                >G</span
+              >
+              <div class="header-session-copy">
+                <strong id="headerSessionName">Conectado com Google</strong>
+                <span id="headerSessionEmail">Conta ativa</span>
+              </div>
+              <button
+                id="btnGoogleSignOut"
+                type="button"
+                class="btn-google-signout"
+                title="Trocar conta Google"
+              >
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span>Sair</span>
+              </button>
+            </div>
+          </div>
         </div>
-        <div class="header-actions">
-          <nav class="header-nav">
-            <a href="#" class="nav-link ativo" data-target="tela-home">
-              <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
-            </a>
-            <a href="#" class="nav-link inativo" data-target="tela-calendario">
-              <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
-            </a>
-            <a href="#" class="nav-link inativo" data-target="tela-alunos">
-              <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
-            </a>
-          </nav>
-        </div>
+
+        <nav class="header-nav">
+          <a href="#" class="nav-link ativo" data-target="tela-home">
+            <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
+          </a>
+          <a href="#" class="nav-link inativo" data-target="tela-calendario">
+            <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
+          </a>
+          <a href="#" class="nav-link inativo" data-target="tela-alunos">
+            <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
+          </a>
+        </nav>
       </header>
+
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section">
         <div class="home-weekly-topbar">
-          <section class="alunos-grid home-kpi-grid">
+          <section class="alunos-grid home-kpi-grid" style="display: none">
             <div class="card-stat home-kpi-card">
               <span class="stat-numero home-kpi-value" id="totalAulasHoje"
                 >0</span
@@ -120,6 +157,72 @@
                   >
                     Hoje
                   </button>
+                </div>
+              </div>
+              <div
+                class="home-weekly-nav-row"
+                style="justify-content: flex-end; margin-top: 6px"
+              >
+                <div
+                  class="sync-actions-row"
+                  style="
+                    display: flex;
+                    flex-direction: row;
+                    align-items: center;
+                    gap: 12px;
+                  "
+                >
+                  <button
+                    id="btnSyncBanco"
+                    class="btn btn-sm"
+                    style="
+                      background: #1e2a18;
+                      color: #b7f2b1;
+                      border: 1px solid #35592f;
+                      font-size: 0.78rem;
+                      padding: 5px 12px;
+                      border-radius: 8px;
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 6px;
+                      cursor: pointer;
+                      transition: all 0.3s ease;
+                    "
+                    onclick="
+                      window.sincronizarBancoDados &&
+                        window.sincronizarBancoDados()
+                    "
+                    title="Forçar sincronização dos dados com o MongoDB"
+                  >
+                    <i class="fa-solid fa-database"></i>
+                    <span id="btnSyncBancoText">Sincronizar Dados</span>
+                  </button>
+                  <button
+                    id="btnSyncGoogleCalendar"
+                    class="btn btn-sm"
+                    style="
+                      background: #152236;
+                      color: #bcd9ff;
+                      border: 1px solid #2f4f7a;
+                      font-size: 0.78rem;
+                      padding: 5px 12px;
+                      border-radius: 8px;
+                      display: inline-flex;
+                      align-items: center;
+                      gap: 6px;
+                      cursor: pointer;
+                      transition: all 0.3s ease;
+                    "
+                    title="Atualizar calendário Google agora, sem depender de mudar de tela"
+                  >
+                    <i class="fa-brands fa-google"></i>
+                    <span id="btnSyncText">Atualizar Calendário</span>
+                  </button>
+                  <small
+                    id="ultimaSincronizacao"
+                    class="ultima-sincronizacao-label"
+                    style="font-size: 0.65rem; color: #888"
+                  ></small>
                 </div>
               </div>
             </div>
@@ -269,6 +372,9 @@
                 <button id="btnHoje" class="btn-hoje-pill btn-hoje-agenda">
                   <i class="fa-solid fa-bullseye"></i>Hoje
                 </button>
+                <span id="diaSemanaAtual" class="agenda-dia-semana-mobile"
+                  >Carregando...</span
+                >
               </div>
             </div>
           </div>
@@ -360,6 +466,31 @@
             ></i
             >Seus Alunos
           </h3>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 10px;
+              margin-bottom: 14px;
+            "
+          >
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="filtroAlunosStatus">Filtrar por status</label>
+              <select id="filtroAlunosStatus">
+                <option value="todos" selected>Todos</option>
+                <option value="ativo">Ativos</option>
+                <option value="inativo">Inativos</option>
+              </select>
+            </div>
+            <div class="form-grupo-spa" style="margin-bottom: 0">
+              <label for="filtroAlunosObjetivo">Filtrar por objetivo</label>
+              <select id="filtroAlunosObjetivo">
+                <option value="todos" selected>Todos</option>
+                <option value="Personal Trainer">Personal Trainer</option>
+                <option value="Consultoria Online">Consultoria Online</option>
+              </select>
+            </div>
+          </div>
           <div class="alunos-grid" id="listaAlunos"></div>
         </section>
 
@@ -369,7 +500,21 @@
 
         <div class="modal-overlay" id="modalFormAluno" style="display: none">
           <div class="modal-alunos-corpo">
-            <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
+            <div class="modal-alunos-header">
+              <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
+              <label
+                class="status-toggle modal-aluno-status-toggle"
+                for="alunoStatusSwitch"
+              >
+                <input type="checkbox" id="alunoStatusSwitch" checked />
+                <span class="status-toggle-track" aria-hidden="true">
+                  <span class="status-toggle-knob"></span>
+                </span>
+                <span id="alunoStatusSwitchStatus" class="status-toggle-label"
+                  >Ativo</span
+                >
+              </label>
+            </div>
             <form id="formNovoAluno" class="form-aluno">
               <input type="hidden" id="alunoIdEdicao" value="" />
               <div class="form-grupo-spa">
@@ -382,7 +527,27 @@
                 />
               </div>
               <div class="form-grupo-spa">
-                <label for="alunoLocal">Local de Treino *</label>
+                <label for="alunoObjetivoSwitch">Objetivo</label>
+                <label class="full-day-toggle" for="alunoObjetivoSwitch">
+                  <input type="checkbox" id="alunoObjetivoSwitch" />
+                  <span class="full-day-toggle-ui">
+                    <span class="full-day-toggle-text">
+                      <i class="fa-solid fa-bullseye"></i>
+                      <span id="alunoObjetivoSwitchStatus"
+                        >Personal Trainer</span
+                      >
+                    </span>
+                    <span
+                      class="full-day-toggle-pill"
+                      aria-hidden="true"
+                    ></span>
+                  </span>
+                </label>
+              </div>
+              <div class="form-grupo-spa">
+                <label for="alunoLocal" id="alunoLocalLabel"
+                  >Local de Treino *</label
+                >
                 <input
                   type="text"
                   id="alunoLocal"
@@ -427,18 +592,16 @@
                   placeholder="(11) 99999-9999"
                 />
               </div>
-              <div class="form-grupo-spa">
-                <label for="alunoObjetivo">Objetivo</label>
-                <select id="alunoObjetivo">
-                  <option value="">Personal Trainer</option>
-                  <option value="Hipertrofia">Hipertrofia</option>
-                  <option value="Emagrecimento">Emagrecimento</option>
-                  <option value="Condicionamento">Condicionamento</option>
-                  <option value="Funcional">Funcional</option>
-                  <option value="Outro">Outro</option>
-                </select>
-              </div>
               <div class="modal-alunos-acoes">
+                <button
+                  type="button"
+                  class="btn btn-danger"
+                  id="btnExcluirAlunoModal"
+                  style="margin-right: auto; display: none"
+                  title="Excluir Aluno"
+                >
+                  <i class="fa-solid fa-trash"></i>
+                </button>
                 <button
                   type="button"
                   class="btn btn-secondary"
@@ -1242,13 +1405,6 @@
               <button
                 type="button"
                 class="btn-escopo-recorrencia"
-                data-escopo="monthOfDate"
-              >
-                Este mês todo
-              </button>
-              <button
-                type="button"
-                class="btn-escopo-recorrencia"
                 data-escopo="entireSeries"
               >
                 Todas as aulas
@@ -1275,6 +1431,17 @@
               "
             ></small>
           </div>
+          <small
+            id="editAvisoAlunoInativo"
+            style="
+              display: none;
+              margin: -4px 0 12px;
+              color: #ff8a80;
+              font-size: 0.78rem;
+              font-weight: 700;
+            "
+            >Aluno inativo — compromisso disponível somente para visualização.</small
+          >
           <div
             class="form-grupo-spa"
             id="editDiaSemanaContainer"
@@ -1531,7 +1698,17 @@
     <script src="assets/js/agenda-card-template.js"></script>
     <script src="assets/js/view-home.js"></script>
     <script src="assets/js/view-calendario.js"></script>
+    <!-- [6.1] Cascade Sync (sincronização em cascata de alunos para agendamentos) -->
+    <script src="assets/js/cascade-sync-aluno.js"></script>
     <script src="assets/js/view-alunos.js"></script>
+    <!-- [6.5] Google Calendar Integration (deve vir antes do script GIS para definir _onGISLoad) -->
+    <script src="assets/js/auth/google-identity.js"></script>
+    <script src="assets/js/google-calendar.js"></script>
+    <script
+      src="https://accounts.google.com/gsi/client"
+      async
+      onload="_onGISLoad()"
+    ></script>
     <!-- [7] App Shell -->
     <script src="assets/js/app/service-worker.js"></script>
     <script src="assets/js/app/router.js"></script>
