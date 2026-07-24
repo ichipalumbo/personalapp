@@ -376,6 +376,12 @@ async function fetchCalendarPage(oauth2Client, path) {
 async function listCalendarEvents(oauth2Client, connection) {
   const syncToken = connection.syncToken || null;
 
+  console.log('[GcalWebhookDiag] Preparando listagem de eventos para sincronizacao.', {
+    ownerEmail: connection.ownerEmail,
+    syncMode: syncToken ? 'incremental' : 'full',
+    syncToken
+  });
+
   if (syncToken) {
     const params = new URLSearchParams({
       syncToken,
@@ -436,6 +442,12 @@ async function persistSyncResults(connection, payload) {
   const activeEvents = Array.isArray(payload.activeItems) ? payload.activeItems : [];
   const cancelledEvents = Array.isArray(payload.cancelledItems) ? payload.cancelledItems : [];
 
+  console.log('[GcalWebhookDiag] Persistindo resultados de sincronizacao.', {
+    ownerEmail,
+    activeEvents: activeEvents.length,
+    cancelledItems: cancelledEvents.length
+  });
+
   const remoteIds = new Set();
 
   for (const event of activeEvents) {
@@ -444,6 +456,10 @@ async function persistSyncResults(connection, payload) {
     }
 
     if (event.status === 'cancelled') {
+      console.log('[GcalWebhookDiag] Evento marcado como cancelado durante varredura de ativos; removendo localmente.', {
+        ownerEmail,
+        eventId: event.id
+      });
       await deleteBloqueio(ownerEmail, event.id);
       await deleteAgendamento(ownerEmail, event.id);
       continue;
@@ -453,6 +469,12 @@ async function persistSyncResults(connection, payload) {
       continue;
     }
 
+    console.log('[GcalWebhookDiag] Upsert de evento externo no bloqueio.', {
+      ownerEmail,
+      eventId: event.id,
+      summary: event.summary || null
+    });
+
     remoteIds.add(event.id);
     await upsertBloqueio(ownerEmail, event);
   }
@@ -461,6 +483,11 @@ async function persistSyncResults(connection, payload) {
     if (!event || !event.id) {
       continue;
     }
+
+    console.log('[GcalWebhookDiag] Evento cancelado recebido; removendo localmente.', {
+      ownerEmail,
+      eventId: event.id
+    });
 
     await deleteBloqueio(ownerEmail, event.id);
     await deleteAgendamento(ownerEmail, event.id);
@@ -660,6 +687,11 @@ async function syncConnection(connection) {
 }
 
 async function syncConnectionByWebhookHeaders(channelId, resourceId) {
+  console.log('[GcalWebhookDiag] Iniciando sincronizacao por webhook headers.', {
+    channelId,
+    resourceId
+  });
+
   if (!channelId || !resourceId) {
     const error = new Error('x-goog-channel-id and x-goog-resource-id are required.');
     error.statusCode = 400;
@@ -677,6 +709,11 @@ async function syncConnectionByWebhookHeaders(channelId, resourceId) {
     throw error;
   }
 
+  console.log('[GcalWebhookDiag] Conexao encontrada para webhook.', {
+    connectionId: String(connection._id),
+    ownerEmail: connection.ownerEmail
+  });
+
   const result = await syncConnection(connection);
 
   await GoogleCalendarConnection.findByIdAndUpdate(connection._id, {
@@ -684,6 +721,8 @@ async function syncConnectionByWebhookHeaders(channelId, resourceId) {
       lastWebhookAt: new Date()
     }
   });
+
+  console.log(`Webhook processing complete for user ${connection.ownerEmail}.`);
 
   return result;
 }

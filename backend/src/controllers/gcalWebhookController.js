@@ -4,6 +4,13 @@ async function processGcalWebhook(req, res) {
   try {
     const channelId = req.get('x-goog-channel-id');
     const resourceId = req.get('x-goog-resource-id');
+    const resourceState = req.get('x-goog-resource-state');
+
+    console.log('[GcalWebhookDiag] Webhook recebido do Google Calendar.', {
+      channelId,
+      resourceId,
+      resourceState
+    });
 
     if (!channelId || !resourceId) {
       return res.status(400).json({
