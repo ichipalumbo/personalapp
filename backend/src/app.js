@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 
-const gcalAuthRoutes = require('./routes/gcalAuthRoutes');
+const { createGcalAuthRoutes } = require('./routes/gcalAuthRoutes');
 const gcalWebhookRoutes = require('./routes/gcalWebhookRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const alunoRoutes = require('./routes/alunoRoutes');
@@ -16,6 +16,7 @@ function createApp() {
   const app = express();
   const { googleClientIds, mongoURI } = getEnvConfig();
   const requireAuth = createRequireAuth({ googleClientIds });
+  const gcalAuthRoutes = createGcalAuthRoutes(requireAuth);
 
   app.use(cors());
   app.use(express.json());

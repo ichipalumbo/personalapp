@@ -1,9 +1,16 @@
 const express = require('express');
-const { exchangeAuthCode, obterConexaoGoogleCalendar } = require('../controllers/gcalAuthController');
+const { exchangeAuthCode, obterConexaoGoogleCalendar, renewWebhookChannel } = require('../controllers/gcalAuthController');
 
-const router = express.Router();
+function createGcalAuthRoutes(requireAuth) {
+	const router = express.Router();
 
-router.get('/connection', obterConexaoGoogleCalendar);
-router.post('/exchange', exchangeAuthCode);
+	router.get('/connection', obterConexaoGoogleCalendar);
+	router.post('/exchange', exchangeAuthCode);
+	router.post('/webhook/renew', requireAuth, renewWebhookChannel);
 
-module.exports = router;
+	return router;
+}
+
+module.exports = {
+	createGcalAuthRoutes
+};

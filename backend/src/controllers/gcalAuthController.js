@@ -1,6 +1,8 @@
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
+const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
+const { registerWebhookChannel, renewWebhookChannelForOwner } = require('../services/gcalSyncService');
 
 function getEncryptionKey() {
   const rawKey = process.env.ENCRYPTION_KEY;
@@ -76,6 +78,28 @@ function obterValor(payload, chaves) {
   }
 
   return null;
+}
+
+function montarRespostaConexao(connection) {
+  return {
+    ownerEmail: connection.ownerEmail,
+    googleUserId: connection.googleUserId,
+    googleEmail: connection.googleEmail,
+    googleName: connection.googleName,
+    googlePicture: connection.googlePicture,
+    calendarId: connection.calendarId,
+    scope: connection.scope,
+    accessTokenExpiryDate: connection.accessTokenExpiryDate,
+    syncToken: connection.syncToken,
+    channelId: connection.channelId,
+    channelResourceId: connection.channelResourceId,
+    channelExpiration: connection.channelExpiration,
+    lastSyncAt: connection.lastSyncAt,
+    lastWebhookAt: connection.lastWebhookAt,
+    lastConnectedAt: connection.lastConnectedAt,
+    createdAt: connection.createdAt,
+    updatedAt: connection.updatedAt
+  };
 }
 
 async function trocarCodigoPorTokens(authCode) {
@@ -177,21 +201,12 @@ async function exchangeAuthCode(req, res) {
       }
     );
 
+    oauth2Client.setCredentials(tokens);
+    const registeredConnection = await registerWebhookChannel(connection, oauth2Client);
+
     return res.status(200).json({
       message: 'Google Calendar connection saved successfully.',
-      connection: {
-        ownerEmail: connection.ownerEmail,
-        googleUserId: connection.googleUserId,
-        googleEmail: connection.googleEmail,
-        googleName: connection.googleName,
-        googlePicture: connection.googlePicture,
-        calendarId: connection.calendarId,
-        scope: connection.scope,
-        accessTokenExpiryDate: connection.accessTokenExpiryDate,
-        lastConnectedAt: connection.lastConnectedAt,
-        createdAt: connection.createdAt,
-        updatedAt: connection.updatedAt
-      }
+      connection: montarRespostaConexao(registeredConnection)
     });
   } catch (err) {
     if (err && err.message === 'invalid_grant') {
@@ -224,32 +239,31 @@ async function obterConexaoGoogleCalendar(req, res) {
 
     return res.json({
       connected: true,
-      connection: {
-        ownerEmail: connection.ownerEmail,
-        googleUserId: connection.googleUserId,
-        googleEmail: connection.googleEmail,
-        googleName: connection.googleName,
-        googlePicture: connection.googlePicture,
-        calendarId: connection.calendarId,
-        syncToken: connection.syncToken,
-        channelId: connection.channelId,
-        channelResourceId: connection.channelResourceId,
-        channelExpiration: connection.channelExpiration,
-        lastSyncAt: connection.lastSyncAt,
-        lastWebhookAt: connection.lastWebhookAt,
-        lastConnectedAt: connection.lastConnectedAt,
-        createdAt: connection.createdAt,
-        updatedAt: connection.updatedAt
-      }
+      connection: montarRespostaConexao(connection)
     });
   } catch (err) {
     responderErroGcalAuth(res, err, 'obter conexão do Google Calendar');
   }
 }
 
+async function renewWebhookChannel(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const connection = await renewWebhookChannelForOwner(ownerEmail);
+
+    return res.status(200).json({
+      message: 'Google Calendar webhook renewed successfully.',
+      connection: montarRespostaConexao(connection)
+    });
+  } catch (err) {
+    responderErroGcalAuth(res, err, 'renovar webhook do Google Calendar');
+  }
+}
+
 module.exports = {
   exchangeAuthCode,
   obterConexaoGoogleCalendar,
+  renewWebhookChannel,
   encryptRefreshToken,
   decryptRefreshToken
 };

@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
+const { google } = require('googleapis');
 const Agendamento = require('../models/Agendamento');
 const BloqueioExterno = require('../models/BloqueioExterno');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
@@ -265,6 +266,38 @@ async function getClientForOwner(ownerEmail) {
   return { connection, oauth2Client };
 }
 
+function getWebhookAddress() {
+  const rawBaseUrl = process.env.BACKEND_URL;
+
+  if (!rawBaseUrl) {
+    const error = new Error('BACKEND_URL is not configured.');
+    error.statusCode = 500;
+    throw error;
+  }
+
+  let parsed;
+
+  try {
+    parsed = new URL(String(rawBaseUrl));
+  } catch (_) {
+    const error = new Error('BACKEND_URL is not a valid URL.');
+    error.statusCode = 500;
+    throw error;
+  }
+
+  if (parsed.protocol !== 'https:') {
+    const error = new Error('BACKEND_URL must be a public HTTPS URL for Google Calendar webhooks.');
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const basePath = parsed.pathname && parsed.pathname !== '/'
+    ? parsed.pathname.replace(/\/$/, '')
+    : '';
+
+  return `${parsed.origin}${basePath}/api/webhooks/gcal`;
+}
+
 async function calendarFetch(oauth2Client, path, options = {}) {
   const accessTokenResponse = await oauth2Client.getAccessToken();
   const accessToken = typeof accessTokenResponse === 'string'
@@ -443,6 +476,47 @@ async function saveConnectionSyncState(connectionId, updates) {
   );
 }
 
+async function registerWebhookChannel(connection, oauth2Client) {
+  if (!connection || !connection._id) {
+    const error = new Error('Google Calendar connection not found.');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (!oauth2Client) {
+    const error = new Error('Authenticated Google client is required to register the webhook channel.');
+    error.statusCode = 500;
+    throw error;
+  }
+
+  const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+  const watchRequest = {
+    id: crypto.randomUUID(),
+    type: 'web_hook',
+    address: getWebhookAddress()
+  };
+
+  const response = await calendar.events.watch({
+    calendarId: connection.calendarId || 'primary',
+    requestBody: watchRequest
+  });
+
+  const channelExpiration = response && response.data && response.data.expiration
+    ? new Date(Number(response.data.expiration))
+    : null;
+
+  return saveConnectionSyncState(connection._id, {
+    channelId: response && response.data && response.data.id ? String(response.data.id) : watchRequest.id,
+    channelResourceId: response && response.data && response.data.resourceId ? String(response.data.resourceId) : null,
+    channelExpiration: channelExpiration && !Number.isNaN(channelExpiration.getTime()) ? channelExpiration : null
+  });
+}
+
+async function renewWebhookChannelForOwner(ownerEmail) {
+  const { connection, oauth2Client } = await getClientForOwner(ownerEmail);
+  return registerWebhookChannel(connection, oauth2Client);
+}
+
 async function pushEventToGoogle(ownerEmail, agendamento) {
   const { connection, oauth2Client } = await getClientForOwner(ownerEmail);
   const evento = montarEventoGoogle(agendamento);
@@ -606,6 +680,8 @@ module.exports = {
   pushEventToGoogle,
   updateEventInGoogle,
   deleteEventFromGoogle,
+  registerWebhookChannel,
+  renewWebhookChannelForOwner,
   decryptRefreshToken,
   isAppOwnedEvent,
   mapEventToBloqueio
