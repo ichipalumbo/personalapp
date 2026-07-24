@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
+const Agendamento = require('../models/Agendamento');
 const BloqueioExterno = require('../models/BloqueioExterno');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 
@@ -385,18 +386,23 @@ async function deleteBloqueio(ownerEmail, googleCalendarEventId) {
   return BloqueioExterno.findOneAndDelete({ ownerEmail, googleCalendarEventId });
 }
 
+async function deleteAgendamento(ownerEmail, googleCalendarEventId) {
+  return Agendamento.findOneAndDelete({ ownerEmail, googleCalendarEventId });
+}
+
 async function persistSyncResults(connection, payload) {
   const ownerEmail = connection.ownerEmail;
   const activeEvents = Array.isArray(payload.activeItems) ? payload.activeItems : [];
   const cancelledEvents = Array.isArray(payload.cancelledItems) ? payload.cancelledItems : [];
 
-  const filteredActiveEvents = activeEvents.filter((event) => !isAppOwnedEvent(event));
-  const filteredCancelledEvents = cancelledEvents.filter((event) => !isAppOwnedEvent(event));
-
   const remoteIds = new Set();
 
-  for (const event of filteredActiveEvents) {
+  for (const event of activeEvents) {
     if (!event || !event.id) {
+      continue;
+    }
+
+    if (isAppOwnedEvent(event)) {
       continue;
     }
 
@@ -404,12 +410,13 @@ async function persistSyncResults(connection, payload) {
     await upsertBloqueio(ownerEmail, event);
   }
 
-  for (const event of filteredCancelledEvents) {
+  for (const event of cancelledEvents) {
     if (!event || !event.id) {
       continue;
     }
 
     await deleteBloqueio(ownerEmail, event.id);
+    await deleteAgendamento(ownerEmail, event.id);
   }
 
   if (!connection.syncToken) {
