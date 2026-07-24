@@ -1,4 +1,5 @@
 const Agendamento = require('../models/Agendamento');
+const Aluno = require('../models/Aluno');
 const { normalizarBloqueio } = require('../services/agendamentoService');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 const {
@@ -99,6 +100,37 @@ function montarPayloadGCal(agendamento) {
   };
 }
 
+async function enriquecerAgendamentoComAluno(ownerEmail, agendamento) {
+  if (!agendamento || !agendamento.alunoId) {
+    return agendamento;
+  }
+
+  const aluno = await Aluno.findOne({
+    ownerEmail,
+    id: String(agendamento.alunoId)
+  }).lean();
+
+  if (!aluno) {
+    return agendamento;
+  }
+
+  const enriquecido = { ...agendamento };
+
+  if (!enriquecido.alunoNome && aluno.nome) {
+    enriquecido.alunoNome = String(aluno.nome);
+  }
+
+  if (!enriquecido.objetivo && aluno.objetivo) {
+    enriquecido.objetivo = String(aluno.objetivo);
+  }
+
+  if (!enriquecido.local && aluno.local) {
+    enriquecido.local = String(aluno.local);
+  }
+
+  return enriquecido;
+}
+
 async function listarAgendamentos(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -149,7 +181,8 @@ async function criarAgendamento(req, res) {
       { new: true, upsert: true, runValidators: true }
     );
 
-    const agendamentoParaGCal = normalizarAgendamentoParaResposta(agendamento);
+    const agendamentoParaGCalBase = normalizarAgendamentoParaResposta(agendamento);
+    const agendamentoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, agendamentoParaGCalBase);
 
     try {
       let resultadoGCal = null;
@@ -191,7 +224,8 @@ async function criarAgendamento(req, res) {
           { new: true, upsert: true, runValidators: true }
         );
 
-        const agendamentoParaGCal = normalizarAgendamentoParaResposta(agendamento);
+        const agendamentoParaGCalBase = normalizarAgendamentoParaResposta(agendamento);
+        const agendamentoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, agendamentoParaGCalBase);
 
         try {
           const resultadoGCal = await pushEventToGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal));
