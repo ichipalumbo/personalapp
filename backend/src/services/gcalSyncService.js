@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
+const Agendamento = require('../models/Agendamento');
 const BloqueioExterno = require('../models/BloqueioExterno');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 
@@ -385,6 +386,10 @@ async function deleteBloqueio(ownerEmail, googleCalendarEventId) {
   return BloqueioExterno.findOneAndDelete({ ownerEmail, googleCalendarEventId });
 }
 
+async function deleteAgendamento(ownerEmail, googleCalendarEventId) {
+  return Agendamento.findOneAndDelete({ ownerEmail, googleCalendarEventId });
+}
+
 async function persistSyncResults(connection, payload) {
   const ownerEmail = connection.ownerEmail;
   const activeEvents = Array.isArray(payload.activeItems) ? payload.activeItems : [];
@@ -392,6 +397,12 @@ async function persistSyncResults(connection, payload) {
 
   const filteredActiveEvents = activeEvents.filter((event) => !isAppOwnedEvent(event));
   const filteredCancelledEvents = cancelledEvents.filter((event) => !isAppOwnedEvent(event));
+  const appOwnedActiveEvents = activeEvents.filter((event) => isAppOwnedEvent(event));
+
+  let deletedBloqueios = 0;
+  let deletedAgendamentos = 0;
+  let upsertedBloqueios = 0;
+  const ignoredAppOwnedActive = appOwnedActiveEvents.length;
 
   const remoteIds = new Set();
 
@@ -401,15 +412,26 @@ async function persistSyncResults(connection, payload) {
     }
 
     remoteIds.add(event.id);
-    await upsertBloqueio(ownerEmail, event);
+    const upserted = await upsertBloqueio(ownerEmail, event);
+    if (upserted) {
+      upsertedBloqueios += 1;
+    }
   }
 
-  for (const event of filteredCancelledEvents) {
+  for (const event of cancelledEvents) {
     if (!event || !event.id) {
       continue;
     }
 
-    await deleteBloqueio(ownerEmail, event.id);
+    const deletedBloqueio = await deleteBloqueio(ownerEmail, event.id);
+    if (deletedBloqueio) {
+      deletedBloqueios += 1;
+    }
+
+    const deletedAgendamento = await deleteAgendamento(ownerEmail, event.id);
+    if (deletedAgendamento) {
+      deletedAgendamentos += 1;
+    }
   }
 
   if (!connection.syncToken) {
@@ -422,10 +444,24 @@ async function persistSyncResults(connection, payload) {
       }
 
       if (!currentRemoteIds.has(bloqueio.googleCalendarEventId)) {
-        await deleteBloqueio(ownerEmail, bloqueio.googleCalendarEventId);
+        const deletedBloqueio = await deleteBloqueio(ownerEmail, bloqueio.googleCalendarEventId);
+        if (deletedBloqueio) {
+          deletedBloqueios += 1;
+        }
       }
     }
   }
+
+  console.info('[GcalSyncService] Incoming event processing summary:', {
+    ownerEmail,
+    activeItems: activeEvents.length,
+    cancelledItems: cancelledEvents.length,
+    ignoredAppOwnedActive,
+    upsertedBloqueios,
+    deletedBloqueios,
+    deletedAgendamentos,
+    cancelledExternalItems: filteredCancelledEvents.length
+  });
 }
 
 async function saveConnectionSyncState(connectionId, updates) {
