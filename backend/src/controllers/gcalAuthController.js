@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
+const Agendamento = require('../models/Agendamento');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 const { registerWebhookChannel, renewWebhookChannelForOwner } = require('../services/gcalSyncService');
 
@@ -269,8 +270,11 @@ async function desconectarGoogleCalendar(req, res) {
       return res.status(400).json({ error: 'ownerEmail é obrigatório.' });
     }
 
+    const normalizedEmail = String(ownerEmail).toLowerCase();
+
+    // Delete the Google Calendar connection token
     const connection = await GoogleCalendarConnection.findOneAndDelete({ 
-      ownerEmail: String(ownerEmail).toLowerCase() 
+      ownerEmail: normalizedEmail
     });
 
     if (!connection) {
@@ -281,10 +285,25 @@ async function desconectarGoogleCalendar(req, res) {
       });
     }
 
+    // Delete all external blocks (google_external source) for this user
+    let deletedBlocksCount = 0;
+    try {
+      const deleteResult = await Agendamento.deleteMany({
+        ownerEmail: normalizedEmail,
+        source: 'google_external'
+      });
+      deletedBlocksCount = deleteResult.deletedCount || 0;
+      console.log(`[GcalAuthController] Deleted ${deletedBlocksCount} external blocks for ${normalizedEmail}`);
+    } catch (blockDeleteError) {
+      console.warn('[GcalAuthController] Warning: Failed to delete external blocks:', blockDeleteError.message);
+      // Don't fail the entire disconnect operation if block deletion fails
+    }
+
     return res.json({
       success: true,
       message: 'Google Calendar connection disconnected successfully.',
-      disconnected: true
+      disconnected: true,
+      externalBlocksDeleted: deletedBlocksCount
     });
   } catch (err) {
     responderErroGcalAuth(res, err, 'desconectar Google Calendar');

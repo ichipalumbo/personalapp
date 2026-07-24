@@ -127,12 +127,13 @@
         if (!btnConnect) return;
 
         const originalText = btnConnect.textContent;
+        let originalSpan = '';
         btnConnect.disabled = true;
 
         try {
             // Show loading state
             const span = btnConnect.querySelector('span');
-            const originalSpan = span ? span.textContent : '';
+            originalSpan = span ? span.textContent : '';
             if (span) {
                 span.textContent = 'Conectando...';
             }
@@ -179,12 +180,13 @@
         const btnDisconnect = document.getElementById('btnDisconnectGoogleCalendar');
         if (!btnDisconnect) return;
 
+        let originalIcon = '';
         btnDisconnect.disabled = true;
 
         try {
             // Show loading state
             const icon = btnDisconnect.querySelector('i');
-            const originalIcon = icon ? icon.className : '';
+            originalIcon = icon ? icon.className : '';
             if (icon) {
                 icon.className = 'fa-solid fa-spinner fa-spin';
             }
@@ -196,6 +198,17 @@
                 // Update UI
                 if (typeof global.googleIdentity.updateGoogleCalendarStatusUI === 'function') {
                     global.googleIdentity.updateGoogleCalendarStatusUI({ connected: false });
+                }
+
+                // Refresh calendar data to remove external blocks from UI
+                if (typeof window.sincronizarBancoDados === 'function') {
+                    console.log('[settings-modal] Sincronizando dados para remover blocos externos...');
+                    try {
+                        await window.sincronizarBancoDados();
+                    } catch (syncError) {
+                        console.warn('[settings-modal] Aviso: Falha na sincronização após desconexão:', syncError);
+                        // Don't fail the entire flow - show success anyway since disconnect succeeded
+                    }
                 }
 
                 // Show success toast
