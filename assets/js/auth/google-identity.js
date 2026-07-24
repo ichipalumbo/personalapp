@@ -2,6 +2,8 @@
     'use strict';
 
     const CLIENT_ID = '799456461369-r4g75ok414jf9gb104um8j0k0ucimu1g.apps.googleusercontent.com';
+    const API_BASE_URL = 'https://personal-app-api.vercel.app/api';
+    const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
     const PROFILE_CACHE_KEY = 'gis_profile_cache';
     const READY_TIMEOUT_MS = 1500;
     const AUTO_PROMPT_ON_INIT = false;
@@ -14,6 +16,10 @@
     let _readyResolved = false;
     let _resolveReady = null;
     let _promptBloqueado = false;
+    let _calendarCodeClient = null;
+    let _calendarConnected = false;
+    let _pendingCalendarCodeResolver = null;
+    let _pendingCalendarCodeRejecter = null;
     const _authListeners = [];
 
     const _readyPromise = new Promise(function (resolve) {
@@ -321,6 +327,187 @@
         });
     }
 
+    function _initializeGISCalendarCodeClient() {
+        if (_calendarCodeClient || !global.google || !global.google.accounts || !global.google.accounts.oauth2) {
+            return;
+        }
+
+        _calendarCodeClient = global.google.accounts.oauth2.initCodeClient({
+            client_id: global.__appGoogleConfig.clientId,
+            scope: CALENDAR_SCOPE,
+            ux_mode: 'popup',
+            callback: function (response) {
+                if (_pendingCalendarCodeResolver) {
+                    _pendingCalendarCodeResolver(response || {});
+                }
+                _pendingCalendarCodeResolver = null;
+                _pendingCalendarCodeRejecter = null;
+            },
+            error_callback: function (error) {
+                if (_pendingCalendarCodeRejecter) {
+                    _pendingCalendarCodeRejecter(error || new Error('Falha ao solicitar autorização de calendário.'));
+                }
+                _pendingCalendarCodeResolver = null;
+                _pendingCalendarCodeRejecter = null;
+            }
+        });
+    }
+
+    async function _postCalendarCodeToBackend(code) {
+        const ownerEmail = _getSessionSnapshot().ownerEmail;
+
+        if (!ownerEmail) {
+            throw new Error('Faça login com Google antes de conectar o calendário.');
+        }
+
+        const endpoints = [
+            `${API_BASE_URL}/gcal/exchange`,
+            `${API_BASE_URL}/auth/exchange`,
+            `${API_BASE_URL}/auth`,
+            `${API_BASE_URL}/gcal`
+        ];
+
+        let ultimoErro = null;
+
+        for (const endpoint of endpoints) {
+            try {
+                let resposta;
+                if (typeof global.apiFetchBackend === 'function') {
+                    resposta = await global.apiFetchBackend(endpoint, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ code, ownerEmail })
+                    });
+                } else {
+                    resposta = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(global.googleIdentity && global.googleIdentity.getIdToken && global.googleIdentity.getIdToken()
+                                ? { Authorization: 'Bearer ' + global.googleIdentity.getIdToken() }
+                                : {})
+                        },
+                        body: JSON.stringify({ code, ownerEmail })
+                    });
+                }
+
+                if (resposta.status === 404) {
+                    continue;
+                }
+
+                if (!resposta.ok) {
+                    const detalhe = await resposta.text().catch(() => '');
+                    throw new Error(`Backend retornou ${resposta.status}: ${detalhe}`);
+                }
+
+                const dados = await resposta.json().catch(() => ({}));
+                _calendarConnected = true;
+                return dados;
+            } catch (error) {
+                ultimoErro = error;
+            }
+        }
+
+        throw ultimoErro || new Error('Não foi possível enviar o Auth Code para o backend.');
+    }
+
+    async function _consultarConexaoCalendario() {
+        const ownerEmail = _getSessionSnapshot().ownerEmail;
+
+        if (!ownerEmail) {
+            return { connected: false };
+        }
+
+        const endpoints = [
+            `${API_BASE_URL}/gcal/connection?ownerEmail=${encodeURIComponent(ownerEmail)}`,
+            `${API_BASE_URL}/auth/connection?ownerEmail=${encodeURIComponent(ownerEmail)}`
+        ];
+
+        for (const endpoint of endpoints) {
+            try {
+                const resposta = typeof global.apiFetchBackend === 'function'
+                    ? await global.apiFetchBackend(endpoint, { method: 'GET' })
+                    : await fetch(endpoint, {
+                        method: 'GET',
+                        headers: {
+                            ...(global.googleIdentity && global.googleIdentity.getIdToken && global.googleIdentity.getIdToken()
+                                ? { Authorization: 'Bearer ' + global.googleIdentity.getIdToken() }
+                                : {})
+                        }
+                    });
+
+                if (resposta.status === 404) {
+                    continue;
+                }
+
+                if (!resposta.ok) {
+                    continue;
+                }
+
+                const dados = await resposta.json().catch(() => ({}));
+                const connected = !!(dados && (dados.connected === true || dados.connection));
+                _calendarConnected = connected;
+                return { connected, details: dados };
+            } catch (_) {
+                // tenta o próximo endpoint
+            }
+        }
+
+        _calendarConnected = false;
+        return { connected: false };
+    }
+
+    function _solicitarAuthCodeCalendario() {
+        return new Promise(function (resolve, reject) {
+            if (!_calendarCodeClient) {
+                reject(new Error('Cliente de autorização de calendário não inicializado.'));
+                return;
+            }
+
+            const profile = _profile || null;
+            const hint = profile && profile.email ? String(profile.email) : undefined;
+
+            _pendingCalendarCodeResolver = resolve;
+            _pendingCalendarCodeRejecter = reject;
+
+            _calendarCodeClient.requestCode({
+                hint,
+                prompt: 'consent'
+            });
+        });
+    }
+
+    async function ensureCalendarConnection(options = {}) {
+        const opts = options && typeof options === 'object' ? options : {};
+        const interactive = opts.interactive === true;
+        const force = opts.force === true;
+
+        if (!global.googleIdentity || !global.googleIdentity.isSignedIn || !global.googleIdentity.isSignedIn()) {
+            throw new Error('Faça login com Google antes de conectar o calendário.');
+        }
+
+        if (!force && _calendarConnected) {
+            return { connected: true, fromCache: true };
+        }
+
+        const statusAtual = await _consultarConexaoCalendario();
+        if (statusAtual.connected) {
+            return statusAtual;
+        }
+
+        if (!interactive) {
+            return { connected: false, needsConsent: true };
+        }
+
+        const codeResponse = await _solicitarAuthCodeCalendario();
+        if (!codeResponse || !codeResponse.code) {
+            throw new Error('Não foi possível obter o código de autorização do Google Calendar.');
+        }
+
+        await _postCalendarCodeToBackend(codeResponse.code);
+        return { connected: true, connectedNow: true };
+    }
+
     function _initializeGISIdentity() {
         if (_gisInitialized || !global.google || !global.google.accounts || !global.google.accounts.id) {
             return;
@@ -337,6 +524,7 @@
         });
 
         _bindCustomLoginButton();
+        _initializeGISCalendarCodeClient();
         _updateUi();
 
         if (AUTO_PROMPT_ON_INIT) {
@@ -371,6 +559,7 @@
 
                 _idToken = null;
                 _profile = null;
+                _calendarConnected = false;
                 _persistProfile(null);
                 _updateUi();
                 _notifyAuthListeners();
@@ -426,6 +615,13 @@
         },
         getProfile: function () {
             return _profile ? { ..._profile } : null;
+        },
+        ensureCalendarConnection: ensureCalendarConnection,
+        connectCalendar: function () {
+            return ensureCalendarConnection({ interactive: true, force: false });
+        },
+        getCalendarConnectionStatus: function () {
+            return _consultarConexaoCalendario();
         },
         addAuthChangeListener: addAuthChangeListener,
         refreshButton: _bindCustomLoginButton,

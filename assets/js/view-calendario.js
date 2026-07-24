@@ -23,12 +23,6 @@ window.inicializarPaginaCalendario = async function(opcoes = {}) {
     window.preencherFiltrosAlunos();
 
     window.alternarModoCalendario(window.modoCalendarioAtivo);
-    // Dispara sincronização GCal para a semana atual (se autenticado)
-    _dispararSincGCal();
-    // Carrega e exibe o timestamp da última sincronização
-    if (typeof window.inicializarUltimaSincronizacao === 'function') {
-        window.inicializarUltimaSincronizacao();
-    }
 };
 
 /**
@@ -411,49 +405,6 @@ window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     };
 };
 
-// [TAG-GCAL-HELPERS] Auxiliares para sincronização semanal com Google Calendar
-
-/**
- * Calcula o range ISO (segunda a domingo) a partir de window.semanaReferencia.
- * @returns {{ isoStart: string, isoEnd: string }}
- */
-function _obterRangeSemanaAtual() {
-    const ref = new Date(window.semanaReferencia);
-    const diaSemana = ref.getDay();
-    const dSeg = ref.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
-    const segunda = new Date(ref.getFullYear(), ref.getMonth(), dSeg);
-    const domingo = new Date(segunda.getFullYear(), segunda.getMonth(), segunda.getDate() + 6);
-    const pad = n => String(n).padStart(2, '0');
-    const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-    return { isoStart: toISO(segunda), isoEnd: toISO(domingo) };
-}
-
-/**
- * Dispara sincronizarBloqueiosExternos para a semana atual, se o usuário estiver autenticado.
- * Guard duplo: verifica existência da função e estado de login antes de chamar.
- */
-function _dispararSincGCal() {
-    const range = _obterRangeSemanaAtual();
-    if (typeof window.solicitarSyncCalendario === 'function') {
-        window.solicitarSyncCalendario({
-            reason: 'calendar-week-range',
-            silencioso: true,
-            manual: false,
-            force: false,
-            allowInteractive: false,
-            range: {
-                timeMin: range.isoStart,
-                timeMax: range.isoEnd
-            }
-        });
-        return;
-    }
-
-    if (typeof window.sincronizarBloqueiosExternos !== 'function') return;
-    if (!window.gcal || !window.gcal.isSignedIn()) return;
-    window.sincronizarBloqueiosExternos(range.isoStart, range.isoEnd);
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     const btnMesAnterior = document.getElementById('btnMesAnterior');
     const btnMesProximo = document.getElementById('btnMesProximo');
@@ -494,7 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSemanaAnterior.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() - 7);
             window.renderizarHomeSemana();
-            _dispararSincGCal();
         });
     }
 
@@ -502,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSemanaProxima.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() + 7);
             window.renderizarHomeSemana();
-            _dispararSincGCal();
         });
     }
 
@@ -510,7 +459,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSemanaHoje.addEventListener('click', () => {
             window.semanaReferencia = new Date();
             window.renderizarHomeSemana();
-            _dispararSincGCal();
         });
     }
 
