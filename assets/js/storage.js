@@ -336,8 +336,8 @@ function atualizarLimitesGrade(novaGrade) {
     window.limitesGrade = grade;
 }
 
-function normalizarValorAlunoComFallbackMigracao(valor, normalizadorGlobal, fallbackLocal) {
-    if (typeof normalizadorGlobal === 'function') {
+function normalizarValorAlunoComFallbackMigracao(valor, normalizadorGlobal, fallbackLocal, selfRef) {
+    if (typeof normalizadorGlobal === 'function' && normalizadorGlobal !== selfRef) {
         return normalizadorGlobal(valor);
     }
     return fallbackLocal(valor);
@@ -350,7 +350,8 @@ function normalizarObjetivoAlunoMigracao(valorObjetivo) {
         (valor) => {
             const objetivo = String(valor || '').trim();
             return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
-        }
+        },
+        normalizarObjetivoAlunoMigracao
     );
 }
 

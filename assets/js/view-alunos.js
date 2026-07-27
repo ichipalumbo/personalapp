@@ -7,8 +7,8 @@ let _ultimaChaveRenderAlunos = null;
 // Exposto para que mutações externas possam forçar um re-render na próxima chamada.
 window.invalidarChaveRenderAlunos = function () { _ultimaChaveRenderAlunos = null; };
 
-function normalizarValorAlunoComFallback(valor, normalizadorGlobal, fallbackLocal) {
-    if (typeof normalizadorGlobal === 'function') {
+function normalizarValorAlunoComFallback(valor, normalizadorGlobal, fallbackLocal, selfRef) {
+    if (typeof normalizadorGlobal === 'function' && normalizadorGlobal !== selfRef) {
         return normalizadorGlobal(valor);
     }
     return fallbackLocal(valor);
@@ -32,7 +32,8 @@ function normalizarObjetivoAluno(valorObjetivo) {
     return normalizarValorAlunoComFallback(
         valorObjetivo,
         normalizadorGlobal,
-        normalizarObjetivoAlunoFallbackLocal
+        normalizarObjetivoAlunoFallbackLocal,
+        normalizarObjetivoAluno
     );
 }
 
@@ -40,7 +41,8 @@ function normalizarStatusAlunoLocal(valorStatus) {
     return normalizarValorAlunoComFallback(
         valorStatus,
         window.normalizarStatusAluno,
-        normalizarStatusAlunoFallbackLocal
+        normalizarStatusAlunoFallbackLocal,
+        normalizarStatusAlunoLocal
     );
 }
 
