@@ -106,6 +106,11 @@ function temDadosLocaisNoCache() {
 async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
     const deveExibirFalha = opcoes.exibirFalha !== false;
     const contexto = opcoes.contexto || 'carregando';
+    const silenciosoUI = opcoes.silenciosoUI === true;
+
+    if (silenciosoUI) {
+        return executor();
+    }
 
     const mensagens = {
         carregando: {
@@ -512,6 +517,7 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
 async function carregarDados(opcoes = {}) {
     const deveForcarRender = opcoes.forcarRender !== false;
     const forcarRemoto = opcoes.forcarRemoto === true;
+    const silenciosoUI = opcoes.silenciosoUI === true;
 
     if (!_cacheInicializado) {
         const resultadoLocal = carregarDadosDoLocalStorage();
@@ -574,7 +580,7 @@ async function carregarDados(opcoes = {}) {
                     .then(res => res.ok ? res.json() : [])
                     .catch(err => { console.warn('⚠️ /bloqueios-externos indisponível:', err.message); return []; })
             ]);
-        }, { contexto: 'carregando', onRetry });
+            }, { contexto: 'carregando', onRetry, silenciosoUI });
 
         if (resAlunos.status === 401 || resAgendamentos.status === 401) {
             throw new Error('AUTH_REQUIRED');
@@ -729,7 +735,7 @@ async function carregarDados(opcoes = {}) {
             window.preencherFiltrosAlunos();
         }
         
-        if (typeof mostrarToast === 'function') {
+        if (!silenciosoUI && typeof mostrarToast === 'function') {
             mostrarToast("Trabalhando offline. Dados salvos no navegador.", "warning");
         }
         if (deveForcarRender) {
@@ -842,6 +848,15 @@ function forçarRenderizacaoInterface() {
     }, 0);
 }
 
+async function atualizarViewAtualAposSync() {
+    if (window.__appShell && window.__appShell.router && typeof window.__appShell.router.refreshCurrentView === 'function') {
+        await window.__appShell.router.refreshCurrentView();
+        return;
+    }
+
+    forçarRenderizacaoInterface();
+}
+
 window.apiFetchBackend = apiFetchBackend;
 window.executarOperacaoRemotaComFeedback = executarOperacaoRemotaComFeedback;
 window.carregarDadosDoLocalStorage = carregarDadosDoLocalStorage;
@@ -861,7 +876,13 @@ window.sincronizarBancoDados = async function (opcoes = {}) {
     _setEstadoBotaoSyncBanco('sincronizando');
 
     try {
-        await carregarDados({ forcarRender: true, forcarRemoto: true });
+        await carregarDados({
+            ...opcoes,
+            forcarRender: false,
+            forcarRemoto: true,
+            silenciosoUI: true
+        });
+        await atualizarViewAtualAposSync();
 
         if (typeof mostrarToast === 'function') {
             mostrarToast('Dados sincronizados com sucesso no MongoDB!', 'success');

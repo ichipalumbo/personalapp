@@ -1,4 +1,4 @@
-const CACHE_NAME = 'personal-app-v1';
+const CACHE_NAME = 'Prô Josy - Agenda Personal Trainer';
 const APP_SHELL_FILES = [
   '/index.html',
   '/assets/css/style.css',

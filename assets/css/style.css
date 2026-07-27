@@ -77,6 +77,20 @@ body {
   padding-bottom: 100px;
 }
 
+.home-app-resumo {
+  margin-top: 20px;
+  padding: 10px 12px;
+  border-top: 1px solid #2a2a2a;
+  text-align: center;
+}
+
+.home-app-resumo p {
+  margin: 0;
+  color: #a8a8a8;
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 #tela-calendario {
   padding-top: 0;
   padding-left: 15px;
@@ -294,6 +308,215 @@ body {
 .btn-google-signout:focus-visible {
   outline: 2px solid #ff8b84;
   outline-offset: 2px;
+}
+
+/* [TAG-STYLE-APP-SETTINGS] - Settings Modal and Buttons */
+.btn-app-settings {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  border: 1px solid #4a4a4a;
+  background: transparent;
+  color: #e0e0e0;
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+  margin-left: 8px;
+}
+
+.btn-app-settings:hover {
+  background: rgba(255, 215, 0, 0.08);
+  border-color: #ffd700;
+  color: #ffd700;
+}
+
+.btn-app-settings:active {
+  transform: translateY(1px);
+}
+
+.btn-app-settings:focus-visible {
+  outline: 2px solid #ffd700;
+  outline-offset: 2px;
+}
+
+/* Modal Backdrop */
+.modal-backdrop {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 999;
+}
+
+/* Settings Modal Styles */
+#appSettingsModal {
+  display: none !important;
+}
+
+#appSettingsModal[style*="display: flex"],
+#appSettingsModal.show {
+  display: flex !important;
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #ffd700;
+  margin: 0 0 10px 0;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: #a0a0a0;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-modal-close:hover {
+  background: rgba(255, 215, 0, 0.1);
+  color: #ffd700;
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 215, 0, 0.02);
+  border: 1px solid rgba(255, 215, 0, 0.1);
+  border-radius: 10px;
+}
+
+.settings-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffd700;
+  margin: 0;
+}
+
+.settings-description {
+  font-size: 0.9rem;
+  color: #a0a0a0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Google Calendar Connect Button */
+.btn-gcal-connect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 2px solid #4285f4;
+  background: rgba(66, 133, 244, 0.1);
+  color: #4285f4;
+  border-radius: 8px;
+  padding: 11px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-gcal-connect:hover {
+  background: rgba(66, 133, 244, 0.2);
+  border-color: #5a9eff;
+  color: #5a9eff;
+}
+
+.btn-gcal-connect:active {
+  transform: translateY(1px);
+}
+
+.btn-gcal-connect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Google Calendar Connected State */
+.gcal-status-connected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(52, 168, 83, 0.08);
+  border: 1px solid rgba(52, 168, 83, 0.3);
+  border-radius: 8px;
+}
+
+.gcal-status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #34a853;
+  flex: 1;
+}
+
+.gcal-status-indicator i {
+  font-size: 0.8rem;
+}
+
+/* Google Calendar Disconnect Button */
+.btn-gcal-disconnect {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #ff5252;
+  background: rgba(255, 82, 82, 0.1);
+  color: #ff5252;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-gcal-disconnect:hover {
+  background: rgba(255, 82, 82, 0.2);
+  border-color: #ff7070;
+  color: #ff7070;
+}
+
+.btn-gcal-disconnect:active {
+  transform: translateY(1px);
+}
+
+.btn-gcal-disconnect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .sync-auto-pill {

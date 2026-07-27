@@ -24,6 +24,17 @@
         atualizarAlturaTabsCalendario();
     }
 
+    async function refreshActiveView(router) {
+        if (router && typeof router.refreshCurrentView === 'function') {
+            await router.refreshCurrentView();
+            return;
+        }
+
+        if (typeof global.renderizarModoCalendarioAtivo === 'function') {
+            global.renderizarModoCalendarioAtivo();
+        }
+    }
+
     async function initialize() {
         if (!global.__appRouter || typeof global.__appRouter.createRouter !== 'function') {
             throw new Error('Bootstrap da aplicação indisponível: router não encontrado.');
@@ -35,6 +46,9 @@
         global.__appShell.atualizarAlturaHeader = atualizarAlturaHeader;
         global.__appShell.atualizarAlturaTabsCalendario = atualizarAlturaTabsCalendario;
         global.__appShell.atualizarMedidasLayout = atualizarMedidasLayout;
+        global.__appShell.refreshActiveView = function () {
+            return refreshActiveView(router);
+        };
 
         if (global.__appServiceWorker && typeof global.__appServiceWorker.register === 'function') {
             global.__appServiceWorker.register();
@@ -82,9 +96,7 @@
                         global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
                     }
 
-                    if (typeof router.refreshCurrentView === 'function') {
-                        await router.refreshCurrentView();
-                    }
+                    await refreshActiveView(router);
                 } catch (error) {
                     console.error('Falha ao atualizar a view após mudança de autenticação:', error);
                 }
@@ -92,6 +104,45 @@
                 atualizarMedidasLayout();
             });
         }
+
+        const AUTO_REFRESH_THROTTLE_MS = 30000;
+        let ultimoAutoRefreshAt = 0;
+        let autoRefreshEmAndamento = false;
+
+        document.addEventListener('visibilitychange', async function () {
+            if (document.hidden) {
+                return;
+            }
+
+            if (autoRefreshEmAndamento) {
+                return;
+            }
+
+            const agora = Date.now();
+            if (agora - ultimoAutoRefreshAt < AUTO_REFRESH_THROTTLE_MS) {
+                return;
+            }
+
+            if (typeof global.carregarDados !== 'function') {
+                return;
+            }
+
+            autoRefreshEmAndamento = true;
+            try {
+                await global.carregarDados({
+                    forcarRender: false,
+                    forcarRemoto: true,
+                    silenciosoUI: true,
+                    silenciarAuthToast: true
+                });
+                ultimoAutoRefreshAt = Date.now();
+                await refreshActiveView(router);
+            } catch (error) {
+                console.error('[Bootstrap] Falha no auto-refresh silencioso:', error);
+            } finally {
+                autoRefreshEmAndamento = false;
+            }
+        });
 
         global.addEventListener('resize', atualizarMedidasLayout);
         atualizarMedidasLayout();
