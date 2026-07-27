@@ -197,6 +197,130 @@ window.renderizarAgendaDia = function () {
     return h * 60 + m;
   };
 
+  const obterTextoPrioritarioCompromisso = (compromisso) => {
+    const tipoComp = compromisso && compromisso.tipo ? compromisso.tipo : "aula";
+
+    if (tipoComp === "aula") {
+      const alunoCompromisso =
+        typeof window.getAluno === "function"
+          ? window.getAluno(compromisso.alunoId)
+          : null;
+      return {
+        principal: alunoCompromisso && alunoCompromisso.nome ? String(alunoCompromisso.nome) : "",
+        secundario:
+          alunoCompromisso && (alunoCompromisso.objective || alunoCompromisso.objetivo)
+            ? String(alunoCompromisso.objective || alunoCompromisso.objetivo)
+            : "",
+        terciario:
+          alunoCompromisso && alunoCompromisso.local
+            ? String(alunoCompromisso.local)
+            : "",
+      };
+    }
+
+    if (tipoComp === "deslocamento") {
+      return {
+        principal: "Deslocamento",
+        secundario: compromisso && compromisso.descricao ? String(compromisso.descricao) : "",
+        terciario: "",
+      };
+    }
+
+    if (tipoComp === "bloqueio") {
+      const descricaoBloqueio = compromisso && compromisso.descricao ? String(compromisso.descricao) : "Compromisso";
+      return {
+        principal: descricaoBloqueio,
+        secundario:
+          compromisso && compromisso.source === "google_external"
+            ? "Google Agenda"
+            : "Bloqueio",
+        terciario: "",
+      };
+    }
+
+    return {
+      principal: compromisso && compromisso.descricao ? String(compromisso.descricao) : "Compromisso",
+      secundario: "",
+      terciario: "",
+    };
+  };
+
+  const larguraUtilGradePx = Math.max((grid.clientWidth || window.innerWidth || 0) - 55, 180);
+
+  const analisarDensidadeVisualCardDia = ({ compromisso, heightPx, duracaoMinutos, larguraPercentual, larguraEstimadaPx }) => {
+    const tipoComp = compromisso && compromisso.tipo ? compromisso.tipo : "aula";
+    const textos = obterTextoPrioritarioCompromisso(compromisso);
+    const principal = textos.principal || "";
+    const secundario = textos.secundario || "";
+    const terciario = textos.terciario || "";
+    const ehMobile = window.innerWidth <= 767;
+    const capacidadeTitulo = Math.max(10, Math.floor((Math.max(larguraEstimadaPx, 120) - 34) / 7.4));
+    const tituloProvavelmenteEstourando = principal.length > capacidadeTitulo;
+
+    const textoLongo =
+      principal.length >= 24 ||
+      secundario.length >= 22 ||
+      terciario.length >= 22 ||
+      `${principal} ${secundario} ${terciario}`.length >= 58;
+    const usaHeuristicaInlinePorTitulo =
+      tipoComp === "deslocamento" || tipoComp === "bloqueio";
+
+    const textoLongoMobile =
+      ehMobile &&
+      (principal.length >= 16 ||
+        tituloProvavelmenteEstourando ||
+        (!usaHeuristicaInlinePorTitulo && `${principal} ${secundario}`.length >= 34));
+
+    const cardMuitoBaixo = heightPx <= 46;
+    const cardBaixo = heightPx <= 64;
+    const duracaoCurta = duracaoMinutos <= 30;
+    const duracaoMediaCurta = duracaoMinutos <= 45;
+    const colunaMuitoEstreita = larguraPercentual <= 45;
+    const colunaEstreita = larguraPercentual <= 60;
+
+    const reduzirConteudoOpcionalMobile =
+      ehMobile && (tituloProvavelmenteEstourando || textoLongoMobile);
+    const usarBadgeInlineNoTitulo =
+      ehMobile &&
+      duracaoCurta &&
+      !tituloProvavelmenteEstourando &&
+      (usaHeuristicaInlinePorTitulo ? principal.length <= 18 : !textoLongoMobile);
+
+    if (
+      duracaoCurta ||
+      cardMuitoBaixo ||
+      colunaMuitoEstreita ||
+      (ehMobile && tituloProvavelmenteEstourando && cardBaixo)
+    ) {
+      return {
+        densidade: "tight",
+        reduzirConteudoOpcionalMobile,
+        usarBadgeInlineNoTitulo,
+      };
+    }
+
+    if (
+      duracaoMediaCurta ||
+      cardBaixo ||
+      colunaEstreita ||
+      textoLongo ||
+      textoLongoMobile ||
+      tituloProvavelmenteEstourando
+    ) {
+      return {
+        densidade: "compact",
+        reduzirConteudoOpcionalMobile,
+        usarBadgeInlineNoTitulo: false,
+      };
+    }
+
+    return {
+      densidade: "normal",
+      reduzirConteudoOpcionalMobile,
+      usarBadgeInlineNoTitulo: false,
+    };
+  };
+
   const inicioMinutosGrade = inicio * 60;
   const fimMinutosGrade = fim * 60;
   const totalMinutosGrade = fimMinutosGrade - inicioMinutosGrade;
@@ -354,15 +478,31 @@ window.renderizarAgendaDia = function () {
     // Posicionamento horizontal dinâmico por colisões
     const widthPercent = 100 / ev.maxCols;
     const leftPercent = ev.col * widthPercent;
+    const duracaoMinutos = ev.end - ev.start;
 
     // Margem de segurança de layout
     const gapRight = 4;
+    const larguraCardEstimadaPx =
+      Math.max(120, (larguraUtilGradePx * widthPercent) / 100 - gapRight);
+
+    const analiseDensidadeVisual = analisarDensidadeVisualCardDia({
+      compromisso,
+      heightPx: heightPos,
+      duracaoMinutos,
+      larguraPercentual: widthPercent,
+      larguraEstimadaPx: larguraCardEstimadaPx,
+    });
+
     const widthStyle = `calc(${widthPercent}% - ${gapRight}px)`;
     const leftStyle = `${leftPercent}%`;
 
     htmlEvents += window.criarCardAgendamento(compromisso, {
       dataReferencia: new Date(window.dataSelecionada),
       bloqueioDiaInteiro: bloqueioDiaInteiro,
+      visualContext: "calendar-day",
+      visualDensity: analiseDensidadeVisual.densidade,
+      visualHideOptionalMobile: analiseDensidadeVisual.reduzirConteudoOpcionalMobile,
+      visualInlineStatusBadge: analiseDensidadeVisual.usarBadgeInlineNoTitulo,
       style: `position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${leftStyle}; width: ${widthStyle};`,
       onclick: `abrirModalAcaoSlot('${compromisso.id}')`,
     });

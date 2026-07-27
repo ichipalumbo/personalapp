@@ -1952,6 +1952,299 @@ body {
   color: #ddd;
 }
 
+/* Auto-ajuste visual somente na visão Calendário > Dia */
+#agendaGridHome .agenda-card-dayview .agenda-semana-card-title-group {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-dia-aula-nome {
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-semana-card-time {
+  display: none;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-card-inline-status {
+  display: none;
+}
+
+#agendaGridHome .agenda-card-dayview .card-content-wrapper {
+  gap: 5px;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-semana-card-top {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-semana-card-bottom {
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-dia-aula-local {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+/* Normaliza a linha de título dos bloqueios para manter o mesmo ritmo vertical */
+#agendaGridHome .agenda-card-dayview .agenda-dia-bloqueio-descricao {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1 1 auto;
+  align-items: center;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-dia-bloqueio-descricao-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: inherit;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-semana-card-meta {
+  flex: 0 0 auto;
+  margin-left: auto;
+  min-width: 0;
+  max-width: 58%;
+  flex-wrap: nowrap;
+  gap: 5px;
+}
+
+#agendaGridHome .agenda-card-dayview .agenda-dia-aula-detalhes {
+  font-size: 0.62rem;
+  max-width: 100%;
+}
+
+#agendaGridHome .agenda-card-dayview .badge-tag-tipo,
+#agendaGridHome .agenda-card-dayview .badge-tag-tipo--reposicao {
+  font-size: 0.62rem !important;
+  line-height: 1.2;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-compact {
+  padding: 7px 9px;
+  gap: 3px;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .card-content-wrapper {
+  gap: 4px;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-top,
+#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-bottom {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 5px;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-meta {
+  flex-wrap: nowrap;
+  gap: 5px;
+  min-width: 0;
+  max-width: 62%;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-tight {
+  padding: 6px 8px;
+  gap: 2px;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .card-content-wrapper {
+  gap: 3px;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-top,
+#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-bottom {
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-meta {
+  margin-left: auto;
+  flex-wrap: nowrap;
+  gap: 4px;
+  min-width: 0;
+  max-width: 66%;
+}
+
+#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-dia-aula-detalhes {
+  max-width: 100%;
+}
+
+/* 30min + titulo curto: badge de status vai para a linha do titulo */
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
+  .agenda-card-inline-status {
+  display: inline-flex;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
+  .agenda-semana-card-title-group {
+  width: 100%;
+  min-width: 0;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
+  .agenda-semana-card-title-group
+  .agenda-dia-aula-nome {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
+  .agenda-semana-card-meta
+  .agenda-card-status-badge {
+  display: none !important;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-deslocamento
+  .agenda-dia-aula-local {
+  display: none;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-deslocamento
+  .agenda-semana-card-bottom {
+  display: none;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-bloqueado
+  .agenda-dia-aula-local {
+  display: none;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-bloqueado
+  .agenda-semana-card-bottom {
+  display: none;
+}
+
+/* Modo estrito para cards curtos (30 min): reduzir redundancia por tipo */
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight
+  .agenda-semana-card-meta
+  .agenda-card-optional {
+  display: none;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight
+  .agenda-semana-card-meta
+  .agenda-card-status-badge {
+  display: inline-flex !important;
+}
+
+/* AULA: manter local + 1 badge de status; remover objetivo para limpar a linha */
+#agendaGridHome
+  .agenda-card-dayview.agenda-card-density-tight:not(.slot-deslocamento):not(.slot-bloqueado)
+  .agenda-dia-aula-detalhes {
+  display: none;
+}
+
+/* DESLOCAMENTO: evitar repeticao subtitulo + badge */
+#agendaGridHome
+  .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight
+  .agenda-dia-aula-local {
+  display: none;
+}
+
+#agendaGridHome .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight {
+  padding-bottom: 8px;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight
+  .agenda-semana-card-bottom {
+  margin-top: 3px;
+  min-height: 14px;
+}
+
+#agendaGridHome
+  .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight
+  .agenda-semana-card-meta {
+  padding-bottom: 1px;
+}
+
+/* BLOQUEIO INTERNO: manter texto "Bloqueado" e remover badge "Bloqueio" */
+#agendaGridHome
+  .agenda-card-dayview.slot-bloqueado.agenda-card-density-tight:not(.card-bloqueio-externo)
+  .agenda-semana-card-meta {
+  display: none;
+}
+
+/* BLOQUEIO EXTERNO GOOGLE: manter badge "Google Agenda" e remover "Bloqueado" */
+#agendaGridHome
+  .agenda-card-dayview.slot-bloqueado.card-bloqueio-externo.agenda-card-density-tight
+  .agenda-dia-aula-local {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  #agendaGridHome .agenda-card-dayview .agenda-semana-card-meta {
+    max-width: 52%;
+  }
+
+  #agendaGridHome .agenda-card-dayview .agenda-dia-aula-local {
+    font-size: 0.7rem;
+  }
+
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-title-group .agenda-card-optional {
+    display: none !important;
+  }
+
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow {
+    padding: 6px 8px;
+  }
+
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-top,
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-bottom {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta .agenda-card-optional {
+    display: none !important;
+  }
+
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta .agenda-card-optional:first-child {
+    display: inline-flex !important;
+  }
+
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta {
+    margin-left: auto;
+    max-width: 54%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-dia-aula-detalhes,
+  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-dia-aula-local {
+    max-width: 100%;
+  }
+}
+
 /* Indicador de Agora (Linha vermelha estilo Outlook) */
 .time-grid-now-indicator {
   pointer-events: none;
