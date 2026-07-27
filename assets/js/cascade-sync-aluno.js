@@ -15,21 +15,21 @@ function enriquecerAgendamentoComDadosFrescos(agendamento) {
         return agendamento;
     }
 
-    // Busca dados frescos do aluno
-    if (typeof window.alunos !== 'undefined' && Array.isArray(window.alunos)) {
-        const aluno = window.alunos.find(function (a) { return a.id === agendamento.alunoId; });
-        if (aluno) {
-            // Atualiza o agendamento com dados frescos do aluno
-            agendamento.alunoNome = aluno.nome || agendamento.alunoNome;
-            agendamento.local = aluno.local || agendamento.local;
-            agendamento.objetivo = aluno.objetivo || agendamento.objetivo;
-            
-            console.log('[enrich] Agendamento enriquecido com dados frescos:', {
-                alunoNome: agendamento.alunoNome,
-                local: agendamento.local,
-                objetivo: agendamento.objetivo
-            });
-        }
+    const aluno = typeof window.getAluno === 'function'
+        ? window.getAluno(agendamento.alunoId)
+        : ((Array.isArray(window.alunos) ? window.alunos : []).find(function (a) { return a.id === agendamento.alunoId; }) || null);
+
+    if (aluno) {
+        // Atualiza o agendamento com dados frescos do aluno
+        agendamento.alunoNome = aluno.nome || agendamento.alunoNome;
+        agendamento.local = aluno.local || agendamento.local;
+        agendamento.objetivo = aluno.objetivo || agendamento.objetivo;
+
+        console.log('[enrich] Agendamento enriquecido com dados frescos:', {
+            alunoNome: agendamento.alunoNome,
+            local: agendamento.local,
+            objetivo: agendamento.objetivo
+        });
     }
 
     return agendamento;

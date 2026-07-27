@@ -197,7 +197,9 @@ window.renderizarKPIDashboard = function() {
     if (window.filtroAlunoMensalId) {
         // Single student KPIs
         kpis = window.calcularKPIsAluno(window.filtroAlunoMensalId, mes, ano, window.aulas);
-        const aluno = window.alunos?.find(a => a.id === window.filtroAlunoMensalId);
+        const aluno = typeof window.getAluno === 'function'
+            ? window.getAluno(window.filtroAlunoMensalId)
+            : (window.alunos || []).find(a => a.id === window.filtroAlunoMensalId);
         nomeAluno = aluno ? aluno.nome : 'Aluno';
     } else {
         // Consolidated KPIs for all students
@@ -215,7 +217,9 @@ window.renderizarKPIDashboard = function() {
     _ultimaChaveRenderKPI = _chaveAtual;
     
     // Format currency
-    const formatMoeda = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+    const formatMoeda = (value) => (typeof window.formatarMoeda === 'function'
+        ? window.formatarMoeda(value)
+        : `R$ ${value.toFixed(2).replace('.', ',')}`);
     const formatQtd = (value) => `${value}`;
     
     const html = `
@@ -279,7 +283,9 @@ window.renderizarHomeSemana = function() {
     }
     
     let html = '';
-    const diasSemanaMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    const diasSemanaMap = typeof window.getNomesDiasUteis === 'function'
+        ? window.getNomesDiasUteis().concat('Domingo')
+        : ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
     const agora = new Date();
     const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
     const minutosAgora = (agora.getHours() * 60) + agora.getMinutes();

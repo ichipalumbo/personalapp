@@ -1,4 +1,5 @@
 const { OAuth2Client } = require('google-auth-library');
+const { normalizeEmail } = require('../utils/emailNormalizer');
 
 const clientsByAudience = new Map();
 
@@ -70,7 +71,7 @@ function createRequireAuth(options = {}) {
       }
 
       req.auth = {
-        ownerEmail: String(payload.email).toLowerCase(),
+        ownerEmail: normalizeEmail(payload.email),
         emailVerified: payload.email_verified === true,
         googleUserId: payload.sub || null,
         name: payload.name || '',

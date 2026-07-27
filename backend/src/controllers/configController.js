@@ -1,27 +1,13 @@
 const Config = require('../models/Config');
+const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 
 function responderErroConfig(res, err, contexto) {
-  const statusCode = err && err.statusCode ? err.statusCode : 500;
-
-  console.error(`[ConfigController] Erro ao ${contexto}:`, err.message);
-  if (err && err.stack) {
-    console.error('[ConfigController] Stack:', err.stack);
-  }
-
-  res.status(statusCode).json({
-    error: `Erro ao ${contexto}`,
-    message: err.message,
-    connectionState: Config.db.readyState
-  });
+  return responderErro(res, err, contexto, Config, 'ConfigController');
 }
 
 function limparPayloadConfig(payload) {
-  const limpo = { ...(payload || {}) };
-  delete limpo._id;
-  delete limpo.__v;
-  delete limpo.ownerEmail;
-  return limpo;
+  return limparPayload(payload);
 }
 
 function montarConfigPadraoGrade(ownerEmail) {
@@ -48,6 +34,19 @@ async function obterOuCriarConfigPadraoGrade(ownerEmail) {
   );
 }
 
+async function obterConfigGradeComFallback(ownerEmail, contextoAviso) {
+  try {
+    let config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
+    if (!config) {
+      config = await obterOuCriarConfigPadraoGrade(ownerEmail);
+    }
+    return config;
+  } catch (dbErr) {
+    console.warn(`[ConfigController] Falha ao ler/criar ${contextoAviso}. Usando fallback em memória:`, dbErr.message);
+    return montarConfigPadraoGrade(ownerEmail);
+  }
+}
+
 async function listarConfiguracoes(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -61,17 +60,7 @@ async function listarConfiguracoes(req, res) {
 async function obterConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    let config = null;
-
-    try {
-      config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
-      if (!config) {
-        config = await obterOuCriarConfigPadraoGrade(ownerEmail);
-      }
-    } catch (dbErr) {
-      console.warn('[ConfigController] Falha ao ler/criar configuração padrão. Usando fallback em memória:', dbErr.message);
-      config = montarConfigPadraoGrade(ownerEmail);
-    }
+    const config = await obterConfigGradeComFallback(ownerEmail, 'configuração padrão');
 
     res.json(config);
   } catch (err) {
@@ -82,17 +71,7 @@ async function obterConfiguracao(req, res) {
 async function obterConfiguracaoGradeHorarios(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    let config = null;
-
-    try {
-      config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
-      if (!config) {
-        config = await obterOuCriarConfigPadraoGrade(ownerEmail);
-      }
-    } catch (dbErr) {
-      console.warn('[ConfigController] Falha ao ler/criar grade_horarios. Usando fallback em memória:', dbErr.message);
-      config = montarConfigPadraoGrade(ownerEmail);
-    }
+    const config = await obterConfigGradeComFallback(ownerEmail, 'grade_horarios');
 
     res.json(config);
   } catch (err) {

@@ -6,6 +6,20 @@
 //         filtrarAulasCalendario, mostrarToast, mostrarOverlaySinc, ocultarOverlaySinc, exportarDados
 // ⚠️ As funções de KPI têm versões simplificadas replicadas no backend/server.js (para uso em APIs)
 
+function obterPrecoAluno(aluno) {
+    return aluno && aluno.preco ? parseFloat(aluno.preco) : 0;
+}
+
+function obterFrequenciaSemanalAluno(aluno) {
+    return aluno && aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+}
+
+function obterDiasUteisMapKpi() {
+    return typeof window.getNomesDiasUteis === 'function'
+        ? window.getNomesDiasUteis()
+        : ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+}
+
 /**
  * Calcula a projeção de recebimento do MÊS INTEIRO (todas as ocorrências do mês)
  * @param {Object} aluno - Objeto do aluno
@@ -13,7 +27,7 @@
  * @returns {Number} Total de aulas previstas no mês × preço
  */
 function calcularProjecaoMensalCompleta(aluno, aulas) {
-    const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+    const preco = obterPrecoAluno(aluno);
     let totalAulasMes = 0;
     
     const aulasAluno = aulas.filter(a => 
@@ -26,7 +40,7 @@ function calcularProjecaoMensalCompleta(aluno, aulas) {
         const hoje = new Date();
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
         const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0); // Último dia do mês
-        const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const diasUteisMap = obterDiasUteisMapKpi();
         
         aulasAluno.forEach(aula => {
             const diasNoMes = fimMes.getDate();
@@ -64,7 +78,7 @@ function calcularProjecaoMensalCompleta(aluno, aulas) {
  * @returns {Number} Total de aulas realizadas × preço
  */
 function calcularProjecaoRealizadaAteHoje(aluno, aulas) {
-    const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+    const preco = obterPrecoAluno(aluno);
     let totalAulasRealizadas = 0;
     
     const aulasAluno = aulas.filter(a => 
@@ -77,7 +91,7 @@ function calcularProjecaoRealizadaAteHoje(aluno, aulas) {
         const hoje = new Date();
         const ontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const diasUteisMap = obterDiasUteisMapKpi();
         
         aulasAluno.forEach(aula => {
             const diasPassados = Math.floor((ontem - inicioMes) / (1000 * 60 * 60 * 24)) + 1;
@@ -106,8 +120,8 @@ function calcularProjecaoRealizadaAteHoje(aluno, aulas) {
  * @returns {Number} Valor aproximado mensal
  */
 function calcularProjecaoAproximada(aluno) {
-    const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
-    const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+    const preco = obterPrecoAluno(aluno);
+    const freqAcordada = obterFrequenciaSemanalAluno(aluno);
     return freqAcordada * 4 * preco;
 }
 
@@ -118,7 +132,7 @@ function calcularProjecaoAproximada(aluno) {
  * @returns {Number} Diferença entre contratado e agendado (nunca negativo)
  */
 function calcularAulasFaltamAgendar(aluno, aulas) {
-    const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+    const freqAcordada = obterFrequenciaSemanalAluno(aluno);
     
     // Aulas recorrentes do aluno para esta semana
     const aulasRecorrentesDoAluno = aulas.filter(a => 
@@ -159,12 +173,14 @@ function contarReposicoesPorAluno(alunoId, aulas) {
  * @returns {Object} { projecaoMensal, realizadoAteHoje, aulasARealizarQtd, reposicoes }
  */
 function calcularKPIsAluno(alunoId, mes, ano, aulasArray = window.aulas) {
-    const aluno = window.alunos?.find(a => a.id === alunoId);
+    const aluno = typeof window.getAluno === 'function'
+        ? window.getAluno(alunoId)
+        : (window.alunos || []).find(a => a.id === alunoId);
     if (!aluno) {
         return { projecaoMensal: 0, realizadoAteHoje: 0, aulasARealizarQtd: 0, reposicoes: 0 };
     }
 
-    const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+    const preco = obterPrecoAluno(aluno);
     const aulasAluno = aulasArray.filter(a => 
         a.alunoId === alunoId && 
         (a.tipo === 'aula' || a.tipo === 'reposição')
@@ -177,7 +193,7 @@ function calcularKPIsAluno(alunoId, mes, ano, aulasArray = window.aulas) {
     const inicioMes = new Date(ano, mes, 1);
     const fimMes = new Date(ano, mes + 1, 0);
     const hoje = new Date();
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diasUteisMap = obterDiasUteisMapKpi();
 
     aulasAluno.forEach(aula => {
         const diasNoMes = fimMes.getDate();

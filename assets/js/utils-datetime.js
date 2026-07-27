@@ -23,9 +23,20 @@ window.diferencaMinutos = function(inicio, fim) {
 };
 
 /** @returns {string} Nome do dia da semana da data selecionada. Ex: "Segunda" | "Sábado" */
+window.getNomesDiasSemana = function() {
+    return ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+};
+
+/** @returns {string[]} Lista de dias úteis usada por telas e cálculos legados */
+window.getNomesDiasUteis = function() {
+    return ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+};
+
 window.getDiaTextoSelecionado = function() {
     const diaIndex = window.dataSelecionada.getDay();
-    const diasMapeados = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diasMapeados = typeof window.getNomesDiasSemana === 'function'
+        ? window.getNomesDiasSemana()
+        : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     return diasMapeados[diaIndex];
 };
 

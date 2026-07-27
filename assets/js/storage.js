@@ -41,6 +41,8 @@ function _parseJSONSeguro(valor, fallback) {
     }
 }
 
+window.parseJSONSeguro = _parseJSONSeguro;
+
 function _mostrarOverlaySleepMode() {
     const mensagem = 'Sincronizando... isso pode levar alguns segundos.';
     if (typeof mostrarOverlaySleepMode === 'function') {
@@ -334,9 +336,23 @@ function atualizarLimitesGrade(novaGrade) {
     window.limitesGrade = grade;
 }
 
+function normalizarValorAlunoComFallbackMigracao(valor, normalizadorGlobal, fallbackLocal, selfRef) {
+    if (typeof normalizadorGlobal === 'function' && normalizadorGlobal !== selfRef) {
+        return normalizadorGlobal(valor);
+    }
+    return fallbackLocal(valor);
+}
+
 function normalizarObjetivoAlunoMigracao(valorObjetivo) {
-    const objetivo = String(valorObjetivo || '').trim();
-    return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+    return normalizarValorAlunoComFallbackMigracao(
+        valorObjetivo,
+        window.normalizarObjetivoAluno,
+        (valor) => {
+            const objetivo = String(valor || '').trim();
+            return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+        },
+        normalizarObjetivoAlunoMigracao
+    );
 }
 
 function montarCorObjetivoTangerinaMigracao() {

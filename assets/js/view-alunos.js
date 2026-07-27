@@ -7,16 +7,53 @@ let _ultimaChaveRenderAlunos = null;
 // Exposto para que mutações externas possam forçar um re-render na próxima chamada.
 window.invalidarChaveRenderAlunos = function () { _ultimaChaveRenderAlunos = null; };
 
-function normalizarObjetivoAluno(valorObjetivo) {
-    const objetivo = String(valorObjetivo || '').trim();
+function normalizarValorAlunoComFallback(valor, normalizadorGlobal, fallbackLocal, selfRef) {
+    if (typeof normalizadorGlobal === 'function' && normalizadorGlobal !== selfRef) {
+        return normalizadorGlobal(valor);
+    }
+    return fallbackLocal(valor);
+}
+
+function normalizarObjetivoAlunoFallbackLocal(valor) {
+    const objetivo = String(valor || '').trim();
     return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
 }
 
+function normalizarStatusAlunoFallbackLocal(valor) {
+    return String(valor || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo';
+}
+
+function normalizarObjetivoAluno(valorObjetivo) {
+    const normalizadorGlobal = typeof window.normalizarObjetivoAluno === 'function'
+        && window.normalizarObjetivoAluno !== normalizarObjetivoAluno
+        ? window.normalizarObjetivoAluno
+        : null;
+
+    return normalizarValorAlunoComFallback(
+        valorObjetivo,
+        normalizadorGlobal,
+        normalizarObjetivoAlunoFallbackLocal,
+        normalizarObjetivoAluno
+    );
+}
+
 function normalizarStatusAlunoLocal(valorStatus) {
-    if (typeof window.normalizarStatusAluno === 'function') {
-        return window.normalizarStatusAluno(valorStatus);
+    return normalizarValorAlunoComFallback(
+        valorStatus,
+        window.normalizarStatusAluno,
+        normalizarStatusAlunoFallbackLocal,
+        normalizarStatusAlunoLocal
+    );
+}
+
+function obterAlunoPorIdView(id) {
+    if (typeof window.getAluno === 'function') {
+        return window.getAluno(id);
     }
-    return String(valorStatus || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo';
+    const listaAlunos = Array.isArray(window.alunos)
+        ? window.alunos
+        : (typeof alunos !== 'undefined' && Array.isArray(alunos) ? alunos : []);
+    return listaAlunos.find(a => a.id === id) || null;
 }
 
 function atualizarStatusSwitchFormulario(ativo) {
@@ -276,7 +313,7 @@ window.renderizarListaAlunos = function() {
 };
 window.prepararEdicaoAluno = function(id) {
     if (typeof alunos === 'undefined') return;
-    const aluno = alunos.find(a => a.id === id);
+    const aluno = obterAlunoPorIdView(id);
     if (!aluno) return;
     const elId = document.getElementById('alunoIdEdicao');
     const elNome = document.getElementById('alunoNome');

@@ -42,6 +42,13 @@ window.aplicarMaxDuracaoSelect = function(selectId, maxDuracao) {
     }
 };
 
+function obterCompromissoSelecionadoStepper() {
+    if (typeof window.getCompromisso === 'function') {
+        return window.getCompromisso(window.idCompromissoSelecionado);
+    }
+    return Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null;
+}
+
 /** Aplica o limite de duração correto para o contexto do modal ('agenda' | 'recorrencia' | 'edicao') */
 window.aplicarLimitesDuracaoPorContexto = function(contexto) {
     if (contexto === 'agenda') {
@@ -61,7 +68,7 @@ window.aplicarLimitesDuracaoPorContexto = function(contexto) {
     }
 
     if (contexto === 'edicao') {
-        const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
+        const compromisso = obterCompromissoSelecionadoStepper();
         const tipo = compromisso?.tipo || 'aula';
         const max = tipo === 'bloqueio' ? window.BLOQUEIO_MAX_MINUTOS : window.DURACAO_MAX_AULA_DESLOCAMENTO;
         window.aplicarMaxDuracaoSelect('editDuracao', max);

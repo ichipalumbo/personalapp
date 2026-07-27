@@ -1,5 +1,6 @@
 const Agendamento = require('../models/Agendamento');
 const Aluno = require('../models/Aluno');
+const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { normalizarBloqueio } = require('../services/agendamentoService');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 const {
@@ -9,26 +10,11 @@ const {
 } = require('../services/gcalSyncService');
 
 function responderErroAgendamento(res, err, contexto) {
-  const statusCode = err && err.statusCode ? err.statusCode : 500;
-
-  console.error(`[AgendamentoController] Erro ao ${contexto}:`, err.message);
-  if (err && err.stack) {
-    console.error('[AgendamentoController] Stack:', err.stack);
-  }
-
-  res.status(statusCode).json({
-    error: `Erro ao ${contexto}`,
-    message: err.message,
-    connectionState: Agendamento.db.readyState
-  });
+  return responderErro(res, err, contexto, Agendamento, 'AgendamentoController');
 }
 
 function limparPayloadAgendamento(payload) {
-  const limpo = { ...(payload || {}) };
-  delete limpo._id;
-  delete limpo.__v;
-  delete limpo.ownerEmail;
-  return limpo;
+  return limparPayload(payload);
 }
 
 function normalizarAgendamentoParaResposta(agendamento) {

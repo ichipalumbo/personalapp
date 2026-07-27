@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="AgendaPersonalTrainer" />
-    <link rel="icon" type="image/png" href="assets/icon-192x192.png" />
+    <link rel="icon" type="image/png" href="assets/images/icon-192x192.png" />
     <title>Prô Josy - Agenda Personal Trainer</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="assets/icon-192x192.png" />
+    <link rel="apple-touch-icon" href="assets/images/icon-192x192.png" />
     <link rel="stylesheet" href="assets/css/style.css" />
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css" />
   </head>
@@ -1655,6 +1655,8 @@
     <!-- [2] Pure Utilities (no DOM) -->
     <script src="assets/js/utils-kpi.js"></script>
     <script src="assets/js/utils-datetime.js"></script>
+    <script src="assets/js/utils-formatters.js"></script>
+    <script src="assets/js/recurrence-helpers.js"></script>
     <!-- [3] Domain Helpers -->
     <script src="assets/js/alunos-helpers.js"></script>
     <script src="assets/js/calendario-engine.js"></script>
@@ -1683,6 +1685,7 @@
       src="https://accounts.google.com/gsi/client"
       async
       onload="_onGISLoad()"
+      onerror="_onGISError()"
     ></script>
     <!-- [7] App Shell -->
     <script src="assets/js/app/service-worker.js"></script>

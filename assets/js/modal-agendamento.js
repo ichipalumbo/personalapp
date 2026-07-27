@@ -27,13 +27,13 @@ let ultimoFocoAntesModalRecorrencia = null;
 let trapFocoRecorrenciaAtivo = null;
 
 function getDataSelecionadaAtualPtBr() {
-    if (typeof window.getDataSelecionadaPtBr === 'function') {
-        return window.getDataSelecionadaPtBr() || '';
+    const iso = getDataSelecionadaAtualIso();
+    if (!iso) return '';
+    if (typeof window.formatarDataPtBr === 'function') {
+        return window.formatarDataPtBr(iso) || '';
     }
-    if (window.dataSelecionada instanceof Date && !Number.isNaN(window.dataSelecionada.getTime())) {
-        return window.dataSelecionada.toLocaleDateString('pt-BR');
-    }
-    return '';
+    const partes = iso.split('-');
+    return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : '';
 }
 
 function normalizarDataLocal(dataReferencia) {
@@ -62,15 +62,16 @@ function resolverDataContextoAgendamento(opcoes = {}) {
 }
 
 function getDataSelecionadaAtualIso() {
-    if (typeof window.formatarDataLocalParaISODate === 'function') {
-        return window.formatarDataLocalParaISODate(window.dataSelecionada);
-    }
-    if (!(window.dataSelecionada instanceof Date) || Number.isNaN(window.dataSelecionada.getTime())) {
+    const dataAtual = resolverDataContextoAgendamento();
+    if (!dataAtual) {
         return '';
     }
-    const ano = window.dataSelecionada.getFullYear();
-    const mes = String(window.dataSelecionada.getMonth() + 1).padStart(2, '0');
-    const dia = String(window.dataSelecionada.getDate()).padStart(2, '0');
+    if (typeof window.formatarDataLocalParaISODate === 'function') {
+        return window.formatarDataLocalParaISODate(dataAtual);
+    }
+    const ano = dataAtual.getFullYear();
+    const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+    const dia = String(dataAtual.getDate()).padStart(2, '0');
     return `${ano}-${mes}-${dia}`;
 }
 
@@ -454,6 +455,9 @@ function desbloquearModalPrincipalParaRecorrencia() {
 }
 
 function getLabelPadraoRecorrencia(padrao) {
+    if (typeof window.recorrenciaGetLabelPadrao === 'function') {
+        return window.recorrenciaGetLabelPadrao(padrao);
+    }
     if (padrao === 'diaria') return 'Diária';
     if (padrao === 'mensal') return 'Mensal';
     if (padrao === 'anual') return 'Anual';
@@ -461,6 +465,9 @@ function getLabelPadraoRecorrencia(padrao) {
 }
 
 function getTextoIntervaloRecorrencia(padrao, intervalo) {
+    if (typeof window.recorrenciaGetTextoIntervalo === 'function') {
+        return window.recorrenciaGetTextoIntervalo(padrao, intervalo);
+    }
     const valor = intervalo > 0 ? intervalo : 1;
     if (padrao === 'diaria') return valor === 1 ? 'todos os dias úteis' : `a cada ${valor} dias úteis`;
     if (padrao === 'mensal') return valor === 1 ? 'todo mês' : `a cada ${valor} meses`;
@@ -469,6 +476,9 @@ function getTextoIntervaloRecorrencia(padrao, intervalo) {
 }
 
 function getTextoDiasRecorrencia(diasSemana) {
+    if (typeof window.recorrenciaGetTextoDias === 'function') {
+        return window.recorrenciaGetTextoDias(diasSemana);
+    }
     const mapa = {
         Domingo: 'Dom',
         Segunda: 'Seg',
