@@ -4,6 +4,7 @@ const { google } = require('googleapis');
 const Agendamento = require('../models/Agendamento');
 const BloqueioExterno = require('../models/BloqueioExterno');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
+const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
 
 const GCAL_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const APP_ORIGIN = 'corepersonal';
@@ -42,6 +43,83 @@ function isAppOwnedEvent(event) {
   return String(appOrigin || '').toLowerCase() === APP_ORIGIN;
 }
 
+function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
+  if (!dateTimeValue || !timeZone) {
+    return null;
+  }
+
+  const parsed = new Date(String(dateTimeValue));
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  try {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    });
+    const parts = formatter.formatToParts(parsed);
+    const values = {};
+
+    for (const part of parts) {
+      if (part && part.type && part.type !== 'literal') {
+        values[part.type] = part.value;
+      }
+    }
+
+    if (!values.year || !values.month || !values.day || !values.hour || !values.minute) {
+      return null;
+    }
+
+    return {
+      data: `${values.year}-${values.month}-${values.day}`,
+      horario: `${values.hour}:${values.minute}`
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+function parseDateTimeLiteralParts(dateTimeValue) {
+  const match = String(dateTimeValue || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
+
+  if (!match) {
+    return null;
+  }
+
+  return {
+    data: match[1],
+    horario: `${match[2]}:${match[3]}`
+  };
+}
+
+function parseDateTimeUtcParts(dateTimeValue) {
+  const parsed = new Date(String(dateTimeValue || ''));
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return {
+    data: parsed.toISOString().slice(0, 10),
+    horario: `${String(parsed.getUTCHours()).padStart(2, '0')}:${String(parsed.getUTCMinutes()).padStart(2, '0')}`
+  };
+}
+
+function mapDateTimeToStorageParts(dateTimeValue, timeZone) {
+  return (
+    formatDateTimePartsFromZone(dateTimeValue, timeZone)
+    || parseDateTimeLiteralParts(dateTimeValue)
+    || parseDateTimeUtcParts(dateTimeValue)
+  );
+}
+
 function mapEventToBloqueio(event) {
   const fullDay = !!(event && event.start && event.start.date);
   let data = '';
@@ -51,20 +129,31 @@ function mapEventToBloqueio(event) {
   if (fullDay) {
     data = event.start.date;
   } else if (event && event.start && event.start.dateTime && event.end && event.end.dateTime) {
-    const inicio = new Date(event.start.dateTime);
-    const fim = new Date(event.end.dateTime);
+    const startTimeZone = event.start.timeZone || event.end.timeZone || null;
+    const endTimeZone = event.end.timeZone || event.start.timeZone || null;
+    const inicio = mapDateTimeToStorageParts(event.start.dateTime, startTimeZone);
+    const fim = mapDateTimeToStorageParts(event.end.dateTime, endTimeZone);
 
-    data = inicio.toISOString().slice(0, 10);
-    horarioInicio = String(inicio.getHours()).padStart(2, '0') + ':' + String(inicio.getMinutes()).padStart(2, '0');
-    horarioFim = String(fim.getHours()).padStart(2, '0') + ':' + String(fim.getMinutes()).padStart(2, '0');
+    if (inicio) {
+      data = inicio.data;
+      horarioInicio = inicio.horario;
+    }
+
+    if (fim) {
+      horarioFim = fim.horario;
+    }
   }
+
+  const dataNormalizada = normalizarDataParaISO(data);
+  const horarioInicioNormalizado = normalizarHorarioHHMM(horarioInicio);
+  const horarioFimNormalizado = normalizarHorarioHHMM(horarioFim);
 
   return {
     googleCalendarEventId: event.id,
     titulo: event.summary || 'Evento externo',
-    data,
-    horarioInicio,
-    horarioFim,
+    data: dataNormalizada || data,
+    horarioInicio: horarioInicioNormalizado || horarioInicio,
+    horarioFim: horarioFimNormalizado || horarioFim,
     fullDay,
     source: 'google_external'
   };

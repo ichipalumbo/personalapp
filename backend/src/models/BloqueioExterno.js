@@ -1,4 +1,14 @@
 const mongoose = require('mongoose');
+const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
+
+function normalizedOrOriginal(value, normalizer) {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  const normalized = normalizer(value);
+  return normalized || value;
+}
 
 // Armazena eventos externos do Google Calendar (criados fora do app).
 // Coleção separada de `agendamentos` para que o sync destrutivo
@@ -7,9 +17,9 @@ const BloqueioExternoSchema = new mongoose.Schema({
   ownerEmail:           { type: String, required: true, index: true },
   googleCalendarEventId:{ type: String, required: true },
   titulo:               { type: String, default: 'Evento externo' },
-  data:                 { type: String },   // 'YYYY-MM-DD' ou PT-BR
-  horarioInicio:        { type: String },   // 'HH:MM'
-  horarioFim:           { type: String },   // 'HH:MM'
+  data:                 { type: String, set: (value) => normalizedOrOriginal(value, normalizarDataParaISO) },
+  horarioInicio:        { type: String, set: (value) => normalizedOrOriginal(value, normalizarHorarioHHMM) },
+  horarioFim:           { type: String, set: (value) => normalizedOrOriginal(value, normalizarHorarioHHMM) },
   fullDay:              { type: Boolean, default: false },
   semanaISO:            { type: String, default: null }, // ex. '2026-W29' (opcional, calculado automaticamente)
   source:               { type: String, default: 'google_external' }
