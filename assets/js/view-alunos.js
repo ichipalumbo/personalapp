@@ -14,14 +14,25 @@ function normalizarValorAlunoComFallback(valor, normalizadorGlobal, fallbackLoca
     return fallbackLocal(valor);
 }
 
+function normalizarObjetivoAlunoFallbackLocal(valor) {
+    const objetivo = String(valor || '').trim();
+    return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+}
+
+function normalizarStatusAlunoFallbackLocal(valor) {
+    return String(valor || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo';
+}
+
 function normalizarObjetivoAluno(valorObjetivo) {
+    const normalizadorGlobal = typeof window.normalizarObjetivoAluno === 'function'
+        && window.normalizarObjetivoAluno !== normalizarObjetivoAluno
+        ? window.normalizarObjetivoAluno
+        : null;
+
     return normalizarValorAlunoComFallback(
         valorObjetivo,
-        window.normalizarObjetivoAluno,
-        (valor) => {
-            const objetivo = String(valor || '').trim();
-            return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
-        }
+        normalizadorGlobal,
+        normalizarObjetivoAlunoFallbackLocal
     );
 }
 
@@ -29,7 +40,7 @@ function normalizarStatusAlunoLocal(valorStatus) {
     return normalizarValorAlunoComFallback(
         valorStatus,
         window.normalizarStatusAluno,
-        (valor) => String(valor || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo'
+        normalizarStatusAlunoFallbackLocal
     );
 }
 
