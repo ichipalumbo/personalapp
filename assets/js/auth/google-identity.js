@@ -251,14 +251,30 @@
         });
     }
 
+    function _performSignOut() {
+        if (global.google && global.google.accounts && global.google.accounts.id) {
+            global.google.accounts.id.disableAutoSelect();
+        }
+
+        _idToken = null;
+        _profile = null;
+        _calendarConnected = false;
+        _persistProfile(null);
+
+        if (typeof global.closeUserAreaModal === 'function') {
+            global.closeUserAreaModal();
+        }
+
+        _updateUi();
+        _notifyAuthListeners();
+        console.info('[auth] Sessão Google encerrada localmente.');
+    }
+
     function _updateUi() {
         const session = _getSessionSnapshot();
         const signedOutState = document.getElementById('googleSignedOutState');
         const signedInState = document.getElementById('googleSignedInState');
-        const sessionName = document.getElementById('headerSessionName');
-        const sessionEmail = document.getElementById('headerSessionEmail');
         const sessionAvatar = document.getElementById('headerSessionAvatar');
-        const btnAppSettings = document.getElementById('btnAppSettings');
 
         if (signedOutState) {
             signedOutState.hidden = session.isSignedIn;
@@ -266,18 +282,6 @@
 
         if (signedInState) {
             signedInState.hidden = !session.isSignedIn;
-        }
-
-        if (btnAppSettings) {
-            btnAppSettings.hidden = !session.isSignedIn;
-        }
-
-        if (sessionName) {
-            sessionName.textContent = session.name || 'Conectado com Google';
-        }
-
-        if (sessionEmail) {
-            sessionEmail.textContent = session.email || 'Conta ativa';
         }
 
         if (sessionAvatar) {
@@ -672,7 +676,7 @@
             connectedState.hidden = false;
 
             if (connectionDescription) {
-                connectionDescription.textContent = 'Desconecte a Google Agenda se quiser gerenciar suas aulas apenas pelo aplicativo.';
+                connectionDescription.textContent = 'Sua conta está conectada. Você pode desconectar quando quiser.';
             }
 
             if (connectedEmail) {
@@ -699,7 +703,7 @@
             connectedState.hidden = true;
 
             if (connectionDescription) {
-                connectionDescription.textContent = 'Conecte sua Google Agenda aqui para sincronizar seus compromissos pessoais.';
+                connectionDescription.textContent = 'Conecte sua conta para sincronizar compromissos externos com a agenda do app.';
             }
 
             if (connectedEmail) {
@@ -777,29 +781,6 @@
         _updateUi();
         _bindCustomLoginButton();
 
-        const signOutButton = document.getElementById('btnGoogleSignOut');
-        if (signOutButton) {
-            signOutButton.addEventListener('click', function () {
-                if (global.google && global.google.accounts && global.google.accounts.id) {
-                    global.google.accounts.id.disableAutoSelect();
-                }
-
-                _idToken = null;
-                _profile = null;
-                _calendarConnected = false;
-                _persistProfile(null);
-                
-                // Close settings modal on sign-out
-                if (typeof global.closeAppSettingsModal === 'function') {
-                    global.closeAppSettingsModal();
-                }
-                
-                _updateUi();
-                _notifyAuthListeners();
-                console.info('[auth] Sessão Google encerrada localmente.');
-            });
-        }
-
         if (typeof global.__registerGISReadyHandler === 'function') {
             global.__registerGISReadyHandler(_initializeGISIdentity);
         }
@@ -849,6 +830,7 @@
         getProfile: function () {
             return _profile ? { ..._profile } : null;
         },
+        signOut: _performSignOut,
         ensureCalendarConnection: ensureCalendarConnection,
         checkCalendarConnectionStatus: checkCalendarConnectionStatus,
         getCachedCalendarConnectionStatus: getCachedCalendarConnectionStatus,

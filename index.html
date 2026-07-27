@@ -45,33 +45,19 @@
               </button>
             </div>
             <div id="googleSignedInState" class="header-session-summary" hidden>
-              <span
-                class="header-session-avatar"
-                id="headerSessionAvatar"
-                aria-hidden="true"
-                >G</span
-              >
-              <div class="header-session-copy">
-                <strong id="headerSessionName">Conectado com Google</strong>
-                <span id="headerSessionEmail">Conta ativa</span>
-              </div>
               <button
-                id="btnGoogleSignOut"
+                id="btnUserAreaTrigger"
                 type="button"
-                class="btn-google-signout"
-                title="Trocar conta Google"
+                class="btn-user-area-trigger"
+                title="Abrir área do usuário"
+                aria-label="Abrir área do usuário"
               >
-                <i class="fa-solid fa-right-from-bracket"></i>
-                <span>Sair</span>
-              </button>
-              <button
-                id="btnAppSettings"
-                type="button"
-                class="btn-app-settings"
-                title="Configurações do App"
-                hidden
-              >
-                <i class="fa-solid fa-gear"></i>
+                <span
+                  class="header-session-avatar"
+                  id="headerSessionAvatar"
+                  aria-hidden="true"
+                  >G</span
+                >
               </button>
             </div>
           </div>
@@ -1708,17 +1694,28 @@
     <div class="modal-overlay" id="appSettingsModal" style="display: none">
       <div class="modal" style="max-width: 500px">
         <h2 class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Configurações</span>
+          <span>Área do usuário</span>
           <button id="btnCloseSettings" class="btn-modal-close" type="button" title="Fechar">
             <i class="fa-solid fa-times"></i>
           </button>
         </h2>
         
         <div class="modal-body">
+          <div class="settings-section user-profile-section">
+            <h3 class="settings-section-title">Perfil da conta</h3>
+            <div class="user-profile-card">
+              <span id="userProfileAvatar" class="user-profile-avatar" aria-hidden="true">G</span>
+              <div class="user-profile-copy">
+                <strong id="userProfileName">Conta Google</strong>
+                <span id="userProfileEmail">Faça login para ver seu perfil.</span>
+              </div>
+            </div>
+          </div>
+
           <!-- Google Calendar Section -->
           <div class="settings-section">
             <h3 class="settings-section-title">Google Agenda</h3>
-            <p id="gcalConnectionDescription" class="settings-description">Conecte sua Google Agenda aqui para sincronizar seus compromissos pessoais.</p>
+            <p id="gcalConnectionDescription" class="settings-description">Conecte sua conta para sincronizar compromissos externos com a agenda do app.</p>
             
             <!-- Connect Button (shown when disconnected) -->
             <button id="btnConnectGoogleCalendar" class="btn-gcal-connect" hidden>
@@ -1742,6 +1739,15 @@
                 <span>Desconectar</span>
               </button>
             </div>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section-title">Sessão</h3>
+            <p class="settings-description">Gerencie a conta Google conectada neste dispositivo.</p>
+            <button id="btnUserSignOut" type="button" class="btn-google-signout">
+              <i class="fa-solid fa-right-from-bracket"></i>
+              <span>Sair da conta</span>
+            </button>
           </div>
         </div>
       </div>

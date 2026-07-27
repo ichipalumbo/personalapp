@@ -211,40 +211,6 @@ body {
   display: none !important;
 }
 
-.header-session-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-  flex: 1 1 auto;
-  text-align: left;
-}
-
-.header-session-copy strong {
-  color: #f7f1cc;
-  font-size: 0.75rem;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.header-session-copy span {
-  color: #b3bcc6;
-  font-size: 0.68rem;
-  line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.google-signin-slot {
-  display: flex;
-  justify-content: flex-end;
-  min-width: 0;
-  flex: 0 0 auto;
-}
-
 .btn-google-custom {
   display: inline-flex;
   align-items: center;
@@ -319,39 +285,32 @@ body {
   outline-offset: 2px;
 }
 
-/* [TAG-STYLE-APP-SETTINGS] - Settings Modal and Buttons */
-.btn-app-settings {
+.btn-user-area-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
-  border: 1px solid #4a4a4a;
-  background: transparent;
-  color: #e0e0e0;
-  border-radius: 8px;
-  padding: 7px 9px;
-  font-size: 1.1rem;
+  border: 1px solid #314861;
+  background: #162233;
+  border-radius: 999px;
+  padding: 2px;
   cursor: pointer;
   transition:
     transform 0.15s ease,
     background 0.2s ease,
-    border-color 0.2s ease,
-    color 0.2s ease;
-  margin-left: 8px;
+    border-color 0.2s ease;
 }
 
-.btn-app-settings:hover {
-  background: rgba(255, 215, 0, 0.08);
-  border-color: #ffd700;
-  color: #ffd700;
+.btn-user-area-trigger:hover {
+  background: #1d2e45;
+  border-color: #4d6891;
 }
 
-.btn-app-settings:active {
+.btn-user-area-trigger:active {
   transform: translateY(1px);
 }
 
-.btn-app-settings:focus-visible {
-  outline: 2px solid #ffd700;
+.btn-user-area-trigger:focus-visible {
+  outline: 2px solid #8ab4f8;
   outline-offset: 2px;
 }
 
@@ -434,6 +393,59 @@ body {
   color: #a0a0a0;
   margin: 0 0 4px 0;
   line-height: 1.5;
+}
+
+.user-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid rgba(66, 133, 244, 0.2);
+  border-radius: 10px;
+  background: rgba(22, 34, 51, 0.35);
+}
+
+.user-profile-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(255, 215, 0, 0.16);
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  color: #ffd700;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+
+.user-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-profile-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.user-profile-copy strong {
+  color: #f7f1cc;
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.user-profile-copy span {
+  color: #b3bcc6;
+  font-size: 0.82rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Google Calendar Connect Button */
@@ -576,10 +588,6 @@ body {
   line-height: 1.2;
 }
 
-.google-signin-slot > div {
-  width: auto;
-}
-
 .header-session-avatar {
   width: 30px;
   height: 30px;
@@ -616,10 +624,6 @@ body {
 }
 
 .header-session-state .btn-google-custom {
-  width: auto;
-}
-
-.header-session-summary .btn-google-signout {
   width: auto;
 }
 
@@ -1422,17 +1426,8 @@ body {
     flex: 1 1 auto;
   }
 
-  .header-session-state .btn-google-custom,
-  .header-session-summary .btn-google-signout {
+  .header-session-state .btn-google-custom {
     width: auto;
-  }
-
-  .header-session-copy strong {
-    font-size: 0.8rem;
-  }
-
-  .header-session-copy span {
-    font-size: 0.72rem;
   }
 
   .modal-recorrencia-secundario {
@@ -3189,15 +3184,7 @@ body {
   }
 
   .header-session-summary {
-    gap: 6px;
-  }
-
-  .header-session-copy strong {
-    max-width: 120px;
-  }
-
-  .header-session-copy span {
-    display: none;
+    gap: 0;
   }
 
   .header-nav .nav-link {

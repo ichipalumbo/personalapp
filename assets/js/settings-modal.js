@@ -1,7 +1,66 @@
 (function (global) {
     'use strict';
 
-    let _settingsModalOpen = false;
+    function obterSessaoAtual() {
+        if (typeof global.googleIdentity !== 'object') {
+            return {
+                isSignedIn: false,
+                name: '',
+                email: '',
+                picture: ''
+            };
+        }
+
+        const isSignedIn = typeof global.googleIdentity.isSignedIn === 'function'
+            ? global.googleIdentity.isSignedIn()
+            : false;
+        const profile = typeof global.googleIdentity.getProfile === 'function'
+            ? global.googleIdentity.getProfile()
+            : null;
+
+        return {
+            isSignedIn,
+            name: profile && profile.name ? String(profile.name) : '',
+            email: profile && profile.email ? String(profile.email) : '',
+            picture: profile && profile.picture ? String(profile.picture) : ''
+        };
+    }
+
+    function atualizarPerfilUsuarioUI(session) {
+        const profile = session && typeof session === 'object' ? session : obterSessaoAtual();
+        const profileAvatar = document.getElementById('userProfileAvatar');
+        const profileName = document.getElementById('userProfileName');
+        const profileEmail = document.getElementById('userProfileEmail');
+        const btnSignOut = document.getElementById('btnUserSignOut');
+
+        if (profileName) {
+            profileName.textContent = profile.isSignedIn && profile.name
+                ? profile.name
+                : 'Conta Google';
+        }
+
+        if (profileEmail) {
+            if (profile.isSignedIn && profile.email) {
+                profileEmail.textContent = profile.email;
+            } else {
+                profileEmail.textContent = 'Faça login para ver seu perfil.';
+            }
+        }
+
+        if (profileAvatar) {
+            if (profile.picture) {
+                profileAvatar.innerHTML = '<img src="' + profile.picture + '" alt="Avatar da conta Google" />';
+            } else {
+                const origem = profile.email || profile.name || 'G';
+                const inicial = String(origem).trim().charAt(0).toUpperCase() || 'G';
+                profileAvatar.textContent = inicial;
+            }
+        }
+
+        if (btnSignOut) {
+            btnSignOut.disabled = !profile.isSignedIn;
+        }
+    }
 
     function atualizarUIStatusGoogleCalendar(status) {
         if (typeof global.googleIdentity === 'object' && typeof global.googleIdentity.updateGoogleCalendarStatusUI === 'function') {
@@ -52,9 +111,9 @@
     }
 
     /**
-     * Opens the Settings Modal
+     * Opens the User Area Modal
      */
-    function openAppSettingsModal() {
+    function openUserAreaModal() {
         const modal = document.getElementById('appSettingsModal');
         const backdrop = document.getElementById('appSettingsBackdrop');
 
@@ -63,9 +122,18 @@
             return;
         }
 
+        const sessionAtual = obterSessaoAtual();
+        atualizarPerfilUsuarioUI(sessionAtual);
+
+        if (!sessionAtual.isSignedIn) {
+            if (typeof global.mostrarToast === 'function') {
+                global.mostrarToast('Faça login para abrir sua área de usuário.', 'warning');
+            }
+            return;
+        }
+
         modal.style.display = 'flex';
         backdrop.style.display = 'block';
-        _settingsModalOpen = true;
         document.body.style.overflow = 'hidden';
 
         // Check and update Google Calendar connection status when modal opens
@@ -109,9 +177,9 @@
     }
 
     /**
-     * Closes the Settings Modal
+     * Closes the User Area Modal
      */
-    function closeAppSettingsModal() {
+    function closeUserAreaModal() {
         const modal = document.getElementById('appSettingsModal');
         const backdrop = document.getElementById('appSettingsBackdrop');
 
@@ -121,7 +189,6 @@
 
         modal.style.display = 'none';
         backdrop.style.display = 'none';
-        _settingsModalOpen = false;
         document.body.style.overflow = '';
     }
 
@@ -129,11 +196,11 @@
      * Initialize Settings Modal and button handlers
      */
     function initialize() {
-        // Wire Gear Icon Button (Open Modal)
-        const btnAppSettings = document.getElementById('btnAppSettings');
-        if (btnAppSettings) {
-            btnAppSettings.addEventListener('click', function () {
-                openAppSettingsModal();
+        // Wire User Avatar Trigger (Open Modal)
+        const btnUserAreaTrigger = document.getElementById('btnUserAreaTrigger');
+        if (btnUserAreaTrigger) {
+            btnUserAreaTrigger.addEventListener('click', function () {
+                openUserAreaModal();
             });
         }
 
@@ -141,7 +208,7 @@
         const btnCloseSettings = document.getElementById('btnCloseSettings');
         if (btnCloseSettings) {
             btnCloseSettings.addEventListener('click', function () {
-                closeAppSettingsModal();
+                closeUserAreaModal();
             });
         }
 
@@ -149,7 +216,7 @@
         const backdrop = document.getElementById('appSettingsBackdrop');
         if (backdrop) {
             backdrop.addEventListener('click', function () {
-                closeAppSettingsModal();
+                closeUserAreaModal();
             });
         }
 
@@ -169,10 +236,23 @@
             });
         }
 
+        const btnUserSignOut = document.getElementById('btnUserSignOut');
+        if (btnUserSignOut) {
+            btnUserSignOut.addEventListener('click', function () {
+                if (!global.googleIdentity || typeof global.googleIdentity.signOut !== 'function') {
+                    return;
+                }
+
+                global.googleIdentity.signOut();
+            });
+        }
+
         // Hook into auth state change to check calendar status and update modal visibility
         if (typeof global.googleIdentity === 'object' && typeof global.googleIdentity.addAuthChangeListener === 'function') {
             global.googleIdentity.addAuthChangeListener(function (session) {
                 if (session && session.isSignedIn) {
+                    atualizarPerfilUsuarioUI(session);
+
                     // User signed in - check calendar status
                     if (typeof global.googleIdentity.checkCalendarConnectionStatus === 'function') {
                         global.googleIdentity.checkCalendarConnectionStatus()
@@ -189,11 +269,15 @@
                             });
                     }
                 } else {
+                    atualizarPerfilUsuarioUI(session || { isSignedIn: false, name: '', email: '', picture: '' });
+
                     // User signed out - close modal
-                    closeAppSettingsModal();
+                    closeUserAreaModal();
                 }
             });
         }
+
+        atualizarPerfilUsuarioUI(obterSessaoAtual());
     }
 
     /**
@@ -350,8 +434,8 @@
     }
 
     // Expose globally
-    global.openAppSettingsModal = openAppSettingsModal;
-    global.closeAppSettingsModal = closeAppSettingsModal;
+    global.openUserAreaModal = openUserAreaModal;
+    global.closeUserAreaModal = closeUserAreaModal;
     global.initSettingsModal = initialize;
 
     // Auto-initialize when DOM is ready
