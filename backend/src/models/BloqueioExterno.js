@@ -1,14 +1,6 @@
 const mongoose = require('mongoose');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
-
-function normalizedOrOriginal(value, normalizer) {
-  if (value === undefined || value === null) {
-    return value;
-  }
-
-  const normalized = normalizer(value);
-  return normalized || value;
-}
+const { normalizedOrOriginal } = require('../utils/valueNormalizer');
 
 // Armazena eventos externos do Google Calendar (criados fora do app).
 // Coleção separada de `agendamentos` para que o sync destrutivo

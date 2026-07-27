@@ -1,39 +1,13 @@
-const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { google } = require('googleapis');
 const Agendamento = require('../models/Agendamento');
 const BloqueioExterno = require('../models/BloqueioExterno');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
+const { decryptRefreshToken } = require('../utils/gcalCrypto');
 
 const GCAL_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const APP_ORIGIN = 'corepersonal';
-
-function getEncryptionKey() {
-  const rawKey = process.env.ENCRYPTION_KEY;
-
-  if (!rawKey) {
-    const error = new Error('ENCRYPTION_KEY is not configured.');
-    error.statusCode = 500;
-    throw error;
-  }
-
-  return crypto.createHash('sha256').update(String(rawKey)).digest();
-}
-
-function decryptRefreshToken(encrypted, iv) {
-  if (!encrypted || !iv) {
-    return null;
-  }
-
-  const decipher = crypto.createDecipheriv('aes-256-cbc', getEncryptionKey(), Buffer.from(String(iv), 'base64'));
-  const decrypted = Buffer.concat([
-    decipher.update(Buffer.from(String(encrypted), 'base64')),
-    decipher.final()
-  ]);
-
-  return decrypted.toString('utf8');
-}
 
 function isAppOwnedEvent(event) {
   const appOrigin = event && event.extendedProperties && event.extendedProperties.private

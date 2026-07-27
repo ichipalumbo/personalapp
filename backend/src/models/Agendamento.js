@@ -1,14 +1,6 @@
 const mongoose = require('mongoose');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
-
-function normalizedOrOriginal(value, normalizer) {
-  if (value === undefined || value === null) {
-    return value;
-  }
-
-  const normalized = normalizer(value);
-  return normalized || value;
-}
+const { normalizedOrOriginal } = require('../utils/valueNormalizer');
 
 const AgendamentoSchema = new mongoose.Schema({
   ownerEmail: { type: String, required: true, index: true },
