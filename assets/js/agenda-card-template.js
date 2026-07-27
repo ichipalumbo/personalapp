@@ -10,7 +10,8 @@
         recorrente: 'background: rgba(255, 215, 0, 0.15); color: #FFD700; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         unico: 'background: rgba(129, 199, 132, 0.15); color: #81C784; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         deslocamento: 'background: rgba(81, 183, 73, 0.15); color: #51b749; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
-        bloqueio: 'background: rgba(220, 33, 39, 0.15); color: #dc2127; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;'
+        bloqueio: 'background: rgba(220, 33, 39, 0.15); color: #dc2127; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
+        googleAgenda: 'background: rgba(66, 133, 244, 0.15); color: #4285F4; font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;'
     };
 
     function normalizarHex(valorHex) {
@@ -234,13 +235,13 @@
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)} title="${tituloExterno}">
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
-                            <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-solid fa-lock"></i> ${descricaoExternaSafe}</span>
+                            <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-brands fa-google" style="color: #4285F4;"></i> ${descricaoExternaSafe}</span>
                             <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local"><i class="fa-brands fa-google" style="color: #4285F4;"></i> Google Agenda</span>
+                            <span class="agenda-dia-aula-local" style="color: #dc2127;">Bloqueado</span>
                             <div class="agenda-semana-card-meta">
-                                <span class="badge-tag-tipo" style="${BADGE_STYLES.bloqueio}"><i class="fa-solid fa-lock"></i> Externo</span>
+                                <span class="badge-tag-tipo" style="${BADGE_STYLES.googleAgenda}"><i class="fa-brands fa-google"></i> Google Agenda</span>
                             </div>
                         </div>
                     </div>
@@ -254,11 +255,11 @@
                 <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
-                            <span class="agenda-dia-aula-nome" style="color: #dc2127;"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
+                            <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: #DDD;"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${comp.descricao || 'Compromisso'}</span></span>
                             <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #DDD;">${comp.descricao || 'Compromisso'}</span>
+                            <span class="agenda-dia-aula-local" style="color: #dc2127;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
                             <div class="agenda-semana-card-meta">
                                 <span class="badge-tag-tipo" style="${BADGE_STYLES.bloqueio}"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia inteiro' : 'Bloqueio'}</span>
                             </div>

@@ -1862,6 +1862,22 @@ body {
   min-width: 0;
 }
 
+/* Descricao de bloqueio interno deve quebrar dinamicamente em telas menores. */
+.agenda-dia-bloqueio-descricao {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  min-width: 0;
+  flex: 1 1 170px;
+  align-items: flex-start;
+}
+
+.agenda-dia-bloqueio-descricao-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.25;
+}
+
 .agenda-dia-aula-local {
   font-size: 0.72rem;
   color: #999;
@@ -1909,27 +1925,31 @@ body {
 .slot-deslocamento {
   border-left-color: #51b749; /* GCal Basil — colorId '10' */
   background: #111a11;
-  border-color: #1b2d1a;
+  border-color: rgba(81, 183, 73, 0.45);
 }
 
 .slot-bloqueado {
   border-left-color: #dc2127; /* GCal Tomato — colorId '11' */
   background: #180f0f;
-  border-color: #2e1515;
+  border-color: rgba(220, 33, 39, 0.45);
 }
 
 /* [TAG-STYLE-BLOQUEIO-EXTERNO] - Eventos externos (somente leitura) do Google Calendar */
 .card-bloqueio-externo {
   border-left-color: #4285f4;
-  background: #111820;
-  border-color: #1a2535;
+  background: #180f0f;
+  border-color: rgba(66, 133, 244, 0.45);
   cursor: default;
 }
 .card-bloqueio-externo:hover {
-  border-left-color: #5c9cf5;
+  border-left-color: #4285f4;
+}
+.slot-bloqueado.card-bloqueio-externo,
+.slot-bloqueado.card-bloqueio-externo:hover {
+  border-left-color: #4285f4;
 }
 .card-bloqueio-externo-nome {
-  color: #90caf9;
+  color: #ddd;
 }
 
 /* Indicador de Agora (Linha vermelha estilo Outlook) */
