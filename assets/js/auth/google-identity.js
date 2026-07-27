@@ -5,6 +5,7 @@
     const API_BASE_URL = 'https://personal-app-api.vercel.app/api';
     const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
     const PROFILE_CACHE_KEY = 'gis_profile_cache';
+    const CALENDAR_STATUS_CACHE_KEY = 'gcal_connection_cache';
     const READY_TIMEOUT_MS = 1500;
     const AUTO_PROMPT_ON_INIT = false;
     const AUTO_RESTORE_SESSION_ON_INIT = true;
@@ -18,6 +19,8 @@
     let _promptBloqueado = false;
     let _calendarCodeClient = null;
     let _calendarConnected = false;
+    let _calendarConnectionDetails = null;
+    let _calendarStatusCheckedAt = 0;
     let _pendingCalendarCodeResolver = null;
     let _pendingCalendarCodeRejecter = null;
     const _authListeners = [];
@@ -177,6 +180,53 @@
         } catch (error) {
             console.warn('[auth] Falha ao restaurar perfil em cache:', error);
         }
+    }
+
+    function _persistCalendarStatusCache(payload) {
+        try {
+            if (!payload) {
+                localStorage.removeItem(CALENDAR_STATUS_CACHE_KEY);
+                return;
+            }
+
+            localStorage.setItem(CALENDAR_STATUS_CACHE_KEY, JSON.stringify(payload));
+        } catch (error) {
+            console.warn('[auth] Falha ao persistir status de conexão do calendário:', error);
+        }
+    }
+
+    function _restoreCalendarStatusCache() {
+        try {
+            const raw = localStorage.getItem(CALENDAR_STATUS_CACHE_KEY);
+            if (!raw) {
+                return;
+            }
+
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') {
+                return;
+            }
+
+            _calendarConnected = parsed.connected === true;
+            _calendarConnectionDetails = parsed.details && typeof parsed.details === 'object'
+                ? parsed.details
+                : null;
+            _calendarStatusCheckedAt = parsed.checkedAt ? Number(parsed.checkedAt) : 0;
+        } catch (error) {
+            console.warn('[auth] Falha ao restaurar cache de status do calendário:', error);
+        }
+    }
+
+    function _atualizarCacheConexaoCalendario(connected, details) {
+        _calendarConnected = connected === true;
+        _calendarConnectionDetails = details && typeof details === 'object' ? details : null;
+        _calendarStatusCheckedAt = Date.now();
+
+        _persistCalendarStatusCache({
+            connected: _calendarConnected,
+            details: _calendarConnectionDetails,
+            checkedAt: _calendarStatusCheckedAt
+        });
     }
 
     function _getSessionSnapshot() {
@@ -406,7 +456,8 @@
                 }
 
                 const dados = await resposta.json().catch(() => ({}));
-                _calendarConnected = true;
+                const details = dados && typeof dados === 'object' ? dados : null;
+                _atualizarCacheConexaoCalendario(true, details);
                 return dados;
             } catch (error) {
                 ultimoErro = error;
@@ -420,6 +471,7 @@
         const ownerEmail = _getSessionSnapshot().ownerEmail;
 
         if (!ownerEmail) {
+            _atualizarCacheConexaoCalendario(false, null);
             return { connected: false };
         }
 
@@ -451,15 +503,25 @@
 
                 const dados = await resposta.json().catch(() => ({}));
                 const connected = !!(dados && (dados.connected === true || dados.connection));
-                _calendarConnected = connected;
-                return { connected, details: dados };
+                const details = dados && typeof dados === 'object' ? dados : null;
+                _atualizarCacheConexaoCalendario(connected, details);
+                return { connected, details };
             } catch (_) {
                 // tenta o próximo endpoint
             }
         }
 
-        _calendarConnected = false;
+        _atualizarCacheConexaoCalendario(false, null);
         return { connected: false };
+    }
+
+    function getCachedCalendarConnectionStatus() {
+        return {
+            connected: _calendarConnected === true,
+            details: _calendarConnectionDetails,
+            checkedAt: _calendarStatusCheckedAt,
+            fromCache: true
+        };
     }
 
     function _solicitarAuthCodeCalendario() {
@@ -492,7 +554,11 @@
         }
 
         if (!force && _calendarConnected) {
-            return { connected: true, fromCache: true };
+            return {
+                connected: true,
+                fromCache: true,
+                details: _calendarConnectionDetails
+            };
         }
 
         const statusAtual = await _consultarConexaoCalendario();
@@ -509,8 +575,12 @@
             throw new Error('Não foi possível obter o código de autorização do Google Calendar.');
         }
 
-        await _postCalendarCodeToBackend(codeResponse.code);
-        return { connected: true, connectedNow: true };
+        const detalhesConexao = await _postCalendarCodeToBackend(codeResponse.code);
+        return {
+            connected: true,
+            connectedNow: true,
+            details: detalhesConexao
+        };
     }
 
     async function checkCalendarConnectionStatus() {
@@ -550,7 +620,7 @@
             }
 
             const dados = await resposta.json().catch(() => ({}));
-            _calendarConnected = false;
+            _atualizarCacheConexaoCalendario(false, null);
             return { disconnected: true, details: dados };
         } catch (error) {
             console.error('[auth] Erro ao desconectar Google Calendar:', error);
@@ -558,20 +628,100 @@
         }
     }
 
+    function _formatarDataConexao(valor) {
+        if (!valor) {
+            return '';
+        }
+
+        const data = new Date(String(valor));
+        if (Number.isNaN(data.getTime())) {
+            return '';
+        }
+
+        return data.toLocaleString('pt-BR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
     function updateGoogleCalendarStatusUI(status) {
         const btnConnect = document.getElementById('btnConnectGoogleCalendar');
         const connectedState = document.getElementById('gcalConnectedState');
+        const connectedEmail = document.getElementById('gcalConnectedEmail');
+        const connectedSince = document.getElementById('gcalConnectedSince');
+        const feedback = document.getElementById('gcalStatusFeedback');
 
         if (!btnConnect || !connectedState) {
             return;
         }
 
+        const detalhesRaiz = status && status.details
+            ? (status.details.connection || status.details)
+            : null;
+        const emailGoogle = detalhesRaiz && detalhesRaiz.googleEmail ? String(detalhesRaiz.googleEmail) : '';
+        const ultimaConexao = detalhesRaiz && detalhesRaiz.lastConnectedAt
+            ? _formatarDataConexao(detalhesRaiz.lastConnectedAt)
+            : '';
+
         if (status && status.connected === true) {
             btnConnect.hidden = true;
             connectedState.hidden = false;
+
+            if (connectedEmail) {
+                if (emailGoogle) {
+                    connectedEmail.textContent = `Conta: ${emailGoogle}`;
+                    connectedEmail.hidden = false;
+                } else {
+                    connectedEmail.textContent = '';
+                    connectedEmail.hidden = true;
+                }
+            }
+
+            if (connectedSince) {
+                if (ultimaConexao) {
+                    connectedSince.textContent = `Conectado em: ${ultimaConexao}`;
+                    connectedSince.hidden = false;
+                } else {
+                    connectedSince.textContent = '';
+                    connectedSince.hidden = true;
+                }
+            }
         } else {
             btnConnect.hidden = false;
             connectedState.hidden = true;
+
+            if (connectedEmail) {
+                connectedEmail.textContent = '';
+                connectedEmail.hidden = true;
+            }
+
+            if (connectedSince) {
+                connectedSince.textContent = '';
+                connectedSince.hidden = true;
+            }
+        }
+
+        if (feedback) {
+            const mensagem = status && status.message ? String(status.message) : '';
+            const estadoUI = status && status.uiState ? String(status.uiState) : '';
+
+            if (mensagem) {
+                feedback.textContent = mensagem;
+                feedback.hidden = false;
+
+                if (estadoUI === 'error') {
+                    feedback.classList.add('error');
+                } else {
+                    feedback.classList.remove('error');
+                }
+            } else {
+                feedback.textContent = '';
+                feedback.hidden = true;
+                feedback.classList.remove('error');
+            }
         }
     }
 
@@ -614,6 +764,7 @@
 
         _initialized = true;
         _restoreCachedProfile();
+        _restoreCalendarStatusCache();
         _updateUi();
         _bindCustomLoginButton();
 
@@ -691,6 +842,7 @@
         },
         ensureCalendarConnection: ensureCalendarConnection,
         checkCalendarConnectionStatus: checkCalendarConnectionStatus,
+        getCachedCalendarConnectionStatus: getCachedCalendarConnectionStatus,
         deleteCalendarConnection: deleteCalendarConnection,
         updateGoogleCalendarStatusUI: updateGoogleCalendarStatusUI,
         connectCalendar: function () {

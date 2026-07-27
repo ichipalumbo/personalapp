@@ -1725,12 +1725,18 @@
               <i class="fa-solid fa-calendar"></i>
               <span>Conectar Google Calendar</span>
             </button>
+
+            <p id="gcalStatusFeedback" class="gcal-status-feedback" hidden></p>
             
             <!-- Connected State (shown when connected) -->
             <div id="gcalConnectedState" class="gcal-status-connected" hidden>
-              <span class="gcal-status-indicator">
-                <i class="fa-solid fa-circle"></i> Google Calendar Conectado
-              </span>
+              <div class="gcal-status-copy">
+                <span class="gcal-status-indicator">
+                  <i class="fa-solid fa-circle"></i> Google Calendar Conectado
+                </span>
+                <small id="gcalConnectedEmail" class="gcal-status-meta" hidden></small>
+                <small id="gcalConnectedSince" class="gcal-status-meta" hidden></small>
+              </div>
               <button id="btnDisconnectGoogleCalendar" class="btn-gcal-disconnect" type="button">
                 <i class="fa-solid fa-trash"></i>
                 <span>Desconectar</span>

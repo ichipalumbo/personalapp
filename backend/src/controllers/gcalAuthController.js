@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { OAuth2Client } = require('google-auth-library');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 const Agendamento = require('../models/Agendamento');
+const BloqueioExterno = require('../models/BloqueioExterno');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 const { registerWebhookChannel, renewWebhookChannelForOwner } = require('../services/gcalSyncService');
 
@@ -285,25 +286,39 @@ async function desconectarGoogleCalendar(req, res) {
       });
     }
 
-    // Delete all external blocks (google_external source) for this user
-    let deletedBlocksCount = 0;
+    // Delete external blocks stored in agendamentos (legacy flow)
+    let deletedAgendamentoBlocksCount = 0;
     try {
       const deleteResult = await Agendamento.deleteMany({
         ownerEmail: normalizedEmail,
         source: 'google_external'
       });
-      deletedBlocksCount = deleteResult.deletedCount || 0;
-      console.log(`[GcalAuthController] Deleted ${deletedBlocksCount} external blocks for ${normalizedEmail}`);
+      deletedAgendamentoBlocksCount = deleteResult.deletedCount || 0;
+      console.log(`[GcalAuthController] Deleted ${deletedAgendamentoBlocksCount} external agendamento blocks for ${normalizedEmail}`);
     } catch (blockDeleteError) {
-      console.warn('[GcalAuthController] Warning: Failed to delete external blocks:', blockDeleteError.message);
-      // Don't fail the entire disconnect operation if block deletion fails
+      console.warn('[GcalAuthController] Warning: Failed to delete external agendamento blocks:', blockDeleteError.message);
+      // Don't fail the entire disconnect operation if this cleanup fails
+    }
+
+    // Delete external blocks stored in dedicated BloqueioExterno collection
+    let deletedBloqueiosExternosCount = 0;
+    try {
+      const deleteBloqueiosResult = await BloqueioExterno.deleteMany({
+        ownerEmail: normalizedEmail
+      });
+      deletedBloqueiosExternosCount = deleteBloqueiosResult.deletedCount || 0;
+      console.log(`[GcalAuthController] Deleted ${deletedBloqueiosExternosCount} bloqueios externos for ${normalizedEmail}`);
+    } catch (bloqueioDeleteError) {
+      console.warn('[GcalAuthController] Warning: Failed to delete bloqueios externos:', bloqueioDeleteError.message);
+      // Don't fail the entire disconnect operation if this cleanup fails
     }
 
     return res.json({
       success: true,
       message: 'Google Calendar connection disconnected successfully.',
       disconnected: true,
-      externalBlocksDeleted: deletedBlocksCount
+      externalBlocksDeleted: deletedAgendamentoBlocksCount,
+      externalCalendarBlocksDeleted: deletedBloqueiosExternosCount
     });
   } catch (err) {
     responderErroGcalAuth(res, err, 'desconectar Google Calendar');
