@@ -103,7 +103,9 @@ window.configurarEscopoRecorrenciaEdicao = function() {
 window.abrirModalAcaoSlot = function(id) {
     window.idCompromissoSelecionado = id;
     const modal = document.getElementById('modalAcaoSlot');
-    const compromisso = aulas.find(a => a.id === id);
+    const compromisso = typeof window.getCompromisso === 'function'
+        ? window.getCompromisso(id)
+        : (Array.isArray(aulas) ? aulas.find(a => a.id === id) : null);
     if (!compromisso) return;
 
     // [TAG-GCAL-READONLY] Eventos externos do Google Calendar são somente leitura
@@ -158,7 +160,9 @@ window.abrirModalAcaoSlot = function(id) {
         containerDiaSemana.style.display = 'block';
         const _isoAlvoDia = typeof window.converterPtBrParaISO === 'function' ? window.converterPtBrParaISO(dataAlvoStr) : null;
         const _idxDiaAlvo = _isoAlvoDia ? new Date(_isoAlvoDia + 'T12:00:00').getDay() : -1;
-        const _nomesDias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const _nomesDias = typeof window.getNomesDiasSemana === 'function'
+            ? window.getNomesDiasSemana()
+            : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         document.getElementById('editDiaSemana').value = (_idxDiaAlvo >= 0 ? _nomesDias[_idxDiaAlvo] : null) || compromisso.dia || 'Segunda';
         document.getElementById('editInfoDia').textContent = `Série Recorrente • Gerenciando dia: ${dataAlvoStr}`;
         if (containerEscopo) containerEscopo.style.display = 'block';
@@ -241,7 +245,9 @@ window.fecharModalAcaoSlot = function() {
 
 window.atualizarAvisoConflitoEdicao = function() {
     const impacto = document.getElementById('editEscopoImpacto');
-    const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
+    const compromisso = typeof window.getCompromisso === 'function'
+        ? window.getCompromisso(window.idCompromissoSelecionado)
+        : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
     if (!impacto || !compromisso) return;
 
     const freq = compromisso.frequencia || 'uma_vez';
@@ -508,7 +514,9 @@ document.addEventListener('DOMContentLoaded', () => {
         formEditar.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            const compromisso = typeof window.getCompromisso === 'function'
+                ? window.getCompromisso(window.idCompromissoSelecionado)
+                : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
             if (!compromisso) return;
             if (compromissoTemAlunoInativo(compromisso)) {
                 alert('Aluno inativo: compromisso disponível somente para visualização.');
@@ -574,7 +582,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Determina o dia da semana correto da ocorrência clicada (não o primeiro dia da série)
                     const _isoOcorrencia = window.converterPtBrParaISO(dataAlvoStr);
                     const _idxOcorrencia = _isoOcorrencia ? new Date(_isoOcorrencia + 'T12:00:00').getDay() : -1;
-                    const _nomesDiasOcorrencia = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _nomesDiasOcorrencia = typeof window.getNomesDiasSemana === 'function'
+                        ? window.getNomesDiasSemana()
+                        : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
                     const _diaOcorrencia = _idxOcorrencia >= 0 ? _nomesDiasOcorrencia[_idxOcorrencia] : (compromisso.dia || 'Segunda');
                     const novoCompromisso = {
                         ...compromisso,
@@ -610,7 +620,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const _selDiaEs = document.getElementById('editDiaSemana').value;
                     const _isoAlvoEs = window.converterPtBrParaISO(dataAlvoStr);
                     const _idxAlvoEs = _isoAlvoEs ? new Date(_isoAlvoEs + 'T12:00:00').getDay() : -1;
-                    const _nomesDiasEs = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _nomesDiasEs = typeof window.getNomesDiasSemana === 'function'
+                        ? window.getNomesDiasSemana()
+                        : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
                     const _diaClicadoEs = _idxAlvoEs >= 0 ? _nomesDiasEs[_idxAlvoEs] : compromisso.dia;
                     if (_diaClicadoEs && _selDiaEs && _diaClicadoEs !== _selDiaEs && Array.isArray(compromisso.diasSemana)) {
                         compromisso.diasSemana = compromisso.diasSemana.map(d => d === _diaClicadoEs ? _selDiaEs : d);
@@ -628,7 +640,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Determina o dia clicado e o novo dia selecionado pelo usuário
                     const _selDiaFd = document.getElementById('editDiaSemana').value;
                     const _idxAlvoFd = _isoAlvoFd ? new Date(_isoAlvoFd + 'T12:00:00').getDay() : -1;
-                    const _nomesDiasFd = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+                    const _nomesDiasFd = typeof window.getNomesDiasSemana === 'function'
+                        ? window.getNomesDiasSemana()
+                        : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
                     const _diaClicadoFd = _idxAlvoFd >= 0 ? _nomesDiasFd[_idxAlvoFd] : compromisso.dia;
                     const _diasSemanaNova = Array.isArray(compromisso.diasSemana)
                         ? compromisso.diasSemana.map(d => (_diaClicadoFd && d === _diaClicadoFd) ? _selDiaFd : d)
@@ -759,7 +773,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDeletar = document.getElementById('btnDeletarDefinitivo');
     if (btnDeletar) {
         btnDeletar.addEventListener('click', async () => {
-            const _compDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            const _compDeletar = typeof window.getCompromisso === 'function'
+                ? window.getCompromisso(window.idCompromissoSelecionado)
+                : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
             if (compromissoTemAlunoInativo(_compDeletar)) {
                 alert('Aluno inativo: não é possível cancelar ou excluir este compromisso.');
                 return;
@@ -785,7 +801,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnMandarReposicao = document.getElementById('btnMandarParaReposicao');
     if (btnMandarReposicao) {
         btnMandarReposicao.addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            const compromisso = typeof window.getCompromisso === 'function'
+                ? window.getCompromisso(window.idCompromissoSelecionado)
+                : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
             if (!compromisso) return;
             if (compromissoTemAlunoInativo(compromisso)) {
                 alert('Aluno inativo: não é possível reagendar este compromisso.');
@@ -814,7 +832,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDeletarInstancia = document.getElementById('btnDeletarInstancia');
     if (btnDeletarInstancia) {
         btnDeletarInstancia.addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            const compromisso = typeof window.getCompromisso === 'function'
+                ? window.getCompromisso(window.idCompromissoSelecionado)
+                : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
             if (!compromisso) return;
             if (compromissoTemAlunoInativo(compromisso)) {
                 alert('Aluno inativo: não é possível cancelar este compromisso.');
@@ -848,7 +868,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnReagendarInstancia = document.getElementById('btnReagendarInstancia');
     if (btnReagendarInstancia) {
         btnReagendarInstancia.addEventListener('click', () => {
-            const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            const compromisso = typeof window.getCompromisso === 'function'
+                ? window.getCompromisso(window.idCompromissoSelecionado)
+                : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
             if (!compromisso) return;
             if (compromissoTemAlunoInativo(compromisso)) {
                 alert('Aluno inativo: não é possível reagendar este compromisso.');
@@ -891,7 +913,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnDeletarSerie = document.getElementById('btnDeletarSerie');
     if (btnDeletarSerie) {
         btnDeletarSerie.addEventListener('click', async () => {
-            const _serieDeletar = aulas.find(a => a.id === window.idCompromissoSelecionado);
+            const _serieDeletar = typeof window.getCompromisso === 'function'
+                ? window.getCompromisso(window.idCompromissoSelecionado)
+                : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
             if (compromissoTemAlunoInativo(_serieDeletar)) {
                 alert('Aluno inativo: não é possível cancelar esta série.');
                 return;

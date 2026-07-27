@@ -279,7 +279,9 @@ window.renderizarHomeSemana = function() {
     }
     
     let html = '';
-    const diasSemanaMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    const diasSemanaMap = typeof window.getNomesDiasUteis === 'function'
+        ? window.getNomesDiasUteis().concat('Domingo')
+        : ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
     const agora = new Date();
     const hoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate());
     const minutosAgora = (agora.getHours() * 60) + agora.getMinutes();

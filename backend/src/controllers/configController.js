@@ -1,27 +1,13 @@
 const Config = require('../models/Config');
+const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 
 function responderErroConfig(res, err, contexto) {
-  const statusCode = err && err.statusCode ? err.statusCode : 500;
-
-  console.error(`[ConfigController] Erro ao ${contexto}:`, err.message);
-  if (err && err.stack) {
-    console.error('[ConfigController] Stack:', err.stack);
-  }
-
-  res.status(statusCode).json({
-    error: `Erro ao ${contexto}`,
-    message: err.message,
-    connectionState: Config.db.readyState
-  });
+  return responderErro(res, err, contexto, Config, 'ConfigController');
 }
 
 function limparPayloadConfig(payload) {
-  const limpo = { ...(payload || {}) };
-  delete limpo._id;
-  delete limpo.__v;
-  delete limpo.ownerEmail;
-  return limpo;
+  return limparPayload(payload);
 }
 
 function montarConfigPadraoGrade(ownerEmail) {

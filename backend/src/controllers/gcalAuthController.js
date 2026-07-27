@@ -2,30 +2,18 @@ const { OAuth2Client } = require('google-auth-library');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 const Agendamento = require('../models/Agendamento');
 const BloqueioExterno = require('../models/BloqueioExterno');
+const { limparPayload, responderErro } = require('../utils/controllerHelpers');
+const { normalizeEmail } = require('../utils/emailNormalizer');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 const { encryptRefreshToken, decryptRefreshToken } = require('../utils/gcalCrypto');
 const { registerWebhookChannel, renewWebhookChannelForOwner } = require('../services/gcalSyncService');
 
 function responderErroGcalAuth(res, err, contexto) {
-  const statusCode = err && err.statusCode ? err.statusCode : 500;
-
-  console.error(`[GcalAuthController] Erro ao ${contexto}:`, err.message);
-  if (err && err.stack) {
-    console.error('[GcalAuthController] Stack:', err.stack);
-  }
-
-  res.status(statusCode).json({
-    error: `Erro ao ${contexto}`,
-    message: err.message,
-    connectionState: GoogleCalendarConnection.db.readyState
-  });
+  return responderErro(res, err, contexto, GoogleCalendarConnection, 'GcalAuthController');
 }
 
 function limparPayloadAuth(payload) {
-  const limpo = { ...(payload || {}) };
-  delete limpo._id;
-  delete limpo.__v;
-  return limpo;
+  return limparPayload(payload, ['_id', '__v']);
 }
 
 function obterValor(payload, chaves) {
@@ -98,7 +86,7 @@ async function exchangeAuthCode(req, res) {
       return res.status(400).json({ error: 'authCode é obrigatório.' });
     }
 
-    const normalizedOwnerEmail = String(ownerEmail).toLowerCase();
+    const normalizedOwnerEmail = normalizeEmail(ownerEmail);
     const { oauth2Client, tokens, clientId } = await trocarCodigoPorTokens(String(authCode));
 
     if (!tokens || !tokens.refresh_token) {
@@ -131,7 +119,7 @@ async function exchangeAuthCode(req, res) {
     }
     const accessTokenExpiryDate = tokens.expiry_date ? new Date(tokens.expiry_date) : null;
     const encryptedRefreshToken = encryptRefreshToken(tokens.refresh_token);
-    const profileEmail = tokenInfo && tokenInfo.email ? String(tokenInfo.email).toLowerCase() : normalizedOwnerEmail;
+    const profileEmail = tokenInfo && tokenInfo.email ? normalizeEmail(tokenInfo.email) : normalizedOwnerEmail;
 
     const connection = await GoogleCalendarConnection.findOneAndUpdate(
       { ownerEmail: normalizedOwnerEmail },
@@ -186,7 +174,7 @@ async function obterConexaoGoogleCalendar(req, res) {
       return res.status(400).json({ error: 'ownerEmail é obrigatório.' });
     }
 
-    const connection = await GoogleCalendarConnection.findOne({ ownerEmail: String(ownerEmail).toLowerCase() });
+    const connection = await GoogleCalendarConnection.findOne({ ownerEmail: normalizeEmail(ownerEmail) });
 
     if (!connection) {
       return res.status(404).json({
@@ -227,7 +215,7 @@ async function desconectarGoogleCalendar(req, res) {
       return res.status(400).json({ error: 'ownerEmail é obrigatório.' });
     }
 
-    const normalizedEmail = String(ownerEmail).toLowerCase();
+    const normalizedEmail = normalizeEmail(ownerEmail);
 
     // Delete the Google Calendar connection token
     const connection = await GoogleCalendarConnection.findOneAndDelete({ 

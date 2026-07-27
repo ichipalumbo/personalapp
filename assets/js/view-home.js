@@ -24,15 +24,9 @@ window.__homeCarregando = window.__homeCarregando || false;
 // Set to null by window.invalidarChaveRenderAgenda() to force a re-render on next call.
 let _ultimaChaveRenderAgenda = null;
 
-const DIAS_DA_SEMANA = [
-  "Domingo",
-  "Segunda-feira",
-  "Terça-feira",
-  "Quarta-feira",
-  "Quinta-feira",
-  "Sexta-feira",
-  "Sábado",
-];
+const DIAS_DA_SEMANA = typeof window.getNomesDiasSemana === 'function'
+  ? window.getNomesDiasSemana()
+  : ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
 // ── Loading State ─────────────────────────────────────────────────────────────────────────────
 

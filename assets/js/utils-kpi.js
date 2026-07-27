@@ -26,7 +26,9 @@ function calcularProjecaoMensalCompleta(aluno, aulas) {
         const hoje = new Date();
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
         const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0); // Último dia do mês
-        const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const diasUteisMap = typeof window.getNomesDiasUteis === 'function'
+            ? window.getNomesDiasUteis()
+            : ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         
         aulasAluno.forEach(aula => {
             const diasNoMes = fimMes.getDate();
@@ -77,7 +79,9 @@ function calcularProjecaoRealizadaAteHoje(aluno, aulas) {
         const hoje = new Date();
         const ontem = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate() - 1);
         const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-        const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const diasUteisMap = typeof window.getNomesDiasUteis === 'function'
+            ? window.getNomesDiasUteis()
+            : ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         
         aulasAluno.forEach(aula => {
             const diasPassados = Math.floor((ontem - inicioMes) / (1000 * 60 * 60 * 24)) + 1;
@@ -177,7 +181,9 @@ function calcularKPIsAluno(alunoId, mes, ano, aulasArray = window.aulas) {
     const inicioMes = new Date(ano, mes, 1);
     const fimMes = new Date(ano, mes + 1, 0);
     const hoje = new Date();
-    const diasUteisMap = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diasUteisMap = typeof window.getNomesDiasUteis === 'function'
+        ? window.getNomesDiasUteis()
+        : ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
     aulasAluno.forEach(aula => {
         const diasNoMes = fimMes.getDate();

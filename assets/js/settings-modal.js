@@ -65,7 +65,16 @@
         }
 
         try {
-            const aulasCache = JSON.parse(localStorage.getItem('personal_aulas') || '[]');
+            const parseSeguro = typeof global.parseJSONSeguro === 'function'
+                ? global.parseJSONSeguro
+                : function (valor, fallback) {
+                    try {
+                        return valor ? JSON.parse(valor) : fallback;
+                    } catch (error) {
+                        return fallback;
+                    }
+                };
+            const aulasCache = parseSeguro(localStorage.getItem('personal_aulas'), []);
             if (Array.isArray(aulasCache)) {
                 const filtradasCache = aulasCache.filter(function (aula) {
                     return !(aula && aula.source === 'google_external');

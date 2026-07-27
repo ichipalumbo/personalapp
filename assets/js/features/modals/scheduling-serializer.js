@@ -43,7 +43,9 @@
         const data = new Date(`${dataIso}T12:00:00`);
         if (Number.isNaN(data.getTime())) return '';
 
-        const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+        const dias = typeof window.getNomesDiasSemana === 'function'
+            ? window.getNomesDiasSemana()
+            : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
         return dias[data.getDay()] || '';
     }
 

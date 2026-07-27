@@ -1,12 +1,14 @@
+const { getAlunoPreco, getAlunoFrequenciaSemanal } = require('../utils/studentValueExtractors');
+
 function calcularProjecaoMensalCompleta(aluno) {
-  const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
-  const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+  const preco = getAlunoPreco(aluno);
+  const freqAcordada = getAlunoFrequenciaSemanal(aluno);
 
   return freqAcordada * 4 * preco;
 }
 
 function calcularProjecaoRealizadaAteHoje(aluno, aulas) {
-  const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
+  const preco = getAlunoPreco(aluno);
   const alunoId = aluno.id;
 
   const aulasAluno = aulas.filter(a => a.alunoId === alunoId && a.tipo === 'aula');
@@ -24,13 +26,13 @@ function calcularProjecaoRealizadaAteHoje(aluno, aulas) {
 }
 
 function calcularProjecaoAproximada(aluno) {
-  const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
-  const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+  const preco = getAlunoPreco(aluno);
+  const freqAcordada = getAlunoFrequenciaSemanal(aluno);
   return freqAcordada * 4 * preco;
 }
 
 function calcularAulasFaltamAgendar(aluno, aulas) {
-  const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+  const freqAcordada = getAlunoFrequenciaSemanal(aluno);
 
   const aulasRecorrentes = aulas.filter(a =>
     a.alunoId === aluno.id &&

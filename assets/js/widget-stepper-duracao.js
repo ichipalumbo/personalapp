@@ -61,7 +61,9 @@ window.aplicarLimitesDuracaoPorContexto = function(contexto) {
     }
 
     if (contexto === 'edicao') {
-        const compromisso = aulas.find(a => a.id === window.idCompromissoSelecionado);
+        const compromisso = typeof window.getCompromisso === 'function'
+            ? window.getCompromisso(window.idCompromissoSelecionado)
+            : (Array.isArray(aulas) ? aulas.find(a => a.id === window.idCompromissoSelecionado) : null);
         const tipo = compromisso?.tipo || 'aula';
         const max = tipo === 'bloqueio' ? window.BLOQUEIO_MAX_MINUTOS : window.DURACAO_MAX_AULA_DESLOCAMENTO;
         window.aplicarMaxDuracaoSelect('editDuracao', max);

@@ -1,27 +1,13 @@
 const BloqueioExterno = require('../models/BloqueioExterno');
+const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 
 function responderErroBloqueio(res, err, contexto) {
-  const statusCode = err && err.statusCode ? err.statusCode : 500;
-
-  console.error(`[BloqueioExternoController] Erro ao ${contexto}:`, err.message);
-  if (err && err.stack) {
-    console.error('[BloqueioExternoController] Stack:', err.stack);
-  }
-
-  res.status(statusCode).json({
-    error: `Erro ao ${contexto}`,
-    message: err.message,
-    connectionState: BloqueioExterno.db.readyState
-  });
+  return responderErro(res, err, contexto, BloqueioExterno, 'BloqueioExternoController');
 }
 
 function limparPayloadBloqueio(payload) {
-  const limpo = { ...(payload || {}) };
-  delete limpo._id;
-  delete limpo.__v;
-  delete limpo.ownerEmail;
-  return limpo;
+  return limparPayload(payload);
 }
 
 async function listarBloqueiosExternos(req, res) {

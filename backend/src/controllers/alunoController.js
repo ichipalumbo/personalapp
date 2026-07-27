@@ -1,5 +1,6 @@
 const Aluno = require('../models/Aluno');
 const Agendamento = require('../models/Agendamento');
+const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 const {
   calcularProjecaoMensalCompleta,
@@ -10,26 +11,11 @@ const {
 } = require('../services/kpiService');
 
 function responderErroAluno(res, err, contexto) {
-  const statusCode = err && err.statusCode ? err.statusCode : 500;
-
-  console.error(`[AlunoController] Erro ao ${contexto}:`, err.message);
-  if (err && err.stack) {
-    console.error('[AlunoController] Stack:', err.stack);
-  }
-
-  res.status(statusCode).json({
-    error: `Erro ao ${contexto}`,
-    message: err.message,
-    connectionState: Aluno.db.readyState
-  });
+  return responderErro(res, err, contexto, Aluno, 'AlunoController');
 }
 
 function limparPayloadAluno(payload) {
-  const limpo = { ...(payload || {}) };
-  delete limpo._id;
-  delete limpo.__v;
-  delete limpo.ownerEmail;
-  return limpo;
+  return limparPayload(payload);
 }
 
 function normalizarStatusAluno(status) {

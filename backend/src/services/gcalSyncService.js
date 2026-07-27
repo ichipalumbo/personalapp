@@ -5,6 +5,7 @@ const BloqueioExterno = require('../models/BloqueioExterno');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
 const { decryptRefreshToken } = require('../utils/gcalCrypto');
+const { normalizeEmail } = require('../utils/emailNormalizer');
 
 const GCAL_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const APP_ORIGIN = 'corepersonal';
@@ -304,7 +305,7 @@ async function createCalendarClient(connection) {
 }
 
 async function getConnectionForOwner(ownerEmail) {
-  const normalizedOwnerEmail = String(ownerEmail || '').toLowerCase();
+  const normalizedOwnerEmail = normalizeEmail(ownerEmail);
 
   if (!normalizedOwnerEmail) {
     const error = new Error('ownerEmail is required to access Google Calendar connection.');

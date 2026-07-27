@@ -41,6 +41,8 @@ function _parseJSONSeguro(valor, fallback) {
     }
 }
 
+window.parseJSONSeguro = _parseJSONSeguro;
+
 function _mostrarOverlaySleepMode() {
     const mensagem = 'Sincronizando... isso pode levar alguns segundos.';
     if (typeof mostrarOverlaySleepMode === 'function') {

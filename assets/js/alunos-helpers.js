@@ -28,6 +28,14 @@ window.getAluno = function(id) {
     return listaAlunos.find(a => a.id === id) || null;
 };
 
+window.getCompromisso = function(id) {
+    const listaCompromissos = Array.isArray(window.aulas)
+        ? window.aulas
+        : (typeof aulas !== 'undefined' && Array.isArray(aulas) ? aulas : []);
+
+    return listaCompromissos.find(a => a.id === id) || null;
+};
+
 window.getAlunosParaSelect = function(selectedId) {
     const listaAlunos = window.getAlunosAtivos();
 
