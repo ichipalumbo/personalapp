@@ -1707,7 +1707,7 @@
     <!-- [TAG-HTML-SETTINGS-MODAL] - Modal de Configurações da Aplicação -->
     <div class="modal-overlay" id="appSettingsModal" style="display: none">
       <div class="modal" style="max-width: 500px">
-        <h2 class="modal-title" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">
           <span>Configurações</span>
           <button id="btnCloseSettings" class="btn-modal-close" type="button" title="Fechar">
             <i class="fa-solid fa-times"></i>
@@ -1717,13 +1717,13 @@
         <div class="modal-body">
           <!-- Google Calendar Section -->
           <div class="settings-section">
-            <h3 class="settings-section-title">Google Calendar</h3>
-            <p class="settings-description">Conecte seu Google Calendar para sincronizar automaticamente as aulas agendadas.</p>
+            <h3 class="settings-section-title">Google Agenda</h3>
+            <p id="gcalConnectionDescription" class="settings-description">Conecte sua Google Agenda aqui para sincronizar seus compromissos pessoais.</p>
             
             <!-- Connect Button (shown when disconnected) -->
             <button id="btnConnectGoogleCalendar" class="btn-gcal-connect" hidden>
               <i class="fa-solid fa-calendar"></i>
-              <span>Conectar Google Calendar</span>
+              <span>Conectar Google Agenda</span>
             </button>
 
             <p id="gcalStatusFeedback" class="gcal-status-feedback" hidden></p>
@@ -1732,7 +1732,7 @@
             <div id="gcalConnectedState" class="gcal-status-connected" hidden>
               <div class="gcal-status-copy">
                 <span class="gcal-status-indicator">
-                  <i class="fa-solid fa-circle"></i> Google Calendar Conectado
+                  <i class="fa-solid fa-circle"></i> Google Agenda conectada
                 </span>
                 <small id="gcalConnectedEmail" class="gcal-status-meta" hidden></small>
                 <small id="gcalConnectedSince" class="gcal-status-meta" hidden></small>

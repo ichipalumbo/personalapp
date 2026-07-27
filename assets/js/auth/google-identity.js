@@ -572,7 +572,7 @@
 
         const codeResponse = await _solicitarAuthCodeCalendario();
         if (!codeResponse || !codeResponse.code) {
-            throw new Error('Não foi possível obter o código de autorização do Google Calendar.');
+            throw new Error('Não foi possível obter o código de autorização da Google Agenda.');
         }
 
         const detalhesConexao = await _postCalendarCodeToBackend(codeResponse.code);
@@ -597,7 +597,7 @@
         const ownerEmail = _getSessionSnapshot().ownerEmail;
 
         if (!ownerEmail) {
-            throw new Error('Não há sessão ativa para desconectar Google Calendar.');
+            throw new Error('Não há sessão ativa para desconectar a Google Agenda.');
         }
 
         const endpoint = `${API_BASE_URL}/gcal/connection?ownerEmail=${encodeURIComponent(ownerEmail)}`;
@@ -616,7 +616,7 @@
 
             if (!resposta.ok) {
                 const errorData = await resposta.json().catch(() => ({}));
-                throw new Error(errorData.message || 'Falha ao desconectar Google Calendar.');
+                throw new Error(errorData.message || 'Falha ao desconectar a Google Agenda.');
             }
 
             const dados = await resposta.json().catch(() => ({}));
@@ -650,6 +650,7 @@
     function updateGoogleCalendarStatusUI(status) {
         const btnConnect = document.getElementById('btnConnectGoogleCalendar');
         const connectedState = document.getElementById('gcalConnectedState');
+        const connectionDescription = document.getElementById('gcalConnectionDescription');
         const connectedEmail = document.getElementById('gcalConnectedEmail');
         const connectedSince = document.getElementById('gcalConnectedSince');
         const feedback = document.getElementById('gcalStatusFeedback');
@@ -669,6 +670,10 @@
         if (status && status.connected === true) {
             btnConnect.hidden = true;
             connectedState.hidden = false;
+
+            if (connectionDescription) {
+                connectionDescription.textContent = 'Desconecte a Google Agenda se quiser gerenciar suas aulas apenas pelo aplicativo.';
+            }
 
             if (connectedEmail) {
                 if (emailGoogle) {
@@ -692,6 +697,10 @@
         } else {
             btnConnect.hidden = false;
             connectedState.hidden = true;
+
+            if (connectionDescription) {
+                connectionDescription.textContent = 'Conecte sua Google Agenda aqui para sincronizar seus compromissos pessoais.';
+            }
 
             if (connectedEmail) {
                 connectedEmail.textContent = '';

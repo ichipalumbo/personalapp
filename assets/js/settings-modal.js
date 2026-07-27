@@ -9,6 +9,10 @@
         }
     }
 
+    function normalizarMensagemGoogleAgenda(mensagem) {
+        return String(mensagem || '').replace(/Google Calendar/gi, 'Google Agenda');
+    }
+
     function limparDadosGoogleExternosLocais() {
         let houveAlteracao = false;
 
@@ -180,7 +184,7 @@
                                 atualizarUIStatusGoogleCalendar({
                                     connected: false,
                                     uiState: 'error',
-                                    message: 'Falha ao consultar o estado do Google Calendar.'
+                                    message: 'Falha ao consultar o estado da Google Agenda.'
                                 });
                             });
                     }
@@ -207,7 +211,7 @@
             atualizarUIStatusGoogleCalendar({
                 connected: false,
                 uiState: 'connecting',
-                message: 'Conectando ao Google Calendar...'
+                message: 'Conectando à Google Agenda...'
             });
 
             // Show loading state
@@ -244,12 +248,13 @@
 
                 // Show success toast
                 if (typeof global.mostrarToast === 'function') {
-                    global.mostrarToast('✅ Google Calendar conectado com sucesso!', 'success');
+                    global.mostrarToast('✅ Google Agenda conectada com sucesso!', 'success');
                 }
             }
         } catch (error) {
             console.error('[settings-modal] Erro ao conectar Google Calendar:', error);
-            const errorMsg = error && error.message ? error.message : 'Falha ao conectar Google Calendar';
+            const errorMsgBruto = error && error.message ? error.message : 'Falha ao conectar Google Agenda';
+            const errorMsg = normalizarMensagemGoogleAgenda(errorMsgBruto);
             atualizarUIStatusGoogleCalendar({
                 connected: false,
                 uiState: 'error',
@@ -272,7 +277,7 @@
      */
     async function handleDisconnectGoogleCalendar() {
         // Show confirmation dialog
-        const confirmed = window.confirm('Tem certeza de que deseja desconectar o Google Calendar?');
+        const confirmed = window.confirm('Tem certeza de que deseja desconectar a Google Agenda?');
         if (!confirmed) {
             return;
         }
@@ -287,7 +292,7 @@
             atualizarUIStatusGoogleCalendar({
                 connected: true,
                 uiState: 'disconnecting',
-                message: 'Desconectando Google Calendar...'
+                message: 'Desconectando Google Agenda...'
             });
 
             // Show loading state
@@ -320,12 +325,13 @@
 
                 // Show success toast
                 if (typeof global.mostrarToast === 'function') {
-                    global.mostrarToast('✅ Google Calendar desconectado com sucesso!', 'success');
+                    global.mostrarToast('✅ Google Agenda desconectada com sucesso!', 'success');
                 }
             }
         } catch (error) {
             console.error('[settings-modal] Erro ao desconectar Google Calendar:', error);
-            const errorMsg = error && error.message ? error.message : 'Falha ao desconectar Google Calendar';
+            const errorMsgBruto = error && error.message ? error.message : 'Falha ao desconectar Google Agenda';
+            const errorMsg = normalizarMensagemGoogleAgenda(errorMsgBruto);
             atualizarUIStatusGoogleCalendar({
                 connected: true,
                 uiState: 'error',

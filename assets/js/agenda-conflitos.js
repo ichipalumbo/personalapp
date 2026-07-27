@@ -58,7 +58,7 @@ window.getConflitosNoDia = function(candidato, dataAlvo, opcoes = {}) {
             let nome;
             // [TAG-GCAL-CONFLICT-LABEL] Identifica conflitos com eventos externos do Google Calendar
             if (existente.source === 'google_external') {
-                nome = (existente.descricao || 'Evento externo') + ' [Google Calendar]';
+                nome = (existente.descricao || 'Evento externo') + ' [Google Agenda]';
             } else {
                 const aluno = window.getAluno(existente.alunoId);
                 nome = aluno ? aluno.nome : (existente.tipo === 'aula' ? 'Aula' : (existente.descricao || 'Compromisso'));

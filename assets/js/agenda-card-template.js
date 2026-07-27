@@ -238,7 +238,7 @@
                             <span class="agenda-semana-card-time${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodo}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local"><i class="fa-brands fa-google" style="color: #4285F4;"></i> Google Calendar</span>
+                            <span class="agenda-dia-aula-local"><i class="fa-brands fa-google" style="color: #4285F4;"></i> Google Agenda</span>
                             <div class="agenda-semana-card-meta">
                                 <span class="badge-tag-tipo" style="${BADGE_STYLES.bloqueio}"><i class="fa-solid fa-lock"></i> Externo</span>
                             </div>

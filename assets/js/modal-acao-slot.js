@@ -109,7 +109,7 @@ window.abrirModalAcaoSlot = function(id) {
     // [TAG-GCAL-READONLY] Eventos externos do Google Calendar são somente leitura
     if (compromisso.source === 'google_external') {
         if (typeof mostrarToast === 'function') {
-            mostrarToast('🔒 Este horário está bloqueado por um evento do Google Calendar.', 'warning');
+            mostrarToast('🔒 Este horário está bloqueado por um evento da Google Agenda.', 'warning');
         }
         return;
     }
