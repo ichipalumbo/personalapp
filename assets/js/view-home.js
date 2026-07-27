@@ -245,7 +245,30 @@ window.renderizarAgendaDia = function () {
     };
   };
 
-  const larguraUtilGradePx = Math.max((grid.clientWidth || window.innerWidth || 0) - 55, 180);
+  const REGRAS_VISUAIS_CARD_DIA = {
+    larguraMinimaCardPx: 120,
+    larguraMinimaUtilGradePx: 180,
+    margemConteudoTituloPx: 34,
+    larguraMediaGlyphPx: 7.4,
+    minCaracteresTitulo: 10,
+    limiteTituloLongo: 24,
+    limiteCampoSecundario: 22,
+    limiteTextoComposto: 58,
+    limiteTituloLongoMobile: 16,
+    limiteTextoPrincipalSecundarioMobile: 34,
+    limiteTituloInlineStatus: 18,
+    limiteCardMuitoBaixoPx: 46,
+    limiteCardBaixoPx: 64,
+    limiteDuracaoCurtaMin: 30,
+    limiteDuracaoMediaCurtaMin: 45,
+    limiteColunaMuitoEstreitaPct: 45,
+    limiteColunaEstreitaPct: 60,
+  };
+
+  const larguraUtilGradePx = Math.max(
+    (grid.clientWidth || window.innerWidth || 0) - 55,
+    REGRAS_VISUAIS_CARD_DIA.larguraMinimaUtilGradePx,
+  );
 
   const analisarDensidadeVisualCardDia = ({ compromisso, heightPx, duracaoMinutos, larguraPercentual, larguraEstimadaPx }) => {
     const tipoComp = compromisso && compromisso.tipo ? compromisso.tipo : "aula";
@@ -254,29 +277,35 @@ window.renderizarAgendaDia = function () {
     const secundario = textos.secundario || "";
     const terciario = textos.terciario || "";
     const ehMobile = window.innerWidth <= 767;
-    const capacidadeTitulo = Math.max(10, Math.floor((Math.max(larguraEstimadaPx, 120) - 34) / 7.4));
+    const capacidadeTitulo = Math.max(
+      REGRAS_VISUAIS_CARD_DIA.minCaracteresTitulo,
+      Math.floor(
+        (Math.max(larguraEstimadaPx, REGRAS_VISUAIS_CARD_DIA.larguraMinimaCardPx) - REGRAS_VISUAIS_CARD_DIA.margemConteudoTituloPx) /
+          REGRAS_VISUAIS_CARD_DIA.larguraMediaGlyphPx,
+      ),
+    );
     const tituloProvavelmenteEstourando = principal.length > capacidadeTitulo;
 
     const textoLongo =
-      principal.length >= 24 ||
-      secundario.length >= 22 ||
-      terciario.length >= 22 ||
-      `${principal} ${secundario} ${terciario}`.length >= 58;
+      principal.length >= REGRAS_VISUAIS_CARD_DIA.limiteTituloLongo ||
+      secundario.length >= REGRAS_VISUAIS_CARD_DIA.limiteCampoSecundario ||
+      terciario.length >= REGRAS_VISUAIS_CARD_DIA.limiteCampoSecundario ||
+      `${principal} ${secundario} ${terciario}`.length >= REGRAS_VISUAIS_CARD_DIA.limiteTextoComposto;
     const usaHeuristicaInlinePorTitulo =
       tipoComp === "deslocamento" || tipoComp === "bloqueio";
 
     const textoLongoMobile =
       ehMobile &&
-      (principal.length >= 16 ||
+      (principal.length >= REGRAS_VISUAIS_CARD_DIA.limiteTituloLongoMobile ||
         tituloProvavelmenteEstourando ||
-        (!usaHeuristicaInlinePorTitulo && `${principal} ${secundario}`.length >= 34));
+        (!usaHeuristicaInlinePorTitulo && `${principal} ${secundario}`.length >= REGRAS_VISUAIS_CARD_DIA.limiteTextoPrincipalSecundarioMobile));
 
-    const cardMuitoBaixo = heightPx <= 46;
-    const cardBaixo = heightPx <= 64;
-    const duracaoCurta = duracaoMinutos <= 30;
-    const duracaoMediaCurta = duracaoMinutos <= 45;
-    const colunaMuitoEstreita = larguraPercentual <= 45;
-    const colunaEstreita = larguraPercentual <= 60;
+    const cardMuitoBaixo = heightPx <= REGRAS_VISUAIS_CARD_DIA.limiteCardMuitoBaixoPx;
+    const cardBaixo = heightPx <= REGRAS_VISUAIS_CARD_DIA.limiteCardBaixoPx;
+    const duracaoCurta = duracaoMinutos <= REGRAS_VISUAIS_CARD_DIA.limiteDuracaoCurtaMin;
+    const duracaoMediaCurta = duracaoMinutos <= REGRAS_VISUAIS_CARD_DIA.limiteDuracaoMediaCurtaMin;
+    const colunaMuitoEstreita = larguraPercentual <= REGRAS_VISUAIS_CARD_DIA.limiteColunaMuitoEstreitaPct;
+    const colunaEstreita = larguraPercentual <= REGRAS_VISUAIS_CARD_DIA.limiteColunaEstreitaPct;
 
     const reduzirConteudoOpcionalMobile =
       ehMobile && (tituloProvavelmenteEstourando || textoLongoMobile);
@@ -284,7 +313,7 @@ window.renderizarAgendaDia = function () {
       ehMobile &&
       duracaoCurta &&
       !tituloProvavelmenteEstourando &&
-      (usaHeuristicaInlinePorTitulo ? principal.length <= 18 : !textoLongoMobile);
+      (usaHeuristicaInlinePorTitulo ? principal.length <= REGRAS_VISUAIS_CARD_DIA.limiteTituloInlineStatus : !textoLongoMobile);
 
     if (
       duracaoCurta ||
@@ -483,7 +512,10 @@ window.renderizarAgendaDia = function () {
     // Margem de segurança de layout
     const gapRight = 4;
     const larguraCardEstimadaPx =
-      Math.max(120, (larguraUtilGradePx * widthPercent) / 100 - gapRight);
+      Math.max(
+        REGRAS_VISUAIS_CARD_DIA.larguraMinimaCardPx,
+        (larguraUtilGradePx * widthPercent) / 100 - gapRight,
+      );
 
     const analiseDensidadeVisual = analisarDensidadeVisualCardDia({
       compromisso,

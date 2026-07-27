@@ -2031,7 +2031,7 @@ body {
 
 #agendaGridHome .agenda-card-dayview .badge-tag-tipo,
 #agendaGridHome .agenda-card-dayview .badge-tag-tipo--reposicao {
-  font-size: 0.62rem !important;
+  font-size: 0.62rem;
   line-height: 1.2;
 }
 
@@ -2108,13 +2108,6 @@ body {
   .agenda-dia-aula-nome {
   flex: 1 1 auto;
   min-width: 0;
-}
-
-#agendaGridHome
-  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
-  .agenda-semana-card-meta
-  .agenda-card-status-badge {
-  display: none !important;
 }
 
 #agendaGridHome
