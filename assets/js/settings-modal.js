@@ -1,65 +1,43 @@
 (function (global) {
     'use strict';
 
+    function obterHelperSessaoUsuario() {
+        return global.userAreaSessionHelper && typeof global.userAreaSessionHelper === 'object'
+            ? global.userAreaSessionHelper
+            : null;
+    }
+
     function obterSessaoAtual() {
-        if (typeof global.googleIdentity !== 'object') {
-            return {
-                isSignedIn: false,
-                name: '',
-                email: '',
-                picture: ''
-            };
+        const helper = obterHelperSessaoUsuario();
+        if (helper && typeof helper.getSessionSnapshot === 'function') {
+            return helper.getSessionSnapshot(global.googleIdentity);
         }
 
-        const isSignedIn = typeof global.googleIdentity.isSignedIn === 'function'
-            ? global.googleIdentity.isSignedIn()
-            : false;
-        const profile = typeof global.googleIdentity.getProfile === 'function'
-            ? global.googleIdentity.getProfile()
-            : null;
-
+        console.warn('[settings-modal] userAreaSessionHelper indisponível; usando sessão vazia.');
         return {
-            isSignedIn,
-            name: profile && profile.name ? String(profile.name) : '',
-            email: profile && profile.email ? String(profile.email) : '',
-            picture: profile && profile.picture ? String(profile.picture) : ''
+            isSignedIn: false,
+            name: '',
+            email: '',
+            picture: ''
         };
     }
 
     function atualizarPerfilUsuarioUI(session) {
-        const profile = session && typeof session === 'object' ? session : obterSessaoAtual();
-        const profileAvatar = document.getElementById('userProfileAvatar');
-        const profileName = document.getElementById('userProfileName');
-        const profileEmail = document.getElementById('userProfileEmail');
-        const btnSignOut = document.getElementById('btnUserSignOut');
-
-        if (profileName) {
-            profileName.textContent = profile.isSignedIn && profile.name
-                ? profile.name
-                : 'Conta Google';
+        const helper = obterHelperSessaoUsuario();
+        if (helper && typeof helper.renderProfile === 'function') {
+            return helper.renderProfile(session, {
+                googleIdentity: global.googleIdentity,
+                avatarId: 'userProfileAvatar',
+                nameId: 'userProfileName',
+                emailId: 'userProfileEmail',
+                signOutButtonId: 'btnUserSignOut'
+            });
         }
 
-        if (profileEmail) {
-            if (profile.isSignedIn && profile.email) {
-                profileEmail.textContent = profile.email;
-            } else {
-                profileEmail.textContent = 'Faça login para ver seu perfil.';
-            }
-        }
-
-        if (profileAvatar) {
-            if (profile.picture) {
-                profileAvatar.innerHTML = '<img src="' + profile.picture + '" alt="Avatar da conta Google" />';
-            } else {
-                const origem = profile.email || profile.name || 'G';
-                const inicial = String(origem).trim().charAt(0).toUpperCase() || 'G';
-                profileAvatar.textContent = inicial;
-            }
-        }
-
-        if (btnSignOut) {
-            btnSignOut.disabled = !profile.isSignedIn;
-        }
+        console.warn('[settings-modal] userAreaSessionHelper indisponível; perfil não renderizado.');
+        return session && typeof session === 'object'
+            ? session
+            : { isSignedIn: false, name: '', email: '', picture: '' };
     }
 
     function atualizarUIStatusGoogleCalendar(status) {
