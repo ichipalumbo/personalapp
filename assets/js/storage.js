@@ -336,12 +336,22 @@ function atualizarLimitesGrade(novaGrade) {
     window.limitesGrade = grade;
 }
 
-function normalizarObjetivoAlunoMigracao(valorObjetivo) {
-    if (typeof window.normalizarObjetivoAluno === 'function') {
-        return window.normalizarObjetivoAluno(valorObjetivo);
+function normalizarValorAlunoComFallbackMigracao(valor, normalizadorGlobal, fallbackLocal) {
+    if (typeof normalizadorGlobal === 'function') {
+        return normalizadorGlobal(valor);
     }
-    const objetivo = String(valorObjetivo || '').trim();
-    return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+    return fallbackLocal(valor);
+}
+
+function normalizarObjetivoAlunoMigracao(valorObjetivo) {
+    return normalizarValorAlunoComFallbackMigracao(
+        valorObjetivo,
+        window.normalizarObjetivoAluno,
+        (valor) => {
+            const objetivo = String(valor || '').trim();
+            return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+        }
+    );
 }
 
 function montarCorObjetivoTangerinaMigracao() {

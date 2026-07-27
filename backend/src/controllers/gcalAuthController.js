@@ -26,6 +26,14 @@ function obterValor(payload, chaves) {
   return null;
 }
 
+function obterOwnerEmailNormalizado(payload) {
+  const ownerEmail = obterValor(payload, ['ownerEmail', 'email']);
+  if (!ownerEmail) {
+    return null;
+  }
+  return normalizeEmail(ownerEmail);
+}
+
 function montarRespostaConexao(connection) {
   return {
     ownerEmail: connection.ownerEmail,
@@ -76,9 +84,9 @@ async function exchangeAuthCode(req, res) {
   try {
     const payload = limparPayloadAuth(req.body);
     const authCode = obterValor(payload, ['code', 'authCode', 'authorizationCode']);
-    const ownerEmail = obterValor(payload, ['ownerEmail', 'email']);
+    const normalizedOwnerEmail = obterOwnerEmailNormalizado(payload);
 
-    if (!ownerEmail) {
+    if (!normalizedOwnerEmail) {
       return res.status(400).json({ error: 'ownerEmail é obrigatório.' });
     }
 
@@ -86,7 +94,6 @@ async function exchangeAuthCode(req, res) {
       return res.status(400).json({ error: 'authCode é obrigatório.' });
     }
 
-    const normalizedOwnerEmail = normalizeEmail(ownerEmail);
     const { oauth2Client, tokens, clientId } = await trocarCodigoPorTokens(String(authCode));
 
     if (!tokens || !tokens.refresh_token) {
@@ -168,13 +175,13 @@ async function exchangeAuthCode(req, res) {
 async function obterConexaoGoogleCalendar(req, res) {
   try {
     const payload = limparPayloadAuth(req.query);
-    const ownerEmail = obterValor(payload, ['ownerEmail', 'email']);
+    const normalizedEmail = obterOwnerEmailNormalizado(payload);
 
-    if (!ownerEmail) {
+    if (!normalizedEmail) {
       return res.status(400).json({ error: 'ownerEmail é obrigatório.' });
     }
 
-    const connection = await GoogleCalendarConnection.findOne({ ownerEmail: normalizeEmail(ownerEmail) });
+    const connection = await GoogleCalendarConnection.findOne({ ownerEmail: normalizedEmail });
 
     if (!connection) {
       return res.status(404).json({
@@ -209,13 +216,11 @@ async function renewWebhookChannel(req, res) {
 async function desconectarGoogleCalendar(req, res) {
   try {
     const payload = limparPayloadAuth(req.query);
-    const ownerEmail = obterValor(payload, ['ownerEmail', 'email']);
+    const normalizedEmail = obterOwnerEmailNormalizado(payload);
 
-    if (!ownerEmail) {
+    if (!normalizedEmail) {
       return res.status(400).json({ error: 'ownerEmail é obrigatório.' });
     }
-
-    const normalizedEmail = normalizeEmail(ownerEmail);
 
     // Delete the Google Calendar connection token
     const connection = await GoogleCalendarConnection.findOneAndDelete({ 

@@ -28,6 +28,15 @@ const DIAS_DA_SEMANA = typeof window.getNomesDiasSemana === 'function'
   ? window.getNomesDiasSemana()
   : ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"];
 
+function formatarNomeDiaHome(nomeDiaBase) {
+  if (!nomeDiaBase) return "";
+  const nome = String(nomeDiaBase).trim();
+  const nomeLower = nome.toLowerCase();
+  if (nomeLower === "domingo" || nomeLower === "domingo-feira") return "Domingo";
+  if (nomeLower === "sábado" || nomeLower === "sabado" || nomeLower === "sábado-feira" || nomeLower === "sabado-feira") return "Sábado";
+  return nome.includes("-feira") ? nome : `${nome}-feira`;
+}
+
 // ── Loading State ─────────────────────────────────────────────────────────────────────────────
 
 window.renderizarLoadingHome = function () {
@@ -126,7 +135,8 @@ window.atualizarDataAtual = function () {
   if (!elementoData) return;
   const dia = String(window.dataSelecionada.getDate()).padStart(2, "0");
   const mes = String(window.dataSelecionada.getMonth() + 1).padStart(2, "0");
-  const nomeDia = DIAS_DA_SEMANA[window.dataSelecionada.getDay()];
+  const nomeDiaBase = DIAS_DA_SEMANA[window.dataSelecionada.getDay()];
+  const nomeDia = formatarNomeDiaHome(nomeDiaBase);
 
   elementoData.innerHTML = `
     <span class="agenda-data-linha-topo">

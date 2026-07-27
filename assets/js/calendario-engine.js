@@ -85,6 +85,12 @@ window.resolverCompromissoRecorrenteNaData = function(comp, dataAlvo, diaTexto) 
     return false;
 };
 
+function obterNomesDiasSemanaCalendario() {
+    return typeof window.getNomesDiasSemana === 'function'
+        ? window.getNomesDiasSemana()
+        : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+}
+
 window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     if (horaStr) {
         const ehDiaInteiro = comp.tipo === 'bloqueio'
@@ -93,9 +99,7 @@ window.checarCompromissoNaData = function(comp, dataAlvo, horaStr) {
     }
     
     const diaSemana = dataAlvo.getDay();
-    const diasSemanaMap = typeof window.getNomesDiasSemana === 'function'
-        ? window.getNomesDiasSemana()
-        : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const diasSemanaMap = obterNomesDiasSemanaCalendario();
     const diaTexto = diasSemanaMap[diaSemana];
     if (!diaTexto) return false;
     const dataStr = dataAlvo.toLocaleDateString('pt-BR');

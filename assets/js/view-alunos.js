@@ -7,19 +7,40 @@ let _ultimaChaveRenderAlunos = null;
 // Exposto para que mutações externas possam forçar um re-render na próxima chamada.
 window.invalidarChaveRenderAlunos = function () { _ultimaChaveRenderAlunos = null; };
 
-function normalizarObjetivoAluno(valorObjetivo) {
-    if (typeof window.normalizarObjetivoAluno === 'function') {
-        return window.normalizarObjetivoAluno(valorObjetivo);
+function normalizarValorAlunoComFallback(valor, normalizadorGlobal, fallbackLocal) {
+    if (typeof normalizadorGlobal === 'function') {
+        return normalizadorGlobal(valor);
     }
-    const objetivo = String(valorObjetivo || '').trim();
-    return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+    return fallbackLocal(valor);
+}
+
+function normalizarObjetivoAluno(valorObjetivo) {
+    return normalizarValorAlunoComFallback(
+        valorObjetivo,
+        window.normalizarObjetivoAluno,
+        (valor) => {
+            const objetivo = String(valor || '').trim();
+            return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
+        }
+    );
 }
 
 function normalizarStatusAlunoLocal(valorStatus) {
-    if (typeof window.normalizarStatusAluno === 'function') {
-        return window.normalizarStatusAluno(valorStatus);
+    return normalizarValorAlunoComFallback(
+        valorStatus,
+        window.normalizarStatusAluno,
+        (valor) => String(valor || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo'
+    );
+}
+
+function obterAlunoPorIdView(id) {
+    if (typeof window.getAluno === 'function') {
+        return window.getAluno(id);
     }
-    return String(valorStatus || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo';
+    const listaAlunos = Array.isArray(window.alunos)
+        ? window.alunos
+        : (typeof alunos !== 'undefined' && Array.isArray(alunos) ? alunos : []);
+    return listaAlunos.find(a => a.id === id) || null;
 }
 
 function atualizarStatusSwitchFormulario(ativo) {
@@ -279,7 +300,7 @@ window.renderizarListaAlunos = function() {
 };
 window.prepararEdicaoAluno = function(id) {
     if (typeof alunos === 'undefined') return;
-    const aluno = alunos.find(a => a.id === id);
+    const aluno = obterAlunoPorIdView(id);
     if (!aluno) return;
     const elId = document.getElementById('alunoIdEdicao');
     const elNome = document.getElementById('alunoNome');

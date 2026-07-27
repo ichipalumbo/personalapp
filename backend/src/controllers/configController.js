@@ -34,6 +34,19 @@ async function obterOuCriarConfigPadraoGrade(ownerEmail) {
   );
 }
 
+async function obterConfigGradeComFallback(ownerEmail, contextoAviso) {
+  try {
+    let config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
+    if (!config) {
+      config = await obterOuCriarConfigPadraoGrade(ownerEmail);
+    }
+    return config;
+  } catch (dbErr) {
+    console.warn(`[ConfigController] Falha ao ler/criar ${contextoAviso}. Usando fallback em memória:`, dbErr.message);
+    return montarConfigPadraoGrade(ownerEmail);
+  }
+}
+
 async function listarConfiguracoes(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -47,17 +60,7 @@ async function listarConfiguracoes(req, res) {
 async function obterConfiguracao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    let config = null;
-
-    try {
-      config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
-      if (!config) {
-        config = await obterOuCriarConfigPadraoGrade(ownerEmail);
-      }
-    } catch (dbErr) {
-      console.warn('[ConfigController] Falha ao ler/criar configuração padrão. Usando fallback em memória:', dbErr.message);
-      config = montarConfigPadraoGrade(ownerEmail);
-    }
+    const config = await obterConfigGradeComFallback(ownerEmail, 'configuração padrão');
 
     res.json(config);
   } catch (err) {
@@ -68,17 +71,7 @@ async function obterConfiguracao(req, res) {
 async function obterConfiguracaoGradeHorarios(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    let config = null;
-
-    try {
-      config = await Config.findOne({ ownerEmail, chave: 'grade_horarios' });
-      if (!config) {
-        config = await obterOuCriarConfigPadraoGrade(ownerEmail);
-      }
-    } catch (dbErr) {
-      console.warn('[ConfigController] Falha ao ler/criar grade_horarios. Usando fallback em memória:', dbErr.message);
-      config = montarConfigPadraoGrade(ownerEmail);
-    }
+    const config = await obterConfigGradeComFallback(ownerEmail, 'grade_horarios');
 
     res.json(config);
   } catch (err) {

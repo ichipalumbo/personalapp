@@ -197,7 +197,9 @@ window.renderizarKPIDashboard = function() {
     if (window.filtroAlunoMensalId) {
         // Single student KPIs
         kpis = window.calcularKPIsAluno(window.filtroAlunoMensalId, mes, ano, window.aulas);
-        const aluno = window.alunos?.find(a => a.id === window.filtroAlunoMensalId);
+        const aluno = typeof window.getAluno === 'function'
+            ? window.getAluno(window.filtroAlunoMensalId)
+            : (window.alunos || []).find(a => a.id === window.filtroAlunoMensalId);
         nomeAluno = aluno ? aluno.nome : 'Aluno';
     } else {
         // Consolidated KPIs for all students
