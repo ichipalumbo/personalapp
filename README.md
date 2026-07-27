@@ -228,6 +228,35 @@ Frontend:
 - `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
 - `assets/js/google-calendar.js`: integracao com Google Calendar API — importa eventos externos como bloqueios e sincroniza agendamentos locais.
 
+## Contrato de Camadas (Calendario > Dia)
+
+Para evitar regressao de sobreposicao entre indicadores da grade e elementos sticky, a visao Calendario > Dia segue um contrato fixo de camadas definido em `assets/css/style.css`.
+
+Tokens de camada:
+
+- `--z-cal-dia-container`: base do container da visao Dia
+- `--z-cal-dia-grid-surface`: superficie base da grade
+- `--z-cal-dia-grid-lines`: linhas da grade
+- `--z-cal-dia-grid-slots`: slots clicaveis de fundo
+- `--z-cal-dia-grid-events`: camada de eventos/cards
+- `--z-cal-dia-grid-now-indicator`: indicador da hora atual
+- `--z-cal-dia-header-sticky`: header sticky da agenda diaria
+- `--z-cal-dia-tabs-sticky`: tabs sticky Dia/Mes
+
+Regras obrigatorias:
+
+- Qualquer elemento interno da grade diaria deve ficar abaixo de `--z-cal-dia-header-sticky`.
+- As tabs sticky devem permanecer acima do header sticky e de toda a grade.
+- Novos indicadores visuais (linhas, marcadores, badges absolutos) devem usar token dedicado e nao numero magico.
+- Quando houver sobreposicao com sticky, ajustar token/stacking context no CSS, nao via patch pontual em estilo inline.
+
+Stacking contexts usados para previsibilidade:
+
+- `#containerCalendarioDia` usa `isolation: isolate`.
+- `.time-grid-content-col` usa `isolation: isolate`.
+
+Com isso, o comportamento esperado e deterministico em desktop e mobile: a linha de hora atual fica dentro da grade e nunca atravessa tabs/header sticky.
+
 Backend:
 
 - `backend/server.js`: entry point principal; carrega env, conecta no MongoDB, cria o app e sobe o servidor.

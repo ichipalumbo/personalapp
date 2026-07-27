@@ -2,6 +2,15 @@
 :root {
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
+  /* Contrato de camadas da visão Calendário > Dia */
+  --z-cal-dia-container: 1;
+  --z-cal-dia-grid-surface: 1;
+  --z-cal-dia-grid-lines: 1;
+  --z-cal-dia-grid-slots: 2;
+  --z-cal-dia-grid-events: 3;
+  --z-cal-dia-grid-now-indicator: 4;
+  --z-cal-dia-header-sticky: 20;
+  --z-cal-dia-tabs-sticky: 21;
   --objetivo-funcional-text: var(--objetivo-tangerina);
   --objetivo-funcional-border: var(--objetivo-tangerina);
   --objetivo-hipertrofia-text: var(--objetivo-tangerina);
@@ -1635,6 +1644,7 @@ body {
   padding: 14px 12px;
   box-sizing: border-box;
   position: relative;
+  z-index: var(--z-cal-dia-grid-surface);
 }
 
 /* Time Grid Wrapper & Columns */
@@ -1669,11 +1679,14 @@ body {
 .time-grid-content-col {
   position: relative;
   border-left: 1px solid #1f1f1f;
+  z-index: var(--z-cal-dia-grid-surface);
+  isolation: isolate;
 }
 
 /* Grid Lines (Horizontais) */
 .time-grid-lines {
   pointer-events: none;
+  z-index: var(--z-cal-dia-grid-lines);
 }
 
 .time-grid-line {
@@ -1691,6 +1704,7 @@ body {
 /* Clickable BG Slots (Vagos) */
 .time-grid-bg-slots {
   pointer-events: auto;
+  z-index: var(--z-cal-dia-grid-slots);
 }
 
 .time-grid-bg-slot {
@@ -1731,6 +1745,7 @@ body {
 /* Absolute events container */
 .time-grid-events {
   pointer-events: none;
+  z-index: var(--z-cal-dia-grid-events);
 }
 
 /* Custom modern event card styling */
@@ -1920,7 +1935,7 @@ body {
 /* Indicador de Agora (Linha vermelha estilo Outlook) */
 .time-grid-now-indicator {
   pointer-events: none;
-  z-index: 20;
+  z-index: var(--z-cal-dia-grid-now-indicator);
   display: flex;
   align-items: center;
 }
@@ -2017,10 +2032,16 @@ body {
   }
 }
 /* [TAG-STYLE-CALENDARIO-TABS-STICKY] */
+#containerCalendarioDia {
+  position: relative;
+  z-index: var(--z-cal-dia-container);
+  isolation: isolate;
+}
+
 #tela-calendario > .calendario-tabs-sticky {
   position: sticky;
   top: var(--header-height);
-  z-index: 10;
+  z-index: var(--z-cal-dia-tabs-sticky);
   padding: 12px 0;
   margin-bottom: 12px;
   background-color: #0b0b0b;
@@ -2030,7 +2051,7 @@ body {
 #containerCalendarioDia .agenda-sticky-container {
   position: sticky;
   top: calc(var(--header-height) + var(--tabs-height, 0px) - 1px);
-  z-index: 9;
+  z-index: var(--z-cal-dia-header-sticky);
   background-color: #141414;
   border-bottom: 1px solid #1f1f1f;
   padding: 6px 0px 5px;
