@@ -1,11 +1,16 @@
 // [TAG-ALUNOS-HELPERS] alunos-helpers.js
 // Responsabilidade: Lookup e geração de HTML para selects de alunos
 // Depende de: state.js (alunos)
-// Expõe: window.normalizarStatusAluno, window.alunoEstaAtivo, window.getAluno(id),
+// Expõe: window.normalizarStatusAluno, window.normalizarObjetivoAluno, window.alunoEstaAtivo, window.getAluno(id),
 //        window.getAlunosAtivos, window.getAlunosParaSelect(selectedId)
 
 window.normalizarStatusAluno = function(status) {
     return String(status || '').toLowerCase() === 'inativo' ? 'inativo' : 'ativo';
+};
+
+window.normalizarObjetivoAluno = function(objetivo) {
+    const valor = String(objetivo || '').trim();
+    return valor === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
 };
 
 window.alunoEstaAtivo = function(aluno) {

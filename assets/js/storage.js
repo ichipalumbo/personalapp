@@ -337,6 +337,9 @@ function atualizarLimitesGrade(novaGrade) {
 }
 
 function normalizarObjetivoAlunoMigracao(valorObjetivo) {
+    if (typeof window.normalizarObjetivoAluno === 'function') {
+        return window.normalizarObjetivoAluno(valorObjetivo);
+    }
     const objetivo = String(valorObjetivo || '').trim();
     return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
 }

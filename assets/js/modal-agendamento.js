@@ -454,6 +454,9 @@ function desbloquearModalPrincipalParaRecorrencia() {
 }
 
 function getLabelPadraoRecorrencia(padrao) {
+    if (typeof window.recorrenciaGetLabelPadrao === 'function') {
+        return window.recorrenciaGetLabelPadrao(padrao);
+    }
     if (padrao === 'diaria') return 'Diária';
     if (padrao === 'mensal') return 'Mensal';
     if (padrao === 'anual') return 'Anual';
@@ -461,6 +464,9 @@ function getLabelPadraoRecorrencia(padrao) {
 }
 
 function getTextoIntervaloRecorrencia(padrao, intervalo) {
+    if (typeof window.recorrenciaGetTextoIntervalo === 'function') {
+        return window.recorrenciaGetTextoIntervalo(padrao, intervalo);
+    }
     const valor = intervalo > 0 ? intervalo : 1;
     if (padrao === 'diaria') return valor === 1 ? 'todos os dias úteis' : `a cada ${valor} dias úteis`;
     if (padrao === 'mensal') return valor === 1 ? 'todo mês' : `a cada ${valor} meses`;
@@ -469,6 +475,9 @@ function getTextoIntervaloRecorrencia(padrao, intervalo) {
 }
 
 function getTextoDiasRecorrencia(diasSemana) {
+    if (typeof window.recorrenciaGetTextoDias === 'function') {
+        return window.recorrenciaGetTextoDias(diasSemana);
+    }
     const mapa = {
         Domingo: 'Dom',
         Segunda: 'Seg',

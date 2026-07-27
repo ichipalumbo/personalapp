@@ -56,6 +56,9 @@ function aplicarModoSomenteLeituraAlunoInativo(compromisso) {
 
 /** @param {string} escopo @returns {string} label curto do escopo */
 window.getLabelEscopoRecorrencia = function(escopo) {
+    if (typeof window.recorrenciaGetLabelEscopo === 'function') {
+        return window.recorrenciaGetLabelEscopo(escopo);
+    }
     if (escopo === 'occurrence') return 'Somente esta aula';
     if (escopo === 'entireSeries') return 'Todas as aulas da série';
     return 'Daqui pra frente';
@@ -63,6 +66,9 @@ window.getLabelEscopoRecorrencia = function(escopo) {
 
 /** @param {string} escopo @returns {string} descrição completa do escopo */
 window.getResumoEscopoRecorrencia = function(escopo) {
+    if (typeof window.recorrenciaGetResumoEscopo === 'function') {
+        return window.recorrenciaGetResumoEscopo(escopo);
+    }
     if (escopo === 'occurrence') return 'Vai aplicar somente nesta aula específica.';
     if (escopo === 'entireSeries') return 'Vai aplicar na série inteira.';
     return 'Vai aplicar nesta aula e nas próximas da série.';

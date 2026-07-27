@@ -215,7 +215,9 @@ window.renderizarKPIDashboard = function() {
     _ultimaChaveRenderKPI = _chaveAtual;
     
     // Format currency
-    const formatMoeda = (value) => `R$ ${value.toFixed(2).replace('.', ',')}`;
+    const formatMoeda = (value) => (typeof window.formatarMoeda === 'function'
+        ? window.formatarMoeda(value)
+        : `R$ ${value.toFixed(2).replace('.', ',')}`);
     const formatQtd = (value) => `${value}`;
     
     const html = `

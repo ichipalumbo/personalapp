@@ -8,6 +8,9 @@ let _ultimaChaveRenderAlunos = null;
 window.invalidarChaveRenderAlunos = function () { _ultimaChaveRenderAlunos = null; };
 
 function normalizarObjetivoAluno(valorObjetivo) {
+    if (typeof window.normalizarObjetivoAluno === 'function') {
+        return window.normalizarObjetivoAluno(valorObjetivo);
+    }
     const objetivo = String(valorObjetivo || '').trim();
     return objetivo === 'Consultoria Online' ? 'Consultoria Online' : 'Personal Trainer';
 }
