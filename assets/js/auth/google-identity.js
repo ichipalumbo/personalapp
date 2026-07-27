@@ -23,6 +23,7 @@
     let _calendarStatusCheckedAt = 0;
     let _pendingCalendarCodeResolver = null;
     let _pendingCalendarCodeRejecter = null;
+    let _gisLoadIssueReported = false;
     const _authListeners = [];
 
     const _readyPromise = new Promise(function (resolve) {
@@ -65,6 +66,12 @@
         });
     };
 
+    global._onGISError = function () {
+        _promptBloqueado = true;
+        _reportGISUnavailable('script_load_error');
+        _markReady();
+    };
+
     function _markReady() {
         if (_readyResolved) {
             return;
@@ -102,6 +109,17 @@
             return;
         }
         console.warn('[auth]', message);
+    }
+
+    function _reportGISUnavailable(reason) {
+        if (_gisLoadIssueReported) {
+            return;
+        }
+
+        _gisLoadIssueReported = true;
+        const motivo = reason || 'unknown';
+        console.error('[auth] GIS indisponível. Motivo:', motivo);
+        _showAuthMessage('Não foi possível carregar o login Google (GIS). Verifique bloqueadores, CSP, domínio autorizado e conexão com accounts.google.com.', 'error');
     }
 
     function _obterMotivoPrompt(notification) {
@@ -785,7 +803,13 @@
             global.__registerGISReadyHandler(_initializeGISIdentity);
         }
 
-        global.setTimeout(_markReady, READY_TIMEOUT_MS);
+        global.setTimeout(function () {
+            const gisDisponivel = !!(global.google && global.google.accounts && global.google.accounts.id);
+            if (!_gisInitialized && !gisDisponivel) {
+                _reportGISUnavailable('ready_timeout_without_google_accounts');
+            }
+            _markReady();
+        }, READY_TIMEOUT_MS);
         return whenReady();
     }
 
