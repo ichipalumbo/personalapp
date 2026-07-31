@@ -1,0 +1,352 @@
+{
+  "assets/js/agenda-card-template.js": {
+    "mtime": 1785443498.034579,
+    "ast_hash": "77d884f3a481c0d58c426cb581d31311",
+    "semantic_hash": ""
+  },
+  "assets/js/agenda-conflitos.js": {
+    "mtime": 1785443498.034579,
+    "ast_hash": "79278e4d0cd0d83d31dc5128bbb8ac2f",
+    "semantic_hash": ""
+  },
+  "assets/js/alunos-helpers.js": {
+    "mtime": 1785443498.0350795,
+    "ast_hash": "053ab02f6827a10b170a1fb4249c387a",
+    "semantic_hash": ""
+  },
+  "assets/js/app.js": {
+    "mtime": 1784992121.0283012,
+    "ast_hash": "3df03a7ae79143368c9822324d5e567d",
+    "semantic_hash": ""
+  },
+  "assets/js/app/bootstrap.js": {
+    "mtime": 1785443498.0350795,
+    "ast_hash": "7302925f7cf34888748ae28027fc71e0",
+    "semantic_hash": ""
+  },
+  "assets/js/app/router.js": {
+    "mtime": 1785443498.0355787,
+    "ast_hash": "810d6f19ea786ea33ed612e4a38e6ec9",
+    "semantic_hash": ""
+  },
+  "assets/js/app/service-worker.js": {
+    "mtime": 1785443498.0355787,
+    "ast_hash": "de87a0b9381010e41aaa4603cfefd9dc",
+    "semantic_hash": ""
+  },
+  "assets/js/auth/google-identity.js": {
+    "mtime": 1785443498.0360787,
+    "ast_hash": "8ca72f172fad6945abf0e6f67667466c",
+    "semantic_hash": ""
+  },
+  "assets/js/calendario-engine.js": {
+    "mtime": 1785443498.0365787,
+    "ast_hash": "bb6d2205804b0621586806e837307c9a",
+    "semantic_hash": ""
+  },
+  "assets/js/cascade-sync-aluno.js": {
+    "mtime": 1785443498.0370798,
+    "ast_hash": "10b901e432303c3b30d7c67c7e152a20",
+    "semantic_hash": ""
+  },
+  "assets/js/features/modals/scheduling-flow-state.js": {
+    "mtime": 1785443498.0370798,
+    "ast_hash": "e54ff9e204c459f20acbc1660332b4a9",
+    "semantic_hash": ""
+  },
+  "assets/js/features/modals/scheduling-serializer.js": {
+    "mtime": 1785443498.0375805,
+    "ast_hash": "f613bd6457a753c78ad34d68ac50ad13",
+    "semantic_hash": ""
+  },
+  "assets/js/features/user/user-area-session-helper.js": {
+    "mtime": 1785443498.0375805,
+    "ast_hash": "f17049da62ae18e3504a90b471b02879",
+    "semantic_hash": ""
+  },
+  "assets/js/google-calendar.js": {
+    "mtime": 1785443498.0380812,
+    "ast_hash": "f23972bd0ca1936cafde77ec4227359e",
+    "semantic_hash": ""
+  },
+  "assets/js/modal-acao-slot.js": {
+    "mtime": 1785443498.0385797,
+    "ast_hash": "d98822077bfec9b53f88273b8fec19ec",
+    "semantic_hash": ""
+  },
+  "assets/js/modal-agendamento.js": {
+    "mtime": 1785443498.0385797,
+    "ast_hash": "36c57e86fc3ae07d91cbcbf83f4f5e0a",
+    "semantic_hash": ""
+  },
+  "assets/js/recurrence-helpers.js": {
+    "mtime": 1785443498.0390801,
+    "ast_hash": "596dbddbbe2ace389b059c1b88c2027e",
+    "semantic_hash": ""
+  },
+  "assets/js/settings-modal.js": {
+    "mtime": 1785443498.0390801,
+    "ast_hash": "e0ef5a940e9af6b0ae3d9ecba856017c",
+    "semantic_hash": ""
+  },
+  "assets/js/state.js": {
+    "mtime": 1784992121.0700164,
+    "ast_hash": "f8e162bdc7b176029857d8186ad92c9d",
+    "semantic_hash": ""
+  },
+  "assets/js/storage.js": {
+    "mtime": 1785443498.0395803,
+    "ast_hash": "7c28de9c7bcfc92d6368168832818b89",
+    "semantic_hash": ""
+  },
+  "assets/js/utils-datetime.js": {
+    "mtime": 1785443498.0395803,
+    "ast_hash": "cb80b986b0b7aee8f695ce86b93ff1da",
+    "semantic_hash": ""
+  },
+  "assets/js/utils-formatters.js": {
+    "mtime": 1785443498.0400803,
+    "ast_hash": "7929f980d10d0d990a1a353b61dcdcb1",
+    "semantic_hash": ""
+  },
+  "assets/js/utils-kpi.js": {
+    "mtime": 1785443498.0400803,
+    "ast_hash": "ea655887c77ff7e8f7856113b7ad1aef",
+    "semantic_hash": ""
+  },
+  "assets/js/view-alunos.js": {
+    "mtime": 1785443498.0405798,
+    "ast_hash": "0ef14599cfe674ff805078ec2bb8f4e0",
+    "semantic_hash": ""
+  },
+  "assets/js/view-calendario.js": {
+    "mtime": 1785443498.04108,
+    "ast_hash": "cb84e399046cdff4bd06ab08e8d82371",
+    "semantic_hash": ""
+  },
+  "assets/js/view-home.js": {
+    "mtime": 1785443498.04108,
+    "ast_hash": "d7eed5cc445780e733b2e14f548baf60",
+    "semantic_hash": ""
+  },
+  "assets/js/widget-bloqueio.js": {
+    "mtime": 1784992121.0715168,
+    "ast_hash": "4a5aa9b60d45047d575ea1ef208a0169",
+    "semantic_hash": ""
+  },
+  "assets/js/widget-stepper-duracao.js": {
+    "mtime": 1785443498.04158,
+    "ast_hash": "6509e28d447fd64c4a857019843ab7dd",
+    "semantic_hash": ""
+  },
+  "backend/package.json": {
+    "mtime": 1785443498.04258,
+    "ast_hash": "0325583111d645b7a766bc749ac3c76a",
+    "semantic_hash": ""
+  },
+  "backend/scripts/normalize-agenda-formats.js": {
+    "mtime": 1785443498.0430794,
+    "ast_hash": "50f98142bde43423c7a21f1fba742fa9",
+    "semantic_hash": ""
+  },
+  "backend/server.js": {
+    "mtime": 1785443498.0430794,
+    "ast_hash": "61f85474336122de7352518d0ec7b8f5",
+    "semantic_hash": ""
+  },
+  "backend/src/app.js": {
+    "mtime": 1785443498.04358,
+    "ast_hash": "c770f970ab82210e892dd43f8738d452",
+    "semantic_hash": ""
+  },
+  "backend/src/config/database.js": {
+    "mtime": 1785443498.04358,
+    "ast_hash": "dc89fcfe977880547a5949709edbfb06",
+    "semantic_hash": ""
+  },
+  "backend/src/config/env.js": {
+    "mtime": 1785443498.044081,
+    "ast_hash": "a39b163d063680d7570273d684d5f0e8",
+    "semantic_hash": ""
+  },
+  "backend/src/controllers/agendamentoController.js": {
+    "mtime": 1785443498.044081,
+    "ast_hash": "6e34dd21bd0bfb2b6a3f69f7e5c1ef92",
+    "semantic_hash": ""
+  },
+  "backend/src/controllers/alunoController.js": {
+    "mtime": 1785443498.04458,
+    "ast_hash": "77e2f16f5fd13037fb58ee788974bab3",
+    "semantic_hash": ""
+  },
+  "backend/src/controllers/bloqueioExternoController.js": {
+    "mtime": 1785443498.0450802,
+    "ast_hash": "b4541ac130dcdc5f9f9d54c08f120596",
+    "semantic_hash": ""
+  },
+  "backend/src/controllers/configController.js": {
+    "mtime": 1785443498.0450802,
+    "ast_hash": "9e39a0b7030064c708ee5c3259f307bc",
+    "semantic_hash": ""
+  },
+  "backend/src/controllers/gcalAuthController.js": {
+    "mtime": 1785443498.04558,
+    "ast_hash": "7f8ad462d905f38c860303a752f3b31f",
+    "semantic_hash": ""
+  },
+  "backend/src/controllers/gcalWebhookController.js": {
+    "mtime": 1785443498.04558,
+    "ast_hash": "fefc14b5b36d9276ce64089b8010ec88",
+    "semantic_hash": ""
+  },
+  "backend/src/middleware/requireAuth.js": {
+    "mtime": 1785443498.04608,
+    "ast_hash": "2dbda00b133d540262879fc416e4c3df",
+    "semantic_hash": ""
+  },
+  "backend/src/models/Agendamento.js": {
+    "mtime": 1785443498.04608,
+    "ast_hash": "de558a48e3c11827d813dfd60a4eced6",
+    "semantic_hash": ""
+  },
+  "backend/src/models/Aluno.js": {
+    "mtime": 1785443498.0465803,
+    "ast_hash": "89433ba1b317dcb91f601ea37b3f6a32",
+    "semantic_hash": ""
+  },
+  "backend/src/models/BloqueioExterno.js": {
+    "mtime": 1785443498.0465803,
+    "ast_hash": "edba3ca13bf0fe2f83bf68b0e63b2ece",
+    "semantic_hash": ""
+  },
+  "backend/src/models/Config.js": {
+    "mtime": 1785443498.0465803,
+    "ast_hash": "599d7f3192d59cd32c1baac70e411511",
+    "semantic_hash": ""
+  },
+  "backend/src/models/GoogleCalendarConnection.js": {
+    "mtime": 1785443498.0470817,
+    "ast_hash": "c578c641a4ff198b777235f086238b98",
+    "semantic_hash": ""
+  },
+  "backend/src/routes/agendamentoRoutes.js": {
+    "mtime": 1785443498.0470817,
+    "ast_hash": "2a5ed771d961844546d0b4dc5af23640",
+    "semantic_hash": ""
+  },
+  "backend/src/routes/alunoRoutes.js": {
+    "mtime": 1785443498.0475812,
+    "ast_hash": "8f411ec56ef733dc7f3933ae2f5cb51f",
+    "semantic_hash": ""
+  },
+  "backend/src/routes/bloqueioExternoRoutes.js": {
+    "mtime": 1784992121.0860167,
+    "ast_hash": "04dbdb264f0df1211ed7de10bf5814dc",
+    "semantic_hash": ""
+  },
+  "backend/src/routes/configRoutes.js": {
+    "mtime": 1785443498.0475812,
+    "ast_hash": "22bc708ab42576ba0b950134b6016cd6",
+    "semantic_hash": ""
+  },
+  "backend/src/routes/gcalAuthRoutes.js": {
+    "mtime": 1785443498.0480797,
+    "ast_hash": "0b3ed6f743298c8c1959f9b86548032c",
+    "semantic_hash": ""
+  },
+  "backend/src/routes/gcalWebhookRoutes.js": {
+    "mtime": 1785443498.0480797,
+    "ast_hash": "3dc9dd5b559e35cd2bdcc48e75a103eb",
+    "semantic_hash": ""
+  },
+  "backend/src/routes/healthRoutes.js": {
+    "mtime": 1785443498.0480797,
+    "ast_hash": "3d1c32032f7177320d40a82a960d71b7",
+    "semantic_hash": ""
+  },
+  "backend/src/services/agendamentoService.js": {
+    "mtime": 1785443498.04858,
+    "ast_hash": "0d8a618d38ccdd9e418864cee7b6448d",
+    "semantic_hash": ""
+  },
+  "backend/src/services/gcalSyncService.js": {
+    "mtime": 1785443498.04858,
+    "ast_hash": "005f2550bf5e7425e6a4c2dcd49ad64f",
+    "semantic_hash": ""
+  },
+  "backend/src/services/kpiService.js": {
+    "mtime": 1785443498.04908,
+    "ast_hash": "23b45f7cea923ae08bb91dd1e371e75a",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/controllerHelpers.js": {
+    "mtime": 1785443498.04908,
+    "ast_hash": "afc0fa43f3b906ec7a9a19acc48d6239",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/emailNormalizer.js": {
+    "mtime": 1785443498.04958,
+    "ast_hash": "7d5aeaee8e1de48f67fa435e47523f63",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/gcalCrypto.js": {
+    "mtime": 1785443498.04958,
+    "ast_hash": "db43ab5e2203c0b68b5e1a0183ada883",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/ownerScope.js": {
+    "mtime": 1784992121.087017,
+    "ast_hash": "8c76f1dfec6f286a23fcad8718fc88f7",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/studentValueExtractors.js": {
+    "mtime": 1785443498.04958,
+    "ast_hash": "a0ee6bc14bd4fcbd005d391bc54c5425",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/time.js": {
+    "mtime": 1785443498.0500822,
+    "ast_hash": "69856de6b4a7c151b5b32f6daadc1531",
+    "semantic_hash": ""
+  },
+  "backend/src/utils/valueNormalizer.js": {
+    "mtime": 1785443498.0500822,
+    "ast_hash": "a3137a466e38fb211939cd0b41b89f09",
+    "semantic_hash": ""
+  },
+  "backend/vercel.json": {
+    "mtime": 1784992121.0875175,
+    "ast_hash": "2060187ea36b0f0fd574802cae282c0b",
+    "semantic_hash": ""
+  },
+  "manifest.json": {
+    "mtime": 1785443498.0510814,
+    "ast_hash": "733de9a5cfcb279bc17a43f9dbd80324",
+    "semantic_hash": ""
+  },
+  "sw.js": {
+    "mtime": 1785443498.0510814,
+    "ast_hash": "c8bc570dd827fb237bf77044f1efc099",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1785443498.03308,
+    "ast_hash": "a91910e9f06a181b37b77eb634ebd87d",
+    "semantic_hash": ""
+  },
+  "index.html": {
+    "mtime": 1785443498.0505805,
+    "ast_hash": "bbb7904a29de7d3af58705c1eeb0e521",
+    "semantic_hash": ""
+  },
+  "assets/images/icon-192x192.png": {
+    "mtime": 1784992121.0268023,
+    "ast_hash": "41a7fb1e74e4b7eee4776392fb810880",
+    "semantic_hash": ""
+  },
+  "assets/images/icon-512x512.png": {
+    "mtime": 1784992121.0273018,
+    "ast_hash": "3b1728b7426d0002c44d9568ddd2db5f",
+    "semantic_hash": ""
+  }
+}
