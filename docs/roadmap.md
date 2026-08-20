@@ -4,7 +4,9 @@
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
-> **Atualização importante**: a feature **"Finanças — Ciclo de Cobrança por Aluno"** foi implementada e está em produção. Ela **entregou o item 1.1** e **substituiu** o antigo sistema de KPI financeiro (`backend/src/services/kpiService.js` e os cálculos de projeção em `assets/js/utils-kpi.js`), que **não existem mais no código**. Os itens abaixo que dependiam desses arquivos foram corrigidos para apontar para a base atual (`financasService.js` / collection `CicloFinanceiro`). Especificação completa em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
+> **Contexto importante**: a feature **"Finanças — Ciclo de Cobrança por Aluno"** está em produção. Ela **entregou o item 1.1** e **substituiu** o antigo sistema de KPI financeiro (`backend/src/services/kpiService.js` e os cálculos de projeção em `assets/js/utils-kpi.js`), que **não existem mais no código**. Especificação completa em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
+>
+> Regras permanentes para agentes de IA: `.github/copilot-instructions.md`.
 
 ---
 
@@ -32,9 +34,10 @@ Cada item traz:
 ---
 
 ### [ ] 0.2 Mover o módulo isomórfico de recorrência para dentro de `backend/`
-- **O que é**: Hoje `backend/src/services/financasService.js` importa `assets/js/shared/recurrence-helpers.js` com um `require` relativo que atravessa para fora da pasta `backend/`.
+- **O que é**: Hoje `backend/src/services/financasService.js` importa `assets/js/shared/recurrence-helpers.js` com um `require` relativo que atravessa três níveis para fora da pasta `backend/`.
 - **Por que importa**: Funciona em produção, mas depende de configuração dos projetos Vercel que **não está versionada** — a API tem *Root Directory* = `backend/`, e o app aponta para a raiz do repositório. Se essa configuração mudar, quebra em produção sem aviso.
-- **Onde mexer**: Mover para `backend/src/shared/recurrence-helpers.js`, backend passando a requerer localmente, e o frontend consumindo de lá (o projeto do app publica o repositório inteiro, então alcança esse caminho — a assimetria joga a favor desta direção). Manter **um único módulo**: duplicar o arquivo reintroduz o risco de divergência entre "o que a agenda mostra" e "o que o financeiro cobra".
+- **Onde mexer**: Mover para `backend/src/shared/recurrence-helpers.js`, backend passando a requerer localmente, e o frontend consumindo de lá via tag `<script>` em `index.html` (o projeto do app publica o repositório inteiro, então alcança esse caminho — a assimetria joga a favor desta direção). Manter **um único módulo**: duplicar o arquivo reintroduz o risco de divergência entre "o que a agenda mostra" e "o que o financeiro cobra".
+- **Atenção**: `calendario-engine.js` lança erro explícito se `recurrence-helpers.js` não tiver sido carregado antes — a ordem das tags em `index.html` precisa ser preservada.
 - **Esforço**: Baixo (mudança de caminho + ajuste de `require` e da tag `<script>`), mas exige validar o deploy dos dois projetos.
 
 ---
@@ -47,16 +50,66 @@ Cada item traz:
 
 ---
 
-### [ ] 0.4 Manter README e artefatos de análise em dia
-- **O que é**: O `README.md` da raiz precisa refletir a estrutura real de arquivos (o `kpiService.js` foi removido; `agendaConsistencyService.js` e `CicloFinanceiro.js` foram criados). Os artefatos em `graphify-out/` refletem o código anterior.
-- **Por que importa**: Documentação desatualizada é o tipo de coisa que faz o próximo trabalho começar errado — foi exatamente o que aconteceu com este roadmap. Artefatos de análise defasados são piores: aparecem em buscas por código e apontam para arquivos que não existem mais.
-- **Onde mexer**: `README.md` manualmente; `graphify-out/` deve ser **regenerado** pela ferramenta, nunca editado à mão. Avaliar se essa pasta deve continuar versionada.
-- **Esforço**: Muito baixo.
+### [x] 0.4 Organização da documentação — **CONCLUÍDO**
+- **O que foi feito**: Documentação reunida em `docs/` (`docs/README.md` como índice, `docs/roadmap.md`, `docs/specs/`), com os arquivos movidos via `git mv` para preservar histórico. A árvore de arquivos do `README.md` da raiz foi corrigida nos dois lados (frontend e backend). A linha `.agents/` foi removida do `.gitignore`, passando a versionar os skills de forma coerente com o que já estava rastreado. Foi criado `.github/copilot-instructions.md` com as regras permanentes para agentes.
+- **Sobre `graphify-out/`**: já estava no `.gitignore` desde sempre — apareceu em varreduras anteriores apenas porque o pacote de análise foi montado por pasta, não por `git archive`. A pasta foi removida localmente por ora; a ferramenta pode voltar quando houver um uso definido. Artefato gerado nunca é fonte de verdade nem deve ser editado à mão.
+- **Manutenção contínua**: quando uma feature mudar a estrutura de arquivos, atualizar a árvore do README no mesmo commit. Documentação defasada foi o que fez este roadmap começar errado uma vez.
 
 ---
 
 ### ✅ Não é débito: custo da rota de consistência de agenda
 `GET /api/alunos/consistencia-agenda` faz 2 consultas de custo **fixo** (alunos + agendamentos) e resolve o resto em memória — não escala por aluno. Chegou a ser levantada como possível dívida, mas foi **reclassificada como comportamento aceito** (seção 10.1 da spec). Não otimizar preventivamente. Se um dia a aba Alunos ficar lenta, o ponto a investigar é o volume de dados trafegado (filtrar `tipo`/`frequencia` já na consulta, ou unificar com a rota de Finanças), não a lógica do indicador.
+
+---
+
+## 🧪 Grupo 3 — Ambiente de desenvolvimento e rede de proteção
+
+> **Histórico**: o projeto nasceu com apoio de IA, sem que ninguém definisse ambiente local nem testes. O resultado é que **toda validação sempre foi feita em produção**. Isso funcionou por um bom tempo porque o app é de usuário único conhecido, mas já custou dois bugs financeiros que chegaram ao usuário real.
+>
+> **Como é hoje**: frontend servido pela extensão **Live Server** do VS Code; backend **sempre o de produção**, porque `API_BASE_URL` em `assets/js/storage.js` é constante fixa apontando para `https://personal-app-api.vercel.app/api`. Não existe `npm run dev`, watch mode, seed ou banco de desenvolvimento.
+>
+> **Consequência a ter clara**: rodando o Live Server, o frontend local **grava no banco de produção**. Não é só "testar em produção" no sentido de publicar antes de validar — é código não publicado escrevendo em dado real.
+>
+> **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
+
+### [ ] 3.1 Testes automatizados das regras financeiras
+> *Este item também aparecia como 2.9 nas versões anteriores deste roadmap. Consolidado aqui.*
+- **O que é**: Suíte mínima cobrindo as regras de cálculo de `financasService.js`: janela do ciclo (incluindo dia 31 em mês curto e virada de ano), piso zero do ajuste negativo, congelamento de ciclo pago e uso do snapshot no recálculo (regra 5.9 da spec).
+- **Por que importa**: Os dois bugs financeiros que chegaram a produção teriam sido pegos por testes triviais. É a única coisa desta lista que protege dinheiro.
+- **Por que é barato**: As funções de cálculo já são **puras e exportadas** (`calcularCicloVigente`, `calcularValorTotalCiclo`, `calcularTotalAulasCobradas`). Não precisam de banco, navegador nem ambiente local. O Node traz `node:test` embutido — **zero dependência nova**, sem bundler e sem build step, respeitando a decisão de manter o projeto enxuto.
+- **Onde mexer**: `backend/` — adicionar `"test": "node --test"` em `backend/package.json` e criar os arquivos de teste. Hoje não há nenhum runner configurado.
+- **Ponto de atenção**: não tentar cobrir tudo. O alvo são as funções puras. Testar o que depende de Mongo é outro nível de esforço e pode ficar para depois (ou nunca).
+- **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
+
+---
+
+### [ ] 3.2 Rodar o backend localmente
+- **O que é**: Conseguir subir a API na própria máquina, em vez de depender de deploy para testar qualquer mudança de backend.
+- **Por que importa**: Hoje, validar uma alteração de backend exige publicar. Isso torna o ciclo de correção lento e força mudanças não testadas a entrarem em produção.
+- **Por que é menor do que parece**: o script `npm start` (`node server.js`) **já existe** e o `dotenv` **já é dependência**. O que falta é um arquivo `.env` local com a string de conexão do Mongo e os client IDs do Google.
+- **Onde mexer**: criar `.env` em `backend/` (garantir que está no `.gitignore`) e documentar as variáveis necessárias — hoje elas só existem no painel da Vercel. Um `.env.example` versionado, com as chaves e sem os valores, resolve o problema de "esqueci quais variáveis são".
+- **Ponto de atenção**: enquanto não existir o item 3.4, esse backend local vai apontar para o **banco de produção**. Útil para ler, arriscado para escrever.
+- **Esforço**: Baixo. Não altera estrutura de código.
+
+---
+
+### [ ] 3.3 Frontend local falando com backend local
+- **O que é**: Fazer o Live Server apontar para a API local quando ela estiver rodando, em vez de sempre para produção.
+- **Por que importa**: É o que hoje faz o desenvolvimento local escrever em dado real. Também impede testar qualquer mudança de backend em conjunto com o frontend antes de publicar.
+- **Onde mexer**: `assets/js/storage.js`, na constante `API_BASE_URL`. Basta detectar o host local (`location.hostname === 'localhost'` ou `127.0.0.1`) e apontar para `http://localhost:<porta>/api`, mantendo a URL de produção como padrão. Nenhuma outra linha do arquivo precisa mudar — todas as chamadas já usam a constante.
+- **Ponto de atenção**: o backend precisa aceitar a origem do Live Server no CORS (hoje `cors()` está aberto, então provavelmente já funciona). Verificar também se o login Google funciona a partir de `localhost` com os client IDs atuais.
+- **Dependência**: só faz sentido junto com o 3.2.
+- **Esforço**: Muito baixo — literalmente uma condicional.
+
+---
+
+### [ ] 3.4 Banco de desenvolvimento separado
+- **O que é**: Uma base MongoDB distinta para desenvolvimento, para que testes locais nunca toquem em dado real do usuário.
+- **Por que importa**: É o que fecha de verdade o problema. Sem isso, mesmo com backend local (3.2) e frontend apontando para ele (3.3), o dado continua sendo o de produção.
+- **Por que é o item grande**: exige criar a base, decidir como popular com dados de teste realistas (aluno com ciclo de vencimento, agendamentos recorrentes, ciclos pagos e em aberto) e manter esses dados úteis ao longo do tempo. É trabalho recorrente, não pontual.
+- **Onde mexer**: nova connection string no `.env` local; opcionalmente um script de seed em `backend/scripts/` (já existe a pasta, com `normalize-agenda-formats.js` como precedente de script utilitário).
+- **Prioridade**: legitimamente baixa. Os itens 3.1 a 3.3 entregam a maior parte do ganho por uma fração do esforço.
+- **Esforço**: Médio–Alto (mais pela manutenção contínua dos dados do que pela configuração inicial).
 
 ---
 
@@ -75,7 +128,7 @@ Cada item traz:
 - **Por que importa**: Prestar contas ao contador e ter controle pessoal do que foi efetivamente recebido no período. Hoje a informação existe na tela de Finanças, mas não sai do app.
 - **Onde mexer**: ⚠️ *Base técnica revisada.* As funções que este item citava (`exportarDados()` em `utils-kpi.js` e os cálculos de `kpiService.js`) **foram removidas**. A fonte correta agora é a collection `CicloFinanceiro` e o serviço `backend/src/services/financasService.js` — os valores já vêm calculados e congelados por ciclo, o que na prática **simplifica** este item: é quase só formatação e exportação, sem recalcular nada.
 - **Sugestão de escopo mínimo (V1)**: Exportar CSV/Excel dos ciclos de um intervalo de datas, com colunas: aluno, período do ciclo, método de cobrança, aulas cobradas, valor, status, data de pagamento.
-- **Ponto de atenção**: decidir se o relatório exporta o **ciclo vigente** também (que ainda pode mudar enquanto não estiver pago) ou apenas ciclos fechados/pagos.
+- **Ponto de atenção**: decidir se o relatório exporta o **ciclo vigente** também (que ainda pode mudar enquanto não estiver pago) ou apenas ciclos fechados/pagos. Evitar dependência nova: CSV se resolve sem biblioteca.
 - **Esforço**: Baixo (a lógica de cálculo já está pronta e persistida; falta só a camada de exportação).
 
 ---
@@ -83,7 +136,7 @@ Cada item traz:
 ### [ ] 1.3 Campo de observações/anotações por aula ou por aluno
 - **O que é**: Um campo de texto livre para anotar coisas como "reclamou de dor no joelho", "combinar novo horário", "trouxe atestado".
 - **Por que importa**: Hoje não existe nenhum campo de anotação livre nem no modelo `Aluno.js` nem no `Agendamento.js` (que usam `{ strict: false }`, mas nenhuma tela expõe esse campo).
-- **Onde mexer**: Adicionar campo `observacoes` no formulário de `view-alunos.js` e/ou `modal-acao-slot.js` (edição de agendamento). O `{ strict: false }` do schema já aceita esse campo sem migração.
+- **Onde mexer**: Adicionar campo `observacoes` no formulário de `view-alunos.js` e/ou `modal-acao-slot.js` (edição de agendamento). O `{ strict: false }` do schema já aceita esse campo sem migração — mas atenção: por isso mesmo, um typo no nome do campo grava silenciosamente e não gera erro.
 - **Nota**: não confundir com `observacaoAjuste` do `CicloFinanceiro`, que é específico do ajuste manual de um ciclo.
 - **Esforço**: Baixo (é essencialmente 1 textarea + 1 exibição na ficha do aluno/aula).
 
@@ -103,7 +156,8 @@ Cada item traz:
 - **Por que importa**: Sem diferenciar falta do aluno, fica difícil cobrar reposição de forma justa ou identificar alunos com muita falta.
 - **⚠️ Dependência crítica do financeiro**: este item é **pré-requisito** para evoluir a regra 5.8 da spec de Finanças. Hoje o financeiro conta simplesmente "o que existe na agenda" — se a aula for excluída de um ciclo não pago, ela some da cobrança. Quando existir status de presença, a contagem deve passar a considerar *realizada / falta cobrável / cancelada sem cobrança*, em vez da mera existência do compromisso. Registrado como revisão futura nas seções 5.8 e 8 da spec.
 - **Onde mexer**: `backend/src/models/Agendamento.js` (ajustar enum/valores aceitos), `modal-acao-slot.js` (ações de cancelar/faltou) e, em seguida, `backend/src/services/financasService.js` (regra de contagem). ⚠️ A antiga `contarReposicoesPorAluno` de `kpiService.js`, que este item citava, **não existe mais**.
-- **Esforço**: Médio (a parte de UI é simples; a integração com o financeiro exige cuidado por mexer em valor cobrado).
+- **Recomendação**: por mexer em valor cobrado, é o candidato natural para entrar **depois** do item 3.1 (testes). Assim a mudança na contagem entra com rede.
+- **Esforço**: Médio (a parte de UI é simples; a integração com o financeiro exige cuidado).
 
 ---
 
@@ -139,6 +193,7 @@ Cada item traz:
 - **Por que importa**: Elimina de vez o trabalho manual de cobrar e reconciliar pagamentos, indo além do registro manual entregue no item 1.1.
 - **Complexidade**: Exige integração com gateway de pagamento (ex.: Mercado Pago, Asaas, Stripe), webhooks de confirmação (o padrão já usado para o Google Calendar em `gcalWebhookController.js` serve de referência arquitetural) e tratamento de falha/estorno.
 - **Base já pronta**: diferente de antes, **a entidade de cobrança já existe** — a collection `CicloFinanceiro` tem período, valor, status e data de pagamento. Um gateway plugaria em cima dela, sem precisar criar um modelo de "faturas" do zero.
+- **Pré-requisito prático**: integrar gateway sem ambiente de teste (Grupo 3) e sem testes automatizados é pedir para errar com dinheiro real. Os itens 3.1 a 3.4 deixam de ser opcionais aqui.
 - **Ponto de atenção**: estorno/reabertura de ciclo pago está hoje **fora de escopo** e sem implementação (ciclo pago é congelado permanentemente). Cobrança automatizada torna isso obrigatório.
 - **Esforço**: Alto.
 
@@ -189,7 +244,7 @@ Cada item traz:
 ### [x] 2.7 Precisão financeira avançada (calendário real em vez de aproximação) — **ENTREGUE**
 - **O que foi entregue**: A fórmula fixa `frequência semanal × 4 × valor` foi **eliminada**. O cálculo agora percorre a janela real de datas do ciclo do aluno e conta as ocorrências efetivas de aulas resolvidas pelo motor de recorrência — o mesmo usado para desenhar a agenda, garantindo que "o que a agenda mostra" e "o que o financeiro cobra" nunca divirjam (módulo isomórfico, seção 2.4 da spec).
 - **O que ficou de fora**: **feriados** não são tratados (uma aula em feriado é contada normalmente, a menos que o PT a remova da agenda) e **faltas** dependem do item 1.5.
-- **Risco que se concretizou**: como previsto aqui, a ausência de testes automatizados fez a validação ser toda manual em produção. Dois defeitos reais escaparam para prod e só foram pegos em revisão posterior (aula excluída continuar sendo cobrada; reajuste de preço alterando ciclos antigos retroativamente). Ambos corrigidos — mas fica o registro de que **o projeto continua sem rede de proteção automatizada** em cima de código que calcula dinheiro. Ver item 2.9.
+- **Risco que se concretizou**: como previsto aqui, a ausência de testes automatizados fez a validação ser toda manual em produção. Dois defeitos reais escaparam para prod e só foram pegos em revisão posterior (aula excluída continuar sendo cobrada; reajuste de preço alterando ciclos antigos retroativamente). Ambos corrigidos — mas fica o registro de que **o projeto continua sem rede de proteção automatizada** em cima de código que calcula dinheiro. Ver item 3.1.
 
 ---
 
@@ -201,39 +256,33 @@ Cada item traz:
 
 ---
 
-### [ ] 2.9 Testes automatizados para as regras financeiras
-- **O que é**: Uma suíte mínima cobrindo as regras de cálculo de `financasService.js`: janela do ciclo (incluindo dia 31 em mês curto e virada de ano), piso zero do ajuste negativo, congelamento de ciclo pago e uso do snapshot no recálculo.
-- **Por que importa**: Os dois bugs financeiros que chegaram a produção teriam sido pegos por testes triviais. As funções de cálculo já são **puras e exportadas** (`calcularCicloVigente`, `calcularValorTotalCiclo`, `calcularTotalAulasCobradas`), então dá para testar sem subir banco nem navegador.
-- **Onde mexer**: `backend/` — hoje não há nenhum runner de teste configurado. Começar pelo mais barato possível (o `node:test` nativo já resolve, sem dependência nova).
-- **Ponto de atenção**: não tentar cobrir tudo. O alvo são as funções puras de cálculo; testar o que depende de Mongo é outro nível de esforço e pode ficar para depois.
-- **Esforço**: Baixo (se limitado às funções puras).
-
----
-
 ## Resumo de priorização sugerida
 
 | Prioridade | Item | Grupo | Esforço |
 |---|---|---|---|
 | — | ~~Controle de pagamento/inadimplência (1.1)~~ | ✅ Entregue | — |
 | — | ~~Precisão financeira avançada (2.7)~~ | ✅ Entregue | — |
+| — | ~~Organização da documentação (0.4)~~ | ✅ Entregue | — |
 | 1 | Bug do bloco de histórico (0.1) | Débito | Muito baixo |
 | 2 | Busca por nome na lista de alunos (1.7) | Fácil | Muito baixo |
-| 3 | Botão WhatsApp + observações (1.3, 1.4) | Fácil | Muito baixo |
-| 4 | Relatório exportável de faturamento (1.2) | Fácil | Baixo |
-| 5 | Testes das regras financeiras (2.9) | Proteção | Baixo |
-| 6 | Status de no-show/cancelamento (1.5) | Fácil–Médio | Médio |
-| 7 | Aulas a repor no card do aluno (1.8) | Fácil–Médio | Baixo–Médio |
-| 8 | Débitos 0.2, 0.3, 0.4 (de carona) | Débito | Baixo |
-| 9 | Aniversário do aluno (1.6) | Fácil | Baixo |
-| 10 | Cobrança automatizada (2.1) | Complexo | Alto |
-| 11 | Notificações automáticas (2.2) | Complexo | Alto |
-| 12 | Avaliação física/anamnese (2.4) | Complexo | Alto |
-| 13 | Auditoria (2.6) | Complexo | Médio–Alto |
-| 14 | Portal do aluno (2.3) | Complexo | Muito alto |
-| 15 | Multi-personal/equipe (2.5) | Complexo | Muito alto |
+| 3 | Testes das regras financeiras (3.1) | Proteção | Baixo |
+| 4 | Botão WhatsApp + observações (1.3, 1.4) | Fácil | Muito baixo |
+| 5 | Backend local + frontend apontando para ele (3.2, 3.3) | Ambiente | Baixo |
+| 6 | Relatório exportável de faturamento (1.2) | Fácil | Baixo |
+| 7 | Status de no-show/cancelamento (1.5) | Fácil–Médio | Médio |
+| 8 | Aulas a repor no card do aluno (1.8) | Fácil–Médio | Baixo–Médio |
+| 9 | Débitos 0.2 e 0.3 (de carona) | Débito | Baixo |
+| 10 | Aniversário do aluno (1.6) | Fácil | Baixo |
+| 11 | Banco de desenvolvimento separado (3.4) | Ambiente | Médio–Alto |
+| 12 | Cobrança automatizada (2.1) | Complexo | Alto |
+| 13 | Notificações automáticas (2.2) | Complexo | Alto |
+| 14 | Avaliação física/anamnese (2.4) | Complexo | Alto |
+| 15 | Auditoria (2.6) | Complexo | Médio–Alto |
+| 16 | Portal do aluno (2.3) | Complexo | Muito alto |
+| 17 | Multi-personal/equipe (2.5) | Complexo | Muito alto |
 
-**Sugestão de leitura da tabela**: os itens 1 a 5 são todos de esforço baixo e fecham as pontas soltas da entrega de Finanças. Os itens 6 e 7 andam juntos e destravam a evolução da regra 5.8 do financeiro (contagem por presença em vez de existência na agenda) — provavelmente o "próximo bloco" natural de trabalho.
+**Sugestão de leitura da tabela**: os itens 1 a 6 são todos de esforço baixo e fecham as pontas soltas da entrega de Finanças. O item 3.1 (testes) subiu na lista de propósito: é barato, não depende de nada e é o único que protege código que calcula dinheiro — vale entrar antes de qualquer coisa que mexa em valor cobrado. Os itens 7 e 8 andam juntos e destravam a evolução da regra 5.8 do financeiro (contagem por presença em vez de existência na agenda).
 
 ---
 
-*Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças. Atualize livremente conforme o roadmap evoluir.*
+*Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir.*
