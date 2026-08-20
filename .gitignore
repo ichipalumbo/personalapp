@@ -4,3 +4,4 @@ node_modules/
 .continue/
 graphify-out/
 .agents/
+*.zip
