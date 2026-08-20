@@ -1,16 +1,16 @@
-# Graph Report - personalapp  (2026-08-20)
+# Graph Report - personalapp  (2026-07-30)
 
 ## Corpus Check
-- 76 files · ~59,249 words
+- 67 files · ~47,094 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 713 nodes · 1282 edges · 44 communities (41 shown, 3 thin omitted)
-- Extraction: 92% EXTRACTED · 8% INFERRED · 0% AMBIGUOUS · INFERRED: 98 edges (avg confidence: 0.85)
+- 564 nodes · 1051 edges · 40 communities (38 shown, 2 thin omitted)
+- Extraction: 93% EXTRACTED · 7% INFERRED · 0% AMBIGUOUS · INFERRED: 74 edges (avg confidence: 0.52)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1200efb1`
+- Built from commit: `e606fab1`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -24,8 +24,8 @@
 - alunoController.js
 - modal-agendamento.js
 - utils-kpi.js
-- financasService.js
-- Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
+- agendamentoController.js
+- Agendamento.js
 - dependencies
 - Agenda Personal Trainer (Prô Josy)
 - state.js
@@ -39,29 +39,25 @@
 - bootstrap.js
 - modal-acao-slot.js
 - cascade-sync-aluno.js
-- view-home.js
 - vercel.json
-- createRouter
 - user-area-session-helper.js
 - sw.js
-- view-financas.js
-- 🔴 Grupo 2 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
-- Anti UI Slop
-- calendario-engine.js
 
 ## God Nodes (most connected - your core abstractions)
-1. `getOwnerEmailOrThrow()` - 38 edges
+1. `getOwnerEmailOrThrow()` - 33 edges
 2. `carregarDados()` - 21 edges
 3. `Agenda Personal Trainer (Prô Josy)` - 17 edges
 4. `salvarDados()` - 13 edges
-5. `responderErro()` - 13 edges
-6. `criarAgendamento()` - 12 edges
-7. `exchangeAuthCode()` - 12 edges
-8. `atualizarAgendamento()` - 11 edges
-9. `limparPayload()` - 11 edges
+5. `criarAgendamento()` - 12 edges
+6. `exchangeAuthCode()` - 12 edges
+7. `atualizarAgendamento()` - 11 edges
+8. `limparPayload()` - 11 edges
+9. `responderErro()` - 11 edges
 10. `responderErroConfig()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `renderizarCalendario()` --references--> `DIAS_SEMANA`  [EXTRACTED]
+  assets/js/calendario-engine.js → assets/js/state.js
 - `createApp()` --calls--> `createGcalAuthRoutes()`  [EXTRACTED]
   backend/src/app.js → backend/src/routes/gcalAuthRoutes.js
 - `responderErroAgendamento()` --calls--> `responderErro()`  [EXTRACTED]
@@ -70,47 +66,45 @@
   backend/src/controllers/agendamentoController.js → backend/src/utils/controllerHelpers.js
 - `listarAgendamentos()` --calls--> `getOwnerEmailOrThrow()`  [EXTRACTED]
   backend/src/controllers/agendamentoController.js → backend/src/utils/ownerScope.js
-- `obterAgendamento()` --calls--> `getOwnerEmailOrThrow()`  [EXTRACTED]
-  backend/src/controllers/agendamentoController.js → backend/src/utils/ownerScope.js
 
 ## Import Cycles
 - None detected.
 
-## Communities (44 total, 3 thin omitted)
+## Communities (40 total, 2 thin omitted)
 
 ### Community 0 - "gcalSyncService.js"
-Cohesion: 0.06
-Nodes (71): Agendamento, Aluno, atualizarAgendamento(), criarAgendamento(), enriquecerAgendamentoComAluno(), excluirAgendamento(), { getOwnerEmailOrThrow }, { limparPayload, responderErro } (+63 more)
+Cohesion: 0.07
+Nodes (45): processGcalWebhook(), { syncConnectionByWebhookHeaders }, GoogleCalendarConnectionSchema, mongoose, express, { processGcalWebhook }, router, Agendamento (+37 more)
 
 ### Community 1 - "getOwnerEmailOrThrow"
-Cohesion: 0.08
-Nodes (48): atualizarBloqueioExterno(), BloqueioExterno, criarBloqueioExterno(), excluirBloqueioExterno(), { getOwnerEmailOrThrow }, { limparPayload, responderErro }, limparPayloadBloqueio(), listarBloqueiosExternos() (+40 more)
+Cohesion: 0.12
+Nodes (35): atualizarBloqueioExterno(), BloqueioExterno, criarBloqueioExterno(), excluirBloqueioExterno(), { getOwnerEmailOrThrow }, { limparPayload, responderErro }, limparPayloadBloqueio(), listarBloqueiosExternos() (+27 more)
 
 ### Community 2 - "storage.js"
-Cohesion: 0.12
-Nodes (39): _agendamentosSaoIguais(), _alunosSaoIguais(), apiFetchBackend(), atualizarAlunos(), atualizarAulas(), atualizarLimitesGrade(), atualizarViewAtualAposSync(), _cacheTemDados() (+31 more)
+Cohesion: 0.13
+Nodes (38): _agendamentosSaoIguais(), _alunosSaoIguais(), apiFetchBackend(), atualizarAlunos(), atualizarAulas(), atualizarLimitesGrade(), atualizarViewAtualAposSync(), _cacheTemDados() (+30 more)
 
 ### Community 3 - "src/app.js"
-Cohesion: 0.06
-Nodes (36): app, { connectToDatabase }, { createApp }, { getEnvConfig }, { port, mongoURI }, agendamentoRoutes, alunoRoutes, bloqueioExternoRoutes (+28 more)
+Cohesion: 0.08
+Nodes (29): app, { connectToDatabase }, { createApp }, { getEnvConfig }, { port, mongoURI }, agendamentoRoutes, alunoRoutes, bloqueioExternoRoutes (+21 more)
 
 ### Community 4 - "google-identity.js"
 Cohesion: 0.14
 Nodes (31): _attemptSilentSessionRestore(), _atualizarCacheConexaoCalendario(), _bindCustomLoginButton(), checkCalendarConnectionStatus(), _consultarConexaoCalendario(), _decodeJwtPayload(), deleteCalendarConnection(), ensureCalendarConnection() (+23 more)
 
 ### Community 5 - "gcalAuthController.js"
-Cohesion: 0.10
-Nodes (33): Agendamento, BloqueioExterno, desconectarGoogleCalendar(), { encryptRefreshToken, decryptRefreshToken }, exchangeAuthCode(), { getOwnerEmailOrThrow }, GoogleCalendarConnection, { limparPayload, responderErro } (+25 more)
+Cohesion: 0.12
+Nodes (29): Agendamento, BloqueioExterno, desconectarGoogleCalendar(), { encryptRefreshToken, decryptRefreshToken }, exchangeAuthCode(), { getOwnerEmailOrThrow }, GoogleCalendarConnection, { limparPayload, responderErro } (+21 more)
 
 ### Community 6 - "alunoController.js"
 Cohesion: 0.16
-Nodes (29): Agendamento, Aluno, atualizarAluno(), {
+Nodes (27): Agendamento, Aluno, atualizarAluno(), {
   calcularProjecaoMensalCompleta,
   calcularProjecaoRealizadaAteHoje,
   calcularProjecaoAproximada,
   calcularAulasFaltamAgendar,
   contarReposicoesPorAluno
-}, criarAluno(), excluirAluno(), garantirStatusAluno(), { getOwnerEmailOrThrow } (+21 more)
+}, criarAluno(), excluirAluno(), garantirStatusAluno(), { getOwnerEmailOrThrow } (+19 more)
 
 ### Community 7 - "modal-agendamento.js"
 Cohesion: 0.11
@@ -120,13 +114,13 @@ Nodes (23): ativarTrapFocoModalRecorrencia(), atualizarCabecalhoModalAgendamento
 Cohesion: 0.13
 Nodes (19): calcularAulasFaltamAgendar(), calcularKPIsAluno(), calcularKPIsTodosAlunos(), calcularProjecaoAproximada(), calcularProjecaoMensalCompleta(), calcularProjecaoRealizadaAteHoje(), exportarDados(), _garantirOverlaySinc() (+11 more)
 
-### Community 9 - "financasService.js"
-Cohesion: 0.10
-Nodes (28): checarCompromissoNaData(), parseDataFlex(), resolverCompromissoRecorrenteNaData(), AlunoSchema, mongoose, CicloFinanceiroSchema, mongoose, Agendamento (+20 more)
+### Community 9 - "agendamentoController.js"
+Cohesion: 0.15
+Nodes (23): Agendamento, Aluno, atualizarAgendamento(), criarAgendamento(), enriquecerAgendamentoComAluno(), excluirAgendamento(), { getOwnerEmailOrThrow }, { limparPayload, responderErro } (+15 more)
 
-### Community 10 - "Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)"
-Cohesion: 0.06
-Nodes (32): 1. Contexto e Objetivo, 2.1 Aba "Home", 2.2 Visão "Mês" do calendário, 2.3 Aba "Calendário" → Aba "Finanças", 2.4 Extração da lógica de recorrência para módulo isomórfico (requisito obrigatório), 2.5 Estrutura final de navegação, 2. Mudanças de Navegação (Escopo desta Feature), 3.1.1 Regras de validação do formulário de Aluno (frontend `view-alunos.js` + backend `alunoController.js`) (+24 more)
+### Community 10 - "Agendamento.js"
+Cohesion: 0.16
+Nodes (17): AgendamentoSchema, mongoose, { normalizarDataParaISO, normalizarHorarioHHMM }, { normalizedOrOriginal }, BloqueioExternoSchema, mongoose, { normalizarDataParaISO, normalizarHorarioHHMM }, { normalizedOrOriginal } (+9 more)
 
 ### Community 11 - "dependencies"
 Cohesion: 0.10
@@ -137,16 +131,16 @@ Cohesion: 0.10
 Nodes (20): 1) Frontend, 2) Backend, 3) Ajustar URL da API no Frontend (ambiente local), Agenda Personal Trainer (Prô Josy), API Resumida, Arquitetura (Visao Geral), Autenticacao e Modo de Uso, Como Executar Localmente (+12 more)
 
 ### Community 13 - "state.js"
-Cohesion: 0.20
-Nodes (9): agendaConfig, alunos, anoAtual, aulas, aulasParaRepor, DIAS, DIAS_SEMANA, HORARIOS (+1 more)
+Cohesion: 0.13
+Nodes (15): getAulasDoDia(), getDiasNoMes(), getNomeMes(), getPrimeiroDiaSemana(), navegarMes(), renderizarCalendario(), agendaConfig, alunos (+7 more)
 
 ### Community 14 - "scheduling-serializer.js"
 Cohesion: 0.24
 Nodes (14): aplicarRecorrenciaLegada(), criarDataIsoMeioDia(), criarResultadoErro(), derivarHorarioEDuracao(), formatarDataPtBrSegura(), montarPayloadBase(), normalizarTipo(), obterDiaSemanaPorIso() (+6 more)
 
 ### Community 15 - "view-alunos.js"
-Cohesion: 0.15
-Nodes (13): aplicarClasseCampoDesabilitado(), aplicarRegrasFinanceirasNoFormulario(), aplicarRegrasObjetivoNoFormulario(), normalizarObjetivoAluno(), normalizarObjetivoAlunoFallbackLocal(), normalizarStatusAlunoFallbackLocal(), normalizarStatusAlunoLocal(), normalizarValorAlunoComFallback() (+5 more)
+Cohesion: 0.18
+Nodes (11): aplicarClasseCampoDesabilitado(), aplicarRegrasObjetivoNoFormulario(), normalizarObjetivoAluno(), normalizarObjetivoAlunoFallbackLocal(), normalizarStatusAlunoFallbackLocal(), normalizarStatusAlunoLocal(), normalizarValorAlunoComFallback(), objetivoSwitchEstaAtivo() (+3 more)
 
 ### Community 16 - "agenda-card-template.js"
 Cohesion: 0.20
@@ -177,52 +171,32 @@ Cohesion: 0.47
 Nodes (4): aplicarModoSomenteLeituraAlunoInativo(), compromissoTemAlunoInativo(), obterCompromissoPorId(), obterCompromissoSelecionado()
 
 ### Community 23 - "cascade-sync-aluno.js"
-Cohesion: 0.47
+Cohesion: 0.60
 Nodes (3): _atualizarAgendamentosNoGCal(), _persistirAgendamentosNoBackend(), sincronizarAgendamentosDoAluno()
 
 ### Community 26 - "vercel.json"
 Cohesion: 0.50
 Nodes (3): builds, routes, version
 
-### Community 28 - "createRouter"
-Cohesion: 0.39
-Nodes (6): createRouter(), bindNavigation(), initializeView(), navigateTo(), refreshCurrentView(), getInitializer()
-
-### Community 40 - "view-financas.js"
-Cohesion: 0.23
-Nodes (22): abrirModalAjuste(), abrirModalPagamento(), atualizarCabecalhoCache(), bindHandlers(), carregarFinancas(), ensureModais(), fecharModal(), filtrarCards() (+14 more)
-
-### Community 41 - "🔴 Grupo 2 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)"
-Cohesion: 0.10
-Nodes (20): [ ] 1.1 Controle de pagamento / inadimplência, [ ] 1.2 Relatório de faturamento exportável (PDF/Excel), [ ] 1.3 Campo de observações/anotações por aula ou por aluno, [ ] 1.4 Botão de contato rápido via WhatsApp, [ ] 1.5 Status de "não compareceu" (no-show) / cancelamento pelo aluno, [ ] 1.6 Lembrete de aniversário do aluno, [ ] 1.7 Filtro e busca na lista de alunos, [ ] 2.1 Cobrança automatizada (Pix, boleto, cartão recorrente) (+12 more)
-
-### Community 42 - "Anti UI Slop"
-Cohesion: 0.17
-Nodes (11): 1. Inspect the Product Before Designing, 2. Collect Real Interface Evidence, 3. Write a Design Contract, 4. Build in the Product’s Language, 5. Run the Finish Gate, 6. Handoff Format, Anti UI Slop, Design-system integrity (+3 more)
-
-### Community 43 - "calendario-engine.js"
-Cohesion: 0.43
-Nodes (4): getAulasDoDia(), getNomeMes(), navegarMes(), renderizarCalendario()
-
 ## Knowledge Gaps
-- **208 isolated node(s):** `DIAS`, `DIAS_SEMANA`, `HORARIOS`, `alunos`, `aulas` (+203 more)
+- **143 isolated node(s):** `DIAS`, `HORARIOS`, `alunos`, `aulas`, `aulasParaRepor` (+138 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **3 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `getOwnerEmailOrThrow()` connect `getOwnerEmailOrThrow` to `gcalSyncService.js`, `gcalAuthController.js`, `alunoController.js`?**
-  _High betweenness centrality (0.029) - this node is a cross-community bridge._
-- **Why does `responderErro()` connect `getOwnerEmailOrThrow` to `gcalSyncService.js`, `gcalAuthController.js`, `alunoController.js`?**
+- **Why does `getOwnerEmailOrThrow()` connect `getOwnerEmailOrThrow` to `agendamentoController.js`, `gcalAuthController.js`, `alunoController.js`?**
+  _High betweenness centrality (0.031) - this node is a cross-community bridge._
+- **Why does `limparPayload()` connect `gcalAuthController.js` to `agendamentoController.js`, `alunoController.js`, `getOwnerEmailOrThrow`?**
   _High betweenness centrality (0.007) - this node is a cross-community bridge._
-- **Why does `limparPayload()` connect `getOwnerEmailOrThrow` to `gcalSyncService.js`, `gcalAuthController.js`, `alunoController.js`?**
-  _High betweenness centrality (0.005) - this node is a cross-community bridge._
-- **What connects `DIAS`, `DIAS_SEMANA`, `HORARIOS` to the rest of the system?**
-  _208 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Why does `responderErro()` connect `gcalAuthController.js` to `agendamentoController.js`, `alunoController.js`, `getOwnerEmailOrThrow`?**
+  _High betweenness centrality (0.007) - this node is a cross-community bridge._
+- **What connects `DIAS`, `HORARIOS`, `alunos` to the rest of the system?**
+  _143 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `gcalSyncService.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.055501460564751706 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07227891156462585 - nodes in this community are weakly interconnected._
 - **Should `getOwnerEmailOrThrow` be split into smaller, more focused modules?**
-  _Cohesion score 0.08208020050125313 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.11951219512195121 - nodes in this community are weakly interconnected._
 - **Should `storage.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.1173054587688734 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.13090418353576247 - nodes in this community are weakly interconnected._
