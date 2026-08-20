@@ -3,5 +3,4 @@ node_modules/
 *.log
 .continue/
 graphify-out/
-.agents/
 *.zip

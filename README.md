@@ -43,9 +43,9 @@ Se o objetivo for:
 - Ajustar modais de criacao de agendamento: comecar em `assets/js/modal-agendamento.js`
 - Ajustar edicao/cancelamento/reagendamento: comecar em `assets/js/modal-acao-slot.js`
 - Ajustar regras de recorrencia ou grid mensal: comecar em `assets/js/calendario-engine.js`
-- Ajustar view do calendario (semanal/mensal/KPIs): comecar em `assets/js/view-calendario.js`
+- Ajustar view do calendario (semanal): comecar em `assets/js/view-calendario.js`
 - Ajustar cadastro de alunos: comecar em `assets/js/view-alunos.js`
-- Ajustar calculos de KPI: comecar em `assets/js/utils-kpi.js`
+- Ajustar utilidades genericas (toast/overlays de sync): comecar em `assets/js/utils-kpi.js`
 - Ajustar persistencia/sincronizacao: comecar em `assets/js/storage.js`, `backend/server.js` e `backend/src/`
 - Ajustar autenticacao Google (login/logout/token): comecar em `assets/js/auth/google-identity.js` e `backend/src/middleware/requireAuth.js`
 - Ajustar integracao com Google Calendar: comecar em `assets/js/google-calendar.js`
@@ -56,8 +56,8 @@ Se o objetivo for:
 [Frontend SPA - browser]
     |- entrada compativel (app.js)
     |- app shell: bootstrap.js, router.js, service-worker.js
-    |- views: view-home.js, view-calendario.js, view-alunos.js
-    |- modais: modal-agendamento.js, modal-acao-slot.js
+    |- views: view-home.js, view-financas.js, view-calendario.js, view-alunos.js
+    |- modais: modal-agendamento.js, modal-acao-slot.js, settings-modal.js
     |- estado em memoria (state.js)
     |- persistencia/sync (storage.js)
     v
@@ -92,13 +92,17 @@ personalapp/
 |  |  |- state.js                  <- estado global (alunos, aulas, constantes)
 |  |  |- storage.js                <- sync API + fallback localStorage
 |  |  |  --- [2] Pure Utilities ---
-|  |  |- utils-kpi.js              <- calculos de KPI, toast, exportacao
+|  |  |- utils-kpi.js              <- utilidades genericas (toast, overlays de sync)
 |  |  |- utils-datetime.js         <- helpers de data e hora
 |  |  |  --- [3] Domain Helpers ---
 |  |  |- alunos-helpers.js         <- lookup e select de alunos
 |  |  |- calendario-engine.js      <- motor de recorrencia + grid mensal
+|  |  |- shared/
+|  |  |  |- recurrence-helpers.js   <- helpers isomorficos de recorrencia consumidos no frontend/backend
 |  |  |- agenda-conflitos.js       <- deteccao de conflitos de horario
 |  |  |- cascade-sync-aluno.js     <- sync em cascata ao editar/excluir aluno
+|  |  |- settings-modal.js         <- modal de configuracoes/ajustes da agenda
+|  |  |- agenda-card-template.js   <- template do card de agenda reutilizado nas views
 |  |  |  --- [4] UI Widgets ---
 |  |  |- widget-stepper-duracao.js <- widget +/- de duracao
 |  |  |- widget-bloqueio.js        <- helpers de estado "dia inteiro"
@@ -109,15 +113,18 @@ personalapp/
 |  |  |  |- modals/
 |  |  |  |  |- scheduling-serializer.js   <- serializacao de agendamentos para salvar
 |  |  |  |  |- scheduling-flow-state.js   <- estado interno do fluxo de criacao de agendamento
+|  |  |  |- user/
+|  |  |  |  |- user-area-session-helper.js <- helper de sessao/usuario da area do aluno
 |  |  |  --- [6] Page Views ---
-|  |  |- view-home.js              <- aba Home: agenda diaria + dashboard
-|  |  |- view-calendario.js        <- aba Calendario: semanal/mensal + KPI dashboard
+|  |  |- view-home.js              <- aba Home: agenda diaria
+|  |  |- view-financas.js          <- aba Financas: ciclo financeiro e cobrancas
+|  |  |- view-calendario.js        <- aba Calendario: visao semanal (sem mensal e sem KPI dashboard)
 |  |  |- view-alunos.js            <- aba Alunos: CRM de cadastro/edicao
 |  |  |- google-calendar.js        <- integracao Google Calendar (leitura/escrita de eventos)
 |  |  |  --- [7] App Shell ---
 |  |  |- app/
 |  |  |  |- bootstrap.js           <- inicializacao da SPA e ordem de startup
-|  |  |  |- router.js              <- navegacao entre abas Home/Calendario/Alunos
+|  |  |  |- router.js              <- navegacao entre abas Home/Financas/Alunos
 |  |  |  |- service-worker.js      <- registro do service worker
 |  |  |  --- [8] SPA Entry ---
 |  |  |- app.js                    <- ponto de entrada estavel da interface
@@ -136,6 +143,9 @@ personalapp/
 |  |  |  |- alunoController.js
 |  |  |  |- bloqueioExternoController.js
 |  |  |  |- configController.js
+|  |  |  |- financasController.js
+|  |  |  |- gcalAuthController.js
+|  |  |  |- gcalWebhookController.js
 |  |  |- models/
 |  |  |  |- Agendamento.js
 |  |  |  |- Aluno.js
@@ -158,8 +168,13 @@ personalapp/
 |  |  |  |- financasService.js
 |  |  |  |- gcalSyncService.js
 |  |  |- utils/
+|  |  |  |- controllerHelpers.js
+|  |  |  |- emailNormalizer.js
+|  |  |  |- gcalCrypto.js
 |  |  |  |- ownerScope.js
+|  |  |  |- studentValueExtractors.js
 |  |  |  |- time.js
+|  |  |  |- valueNormalizer.js
 |  |- vercel.json
 ```
 
@@ -217,12 +232,12 @@ Frontend:
 - `assets/css/style.css`: estilos globais e responsividade.
 - `assets/js/app.js` [TAG-APP-ROUTER]: ponto de entrada estavel que delega a inicializacao para o app shell.
 - `assets/js/app/bootstrap.js`: orquestra startup, bind de navegacao e inicializacao da Home.
-- `assets/js/app/router.js`: controla navegacao entre abas e chama os inicializadores globais das views.
+- `assets/js/app/router.js`: controla navegacao entre abas Home / Financas / Alunos e chama os inicializadores globais das views.
 - `assets/js/app/service-worker.js`: centraliza o registro do service worker.
 - `assets/js/auth/google-identity.js`: modulo de autenticacao Google (GIS). Expoe `window.googleIdentity` com `initialize()`, `isSignedIn()`, `getIdToken()`, `getOwnerEmail()`, `addAuthChangeListener()`. Deve ser carregado antes de qualquer script que precise do token.
 - `assets/js/state.js` [TAG-STATE]: variaveis de estado global (alunos, aulas, agendaConfig, constantes).
 - `assets/js/storage.js` [TAG-STORAGE]: GET/POST na API e fallback para localStorage. Toda requisicao remota passa por `apiFetchBackend` que injeta o JWT do `window.googleIdentity`.
-- `assets/js/utils-kpi.js` [TAG-UTILS-KPI]: calculos de KPI por aluno/mes, toast, exportacao JSON.
+- `assets/js/utils-kpi.js` [TAG-UTILS-KPI]: utilidades genericas (toast, overlays de sync) sem calculos de KPI nem exportacao.
 - `assets/js/utils-datetime.js` [TAG-UTILS-DATETIME]: formatacao, conversao e calculo de datas e horas.
 - `assets/js/alunos-helpers.js` [TAG-ALUNOS-HELPERS]: lookup de aluno por ID, HTML de selects.
 - `assets/js/calendario-engine.js` [TAG-CALENDARIO-ENGINE]: math de recorrencia (diaria/semanal/mensal/anual) + grid mensal.
@@ -235,7 +250,8 @@ Frontend:
 - `assets/js/features/modals/scheduling-serializer.js`: serializa o estado do formulario de agendamento para o formato de payload da API.
 - `assets/js/features/modals/scheduling-flow-state.js`: gerencia o estado interno (multi-step) do fluxo de criacao de agendamento.
 - `assets/js/view-home.js` [TAG-VIEW-HOME]: aba Home — agenda diaria, dashboard e navegacao de datas.
-- `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — alternancia semanal/mensal, filtros e KPI dashboard.
+- `assets/js/view-financas.js` [TAG-VIEW-FINANCAS]: aba Financas — ciclo financeiro e cobrancas.
+- `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — visao semanal, sem mensal e sem KPI dashboard.
 - `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
 - `assets/js/google-calendar.js`: integracao com Google Calendar API — importa eventos externos como bloqueios e sincroniza agendamentos locais.
 
