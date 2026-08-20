@@ -269,182 +269,6 @@
       </main>
       <!-- [TAG-HTML-TELA-FINANCAS] - Finanças por ciclo de cobrança -->
       <main id="tela-financas" class="view-section" style="display: none"></main>
-      <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
-      <main id="tela-calendario" class="view-section" style="display: none">
-        <div class="calendario-tabs-sticky">
-          <div
-            class="tab-tipo-agendamento"
-            style="
-              display: flex;
-              gap: 6px;
-              background: #0d0d0d;
-              padding: 4px;
-              border-radius: 8px;
-              border: 1px solid #2a2a2a;
-            "
-          >
-            <button
-              type="button"
-              class="tab-btn active"
-              id="tabCalendarioDia"
-              onclick="alternarModoCalendario('dia')"
-            >
-              <i class="fa-solid fa-calendar-day"></i> Dia
-            </button>
-            <button
-              type="button"
-              class="tab-btn"
-              id="tabCalendarioMensal"
-              onclick="alternarModoCalendario('mensal')"
-            >
-              <i class="fa-solid fa-calendar-days"></i> Mês
-            </button>
-          </div>
-        </div>
-        <div
-          id="containerCalendarioDia"
-          class="agenda-panel"
-          style="display: block"
-        >
-          <div class="agenda-sticky-container">
-            <div class="agenda-header-wrapper">
-              <div class="agenda-header-info">
-                <h2>
-                  <i
-                    class="fa-solid fa-calendar-day"
-                    style="color: #ffd700; margin-right: 8px"
-                  ></i
-                  >Agenda do Dia
-                </h2>
-                <span>Sua rotina de treinos bem organizada!</span>
-              </div>
-              <div style="display: flex; gap: 8px">
-                <button
-                  id="btnRecorrenciaAgenda"
-                  class="btn-config-icon"
-                  title="Novo Agendamento"
-                >
-                  <i
-                    class="fa-solid fa-calendar-plus"
-                    style="color: #ffd700"
-                  ></i>
-                </button>
-                <button
-                  id="btnConfigAgenda"
-                  class="btn-config-icon"
-                  title="Configurar Grade Horária"
-                >
-                  <i
-                    class="fa-solid fa-gear fa-spin-hover"
-                    style="color: #ffd700"
-                  ></i>
-                </button>
-              </div>
-            </div>
-            <div class="agenda-header-navegacao">
-              <div class="nav-calendario nav-calendario--home">
-                <div class="nav-calendario-main">
-                  <button
-                    id="btnAnterior"
-                    class="btn-nav-dia"
-                    title="Dia Anterior"
-                  >
-                    <i class="fa-solid fa-circle-arrow-left"></i>
-                  </button>
-                  <span id="dataAtual" class="agenda-data-principal"
-                    >Carregando...</span
-                  >
-                  <button
-                    id="btnProximo"
-                    class="btn-nav-dia"
-                    title="Próximo Dia"
-                  >
-                    <i class="fa-solid fa-circle-arrow-right"></i>
-                  </button>
-                </div>
-                <button id="btnHoje" class="btn-hoje-pill btn-hoje-agenda">
-                  <i class="fa-solid fa-bullseye"></i>Hoje
-                </button>
-                <span id="diaSemanaAtual" class="agenda-dia-semana-mobile"
-                  >Carregando...</span
-                >
-              </div>
-            </div>
-          </div>
-          <div class="agenda-dia-container" id="agendaGridHome"></div>
-        </div>
-        <div
-          id="containerCalendarioMensal"
-          class="calendario-mensal"
-          style="display: none"
-        >
-          <div
-            class="mes-header calendario-header-toolbar"
-            style="
-              margin-bottom: 15px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              flex-wrap: wrap;
-              gap: 10px;
-            "
-          >
-            <h2
-              id="nomeMesAno"
-              class="calendario-header-title"
-              style="
-                font-size: 1.2rem;
-                color: #ffd700;
-                margin: 0;
-                font-weight: 800;
-              "
-            >
-              Carregando...
-            </h2>
-            <div class="mes-nav calendario-header-controls">
-              <div
-                class="filtro-aluno-container calendario-filtro-container"
-                style="min-width: 180px"
-              >
-                <select
-                  id="filtroAlunoMensal"
-                  class="filtro-aluno-select"
-                  onchange="window.atualizarFiltroCalendarioMensal()"
-                >
-                  <option value="">👥 Todos os Alunos</option>
-                </select>
-              </div>
-              <div class="calendario-nav-arrows">
-                <button
-                  id="btnMesAnterior"
-                  class="btn btn-secondary btn-sm"
-                  title="Mês Anterior"
-                >
-                  <i class="fa-solid fa-chevron-left"></i>
-                </button>
-                <button
-                  id="btnMesProximo"
-                  class="btn btn-secondary btn-sm"
-                  title="Próximo Mês"
-                >
-                  <i class="fa-solid fa-chevron-right"></i>
-                </button>
-              </div>
-              <button
-                id="btnMesHoje"
-                class="btn btn-secondary btn-sm btn-calendario-hoje"
-              >
-                Hoje
-              </button>
-            </div>
-          </div>
-          <div
-            id="kpiDashboardContainer"
-            style="display: none; margin-bottom: 20px"
-          ></div>
-          <div class="calendario-grid" id="calendarioMonthlyGrid"></div>
-        </div>
-      </main>
       <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
       <main
         id="tela-alunos"
@@ -548,37 +372,20 @@
                   required
                 />
               </div>
-              <div
-                style="
-                  display: grid;
-                  grid-template-columns: 1.2fr 1fr;
-                  gap: 10px;
-                "
-              >
-                <div class="form-grupo-spa">
-                  <label for="alunoPreco">Valor Hora/Aula (R$) *</label>
-                  <input
-                    type="number"
-                    id="alunoPreco"
-                    placeholder="Ex: 80"
-                    step="0.01"
-                    required
-                  />
-                </div>
-                <div class="form-grupo-spa">
-                  <label for="alunoFrequenciaSemanal">Aulas / Semana *</label>
-                  <select id="alunoFrequenciaSemanal" required>
-                    <option value="1">1x na semana</option>
-                    <option value="2" selected>2x na semana</option>
-                    <option value="3">3x na semana</option>
-                    <option value="4">4x na semana</option>
-                    <option value="5">5x na semana</option>
-                    <option value="6">6x na semana</option>
-                  </select>
-                </div>
+              <div class="form-grupo-spa">
+                <label for="alunoFrequenciaSemanal">Aulas / Semana *</label>
+                <select id="alunoFrequenciaSemanal" required>
+                  <option value="1">1x na semana</option>
+                  <option value="2" selected>2x na semana</option>
+                  <option value="3">3x na semana</option>
+                  <option value="4">4x na semana</option>
+                  <option value="5">5x na semana</option>
+                  <option value="6">6x na semana</option>
+                </select>
               </div>
               <div
                 class="form-grupo-spa"
+                id="cardCobrancaPorCiclo"
                 style="
                   border: 1px solid #222;
                   border-radius: 10px;
@@ -615,6 +422,16 @@
                     <option value="por_aula" selected>Por aula</option>
                     <option value="valor_fixo">Valor fixo por ciclo</option>
                   </select>
+                </div>
+                <div class="form-grupo-spa" id="containerAlunoPreco" style="margin-bottom:10px;">
+                  <label for="alunoPreco">Valor Hora/Aula (R$) *</label>
+                  <input
+                    type="number"
+                    id="alunoPreco"
+                    placeholder="Ex: 80"
+                    step="0.01"
+                    min="0"
+                  />
                 </div>
                 <div class="form-grupo-spa" id="containerAlunoValorFixoCiclo" style="margin-bottom:0;">
                   <label for="alunoValorFixoCiclo">Valor fixo do ciclo (R$)</label>

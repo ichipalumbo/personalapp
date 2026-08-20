@@ -102,7 +102,6 @@ function aplicarRegrasObjetivoNoFormulario() {
     const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
     const elLocal = document.getElementById('alunoLocal');
     const elLocalLabel = document.getElementById('alunoLocalLabel');
-    const elPreco = document.getElementById('alunoPreco');
     const elFrequencia = document.getElementById('alunoFrequenciaSemanal');
     const elStatusObjetivo = document.getElementById('alunoObjetivoSwitchStatus');
 
@@ -118,12 +117,6 @@ function aplicarRegrasObjetivoNoFormulario() {
         elLocalLabel.textContent = ehConsultoriaOnline
             ? 'Local de Treino (Opcional)'
             : 'Local de Treino *';
-    }
-
-    if (elPreco) {
-        elPreco.disabled = ehConsultoriaOnline;
-        elPreco.required = !ehConsultoriaOnline;
-        aplicarClasseCampoDesabilitado(elPreco, ehConsultoriaOnline);
     }
 
     if (elFrequencia) {
@@ -160,6 +153,7 @@ function obterValorFinanceiroSelecionado() {
 
 function aplicarRegrasFinanceirasNoFormulario() {
     const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
+    const cardCobranca = document.getElementById('cardCobrancaPorCiclo');
     const fechamentoMesCheio = document.getElementById('alunoFechamentoMesCheio');
     const fechamentoMesCheioStatus = document.getElementById('alunoFechamentoMesCheioStatus');
     const diaVencimento = document.getElementById('alunoDiaVencimento');
@@ -168,11 +162,18 @@ function aplicarRegrasFinanceirasNoFormulario() {
     const valorFixoCiclo = document.getElementById('alunoValorFixoCiclo');
     const containerValorFixo = document.getElementById('containerAlunoValorFixoCiclo');
     const preco = document.getElementById('alunoPreco');
-    const frequencia = document.getElementById('alunoFrequenciaSemanal');
+    const containerPreco = document.getElementById('containerAlunoPreco');
 
     const fechaPorMes = !!(fechamentoMesCheio && fechamentoMesCheio.checked);
     const metodo = obterValorFinanceiroSelecionado();
 
+    if (cardCobranca) {
+        cardCobranca.classList.toggle('form-grupo-spa--desabilitado', ehConsultoriaOnline);
+    }
+
+    if (fechamentoMesCheio) {
+        fechamentoMesCheio.disabled = ehConsultoriaOnline;
+    }
     if (fechamentoMesCheioStatus) {
         fechamentoMesCheioStatus.textContent = fechaPorMes ? 'Fecha por mês cheio' : 'Fecha por vencimento';
     }
@@ -188,6 +189,15 @@ function aplicarRegrasFinanceirasNoFormulario() {
     if (metodoCobranca) {
         metodoCobranca.disabled = ehConsultoriaOnline;
     }
+
+    if (containerPreco) {
+        containerPreco.style.display = ehConsultoriaOnline || metodo !== 'por_aula' ? 'none' : '';
+    }
+    if (preco) {
+        preco.required = !ehConsultoriaOnline && metodo === 'por_aula';
+        preco.disabled = ehConsultoriaOnline || metodo !== 'por_aula';
+    }
+
     if (containerValorFixo) {
         containerValorFixo.style.display = ehConsultoriaOnline || metodo !== 'valor_fixo' ? 'none' : '';
     }
@@ -195,16 +205,94 @@ function aplicarRegrasFinanceirasNoFormulario() {
         valorFixoCiclo.required = !ehConsultoriaOnline && metodo === 'valor_fixo';
         valorFixoCiclo.disabled = ehConsultoriaOnline || metodo !== 'valor_fixo';
     }
+}
 
-    if (preco) {
-        preco.required = !ehConsultoriaOnline && metodo !== 'valor_fixo';
-        preco.disabled = ehConsultoriaOnline;
+function obterFrequenciaContratoAluno(aluno) {
+    const bruto = aluno && aluno.frequenciaSemanal !== undefined && aluno.frequenciaSemanal !== null && aluno.frequenciaSemanal !== ''
+        ? aluno.frequenciaSemanal
+        : (aluno ? aluno.aulasSemanais : null);
+    const valor = parseInt(bruto, 10);
+    return Number.isFinite(valor) && valor >= 0 ? valor : 1;
+}
+
+// Dados complementares vindos do backend (Finanças e consistência de agenda), indexados por alunoId.
+let _resumoFinanceiroPorAluno = {};
+let _consistenciaAgendaPorAluno = {};
+
+function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
+    if (objetivo === 'Consultoria Online') return '';
+
+    const resumo = _resumoFinanceiroPorAluno[aluno.id];
+    const pendente = !resumo
+        ? (!aluno.fechamentoMesCheio && !aluno.diaVencimento)
+        : !!resumo.configuracaoPendente;
+
+    if (pendente) {
+        return `
+            <div class="aluno-card-indicador aluno-card-indicador--alerta">
+                <div class="aluno-card-indicador-titulo">⚠️ Configurar cobrança</div>
+                <div class="aluno-card-indicador-detalhe">Defina o vencimento para calcular o ciclo.</div>
+            </div>
+        `;
     }
 
-    if (frequencia) {
-        frequencia.required = !ehConsultoriaOnline;
-        frequencia.disabled = ehConsultoriaOnline;
+    const ciclo = resumo && resumo.cicloAtual;
+    if (!ciclo) return '';
+
+    const statusLabels = { pago: 'pago', atrasado: 'atrasado', em_aberto: 'em aberto' };
+    const statusTexto = statusLabels[ciclo.status] || 'em aberto';
+    const periodo = `${formatarDataCurtaAluno(ciclo.cicloInicio)} → ${formatarDataCurtaAluno(ciclo.cicloFim)}`;
+
+    return `
+        <div class="aluno-card-indicador">
+            <div class="aluno-card-indicador-titulo">Ciclo atual: ${formatarMoedaFinanceira(ciclo.valorTotalCiclo)} · ${statusTexto}</div>
+            <div class="aluno-card-indicador-detalhe">${periodo}</div>
+        </div>
+    `;
+}
+
+function montarCaixinhaConsistenciaAluno(aluno) {
+    const consistencia = _consistenciaAgendaPorAluno[aluno.id];
+    if (!consistencia || !consistencia.aulasFaltamAgendar) return '';
+
+    return `
+        <div class="aluno-card-indicador aluno-card-indicador--alerta">
+            <div class="aluno-card-indicador-titulo">⚠️ Faltam agendar ${consistencia.aulasFaltamAgendar} de ${consistencia.aulasSemanaisContrato} aulas semanais</div>
+            <div class="aluno-card-indicador-detalhe">Recorrência da agenda menor que o contrato.</div>
+        </div>
+    `;
+}
+
+function formatarDataCurtaAluno(dataISO) {
+    if (!dataISO) return '--/--';
+    const partes = String(dataISO).split('-');
+    if (partes.length !== 3) return String(dataISO);
+    return `${partes[2]}/${partes[1]}`;
+}
+
+async function carregarDadosComplementaresAlunos() {
+    if (typeof window.garantirDadosFinancas === 'function') {
+        try {
+            _resumoFinanceiroPorAluno = await window.garantirDadosFinancas() || {};
+        } catch (_) { /* card do aluno segue sem o bloco financeiro */ }
     }
+
+    if (typeof window.apiFetchBackend === 'function') {
+        try {
+            const base = window.API_BASE_URL || 'https://personal-app-api.vercel.app/api';
+            const resposta = await window.apiFetchBackend(`${base}/alunos/consistencia-agenda`);
+            if (resposta.ok) {
+                const dados = await resposta.json();
+                _consistenciaAgendaPorAluno = {};
+                (Array.isArray(dados) ? dados : []).forEach((item) => {
+                    if (item && item.alunoId) _consistenciaAgendaPorAluno[item.alunoId] = item;
+                });
+            }
+        } catch (_) { /* indicador de consistência é opcional */ }
+    }
+
+    window.invalidarChaveRenderAlunos();
+    window.renderizarListaAlunos();
 }
 
 window.inicializarPaginaCadastro = async function(opcoes = {}) {
@@ -218,6 +306,7 @@ window.inicializarPaginaCadastro = async function(opcoes = {}) {
     }
     window.renderizarListaAlunos();
     window.togglePainelCadastro(false);
+    carregarDadosComplementaresAlunos();
 };
 window.inicializarAlunos = async function() {
     await window.inicializarPaginaCadastro();
@@ -275,7 +364,12 @@ window.renderizarListaAlunos = function() {
 
         // Dirty-check: skip the DOM write if the student list is unchanged.
         const _chaveAtual = (function () {
-            try { return JSON.stringify(alunos) + '|' + filtroStatus + '|' + filtroObjetivo; } catch (_) { return null; }
+            try {
+                return JSON.stringify(alunos)
+                    + '|' + filtroStatus + '|' + filtroObjetivo
+                    + '|' + JSON.stringify(_resumoFinanceiroPorAluno)
+                    + '|' + JSON.stringify(_consistenciaAgendaPorAluno);
+            } catch (_) { return null; }
         })();
         if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderAlunos) return;
         _ultimaChaveRenderAlunos = _chaveAtual;
@@ -309,7 +403,7 @@ window.renderizarListaAlunos = function() {
 
         listaContainer.innerHTML = alunosFiltrados.map(aluno => {
             const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
-            const freqAcordada = aluno.frequenciaSemanal ? parseInt(aluno.frequenciaSemanal, 10) : 1;
+            const freqAcordada = obterFrequenciaContratoAluno(aluno);
             const local = aluno.local || 'Não definido';
             const objetivo = normalizarObjetivoAluno(aluno.objetivo);
             const objetivoClass = objetivo.replace(/\s+/g, '');
@@ -330,12 +424,12 @@ window.renderizarListaAlunos = function() {
                     ? 'Fecha por mês cheio'
                     : (aluno.diaVencimento ? `Vence dia ${aluno.diaVencimento}` : 'Sem vencimento definido'));
 
-            // Calcular KPIs usando as novas funções
-            const projecaoMes = calcularProjecaoMensalCompleta(aluno, aulas);
-            const realizadoAteHoje = calcularProjecaoRealizadaAteHoje(aluno, aulas);
-            const projecaoAproximada = calcularProjecaoAproximada(aluno);
-            const aulasFaltam = calcularAulasFaltamAgendar(aluno, aulas);
-            const reposicoes = contarReposicoesPorAluno(aluno.id, aulas);
+            // Indicadores do card: ciclo financeiro atual e consistência de agenda.
+            // O grid abaixo comporta uma futura caixinha de "aulas a repor" sem refatoração.
+            const caixinhas = [
+                montarCaixinhaFinanceiraAluno(aluno, objetivo),
+                montarCaixinhaConsistenciaAluno(aluno)
+            ].filter(Boolean).join('');
 
             return `
                 <div class="aluno-card aluno-card--gerenciavel" onclick="prepararEdicaoAluno('${aluno.id}')" style="display: flex; flex-direction: column; gap: 10px; position: relative; cursor: pointer;">
@@ -346,7 +440,6 @@ window.renderizarListaAlunos = function() {
                                 <span class="objetivo-${objetivoClass}" style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${objetivo}</span>
                                 <span style="color: #444; font-size: 0.75rem;">•</span>
                                 <span style="font-size: 0.72rem; color: #AAA; font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
-                                <span style="font-size: 0.72rem; color: #81C784; font-weight: 600;">~R$ ${projecaoAproximada.toFixed(2)}</span>
                             </div>
                         </div>
                         <div onclick="event.stopPropagation();" style="margin-left: auto; display: flex; justify-content: flex-end; flex-shrink: 0;">
@@ -364,31 +457,7 @@ window.renderizarListaAlunos = function() {
                         <div><i class="fa-solid fa-calendar-days" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${fechamentoLabel}</div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px;">
-                        <div style="background: rgba(129, 199, 132, 0.12); border: 1px solid rgba(129, 199, 132, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
-                            <div style="font-size: 0.65rem; color: #81C784; font-weight: 700;">💰 PROJEÇÃO</div>
-                            <div style="font-size: 0.7rem; color: #A5D6A7; margin-top: 3px;">
-                                <div style="font-weight: 600;">R$ ${projecaoMes.toFixed(2)}</div>
-                                <div style="font-size: 0.55rem; color: #AAA; margin-top: 1px;">Mês inteiro</div>
-                            </div>
-                            <div style="font-size: 0.7rem; color: #B0B0B0; margin-top: 4px; border-top: 1px solid rgba(129, 199, 132, 0.2); padding-top: 3px;">
-                                <div style="font-weight: 600;">R$ ${realizadoAteHoje.toFixed(2)}</div>
-                                <div style="font-size: 0.55rem; color: #888;">Realizado</div>
-                            </div>
-                        </div>
-
-                        <div style="background: rgba(255, 152, 0, 0.12); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
-                            <div style="font-size: 0.65rem; color: #FF9800; font-weight: 700;">📅 FALTAM</div>
-                            <div style="font-size: 1.4rem; color: #FFB74D; font-weight: 700; margin-top: 4px;">${aulasFaltam}</div>
-                            <div style="font-size: 0.6rem; color: #AAA; margin-top: 2px;">aula(s) / sem</div>
-                        </div>
-
-                        <div style="background: rgba(100, 181, 246, 0.12); border: 1px solid rgba(100, 181, 246, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
-                            <div style="font-size: 0.65rem; color: #64B5F6; font-weight: 700;">🔄 REPOSIÇÃO</div>
-                            <div style="font-size: 1.4rem; color: #90CAF9; font-weight: 700; margin-top: 4px;">${reposicoes}</div>
-                            <div style="font-size: 0.6rem; color: #AAA; margin-top: 2px;">devida(s)</div>
-                        </div>
-                    </div>
+                    ${caixinhas ? `<div class="aluno-card-indicadores">${caixinhas}</div>` : ''}
                 </div>
             `;
         }).join('');
@@ -510,7 +579,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
             const nome = document.getElementById('alunoNome').value.trim();
             const local = document.getElementById('alunoLocal').value.trim();
-            const preco = ehConsultoriaOnline ? 0 : (parseFloat(document.getElementById('alunoPreco').value) || 0);
+            const preco = ehConsultoriaOnline ? 0 : (normalizarNumeroFinanceiro(document.getElementById('alunoPreco').value) || 0);
             const telefone = document.getElementById('alunoTelefone').value.trim();
             const objetivo = obterObjetivoAlunoDoSwitch();
             const corObjetivo = montarCorObjetivoTangerina();
@@ -549,6 +618,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (metodoCobranca === 'valor_fixo' && (!Number.isFinite(valorFixoCiclo) || valorFixoCiclo <= 0)) {
                     if (typeof mostrarToast === 'function') {
                         mostrarToast('Informe o valor fixo do ciclo.', 'error');
+                    }
+                    return;
+                }
+                if (metodoCobranca === 'por_aula' && (!Number.isFinite(preco) || preco <= 0)) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast('Informe o valor hora/aula para salvar este aluno.', 'error');
                     }
                     return;
                 }

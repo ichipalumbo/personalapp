@@ -96,8 +96,8 @@
                 <p id="financasAjusteResumo" style="font-size:0.78rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
                 <form id="formFinancasAjuste">
                   <div class="form-grupo-spa">
-                    <label for="financasAulasExtras">Aulas extras</label>
-                    <input type="number" id="financasAulasExtras" min="0" step="1" required />
+                    <label for="financasAulasExtras">Ajuste de aulas (pode ser negativo)</label>
+                    <input type="number" id="financasAulasExtras" step="1" required />
                   </div>
                   <div class="form-grupo-spa">
                     <label for="financasObservacaoAjuste">Observação</label>
@@ -207,6 +207,18 @@
         return `${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)} • ${status}`;
     }
 
+    function totalAulasCobradas(ciclo) {
+        const contadas = Number(ciclo && ciclo.aulasContadas) || 0;
+        const extras = Number(ciclo && ciclo.aulasManuaisExtras) || 0;
+        return Math.max(0, contadas + extras);
+    }
+
+    function descreverAjuste(extras) {
+        const valor = Number(extras) || 0;
+        if (valor === 0) return 'sem ajuste';
+        return `${valor > 0 ? '+' : '−'}${Math.abs(valor)} de ajuste`;
+    }
+
     function renderizarCardHistorico(card) {
         const historico = Array.isArray(card.historico) ? card.historico : [];
         if (historico.length === 0) {
@@ -225,7 +237,7 @@
                       <span style="color:${ciclo.status === 'pago' ? '#81c784' : (ciclo.status === 'atrasado' ? '#ff8a80' : '#ffd700')};font-size:0.72rem;font-weight:700;">${status}</span>
                     </div>
                     <div style="font-size:0.75rem;color:#9a9a9a;margin-top:6px;">
-                      ${ciclo.aulasContadas || 0} aulas + ${ciclo.aulasManuaisExtras || 0} extras • ${valor}
+                      ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
                     </div>
                   </div>
                 `;
@@ -243,6 +255,7 @@
         const metodo = ciclo.metodoCobranca === 'valor_fixo' ? 'Valor fixo' : 'Por aula';
         const aulasExtras = ciclo.aulasManuaisExtras || 0;
         const aulasContadas = ciclo.aulasContadas || 0;
+        const aulasCobradas = totalAulasCobradas(ciclo);
         const historicoAberto = card.historico && card.historico.length > 0 ? 'open' : '';
 
         return `
@@ -277,8 +290,8 @@
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
                   <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
-                  <div style="margin-top:6px;font-size:0.82rem;color:#fff;font-weight:700;">${aulasContadas} + ${aulasExtras} extras</div>
-                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">Ciclo em cálculo</div>
+                  <div style="margin-top:6px;font-size:0.82rem;color:#fff;font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
+                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
                   <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
@@ -289,7 +302,7 @@
 
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button type="button" class="btn btn-primary" data-financas-pagar="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Marcar como pago</button>
-                <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}">Editar ajuste</button>
+                <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Editar ajuste</button>
               </div>
 
               <details ${historicoAberto} style="border-top:1px solid #262626;padding-top:10px;">
@@ -590,6 +603,27 @@
         bindHandlers();
         renderizarCards();
         atualizarCabecalhoCache();
+    };
+
+    // Consumido pelo card do aluno (view-alunos.js) para não duplicar o cálculo de ciclo no frontend.
+    window.obterResumoFinanceiroPorAluno = function () {
+        const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
+        const fonte = STATE.cards.length > 0
+            ? STATE.cards
+            : (cache && Array.isArray(cache.dados) ? cache.dados : []);
+
+        const mapa = {};
+        fonte.forEach((card) => {
+            if (card && card.alunoId) mapa[card.alunoId] = card;
+        });
+        return mapa;
+    };
+
+    window.garantirDadosFinancas = async function (opcoes = {}) {
+        if (STATE.cards.length === 0 || opcoes.forcarRemoto) {
+            await carregarFinancas({ silencioso: true, forcarRemoto: !!opcoes.forcarRemoto });
+        }
+        return window.obterResumoFinanceiroPorAluno();
     };
 
     window.__financasState = STATE;

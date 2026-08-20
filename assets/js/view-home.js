@@ -167,8 +167,7 @@ function garantirHomeTabs() {
     window.renderizarHomeDia();
   });
   bindOnce('#btnHomeDiaConfigAgenda', () => {
-    const btn = document.getElementById('btnConfigAgenda');
-    if (btn) btn.click();
+    window.abrirModalConfigAgenda();
   });
   bindOnce('#btnHomeDiaNovaAgenda', () => {
     if (typeof window.abrirNovoAgendamento === 'function') {
@@ -778,20 +777,20 @@ window.invalidarChaveRenderAgenda = function () {
   _ultimaChaveRenderAgenda = Object.create(null);
 };
 
+window.abrirModalConfigAgenda = function () {
+  const selectInicio = document.getElementById("configHoraInicio");
+  const selectFim = document.getElementById("configHoraFim");
+  const modal = document.getElementById("modalConfigAgenda");
+  if (!selectInicio || !selectFim || !modal) return;
+
+  selectInicio.value = agendaConfig.horaInicio;
+  selectFim.value = agendaConfig.horaFim;
+  modal.style.display = "flex";
+};
+
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
-  const btnConfig = document.getElementById("btnConfigAgenda");
-  if (btnConfig) {
-    btnConfig.addEventListener("click", () => {
-      const selectInicio = document.getElementById("configHoraInicio");
-      const selectFim = document.getElementById("configHoraFim");
-      selectInicio.value = agendaConfig.horaInicio;
-      selectFim.value = agendaConfig.horaFim;
-      document.getElementById("modalConfigAgenda").style.display = "flex";
-    });
-  }
-
   if (document.getElementById("btnFecharConfig")) {
     document.getElementById("btnFecharConfig").addEventListener("click", () => {
       document.getElementById("modalConfigAgenda").style.display = "none";
@@ -823,26 +822,5 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("modalConfigAgenda").style.display = "none";
         window.inicializarHome();
       });
-  }
-});
-
-document.addEventListener("DOMContentLoaded", () => {
-  if (document.getElementById("btnAnterior")) {
-    document.getElementById("btnAnterior").addEventListener("click", () => {
-      window.dataSelecionada.setDate(window.dataSelecionada.getDate() - 1);
-      window.inicializarHome();
-    });
-  }
-  if (document.getElementById("btnProximo")) {
-    document.getElementById("btnProximo").addEventListener("click", () => {
-      window.dataSelecionada.setDate(window.dataSelecionada.getDate() + 1);
-      window.inicializarHome();
-    });
-  }
-  if (document.getElementById("btnHoje")) {
-    document.getElementById("btnHoje").addEventListener("click", () => {
-      window.dataSelecionada = new Date();
-      window.inicializarHome();
-    });
   }
 });

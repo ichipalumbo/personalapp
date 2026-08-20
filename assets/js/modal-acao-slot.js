@@ -793,13 +793,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (_compDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 window.salvarEventoComGCal(_compDeletar, { operacao: 'excluir', snapshotAnterior: _compDeletar }).then(async () => {
                     await window.inicializarHome({ sincronizar: true });
-                    if (typeof renderizarCalendario === 'function') renderizarCalendario();
                     if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
                 });
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
                 await window.inicializarHome({ sincronizar: true });
-                if (typeof renderizarCalendario === 'function') renderizarCalendario();
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
             }
         });
@@ -855,7 +853,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const _posDeletar = async () => {
                 await window.inicializarHome({ sincronizar: true });
-                if (typeof renderizarCalendario === 'function') renderizarCalendario();
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
             };
 
@@ -936,13 +933,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(async () => {
                     await window.inicializarHome({ sincronizar: true });
-                    if (typeof renderizarCalendario === 'function') renderizarCalendario();
                     if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
                 });
             } else {
                 if (typeof salvarDados === 'function') salvarDados();
                 await window.inicializarHome({ sincronizar: true });
-                if (typeof renderizarCalendario === 'function') renderizarCalendario();
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Agendamento cancelado com sucesso!');
             }
         });

@@ -764,6 +764,37 @@ body {
   border-left: 4px solid #ffd700;
 }
 
+/* Grid de indicadores do card do aluno: comporta novas caixinhas sem refatoração. */
+.aluno-card-indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+.aluno-card-indicador {
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+.aluno-card-indicador--alerta {
+  background: rgba(255, 152, 0, 0.12);
+  border-color: rgba(255, 152, 0, 0.28);
+}
+.aluno-card-indicador-titulo {
+  font-size: 0.74rem;
+  color: #ffd700;
+  font-weight: 700;
+}
+.aluno-card-indicador--alerta .aluno-card-indicador-titulo {
+  color: #ffb74d;
+}
+.aluno-card-indicador-detalhe {
+  font-size: 0.66rem;
+  color: #aaa;
+  margin-top: 3px;
+}
+
 #btnFlutuanteAdicionar {
   position: fixed;
   bottom: 30px;

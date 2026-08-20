@@ -1,29 +1,8 @@
 // [TAG-VIEW-CALENDARIO] view-calendario.js
-// Responsabilidade: Orquestração da aba Calendário — alternância Dia/Mês, dashboard KPI e visão semanal da Home
-// Depende de: state.js, storage.js, utils-kpi.js, alunos-helpers.js (window.getAluno), agenda-card-template.js (window.criarCardAgendamento), calendario-engine.js, modal-acao-slot.js (abrirModalAcaoSlot — em runtime) - Controle Mensal & Semanal na SPA
-window.modoCalendarioAtivo = 'dia';
+// Responsabilidade: Visão semanal da Home (grid da semana e ações de slot)
+// Depende de: state.js, storage.js, alunos-helpers.js (window.getAluno), agenda-card-template.js (window.criarCardAgendamento), calendario-engine.js, modal-acao-slot.js (abrirModalAcaoSlot — em runtime)
 window.semanaReferencia = new Date();
 window.filtroAlunoSemanalId = null; // Estado do filtro de aluno na semana exibida na Home
-window.filtroAlunoMensalId = null; // Estado do filtro de aluno na aba mensal
-
-// Dirty-check key for renderizarKPIDashboard — null forces a render on the next call.
-let _ultimaChaveRenderKPI = null;
-
-window.inicializarPaginaCalendario = async function(opcoes = {}) {
-    const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
-    if (deveSincronizar && typeof carregarDados === 'function') {
-        await carregarDados({
-            forcarRender: false,
-            forcarRemoto: opcoes.sincronizar === true
-        });
-        window.__sincronizacaoInicialConcluida = true;
-    }
-    
-    // Populate filter dropdowns
-    window.preencherFiltrosAlunos();
-
-    window.alternarModoCalendario(window.modoCalendarioAtivo);
-};
 
 /**
  * Popula os dropdowns de filtro de alunos em ambas as abas
@@ -95,7 +74,6 @@ window.preencherFiltrosAlunos = function() {
     };
 
     preencherSelect('filtroAlunoSemanaHome');
-    preencherSelect('filtroAlunoMensal');
 };
 
 /**
@@ -111,141 +89,6 @@ window.atualizarFiltroSemanaHome = function() {
 
 window.atualizarFiltroCalendarioSemanal = window.atualizarFiltroSemanaHome;
 
-/**
- * Atualiza o filtro da aba mensal e re-renderiza
- */
-window.atualizarFiltroCalendarioMensal = function() {
-    const select = document.getElementById('filtroAlunoMensal');
-    if (select) {
-        window.filtroAlunoMensalId = select.value || null;
-        window.renderizarCalendarioMensal();
-    }
-};
-
-window.alternarModoCalendario = function(modo) {
-    window.modoCalendarioAtivo = modo;
-    
-    const tabMensal = document.getElementById('tabCalendarioMensal');
-    const tabDia = document.getElementById('tabCalendarioDia');
-    
-    const containerMensal = document.getElementById('containerCalendarioMensal');
-    const containerDia = document.getElementById('containerCalendarioDia');
-
-    if (!tabMensal || !tabDia || !containerMensal || !containerDia) return;
-
-    if (modo === 'dia') {
-        tabDia.classList.add('active');
-        tabMensal.classList.remove('active');
-        containerDia.style.display = 'block';
-        containerMensal.style.display = 'none';
-        window.renderizarCalendarioDia();
-    } else {
-        tabMensal.classList.add('active');
-        tabDia.classList.remove('active');
-        containerMensal.style.display = 'block';
-        containerDia.style.display = 'none';
-        window.renderizarCalendarioMensal();
-    }
-};
-
-window.renderizarModoCalendarioAtivo = function() {
-    if (window.modoCalendarioAtivo === 'mensal') {
-        window.renderizarCalendarioMensal();
-        return;
-    }
-
-    window.renderizarCalendarioDia();
-};
-
-window.renderizarCalendarioDia = function() {
-    if (typeof window.atualizarDataAtual === 'function') {
-        window.atualizarDataAtual();
-    }
-
-    if (typeof window.renderizarAgendaDia === 'function') {
-        window.renderizarAgendaDia();
-    }
-};
-window.renderizarCalendarioMensal = function() {
-    const gridSPA = document.getElementById('calendarioMonthlyGrid');
-    if (!gridSPA) return;
-    gridSPA.id = 'calendarioGrid';
-
-    window.renderizarKPIDashboard();
-
-    if (typeof renderizarCalendario === 'function') {
-        renderizarCalendario();
-    }
-    gridSPA.id = 'calendarioMonthlyGrid';
-};
-
-/**
- * Renderiza o painel de KPIs para o aluno selecionado no filtro da aba mensal
- */
-window.renderizarKPIDashboard = function() {
-    const kpiContainer = document.getElementById('kpiDashboardContainer');
-    if (!kpiContainer) return;
-    
-    // Get current month/year
-    const hoje = new Date();
-    const mes = window.mesAtual !== undefined ? window.mesAtual : hoje.getMonth();
-    const ano = window.anoAtual !== undefined ? window.anoAtual : hoje.getFullYear();
-    
-    let kpis, nomeAluno;
-    
-    // Calculate KPIs based on filter
-    if (window.filtroAlunoMensalId) {
-        // Single student KPIs
-        kpis = window.calcularKPIsAluno(window.filtroAlunoMensalId, mes, ano, window.aulas);
-        const aluno = typeof window.getAluno === 'function'
-            ? window.getAluno(window.filtroAlunoMensalId)
-            : (window.alunos || []).find(a => a.id === window.filtroAlunoMensalId);
-        nomeAluno = aluno ? aluno.nome : 'Aluno';
-    } else {
-        // Consolidated KPIs for all students
-        kpis = window.calcularKPIsTodosAlunos(mes, ano, window.aulas, window.alunos);
-        nomeAluno = 'Todos os Alunos';
-    }
-
-    // Dirty-check: skip the DOM write if inputs + computed values are unchanged.
-    const _chaveAtual = (function () {
-        try {
-            return (window.filtroAlunoMensalId || '') + '|' + mes + '|' + ano + '|' + JSON.stringify(kpis);
-        } catch (_) { return null; }
-    })();
-    if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderKPI) return;
-    _ultimaChaveRenderKPI = _chaveAtual;
-    
-    // Format currency
-    const formatMoeda = (value) => (typeof window.formatarMoeda === 'function'
-        ? window.formatarMoeda(value)
-        : `R$ ${value.toFixed(2).replace('.', ',')}`);
-    const formatQtd = (value) => `${value}`;
-    
-    const html = `
-        <div class="kpi-dashboard">
-            <div class="kpi-card">
-                <span class="kpi-card-value">${formatMoeda(kpis.projecaoMensal)}</span>
-                <span class="kpi-card-label">📊 Projeção Mensal</span>
-            </div>
-            <div class="kpi-card">
-                <span class="kpi-card-value">${formatMoeda(kpis.realizadoAteHoje)}</span>
-                <span class="kpi-card-label">✅ Realizado até Hoje</span>
-            </div>
-            <div class="kpi-card">
-                <span class="kpi-card-value">${formatQtd(kpis.aulasARealizarQtd)}</span>
-                <span class="kpi-card-label">⏳ Aulas a Realizar</span>
-            </div>
-            <div class="kpi-card">
-                <span class="kpi-card-value">${formatQtd(kpis.reposicoes)}</span>
-                <span class="kpi-card-label">🔄 Aulas a Repor</span>
-            </div>
-        </div>
-    `;
-    
-    kpiContainer.innerHTML = html;
-    kpiContainer.style.display = 'grid';
-};
 window.irParaDiaDestaSemana = function(dataStr) {
     const parts = dataStr.split('/');
     if (parts.length === 3) {
@@ -254,15 +97,9 @@ window.irParaDiaDestaSemana = function(dataStr) {
         const ano = parseInt(parts[2], 10);
         window.dataSelecionada = new Date(ano, mes, dia);
     }
-    window.modoCalendarioAtivo = 'dia';
-
-    const navLinkCalendario = document.querySelector('.header-nav .nav-link[data-target="tela-calendario"]');
-    if (navLinkCalendario) {
-        navLinkCalendario.click();
-    } else if (typeof window.alternarModoCalendario === 'function') {
-        window.alternarModoCalendario('dia');
+    if (typeof window.alternarModoHome === 'function') {
+        window.alternarModoHome('dia');
     }
-
 };
 window.renderizarHomeSemana = function() {
     const gridSemanal = document.getElementById('calendarioSemanalHomeGrid');
@@ -407,42 +244,11 @@ window.abrirCalendarioAcaoSlot = function(id, dataStr) {
         window.dataAlvoAcaoStr = null; // Limpa o estado
         if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
         if (typeof window.renderizarHomeSemana === 'function') window.renderizarHomeSemana();
-        if (typeof window.renderizarModoCalendarioAtivo === 'function') window.renderizarModoCalendarioAtivo();
+        if (typeof window.renderizarHomeDia === 'function') window.renderizarHomeDia();
     };
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    const btnMesAnterior = document.getElementById('btnMesAnterior');
-    const btnMesProximo = document.getElementById('btnMesProximo');
-    const btnMesHoje = document.getElementById('btnMesHoje');
-
-    if (btnMesAnterior) {
-        btnMesAnterior.addEventListener('click', () => {
-            if (typeof navegarMes === 'function') {
-                navegarMes(-1);
-                window.renderizarCalendarioMensal();
-            }
-        });
-    }
-
-    if (btnMesProximo) {
-        btnMesProximo.addEventListener('click', () => {
-            if (typeof navegarMes === 'function') {
-                navegarMes(1);
-                window.renderizarCalendarioMensal();
-            }
-        });
-    }
-
-    if (btnMesHoje) {
-        btnMesHoje.addEventListener('click', () => {
-            const hoje = new Date();
-            window.mesAtual = hoje.getMonth();
-            window.anoAtual = hoje.getFullYear();
-            window.renderizarCalendarioMensal();
-        });
-    }
-
     const btnSemanaAnterior = document.getElementById('btnSemanaHomeAnterior');
     const btnSemanaProxima = document.getElementById('btnSemanaHomeProxima');
     const btnSemanaHoje = document.getElementById('btnSemanaHomeHoje');

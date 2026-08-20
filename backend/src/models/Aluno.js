@@ -8,7 +8,8 @@ const AlunoSchema = new mongoose.Schema({
   status: { type: String, enum: ['ativo', 'inativo'], default: 'ativo' },
   tipoPreco: String,
   valorAlinhado: Number,
-  aulasSemanais: Number,
+  frequenciaSemanal: Number, // aulas semanais de contrato (campo gravado pelo formulário)
+  aulasSemanais: Number, // LEGADO: mesmo significado de frequenciaSemanal em dados antigos
   diaVencimento: { type: Number, min: 2, max: 31, default: null },
   fechamentoMesCheio: { type: Boolean, default: false },
   metodoCobranca: { type: String, enum: ['por_aula', 'valor_fixo'], default: 'por_aula' },
