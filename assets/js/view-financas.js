@@ -13,7 +13,9 @@
         handlersBound: false,
         // Histórico de ciclos anteriores, carregado sob demanda e cacheado em memória por aluno (6.2.2).
         // Nunca gravado no localStorage; descartado ao recarregar a página.
-        historicoPorAluno: {}
+        historicoPorAluno: {},
+        // Alunos com "Ver ciclos anteriores" expandido — sobrevive a re-renders (innerHTML não preserva `open`).
+        historicoAberto: new Set()
     };
 
     function formatarMoeda(valor) {
@@ -388,7 +390,7 @@
                 <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Editar ajuste</button>
               </div>
 
-              <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;">
+              <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;" ${STATE.historicoAberto.has(aluno.id) ? 'open' : ''}>
                 <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.82rem;">Ver ciclos anteriores</summary>
                 <div id="financas-historico-conteudo-${aluno.id}" style="margin-top:10px;">${montarHtmlHistorico(aluno.id)}</div>
               </details>
@@ -652,8 +654,17 @@
         root.addEventListener('toggle', function (event) {
             const details = event.target;
             if (!details || typeof details.matches !== 'function' || !details.matches('[data-financas-historico-details]')) return;
-            if (!details.open) return; // só dispara carregamento ao abrir, não ao fechar
-            carregarHistoricoAluno(details.getAttribute('data-financas-historico-details'));
+            const alunoId = details.getAttribute('data-financas-historico-details');
+
+            if (!details.open) {
+                STATE.historicoAberto.delete(alunoId);
+                return; // fechar não dispara carregamento
+            }
+
+            STATE.historicoAberto.add(alunoId);
+            // carregarHistoricoAluno já retorna cedo se o histórico estiver 'pronto'/'carregando',
+            // então um toggle redundante (ex.: disparado ao montar um <details> já `open`) é inofensivo.
+            carregarHistoricoAluno(alunoId);
         }, true);
 
         const pagamentoModal = document.getElementById('modalFinancasPagamento');

@@ -32,8 +32,8 @@ Cada item traz:
 
 ### [ ] 1.2 Relatório de faturamento exportável (PDF/Excel)
 - **O que é**: Botão "Gerar relatório do mês" com faturamento por aluno, total do mês, aulas dadas x combinadas.
-- **Por que importa**: Hoje a função `exportarDados()` em `assets/js/utils-kpi.js` só gera um JSON técnico de backup (`{ alunos, aulas }`), sem valor para prestar contas a um contador ou para controle pessoal.
-- **Onde mexer**: Reaproveitar 100% dos cálculos já existentes em `backend/src/services/kpiService.js` (`calcularProjecaoMensalCompleta`, `calcularProjecaoRealizadaAteHoje`, `contarReposicoesPorAluno`) e apenas mudar a camada de apresentação/exportação.
+- **Por que importa**: Hoje não existe nenhuma exportação de faturamento — o histórico financeiro fica apenas na tela de Finanças (`view-financas.js`), sem meio de gerar um relatório para prestar contas a um contador ou para controle pessoal.
+- **Onde mexer**: Reaproveitar os dados já persistidos em `CicloFinanceiro` via `backend/src/services/financasService.js` (`listarFinancasDoOwner`, `obterHistoricoFinancasPorAluno`) e apenas adicionar uma camada de apresentação/exportação. `exportarDados()`/`utils-kpi.js` e `kpiService.js` foram removidos junto com o KPI antigo — não são mais uma base a reaproveitar.
 - **Sugestão de escopo mínimo (V1)**: Exportar CSV/Excel primeiro (mais simples que PDF), com colunas: aluno, valor combinado, aulas dadas, aulas faltando, reposições, projeção do mês.
 - **Esforço**: Baixo–Médio (lógica de cálculo já existe; falta camada de exportação formatada, ex. `xlsxwriter` ou `reportlab` no backend, ou lib JS no front).
 
@@ -58,7 +58,7 @@ Cada item traz:
 ### [ ] 1.5 Status de "não compareceu" (no-show) / cancelamento pelo aluno
 - **O que é**: Além do status `confirmado` (default atual em `Agendamento.js`), adicionar estados como `cancelado_pelo_aluno` e `faltou`, para diferenciar de cancelamento feito pelo próprio PT.
 - **Por que importa**: Hoje o sistema já tem o campo `status` no schema, mas só é usado como confirmado. Sem diferenciar falta do aluno, fica difícil cobrar reposição de forma justa ou identificar alunos com muita falta.
-- **Onde mexer**: `backend/src/models/Agendamento.js` (ajustar enum/valores aceitos), `modal-acao-slot.js` (ações de cancelar/faltou), e reaproveitar a lógica de reposição já existente em `kpiService.js` (`contarReposicoesPorAluno`).
+- **Onde mexer**: `backend/src/models/Agendamento.js` (ajustar enum/valores aceitos), `modal-acao-slot.js` (ações de cancelar/faltou, painel de `aulasParaRepor` em `state.js`). Atenção: `contarReposicoesPorAluno()`/`kpiService.js` foram removidos junto com o KPI antigo — a lógica de contagem de reposição por aluno precisa ser reavaliada/reconstruída a partir do estado atual de `aulasParaRepor`, não reaproveitada de código existente.
 - **Esforço**: Baixo–Médio (schema já suporta string livre; o trabalho é de UI + regra de quando permitir reposição gratuita vs. cobrada).
 
 ---
@@ -136,8 +136,8 @@ Cada item traz:
 ---
 
 ### [ ] 2.7 Precisão financeira avançada (calendário real em vez de aproximação)
-- **O que é**: Corrigir a projeção mensal de faturamento para considerar meses com 5 semanas, feriados e faltas descontadas, em vez da fórmula fixa atual.
-- **Por que importa**: Hoje o cálculo em `backend/src/services/kpiService.js` (`calcularProjecaoMensalCompleta`, `calcularProjecaoAproximada`) usa sempre `frequência semanal × 4 × valor`, uma aproximação que não reflete a realidade do calendário.
+- **O que é**: Corrigir a contagem de aulas do ciclo para considerar feriados e faltas descontadas automaticamente, em vez de depender do ajuste manual por ciclo.
+- **Por que importa**: O modelo de faturamento por ciclo já existe (`backend/src/services/financasService.js`, coleção `CicloFinanceiro`), mas ele conta aulas dentro da janela do ciclo sem considerar feriados ou faltas descontadas de forma automática — hoje esse ajuste fino depende do ajuste manual por ciclo (`aulasManuaisExtras`).
 - **Complexidade**: Não é reescrever o serviço do zero, mas é uma mudança sensível porque toca diretamente o número que o PT usa para planejar a vida financeira — qualquer ajuste exige testes extensivos (o projeto hoje não tem nenhum teste automatizado), então o risco de quebrar algo silenciosamente é real.
 - **Esforço**: Médio (tecnicamente contido, mas de alto risco/sensibilidade).
 
