@@ -10,6 +10,10 @@ Este README foi estruturado para facilitar onboarding tecnico e navegacao rapida
 - Sincronizar dados com API backend quando online.
 - Manter fallback local (localStorage) em caso de indisponibilidade da API.
 
+## Documentacao
+
+- [docs/README.md](docs/README.md): indice da documentacao do projeto, reunindo roadmap e specs de features.
+
 ## Autenticacao e Modo de Uso
 
 **O app exige login Google para gravar dados.** Sem login, opera em modo leitura (dados do localStorage apenas, sem sync com a API).
@@ -136,16 +140,23 @@ personalapp/
 |  |  |  |- Agendamento.js
 |  |  |  |- Aluno.js
 |  |  |  |- BloqueioExterno.js
+|  |  |  |- CicloFinanceiro.js
 |  |  |  |- Config.js
+|  |  |  |- GoogleCalendarConnection.js
 |  |  |- routes/
 |  |  |  |- agendamentoRoutes.js
 |  |  |  |- alunoRoutes.js
 |  |  |  |- bloqueioExternoRoutes.js
 |  |  |  |- configRoutes.js
+|  |  |  |- financasRoutes.js
+|  |  |  |- gcalAuthRoutes.js
+|  |  |  |- gcalWebhookRoutes.js
 |  |  |  |- healthRoutes.js
 |  |  |- services/
-|  |  |  |- agendamentoService.js
 |  |  |  |- agendaConsistencyService.js
+|  |  |  |- agendamentoService.js
+|  |  |  |- financasService.js
+|  |  |  |- gcalSyncService.js
 |  |  |- utils/
 |  |  |  |- ownerScope.js
 |  |  |  |- time.js

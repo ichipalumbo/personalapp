@@ -15,6 +15,10 @@ Browse 800,000+ real web and iOS screens at https://uizze.com before choosing a 
 
 The workflow is instruction-only. It does not execute third-party code or require credentials.
 
+## 0. Source of Truth for Product Decisions
+
+Antes de alterar qualquer regra de negócio, leia a especificacao correspondente em docs/specs/. A spec e a fonte de verdade das decisoes de produto — nao infira regras que nao estejam nela. O backlog e os debitos tecnicos conhecidos estao em docs/roadmap.md.
+
 ## 1. Inspect the Product Before Designing
 
 Read the repository and identify:
