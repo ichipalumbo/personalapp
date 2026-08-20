@@ -67,8 +67,8 @@
           <a href="#" class="nav-link ativo" data-target="tela-home">
             <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
           </a>
-          <a href="#" class="nav-link inativo" data-target="tela-calendario">
-            <i class="fa-solid fa-calendar-days nav-icon-anim"></i>Calendário
+          <a href="#" class="nav-link inativo" data-target="tela-financas">
+            <i class="fa-solid fa-wallet nav-icon-anim"></i> Finanças
           </a>
           <a href="#" class="nav-link inativo" data-target="tela-alunos">
             <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
@@ -110,18 +110,36 @@
             </div>
           </section>
           <div class="home-sticky-header">
-            <div class="home-weekly-toolbar">
-              <div
-                class="filtro-aluno-container calendario-filtro-container home-weekly-filter"
+            <div
+              class="tab-tipo-agendamento"
+              style="
+                display: flex;
+                gap: 6px;
+                margin-bottom: 14px;
+                background: #0d0d0d;
+                padding: 4px;
+                border-radius: 8px;
+                border: 1px solid #2a2a2a;
+              "
+            >
+              <button
+                type="button"
+                class="tab-btn active"
+                id="tabHomeSemana"
+                onclick="window.alternarModoHome('semana')"
               >
-                <select
-                  id="filtroAlunoSemanaHome"
-                  class="filtro-aluno-select"
-                  onchange="window.atualizarFiltroSemanaHome()"
-                >
-                  <option value="">👥 Todos os Alunos</option>
-                </select>
-              </div>
+                <i class="fa-solid fa-calendar-week"></i> Semana
+              </button>
+              <button
+                type="button"
+                class="tab-btn"
+                id="tabHomeDia"
+                onclick="window.alternarModoHome('dia')"
+              >
+                <i class="fa-solid fa-calendar-day"></i> Dia
+              </button>
+            </div>
+            <div class="home-weekly-toolbar">
               <div class="home-weekly-nav-row">
                 <div
                   class="nav-calendario nav-calendario--home nav-calendario--week-home"
@@ -249,6 +267,8 @@
           <p>App de Gerenciamento de Personal Trainer</p>
         </footer>
       </main>
+      <!-- [TAG-HTML-TELA-FINANCAS] - Finanças por ciclo de cobrança -->
+      <main id="tela-financas" class="view-section" style="display: none"></main>
       <!-- [TAG-HTML-TELA-CALENDARIO] - Visão Mensal e Semanal Estratégica -->
       <main id="tela-calendario" class="view-section" style="display: none">
         <div class="calendario-tabs-sticky">
@@ -555,6 +575,56 @@
                     <option value="5">5x na semana</option>
                     <option value="6">6x na semana</option>
                   </select>
+                </div>
+              </div>
+              <div
+                class="form-grupo-spa"
+                style="
+                  border: 1px solid #222;
+                  border-radius: 10px;
+                  padding: 12px;
+                  background: rgba(255, 215, 0, 0.03);
+                "
+              >
+                <label style="display:block;margin-bottom:10px;color:#ffd700;font-weight:700;">Cobrança por ciclo</label>
+                <label class="full-day-toggle" for="alunoFechamentoMesCheio" style="margin-bottom:10px;">
+                  <input type="checkbox" id="alunoFechamentoMesCheio" />
+                  <span class="full-day-toggle-ui">
+                    <span class="full-day-toggle-text">
+                      <i class="fa-solid fa-calendar-days"></i>
+                      <span id="alunoFechamentoMesCheioStatus">Fecha por vencimento</span>
+                    </span>
+                    <span class="full-day-toggle-pill" aria-hidden="true"></span>
+                  </span>
+                </label>
+                <div class="form-grupo-spa" id="containerAlunoDiaVencimento" style="margin-bottom:10px;">
+                  <label for="alunoDiaVencimento">Dia de vencimento *</label>
+                  <input
+                    type="number"
+                    id="alunoDiaVencimento"
+                    min="2"
+                    max="31"
+                    step="1"
+                    inputmode="numeric"
+                    placeholder="Ex: 10"
+                  />
+                </div>
+                <div class="form-grupo-spa" style="margin-bottom:10px;">
+                  <label for="alunoMetodoCobranca">Método de cobrança</label>
+                  <select id="alunoMetodoCobranca">
+                    <option value="por_aula" selected>Por aula</option>
+                    <option value="valor_fixo">Valor fixo por ciclo</option>
+                  </select>
+                </div>
+                <div class="form-grupo-spa" id="containerAlunoValorFixoCiclo" style="margin-bottom:0;">
+                  <label for="alunoValorFixoCiclo">Valor fixo do ciclo (R$)</label>
+                  <input
+                    type="number"
+                    id="alunoValorFixoCiclo"
+                    placeholder="Ex: 1200"
+                    step="0.01"
+                    min="0"
+                  />
                 </div>
               </div>
               <div class="form-grupo-spa">
@@ -1672,6 +1742,7 @@
     <!-- [6] Page Views -->
     <script src="assets/js/agenda-card-template.js"></script>
     <script src="assets/js/view-home.js"></script>
+    <script src="assets/js/view-financas.js"></script>
     <script src="assets/js/view-calendario.js"></script>
     <!-- [6.1] Cascade Sync (sincronização em cascata de alunos para agendamentos) -->
     <script src="assets/js/cascade-sync-aluno.js"></script>
@@ -1693,7 +1764,7 @@
     <script src="assets/js/app/bootstrap.js"></script>
     <!-- [8] SPA Entry (deve ser o último) -->
     <script src="assets/js/app.js"></script>
-    
+
     <!-- [TAG-HTML-SETTINGS-MODAL] - Modal de Configurações da Aplicação -->
     <div class="modal-overlay" id="appSettingsModal" style="display: none">
       <div class="modal" style="max-width: 500px">
@@ -1703,7 +1774,7 @@
             <i class="fa-solid fa-times"></i>
           </button>
         </h2>
-        
+
         <div class="modal-body">
           <div class="settings-section user-profile-section">
             <h3 class="settings-section-title">Perfil da conta</h3>
@@ -1720,7 +1791,7 @@
           <div class="settings-section">
             <h3 class="settings-section-title">Google Agenda</h3>
             <p id="gcalConnectionDescription" class="settings-description">Conecte sua conta para sincronizar compromissos externos com a agenda do app.</p>
-            
+
             <!-- Connect Button (shown when disconnected) -->
             <button id="btnConnectGoogleCalendar" class="btn-gcal-connect" hidden>
               <i class="fa-solid fa-calendar"></i>
@@ -1728,7 +1799,7 @@
             </button>
 
             <p id="gcalStatusFeedback" class="gcal-status-feedback" hidden></p>
-            
+
             <!-- Connected State (shown when connected) -->
             <div id="gcalConnectedState" class="gcal-status-connected" hidden>
               <div class="gcal-status-copy">

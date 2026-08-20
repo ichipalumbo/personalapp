@@ -16,13 +16,14 @@ window.dataSelecionada = window.dataSelecionada || new Date();
 window.dataAlvoAcaoStr = null;
 window.horarioSelecionadoSlot = null;
 window.reagendamentoDirectCardId = null;
+window.modoHomeAtivo = window.modoHomeAtivo || 'semana';
 window.__sincronizacaoInicialConcluida =
   window.__sincronizacaoInicialConcluida || false;
 window.__homeCarregando = window.__homeCarregando || false;
 
 // Dirty-check key for renderizarAgendaDia.
 // Set to null by window.invalidarChaveRenderAgenda() to force a re-render on next call.
-let _ultimaChaveRenderAgenda = null;
+let _ultimaChaveRenderAgenda = Object.create(null);
 
 const DIAS_DA_SEMANA = typeof window.getNomesDiasSemana === 'function'
   ? window.getNomesDiasSemana()
@@ -64,6 +65,156 @@ window.renderizarLoadingHome = function () {
   }
 };
 
+function garantirHomeTabs() {
+  const homeMain = document.getElementById('tela-home');
+  if (!homeMain || document.getElementById('homeDayPanel')) return;
+
+  const stickyHeader = homeMain.querySelector('.home-sticky-header');
+  const weeklyGridPanel = homeMain.querySelector('.agenda-panel-semana');
+  const footer = homeMain.querySelector('.home-app-resumo');
+  const existingTabs = homeMain.querySelector('.home-sticky-header .tab-tipo-agendamento');
+
+  if (!existingTabs) {
+    const tabsWrapper = document.createElement('div');
+    tabsWrapper.id = 'homeTabsWrapper';
+    tabsWrapper.style.marginBottom = '14px';
+    tabsWrapper.innerHTML = `
+      <div class="tab-tipo-agendamento" style="display:flex;gap:6px;background:#0d0d0d;padding:4px;border-radius:8px;border:1px solid #2a2a2a;">
+        <button type="button" class="tab-btn active" id="tabHomeSemana" onclick="window.alternarModoHome('semana')"><i class="fa-solid fa-calendar-week"></i> Semana</button>
+        <button type="button" class="tab-btn" id="tabHomeDia" onclick="window.alternarModoHome('dia')"><i class="fa-solid fa-calendar-day"></i> Dia</button>
+      </div>
+    `;
+
+    if (stickyHeader) {
+      stickyHeader.insertBefore(tabsWrapper, stickyHeader.firstChild);
+    } else {
+      homeMain.insertBefore(tabsWrapper, homeMain.firstChild);
+    }
+  }
+
+  const dayPanel = document.createElement('div');
+  dayPanel.id = 'homeDayPanel';
+  dayPanel.className = 'agenda-panel';
+  dayPanel.style.display = 'none';
+  dayPanel.innerHTML = `
+    <div
+      class="agenda-sticky-container"
+      style="
+        position: sticky;
+        top: var(--header-height);
+        z-index: 20;
+        background-color: #141414;
+        border-bottom: 1px solid #1f1f1f;
+        padding: 6px 0px 5px;
+      "
+    >
+      <div class="agenda-header-wrapper">
+        <div class="agenda-header-info">
+          <h2>
+            <i class="fa-solid fa-calendar-day" style="color:#ffd700;margin-right:8px"></i>
+            Agenda do Dia
+          </h2>
+          <span>Sua rotina de treinos bem organizada!</span>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button id="btnHomeDiaNovaAgenda" class="btn-config-icon" title="Novo Agendamento">
+            <i class="fa-solid fa-calendar-plus" style="color:#ffd700"></i>
+          </button>
+          <button id="btnHomeDiaConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
+            <i class="fa-solid fa-gear fa-spin-hover" style="color:#ffd700"></i>
+          </button>
+        </div>
+      </div>
+      <div class="agenda-header-navegacao">
+        <div class="nav-calendario nav-calendario--home">
+          <div class="nav-calendario-main">
+            <button id="btnHomeDiaAnterior" class="btn-nav-dia" title="Dia Anterior"><i class="fa-solid fa-circle-arrow-left"></i></button>
+            <span id="dataAtualHome" class="agenda-data-principal">Carregando...</span>
+            <button id="btnHomeDiaProximo" class="btn-nav-dia" title="Próximo Dia"><i class="fa-solid fa-circle-arrow-right"></i></button>
+          </div>
+          <button id="btnHomeDiaHoje" class="btn-hoje-pill btn-hoje-agenda"><i class="fa-solid fa-bullseye"></i>Hoje</button>
+          <span id="diaSemanaAtualHome" class="agenda-dia-semana-mobile">Carregando...</span>
+        </div>
+      </div>
+    </div>
+    <div class="agenda-dia-container" id="agendaGridHomeHome"></div>
+  `;
+
+  if (weeklyGridPanel) {
+    weeklyGridPanel.parentNode.insertBefore(dayPanel, weeklyGridPanel.nextSibling);
+  } else {
+    homeMain.appendChild(dayPanel);
+  }
+
+  const bindOnce = (selector, handler) => {
+    const el = document.querySelector(selector);
+    if (el && !el.__homeBound) {
+      el.addEventListener('click', handler);
+      el.__homeBound = true;
+    }
+  };
+
+  bindOnce('#btnHomeDiaAnterior', () => {
+    window.dataSelecionada.setDate(window.dataSelecionada.getDate() - 1);
+    window.renderizarHomeDia();
+  });
+  bindOnce('#btnHomeDiaProximo', () => {
+    window.dataSelecionada.setDate(window.dataSelecionada.getDate() + 1);
+    window.renderizarHomeDia();
+  });
+  bindOnce('#btnHomeDiaHoje', () => {
+    window.dataSelecionada = new Date();
+    window.renderizarHomeDia();
+  });
+  bindOnce('#btnHomeDiaConfigAgenda', () => {
+    const btn = document.getElementById('btnConfigAgenda');
+    if (btn) btn.click();
+  });
+  bindOnce('#btnHomeDiaNovaAgenda', () => {
+    if (typeof window.abrirNovoAgendamento === 'function') {
+      const horaInicioHome = agendaConfig && typeof agendaConfig.horaInicio === "number"
+        ? agendaConfig.horaInicio
+        : 8;
+      window.abrirNovoAgendamento({
+        dataSelecionada: new Date(window.dataSelecionada),
+        hora: `${String(horaInicioHome).padStart(2, '0')}:00`
+      });
+    }
+  });
+}
+
+window.renderizarHomeDia = function () {
+  window.atualizarDataAtual('dataAtualHome', 'diaSemanaAtualHome');
+  window.renderizarAgendaDia('agendaGridHomeHome');
+};
+
+window.alternarModoHome = function (modo) {
+  window.modoHomeAtivo = modo === 'dia' ? 'dia' : 'semana';
+  garantirHomeTabs();
+
+  const semBtn = document.getElementById('tabHomeSemana');
+  const diaBtn = document.getElementById('tabHomeDia');
+  const weekToolbar = document.querySelector('.home-weekly-toolbar');
+  const weekGridPanel = document.querySelector('.agenda-panel-semana');
+  const dayPanel = document.getElementById('homeDayPanel');
+  const btnNova = document.getElementById('btnNovaAgendaSemanal');
+  const footer = document.querySelector('.home-app-resumo');
+
+  if (semBtn) semBtn.classList.toggle('active', window.modoHomeAtivo === 'semana');
+  if (diaBtn) diaBtn.classList.toggle('active', window.modoHomeAtivo === 'dia');
+  if (weekToolbar) weekToolbar.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
+  if (weekGridPanel) weekGridPanel.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
+  if (btnNova) btnNova.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
+  if (footer) footer.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
+  if (dayPanel) dayPanel.style.display = window.modoHomeAtivo === 'dia' ? '' : 'none';
+
+  if (window.modoHomeAtivo === 'semana') {
+    window.renderizarHomeSemana();
+  } else {
+    window.renderizarHomeDia();
+  }
+};
+
 // ── Inicialização da Home ─────────────────────────────────────────────────────────────────────
 
 // ── Internal helpers for inicializarHome ─────────────────────────────────────────────────────
@@ -101,13 +252,6 @@ function _renderizarHome(opcoes) {
   }
   window.renderizarListaReposicoes();
   window.inicializarMultiSelectPills();
-
-  if (
-    opcoes.atualizarCalendario !== false &&
-    typeof window.renderizarModoCalendarioAtivo === "function"
-  ) {
-    window.renderizarModoCalendarioAtivo();
-  }
 }
 
 window.inicializarHome = async function (opcoes = {}) {
@@ -124,14 +268,16 @@ window.inicializarHome = async function (opcoes = {}) {
     await _sincronizarDadosHome(opcoes);
   }
 
+  garantirHomeTabs();
   _renderizarHome(opcoes);
+  window.alternarModoHome(window.modoHomeAtivo || 'semana');
 };
 
 // ── Dashboard Stats ───────────────────────────────────────────────────────────────────────────
 
-window.atualizarDataAtual = function () {
-  const elementoData = document.getElementById("dataAtual");
-  const elementoDiaSemana = document.getElementById("diaSemanaAtual");
+window.atualizarDataAtual = function (dataId, diaId) {
+  const elementoData = document.getElementById(dataId || "dataAtual");
+  const elementoDiaSemana = document.getElementById(diaId || "diaSemanaAtual");
   if (!elementoData) return;
   const dia = String(window.dataSelecionada.getDate()).padStart(2, "0");
   const mes = String(window.dataSelecionada.getMonth() + 1).padStart(2, "0");
@@ -180,8 +326,8 @@ window.abrirEscolhaTipoModalPorSlotHome = function (diaTexto, horaStr, elSlot) {
   }, 70);
 };
 
-window.renderizarAgendaDia = function () {
-  const grid = document.getElementById("agendaGridHome");
+window.renderizarAgendaDia = function (gridId) {
+  const grid = document.getElementById(gridId || "agendaGridHome");
   if (!grid) return;
 
   const diaTexto = window.getDiaTextoSelecionado();
@@ -487,7 +633,7 @@ window.renderizarAgendaDia = function () {
     const heightSlot = hourHeight / 2;
 
     htmlBgSlots += `
-            <div class="time-grid-bg-slot" 
+            <div class="time-grid-bg-slot"
                  style="position: absolute; top: ${topPos}px; left: 0; right: 0; height: ${heightSlot}px;"
                  onclick="window.abrirEscolhaTipoModalPorSlotHome('${diaTexto}', '${horaStr}', this)"
                  title="Toque para agendar em ${horaStr}">
@@ -588,9 +734,12 @@ window.renderizarAgendaDia = function () {
   // will produce a different key and trigger a re-render.
   // Defensive fallback: if JSON.stringify throws for any reason, novaChave is null
   // and the render always runs unconditionally.
+  const chaveGridAgenda = grid.id || "agendaGridHome";
   const _novaChaveAgenda = (function () {
     try {
       return (
+        chaveGridAgenda +
+        "|" +
         window.dataSelecionada.toDateString() +
         "|" +
         (agendaConfig ? agendaConfig.horaInicio + "-" + agendaConfig.horaFim : "") +
@@ -601,8 +750,11 @@ window.renderizarAgendaDia = function () {
       return null;
     }
   })();
-  if (_novaChaveAgenda !== null && _novaChaveAgenda === _ultimaChaveRenderAgenda) return;
-  _ultimaChaveRenderAgenda = _novaChaveAgenda;
+  if (
+    _novaChaveAgenda !== null &&
+    _ultimaChaveRenderAgenda[chaveGridAgenda] === _novaChaveAgenda
+  ) return;
+  _ultimaChaveRenderAgenda[chaveGridAgenda] = _novaChaveAgenda;
 
   grid.innerHTML = wrapperHtml;
 
@@ -611,7 +763,7 @@ window.renderizarAgendaDia = function () {
     const wrapperElement = document.querySelector(".time-grid-wrapper");
     const nowIndicator = document.querySelector(".time-grid-now-indicator");
     if (wrapperElement && nowIndicator) {
-      const containerElement = document.getElementById("agendaGridHome");
+      const containerElement = grid;
       if (containerElement) {
         const topIndicator = nowIndicator.offsetTop;
         containerElement.scrollTop = topIndicator - 150;
@@ -623,7 +775,7 @@ window.renderizarAgendaDia = function () {
 // Exposed so other modules can force a re-render on the next renderizarAgendaDia call,
 // for example after Optimistic UI mutations or calendar config changes.
 window.invalidarChaveRenderAgenda = function () {
-  _ultimaChaveRenderAgenda = null;
+  _ultimaChaveRenderAgenda = Object.create(null);
 };
 
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────

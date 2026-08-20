@@ -123,24 +123,88 @@ function aplicarRegrasObjetivoNoFormulario() {
     if (elPreco) {
         elPreco.disabled = ehConsultoriaOnline;
         elPreco.required = !ehConsultoriaOnline;
-        if (ehConsultoriaOnline) elPreco.value = '';
         aplicarClasseCampoDesabilitado(elPreco, ehConsultoriaOnline);
     }
 
     if (elFrequencia) {
         elFrequencia.disabled = ehConsultoriaOnline;
         elFrequencia.required = !ehConsultoriaOnline;
-        if (ehConsultoriaOnline) {
-            elFrequencia.value = '';
-        } else if (!elFrequencia.value) {
+        if (!ehConsultoriaOnline && !elFrequencia.value) {
             elFrequencia.value = '2';
         }
         aplicarClasseCampoDesabilitado(elFrequencia, ehConsultoriaOnline);
     }
+
+    aplicarRegrasFinanceirasNoFormulario();
 }
 
 function montarCorObjetivoTangerina() {
     return { nome: 'Tangerina', hex: '#FF887C' };
+}
+
+function normalizarNumeroFinanceiro(valor) {
+    const numero = typeof valor === 'string' ? valor.replace(',', '.') : valor;
+    const resultado = Number(numero);
+    return Number.isFinite(resultado) ? resultado : null;
+}
+
+function formatarMoedaFinanceira(valor) {
+    const numero = Number(valor) || 0;
+    return `R$ ${numero.toFixed(2).replace('.', ',')}`;
+}
+
+function obterValorFinanceiroSelecionado() {
+    const metodo = document.getElementById('alunoMetodoCobranca');
+    return metodo ? (metodo.value || 'por_aula') : 'por_aula';
+}
+
+function aplicarRegrasFinanceirasNoFormulario() {
+    const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
+    const fechamentoMesCheio = document.getElementById('alunoFechamentoMesCheio');
+    const fechamentoMesCheioStatus = document.getElementById('alunoFechamentoMesCheioStatus');
+    const diaVencimento = document.getElementById('alunoDiaVencimento');
+    const containerDiaVencimento = document.getElementById('containerAlunoDiaVencimento');
+    const metodoCobranca = document.getElementById('alunoMetodoCobranca');
+    const valorFixoCiclo = document.getElementById('alunoValorFixoCiclo');
+    const containerValorFixo = document.getElementById('containerAlunoValorFixoCiclo');
+    const preco = document.getElementById('alunoPreco');
+    const frequencia = document.getElementById('alunoFrequenciaSemanal');
+
+    const fechaPorMes = !!(fechamentoMesCheio && fechamentoMesCheio.checked);
+    const metodo = obterValorFinanceiroSelecionado();
+
+    if (fechamentoMesCheioStatus) {
+        fechamentoMesCheioStatus.textContent = fechaPorMes ? 'Fecha por mês cheio' : 'Fecha por vencimento';
+    }
+
+    if (containerDiaVencimento) {
+        containerDiaVencimento.style.display = fechaPorMes || ehConsultoriaOnline ? 'none' : '';
+    }
+    if (diaVencimento) {
+        diaVencimento.required = !ehConsultoriaOnline && !fechaPorMes;
+        diaVencimento.disabled = ehConsultoriaOnline || fechaPorMes;
+    }
+
+    if (metodoCobranca) {
+        metodoCobranca.disabled = ehConsultoriaOnline;
+    }
+    if (containerValorFixo) {
+        containerValorFixo.style.display = ehConsultoriaOnline || metodo !== 'valor_fixo' ? 'none' : '';
+    }
+    if (valorFixoCiclo) {
+        valorFixoCiclo.required = !ehConsultoriaOnline && metodo === 'valor_fixo';
+        valorFixoCiclo.disabled = ehConsultoriaOnline || metodo !== 'valor_fixo';
+    }
+
+    if (preco) {
+        preco.required = !ehConsultoriaOnline && metodo !== 'valor_fixo';
+        preco.disabled = ehConsultoriaOnline;
+    }
+
+    if (frequencia) {
+        frequencia.required = !ehConsultoriaOnline;
+        frequencia.disabled = ehConsultoriaOnline;
+    }
 }
 
 window.inicializarPaginaCadastro = async function(opcoes = {}) {
@@ -175,7 +239,7 @@ window.togglePainelCadastro = function(mostrar) {
         atualizarStatusSwitchFormulario(true);
         const btnExcluirAlunoModal = document.getElementById('btnExcluirAlunoModal');
         if (btnExcluirAlunoModal) btnExcluirAlunoModal.style.display = 'none';
-        
+
         const idEdicao = document.getElementById('alunoIdEdicao');
         if (idEdicao) idEdicao.value = '';
     }
@@ -183,22 +247,26 @@ window.togglePainelCadastro = function(mostrar) {
 window.abrirCadastroParaNovo = function() {
     const titulo = document.getElementById('tituloFormAluno');
     const botao = document.getElementById('btnSalvarAluno');
-    
+
     if (titulo) titulo.textContent = 'Cadastrar Novo Aluno';
     if (botao) botao.textContent = 'Adicionar';
 
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
     if (elObjetivoSwitch) elObjetivoSwitch.checked = false;
+    const elFechamentoMesCheio = document.getElementById('alunoFechamentoMesCheio');
+    const elMetodoCobranca = document.getElementById('alunoMetodoCobranca');
+    if (elFechamentoMesCheio) elFechamentoMesCheio.checked = false;
+    if (elMetodoCobranca) elMetodoCobranca.value = 'por_aula';
     aplicarRegrasObjetivoNoFormulario();
     atualizarStatusSwitchFormulario(true);
     const btnExcluirAlunoModal = document.getElementById('btnExcluirAlunoModal');
     if (btnExcluirAlunoModal) btnExcluirAlunoModal.style.display = 'none';
-    
+
     window.togglePainelCadastro(true);
 };
 window.renderizarListaAlunos = function() {
     const listaContainer = document.getElementById('listaAlunos');
-    
+
     if (!listaContainer) return;
 
     if (typeof alunos !== 'undefined') {
@@ -247,14 +315,28 @@ window.renderizarListaAlunos = function() {
             const objetivoClass = objetivo.replace(/\s+/g, '');
             const statusAluno = normalizarStatusAlunoLocal(aluno.status);
             const statusLabel = statusAluno === 'inativo' ? 'Inativo' : 'Ativo';
-            
+            const financeiroAtivo = objetivo !== 'Consultoria Online';
+            const metodoCobranca = !financeiroAtivo
+                ? 'Financeiro'
+                : (aluno.metodoCobranca === 'valor_fixo' ? 'Valor fixo' : 'Por aula');
+            const cobrancaDetalhe = !financeiroAtivo
+                ? 'Não aplicável'
+                : (aluno.metodoCobranca === 'valor_fixo'
+                    ? `${formatarMoedaFinanceira(aluno.valorFixoCiclo)} / ciclo`
+                    : `${formatarMoedaFinanceira(preco)} / aula`);
+            const fechamentoLabel = !financeiroAtivo
+                ? 'Consultoria Online'
+                : (aluno.fechamentoMesCheio
+                    ? 'Fecha por mês cheio'
+                    : (aluno.diaVencimento ? `Vence dia ${aluno.diaVencimento}` : 'Sem vencimento definido'));
+
             // Calcular KPIs usando as novas funções
             const projecaoMes = calcularProjecaoMensalCompleta(aluno, aulas);
             const realizadoAteHoje = calcularProjecaoRealizadaAteHoje(aluno, aulas);
             const projecaoAproximada = calcularProjecaoAproximada(aluno);
             const aulasFaltam = calcularAulasFaltamAgendar(aluno, aulas);
             const reposicoes = contarReposicoesPorAluno(aluno.id, aulas);
-            
+
             return `
                 <div class="aluno-card aluno-card--gerenciavel" onclick="prepararEdicaoAluno('${aluno.id}')" style="display: flex; flex-direction: column; gap: 10px; position: relative; cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
@@ -275,10 +357,11 @@ window.renderizarListaAlunos = function() {
                             </label>
                         </div>
                     </div>
-                    
+
                     <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.78rem; color: #B0B0B0; border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
                         <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
-                        <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> R$ ${preco.toFixed(2)} / hora</div>
+                        <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${metodoCobranca}: ${cobrancaDetalhe}</div>
+                        <div><i class="fa-solid fa-calendar-days" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${fechamentoLabel}</div>
                     </div>
 
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px;">
@@ -293,13 +376,13 @@ window.renderizarListaAlunos = function() {
                                 <div style="font-size: 0.55rem; color: #888;">Realizado</div>
                             </div>
                         </div>
-                        
+
                         <div style="background: rgba(255, 152, 0, 0.12); border: 1px solid rgba(255, 152, 0, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
                             <div style="font-size: 0.65rem; color: #FF9800; font-weight: 700;">📅 FALTAM</div>
                             <div style="font-size: 1.4rem; color: #FFB74D; font-weight: 700; margin-top: 4px;">${aulasFaltam}</div>
                             <div style="font-size: 0.6rem; color: #AAA; margin-top: 2px;">aula(s) / sem</div>
                         </div>
-                        
+
                         <div style="background: rgba(100, 181, 246, 0.12); border: 1px solid rgba(100, 181, 246, 0.25); border-radius: 6px; padding: 6px 8px; text-align: center;">
                             <div style="font-size: 0.65rem; color: #64B5F6; font-weight: 700;">🔄 REPOSIÇÃO</div>
                             <div style="font-size: 1.4rem; color: #90CAF9; font-weight: 700; margin-top: 4px;">${reposicoes}</div>
@@ -330,6 +413,14 @@ window.prepararEdicaoAluno = function(id) {
     if (elTelefone) elTelefone.value = aluno.telefone || '';
     if (elObjetivoSwitch) elObjetivoSwitch.checked = normalizarObjetivoAluno(aluno.objetivo) === 'Consultoria Online';
     if (elFrequencia) elFrequencia.value = aluno.frequenciaSemanal || '2';
+    const elFechamentoMesCheio = document.getElementById('alunoFechamentoMesCheio');
+    const elDiaVencimento = document.getElementById('alunoDiaVencimento');
+    const elMetodoCobranca = document.getElementById('alunoMetodoCobranca');
+    const elValorFixoCiclo = document.getElementById('alunoValorFixoCiclo');
+    if (elFechamentoMesCheio) elFechamentoMesCheio.checked = !!aluno.fechamentoMesCheio;
+    if (elDiaVencimento) elDiaVencimento.value = aluno.diaVencimento || '';
+    if (elMetodoCobranca) elMetodoCobranca.value = aluno.metodoCobranca || 'por_aula';
+    if (elValorFixoCiclo) elValorFixoCiclo.value = aluno.valorFixoCiclo || '';
     atualizarStatusSwitchFormulario(normalizarStatusAlunoLocal(aluno.status) === 'ativo');
     const titulo = document.getElementById('tituloFormAluno');
     const botao = document.getElementById('btnSalvarAluno');
@@ -385,6 +476,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elObjetivoSwitch) {
         elObjetivoSwitch.addEventListener('change', aplicarRegrasObjetivoNoFormulario);
     }
+    const elFechamentoMesCheio = document.getElementById('alunoFechamentoMesCheio');
+    if (elFechamentoMesCheio) {
+        elFechamentoMesCheio.addEventListener('change', aplicarRegrasFinanceirasNoFormulario);
+    }
+    const elMetodoCobranca = document.getElementById('alunoMetodoCobranca');
+    if (elMetodoCobranca) {
+        elMetodoCobranca.addEventListener('change', aplicarRegrasFinanceirasNoFormulario);
+    }
     const elStatusSwitch = document.getElementById('alunoStatusSwitch');
     if (elStatusSwitch) {
         elStatusSwitch.addEventListener('change', () => atualizarStatusSwitchFormulario(elStatusSwitch.checked));
@@ -406,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formAluno) {
         formAluno.addEventListener('submit', (e) => {
             e.preventDefault();
-            
+
             const idEdicao = document.getElementById('alunoIdEdicao').value;
             const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
             const nome = document.getElementById('alunoNome').value.trim();
@@ -419,14 +518,47 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? 0
                 : (parseInt(document.getElementById('alunoFrequenciaSemanal').value, 10) || 2);
             const status = normalizarStatusAlunoLocal(obterStatusAlunoDoSwitch());
+            const fechamentoMesCheio = !ehConsultoriaOnline && document.getElementById('alunoFechamentoMesCheio').checked;
+            const diaVencimentoRaw = document.getElementById('alunoDiaVencimento').value;
+            const diaVencimento = fechamentoMesCheio || ehConsultoriaOnline
+                ? null
+                : (parseInt(diaVencimentoRaw, 10) || null);
+            const metodoCobranca = ehConsultoriaOnline
+                ? 'por_aula'
+                : (document.getElementById('alunoMetodoCobranca').value || 'por_aula');
+            const valorFixoRaw = document.getElementById('alunoValorFixoCiclo').value;
+            const valorFixoCiclo = metodoCobranca === 'valor_fixo'
+                ? normalizarNumeroFinanceiro(valorFixoRaw)
+                : null;
 
             if (typeof alunos === 'undefined') return;
+
+            if (!ehConsultoriaOnline) {
+                if (!fechamentoMesCheio && !diaVencimento) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast("Informe o dia de vencimento ou ative 'Fechar por mês cheio'.", 'error');
+                    }
+                    return;
+                }
+                if (!fechamentoMesCheio && diaVencimento === 1) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast("O vencimento no dia 1 exige 'Fechar por mês cheio'.", 'error');
+                    }
+                    return;
+                }
+                if (metodoCobranca === 'valor_fixo' && (!Number.isFinite(valorFixoCiclo) || valorFixoCiclo <= 0)) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast('Informe o valor fixo do ciclo.', 'error');
+                    }
+                    return;
+                }
+            }
 
             if (idEdicao) {
                 const index = alunos.findIndex(a => a.id === idEdicao);
                 if (index !== -1) {
                     const alunoAntigo = { ...alunos[index] };
-                    
+
                     alunos[index].nome = nome;
                     alunos[index].local = local;
                     alunos[index].preco = preco;
@@ -435,7 +567,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     alunos[index].corObjetivo = corObjetivo;
                     alunos[index].frequenciaSemanal = frequenciaSemanal;
                     alunos[index].status = status;
-                    
+                    alunos[index].fechamentoMesCheio = fechamentoMesCheio;
+                    alunos[index].diaVencimento = diaVencimento;
+                    alunos[index].metodoCobranca = metodoCobranca;
+                    alunos[index].valorFixoCiclo = valorFixoCiclo;
+
                     // [TAG-CASCADE-SYNC] Se nome ou local mudou, sincroniza agendamentos futuros
                     if (alunoAntigo.nome !== nome || alunoAntigo.local !== local) {
                         console.log('[view-alunos] Detectada mudança no nome ou local, acionando cascade sync...');
@@ -447,7 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                         }
                     }
-                    
+
                     if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno atualizado com sucesso!');
                 }
             } else {
@@ -460,7 +596,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     objetivo: objetivo,
                     corObjetivo: corObjetivo,
                     frequenciaSemanal: frequenciaSemanal,
-                    status: status
+                    status: status,
+                    fechamentoMesCheio: fechamentoMesCheio,
+                    diaVencimento: diaVencimento,
+                    metodoCobranca: metodoCobranca,
+                    valorFixoCiclo: valorFixoCiclo
                 };
                 alunos.push(novoAluno);
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno cadastrado com sucesso!');
