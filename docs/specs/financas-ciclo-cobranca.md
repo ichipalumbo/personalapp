@@ -15,6 +15,7 @@
 O app calculava faturamento com uma aproximação genérica por mês calendário (`frequência semanal × 4 × valor`), sem relação com datas reais de vencimento de cada aluno. Isso não refletia a realidade de um Personal Trainer (PT) autônomo, que frequentemente cobra em ciclos móveis (ex.: todo dia 17 de cada mês), e não em mês civil fechado.
 
 **Objetivo da feature**: substituir totalmente o modelo de KPI financeiro antigo por um modelo de **ciclo de cobrança configurável por aluno**, com:
+
 - Cálculo de quantas aulas válidas ocorreram dentro da janela de datas do ciclo vigente do aluno.
 - Cálculo do valor a cobrar nesse ciclo (por aula ou valor fixo, conforme configuração do aluno).
 - Registro persistente de pagamento por ciclo, com status automático (pago/atrasado/em aberto).
@@ -29,18 +30,21 @@ A feature **removeu** o dashboard de KPI antigo (baseado em mês calendário) e 
 ## 2. Mudanças de Navegação
 
 ### 2.1 Aba "Home"
+
 - Duas sub-abas internas, nesta ordem fixa: **"Semana" (primeira/padrão ao abrir) → "Dia"**.
 - "Semana" é a visão principal e deve abrir por padrão sempre que o usuário navegar para "Home". Requisito explícito do usuário final (PT) — não alterar.
 - "Dia" mantém o comportamento da agenda diária.
 - Nenhuma lógica de agendamento, recorrência ou conflito muda — é reorganização de navegação/UI.
 
 ### 2.2 Visão "Mês" do calendário
+
 - **Removida por completo** (grid mensal). Motivo de produto: baixo valor em mobile-first, substituída pela aba "Finanças".
 - "Removida por completo" significa: remover o markup (`<main id="tela-calendario">`, botão `tabCalendarioMensal`, container `containerCalendarioMensal`), remover a entrada de rota correspondente e remover/reduzir o arquivo de view. **Não basta retirar o link do menu** — a tela não deve existir como código morto acessível.
 - Funções exclusivas do grid mensal podem ser removidas. **Funções de resolução de recorrência/data** (`parseDataFlex`, `resolverCompromissoRecorrenteNaData`, `checarCompromissoNaData`) **devem ser mantidas** — são a base do cálculo de aulas por ciclo (seção 2.4). Atenção: `getDiasNoMes` é consumida pelo backend (`ajustarDiaParaMesValido`) e **não** pode ser removida do módulo compartilhado.
 - **Efeito colateral tratado na implementação**: o botão de configuração da grade (`#btnConfigAgenda`) vivia dentro do markup removido, mas era acionado pela sub-aba "Dia" da Home. A abertura do modal foi extraída para `window.abrirModalConfigAgenda()` em `view-home.js`.
 
 ### 2.3 Aba "Calendário" → Aba "Finanças"
+
 - A aba antes chamada "Calendário" é substituída pela aba **"Finanças"**.
 - O dashboard de KPI antigo (`utils-kpi.js`: `calcularKPIsAluno`, `calcularKPIsTodosAlunos`; `kpiService.js`: `calcularProjecaoMensalCompleta`, `calcularProjecaoRealizadaAteHoje`, `calcularProjecaoAproximada`, `contarReposicoesPorAluno`) **foi removido e substituído** pela lógica de ciclo (seção 5). Não deixar os dois sistemas convivendo — decisão explícita de produto: substituir, não somar. A única função preservada é `calcularAulasFaltamAgendar` (seção 10).
 
@@ -52,9 +56,10 @@ O cálculo de "aulas válidas dentro do ciclo" (5.3) depende da mesma lógica de
 
 **Solução exigida**: um **módulo JS isomórfico** (sem dependência de `window`, DOM ou API exclusiva de browser), importável tanto pelo frontend quanto pelo backend. Ambos consomem a mesma implementação, não cópias.
 
-**Contexto de deploy (relevante para a dívida técnica 12.1)**: existem **dois projetos Vercel distintos** — o da API com *Root Directory* = `backend/`, e o do app apontando para a raiz do repositório. Hoje o módulo vive em `assets/js/shared/` e o backend o alcança via `require` relativo que atravessa para fora da pasta `backend/`. Funciona porque o repositório é clonado inteiro e o tracing do `@vercel/node` resolve o caminho, mas isso depende de configuração de projeto que não está versionada.
+**Contexto de deploy (relevante para a dívida técnica 12.1)**: existem **dois projetos Vercel distintos** — o da API com _Root Directory_ = `backend/`, e o do app apontando para a raiz do repositório. Hoje o módulo vive em `assets/js/shared/` e o backend o alcança via `require` relativo que atravessa para fora da pasta `backend/`. Funciona porque o repositório é clonado inteiro e o tracing do `@vercel/node` resolve o caminho, mas isso depende de configuração de projeto que não está versionada.
 
 ### 2.5 Estrutura final de navegação
+
 ```
 [Home]  → sub-abas: [Semana (padrão)] [Dia]
 [Finanças]  (substitui "Calendário")
@@ -86,6 +91,7 @@ valorFixoCiclo: { type: Number, default: null }
 **Campo de contrato (`frequenciaSemanal` / `aulasSemanais`)**: `frequenciaSemanal` é o campo efetivamente gravado pelo formulário; `aulasSemanais` é o nome legado presente em dados antigos. Ambos declarados no schema, com leitura priorizando `frequenciaSemanal` e caindo em `aulasSemanais` como fallback. Alimenta o indicador de consistência de agenda (seção 10). **Não remover.**
 
 #### 3.1.1 Regras de validação do formulário de Aluno (frontend + backend)
+
 - `fechamentoMesCheio === false` e `diaVencimento === 1` → erro: `"Para vencimento no dia 1 ou mês completo, ative a opção 'Fechar por mês cheio' acima."`
 - `fechamentoMesCheio === true` → `diaVencimento` oculto/desabilitado.
 - `metodoCobranca === 'valor_fixo'` → `preco` (Valor Hora/Aula) **oculto/desabilitado e não obrigatório**; `valorFixoCiclo` obrigatório.
@@ -98,6 +104,7 @@ valorFixoCiclo: { type: Number, default: null }
 O campo **"Valor Hora/Aula (R$)"** fica **dentro do card "Cobrança por ciclo"**, não solto na área geral do formulário. Motivo: fora do bloco financeiro ele não acompanhava a desabilitação do restante, gerando um campo editável que não participava do cálculo (inconsistência observada em produção).
 
 Composição do card, nesta ordem:
+
 1. Toggle **"Fecha por mês cheio"**
 2. Campo **"Dia de vencimento"** (visível apenas com o toggle desligado)
 3. Select **"Método de cobrança"** (Por aula / Valor fixo)
@@ -105,6 +112,7 @@ Composição do card, nesta ordem:
 5. Campo **"Valor fixo do ciclo (R$)"** — visível e obrigatório apenas quando método = `valor_fixo`
 
 Regras de estado:
+
 - `objetivo === 'Consultoria Online'` → **o card inteiro** assume aparência desabilitada (mesmo tratamento visual de "Local de Treino"/"Aulas por Semana") e todos os campos internos ficam `disabled` e não obrigatórios.
 - `objetivo === 'Personal Trainer'` → card ativo, com as regras de visibilidade de 3.1.1.
 - O campo **"Aulas / Semana"** permanece **fora** do card — é dado de contrato, não financeiro (seção 10).
@@ -112,30 +120,44 @@ Regras de estado:
 ### 3.2 Collection `CicloFinanceiro`
 
 ```js
-const CicloFinanceiroSchema = new mongoose.Schema({
-  ownerEmail: { type: String, required: true, index: true },
-  alunoId: { type: String, required: true, index: true },
-  cicloInicio: { type: String, required: true }, // ISO YYYY-MM-DD
-  cicloFim: { type: String, required: true },    // ISO YYYY-MM-DD
+const CicloFinanceiroSchema = new mongoose.Schema(
+  {
+    ownerEmail: { type: String, required: true, index: true },
+    alunoId: { type: String, required: true, index: true },
+    cicloInicio: { type: String, required: true }, // ISO YYYY-MM-DD
+    cicloFim: { type: String, required: true }, // ISO YYYY-MM-DD
 
-  aulasContadas: { type: Number, default: 0 },      // derivado da agenda (5.3, 5.8)
-  aulasManuaisExtras: { type: Number, default: 0 }, // pode ser negativo (5.5)
-  observacaoAjuste: { type: String, default: '' },
+    aulasContadas: { type: Number, default: 0 }, // derivado da agenda (5.3, 5.8)
+    aulasManuaisExtras: { type: Number, default: 0 }, // pode ser negativo (5.5)
+    observacaoAjuste: { type: String, default: "" },
 
-  metodoCobranca: { type: String, enum: ['por_aula', 'valor_fixo'], required: true }, // snapshot
-  precoAulaSnapshot: { type: Number, default: null },  // snapshot — fonte do recálculo (5.9)
-  valorFixoSnapshot: { type: Number, default: null },  // snapshot — fonte do recálculo (5.9)
-  valorTotalCiclo: { type: Number, required: true },
+    metodoCobranca: {
+      type: String,
+      enum: ["por_aula", "valor_fixo"],
+      required: true,
+    }, // snapshot
+    precoAulaSnapshot: { type: Number, default: null }, // snapshot — fonte do recálculo (5.9)
+    valorFixoSnapshot: { type: Number, default: null }, // snapshot — fonte do recálculo (5.9)
+    valorTotalCiclo: { type: Number, required: true },
 
-  status: { type: String, enum: ['em_aberto', 'pago', 'atrasado'], default: 'em_aberto' },
-  dataPagamento: { type: String, default: null },
-  formaPagamento: { type: String, default: null },
+    status: {
+      type: String,
+      enum: ["em_aberto", "pago", "atrasado"],
+      default: "em_aberto",
+    },
+    dataPagamento: { type: String, default: null },
+    formaPagamento: { type: String, default: null },
 
-  criadoEm: { type: Date, default: Date.now },
-  atualizadoEm: { type: Date, default: Date.now }
-}, { strict: false });
+    criadoEm: { type: Date, default: Date.now },
+    atualizadoEm: { type: Date, default: Date.now },
+  },
+  { strict: false },
+);
 
-CicloFinanceiroSchema.index({ ownerEmail: 1, alunoId: 1, cicloInicio: 1 }, { unique: true });
+CicloFinanceiroSchema.index(
+  { ownerEmail: 1, alunoId: 1, cicloInicio: 1 },
+  { unique: true },
+);
 ```
 
 **Função dos snapshots**: preço e valor fixo do aluno mudam ao longo do tempo (reajuste). Um ciclo já criado não deve ser reprecificado retroativamente. Os campos `metodoCobranca`, `precoAulaSnapshot` e `valorFixoSnapshot` são congelados na criação e são a **única** fonte de preço em qualquer recálculo posterior (ver 5.9).
@@ -145,6 +167,7 @@ CicloFinanceiroSchema.index({ ownerEmail: 1, alunoId: 1, cicloInicio: 1 }, { uni
 ## 4. Tela "Finanças" — Especificação Funcional
 
 ### 4.1 Estrutura geral
+
 Lista de cards, um por aluno elegível (4.4), ordenados por status (atrasado → em aberto → pago → pendente de configuração), cada card mostrando o **ciclo vigente**. Cada card é expansível para exibir o histórico de ciclos anteriores (somente leitura, carregado sob demanda — ver 6.2).
 
 ### 4.2 Mockup de referência (guia de UX, não pixel-perfect)
@@ -175,6 +198,7 @@ Lista de cards, um por aluno elegível (4.4), ordenados por status (atrasado →
 ```
 
 Exemplo de ajuste negativo (aula experimental / cortesia):
+
 ```
    │ Pedro Lima              🟡 Aberto│
    │ Ciclo atual: 10/08 → 09/09        │
@@ -184,23 +208,28 @@ Exemplo de ajuste negativo (aula experimental / cortesia):
 ```
 
 Estado de carregamento do histórico (ver 6.2.2):
+
 ```
    │ [▾ Ver ciclos anteriores]          │
    │    Carregando ciclos anteriores... │
 ```
 
 ### 4.3 Criação "sob demanda" (lazy) do documento de ciclo
+
 O documento do ciclo vigente é criado quando a tela é consultada pela primeira vez para aquele período — não via job/cron.
+
 - Exibir loading local no card (skeleton por card, não tela inteira) enquanto o backend calcula e persiste.
 - Não exibir mensagens técnicas ("criando ciclo no banco").
 - Duplicidade (erro `11000` do índice único) é tratada como "já existe, retornar o existente", nunca erro para o usuário.
 
 ### 4.4 Alunos elegíveis
+
 - **Incluir**: `status === 'ativo'` e `objetivo !== 'Consultoria Online'`.
 - **Excluir**: alunos inativos e Consultoria Online.
 - **Estado especial**: ativos e elegíveis, mas sem configuração de vencimento → card "pendente" (4.5).
 
 ### 4.5 Aluno sem configuração de vencimento
+
 ```
 ┌─────────────────────────────────┐
 │ Carlos Mendes       ⚠️ Pendente │
@@ -209,9 +238,11 @@ O documento do ciclo vigente é criado quando a tela é consultada pela primeira
 │ [Configurar agora]               │
 └─────────────────────────────────┘
 ```
+
 O botão abre o formulário do aluno diretamente no card "Cobrança por ciclo".
 
 ### 4.6 Cache local (resiliência a cold start) — leitura sim, escrita não
+
 A tela mantém cache local (localStorage) do último estado conhecido do **ciclo vigente** de cada aluno, seguindo o padrão de `assets/js/storage.js`. Objetivo exclusivo: **resiliência de leitura contra cold start do backend serverless**. Não é modo offline. Regras em 6.1.
 
 O **histórico de ciclos anteriores não entra nesse cache persistente** — ele é carregado sob demanda e mantido apenas em memória durante a sessão da tela (6.2.2).
@@ -229,6 +260,7 @@ Consequência a considerar: a aba Alunos paga o mesmo custo de performance do en
 ## 5. Regras de Cálculo (Lógica de Negócio)
 
 ### 5.1 Determinação do ciclo vigente
+
 ```
 FUNÇÃO calcularCicloVigente(aluno, hoje):
   SE aluno.fechamentoMesCheio === true:
@@ -250,10 +282,12 @@ FUNÇÃO calcularCicloVigente(aluno, hoje):
 ```
 
 ### 5.2 Ajuste de dia inválido no mês
+
 Se `diaVencimento` for maior que o último dia do mês, usar o **último dia daquele mês**.
 
 ### 5.3 Aulas válidas dentro do ciclo (`aulasContadas`)
-- Contar ocorrências de compromissos do aluno com `tipo === 'aula'` OU `tipo === 'reposição'` cuja data resolvida (via módulo isomórfico, 2.4) caia em `[cicloInicio, cicloFim]` (inclusive nas pontas).
+
+- Contar ocorrências de compromissos do aluno com `tipo === 'aula'` OU `tipo === 'reposicao'` cuja data resolvida (via módulo isomórfico, 2.4) caia em `[cicloInicio, cicloFim]` (inclusive nas pontas).
 - **Não contar**: `bloqueio`, `deslocamento`.
 - Não há tratamento de falta/presença nesta versão — se o compromisso não existe mais na agenda, não é contado (ver 5.8).
 
@@ -285,14 +319,17 @@ SENÃO:
 - Ajuste manual em ciclo **pago** é rejeitado (HTTP 409) — ver 5.8.
 
 ### 5.6 Cálculo do `status`
+
 ```
 SE dataPagamento preenchida: status = 'pago'
 SENÃO SE hoje > cicloFim: status = 'atrasado'
 SENÃO: status = 'em_aberto'
 ```
+
 Pode ser persistido por conveniência, mas é recalculado a cada leitura (exceto 'pago', definitivo até estorno — fora de escopo).
 
 ### 5.7 Primeiro ciclo de um aluno novo
+
 `criadoEm` do `Aluno` é o piso mínimo de `cicloInicio` no primeiro ciclo. Sem cálculo proporcional de valor — aulas anteriores ao cadastro entram via ajuste manual positivo (5.5), se necessário.
 
 ### 5.8 Recontagem de aulas em ciclo ainda não pago
@@ -300,6 +337,7 @@ Pode ser persistido por conveniência, mas é recalculado a cada leitura (exceto
 **Problema que originou a regra**: `aulasContadas` era calculado apenas na criação do ciclo e nunca atualizado. Ao excluir (ou adicionar/mover) uma aula dentro da janela do ciclo vigente, o financeiro continuava exibindo o número antigo.
 
 **Regra**:
+
 - **Ciclo sem `dataPagamento` (`em_aberto` ou `atrasado`)** → `aulasContadas` é **recalculado a partir da agenda a cada leitura**, e o `valorTotalCiclo` recalculado conforme 5.4 (com preço do snapshot, ver 5.9), preservando o `aulasManuaisExtras`. Persistir apenas se houver divergência.
 - **Ciclo com `dataPagamento` (`pago`)** → `aulasContadas`, `aulasManuaisExtras` e `valorTotalCiclo` ficam **congelados permanentemente**. Nenhuma alteração posterior na agenda os modifica. Tentativa de ajuste manual retorna **HTTP 409**.
 - Correção em ciclo pago exige estorno/reabertura — **fora de escopo** (tratamento manual).
@@ -344,7 +382,7 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
   - marcar o card como "pago";
   - atualizar o valor após ajuste manual;
   - remover o estado de "configuração pendente".
-  Durante a espera, exibir estado transitório claro (botão "Salvando...", desabilitado) e informar erro/retry em caso de falha. Nunca aplicar a mudança apenas no cache local como definitiva.
+    Durante a espera, exibir estado transitório claro (botão "Salvando...", desabilitado) e informar erro/retry em caso de falha. Nunca aplicar a mudança apenas no cache local como definitiva.
 - **Motivo**: valor financeiro e status de pagamento não podem divergir entre dispositivos nem entre local e servidor.
 
 ### 6.2 Histórico de ciclos sob demanda
@@ -354,6 +392,7 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
 **Problema identificado em revisão (N+1)**: `listarFinancasDoOwner` fazia, por aluno, uma consulta do histórico completo e rodava a sincronização em cada ciclo histórico não pago — cada sincronização varrendo dia a dia a janela do ciclo para cada agendamento. Com 20 alunos e ~12 ciclos cada, uma única abertura da tela disparava ~21 consultas e centenas de recálculos, para exibir dados que ficam escondidos atrás de "Ver ciclos anteriores". Além disso, o ciclo vigente era sincronizado **duas vezes** por carregamento.
 
 **Regras**:
+
 - `GET /api/financas` retorna **somente o ciclo vigente** por aluno. O array de histórico é removido do payload.
 - `historicoDisponivel` permanece como indicador booleano, obtido via `countDocuments` (com `limit: 1`) e excluindo o ciclo vigente do filtro. **Nunca** usar `find()` para essa finalidade.
 - O ciclo vigente deve ser sincronizado **uma única vez** por carregamento.
@@ -383,34 +422,34 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 
 ## 7. Decisões e Casos de Borda (Resolvidos — não reabrir sem confirmação)
 
-| # | Caso | Decisão |
-|---|------|---------|
-| 1 | Cobrança é por pacote mensal fixo? | Não. Sempre por aula, exceto `metodoCobranca === 'valor_fixo'` (permuta/acordo especial). |
-| 2 | "Consultoria Online" entra no financeiro? | Não. |
-| 3 | Visão "Mês" será mantida? | Não. Removida por completo (markup, rota e código), não apenas oculta do menu. |
-| 4 | Home: qual sub-aba abre por padrão? | "Semana". |
-| 5 | Vencimento em "dia útil" / "semana do mês"? | Fora de escopo. |
-| 6 | Vencimento no dia 1 / mês cheio? | Flag `fechamentoMesCheio`. `diaVencimento === 1` proibido com a flag desativada. |
-| 7 | Falta/cancelamento entra no cálculo? | Não nesta versão — conta-se o que existe na agenda no momento da leitura (ver #16). |
-| 8 | Onde persistir o pagamento? | Collection `CicloFinanceiro`. `historicoPagamentos` aposentado. |
-| 9 | Alunos antigos sem `diaVencimento`? | Card "configuração pendente". KPI antigo removido, não mantido em paralelo. |
-| 10 | Aulas dadas antes do cadastro? | Ajuste manual positivo por ciclo. |
-| 11 | Ajuste manual se repete no próximo ciclo? | Não. Cada ciclo nasce zerado. |
-| 12 | Quando o ciclo é criado? | Sob demanda ao consultar Finanças (ou Alunos, ver #21), com loading local por card. |
-| 13 | Valor fixo esconde a contagem de aulas? | Não. Contagem permanece visível como referência. |
-| 14 | Deve haver cache local? | Sim, apenas leitura/resiliência a cold start, e apenas do ciclo vigente. Escrita sempre confirmada pelo backend (6.1). |
-| 15 | Recorrência pode ser reimplementada no backend? | Não. Módulo isomórfico único (2.4). |
-| 16 | Excluir aula da agenda remove do financeiro? | Sim, **enquanto o ciclo não estiver pago**: recontagem a cada leitura (5.8). Ciclo pago fica congelado. Regra temporária até existir status de presença. |
-| 17 | `aulasManuaisExtras` pode ser negativo? | Sim (desconto, cortesia, experimental). Mas o total cobrado nunca fica negativo — piso zero (5.5). |
-| 18 | Onde fica "Valor Hora/Aula"? | Dentro do card "Cobrança por ciclo" (3.1.2). Desabilita junto com o card em Consultoria Online. |
-| 19 | O que o card do aluno mostra no lugar do KPI antigo? | Resumo do ciclo atual + indicador de consistência de agenda (seções 10 e 11). |
-| 20 | O KPI "aulas faltam agendar" é removido? | Não. É o único preservado, realocado para fora do `kpiService` (seção 10). Não é cálculo financeiro. |
-| 21 | Abrir a aba "Alunos" pode criar ciclos no banco? | Sim, e isso é **intencional** (4.7): o badge financeiro aparece imediatamente ao ativar/editar um aluno, sem exigir navegação até Finanças. Validado em produção. |
-| 22 | Qual preço usar ao recalcular um ciclo existente? | **Sempre o snapshot do ciclo**, nunca o preço atual do aluno. Reajuste vale a partir do próximo ciclo (5.9). |
-| 23 | Criar botão de "forçar recálculo" manual? | Não. O recálculo do ciclo vigente é barato e deve continuar automático a cada leitura — é justamente o que corrige a contagem após exclusão de aula (5.8). O custo estava no histórico, resolvido por 6.2. |
-| 24 | A listagem de Finanças devolve o histórico? | Não. Somente o ciclo vigente. O histórico é carregado sob demanda ao expandir o card (6.2). |
-| 25 | O histórico entra no cache de localStorage? | Não. Apenas cache em memória durante a sessão da tela (6.2.2). |
-| 26 | A rota de consistência de agenda é um problema de performance? | Não. É **comportamento aceito** (10.1): custo fixo de 2 consultas, não escala por aluno. Não tratar como dívida técnica. |
+| #   | Caso                                                           | Decisão                                                                                                                                                                                                    |
+| --- | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Cobrança é por pacote mensal fixo?                             | Não. Sempre por aula, exceto `metodoCobranca === 'valor_fixo'` (permuta/acordo especial).                                                                                                                  |
+| 2   | "Consultoria Online" entra no financeiro?                      | Não.                                                                                                                                                                                                       |
+| 3   | Visão "Mês" será mantida?                                      | Não. Removida por completo (markup, rota e código), não apenas oculta do menu.                                                                                                                             |
+| 4   | Home: qual sub-aba abre por padrão?                            | "Semana".                                                                                                                                                                                                  |
+| 5   | Vencimento em "dia útil" / "semana do mês"?                    | Fora de escopo.                                                                                                                                                                                            |
+| 6   | Vencimento no dia 1 / mês cheio?                               | Flag `fechamentoMesCheio`. `diaVencimento === 1` proibido com a flag desativada.                                                                                                                           |
+| 7   | Falta/cancelamento entra no cálculo?                           | Não nesta versão — conta-se o que existe na agenda no momento da leitura (ver #16).                                                                                                                        |
+| 8   | Onde persistir o pagamento?                                    | Collection `CicloFinanceiro`. `historicoPagamentos` aposentado.                                                                                                                                            |
+| 9   | Alunos antigos sem `diaVencimento`?                            | Card "configuração pendente". KPI antigo removido, não mantido em paralelo.                                                                                                                                |
+| 10  | Aulas dadas antes do cadastro?                                 | Ajuste manual positivo por ciclo.                                                                                                                                                                          |
+| 11  | Ajuste manual se repete no próximo ciclo?                      | Não. Cada ciclo nasce zerado.                                                                                                                                                                              |
+| 12  | Quando o ciclo é criado?                                       | Sob demanda ao consultar Finanças (ou Alunos, ver #21), com loading local por card.                                                                                                                        |
+| 13  | Valor fixo esconde a contagem de aulas?                        | Não. Contagem permanece visível como referência.                                                                                                                                                           |
+| 14  | Deve haver cache local?                                        | Sim, apenas leitura/resiliência a cold start, e apenas do ciclo vigente. Escrita sempre confirmada pelo backend (6.1).                                                                                     |
+| 15  | Recorrência pode ser reimplementada no backend?                | Não. Módulo isomórfico único (2.4).                                                                                                                                                                        |
+| 16  | Excluir aula da agenda remove do financeiro?                   | Sim, **enquanto o ciclo não estiver pago**: recontagem a cada leitura (5.8). Ciclo pago fica congelado. Regra temporária até existir status de presença.                                                   |
+| 17  | `aulasManuaisExtras` pode ser negativo?                        | Sim (desconto, cortesia, experimental). Mas o total cobrado nunca fica negativo — piso zero (5.5).                                                                                                         |
+| 18  | Onde fica "Valor Hora/Aula"?                                   | Dentro do card "Cobrança por ciclo" (3.1.2). Desabilita junto com o card em Consultoria Online.                                                                                                            |
+| 19  | O que o card do aluno mostra no lugar do KPI antigo?           | Resumo do ciclo atual + indicador de consistência de agenda (seções 10 e 11).                                                                                                                              |
+| 20  | O KPI "aulas faltam agendar" é removido?                       | Não. É o único preservado, realocado para fora do `kpiService` (seção 10). Não é cálculo financeiro.                                                                                                       |
+| 21  | Abrir a aba "Alunos" pode criar ciclos no banco?               | Sim, e isso é **intencional** (4.7): o badge financeiro aparece imediatamente ao ativar/editar um aluno, sem exigir navegação até Finanças. Validado em produção.                                          |
+| 22  | Qual preço usar ao recalcular um ciclo existente?              | **Sempre o snapshot do ciclo**, nunca o preço atual do aluno. Reajuste vale a partir do próximo ciclo (5.9).                                                                                               |
+| 23  | Criar botão de "forçar recálculo" manual?                      | Não. O recálculo do ciclo vigente é barato e deve continuar automático a cada leitura — é justamente o que corrige a contagem após exclusão de aula (5.8). O custo estava no histórico, resolvido por 6.2. |
+| 24  | A listagem de Finanças devolve o histórico?                    | Não. Somente o ciclo vigente. O histórico é carregado sob demanda ao expandir o card (6.2).                                                                                                                |
+| 25  | O histórico entra no cache de localStorage?                    | Não. Apenas cache em memória durante a sessão da tela (6.2.2).                                                                                                                                             |
+| 26  | A rota de consistência de agenda é um problema de performance? | Não. É **comportamento aceito** (10.1): custo fixo de 2 consultas, não escala por aluno. Não tratar como dívida técnica.                                                                                   |
 
 ---
 
@@ -434,6 +473,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 ## 9. Arquivos Impactados (mapa para o agente)
 
 **Backend**
+
 - `models/Aluno.js` — campos financeiros; `historicoPagamentos` deprecated; `frequenciaSemanal` + `aulasSemanais` (legado).
 - `models/CicloFinanceiro.js` — schema 3.2.
 - `services/financasService.js` — cálculo de ciclo (seção 5), incluindo 5.5, 5.8, 5.9 (`resolverSnapshotParaRecalculo`) e o payload enxuto de 6.2.1; consome o módulo isomórfico.
@@ -444,9 +484,11 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 - `services/kpiService.js` — **removido**.
 
 **Módulo compartilhado**
+
 - `assets/js/shared/recurrence-helpers.js`: `parseDataFlex`, `resolverCompromissoRecorrenteNaData`, `checarCompromissoNaData`, `getDiasNoMes`. Consumido por frontend e backend. Ver dívida técnica 12.1.
 
 **Frontend**
+
 - `view-financas.js` — tela de Finanças, cache de leitura (4.6/6.1), ajuste negativo com piso zero, histórico sob demanda (6.2.2), cache de histórico em memória.
 - `view-alunos.js` — card "Cobrança por ciclo" (3.1.2), validação de `preco` (3.1.1), indicadores do card do aluno (seção 11). Consome apenas `cicloAtual` e `configuracaoPendente` da listagem.
 - `view-home.js` — sub-abas Semana/Dia; `abrirModalConfigAgenda`.
@@ -463,6 +505,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 **Por que é preservado**: não é cálculo financeiro. É alerta operacional para verificar se a recorrência do aluno foi configurada conforme o contrato — útil independentemente do modelo de cobrança.
 
 **Requisitos**:
+
 1. Reside em módulo próprio (`services/agendaConsistencyService.js`), fora do `kpiService.js` (removido).
 2. Exposto via `GET /api/alunos/consistencia-agenda`, declarada **antes** de `/:id`.
 3. **Campo de contrato**: ler `frequenciaSemanal` (gravado pelo formulário) com fallback para `aulasSemanais` (legado). Não tratar `0` como ausência de valor — `0` é válido e não deve ser convertido em `1`.
@@ -475,6 +518,7 @@ A rota executa **2 consultas de custo fixo** (alunos + agendamentos do owner) e 
 Portanto, esta rota é **comportamento aceito e documentado**, no mesmo espírito de 4.7. Não tratar como problema pendente nem "otimizar" preventivamente, sob risco de quebrar o indicador sem ganho real.
 
 **Gatilho de revisão**: se a aba Alunos passar a demorar perceptivelmente para exibir os badges, o primeiro ponto a investigar é o **volume de dados trafegado**, não a lógica do indicador:
+
 - A consulta de agendamentos traz todos os compromissos, mas a rota só usa `tipo === 'aula'` com `frequencia === 'semanal'` — filtrar já na consulta reduziria bastante o payload.
 - A aba Alunos busca os agendamentos duas vezes por carregamento (uma pela rota de Finanças, outra por esta). Unificar as duas informações em um único endpoint é a alternativa mais direta, já que ambas leem exatamente a mesma base.
 
@@ -487,6 +531,7 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 **Contexto**: o card exibia caixinhas de "Projeção", "Faltam" e "Reposição" alimentadas pelo KPI antigo. Removido o KPI, o conteúdo foi substituído.
 
 **Conteúdo do card**:
+
 1. **Resumo do ciclo financeiro atual** — período, valor e status. Ex.: `Ciclo atual: R$ 480 · em aberto`. Reaproveita os dados já calculados pela API de Finanças (sem duplicar lógica de cálculo no frontend), consumindo **apenas** `cicloAtual` e `configuracaoPendente` — nunca o histórico.
    - Configuração pendente → `⚠️ Configurar cobrança`.
    - `objetivo === 'Consultoria Online'` → sem bloco financeiro.
@@ -494,6 +539,7 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 3. **Espaço reservado para "aulas a repor"** — não faz parte desta spec (seção 8; item 1.8 do roadmap), mas o layout (`.aluno-card-indicadores`, grid `auto-fit`) já acomoda uma terceira caixinha sem refatoração. Sem placeholder visível nem controle inerte.
 
 **Restrições**:
+
 - Nenhuma dessas informações pode depender de `kpiService.js` ou das funções antigas de `utils-kpi.js`.
 - Falha nas chamadas complementares (Finanças ou consistência) deve degradar silenciosamente: o card continua exibindo os dados do aluno, sem as caixinhas.
 
@@ -504,6 +550,7 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 Itens identificados, avaliados e **deliberadamente adiados**. Não implementar sem decisão explícita. Espelhados no [`../roadmap.md`](../roadmap.md) (Grupo 0) para entrarem junto com uma próxima feature.
 
 ### 12.1 Localização do módulo isomórfico de recorrência
+
 O módulo vive em `assets/js/shared/recurrence-helpers.js` e o backend o alcança via `require` relativo que atravessa para fora de `backend/`. Funciona em produção porque o repositório é clonado inteiro e o tracing do `@vercel/node` resolve o caminho — mas depende de configuração de projeto não versionada.
 
 Existe assimetria a favor da solução inversa: o projeto do **app** tem a raiz do repositório como root e serviria normalmente um arquivo localizado dentro de `backend/`, enquanto o projeto da **API** só garante o que está dentro de `backend/`. Portanto, **mover o módulo para `backend/src/shared/`** (com o frontend consumindo-o de lá) é a direção mais robusta.
@@ -511,6 +558,7 @@ Existe assimetria a favor da solução inversa: o projeto do **app** tem a raiz 
 Status: **adiado**. É melhoria de robustez, não correção de defeito — o comportamento atual está validado em produção.
 
 ### 12.2 CSS órfão da visão mensal
+
 Regras da visão mensal removida (`.calendario-mensal`, `.calendario-grid`, `.dia-cell`, `.kpi-dashboard`, `#tela-calendario`) permanecem em `assets/css/style.css`. Não removidas para evitar risco de afetar seletores compartilhados com as visões de dia/semana. Requer verificação cuidadosa antes de limpar.
 
 ### 12.3 Defeito em aberto — o bloco "Ver ciclos anteriores" fecha sozinho no re-render
@@ -522,6 +570,7 @@ Regras da visão mensal removida (`.calendario-mensal`, `.calendario-grid`, `.di
 **Contradição com a spec**: viola o espírito de 6.2.2 (expansão imediata e feedback visível durante o carregamento), por uma via diferente da prevista.
 
 **Correção prevista** (não implementada): persistir o estado de expansão no `STATE` em vez de no DOM —
+
 1. registrar os alunos expandidos no `STATE` (ex.: `STATE.historicoAberto`);
 2. o listener de `toggle` (já em fase de captura) passa a registrar abertura **e** fechamento;
 3. `renderizarCard()` aplica `open` quando o aluno estiver marcado como expandido;
@@ -530,6 +579,7 @@ Regras da visão mensal removida (`.calendario-mensal`, `.calendario-grid`, `.di
 Alterações contidas em `view-financas.js`. Não requer mudança de backend.
 
 ### 12.4 Documentação de apoio desatualizada
+
 - `README.md` da raiz: a árvore de arquivos ainda lista `backend/src/services/kpiService.js` (removido) e não menciona `agendaConsistencyService.js` nem `CicloFinanceiro.js`.
 - Os artefatos em `graphify-out/` refletem o estado anterior do código (referenciam `kpiService.js`, `exportarDados()`, `assets/js/recurrence-helpers.js`). Presumidamente gerados automaticamente — devem ser regenerados, não editados à mão. Quando desatualizados, poluem buscas por código com referências a arquivos inexistentes.
 - O roadmap foi atualizado junto com esta versão da spec e **não** faz parte desta dívida.
