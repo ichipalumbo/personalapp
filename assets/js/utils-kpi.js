@@ -1,8 +1,8 @@
 // [TAG-UTILS-KPI] utils-kpi.js
-// Responsabilidade: Notificação toast, overlays/indicadores de sincronização e exportação de dados
+// Responsabilidade: Notificação toast e overlays/indicadores de sincronização
 // Expõe: mostrarToast, mostrarOverlaySinc, mostrarOverlaySleepMode, mostrarOverlayErroConexao,
 //        ocultarOverlayConexao, ocultarOverlaySinc, mostrarIndicadorSyncBackground,
-//        ocultarIndicadorSyncBackground, exportarDados
+//        ocultarIndicadorSyncBackground
 
 // [TAG-JS-TOAST] - Função de exibição de toast
 function mostrarToast(msg, tipo = 'success') {
@@ -108,16 +108,4 @@ function ocultarIndicadorSyncBackground() {
         const badge = document.getElementById('indicador-sync-bg');
         if (badge) badge.classList.remove('ativo');
     }, 600);
-}
-
-function exportarDados() {
-    const dados = JSON.stringify({ alunos, aulas }, null, 2);
-    const blob = new Blob([dados], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `agenda-personal-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    mostrarToast('📥 Dados exportados com sucesso!');
 }

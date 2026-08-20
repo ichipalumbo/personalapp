@@ -10,7 +10,10 @@
         erro: null,
         cacheAtualizadoEm: null,
         cardAtivo: null,
-        handlersBound: false
+        handlersBound: false,
+        // Histórico de ciclos anteriores, carregado sob demanda e cacheado em memória por aluno (6.2.2).
+        // Nunca gravado no localStorage; descartado ao recarregar a página.
+        historicoPorAluno: {}
     };
 
     function formatarMoeda(valor) {
@@ -219,15 +222,15 @@
         return `${valor > 0 ? '+' : '−'}${Math.abs(valor)} de ajuste`;
     }
 
-    function renderizarCardHistorico(card) {
-        const historico = Array.isArray(card.historico) ? card.historico : [];
-        if (historico.length === 0) {
+    function renderizarListaHistorico(historico) {
+        const lista = Array.isArray(historico) ? historico : [];
+        if (lista.length === 0) {
             return '<p style="margin:0;color:#8e8e8e;font-size:0.78rem;">Sem ciclos anteriores.</p>';
         }
 
         return `
           <div style="display:flex;flex-direction:column;gap:8px;">
-            ${historico.map((ciclo) => {
+            ${lista.map((ciclo) => {
                 const status = ciclo.status === 'pago' ? 'Pago' : (ciclo.status === 'atrasado' ? 'Atrasado' : 'Em aberto');
                 const valor = formatarMoeda(ciclo.valorTotalCiclo);
                 return `
@@ -246,6 +249,87 @@
         `;
     }
 
+    function obterEstadoHistorico(alunoId) {
+        if (!STATE.historicoPorAluno[alunoId]) {
+            STATE.historicoPorAluno[alunoId] = { status: 'idle', dados: [], erro: null, requestId: 0 };
+        }
+        return STATE.historicoPorAluno[alunoId];
+    }
+
+    function montarHtmlHistorico(alunoId) {
+        const estado = obterEstadoHistorico(alunoId);
+
+        if (estado.status === 'carregando') {
+            return '<p style="margin:0;color:#8e8e8e;font-size:0.78rem;">Carregando ciclos anteriores...</p>';
+        }
+        if (estado.status === 'erro') {
+            return `
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+                <p style="margin:0;color:#ff8a80;font-size:0.78rem;">${estado.erro || 'Não foi possível carregar o histórico.'}</p>
+                <button type="button" class="btn btn-secondary" data-financas-historico-retry="${alunoId}">Tentar novamente</button>
+              </div>
+            `;
+        }
+        if (estado.status === 'pronto') {
+            return renderizarListaHistorico(estado.dados);
+        }
+
+        // idle: histórico ainda não solicitado — populado quando o <details> for aberto.
+        return '';
+    }
+
+    function renderizarConteudoHistorico(alunoId) {
+        // O card pode ter sido desmontado (troca de aba/filtro) antes da resposta chegar.
+        const container = document.getElementById(`financas-historico-conteudo-${alunoId}`);
+        if (!container) return;
+        container.innerHTML = montarHtmlHistorico(alunoId);
+    }
+
+    async function carregarHistoricoAluno(alunoId, opcoes = {}) {
+        const estado = obterEstadoHistorico(alunoId);
+        const forcar = opcoes.forcar === true;
+        if (!forcar && (estado.status === 'pronto' || estado.status === 'carregando')) {
+            renderizarConteudoHistorico(alunoId);
+            return;
+        }
+
+        const card = STATE.cards.find((item) => item && item.alunoId === alunoId);
+        if (!forcar && card && card.historicoDisponivel === false) {
+            estado.status = 'pronto';
+            estado.dados = [];
+            estado.erro = null;
+            renderizarConteudoHistorico(alunoId);
+            return;
+        }
+
+        const requestId = ++estado.requestId;
+        estado.status = 'carregando';
+        estado.erro = null;
+        renderizarConteudoHistorico(alunoId);
+
+        try {
+            const resposta = await global.apiFetchBackend(`${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/financas/${encodeURIComponent(alunoId)}/historico`, {}, opcoes.timeoutMs || 40000);
+            if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
+            if (!resposta.ok) throw new Error(`Falha ao carregar histórico (${resposta.status})`);
+            const dados = await resposta.json();
+
+            // Ignora respostas tardias de uma chamada já substituída por outra mais recente para o mesmo aluno.
+            if (requestId !== estado.requestId) return;
+
+            estado.status = 'pronto';
+            estado.dados = Array.isArray(dados) ? dados : [];
+            estado.erro = null;
+        } catch (error) {
+            if (requestId !== estado.requestId) return;
+            estado.status = 'erro';
+            estado.erro = error && error.message === 'AUTH_REQUIRED'
+                ? 'Faça login para carregar o histórico.'
+                : 'Não foi possível carregar o histórico agora.';
+        }
+
+        renderizarConteudoHistorico(alunoId);
+    }
+
     function renderizarCard(card) {
         const aluno = card.aluno || {};
         const ciclo = card.cicloAtual || {};
@@ -256,7 +340,6 @@
         const aulasExtras = ciclo.aulasManuaisExtras || 0;
         const aulasContadas = ciclo.aulasContadas || 0;
         const aulasCobradas = totalAulasCobradas(ciclo);
-        const historicoAberto = card.historico && card.historico.length > 0 ? 'open' : '';
 
         return `
           <article class="aluno-card" data-financas-card-id="${aluno.id || card.alunoId}" style="display:flex;flex-direction:column;gap:10px;position:relative;">
@@ -305,11 +388,9 @@
                 <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Editar ajuste</button>
               </div>
 
-              <details ${historicoAberto} style="border-top:1px solid #262626;padding-top:10px;">
+              <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;">
                 <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.82rem;">Ver ciclos anteriores</summary>
-                <div style="margin-top:10px;">
-                  ${renderizarCardHistorico(card)}
-                </div>
+                <div id="financas-historico-conteudo-${aluno.id}" style="margin-top:10px;">${montarHtmlHistorico(aluno.id)}</div>
               </details>
             `}
           </article>
@@ -558,8 +639,22 @@
                 } else {
                     global.prepararEdicaoAluno(alunoId);
                 }
+                return;
+            }
+
+            const retryHistoricoBtn = event.target.closest('[data-financas-historico-retry]');
+            if (retryHistoricoBtn) {
+                carregarHistoricoAluno(retryHistoricoBtn.getAttribute('data-financas-historico-retry'), { forcar: true });
             }
         });
+
+        // 'toggle' não borbulha, mas a fase de captura no root alcança qualquer <details> descendente.
+        root.addEventListener('toggle', function (event) {
+            const details = event.target;
+            if (!details || typeof details.matches !== 'function' || !details.matches('[data-financas-historico-details]')) return;
+            if (!details.open) return; // só dispara carregamento ao abrir, não ao fechar
+            carregarHistoricoAluno(details.getAttribute('data-financas-historico-details'));
+        }, true);
 
         const pagamentoModal = document.getElementById('modalFinancasPagamento');
         const ajusteModal = document.getElementById('modalFinancasAjuste');
