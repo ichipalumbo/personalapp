@@ -6,6 +6,7 @@ const gcalWebhookRoutes = require('./routes/gcalWebhookRoutes');
 const healthRoutes = require('./routes/healthRoutes');
 const alunoRoutes = require('./routes/alunoRoutes');
 const agendamentoRoutes = require('./routes/agendamentoRoutes');
+const financasRoutes = require('./routes/financasRoutes');
 const configRoutes = require('./routes/configRoutes');
 const bloqueioExternoRoutes = require('./routes/bloqueioExternoRoutes');
 const { getEnvConfig } = require('./config/env');
@@ -44,6 +45,7 @@ function createApp() {
   app.use('/', healthRoutes);
   app.use('/api/alunos', requireAuth, alunoRoutes);
   app.use('/api/agendamentos', requireAuth, agendamentoRoutes);
+  app.use('/api/financas', requireAuth, financasRoutes);
   app.use('/api/configuracao', requireAuth, configRoutes);
   app.use('/api/bloqueios-externos', requireAuth, bloqueioExternoRoutes);
 

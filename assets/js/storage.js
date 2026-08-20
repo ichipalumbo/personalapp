@@ -6,6 +6,7 @@
 const API_BASE_URL = "https://personal-app-api.vercel.app/api";
 const API_TIMEOUT_MS = 8000;
 const SLEEP_MODE_THRESHOLD_MS = 3000;
+const FINANCAS_CACHE_KEY = 'personal_financas_cache';
 
 // [TAG-STORAGE-VERCEL-PING] Warm-up para cold start do Vercel — fire-and-forget, sem await
 fetch('https://personal-app-api.vercel.app/').catch(() => {});
@@ -42,6 +43,30 @@ function _parseJSONSeguro(valor, fallback) {
 }
 
 window.parseJSONSeguro = _parseJSONSeguro;
+
+function obterCacheFinancas() {
+    return _parseJSONSeguro(localStorage.getItem(FINANCAS_CACHE_KEY), null);
+}
+
+function salvarCacheFinancas(dados) {
+    if (!dados) {
+        localStorage.removeItem(FINANCAS_CACHE_KEY);
+        return;
+    }
+
+    localStorage.setItem(FINANCAS_CACHE_KEY, JSON.stringify({
+        atualizadoEm: new Date().toISOString(),
+        dados: dados
+    }));
+}
+
+function limparCacheFinancas() {
+    localStorage.removeItem(FINANCAS_CACHE_KEY);
+}
+
+window.obterCacheFinancas = obterCacheFinancas;
+window.salvarCacheFinancas = salvarCacheFinancas;
+window.limparCacheFinancas = limparCacheFinancas;
 
 function _mostrarOverlaySleepMode() {
     const mensagem = 'Sincronizando... isso pode levar alguns segundos.';
