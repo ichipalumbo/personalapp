@@ -10,13 +10,7 @@
     }
 
     function atualizarAlturaTabsCalendario() {
-        const tabs = document.querySelector('#tela-calendario > .calendario-tabs-sticky');
-        if (tabs && tabs.offsetWidth > 0) {
-            const height = tabs.offsetHeight;
-            document.documentElement.style.setProperty('--tabs-height', `${height}px`);
-        } else {
-            document.documentElement.style.removeProperty('--tabs-height');
-        }
+        document.documentElement.style.removeProperty('--tabs-height');
     }
 
     function atualizarMedidasLayout() {
@@ -30,8 +24,8 @@
             return;
         }
 
-        if (typeof global.renderizarModoCalendarioAtivo === 'function') {
-            global.renderizarModoCalendarioAtivo();
+        if (typeof global.renderizarHomeSemana === 'function') {
+            global.renderizarHomeSemana();
         }
     }
 

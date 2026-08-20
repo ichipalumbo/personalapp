@@ -2,13 +2,7 @@ const Aluno = require('../models/Aluno');
 const Agendamento = require('../models/Agendamento');
 const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
-const {
-  calcularProjecaoMensalCompleta,
-  calcularProjecaoRealizadaAteHoje,
-  calcularProjecaoAproximada,
-  calcularAulasFaltamAgendar,
-  contarReposicoesPorAluno
-} = require('../services/kpiService');
+const { montarConsistenciaAgenda } = require('../services/agendaConsistencyService');
 
 function responderErroAluno(res, err, contexto) {
   return responderErro(res, err, contexto, Aluno, 'AlunoController');
@@ -202,57 +196,15 @@ async function excluirAluno(req, res) {
   }
 }
 
-async function obterKpisAluno(req, res) {
-  try {
-    const ownerEmail = getOwnerEmailOrThrow(req);
-    const { id } = req.params;
-    const aluno = await Aluno.findOne({ ownerEmail, id });
-
-    if (!aluno) {
-      return res.status(404).json({ error: 'Aluno não encontrado' });
-    }
-
-    const aulas = await Agendamento.find({ ownerEmail });
-
-    res.json({
-      alunoId: aluno.id,
-      aluno: aluno.nome,
-      kpis: {
-        projecaoMesCompleto: calcularProjecaoMensalCompleta(aluno, aulas),
-        realizadoAteHoje: calcularProjecaoRealizadaAteHoje(aluno, aulas),
-        projecaoAproximada: calcularProjecaoAproximada(aluno),
-        aulasFaltam: calcularAulasFaltamAgendar(aluno, aulas),
-        reposicoes: contarReposicoesPorAluno(aluno.id, aulas)
-      }
-    });
-  } catch (err) {
-    responderErroAluno(res, err, 'obter KPIs do aluno');
-  }
-}
-
-async function obterKpisTodosAlunos(req, res) {
+async function listarConsistenciaAgenda(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const alunos = await Aluno.find({ ownerEmail });
     const aulas = await Agendamento.find({ ownerEmail });
 
-    const kpisCompletos = alunos.map((aluno) => ({
-      alunoId: aluno.id,
-      aluno: aluno.nome,
-      preco: aluno.preco,
-      frequenciaSemanal: aluno.frequenciaSemanal,
-      kpis: {
-        projecaoMesCompleto: calcularProjecaoMensalCompleta(aluno, aulas),
-        realizadoAteHoje: calcularProjecaoRealizadaAteHoje(aluno, aulas),
-        projecaoAproximada: calcularProjecaoAproximada(aluno),
-        aulasFaltam: calcularAulasFaltamAgendar(aluno, aulas),
-        reposicoes: contarReposicoesPorAluno(aluno.id, aulas)
-      }
-    }));
-
-    res.json(kpisCompletos);
+    res.json(alunos.map((aluno) => montarConsistenciaAgenda(aluno, aulas)));
   } catch (err) {
-    responderErroAluno(res, err, 'obter KPIs de todos os alunos');
+    responderErroAluno(res, err, 'obter consistência de agenda');
   }
 }
 
@@ -262,6 +214,5 @@ module.exports = {
   criarAluno,
   atualizarAluno,
   excluirAluno,
-  obterKpisAluno,
-  obterKpisTodosAlunos
+  listarConsistenciaAgenda
 };

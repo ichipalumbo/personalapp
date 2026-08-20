@@ -40,10 +40,6 @@
             await global.inicializarHome();
         }
 
-        if (typeof global.renderizarModoCalendarioAtivo === 'function') {
-            global.renderizarModoCalendarioAtivo();
-        }
-
         return { ok: true };
     }
 

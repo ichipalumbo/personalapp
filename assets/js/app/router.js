@@ -2,7 +2,6 @@
     const VIEW_INITIALIZERS = {
         'tela-home': () => global.inicializarHome,
         'tela-financas': () => global.inicializarFinancas,
-        'tela-calendario': () => global.inicializarPaginaCalendario,
         'tela-alunos': () => global.inicializarAlunos
     };
 

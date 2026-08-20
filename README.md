@@ -145,7 +145,7 @@ personalapp/
 |  |  |  |- healthRoutes.js
 |  |  |- services/
 |  |  |  |- agendamentoService.js
-|  |  |  |- kpiService.js
+|  |  |  |- agendaConsistencyService.js
 |  |  |- utils/
 |  |  |  |- ownerScope.js
 |  |  |  |- time.js
@@ -266,7 +266,7 @@ Backend:
 - `backend/src/middleware/requireAuth.js`: valida o Google ID token (JWT Bearer) via `google-auth-library`. Popula `req.auth.ownerEmail` com o email da conta Google. Todos os controllers dependem deste middleware para isolamento de dados.
 - `backend/src/routes/*.js`: definicao das rotas HTTP por dominio.
 - `backend/src/controllers/*.js`: handlers HTTP das rotas.
-- `backend/src/services/*.js`: regras compartilhadas de KPI e normalizacao de agendamentos.
+- `backend/src/services/*.js`: regras de calculo do ciclo financeiro, consistencia de agenda e normalizacao de agendamentos.
 - `backend/src/models/*.js`: models Mongoose (Aluno, Agendamento, Config, BloqueioExterno — todos com campo `ownerEmail` obrigatorio).
 - `backend/src/utils/ownerScope.js`: helper `getOwnerEmailOrThrow(req)` — extrai `req.auth.ownerEmail` ou lanca erro 401.
 - `backend/src/utils/time.js`: helper de conversao de horario para minutos.

@@ -108,6 +108,11 @@ function calcularAulasContadasDoCiclo(aluno, agendamentos, cicloInicio, cicloFim
     .reduce((total, agendamento) => total + normalizarAulasContadas(agendamento, cicloInicio, cicloFim), 0);
 }
 
+// Piso zero (5.5): o total cobrado nunca pode ser negativo, mesmo com ajuste manual negativo.
+function calcularTotalAulasCobradas(aulasContadas, aulasManuaisExtras) {
+  return Math.max(0, (Number(aulasContadas) || 0) + (Number(aulasManuaisExtras) || 0));
+}
+
 function calcularValorTotalCiclo(aluno, aulasContadas, aulasManuaisExtras) {
   const metodo = aluno && aluno.metodoCobranca ? aluno.metodoCobranca : 'por_aula';
   if (metodo === 'valor_fixo') {
@@ -115,8 +120,64 @@ function calcularValorTotalCiclo(aluno, aulasContadas, aulasManuaisExtras) {
   }
 
   const preco = Number(aluno && aluno.preco) || 0;
-  const totalAulas = (Number(aulasContadas) || 0) + (Number(aulasManuaisExtras) || 0);
-  return totalAulas * preco;
+  return calcularTotalAulasCobradas(aulasContadas, aulasManuaisExtras) * preco;
+}
+
+// 5.9: no recálculo de um ciclo já existente, o preço é SEMPRE o snapshot do próprio ciclo
+// (nunca o valor atual do aluno). Fallback: snapshot ausente (legado) herda o valor atual do
+// aluno e passa a ser gravado no ciclo, sem nunca sobrescrever um snapshot já preenchido.
+function resolverSnapshotParaRecalculo(ciclo, aluno) {
+  const metodo = ciclo.metodoCobranca || 'por_aula';
+  let snapshotAlterado = false;
+
+  if (metodo === 'valor_fixo') {
+    if (!ciclo.valorFixoSnapshot) {
+      const fallback = Number(aluno && aluno.valorFixoCiclo) || 0;
+      if (fallback) {
+        ciclo.valorFixoSnapshot = fallback;
+        snapshotAlterado = true;
+      }
+    }
+    return { snapshot: { metodoCobranca: metodo, valorFixoCiclo: ciclo.valorFixoSnapshot }, snapshotAlterado };
+  }
+
+  if (!ciclo.precoAulaSnapshot) {
+    const fallback = Number(aluno && aluno.preco) || 0;
+    if (fallback) {
+      ciclo.precoAulaSnapshot = fallback;
+      snapshotAlterado = true;
+    }
+  }
+  return { snapshot: { metodoCobranca: metodo, preco: ciclo.precoAulaSnapshot }, snapshotAlterado };
+}
+
+// 5.8: ciclo sem dataPagamento é recontado a partir da agenda a cada leitura; ciclo pago fica congelado.
+async function sincronizarCicloComAgenda(documento, aluno, agendamentos) {
+  if (!documento || documento.dataPagamento) return documento;
+
+  const cicloInicio = normalizarDateOnly(documento.cicloInicio);
+  const cicloFim = normalizarDateOnly(documento.cicloFim);
+  if (!cicloInicio || !cicloFim) return documento;
+
+  const alunoParaContagem = aluno || { id: documento.alunoId };
+  const aulasContadas = calcularAulasContadasDoCiclo(alunoParaContagem, agendamentos, cicloInicio, cicloFim);
+  const { snapshot, snapshotAlterado } = resolverSnapshotParaRecalculo(documento, aluno);
+  const valorTotalCiclo = calcularValorTotalCiclo(snapshot, aulasContadas, documento.aulasManuaisExtras);
+
+  const divergiu = documento.aulasContadas !== aulasContadas
+    || documento.valorTotalCiclo !== valorTotalCiclo
+    || snapshotAlterado;
+  if (!divergiu) {
+    return documento;
+  }
+
+  documento.aulasContadas = aulasContadas;
+  documento.valorTotalCiclo = valorTotalCiclo;
+  documento.atualizadoEm = new Date();
+  if (typeof documento.save === 'function') {
+    await documento.save();
+  }
+  return documento;
 }
 
 function calcularStatusCiclo(ciclo, hoje = new Date()) {
@@ -178,6 +239,8 @@ async function obterOuCriarCicloVigente(ownerEmail, aluno, agendamentos, hoje = 
     return null;
   }
 
+  await sincronizarCicloComAgenda(documento, aluno, agendamentos);
+
   const statusCalculado = calcularStatusCiclo(documento, hoje);
   if (documento.status !== statusCalculado) {
     documento.status = statusCalculado;
@@ -208,27 +271,20 @@ async function listarFinancasDoOwner(ownerEmail, hoje = new Date()) {
     }
 
     const cicloAtual = await obterOuCriarCicloVigente(ownerEmail, aluno, agendamentos, hoje);
-    const historico = await CicloFinanceiro.find({ ownerEmail, alunoId: aluno.id }).sort({ cicloInicio: -1 });
-    const historicoFormatado = [];
 
-    for (const doc of historico) {
-      const item = doc.toObject ? doc.toObject() : doc;
-      const statusCalculado = calcularStatusCiclo(item, hoje);
-      if (doc.status !== statusCalculado) {
-        doc.status = statusCalculado;
-        doc.atualizadoEm = new Date();
-        await doc.save();
-      }
-      historicoFormatado.push(item);
+    // 6.2.1: histórico não entra no payload da listagem; apenas um indicador booleano, sem find().
+    const filtroHistorico = { ownerEmail, alunoId: aluno.id };
+    if (cicloAtual) {
+      filtroHistorico.cicloInicio = { $ne: cicloAtual.cicloInicio };
     }
+    const existeHistorico = await CicloFinanceiro.countDocuments(filtroHistorico, { limit: 1 });
 
     cards.push({
       alunoId: aluno.id,
       aluno: aluno.toObject ? aluno.toObject() : aluno,
       configuracaoPendente: false,
       cicloAtual,
-      historicoDisponivel: true,
-      historico: historicoFormatado.map((item) => aplicarStatusCiclo(item, hoje))
+      historicoDisponivel: existeHistorico > 0
     });
   }
 
@@ -242,17 +298,21 @@ async function listarFinancasDoOwner(ownerEmail, hoje = new Date()) {
 
 async function obterHistoricoFinancasPorAluno(ownerEmail, alunoId, hoje = new Date()) {
   const ciclos = await CicloFinanceiro.find({ ownerEmail, alunoId }).sort({ cicloInicio: -1 });
+  if (ciclos.length === 0) return [];
+
+  const aluno = await Aluno.findOne({ ownerEmail, id: alunoId });
+  const agendamentos = await Agendamento.find({ ownerEmail });
   const historico = [];
 
   for (const doc of ciclos) {
-    const item = doc.toObject ? doc.toObject() : doc;
-    const statusCalculado = calcularStatusCiclo(item, hoje);
+    await sincronizarCicloComAgenda(doc, aluno, agendamentos);
+    const statusCalculado = calcularStatusCiclo(doc, hoje);
     if (doc.status !== statusCalculado) {
       doc.status = statusCalculado;
       doc.atualizadoEm = new Date();
       await doc.save();
     }
-    historico.push(aplicarStatusCiclo(item, hoje));
+    historico.push(aplicarStatusCiclo(doc.toObject ? doc.toObject() : doc, hoje));
   }
 
   return historico;
@@ -284,16 +344,19 @@ async function atualizarAjusteCiclo(ownerEmail, cicloId, payload = {}, hoje = ne
     throw error;
   }
 
+  if (ciclo.dataPagamento) {
+    const error = new Error('Este ciclo já foi pago e não pode mais ser ajustado.');
+    error.statusCode = 409;
+    throw error;
+  }
+
   const extras = Number.parseInt(payload.aulasManuaisExtras, 10);
-  ciclo.aulasManuaisExtras = Number.isNaN(extras) || extras < 0 ? 0 : extras;
+  ciclo.aulasManuaisExtras = Number.isNaN(extras) ? 0 : extras;
   ciclo.observacaoAjuste = typeof payload.observacaoAjuste === 'string' ? payload.observacaoAjuste : '';
 
   const aluno = await Aluno.findOne({ ownerEmail, id: ciclo.alunoId });
-  ciclo.valorTotalCiclo = calcularValorTotalCiclo(
-    aluno || { metodoCobranca: ciclo.metodoCobranca, preco: ciclo.precoAulaSnapshot, valorFixoCiclo: ciclo.valorFixoSnapshot },
-    ciclo.aulasContadas,
-    ciclo.aulasManuaisExtras
-  );
+  const { snapshot } = resolverSnapshotParaRecalculo(ciclo, aluno);
+  ciclo.valorTotalCiclo = calcularValorTotalCiclo(snapshot, ciclo.aulasContadas, ciclo.aulasManuaisExtras);
   ciclo.atualizadoEm = new Date();
   aplicarStatusCiclo(ciclo, hoje);
   await ciclo.save();
@@ -304,6 +367,7 @@ module.exports = {
   calcularCicloVigente,
   calcularAulasContadasDoCiclo,
   calcularValorTotalCiclo,
+  calcularTotalAulasCobradas,
   listarFinancasDoOwner,
   obterHistoricoFinancasPorAluno,
   marcarCicloComoPago,

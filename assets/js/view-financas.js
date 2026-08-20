@@ -10,7 +10,12 @@
         erro: null,
         cacheAtualizadoEm: null,
         cardAtivo: null,
-        handlersBound: false
+        handlersBound: false,
+        // Histórico de ciclos anteriores, carregado sob demanda e cacheado em memória por aluno (6.2.2).
+        // Nunca gravado no localStorage; descartado ao recarregar a página.
+        historicoPorAluno: {},
+        // Alunos com "Ver ciclos anteriores" expandido — sobrevive a re-renders (innerHTML não preserva `open`).
+        historicoAberto: new Set()
     };
 
     function formatarMoeda(valor) {
@@ -96,8 +101,8 @@
                 <p id="financasAjusteResumo" style="font-size:0.78rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
                 <form id="formFinancasAjuste">
                   <div class="form-grupo-spa">
-                    <label for="financasAulasExtras">Aulas extras</label>
-                    <input type="number" id="financasAulasExtras" min="0" step="1" required />
+                    <label for="financasAulasExtras">Ajuste de aulas (pode ser negativo)</label>
+                    <input type="number" id="financasAulasExtras" step="1" required />
                   </div>
                   <div class="form-grupo-spa">
                     <label for="financasObservacaoAjuste">Observação</label>
@@ -207,15 +212,27 @@
         return `${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)} • ${status}`;
     }
 
-    function renderizarCardHistorico(card) {
-        const historico = Array.isArray(card.historico) ? card.historico : [];
-        if (historico.length === 0) {
+    function totalAulasCobradas(ciclo) {
+        const contadas = Number(ciclo && ciclo.aulasContadas) || 0;
+        const extras = Number(ciclo && ciclo.aulasManuaisExtras) || 0;
+        return Math.max(0, contadas + extras);
+    }
+
+    function descreverAjuste(extras) {
+        const valor = Number(extras) || 0;
+        if (valor === 0) return 'sem ajuste';
+        return `${valor > 0 ? '+' : '−'}${Math.abs(valor)} de ajuste`;
+    }
+
+    function renderizarListaHistorico(historico) {
+        const lista = Array.isArray(historico) ? historico : [];
+        if (lista.length === 0) {
             return '<p style="margin:0;color:#8e8e8e;font-size:0.78rem;">Sem ciclos anteriores.</p>';
         }
 
         return `
           <div style="display:flex;flex-direction:column;gap:8px;">
-            ${historico.map((ciclo) => {
+            ${lista.map((ciclo) => {
                 const status = ciclo.status === 'pago' ? 'Pago' : (ciclo.status === 'atrasado' ? 'Atrasado' : 'Em aberto');
                 const valor = formatarMoeda(ciclo.valorTotalCiclo);
                 return `
@@ -225,13 +242,94 @@
                       <span style="color:${ciclo.status === 'pago' ? '#81c784' : (ciclo.status === 'atrasado' ? '#ff8a80' : '#ffd700')};font-size:0.72rem;font-weight:700;">${status}</span>
                     </div>
                     <div style="font-size:0.75rem;color:#9a9a9a;margin-top:6px;">
-                      ${ciclo.aulasContadas || 0} aulas + ${ciclo.aulasManuaisExtras || 0} extras • ${valor}
+                      ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
                     </div>
                   </div>
                 `;
             }).join('')}
           </div>
         `;
+    }
+
+    function obterEstadoHistorico(alunoId) {
+        if (!STATE.historicoPorAluno[alunoId]) {
+            STATE.historicoPorAluno[alunoId] = { status: 'idle', dados: [], erro: null, requestId: 0 };
+        }
+        return STATE.historicoPorAluno[alunoId];
+    }
+
+    function montarHtmlHistorico(alunoId) {
+        const estado = obterEstadoHistorico(alunoId);
+
+        if (estado.status === 'carregando') {
+            return '<p style="margin:0;color:#8e8e8e;font-size:0.78rem;">Carregando ciclos anteriores...</p>';
+        }
+        if (estado.status === 'erro') {
+            return `
+              <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+                <p style="margin:0;color:#ff8a80;font-size:0.78rem;">${estado.erro || 'Não foi possível carregar o histórico.'}</p>
+                <button type="button" class="btn btn-secondary" data-financas-historico-retry="${alunoId}">Tentar novamente</button>
+              </div>
+            `;
+        }
+        if (estado.status === 'pronto') {
+            return renderizarListaHistorico(estado.dados);
+        }
+
+        // idle: histórico ainda não solicitado — populado quando o <details> for aberto.
+        return '';
+    }
+
+    function renderizarConteudoHistorico(alunoId) {
+        // O card pode ter sido desmontado (troca de aba/filtro) antes da resposta chegar.
+        const container = document.getElementById(`financas-historico-conteudo-${alunoId}`);
+        if (!container) return;
+        container.innerHTML = montarHtmlHistorico(alunoId);
+    }
+
+    async function carregarHistoricoAluno(alunoId, opcoes = {}) {
+        const estado = obterEstadoHistorico(alunoId);
+        const forcar = opcoes.forcar === true;
+        if (!forcar && (estado.status === 'pronto' || estado.status === 'carregando')) {
+            renderizarConteudoHistorico(alunoId);
+            return;
+        }
+
+        const card = STATE.cards.find((item) => item && item.alunoId === alunoId);
+        if (!forcar && card && card.historicoDisponivel === false) {
+            estado.status = 'pronto';
+            estado.dados = [];
+            estado.erro = null;
+            renderizarConteudoHistorico(alunoId);
+            return;
+        }
+
+        const requestId = ++estado.requestId;
+        estado.status = 'carregando';
+        estado.erro = null;
+        renderizarConteudoHistorico(alunoId);
+
+        try {
+            const resposta = await global.apiFetchBackend(`${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/financas/${encodeURIComponent(alunoId)}/historico`, {}, opcoes.timeoutMs || 40000);
+            if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
+            if (!resposta.ok) throw new Error(`Falha ao carregar histórico (${resposta.status})`);
+            const dados = await resposta.json();
+
+            // Ignora respostas tardias de uma chamada já substituída por outra mais recente para o mesmo aluno.
+            if (requestId !== estado.requestId) return;
+
+            estado.status = 'pronto';
+            estado.dados = Array.isArray(dados) ? dados : [];
+            estado.erro = null;
+        } catch (error) {
+            if (requestId !== estado.requestId) return;
+            estado.status = 'erro';
+            estado.erro = error && error.message === 'AUTH_REQUIRED'
+                ? 'Faça login para carregar o histórico.'
+                : 'Não foi possível carregar o histórico agora.';
+        }
+
+        renderizarConteudoHistorico(alunoId);
     }
 
     function renderizarCard(card) {
@@ -243,7 +341,7 @@
         const metodo = ciclo.metodoCobranca === 'valor_fixo' ? 'Valor fixo' : 'Por aula';
         const aulasExtras = ciclo.aulasManuaisExtras || 0;
         const aulasContadas = ciclo.aulasContadas || 0;
-        const historicoAberto = card.historico && card.historico.length > 0 ? 'open' : '';
+        const aulasCobradas = totalAulasCobradas(ciclo);
 
         return `
           <article class="aluno-card" data-financas-card-id="${aluno.id || card.alunoId}" style="display:flex;flex-direction:column;gap:10px;position:relative;">
@@ -277,8 +375,8 @@
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
                   <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
-                  <div style="margin-top:6px;font-size:0.82rem;color:#fff;font-weight:700;">${aulasContadas} + ${aulasExtras} extras</div>
-                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">Ciclo em cálculo</div>
+                  <div style="margin-top:6px;font-size:0.82rem;color:#fff;font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
+                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
                   <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
@@ -289,14 +387,12 @@
 
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button type="button" class="btn btn-primary" data-financas-pagar="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Marcar como pago</button>
-                <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}">Editar ajuste</button>
+                <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Editar ajuste</button>
               </div>
 
-              <details ${historicoAberto} style="border-top:1px solid #262626;padding-top:10px;">
+              <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;" ${STATE.historicoAberto.has(aluno.id) ? 'open' : ''}>
                 <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.82rem;">Ver ciclos anteriores</summary>
-                <div style="margin-top:10px;">
-                  ${renderizarCardHistorico(card)}
-                </div>
+                <div id="financas-historico-conteudo-${aluno.id}" style="margin-top:10px;">${montarHtmlHistorico(aluno.id)}</div>
               </details>
             `}
           </article>
@@ -545,8 +641,31 @@
                 } else {
                     global.prepararEdicaoAluno(alunoId);
                 }
+                return;
+            }
+
+            const retryHistoricoBtn = event.target.closest('[data-financas-historico-retry]');
+            if (retryHistoricoBtn) {
+                carregarHistoricoAluno(retryHistoricoBtn.getAttribute('data-financas-historico-retry'), { forcar: true });
             }
         });
+
+        // 'toggle' não borbulha, mas a fase de captura no root alcança qualquer <details> descendente.
+        root.addEventListener('toggle', function (event) {
+            const details = event.target;
+            if (!details || typeof details.matches !== 'function' || !details.matches('[data-financas-historico-details]')) return;
+            const alunoId = details.getAttribute('data-financas-historico-details');
+
+            if (!details.open) {
+                STATE.historicoAberto.delete(alunoId);
+                return; // fechar não dispara carregamento
+            }
+
+            STATE.historicoAberto.add(alunoId);
+            // carregarHistoricoAluno já retorna cedo se o histórico estiver 'pronto'/'carregando',
+            // então um toggle redundante (ex.: disparado ao montar um <details> já `open`) é inofensivo.
+            carregarHistoricoAluno(alunoId);
+        }, true);
 
         const pagamentoModal = document.getElementById('modalFinancasPagamento');
         const ajusteModal = document.getElementById('modalFinancasAjuste');
@@ -590,6 +709,27 @@
         bindHandlers();
         renderizarCards();
         atualizarCabecalhoCache();
+    };
+
+    // Consumido pelo card do aluno (view-alunos.js) para não duplicar o cálculo de ciclo no frontend.
+    window.obterResumoFinanceiroPorAluno = function () {
+        const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
+        const fonte = STATE.cards.length > 0
+            ? STATE.cards
+            : (cache && Array.isArray(cache.dados) ? cache.dados : []);
+
+        const mapa = {};
+        fonte.forEach((card) => {
+            if (card && card.alunoId) mapa[card.alunoId] = card;
+        });
+        return mapa;
+    };
+
+    window.garantirDadosFinancas = async function (opcoes = {}) {
+        if (STATE.cards.length === 0 || opcoes.forcarRemoto) {
+            await carregarFinancas({ silencioso: true, forcarRemoto: !!opcoes.forcarRemoto });
+        }
+        return window.obterResumoFinanceiroPorAluno();
     };
 
     window.__financasState = STATE;

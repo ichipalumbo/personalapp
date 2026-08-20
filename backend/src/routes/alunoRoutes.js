@@ -5,8 +5,7 @@ const {
   criarAluno,
   atualizarAluno,
   excluirAluno,
-  obterKpisAluno,
-  obterKpisTodosAlunos
+  listarConsistenciaAgenda
 } = require('../controllers/alunoController');
 
 const router = express.Router();
@@ -15,8 +14,7 @@ router.route('/')
   .get(listarAlunos)
   .post(criarAluno);
 
-router.get('/kpis/todos', obterKpisTodosAlunos);
-router.get('/:id/kpis', obterKpisAluno);
+router.get('/consistencia-agenda', listarConsistenciaAgenda);
 
 router.route('/:id')
   .get(obterAluno)
