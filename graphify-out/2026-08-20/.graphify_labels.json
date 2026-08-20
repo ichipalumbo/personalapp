@@ -8,8 +8,8 @@
   "6": "alunoController.js",
   "7": "modal-agendamento.js",
   "8": "utils-kpi.js",
-  "9": "financasService.js",
-  "10": "Especificação Técnica — Feature \"Finanças\" (Ciclo de Cobrança por Aluno)",
+  "9": "agendamentoController.js",
+  "10": "Agendamento.js",
   "11": "dependencies",
   "12": "Agenda Personal Trainer (Prô Josy)",
   "13": "state.js",
@@ -27,7 +27,7 @@
   "25": "view-home.js",
   "26": "vercel.json",
   "27": "js/app.js",
-  "28": "createRouter",
+  "28": "router.js",
   "29": "user-area-session-helper.js",
   "30": "service-worker.js",
   "31": "widget-stepper-duracao.js",
@@ -38,9 +38,5 @@
   "36": "utils-datetime.js",
   "37": "utils-formatters.js",
   "38": "view-calendario.js",
-  "39": "widget-bloqueio.js",
-  "40": "view-financas.js",
-  "41": "🔴 Grupo 2 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)",
-  "42": "Anti UI Slop",
-  "43": "calendario-engine.js"
+  "39": "widget-bloqueio.js"
 }

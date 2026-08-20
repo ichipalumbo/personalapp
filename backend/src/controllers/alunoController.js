@@ -30,6 +30,52 @@ function garantirStatusAluno(aluno) {
   };
 }
 
+function normalizarBooleanoFinanceiro(valor) {
+  return valor === true || valor === 'true' || valor === 1 || valor === '1';
+}
+
+function validarFinanceiroAluno(aluno) {
+  if (!aluno || typeof aluno !== 'object') return;
+
+  if (String(aluno.objetivo || '').trim() === 'Consultoria Online') {
+    return;
+  }
+
+  const fechamentoMesCheio = normalizarBooleanoFinanceiro(aluno.fechamentoMesCheio);
+  const diaVencimento = aluno.diaVencimento === null || aluno.diaVencimento === undefined || aluno.diaVencimento === ''
+    ? null
+    : Number(aluno.diaVencimento);
+  const metodoCobranca = String(aluno.metodoCobranca || 'por_aula');
+
+  if (!fechamentoMesCheio && !diaVencimento) {
+    const error = new Error("Para salvar este aluno, informe o dia de vencimento ou ative 'Fechar por mês cheio'.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (!fechamentoMesCheio && diaVencimento === 1) {
+    const error = new Error("Para vencimento no dia 1 ou mês completo, ative a opção 'Fechar por mês cheio' acima.");
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (metodoCobranca === 'valor_fixo') {
+    const valorFixoCiclo = Number(aluno.valorFixoCiclo);
+    if (!Number.isFinite(valorFixoCiclo) || valorFixoCiclo <= 0) {
+      const error = new Error('Informe o valor fixo do ciclo para salvar este aluno.');
+      error.statusCode = 400;
+      throw error;
+    }
+  } else {
+    const preco = Number(aluno.preco);
+    if (!Number.isFinite(preco) || preco <= 0) {
+      const error = new Error('Informe o valor hora/aula para salvar este aluno.');
+      error.statusCode = 400;
+      throw error;
+    }
+  }
+}
+
 async function listarAlunos(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -66,6 +112,10 @@ async function criarAluno(req, res) {
     }
 
     payload.status = normalizarStatusAluno(payload.status);
+    if (Object.prototype.hasOwnProperty.call(payload, 'fechamentoMesCheio')) {
+      payload.fechamentoMesCheio = normalizarBooleanoFinanceiro(payload.fechamentoMesCheio);
+    }
+    validarFinanceiroAluno(payload);
 
     const aluno = await Aluno.findOneAndUpdate(
       { ownerEmail, id: payload.id },
@@ -110,16 +160,24 @@ async function atualizarAluno(req, res) {
     if (Object.prototype.hasOwnProperty.call(payload, 'status')) {
       payload.status = normalizarStatusAluno(payload.status);
     }
+    if (Object.prototype.hasOwnProperty.call(payload, 'fechamentoMesCheio')) {
+      payload.fechamentoMesCheio = normalizarBooleanoFinanceiro(payload.fechamentoMesCheio);
+    }
+
+    const alunoAtual = await Aluno.findOne({ ownerEmail, id });
+
+    if (!alunoAtual) {
+      return res.status(404).json({ error: 'Aluno não encontrado' });
+    }
+
+    const alunoMerge = { ...(alunoAtual.toObject ? alunoAtual.toObject() : alunoAtual), ...payload, id, ownerEmail };
+    validarFinanceiroAluno(alunoMerge);
 
     const aluno = await Aluno.findOneAndUpdate(
       { ownerEmail, id },
       { $set: { ...payload, id, ownerEmail } },
       { new: true, runValidators: true }
     );
-
-    if (!aluno) {
-      return res.status(404).json({ error: 'Aluno não encontrado' });
-    }
 
     res.json(garantirStatusAluno(aluno.toObject ? aluno.toObject() : aluno));
   } catch (err) {

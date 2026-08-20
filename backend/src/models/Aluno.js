@@ -9,7 +9,11 @@ const AlunoSchema = new mongoose.Schema({
   tipoPreco: String,
   valorAlinhado: Number,
   aulasSemanais: Number,
-  historicoPagamentos: Array,
+  diaVencimento: { type: Number, min: 2, max: 31, default: null },
+  fechamentoMesCheio: { type: Boolean, default: false },
+  metodoCobranca: { type: String, enum: ['por_aula', 'valor_fixo'], default: 'por_aula' },
+  valorFixoCiclo: { type: Number, default: null },
+  historicoPagamentos: Array, // DEPRECATED: não utilizado a partir da feature de Finanças por ciclo. Ver CicloFinanceiro.
   criadoEm: { type: Date, default: Date.now }
 }, { strict: false });
 
