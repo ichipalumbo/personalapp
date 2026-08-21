@@ -8,6 +8,7 @@ const alunoRoutes = require('./routes/alunoRoutes');
 const agendamentoRoutes = require('./routes/agendamentoRoutes');
 const financasRoutes = require('./routes/financasRoutes');
 const configRoutes = require('./routes/configRoutes');
+const reposicaoRoutes = require('./routes/reposicaoRoutes');
 const bloqueioExternoRoutes = require('./routes/bloqueioExternoRoutes');
 const { getEnvConfig } = require('./config/env');
 const { connectToDatabase } = require('./config/database');
@@ -47,6 +48,7 @@ function createApp() {
   app.use('/api/agendamentos', requireAuth, agendamentoRoutes);
   app.use('/api/financas', requireAuth, financasRoutes);
   app.use('/api/configuracao', requireAuth, configRoutes);
+  app.use('/api/reposicoes', requireAuth, reposicaoRoutes);
   app.use('/api/bloqueios-externos', requireAuth, bloqueioExternoRoutes);
 
   return app;

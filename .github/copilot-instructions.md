@@ -109,7 +109,8 @@ O módulo financeiro (`backend/src/services/financasService.js`, collection
 
 - **Não existe teste automatizado neste repositório.** Não há runner
   configurado em `backend/package.json`. Toda validação é manual, em produção.
-  Dois bugs financeiros reais já escaparam para prod por causa disso.
+  Dois bugs financeiros reais existiram e foram corrigidos por causa disso, mas
+  não afetaram cobrança de aluno real.
 - **Recálculo usa sempre o snapshot do ciclo** (`precoAulaSnapshot`,
   `valorFixoSnapshot`, `metodoCobranca`), nunca o preço atual do aluno. Um
   reajuste vale a partir do próximo ciclo, jamais retroativamente.
@@ -149,9 +150,11 @@ Não existe branch de preview nem ambiente intermediário.
 
 - Deploys manuais de branch de teste são possíveis, mas qualquer alteração na
   `main` os substitui.
-- Consequência prática: **qualquer coisa que entra na `main` está em produção,
-  usada por um usuário real.** Trate mudanças em cálculo financeiro, agenda e
-  sincronização com o Google Calendar com esse nível de cuidado.
+- Consequência prática: **qualquer coisa que entra na `main` faz deploy automático
+  em produção.** O app está publicado, mas ainda não foi lançado oficialmente; a
+  base de produção é usada para teste e limpa em seguida, e hoje está zerada.
+  Trate mudanças em cálculo financeiro, agenda e sincronização com o Google
+  Calendar com esse nível de cuidado.
 - Os _roots_ diferentes dos dois projetos são o que faz o caminho atravessado
   da seção 4.2 funcionar. Mudanças de estrutura de pastas podem quebrar o
   deploy sem quebrar nada localmente.
