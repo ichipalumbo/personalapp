@@ -450,13 +450,17 @@ function montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes) {
         nota: null,
       });
     } else if (tipoEscolhido === "reposicao_nao_cobravel") {
+      const nota = dataEmJanela(reposicao.dataOriginal, cicloInicio, cicloFim)
+        ? null
+        : `referente à aula de ${formatarDataBR(reposicao.dataOriginal)}, cobrada aqui por ciclo anterior já pago`;
+
       linhas.push({
         tipo: tipoEscolhido,
         descricao: "reposição não cobrável",
         quantidade: 1,
         valorUnitario: isValorFixo ? 0 : preco,
         valorTotal: isValorFixo ? 0 : preco,
-        nota: null,
+        nota,
       });
     } else if (tipoEscolhido === "reposicao_cobranca_adiada") {
       linhas.push({

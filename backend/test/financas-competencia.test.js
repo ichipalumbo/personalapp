@@ -208,3 +208,33 @@ test('montarExtratoDoCiclo: reposição já cobrada gera linha zero sem inflar o
   const somaLinhas = linhas.reduce((total, linha) => total + Number(linha.valorTotal || 0), 0);
   assert.equal(somaLinhas, ciclo.valorTotalCiclo);
 });
+
+test('montarExtratoDoCiclo: reposição não cobrável fora do ciclo traz nota de ciclo anterior', () => {
+  const ciclo = {
+    cicloInicio,
+    cicloFim,
+    alunoId: 'aluno-1',
+    metodoCobranca: 'por_aula',
+    precoAulaSnapshot: 100,
+    aulasContadas: 1,
+    aulasManuaisExtras: 0,
+    valorTotalCiclo: 100,
+  };
+  const reposicoes = [
+    {
+      id: 'rep-20',
+      alunoId: 'aluno-1',
+      cobravel: false,
+      status: 'realizada',
+      dataOriginal: '2026-02-10',
+      cicloCobrancaResolvido: { inicio: cicloInicioISO, fim: cicloFimISO },
+    },
+  ];
+
+  const linhas = montarExtratoDoCiclo(ciclo, aluno, [], reposicoes);
+  const linhaNaoCobravel = linhas.find((linha) => linha.tipo === 'reposicao_nao_cobravel');
+
+  assert.ok(linhaNaoCobravel);
+  assert.equal(linhaNaoCobravel.valorTotal, 100);
+  assert.equal(linhaNaoCobravel.nota, 'referente à aula de 10/02, cobrada aqui por ciclo anterior já pago');
+});

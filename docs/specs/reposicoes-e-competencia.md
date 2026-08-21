@@ -217,16 +217,16 @@ na mesma operação.
 Se uma reposição `cobravel === false` for marcada para uma data dentro de um ciclo que
 **já está pago** (congelado, decisão 16 da spec de Finanças), ela **não** pode ser
 adicionada àquele ciclo. Ela é cobrada no **primeiro ciclo seguinte que não esteja pago**,
-e `cicloCobrancaResolvido` registra essa janela. O extrato traz a nota:
-*"referente ao ciclo 17/03–16/04, cobrada aqui por ciclo anterior já pago"*.
+e `cicloCobrancaResolvido` registra essa janela. No ciclo que **cobra**, a linha
+`reposicao_nao_cobravel` traz: `referente à aula de dd/mm, cobrada aqui por ciclo anterior já pago`.
+No ciclo onde a aula **ocorreu**, a linha `reposicao_cobranca_adiada` traz:
+`cobrada no ciclo dd/mm–dd/mm`.
 
 - `cicloCobrancaResolvido` é derivado no servidor. `POST /api/reposicoes` e `PATCH /api/reposicoes/:id` respondem 400 se o campo vier no corpo.
 - O campo é gravado uma única vez, no PATCH que preenche `agendamentoReposicaoId`, e somente quando `cobravel === false`.
 - A data usada é a do `Agendamento` referenciado, nunca uma data enviada pelo cliente.
 - Uma vez preenchido, o campo nunca é recalculado.
 - Quando `cobravel === true`, o campo não é gravado: a cobrança pertence ao ciclo de origem.
-
-⚠️ Confirmar esta regra antes de implementar (ver 13).
 
 ### 5.5 Aluno com `valor_fixo`
 
@@ -369,6 +369,7 @@ ciclos com muita reposição ou avulsa.
 | `valor_fixo` | valor do ciclo | apenas para aluno com `metodoCobranca: 'valor_fixo'` |
 
 Uma mesma reposição gera no máximo uma linha por ciclo. A ordem de precedência é: `reposicao_cobravel_origem`, `reposicao_nao_cobravel`, `reposicao_cobranca_adiada`, `reposicao_ja_cobrada`, `reposicao_expirada`, `reposicao_pendente`.
+A reposição expirada aparece no ciclo em que expirou, identificado por `validoAte`; quando `dataOriginal` e `validoAte` caem no mesmo ciclo, `reposicao_cobravel_origem` tem precedência.
 
 A soma das linhas fecha com `valorTotalCiclo` por construção. É proibido qualquer ajuste corretivo de fechamento; a única exceção é a linha nomeada `piso_zero`.
 
@@ -533,10 +534,7 @@ handlers de envio para reposição.
 
 1. **Textos exatos do modal de escolha (9.3).** Os rótulos das duas opções e o disclaimer
    de cada uma. É a peça que a PT vai ler toda vez; não deve ser inventada no código.
-2. **Confirmação da regra 5.4** — reposição não cobrável que cai em ciclo já pago.
-3. **Onde a reposição expirada aparece no extrato** — no ciclo em que expirou (proposto)
-   ou no ciclo de origem?
-4. **Rótulo da caixinha no card do aluno** — "Reposições" ou algo mais específico, dado
+2. **Rótulo da caixinha no card do aluno** — "Reposições" ou algo mais específico, dado
    que o item 1.8 do roadmap previa outro conteúdo para o mesmo espaço.
 
 Nota de implementação: o frontend não deve enviar `cicloCobrancaResolvido` em nenhuma requisição de criação ou atualização de reposição, sob pena de 400.
