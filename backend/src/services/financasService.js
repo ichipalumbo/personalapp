@@ -368,6 +368,7 @@ function montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes) {
   const PRECEDENCIA = [
     "reposicao_cobravel_origem",
     "reposicao_nao_cobravel",
+    "reposicao_cobranca_adiada",
     "reposicao_ja_cobrada",
     "reposicao_expirada",
     "reposicao_pendente",
@@ -389,6 +390,21 @@ function montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes) {
       reposicao.cicloCobrancaResolvido.inicio === cicloInicioISO
     ) {
       candidatos.push("reposicao_nao_cobravel");
+    }
+
+    if (
+      reposicao.cobravel === false &&
+      reposicao.cicloCobrancaResolvido &&
+      reposicao.cicloCobrancaResolvido.inicio !== cicloInicioISO
+    ) {
+      const agendamentoVinculado = agendamentosComReposicao.find(
+        (agendamento) =>
+          agendamento.reposicaoId === reposicao.id &&
+          normalizarAulasContadas(agendamento, cicloInicio, cicloFim) > 0,
+      );
+      if (agendamentoVinculado) {
+        candidatos.push("reposicao_cobranca_adiada");
+      }
     }
 
     if (
@@ -441,6 +457,15 @@ function montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes) {
         valorUnitario: isValorFixo ? 0 : preco,
         valorTotal: isValorFixo ? 0 : preco,
         nota: null,
+      });
+    } else if (tipoEscolhido === "reposicao_cobranca_adiada") {
+      linhas.push({
+        tipo: tipoEscolhido,
+        descricao: "reposição com cobrança adiada",
+        quantidade: 1,
+        valorUnitario: 0,
+        valorTotal: 0,
+        nota: `cobrada no ciclo ${formatarPeriodoBR(reposicao.cicloCobrancaResolvido.inicio, reposicao.cicloCobrancaResolvido.fim)}`,
       });
     } else if (tipoEscolhido === "reposicao_ja_cobrada") {
       const origem = calcularCicloVigente(
@@ -532,6 +557,7 @@ function montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes) {
 async function resolverCicloCobranca(ownerEmail, aluno, dataISO) {
   const dataAlvo = normalizarDateOnly(dataISO);
   if (!dataAlvo) return null;
+  if (!aluno) return null;
 
   let ciclo = calcularCicloVigente(aluno, dataAlvo);
   if (!ciclo) return null;

@@ -145,6 +145,10 @@ async function criarReposicao(req, res) {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const payload = limparPayloadReposicao(req.body);
 
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'cicloCobrancaResolvido')) {
+      return res.status(400).json({ error: 'cicloCobrancaResolvido é derivado no servidor e não pode ser definido diretamente.' });
+    }
+
     if (!payload.alunoId) {
       return res.status(400).json({ error: 'alunoId é obrigatório.' });
     }
@@ -191,24 +195,6 @@ async function criarReposicao(req, res) {
       const validacaoValidoAte = validarDataISO(payload.validoAte, 'validoAte');
       if (!validacaoValidoAte.valido) {
         return res.status(400).json({ error: validacaoValidoAte.mensagem });
-      }
-    }
-
-    if (payload.cicloCobrancaResolvido !== undefined && payload.cicloCobrancaResolvido !== null && typeof payload.cicloCobrancaResolvido === 'object') {
-      const ciclo = payload.cicloCobrancaResolvido;
-
-      if (ciclo.inicio !== undefined && ciclo.inicio !== null) {
-        const validacaoInicio = validarDataISO(ciclo.inicio, 'cicloCobrancaResolvido.inicio');
-        if (!validacaoInicio.valido) {
-          return res.status(400).json({ error: validacaoInicio.mensagem });
-        }
-      }
-
-      if (ciclo.fim !== undefined && ciclo.fim !== null) {
-        const validacaoFim = validarDataISO(ciclo.fim, 'cicloCobrancaResolvido.fim');
-        if (!validacaoFim.valido) {
-          return res.status(400).json({ error: validacaoFim.mensagem });
-        }
       }
     }
 
@@ -313,6 +299,9 @@ async function atualizarReposicao(req, res) {
       }
 
       const aluno = await Aluno.findOne({ ownerEmail, id: reposicaoExistente.alunoId });
+      if (!aluno) {
+        return res.status(400).json({ error: 'Aluno da reposição não encontrado.' });
+      }
       const cicloCobranca = await financasService.resolverCicloCobranca(ownerEmail, aluno, agendamento.data);
       payload.cicloCobrancaResolvido = cicloCobranca;
     }

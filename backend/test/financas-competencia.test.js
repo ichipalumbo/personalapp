@@ -170,3 +170,41 @@ test('montarExtratoDoCiclo: cobrável expirada com dataOriginal e validoAte no m
   assert.equal(linhasDaReposicao.length, 1);
   assert.equal(linhasDaReposicao[0].tipo, 'reposicao_cobravel_origem');
 });
+
+test('montarExtratoDoCiclo: reposição já cobrada gera linha zero sem inflar o total', () => {
+  const ciclo = {
+    cicloInicio,
+    cicloFim,
+    alunoId: 'aluno-1',
+    metodoCobranca: 'por_aula',
+    precoAulaSnapshot: 100,
+    aulasContadas: 0,
+    aulasManuaisExtras: 0,
+    valorTotalCiclo: 0,
+  };
+  const agendamentos = [agendamentoAvulso({ data: '2026-03-10', reposicaoId: 'rep-9' })];
+  const reposicoes = [
+    {
+      id: 'rep-9',
+      alunoId: 'aluno-1',
+      cobravel: true,
+      status: 'realizada',
+      dataOriginal: '2026-02-10',
+    },
+  ];
+  const alunoCenario = {
+    id: 'aluno-1',
+    metodoCobranca: 'por_aula',
+    preco: 100,
+    fechamentoMesCheio: true,
+    criadoEm: '2026-01-01',
+  };
+
+  const linhas = montarExtratoDoCiclo(ciclo, alunoCenario, agendamentos, reposicoes);
+  const linhasJaCobradas = linhas.filter((linha) => linha.tipo === 'reposicao_ja_cobrada');
+
+  assert.equal(linhasJaCobradas.length, 1);
+  assert.equal(linhasJaCobradas[0].valorTotal, 0);
+  const somaLinhas = linhas.reduce((total, linha) => total + Number(linha.valorTotal || 0), 0);
+  assert.equal(somaLinhas, ciclo.valorTotalCiclo);
+});
