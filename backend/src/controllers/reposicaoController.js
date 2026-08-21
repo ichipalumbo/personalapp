@@ -1,4 +1,5 @@
 const Reposicao = require('../models/Reposicao');
+const reposicaoService = require('../services/reposicaoService');
 const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { normalizarDataParaISO } = require('../utils/time');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
@@ -113,7 +114,8 @@ async function listarReposicoes(req, res) {
     }
 
     const reposicoes = await Reposicao.find(filtro).sort({ dataOriginal: 1, horarioOriginal: 1 });
-    res.json(reposicoes);
+    const reposicoesAtualizadas = await reposicaoService.sincronizarExpiracaoLazy(ownerEmail, reposicoes, new Date());
+    res.json(reposicoesAtualizadas);
   } catch (err) {
     responderErroReposicao(res, err, 'listar reposições');
   }
@@ -261,6 +263,10 @@ async function atualizarReposicao(req, res) {
       return res.status(400).json({ error: 'dataOriginal é imutável após a criação da reposição.' });
     }
 
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'dataEnvio')) {
+      return res.status(400).json({ error: 'dataEnvio é imutável após a criação da reposição.' });
+    }
+
     if (Object.prototype.hasOwnProperty.call(payloadBruto, 'agendamentoOriginalId')) {
       return res.status(400).json({ error: 'agendamentoOriginalId é imutável após a criação da reposição.' });
     }
@@ -269,28 +275,20 @@ async function atualizarReposicao(req, res) {
       return res.status(400).json({ error: 'ownerEmail é imutável após a criação da reposição.' });
     }
 
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'historico')) {
+      return res.status(400).json({ error: 'historico é append-only; use POST /api/reposicoes/:id/historico.' });
+    }
+
     if (payload.id && payload.id !== id) {
       return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
     }
 
-    if (payload.dataOriginal !== undefined) {
-      const validacaoDataOriginal = validarDataISO(payload.dataOriginal, 'dataOriginal');
-      if (!validacaoDataOriginal.valido) {
-        return res.status(400).json({ error: validacaoDataOriginal.mensagem });
-      }
-      payload.dataOriginal = validacaoDataOriginal.valor;
+    if (payload.dataEnvio !== undefined) {
+      return res.status(400).json({ error: 'dataEnvio é imutável após a criação da reposição.' });
     }
 
     if (payload.cobravel !== undefined && typeof payload.cobravel !== 'boolean') {
       return res.status(400).json({ error: 'cobravel deve ser booleano.' });
-    }
-
-    if (payload.dataEnvio !== undefined) {
-      const validacaoDataEnvio = validarISO8601Completo(payload.dataEnvio, 'dataEnvio');
-      if (!validacaoDataEnvio.valido) {
-        return res.status(400).json({ error: validacaoDataEnvio.mensagem });
-      }
-      payload.dataEnvio = validacaoDataEnvio.valor;
     }
 
     if (payload.validoAte !== undefined && payload.validoAte !== null) {
@@ -312,18 +310,6 @@ async function atualizarReposicao(req, res) {
       payload.cicloCobrancaResolvido = { inicio: inicioNormalizado, fim: fimNormalizado };
     }
 
-    if (payload.historico !== undefined) {
-      try {
-        const historicoNormalizado = normalizarHistorico(payload.historico, 'historico');
-        if (historicoNormalizado && historicoNormalizado.erro) {
-          return res.status(400).json({ error: historicoNormalizado.erro });
-        }
-        payload.historico = historicoNormalizado.historico;
-      } catch (err) {
-        return res.status(400).json({ error: err.message });
-      }
-    }
-
     const reposicao = await Reposicao.findOneAndUpdate(
       { ownerEmail, id },
       { $set: { ...payload, ownerEmail, id } },
@@ -340,9 +326,51 @@ async function atualizarReposicao(req, res) {
   }
 }
 
+async function adicionarHistoricoReposicao(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const { id } = req.params;
+    const payload = limparPayloadReposicao(req.body || {});
+
+    if (!payload.evento || typeof payload.evento !== 'string' || !payload.evento.trim()) {
+      return res.status(400).json({ error: 'evento é obrigatório.' });
+    }
+
+    if (!payload.data) {
+      return res.status(400).json({ error: 'data é obrigatória.' });
+    }
+
+    const validacaoData = validarISO8601Completo(payload.data, 'data');
+    if (!validacaoData.valido) {
+      return res.status(400).json({ error: validacaoData.mensagem });
+    }
+
+    const historico = {
+      evento: payload.evento.trim(),
+      data: validacaoData.valor,
+      agendamentoId: payload.agendamentoId || null,
+    };
+
+    const reposicao = await Reposicao.findOneAndUpdate(
+      { ownerEmail, id },
+      { $push: { historico } },
+      { new: true, runValidators: true }
+    );
+
+    if (!reposicao) {
+      return res.status(404).json({ error: `Reposição com id '${id}' não encontrada.` });
+    }
+
+    res.status(201).json(reposicao);
+  } catch (err) {
+    responderErroReposicao(res, err, 'adicionar histórico da reposição');
+  }
+}
+
 module.exports = {
   listarReposicoes,
   obterReposicao,
   criarReposicao,
-  atualizarReposicao
+  atualizarReposicao,
+  adicionarHistoricoReposicao
 };
