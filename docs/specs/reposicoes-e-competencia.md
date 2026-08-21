@@ -220,6 +220,12 @@ adicionada àquele ciclo. Ela é cobrada no **primeiro ciclo seguinte que não e
 e `cicloCobrancaResolvido` registra essa janela. O extrato traz a nota:
 *"referente ao ciclo 17/03–16/04, cobrada aqui por ciclo anterior já pago"*.
 
+- `cicloCobrancaResolvido` é derivado no servidor. `POST /api/reposicoes` e `PATCH /api/reposicoes/:id` respondem 400 se o campo vier no corpo.
+- O campo é gravado uma única vez, no PATCH que preenche `agendamentoReposicaoId`, e somente quando `cobravel === false`.
+- A data usada é a do `Agendamento` referenciado, nunca uma data enviada pelo cliente.
+- Uma vez preenchido, o campo nunca é recalculado.
+- Quando `cobravel === true`, o campo não é gravado: a cobrança pertence ao ciclo de origem.
+
 ⚠️ Confirmar esta regra antes de implementar (ver 13).
 
 ### 5.5 Aluno com `valor_fixo`
@@ -348,15 +354,25 @@ ciclos com muita reposição ou avulsa.
 
 ### 8.2 Classificação
 
-| Linha | Critério |
-|---|---|
-| **Recorrente** | `frequencia !== 'uma_vez'` e sem vínculo de reposição |
-| **Avulsa** | `frequencia === 'uma_vez'` e sem vínculo de reposição |
-| **Reposição** | possui vínculo com registro de `Reposicao` |
-| **Reposição já cobrada** | vínculo + `cobravel === true` (valor zero + nota) |
-| **Reposição pendente não cobrada** | registro `cobravel === false`, informativo, valor zero |
-| **Reposição expirada** | registro `expirada` no ciclo em que expirou, valor zero + nota |
-| **Ajuste manual** | `aulasManuaisExtras` do ciclo |
+| tipo | valor | quando aparece |
+|---|---|---|
+| `recorrente` | cheio | aulas de série recorrente na janela |
+| `avulsa` | cheio | aulas pontuais na janela |
+| `reposicao_cobravel_origem` | cheio | reposição cobrável cuja `dataOriginal` cai na janela |
+| `reposicao_nao_cobravel` | cheio | reposição não cobrável com `cicloCobrancaResolvido.inicio` igual ao início da janela |
+| `ajuste_manual` | cheio, pode ser negativo | `aulasManuaisExtras !== 0` |
+| `reposicao_ja_cobrada` | zero | aula de reposição cobrável realizada nesta janela, cobrada no ciclo de origem |
+| `reposicao_cobranca_adiada` | zero | aula de reposição não cobrável realizada nesta janela, cobrada em ciclo posterior |
+| `reposicao_expirada` | zero | reposição com status `expirada` e `validoAte` na janela |
+| `reposicao_pendente` | zero | reposição não cobrável pendente com `dataOriginal` na janela |
+| `piso_zero` | positivo | apenas quando `aulasContadas + aulasManuaisExtras < 0` |
+| `valor_fixo` | valor do ciclo | apenas para aluno com `metodoCobranca: 'valor_fixo'` |
+
+Uma mesma reposição gera no máximo uma linha por ciclo. A ordem de precedência é: `reposicao_cobravel_origem`, `reposicao_nao_cobravel`, `reposicao_cobranca_adiada`, `reposicao_ja_cobrada`, `reposicao_expirada`, `reposicao_pendente`.
+
+A soma das linhas fecha com `valorTotalCiclo` por construção. É proibido qualquer ajuste corretivo de fechamento; a única exceção é a linha nomeada `piso_zero`.
+
+Para aluno `valor_fixo` o extrato é informativo: todas as linhas saem com valor zero, exceto a linha `valor_fixo`.
 
 ⚠️ A classificação **olha o vínculo, não o `tipo`** (ver 5.2). O fluxo de remarcar salva
 `tipo: 'aula'`; classificar por tipo faria toda reposição aparecer como avulsa.
@@ -523,6 +539,8 @@ handlers de envio para reposição.
 4. **Rótulo da caixinha no card do aluno** — "Reposições" ou algo mais específico, dado
    que o item 1.8 do roadmap previa outro conteúdo para o mesmo espaço.
 
+Nota de implementação: o frontend não deve enviar `cicloCobrancaResolvido` em nenhuma requisição de criação ou atualização de reposição, sob pena de 400.
+
 ---
 
 ## 14. Débitos técnicos criados por esta spec
@@ -537,3 +555,8 @@ handlers de envio para reposição.
 - **Testes.** Esta spec mexe em código que calcula dinheiro e introduz casos de borda de
   data. O item 3.1 do roadmap (testes das funções puras) deveria vir **antes** ou junto.
   A janela é boa: base de produção zerada e app não lançado.
+- A nota da linha `reposicao_ja_cobrada` indica o ciclo de origem, recalculado a partir de
+  `dataOriginal` com a configuração de ciclo atual do aluno. Não há campo persistido com o
+  ciclo de origem. Se o aluno mudar `diaVencimento` ou `fechamentoMesCheio` entre o ciclo de
+  origem e a leitura, o período exibido na nota pode divergir do ciclo real. A linha vale
+  R$ 0,00, então o valor cobrado não é afetado — apenas o rótulo.
