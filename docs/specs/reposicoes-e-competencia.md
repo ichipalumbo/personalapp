@@ -228,6 +228,8 @@ No ciclo onde a aula **ocorreu**, a linha `reposicao_cobranca_adiada` traz:
 - Uma vez preenchido, o campo nunca é recalculado.
 - Quando `cobravel === true`, o campo não é gravado: a cobrança pertence ao ciclo de origem.
 
+> Nota de implementação: o frontend não deve enviar `cicloCobrancaResolvido` em nenhuma requisição de criação ou atualização de reposição, sob pena de 400.
+
 ### 5.5 Aluno com `valor_fixo`
 
 Para aluno com `metodoCobranca === 'valor_fixo'`, o valor do ciclo **não depende** da
@@ -452,7 +454,34 @@ Segundo passo, após o clique em "Enviar para reposição". Modal pequeno, conte
 - Um disclaimer curto por opção, explicando a consequência.
 - Quando o piso de 7 dias for aplicado (6.2), o aviso correspondente.
 
-Rótulos e textos exatos: ver 13.
+**Cabeçalho**
+
+- Título: `Cobrar esta aula?`
+- Subtítulo em duas linhas: nome do aluno na primeira, data e horário na segunda, no formato `Terça, 10/03 · 08:00`.
+
+O nome do aluno é obrigatório: o modal pode cobrir a informação na tela abaixo dele, e a escolha é irreversível — precisa ficar explícito de quem é a aula.
+
+Duas linhas, e não uma: nome comprido em tela de 320px trunca justamente o nome.
+
+**Opções**
+
+Rótulo
+Disclaimer
+
+`Cobrar neste ciclo`
+`Cobrada mesmo se a reposição não acontecer.`
+
+`Cobrar na reposição`
+`Se o prazo expirar, não é cobrada.`
+
+Sem opção pré-selecionada. As duas são legítimas.
+
+Os rótulos descrevem *quando* se cobra; os disclaimers existem para carregar o *se* — o desfecho quando a reposição não acontece, que é a diferença real entre as duas escolhas. Não encurtar os disclaimers a ponto de perder essa informação.
+
+**Rodapé**
+
+- Texto fixo: `Não pode ser alterado depois.`
+- Quando houver prazo (6.2), acrescentar: `Prazo para reposição: até dd/mm.`
 
 ### 9.4 Painel de reposições
 
@@ -468,7 +497,7 @@ roadmap). Cabe ali, sem refatoração:
 
 > **Reposições** — 2 pendentes · 1 vence em 5 dias
 
-"Em breve" = **7 dias**, mesma constante de 6.5.
+"Em breve" = **7 dias**, mesma constante de 6.5. O rótulo da caixinha é **Reposições**, decidido, e se o item 1.8 do roadmap mudar o conteúdo desse espaço o rótulo será revisto junto.
 
 ---
 
@@ -530,18 +559,7 @@ handlers de envio para reposição.
 
 ---
 
-## 13. Em aberto (decidir antes de implementar)
-
-1. **Textos exatos do modal de escolha (9.3).** Os rótulos das duas opções e o disclaimer
-   de cada uma. É a peça que a PT vai ler toda vez; não deve ser inventada no código.
-2. **Rótulo da caixinha no card do aluno** — "Reposições" ou algo mais específico, dado
-   que o item 1.8 do roadmap previa outro conteúdo para o mesmo espaço.
-
-Nota de implementação: o frontend não deve enviar `cicloCobrancaResolvido` em nenhuma requisição de criação ou atualização de reposição, sob pena de 400.
-
----
-
-## 14. Débitos técnicos criados por esta spec
+## 13. Débitos técnicos criados por esta spec
 
 - **Duas fontes no cálculo financeiro.** `financasService` passa a depender de
   `Agendamento` **e** `Reposicao` para fechar um ciclo. É o preço da collection separada.
