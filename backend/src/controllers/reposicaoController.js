@@ -1,5 +1,8 @@
 const Reposicao = require('../models/Reposicao');
+const Agendamento = require('../models/Agendamento');
+const Aluno = require('../models/Aluno');
 const reposicaoService = require('../services/reposicaoService');
+const financasService = require('../services/financasService');
 const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { normalizarDataParaISO } = require('../utils/time');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
@@ -279,6 +282,10 @@ async function atualizarReposicao(req, res) {
       return res.status(400).json({ error: 'historico é append-only; use POST /api/reposicoes/:id/historico.' });
     }
 
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'cicloCobrancaResolvido')) {
+      return res.status(400).json({ error: 'cicloCobrancaResolvido é derivado no servidor e não pode ser definido diretamente.' });
+    }
+
     if (payload.validoAte !== undefined && payload.validoAte !== null) {
       const validacaoValidoAte = validarDataISO(payload.validoAte, 'validoAte');
       if (!validacaoValidoAte.valido) {
@@ -287,15 +294,27 @@ async function atualizarReposicao(req, res) {
       payload.validoAte = validacaoValidoAte.valor;
     }
 
-    if (payload.cicloCobrancaResolvido !== undefined && payload.cicloCobrancaResolvido !== null) {
-      const inicioNormalizado = payload.cicloCobrancaResolvido.inicio !== undefined && payload.cicloCobrancaResolvido.inicio !== null
-        ? validarDataISO(String(payload.cicloCobrancaResolvido.inicio), 'cicloCobrancaResolvido.inicio').valor
-        : null;
-      const fimNormalizado = payload.cicloCobrancaResolvido.fim !== undefined && payload.cicloCobrancaResolvido.fim !== null
-        ? validarDataISO(String(payload.cicloCobrancaResolvido.fim), 'cicloCobrancaResolvido.fim').valor
-        : null;
+    const reposicaoExistente = await Reposicao.findOne({ ownerEmail, id });
+    if (!reposicaoExistente) {
+      return res.status(404).json({ error: `Reposição com id '${id}' não encontrada.` });
+    }
 
-      payload.cicloCobrancaResolvido = { inicio: inicioNormalizado, fim: fimNormalizado };
+    // 5.4: reposição não cobrável ganha cicloCobrancaResolvido na marcação (agendamentoReposicaoId),
+    // calculado no servidor a partir da data do agendamento. Congelado após a primeira gravação.
+    if (
+      Object.prototype.hasOwnProperty.call(payloadBruto, 'agendamentoReposicaoId') &&
+      payloadBruto.agendamentoReposicaoId &&
+      reposicaoExistente.cobravel === false &&
+      !reposicaoExistente.cicloCobrancaResolvido
+    ) {
+      const agendamento = await Agendamento.findOne({ ownerEmail, id: payloadBruto.agendamentoReposicaoId });
+      if (!agendamento) {
+        return res.status(400).json({ error: `Agendamento com id '${payloadBruto.agendamentoReposicaoId}' não encontrado.` });
+      }
+
+      const aluno = await Aluno.findOne({ ownerEmail, id: reposicaoExistente.alunoId });
+      const cicloCobranca = await financasService.resolverCicloCobranca(ownerEmail, aluno, agendamento.data);
+      payload.cicloCobrancaResolvido = cicloCobranca;
     }
 
     const reposicao = await Reposicao.findOneAndUpdate(

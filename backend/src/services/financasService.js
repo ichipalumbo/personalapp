@@ -269,6 +269,298 @@ function resolverSnapshotParaRecalculo(ciclo, aluno) {
   };
 }
 
+function formatarDataBR(dataISO) {
+  if (!dataISO) return null;
+  const partes = String(dataISO).slice(0, 10).split("-");
+  if (partes.length !== 3) return null;
+  const [, mes, dia] = partes;
+  return `${dia}/${mes}`;
+}
+
+function formatarPeriodoBR(cicloInicioISO, cicloFimISO) {
+  return `${formatarDataBR(cicloInicioISO)}–${formatarDataBR(cicloFimISO)}`;
+}
+
+// 8.1–8.4: decomposição pura de aulasContadas/valorTotalCiclo em linhas. Cada linha com valor
+// corresponde 1-a-1 a uma parcela já contada em calcularAulasContadasDoCiclo — a soma fecha por
+// construção, sem nenhuma correção genérica (a única exceção nomeada é o piso_zero, ver abaixo).
+function montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes) {
+  if (!ciclo) return [];
+
+  const cicloInicio = normalizarDateOnly(ciclo.cicloInicio);
+  const cicloFim = normalizarDateOnly(ciclo.cicloFim);
+  if (!cicloInicio || !cicloFim) return [];
+
+  const cicloInicioISO = toISODateOnly(cicloInicio);
+  const alunoId = ciclo.alunoId;
+  const lista = Array.isArray(agendamentos) ? agendamentos : [];
+  const listaReposicoes = Array.isArray(reposicoes) ? reposicoes : [];
+  const metodoCobranca =
+    ciclo.metodoCobranca || (aluno && aluno.metodoCobranca) || "por_aula";
+  const isValorFixo = metodoCobranca === "valor_fixo";
+  const preco = isValorFixo
+    ? 0
+    : Number(
+        (ciclo.precoAulaSnapshot !== null && ciclo.precoAulaSnapshot !== undefined
+          ? ciclo.precoAulaSnapshot
+          : aluno && aluno.preco) || 0,
+      );
+
+  const linhas = [];
+
+  // (A) agendamentos normais — recorrente vs. avulsa
+  const agendamentosDoAluno = lista.filter(
+    (agendamento) =>
+      agendamento &&
+      agendamento.alunoId === alunoId &&
+      !agendamento.reposicaoId &&
+      (agendamento.tipo === "aula" || agendamento.tipo === "reposicao"),
+  );
+
+  const recorrentes = agendamentosDoAluno.filter(
+    (agendamento) => agendamento.frequencia !== "uma_vez",
+  );
+  const avulsas = agendamentosDoAluno.filter(
+    (agendamento) => agendamento.frequencia === "uma_vez",
+  );
+
+  const qtdRecorrentes = recorrentes.reduce(
+    (total, agendamento) =>
+      total + normalizarAulasContadas(agendamento, cicloInicio, cicloFim),
+    0,
+  );
+  const qtdAvulsas = avulsas.reduce(
+    (total, agendamento) =>
+      total + normalizarAulasContadas(agendamento, cicloInicio, cicloFim),
+    0,
+  );
+
+  if (qtdRecorrentes > 0) {
+    linhas.push({
+      tipo: "recorrente",
+      descricao: `${qtdRecorrentes} aula(s) recorrente(s)`,
+      quantidade: qtdRecorrentes,
+      valorUnitario: isValorFixo ? 0 : preco,
+      valorTotal: isValorFixo ? 0 : qtdRecorrentes * preco,
+      nota: null,
+    });
+  }
+
+  if (qtdAvulsas > 0) {
+    linhas.push({
+      tipo: "avulsa",
+      descricao: `${qtdAvulsas} aula(s) avulsa(s)`,
+      quantidade: qtdAvulsas,
+      valorUnitario: isValorFixo ? 0 : preco,
+      valorTotal: isValorFixo ? 0 : qtdAvulsas * preco,
+      nota: null,
+    });
+  }
+
+  // (B)/(C) e linhas de valor zero — uma linha por reposição, com deduplicação por precedência.
+  const reposicoesDoAluno = listaReposicoes.filter(
+    (reposicao) => reposicao && reposicao.alunoId === alunoId,
+  );
+  const agendamentosComReposicao = lista.filter(
+    (agendamento) => agendamento && agendamento.alunoId === alunoId && agendamento.reposicaoId,
+  );
+
+  const PRECEDENCIA = [
+    "reposicao_cobravel_origem",
+    "reposicao_nao_cobravel",
+    "reposicao_ja_cobrada",
+    "reposicao_expirada",
+    "reposicao_pendente",
+  ];
+
+  for (const reposicao of reposicoesDoAluno) {
+    const candidatos = [];
+
+    if (
+      reposicao.cobravel === true &&
+      dataEmJanela(reposicao.dataOriginal, cicloInicio, cicloFim)
+    ) {
+      candidatos.push("reposicao_cobravel_origem");
+    }
+
+    if (
+      reposicao.cobravel === false &&
+      reposicao.cicloCobrancaResolvido &&
+      reposicao.cicloCobrancaResolvido.inicio === cicloInicioISO
+    ) {
+      candidatos.push("reposicao_nao_cobravel");
+    }
+
+    if (
+      reposicao.cobravel === true &&
+      !dataEmJanela(reposicao.dataOriginal, cicloInicio, cicloFim)
+    ) {
+      const agendamentoVinculado = agendamentosComReposicao.find(
+        (agendamento) =>
+          agendamento.reposicaoId === reposicao.id &&
+          normalizarAulasContadas(agendamento, cicloInicio, cicloFim) > 0,
+      );
+      if (agendamentoVinculado) {
+        candidatos.push("reposicao_ja_cobrada");
+      }
+    }
+
+    if (
+      reposicao.status === "expirada" &&
+      dataEmJanela(reposicao.validoAte, cicloInicio, cicloFim)
+    ) {
+      candidatos.push("reposicao_expirada");
+    }
+
+    if (
+      reposicao.cobravel === false &&
+      reposicao.status === "pendente" &&
+      dataEmJanela(reposicao.dataOriginal, cicloInicio, cicloFim)
+    ) {
+      candidatos.push("reposicao_pendente");
+    }
+
+    if (candidatos.length === 0) continue;
+
+    const tipoEscolhido = PRECEDENCIA.find((tipo) => candidatos.includes(tipo));
+
+    if (tipoEscolhido === "reposicao_cobravel_origem") {
+      linhas.push({
+        tipo: tipoEscolhido,
+        descricao: "reposição cobrável (origem)",
+        quantidade: 1,
+        valorUnitario: isValorFixo ? 0 : preco,
+        valorTotal: isValorFixo ? 0 : preco,
+        nota: null,
+      });
+    } else if (tipoEscolhido === "reposicao_nao_cobravel") {
+      linhas.push({
+        tipo: tipoEscolhido,
+        descricao: "reposição não cobrável",
+        quantidade: 1,
+        valorUnitario: isValorFixo ? 0 : preco,
+        valorTotal: isValorFixo ? 0 : preco,
+        nota: null,
+      });
+    } else if (tipoEscolhido === "reposicao_ja_cobrada") {
+      const origem = calcularCicloVigente(
+        aluno,
+        normalizarDateOnly(reposicao.dataOriginal),
+      );
+      const nota = origem
+        ? `já cobrada no ciclo ${formatarPeriodoBR(origem.cicloInicioISO, origem.cicloFimISO)}`
+        : "já cobrada em ciclo anterior";
+      linhas.push({
+        tipo: tipoEscolhido,
+        descricao: "reposição já cobrada",
+        quantidade: 1,
+        valorUnitario: 0,
+        valorTotal: 0,
+        nota,
+      });
+    } else if (tipoEscolhido === "reposicao_expirada") {
+      linhas.push({
+        tipo: tipoEscolhido,
+        descricao: "reposição expirada",
+        quantidade: 1,
+        valorUnitario: 0,
+        valorTotal: 0,
+        nota: `prazo expirado em ${formatarDataBR(reposicao.validoAte)}`,
+      });
+    } else if (tipoEscolhido === "reposicao_pendente") {
+      linhas.push({
+        tipo: tipoEscolhido,
+        descricao: "reposição pendente",
+        quantidade: 1,
+        valorUnitario: 0,
+        valorTotal: 0,
+        nota: "aguardando reagendamento; não cobrada",
+      });
+    }
+  }
+
+  // Ajuste manual — parcela explícita, pode ser negativa.
+  const ajuste = Number(ciclo.aulasManuaisExtras) || 0;
+  if (ajuste !== 0) {
+    linhas.push({
+      tipo: "ajuste_manual",
+      descricao: "ajuste manual",
+      quantidade: ajuste,
+      valorUnitario: isValorFixo ? 0 : preco,
+      valorTotal: isValorFixo ? 0 : ajuste * preco,
+      nota: ciclo.observacaoAjuste || null,
+    });
+  }
+
+  // Piso zero (5.5): única correção permitida, e só dispara na condição de truncamento.
+  const aulasContadas = Number(ciclo.aulasContadas) || 0;
+  const totalBruto = aulasContadas + ajuste;
+  if (!isValorFixo && totalBruto < 0) {
+    const somaLinhas = linhas.reduce(
+      (total, linha) => total + Number(linha.valorTotal || 0),
+      0,
+    );
+    const valorEsperado = Number(ciclo.valorTotalCiclo) || 0;
+    const diferenca = valorEsperado - somaLinhas;
+    if (diferenca > 0) {
+      linhas.push({
+        tipo: "piso_zero",
+        descricao: "ajuste de piso zero",
+        quantidade: 0,
+        valorUnitario: 0,
+        valorTotal: diferenca,
+        nota: "total do ciclo não pode ser negativo",
+      });
+    }
+  }
+
+  // 5.5: aluno valor_fixo — extrato puramente informativo, não altera valorTotalCiclo.
+  if (isValorFixo) {
+    linhas.push({
+      tipo: "valor_fixo",
+      descricao: "valor fixo do ciclo",
+      quantidade: 1,
+      valorUnitario: 0,
+      valorTotal: Number(ciclo.valorFixoSnapshot) || 0,
+      nota: null,
+    });
+  }
+
+  return linhas;
+}
+
+async function resolverCicloCobranca(ownerEmail, aluno, dataISO) {
+  const dataAlvo = normalizarDateOnly(dataISO);
+  if (!dataAlvo) return null;
+
+  let ciclo = calcularCicloVigente(aluno, dataAlvo);
+  if (!ciclo) return null;
+
+  const MAX_ITERACOES = 24;
+  let iteracoes = 0;
+
+  while (iteracoes < MAX_ITERACOES) {
+    const documento = await CicloFinanceiro.findOne({
+      ownerEmail,
+      alunoId: aluno.id,
+      cicloInicio: ciclo.cicloInicioISO,
+    }).lean();
+
+    if (!documento || !documento.dataPagamento) {
+      return { inicio: ciclo.cicloInicioISO, fim: ciclo.cicloFimISO };
+    }
+
+    iteracoes += 1;
+    const proximaData = diaSeguinte(ciclo.cicloFim);
+    ciclo = calcularCicloVigente(aluno, proximaData);
+    if (!ciclo) {
+      return null;
+    }
+  }
+
+  return { inicio: ciclo.cicloInicioISO, fim: ciclo.cicloFimISO };
+}
+
 // 5.8: ciclo sem dataPagamento é recontado a partir da agenda a cada leitura; ciclo pago fica congelado.
 async function sincronizarCicloComAgenda(documento, aluno, agendamentos, reposicoes) {
   if (!documento || documento.dataPagamento) return documento;
@@ -441,6 +733,12 @@ async function listarFinancasDoOwner(ownerEmail, hoje = new Date()) {
       hoje,
     );
 
+    if (cicloAtual) {
+      cicloAtual.extrato = cicloAtual.dataPagamento
+        ? cicloAtual.extrato
+        : montarExtratoDoCiclo(cicloAtual, aluno, agendamentos, reposicoesAtualizadas);
+    }
+
     // 6.2.1: histórico não entra no payload da listagem; apenas um indicador booleano, sem find().
     const filtroHistorico = { ownerEmail, alunoId: aluno.id };
     if (cicloAtual) {
@@ -505,9 +803,11 @@ async function obterHistoricoFinancasPorAluno(
       doc.atualizadoEm = new Date();
       await doc.save();
     }
-    historico.push(
-      aplicarStatusCiclo(doc.toObject ? doc.toObject() : doc, hoje),
-    );
+    const cicloObjeto = aplicarStatusCiclo(doc.toObject ? doc.toObject() : doc, hoje);
+    cicloObjeto.extrato = cicloObjeto.dataPagamento
+      ? cicloObjeto.extrato
+      : montarExtratoDoCiclo(cicloObjeto, aluno, agendamentos, reposicoesAtualizadas);
+    historico.push(cicloObjeto);
   }
 
   return historico;
@@ -537,6 +837,7 @@ async function marcarCicloComoPago(
   )
     ? payload.formaPagamento || null
     : ciclo.formaPagamento;
+  ciclo.extrato = montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes);
   ciclo.status = "pago";
   ciclo.atualizadoEm = new Date();
   await ciclo.save();
@@ -589,6 +890,8 @@ module.exports = {
   calcularAulasContadasDoCiclo,
   calcularValorTotalCiclo,
   calcularTotalAulasCobradas,
+  montarExtratoDoCiclo,
+  resolverCicloCobranca,
   listarFinancasDoOwner,
   obterHistoricoFinancasPorAluno,
   marcarCicloComoPago,
