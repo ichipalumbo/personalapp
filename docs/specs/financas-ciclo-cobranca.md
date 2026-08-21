@@ -1,7 +1,8 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 5 · **Atualizado**: 2026-08-20
+> **Status**: Em produção · **Versão**: 6 · **Atualizado**: 2026-08-20
 > **Defeitos em aberto**: 1 (ver seção 12.3)
+> **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
 > Projeto: Agenda Personal Trainer (Prô Josy) — frontend JS vanilla + backend Node/Express/MongoDB.
 > Este documento é a **fonte de verdade** das decisões de produto desta feature. Não infira regras de negócio além do que está descrito aqui — onde houver dúvida, ela está explicitamente resolvida na seção 7 ("Decisões e Casos de Borda"). Qualquer regra não coberta aqui deve ser tratada como "Fora de Escopo" (seção 8) e não implementada sem confirmação humana.
@@ -334,6 +335,8 @@ Pode ser persistido por conveniência, mas é recalculado a cada leitura (exceto
 
 ### 5.8 Recontagem de aulas em ciclo ainda não pago
 
+A contagem passa a seguir o **modelo de competência** definido na seção 5 de `reposicoes-e-competencia.md`: agendamentos normais não vinculados a reposição, mais reposições cobráveis com origem no ciclo, mais reposições não cobráveis resolvidas no ciclo.
+
 **Problema que originou a regra**: `aulasContadas` era calculado apenas na criação do ciclo e nunca atualizado. Ao excluir (ou adicionar/mover) uma aula dentro da janela do ciclo vigente, o financeiro continuava exibindo o número antigo.
 
 **Regra**:
@@ -439,7 +442,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 | 13  | Valor fixo esconde a contagem de aulas?                        | Não. Contagem permanece visível como referência.                                                                                                                                                           |
 | 14  | Deve haver cache local?                                        | Sim, apenas leitura/resiliência a cold start, e apenas do ciclo vigente. Escrita sempre confirmada pelo backend (6.1).                                                                                     |
 | 15  | Recorrência pode ser reimplementada no backend?                | Não. Módulo isomórfico único (2.4).                                                                                                                                                                        |
-| 16  | Excluir aula da agenda remove do financeiro?                   | Sim, **enquanto o ciclo não estiver pago**: recontagem a cada leitura (5.8). Ciclo pago fica congelado. Regra temporária até existir status de presença.                                                   |
+| 16  | Excluir aula da agenda remove do financeiro?                   | Sim, **enquanto o ciclo não estiver pago**: recontagem a cada leitura (5.8). **Envio para reposição não é exclusão** — ver `reposicoes-e-competencia.md`. Ciclo pago fica congelado. Regra temporária até existir status de presença. |
 | 17  | `aulasManuaisExtras` pode ser negativo?                        | Sim (desconto, cortesia, experimental). Mas o total cobrado nunca fica negativo — piso zero (5.5).                                                                                                         |
 | 18  | Onde fica "Valor Hora/Aula"?                                   | Dentro do card "Cobrança por ciclo" (3.1.2). Desabilita junto com o card em Consultoria Online.                                                                                                            |
 | 19  | O que o card do aluno mostra no lugar do KPI antigo?           | Resumo do ciclo atual + indicador de consistência de agenda (seções 10 e 11).                                                                                                                              |

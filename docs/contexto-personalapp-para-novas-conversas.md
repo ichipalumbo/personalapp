@@ -22,8 +22,11 @@
 - **O projeto nasceu com apoio de IA.** No começo o Copilot montou a estrutura e não
   criou testes nem ambiente local. Boa parte das lacunas atuais vem daí, não de
   descuido. Tratar como história, não como falha.
-- **Usuário final real**: uma personal trainer (Prô Josy). O app está em produção e é
-  usado de verdade. Bug em cálculo financeiro afeta cobrança de aluno real.
+- **Usuário final real**: uma personal trainer (Prô Josy). O app está publicado, mas
+  **ainda não foi oficialmente lançado**. A base de produção é usada para teste e limpa
+  em seguida — hoje está zerada. Não há dado real em risco, o que torna esta a melhor
+  janela para mudanças estruturais e para escrever testes. **Essa janela fecha no
+  lançamento.**
 
 ### Preferências explícitas (confirmadas por ele)
 
@@ -108,9 +111,10 @@ impedindo vazamento entre contas.
 ### 3.4 Não há teste automatizado
 
 Nenhum runner configurado em `backend/package.json`. Toda validação é manual, em
-produção. **Dois bugs financeiros reais já escaparam para prod** por isso (aula excluída
-continuar sendo cobrada; reajuste alterando ciclos antigos retroativamente). Ambos
-corrigidos.
+produção. **Dois bugs financeiros escaparam para prod** por isso (aula excluída continuar
+sendo cobrada; reajuste alterando ciclos antigos retroativamente), mas eles **não
+afetaram cobrança de aluno real** porque a base de produção foi limpa e o app ainda não foi
+lançado oficialmente. Ambos foram corrigidos.
 
 ### 3.5 Ordem de rotas no Express
 
@@ -122,7 +126,7 @@ vir antes de `/:id`.
 ## 4. Regras do módulo financeiro
 
 Área mais sensível do sistema. Detalhamento em
-`docs/specs/financas-ciclo-cobranca.md` (v5, em produção).
+`docs/specs/financas-ciclo-cobranca.md` (v6, em produção).
 
 - **Recálculo sempre pelo snapshot** do ciclo (`precoAulaSnapshot`, `valorFixoSnapshot`,
   `metodoCobranca`), nunca pelo preço atual do aluno. Reajuste vale do próximo ciclo em
@@ -206,12 +210,17 @@ independentes (testes de função pura, backend local, frontend apontando para o
 apenas um realmente grande (banco de dev separado). *Lição: quando ele descrever algo
 como "estrutural demais para mexer agora", vale decompor antes de concordar.*
 
+**5. Presumir que a fila de reposição era persistida.**
+Discuti regras de cobrança sobre a fila por um bom tempo antes de verificar que
+`aulasParaRepor` é só um array em memória, nunca gravado. *Lição: antes de desenhar
+regra sobre um dado, confirmar que o dado sobrevive a um reload.*
+
 ---
 
 ## 8. Estado em 20/08/2026
 
 ### Entregue
-- **Finanças — Ciclo de Cobrança por Aluno** (spec v5, em produção): ciclo configurável
+- **Finanças — Ciclo de Cobrança por Aluno** (spec v6, em produção): ciclo configurável
   por aluno com vencimento móvel, registro de pagamento, status automático, ajuste manual
   por ciclo, histórico. Substituiu o antigo sistema de KPI financeiro
   (`kpiService.js` e cálculos de projeção em `utils-kpi.js` **não existem mais**).
@@ -230,10 +239,20 @@ como "estrutural demais para mexer agora", vale decompor antes de concordar.*
 **Próximo passo sugerido**: `0.1` + `1.7` num prompt só — esforço mínimo, arquivos
 diferentes, sem risco de conflito.
 
+### Estado atual da documentação
+- **Spec nova**: `docs/specs/reposicoes-e-competencia.md` está registrada como **proposta,
+  não implementada**.
+- **Grafia normalizada**: o tipo de aula no financeiro e no serializer passou a usar
+  `'reposicao'`, sem acento.
+- **Gatilho de v6 da Finanças**: o de reposições **já disparou**. A spec de Finanças
+  precisa seguir a regra de competência que a nova spec define.
+
 ### Gatilhos para uma v6 da spec de Finanças
 - `1.5` (status de no-show) muda a regra 5.8: contagem passaria a considerar presença,
   não mera existência do compromisso na agenda.
 - `2.1` (cobrança automatizada) obriga a definir estorno/reabertura de ciclo pago.
+- **Reposições** (spec nova): já moveram a regra de contagem para o modelo de competência,
+  então a v6 da Finanças foi disparada antes de qualquer outra mudança de negócio.
 
 ---
 

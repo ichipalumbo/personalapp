@@ -57,6 +57,32 @@ Cada item traz:
 
 ---
 
+### [ ] 0.5 Collection `Reposicao` + modelo de competência
+- **O que é**: Nova collection para fila de reposição e mudança do modelo financeiro de cobrança por ocorrência para competência de ciclo.
+- **Por que importa**: Corrige a perda de informação da fila e elimina a cobrança dupla em ciclos adjacentes por causa de reposições. É a entrega principal da spec nova.
+- **Onde mexer**: `docs/specs/reposicoes-e-competencia.md`, `backend/src/models/Reposicao.js`, `backend/src/services/financasService.js` e fluxo de envio para reposição.
+- **Esforço**: Médio.
+
+### [ ] 0.6 Extrato do ciclo
+- **O que é**: Exibir em cada ciclo o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado.
+- **Por que importa**: Dá previsibilidade e auditoria para o PT, sem depender de memória ou de contagem ad hoc na agenda.
+- **Onde mexer**: `docs/specs/reposicoes-e-competencia.md`, `backend/src/services/financasService.js`, tela de Finanças.
+- **Esforço**: Médio.
+
+### [ ] 0.7 Prazo de validade + expiração lazy
+- **O que é**: Definir prazo para reposição pendente e expirar os registros de forma automática/lazy sem bloquear a tela de cobrança.
+- **Por que importa**: Evita que a fila fique viva indefinidamente e dá regra de negócio clara para o que vence.
+- **Onde mexer**: `docs/specs/reposicoes-e-competencia.md`, `backend/src/controllers/reposicaoController.js`, rotina de expiração em background ou lazy check.
+- **Esforço**: Médio.
+
+### [ ] 0.8 Avisos in-app de reposição a vencer
+- **O que é**: Card do aluno + painel com alerta para reposição prestes a expirar.
+- **Por que importa**: Dá visibilidade útil sem exigir notificação externa; é o próximo passo de UX após a regra de negócio.
+- **Onde mexer**: `view-alunos.js`, painel de aluno e endpoint de fila de reposição.
+- **Esforço**: Baixo–Médio.
+
+---
+
 ### ✅ Não é débito: custo da rota de consistência de agenda
 `GET /api/alunos/consistencia-agenda` faz 2 consultas de custo **fixo** (alunos + agendamentos) e resolve o resto em memória — não escala por aluno. Chegou a ser levantada como possível dívida, mas foi **reclassificada como comportamento aceito** (seção 10.1 da spec). Não otimizar preventivamente. Se um dia a aba Alunos ficar lenta, o ponto a investigar é o volume de dados trafegado (filtrar `tipo`/`frequencia` já na consulta, ou unificar com a rota de Finanças), não a lógica do indicador.
 
@@ -80,6 +106,7 @@ Cada item traz:
 - **Onde mexer**: `backend/` — adicionar `"test": "node --test"` em `backend/package.json` e criar os arquivos de teste. Hoje não há nenhum runner configurado.
 - **Ponto de atenção**: não tentar cobrir tudo. O alvo são as funções puras. Testar o que depende de Mongo é outro nível de esforço e pode ficar para depois (ou nunca).
 - **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
+- **Prioridade**: **subiu** com a nova spec de reposições e competência. A contagem do ciclo agora mexe em regras de data e valor, e o melhor momento para escrever estes testes é antes de qualquer mudança de cálculo.
 
 ---
 
@@ -154,7 +181,7 @@ Cada item traz:
 ### [ ] 1.5 Status de "não compareceu" (no-show) / cancelamento pelo aluno
 - **O que é**: Além do status `confirmado` (default atual em `Agendamento.js`), adicionar estados como `cancelado_pelo_aluno` e `faltou`, para diferenciar de cancelamento feito pelo próprio PT.
 - **Por que importa**: Sem diferenciar falta do aluno, fica difícil cobrar reposição de forma justa ou identificar alunos com muita falta.
-- **⚠️ Dependência crítica do financeiro**: este item é **pré-requisito** para evoluir a regra 5.8 da spec de Finanças. Hoje o financeiro conta simplesmente "o que existe na agenda" — se a aula for excluída de um ciclo não pago, ela some da cobrança. Quando existir status de presença, a contagem deve passar a considerar *realizada / falta cobrável / cancelada sem cobrança*, em vez da mera existência do compromisso. Registrado como revisão futura nas seções 5.8 e 8 da spec.
+- **⚠️ Dependência crítica do financeiro**: este item é **pré-requisito** para evoluir a regra 5.8 da spec de Finanças. Quando existir, a escolha cobrável/não cobrável pode passar a ser derivada de *quem cancelou*. Hoje o financeiro conta simplesmente "o que existe na agenda" — se a aula for excluída de um ciclo não pago, ela some da cobrança. Quando existir status de presença, a contagem deve passar a considerar *realizada / falta cobrável / cancelada sem cobrança*, em vez da mera existência do compromisso. Registrado como revisão futura nas seções 5.8 e 8 da spec.
 - **Onde mexer**: `backend/src/models/Agendamento.js` (ajustar enum/valores aceitos), `modal-acao-slot.js` (ações de cancelar/faltou) e, em seguida, `backend/src/services/financasService.js` (regra de contagem). ⚠️ A antiga `contarReposicoesPorAluno` de `kpiService.js`, que este item citava, **não existe mais**.
 - **Recomendação**: por mexer em valor cobrado, é o candidato natural para entrar **depois** do item 3.1 (testes). Assim a mudança na contagem entra com rede.
 - **Esforço**: Médio (a parte de UI é simples; a integração com o financeiro exige cuidado).
@@ -181,7 +208,7 @@ Cada item traz:
 - **O que é**: Uma caixinha no card do aluno mostrando quantas aulas ele tem pendentes de reposição.
 - **Por que importa**: Foi explicitamente citada como a próxima feature desejada durante o desenho de Finanças, e ficou **fora de escopo** de propósito para não misturar com a mudança do modelo de cobrança.
 - **Onde mexer**: `assets/js/view-alunos.js`. O layout do card (`.aluno-card-indicadores`, grid `auto-fit`) **já foi estruturado para acomodar uma terceira caixinha sem refatoração** — ver seção 11 da spec. No backend, o padrão a seguir é o de `agendaConsistencyService.js` (indicador operacional isolado, exposto por rota própria). ⚠️ A antiga `contarReposicoesPorAluno` **foi removida** e não deve ser ressuscitada — a regra precisa ser redesenhada, provavelmente junto com o item 1.5.
-- **Dependência**: faz mais sentido depois (ou junto) do item 1.5, que define o que gera uma reposição.
+- **Dependência**: faz mais sentido depois (ou junto) do item 1.5, que define o que gera uma reposição. **Parcialmente atendido pela caixinha de avisos de reposição a vencer** (item 0.8), então o escopo deve ser reavaliado antes de executar.
 - **Esforço**: Baixo–Médio.
 
 ---

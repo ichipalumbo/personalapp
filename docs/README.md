@@ -10,7 +10,8 @@
 | Documento | O que é | Quando ler |
 |---|---|---|
 | [`roadmap.md`](roadmap.md) | Backlog vivo do produto, com os débitos técnicos conhecidos mapeados | Antes de escolher a próxima feature |
-| [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno · **v5 · em produção** | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
+| [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno · **v6 · em produção** | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
+| [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md) | Fila de reposições, competência de cobrança, prazo de validade e extrato do ciclo | Antes de definir como aulas enviadas para reposição entram no cálculo e no histórico financeiro |
 
 ---
 

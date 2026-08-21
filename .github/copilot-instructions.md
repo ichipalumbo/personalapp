@@ -36,7 +36,7 @@ correspondente em `docs/specs/`.
 - Backlog, priorização e débitos técnicos conhecidos: `docs/roadmap.md`.
 - Índice da documentação: `docs/README.md`.
 
-Spec ativa: `docs/specs/financas-ciclo-cobranca.md` (v5, em produção).
+Spec ativa: `docs/specs/financas-ciclo-cobranca.md` (v6, em produção). A spec complementar `docs/specs/reposicoes-e-competencia.md` redefine a regra 5.8 e prevalece em caso de divergência sobre reposições.
 
 ---
 
