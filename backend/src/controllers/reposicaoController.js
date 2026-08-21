@@ -279,18 +279,6 @@ async function atualizarReposicao(req, res) {
       return res.status(400).json({ error: 'historico é append-only; use POST /api/reposicoes/:id/historico.' });
     }
 
-    if (payload.id && payload.id !== id) {
-      return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
-    }
-
-    if (payload.dataEnvio !== undefined) {
-      return res.status(400).json({ error: 'dataEnvio é imutável após a criação da reposição.' });
-    }
-
-    if (payload.cobravel !== undefined && typeof payload.cobravel !== 'boolean') {
-      return res.status(400).json({ error: 'cobravel deve ser booleano.' });
-    }
-
     if (payload.validoAte !== undefined && payload.validoAte !== null) {
       const validacaoValidoAte = validarDataISO(payload.validoAte, 'validoAte');
       if (!validacaoValidoAte.valido) {

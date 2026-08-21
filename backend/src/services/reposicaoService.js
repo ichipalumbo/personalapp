@@ -3,13 +3,19 @@ const Reposicao = require('../models/Reposicao');
 function normalizarDataSemHora(value) {
   if (!value) return null;
 
-  const valor = String(value);
-  const data = new Date(valor);
-  if (Number.isNaN(data.getTime())) {
+  const partes = String(value).slice(0, 10).split('-');
+  if (partes.length !== 3) return null;
+
+  const [anoTexto, mesTexto, diaTexto] = partes;
+  const ano = Number(anoTexto);
+  const mes = Number(mesTexto);
+  const dia = Number(diaTexto);
+
+  if (!Number.isInteger(ano) || !Number.isInteger(mes) || !Number.isInteger(dia)) {
     return null;
   }
 
-  return new Date(data.getFullYear(), data.getMonth(), data.getDate());
+  return new Date(ano, mes - 1, dia);
 }
 
 function aplicarExpiracaoLazy(reposicoes, hoje = new Date()) {
