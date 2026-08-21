@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Proposta (não implementada) · **Versão**: 1 · **Atualizado**: 2026-08-20
+> **Status**: Proposta (não implementada) · **Versão**: 2 · **Atualizado**: 2026-08-21
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v6).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -108,8 +108,12 @@ e ocorrências de séries recorrentes não têm documento próprio para carregar
 | `agendamentoOriginalId` | String | de onde veio |
 | `agendamentoReposicaoId` | String ou null | para onde foi — **campo crítico**, ver 5.3 |
 | `validoAte` | String ISO ou null | prazo (ver 6). Nulo enquanto não houver prazo |
-| `dataEnvio` | String ISO | quando entrou na fila |
-| `historico` | Array | append-only: `{ evento, data, agendamentoId }` |
+| `dataEnvio` | String ISO 8601 completo | quando entrou na fila; auditoria, precisa de ordem fina |
+| `historico` | Array | append-only: `{ evento, data, agendamentoId }`; `data` é timestamp ISO 8601 completo |
+
+A collection usa `strict` padrão do Mongoose, **diferente dos demais schemas do projeto**, que usam `{ strict: false }`. O formato aqui nasce fechado e conhecido; `strict` padrão impede que um typo em nome de campo grave silenciosamente — risco relevante num modelo que alimenta cálculo financeiro.
+
+`dataOriginal`, `validoAte`, `cicloCobrancaResolvido.inicio` e `.fim` são **datas puras** (`YYYY-MM-DD`), porque representam competência e são comparadas contra a janela do ciclo. Já `dataEnvio` e `historico[].data` são **timestamps ISO completos** (`new Date().toISOString()`), porque são auditoria: precisam de ordenação fina mesmo quando dois eventos acontecem no mesmo dia.
 
 Índices: `{ ownerEmail: 1, id: 1 }` único, e `{ ownerEmail: 1, alunoId: 1, status: 1 }`
 para a consulta da fila.
@@ -145,13 +149,18 @@ igual ao resto do sistema. Não há outra camada impedindo vazamento entre conta
 
 ### 4.4 Formato de datas
 
-**Tudo em ISO (`YYYY-MM-DD`) dentro da collection.** O fluxo atual empilha
-`dataCancelamento` em pt-BR vindo direto do modal; na criação do registro isso **precisa**
-passar por `normalizarDataParaISO` (`backend/src/utils/time.js`). Conversão para pt-BR
-só na renderização.
+Existem duas granularidades distintas na collection:
 
-> Sem isso, a comparação com a janela do ciclo falha silenciosamente nas bordas — é o
-> tipo de bug que só aparece no dia 1 e no dia 31.
+- **Datas de competência**: `dataOriginal`, `validoAte`, `cicloCobrancaResolvido.inicio` e
+  `.fim` ficam em ISO puro (`YYYY-MM-DD`). O fluxo atual empilha `dataCancelamento` em
+  pt-BR vindo direto do modal; na criação do registro isso **precisa** passar por
+  `normalizarDataParaISO` (`backend/src/utils/time.js`). Conversão para pt-BR só na
+  renderização.
+- **Auditoria**: `dataEnvio` e `historico[].data` ficam em timestamp ISO completo
+  (`new Date().toISOString()`), para permitir ordenação fina mesmo no mesmo dia.
+
+> Sem a normalização das datas de competência, a comparação com a janela do ciclo falha
+> silenciosamente nas bordas — é o tipo de bug que só aparece no dia 1 e no dia 31.
 
 ---
 

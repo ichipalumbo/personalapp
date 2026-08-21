@@ -27,6 +27,60 @@ function validarDataISO(data, nomeCampo) {
   return { valido: true, valor: dataNormalizada };
 }
 
+function validarISO8601Completo(valor, nomeCampo) {
+  if (valor === undefined || valor === null || valor === '') {
+    return { valido: false, mensagem: `${nomeCampo} é obrigatório.` };
+  }
+
+  if (typeof valor !== 'string') {
+    return { valido: false, mensagem: `${nomeCampo} deve ser um timestamp ISO 8601 válido.` };
+  }
+
+  const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:?\d{2})$/;
+  if (!regex.test(valor.trim())) {
+    return { valido: false, mensagem: `${nomeCampo} deve ser um timestamp ISO 8601 válido.` };
+  }
+
+  const data = new Date(valor);
+  if (Number.isNaN(data.getTime())) {
+    return { valido: false, mensagem: `${nomeCampo} deve ser um timestamp ISO 8601 válido.` };
+  }
+
+  return { valido: true, valor: valor.trim() };
+}
+
+function normalizarHistorico(historico, nomeCampo) {
+  if (historico === undefined) {
+    return historico;
+  }
+
+  if (!Array.isArray(historico)) {
+    return { erro: `${nomeCampo} deve ser um array.` };
+  }
+
+  const historicoNormalizado = historico.map((item, index) => {
+    if (!item || typeof item !== 'object') {
+      throw new Error(`${nomeCampo}[${index}] deve ser um objeto.`);
+    }
+
+    if (item.data === undefined || item.data === null || item.data === '') {
+      throw new Error(`${nomeCampo}[${index}].data é obrigatório.`);
+    }
+
+    const dataValidada = validarISO8601Completo(item.data, `${nomeCampo}[${index}].data`);
+    if (!dataValidada.valido) {
+      throw new Error(dataValidada.mensagem);
+    }
+
+    return {
+      ...item,
+      data: dataValidada.valor
+    };
+  });
+
+  return { historico: historicoNormalizado };
+}
+
 async function listarReposicoes(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -94,6 +148,12 @@ async function criarReposicao(req, res) {
       return res.status(400).json({ error: 'id é obrigatório.' });
     }
 
+    const idNormalizado = String(payload.id);
+    const existente = await Reposicao.findOne({ ownerEmail, id: idNormalizado }).lean();
+    if (existente) {
+      return res.status(409).json({ error: `Já existe uma reposição com id '${idNormalizado}' para este usuário.` });
+    }
+
     const validacaoDataOriginal = validarDataISO(payload.dataOriginal, 'dataOriginal');
     if (!validacaoDataOriginal.valido) {
       return res.status(400).json({ error: validacaoDataOriginal.mensagem });
@@ -103,32 +163,80 @@ async function criarReposicao(req, res) {
       return res.status(400).json({ error: 'cobravel é obrigatório e deve ser booleano.' });
     }
 
+    if (payload.dataEnvio !== undefined) {
+      const validacaoDataEnvio = validarISO8601Completo(payload.dataEnvio, 'dataEnvio');
+      if (!validacaoDataEnvio.valido) {
+        return res.status(400).json({ error: validacaoDataEnvio.mensagem });
+      }
+    }
+
+    if (payload.historico !== undefined) {
+      try {
+        const historicoNormalizado = normalizarHistorico(payload.historico, 'historico');
+        if (historicoNormalizado && historicoNormalizado.erro) {
+          return res.status(400).json({ error: historicoNormalizado.erro });
+        }
+        payload.historico = historicoNormalizado.historico;
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
+    }
+
+    if (payload.validoAte !== undefined && payload.validoAte !== null) {
+      const validacaoValidoAte = validarDataISO(payload.validoAte, 'validoAte');
+      if (!validacaoValidoAte.valido) {
+        return res.status(400).json({ error: validacaoValidoAte.mensagem });
+      }
+    }
+
+    if (payload.cicloCobrancaResolvido !== undefined && payload.cicloCobrancaResolvido !== null && typeof payload.cicloCobrancaResolvido === 'object') {
+      const ciclo = payload.cicloCobrancaResolvido;
+
+      if (ciclo.inicio !== undefined && ciclo.inicio !== null) {
+        const validacaoInicio = validarDataISO(ciclo.inicio, 'cicloCobrancaResolvido.inicio');
+        if (!validacaoInicio.valido) {
+          return res.status(400).json({ error: validacaoInicio.mensagem });
+        }
+      }
+
+      if (ciclo.fim !== undefined && ciclo.fim !== null) {
+        const validacaoFim = validarDataISO(ciclo.fim, 'cicloCobrancaResolvido.fim');
+        if (!validacaoFim.valido) {
+          return res.status(400).json({ error: validacaoFim.mensagem });
+        }
+      }
+    }
+
     const payloadParaSalvar = {
       ...payload,
       ownerEmail,
-      id: String(payload.id),
+      id: idNormalizado,
       alunoId: String(payload.alunoId),
       dataOriginal: validacaoDataOriginal.valor,
-      dataEnvio: payload.dataEnvio ? normalizarDataParaISO(String(payload.dataEnvio)) || payload.dataEnvio : new Date().toISOString().slice(0, 10),
-      ...(payload.validoAte ? { validoAte: normalizarDataParaISO(String(payload.validoAte)) || payload.validoAte } : {}),
+      dataEnvio: payload.dataEnvio ? (validarISO8601Completo(payload.dataEnvio, 'dataEnvio').valor) : new Date().toISOString(),
+      ...(payload.validoAte ? { validoAte: validarDataISO(payload.validoAte, 'validoAte').valor } : {}),
       ...(payload.cicloCobrancaResolvido && typeof payload.cicloCobrancaResolvido === 'object'
         ? {
             cicloCobrancaResolvido: {
-              ...(payload.cicloCobrancaResolvido.inicio ? { inicio: normalizarDataParaISO(String(payload.cicloCobrancaResolvido.inicio)) || payload.cicloCobrancaResolvido.inicio } : { inicio: null }),
-              ...(payload.cicloCobrancaResolvido.fim ? { fim: normalizarDataParaISO(String(payload.cicloCobrancaResolvido.fim)) || payload.cicloCobrancaResolvido.fim } : { fim: null })
+              ...(payload.cicloCobrancaResolvido.inicio !== undefined && payload.cicloCobrancaResolvido.inicio !== null ? { inicio: validarDataISO(String(payload.cicloCobrancaResolvido.inicio), 'cicloCobrancaResolvido.inicio').valor } : { inicio: null }),
+              ...(payload.cicloCobrancaResolvido.fim !== undefined && payload.cicloCobrancaResolvido.fim !== null ? { fim: validarDataISO(String(payload.cicloCobrancaResolvido.fim), 'cicloCobrancaResolvido.fim').valor } : { fim: null })
             }
           }
         : {}),
       ...(payload.historico ? { historico: payload.historico } : {})
     };
 
-    const reposicao = await Reposicao.findOneAndUpdate(
-      { ownerEmail, id: payloadParaSalvar.id },
-      { $set: payloadParaSalvar },
-      { new: true, upsert: true, runValidators: true }
-    );
+    let reposicao;
+    try {
+      reposicao = await Reposicao.create(payloadParaSalvar);
+    } catch (err) {
+      if (err && err.code === 11000) {
+        return res.status(409).json({ error: `Já existe uma reposição com id '${idNormalizado}' para este usuário.` });
+      }
+      throw err;
+    }
 
-    res.status(200).json(reposicao);
+    res.status(201).json(reposicao);
   } catch (err) {
     responderErroReposicao(res, err, 'criar reposição');
   }
@@ -138,7 +246,28 @@ async function atualizarReposicao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const { id } = req.params;
-    const payload = limparPayloadReposicao(req.body);
+    const payloadBruto = req.body || {};
+    const payload = limparPayloadReposicao(payloadBruto);
+
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'id') && payloadBruto.id && payloadBruto.id !== id) {
+      return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'cobravel')) {
+      return res.status(400).json({ error: 'cobravel é imutável após a criação da reposição.' });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'dataOriginal')) {
+      return res.status(400).json({ error: 'dataOriginal é imutável após a criação da reposição.' });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'agendamentoOriginalId')) {
+      return res.status(400).json({ error: 'agendamentoOriginalId é imutável após a criação da reposição.' });
+    }
+
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'ownerEmail')) {
+      return res.status(400).json({ error: 'ownerEmail é imutável após a criação da reposição.' });
+    }
 
     if (payload.id && payload.id !== id) {
       return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
@@ -157,7 +286,7 @@ async function atualizarReposicao(req, res) {
     }
 
     if (payload.dataEnvio !== undefined) {
-      const validacaoDataEnvio = validarDataISO(payload.dataEnvio, 'dataEnvio');
+      const validacaoDataEnvio = validarISO8601Completo(payload.dataEnvio, 'dataEnvio');
       if (!validacaoDataEnvio.valido) {
         return res.status(400).json({ error: validacaoDataEnvio.mensagem });
       }
@@ -174,13 +303,25 @@ async function atualizarReposicao(req, res) {
 
     if (payload.cicloCobrancaResolvido !== undefined && payload.cicloCobrancaResolvido !== null) {
       const inicioNormalizado = payload.cicloCobrancaResolvido.inicio !== undefined && payload.cicloCobrancaResolvido.inicio !== null
-        ? normalizarDataParaISO(String(payload.cicloCobrancaResolvido.inicio)) || payload.cicloCobrancaResolvido.inicio
+        ? validarDataISO(String(payload.cicloCobrancaResolvido.inicio), 'cicloCobrancaResolvido.inicio').valor
         : null;
       const fimNormalizado = payload.cicloCobrancaResolvido.fim !== undefined && payload.cicloCobrancaResolvido.fim !== null
-        ? normalizarDataParaISO(String(payload.cicloCobrancaResolvido.fim)) || payload.cicloCobrancaResolvido.fim
+        ? validarDataISO(String(payload.cicloCobrancaResolvido.fim), 'cicloCobrancaResolvido.fim').valor
         : null;
 
       payload.cicloCobrancaResolvido = { inicio: inicioNormalizado, fim: fimNormalizado };
+    }
+
+    if (payload.historico !== undefined) {
+      try {
+        const historicoNormalizado = normalizarHistorico(payload.historico, 'historico');
+        if (historicoNormalizado && historicoNormalizado.erro) {
+          return res.status(400).json({ error: historicoNormalizado.erro });
+        }
+        payload.historico = historicoNormalizado.historico;
+      } catch (err) {
+        return res.status(400).json({ error: err.message });
+      }
     }
 
     const reposicao = await Reposicao.findOneAndUpdate(

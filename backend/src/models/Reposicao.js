@@ -2,6 +2,24 @@ const mongoose = require('mongoose');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
 const { normalizedOrOriginal } = require('../utils/valueNormalizer');
 
+function normalizarTimestampISO(value) {
+  if (value === undefined || value === null) {
+    return value;
+  }
+
+  const texto = String(value).trim();
+  if (!texto) {
+    return null;
+  }
+
+  const data = new Date(texto);
+  if (Number.isNaN(data.getTime())) {
+    return null;
+  }
+
+  return texto;
+}
+
 const ReposicaoSchema = new mongoose.Schema({
   ownerEmail: { type: String, required: true },
   id: { type: String, required: true },
@@ -48,12 +66,16 @@ const ReposicaoSchema = new mongoose.Schema({
   dataEnvio: {
     type: String,
     default: null,
-    set: (value) => normalizedOrOriginal(value, normalizarDataParaISO)
+    set: (value) => normalizedOrOriginal(value, normalizarTimestampISO)
   },
   historico: {
     type: [{
       evento: { type: String, required: true },
-      data: { type: String, required: true },
+      data: {
+        type: String,
+        required: true,
+        set: (value) => normalizedOrOriginal(value, normalizarTimestampISO)
+      },
       agendamentoId: { type: String, default: null }
     }],
     default: []
