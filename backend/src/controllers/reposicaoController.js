@@ -149,6 +149,12 @@ async function criarReposicao(req, res) {
       return res.status(400).json({ error: 'cicloCobrancaResolvido é derivado no servidor e não pode ser definido diretamente.' });
     }
 
+    if (Object.prototype.hasOwnProperty.call(req.body || {}, 'validoAte')) {
+      return res.status(400).json({
+        error: 'validoAte é derivado no servidor e não pode ser definido diretamente.'
+      });
+    }
+
     if (!payload.alunoId) {
       return res.status(400).json({ error: 'alunoId é obrigatório.' });
     }
@@ -191,12 +197,12 @@ async function criarReposicao(req, res) {
       }
     }
 
-    if (payload.validoAte !== undefined && payload.validoAte !== null) {
-      const validacaoValidoAte = validarDataISO(payload.validoAte, 'validoAte');
-      if (!validacaoValidoAte.valido) {
-        return res.status(400).json({ error: validacaoValidoAte.mensagem });
-      }
+    const aluno = await Aluno.findOne({ ownerEmail, id: String(payload.alunoId) });
+    if (!aluno) {
+      return res.status(400).json({ error: 'Aluno da reposição não encontrado.' });
     }
+
+    const prazo = financasService.calcularPrazoReposicao(aluno, validacaoDataOriginal.valor);
 
     const payloadParaSalvar = {
       ...payload,
@@ -205,7 +211,7 @@ async function criarReposicao(req, res) {
       alunoId: String(payload.alunoId),
       dataOriginal: validacaoDataOriginal.valor,
       dataEnvio: payload.dataEnvio ? (validarISO8601Completo(payload.dataEnvio, 'dataEnvio').valor) : new Date().toISOString(),
-      ...(payload.validoAte ? { validoAte: validarDataISO(payload.validoAte, 'validoAte').valor } : {}),
+      validoAte: prazo.validoAte,
       ...(payload.cicloCobrancaResolvido && typeof payload.cicloCobrancaResolvido === 'object'
         ? {
             cicloCobrancaResolvido: {
@@ -227,7 +233,12 @@ async function criarReposicao(req, res) {
       throw err;
     }
 
-    res.status(201).json(reposicao);
+    const resposta = reposicao && reposicao.toObject ? reposicao.toObject() : reposicao;
+    if (prazo.pisoAplicado === true && resposta && typeof resposta === 'object') {
+      resposta.pisoAplicado = true;
+    }
+
+    res.status(201).json(resposta);
   } catch (err) {
     responderErroReposicao(res, err, 'criar reposição');
   }
@@ -272,12 +283,10 @@ async function atualizarReposicao(req, res) {
       return res.status(400).json({ error: 'cicloCobrancaResolvido é derivado no servidor e não pode ser definido diretamente.' });
     }
 
-    if (payload.validoAte !== undefined && payload.validoAte !== null) {
-      const validacaoValidoAte = validarDataISO(payload.validoAte, 'validoAte');
-      if (!validacaoValidoAte.valido) {
-        return res.status(400).json({ error: validacaoValidoAte.mensagem });
-      }
-      payload.validoAte = validacaoValidoAte.valor;
+    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'validoAte')) {
+      return res.status(400).json({
+        error: 'validoAte é derivado no servidor e não pode ser definido diretamente.'
+      });
     }
 
     const reposicaoExistente = await Reposicao.findOne({ ownerEmail, id });

@@ -5,6 +5,8 @@ const Reposicao = require("../models/Reposicao");
 const reposicaoService = require("./reposicaoService");
 const recurrenceHelpers = require("../../../assets/js/shared/recurrence-helpers");
 
+const PRAZO_MINIMO_REPOSICAO_DIAS = 7;
+
 function toISODateOnly(value) {
   if (!value) return null;
   const data = value instanceof Date ? value : new Date(value);
@@ -124,6 +126,50 @@ function calcularCicloVigente(aluno, hoje = new Date()) {
     cicloFim,
     cicloInicioISO: toISODateOnly(cicloInicio),
     cicloFimISO: toISODateOnly(cicloFim),
+  };
+}
+
+function calcularPrazoReposicao(aluno, dataOriginal) {
+  const dataOriginalNormalizada = normalizarDateOnly(dataOriginal);
+  if (!dataOriginalNormalizada) {
+    return { validoAte: null, pisoAplicado: false };
+  }
+
+  if (
+    aluno &&
+    aluno.objetivo !== "Consultoria Online" &&
+    !aluno.fechamentoMesCheio &&
+    !aluno.diaVencimento
+  ) {
+    return { validoAte: null, pisoAplicado: false };
+  }
+
+  const cicloAtual = calcularCicloVigente(aluno, dataOriginalNormalizada);
+  if (!cicloAtual || !cicloAtual.cicloFimISO) {
+    return { validoAte: null, pisoAplicado: false };
+  }
+
+  const cicloFimAtual = normalizarDateOnly(cicloAtual.cicloFimISO);
+  if (!cicloFimAtual) {
+    return { validoAte: null, pisoAplicado: false };
+  }
+
+  const diferencaDias = Math.floor(
+    (cicloFimAtual.getTime() - dataOriginalNormalizada.getTime()) / 86400000,
+  );
+
+  if (diferencaDias < PRAZO_MINIMO_REPOSICAO_DIAS) {
+    const proximaData = diaSeguinte(cicloFimAtual);
+    const proximoCiclo = calcularCicloVigente(aluno, proximaData);
+    return {
+      validoAte: proximoCiclo && proximoCiclo.cicloFimISO ? proximoCiclo.cicloFimISO : null,
+      pisoAplicado: true,
+    };
+  }
+
+  return {
+    validoAte: cicloAtual.cicloFimISO,
+    pisoAplicado: false,
   };
 }
 
@@ -916,6 +962,8 @@ async function atualizarAjusteCiclo(
 }
 
 module.exports = {
+  PRAZO_MINIMO_REPOSICAO_DIAS,
+  calcularPrazoReposicao,
   calcularCicloVigente,
   calcularAulasContadasDoCiclo,
   calcularValorTotalCiclo,
