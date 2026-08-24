@@ -1,7 +1,7 @@
 // [TAG-STATE] state.js
 // Responsabilidade: Estado global compartilhado — constantes e variáveis mutáveis da aplicação
 // Depende de: nada (deve ser o PRIMEIRO script carregado)
-// Expõe: DIAS, DIAS_SEMANA, HORARIOS (const), alunos, aulas, aulasParaRepor, agendaConfig, mesAtual, anoAtual (let)
+// Expõe: DIAS, DIAS_SEMANA, HORARIOS (const), alunos, aulas, aulasParaRepor (hidratado pela API), agendaConfig, mesAtual, anoAtual (let)
 const DIAS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
 const DIAS_SEMANA = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 const HORARIOS = [];

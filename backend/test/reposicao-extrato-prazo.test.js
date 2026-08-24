@@ -79,19 +79,27 @@ test('invariante de fechamento: valorTotal do extrato não muda entre prazo pree
     cicloInicio: '2024-04-01',
     cicloFim: '2024-04-30',
     precoAulaSnapshot: 100,
-    aulasContadas: 0,
+    aulasContadas: 1,
     aulasManuaisExtras: 0,
-    valorTotalCiclo: 0,
+    valorTotalCiclo: 100,
     metodoCobranca: 'por_aula',
   };
 
-  const comPrazo = montarExtratoDoCiclo(ciclo, aluno, [], [criarReposicao()]);
-  const semPrazo = montarExtratoDoCiclo(ciclo, aluno, [], [criarReposicao({ validoAte: null })]);
+  const agendamento = {
+    alunoId: 'aluno-1',
+    tipo: 'aula',
+    frequencia: 'uma_vez',
+    data: '2024-04-10',
+  };
 
-  assert.equal(
-    comPrazo.reduce((total, linha) => total + Number(linha.valorTotal || 0), 0),
-    semPrazo.reduce((total, linha) => total + Number(linha.valorTotal || 0), 0),
-  );
+  const comPrazo = montarExtratoDoCiclo(ciclo, aluno, [agendamento], [criarReposicao()]);
+  const semPrazo = montarExtratoDoCiclo(ciclo, aluno, [agendamento], [criarReposicao({ validoAte: null })]);
+
+  const somaComPrazo = comPrazo.reduce((total, linha) => total + Number(linha.valorTotal || 0), 0);
+  const somaSemPrazo = semPrazo.reduce((total, linha) => total + Number(linha.valorTotal || 0), 0);
+
+  assert.equal(somaComPrazo, somaSemPrazo);
+  assert.ok(somaComPrazo > 0);
 });
 
 test('reposição expirada com validoAte dentro do ciclo usa ramo expirado', () => {

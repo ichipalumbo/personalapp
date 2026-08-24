@@ -263,7 +263,9 @@ SE (validoAte - dataOriginal) < 7 dias:
     validoAte = último dia do ciclo SEGUINTE
 ```
 
-**Piso mínimo de 7 dias.** Sem ele, uma reposição cuja aula original caiu a um dia do fim do ciclo nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por um prazo que nunca foi factível.
+**Piso mínimo de 7 dias.** Sem ele, uma reposição cuja aula original caiu a um dia do
+fim do ciclo nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por
+um prazo que nunca foi factível.
 
 Quando o piso é aplicado, a UI **avisa explicitamente**: _"Prazo definido para o fim do
 ciclo seguinte (16/05), por faltarem menos de 7 dias para o fim do ciclo atual."_
@@ -290,7 +292,9 @@ vezes por escolhas inconsistentes.
 `PRAZO_MINIMO_REPOSICAO_DIAS = 7`. O mesmo número é usado como janela de "vencendo em
 breve" nos avisos de UI (9.5). Não criar duas constantes.
 
-No extrato, a reposição pendente exibe o prazo na própria linha (`aguardando reagendamento; válida até DD/MM`). Registros anteriores a esta versão, e alunos sem ciclo configurado, mantêm a nota antiga por não terem prazo.
+No extrato, a reposição pendente exibe o prazo na própria linha
+(`aguardando reagendamento; válida até DD/MM`). Registros anteriores a esta versão, e
+alunos sem ciclo configurado, mantêm a nota antiga por não terem prazo.
 
 ---
 
