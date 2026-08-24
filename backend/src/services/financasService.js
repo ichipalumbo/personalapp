@@ -715,8 +715,22 @@ function aplicarStatusCiclo(ciclo, hoje = new Date()) {
   return ciclo;
 }
 
+function validarJanelaCiclo(ciclo, contexto = "ciclo") {
+  if (!ciclo) return;
+
+  const inicio = normalizarDateOnly(ciclo.cicloInicio);
+  const fim = normalizarDateOnly(ciclo.cicloFim);
+  if (!inicio || !fim) return;
+
+  if (inicio > fim) {
+    const error = new Error(`Janela inválida em ${context}: cicloInicio > cicloFim.`);
+    error.statusCode = 400;
+    throw error;
+  }
+}
+
 function encerrarCicloSobrepostoSeNecessario(cicloAnterior, cicloNovo) {
-  if (!cicloAnterior || !cicloNovo) return cicloAnterior;
+  if (!cicloAnterior || !cicloNovo) return null;
 
   const inicioAnterior = normalizarDateOnly(cicloAnterior.cicloInicio);
   const fimAnterior = normalizarDateOnly(cicloAnterior.cicloFim);
@@ -724,12 +738,16 @@ function encerrarCicloSobrepostoSeNecessario(cicloAnterior, cicloNovo) {
   const fimNovo = normalizarDateOnly(cicloNovo.cicloFim);
 
   if (!inicioAnterior || !fimAnterior || !inicioNovo || !fimNovo) {
-    return cicloAnterior;
+    return null;
   }
 
   const sobrepoe = inicioAnterior <= fimNovo && inicioNovo <= fimAnterior;
   if (!sobrepoe) {
-    return cicloAnterior;
+    return null;
+  }
+
+  if (inicioAnterior >= inicioNovo) {
+    return null;
   }
 
   const fimAnteriorCorreto = new Date(inicioNovo.getTime());
@@ -737,26 +755,23 @@ function encerrarCicloSobrepostoSeNecessario(cicloAnterior, cicloNovo) {
 
   const fimISO = toISODateOnly(fimAnteriorCorreto);
   if (!fimISO) {
-    return cicloAnterior;
+    return null;
   }
 
-  const fimAntes = cicloAnterior.cicloFim;
-  const statusAntes = cicloAnterior.status;
-
-  cicloAnterior.cicloFim = fimISO;
-  if (Object.prototype.hasOwnProperty.call(cicloAnterior, "cicloFimISO")) {
-    cicloAnterior.cicloFimISO = fimISO;
+  const proximo = { ...cicloAnterior, cicloFim: fimISO };
+  if (Object.prototype.hasOwnProperty.call(proximo, "cicloFimISO")) {
+    proximo.cicloFimISO = fimISO;
   }
 
-  if (cicloAnterior.status === "em_aberto" || cicloAnterior.status === "atrasado") {
-    cicloAnterior.status = calcularStatusCiclo(cicloAnterior, new Date());
-  }
+  const statusAtual = calcularStatusCiclo(
+    { ...proximo, cicloInicio: proximo.cicloInicio, cicloFim: proximo.cicloFim },
+    new Date(),
+  );
+  proximo.status = statusAtual;
 
-  if (cicloAnterior.cicloFim !== fimAntes || cicloAnterior.status !== statusAntes) {
-    cicloAnterior._alteradoPorSobreposicao = true;
-  }
+  validarJanelaCiclo(proximo, "encurtamento sobreposto");
 
-  return cicloAnterior;
+  return proximo;
 }
 
 async function obterOuCriarCicloVigente(
@@ -777,17 +792,48 @@ async function obterOuCriarCicloVigente(
   }).sort({ cicloInicio: 1 });
 
   for (const cicloAberto of ciclosAbertos) {
-    if (String(cicloAberto.cicloInicio) === String(ciclo.cicloInicioISO)) continue;
+    if (String(cicloAberto.cicloInicio) === String(ciclo.cicloInicioISO)) {
+      if (String(cicloAberto.cicloFim) !== String(ciclo.cicloFimISO)) {
+        const proximoFim = String(ciclo.cicloFimISO);
+        const cicloEmEdicao = cicloAberto.toObject ? cicloAberto.toObject() : cicloAberto;
+        const cicloReconciliado = { ...cicloEmEdicao, cicloFim: proximoFim, cicloFimISO: proximoFim };
+        validarJanelaCiclo(cicloReconciliado, "reconciliacao de ciclo existente");
+        cicloAberto.cicloFim = proximoFim;
+        if (Object.prototype.hasOwnProperty.call(cicloAberto, "cicloFimISO")) {
+          cicloAberto.cicloFimISO = proximoFim;
+        }
+        const aulasContadas = calcularAulasContadasDoCiclo(
+          aluno,
+          agendamentos,
+          reposicoes,
+          normalizarDateOnly(cicloAberto.cicloInicio),
+          normalizarDateOnly(cicloAberto.cicloFim),
+        );
+        const valorTotalCiclo = calcularValorTotalCiclo(
+          aluno,
+          aulasContadas,
+          cicloAberto.aulasManuaisExtras || 0,
+        );
+        cicloAberto.aulasContadas = aulasContadas;
+        cicloAberto.valorTotalCiclo = valorTotalCiclo;
+        cicloAberto.atualizadoEm = new Date();
+        await cicloAberto.save();
+      }
+      continue;
+    }
 
-    const fimAntes = cicloAberto.cicloFim;
-    const statusAntes = cicloAberto.status;
-    encerrarCicloSobrepostoSeNecessario(cicloAberto, ciclo);
-
-    if (
-      cicloAberto.cicloFim !== fimAntes ||
-      cicloAberto.status !== statusAntes
-    ) {
+    const encurtado = encerrarCicloSobrepostoSeNecessario(cicloAberto, ciclo);
+    if (encurtado) {
+      cicloAberto.cicloFim = encurtado.cicloFim;
+      if (Object.prototype.hasOwnProperty.call(cicloAberto, "cicloFimISO")) {
+        cicloAberto.cicloFimISO = encurtado.cicloFim;
+      }
+      const statusAtual = calcularStatusCiclo(cicloAberto, hoje);
+      cicloAberto.status = statusAtual;
+      cicloAberto.atualizadoEm = new Date();
       await cicloAberto.save();
+    } else {
+      return null;
     }
   }
 

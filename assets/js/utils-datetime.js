@@ -46,6 +46,24 @@ window.getDataSelecionadaPtBr = function() {
     return window.dataSelecionada.toLocaleDateString('pt-BR');
 };
 
+window.normalizarDataParaISO = function(dataValor) {
+    if (!dataValor && dataValor !== 0) return '';
+    if (dataValor instanceof Date && !Number.isNaN(dataValor.getTime())) {
+        return window.formatarDataLocalParaISODate(dataValor);
+    }
+    if (typeof dataValor === 'string') {
+        const texto = dataValor.trim();
+        if (!texto) return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(texto)) return texto;
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+            return window.converterPtBrParaISO(texto);
+        }
+        const iso = window.converterPtBrParaISO(texto);
+        if (iso) return iso;
+    }
+    return '';
+};
+
 /** @param {string} dataISO - Ex: "2025-07-15" @returns {string} Ex: "15/07/2025" */
 window.formatarDataPtBr = function(dataISO) {
     if (!dataISO || typeof dataISO !== 'string') return '';

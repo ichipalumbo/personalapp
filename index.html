@@ -1390,23 +1390,23 @@
                 type="button"
                 class="btn btn-danger"
                 id="btnDeletarDefinitivo"
-                title="Cancelar Compromisso"
+                title="Excluir Compromisso"
               >
                 <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
-                Cancelar
+                Excluir esta aula
               </button>
               <button
                 type="button"
                 class="btn"
                 id="btnMandarParaReposicao"
                 style="background: #ff9800; color: #fff; border: none"
-                title="Mandar para Reposição"
+                title="Enviar para reposição"
               >
                 <i
                   class="fa-solid fa-rotate-left"
                   style="margin-right: 6px"
                 ></i>
-                Reagendar
+                Enviar para reposição
               </button>
             </div>
             <div
@@ -1420,26 +1420,26 @@
                   type="button"
                   class="btn btn-danger"
                   id="btnDeletarInstancia"
-                  title="Cancelar apenas essa aula"
+                  title="Excluir apenas essa aula"
                 >
                   <i
                     class="fa-solid fa-calendar-minus"
                     style="margin-right: 4px"
                   ></i>
-                  Cancelar
+                  Excluir esta aula
                 </button>
                 <button
                   type="button"
                   class="btn"
                   id="btnReagendarInstancia"
                   style="background: #ff9800; color: #fff; border: none"
-                  title="Mandar essa aula para reposição"
+                  title="Enviar essa aula para reposição"
                 >
                   <i
                     class="fa-solid fa-rotate-left"
                     style="margin-right: 4px"
                   ></i>
-                  Reagendar
+                  Enviar para reposição
                 </button>
               </div>
               <button
@@ -1447,10 +1447,10 @@
                 class="btn"
                 id="btnDeletarSerie"
                 style="background: #d32f2f; color: #fff; border: none"
-                title="Cancelar toda a série de recorrências"
+                title="Excluir toda a série de recorrências"
               >
                 <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
-                Cancelar Série Completa
+                Excluir série completa
               </button>
             </div>
 
@@ -1470,6 +1470,33 @@
             </div>
           </div>
         </form>
+      </div>
+    </div>
+    <div class="modal-overlay" id="modalEscolhaCobrancaReposicao" style="display: none">
+      <div class="modal" style="max-width: 420px">
+        <h3 style="margin-top: 0; margin-bottom: 8px;">Cobrar esta aula?</h3>
+        <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: #fff; font-size: 0.92rem;"></p>
+        <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.84rem;"></p>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
+          <button type="button" class="btn btn-primary" data-reposicao-cobravel="true" id="btnCobrarNesteCiclo">
+            <span> Cobrar neste ciclo </span>
+          </button>
+          <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Cobrada mesmo se a reposição não acontecer.</small>
+
+          <button type="button" class="btn" data-reposicao-cobravel="false" id="btnCobrarNaReposicao" style="background: #1f1f1f; color: #fff; border: 1px solid #3a3a3a;">
+            <span> Cobrar na reposição </span>
+          </button>
+          <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Se o prazo expirar, não é cobrada.</small>
+        </div>
+
+        <div style="border-top: 1px solid #222; padding-top: 12px; color: #d9d9d9; font-size: 0.76rem; text-align: center; line-height: 1.5;">
+          <div>Não pode ser alterado depois.</div>
+        </div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
+          <button type="button" class="btn btn-secondary" onclick="window.fecharModalEscolhaCobrancaReposicao()">Voltar</button>
+        </div>
       </div>
     </div>
     <div class="modal-overlay" id="modalConfigAgenda" style="display: none">
