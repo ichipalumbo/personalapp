@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Proposta (não implementada) · **Versão**: 2 · **Atualizado**: 2026-08-24
+> **Status**: Parcialmente implementada (seção 6 no ar) · **Versão**: 2 · **Atualizado**: 2026-08-24
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v6).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -248,7 +248,7 @@ contagem de aulas. Portanto:
 
 - O prazo é calculado **no envio para a fila**, a partir da `dataOriginal` da aula.
 - Não depende de quando a PT cancelou, nem de quantas vezes a reposição foi marcada e
-desmarcada depois.
+  desmarcada depois.
 
 Racional: a régua é a aula, não o clique. Duas aulas do mesmo ciclo têm o mesmo prazo,
 independentemente do dia em que cada uma foi enviada para a fila. O prazo fica
@@ -263,10 +263,7 @@ SE (validoAte - dataOriginal) < 7 dias:
     validoAte = último dia do ciclo SEGUINTE
 ```
 
-**Piso mínimo de 7 dias.** Sem ele, uma reposição cuja aula original caiu a um dia do fim
-do ciclo
-nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por um prazo
-que nunca foi factível.
+**Piso mínimo de 7 dias.** Sem ele, uma reposição cuja aula original caiu a um dia do fim do ciclo nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por um prazo que nunca foi factível.
 
 Quando o piso é aplicado, a UI **avisa explicitamente**: _"Prazo definido para o fim do
 ciclo seguinte (16/05), por faltarem menos de 7 dias para o fim do ciclo atual."_
@@ -292,6 +289,8 @@ vezes por escolhas inconsistentes.
 
 `PRAZO_MINIMO_REPOSICAO_DIAS = 7`. O mesmo número é usado como janela de "vencendo em
 breve" nos avisos de UI (9.5). Não criar duas constantes.
+
+No extrato, a reposição pendente exibe o prazo na própria linha (`aguardando reagendamento; válida até DD/MM`). Registros anteriores a esta versão, e alunos sem ciclo configurado, mantêm a nota antiga por não terem prazo.
 
 ---
 
@@ -534,7 +533,7 @@ handlers de envio para reposição.
 | 5   | Como evitar contagem dupla?     | Vínculo bidirecional; vinculado nunca entra na parcela (A)   |
 | 6   | Reposição nunca reposta?        | Fica `pendente` até expirar (se tiver prazo)                 |
 | 7   | Prazo nasce quando?             | No envio para a fila, a partir da `dataOriginal`             |
-| 8   | Qual o prazo?                   | Fim do ciclo vigente, com **piso de 7 dias**                 |
+| 8   | Qual o prazo?                   | Fim do ciclo que contém a dataOriginal, com **piso de 7 dias** |
 | 9   | Remarcar renova o prazo?        | **Não.** Remarcar/cancelar não altera prazo                  |
 | 10  | Expiração mexe em valor?        | **Nunca.** Nem devolve, nem cobra                            |
 | 11  | Reabrir expirada?               | **Não existe.** PT cria aula avulsa e ajusta no financeiro   |

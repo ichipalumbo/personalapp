@@ -543,13 +543,17 @@ function montarExtratoDoCiclo(ciclo, aluno, agendamentos, reposicoes) {
         nota: `prazo expirado em ${formatarDataBR(reposicao.validoAte)}`,
       });
     } else if (tipoEscolhido === "reposicao_pendente") {
+      const nota = reposicao.validoAte
+        ? `aguardando reagendamento; válida até ${formatarDataBR(reposicao.validoAte)}`
+        : "aguardando reagendamento; não cobrada";
+
       linhas.push({
         tipo: tipoEscolhido,
         descricao: "reposição pendente",
         quantidade: 1,
         valorUnitario: 0,
         valorTotal: 0,
-        nota: "aguardando reagendamento; não cobrada",
+        nota,
       });
     }
   }
