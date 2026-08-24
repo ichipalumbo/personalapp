@@ -107,7 +107,7 @@ e ocorrências de séries recorrentes não têm documento próprio para carregar
 | `status` | String enum | `pendente` / `agendada` / `realizada` / `expirada` |
 | `agendamentoOriginalId` | String | de onde veio |
 | `agendamentoReposicaoId` | String ou null | para onde foi — **campo crítico**, ver 5.3 |
-| `validoAte` | String ISO ou null | prazo (ver 6). Nulo enquanto não houver prazo |
+| `validoAte` | String ISO ou null | prazo (ver 6). Nulo apenas para aluno sem ciclo configurado |
 | `dataEnvio` | String ISO | quando entrou na fila |
 | `historico` | Array | append-only: `{ evento, data, agendamentoId }` |
 
@@ -123,7 +123,7 @@ para a consulta da fila.
                   [ pendente ]  ◄──────────────┐
                        │                       │
               marcar reposição                 │ reposição cancelada
-                       │                       │ (ganha validoAte na 1ª vez, 6.3)
+                       │                       │ (prazo não muda, 6.4)
                        ▼                       │
                   [ agendada ] ────────────────┘
                        │
@@ -229,25 +229,26 @@ contagem de aulas. Portanto:
 
 ### 6.1 Quando o prazo nasce
 
-- Aula enviada para reposição pela primeira vez → **sem prazo** (`validoAte = null`).
-  Fica na fila indefinidamente.
-- Reposição que já havia sido marcada e é **cancelada** → aí sim ganha `validoAte`.
+- O prazo é calculado **no envio para a fila**, a partir da `dataOriginal` da aula.
+- Não depende de quando a PT cancelou, nem de quantas vezes a reposição foi marcada e
+  desmarcada depois.
 
-Racional: a primeira ida para a fila é o cancelamento da aula em si; o prazo existe para
-evitar que a PT fique remarcando indefinidamente uma aula que nunca acontece.
+Racional: a régua é a aula, não o clique. Duas aulas do mesmo ciclo têm o mesmo prazo,
+independentemente do dia em que cada uma foi enviada para a fila. O prazo fica
+determinístico e a reposição pode ser marcada e remarcada livremente dentro da janela.
 
 ### 6.2 Como o prazo é calculado
 
 ```
-validoAte = último dia do ciclo vigente do aluno na data do cancelamento
+validoAte = último dia do ciclo do aluno que contém dataOriginal
 
-SE (validoAte - hoje) < 7 dias:
+SE (validoAte - dataOriginal) < 7 dias:
     validoAte = último dia do ciclo SEGUINTE
 ```
 
-**Piso mínimo de 7 dias.** Sem ele, uma reposição cancelada a um dia do fim do ciclo
-nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por um prazo
-que nunca foi factível.
+**Piso mínimo de 7 dias.** Sem ele, uma reposição cuja aula original caiu a um dia do fim
+ do ciclo nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por um
+prazo que nunca foi factível.
 
 Quando o piso é aplicado, a UI **avisa explicitamente**: *"Prazo definido para o fim do
 ciclo seguinte (16/05), por faltarem menos de 7 dias para o fim do ciclo atual."*
@@ -259,8 +260,11 @@ Aluno com `configuracaoPendente` não tem "fim do ciclo vigente". Nesse caso
 
 ### 6.4 Recancelamento não renova o prazo
 
-Se a reposição for marcada e cancelada de novo (segunda, terceira vez), ela **mantém o
-`validoAte` que ganhou na primeira vez**. O prazo não é recalculado.
+O `validoAte` é função exclusiva da `dataOriginal`. Marcar, cancelar e remarcar a mesma
+reposição quantas vezes for não altera o prazo — não porque haja uma regra impedindo,
+mas porque não há nada a recalcular.
+
+Enquanto o prazo não venceu, a reposição pode ser remarcada livremente.
 
 Da mesma forma, `cobravel` **nunca é reperguntado**: a decisão tomada no primeiro envio
 vale para toda a corrente. Isso elimina qualquer chance de a mesma aula ser cobrada duas
@@ -477,9 +481,9 @@ handlers de envio para reposição.
 | 4 | Fila persistida como quê? | **Collection separada** `Reposicao` |
 | 5 | Como evitar contagem dupla? | Vínculo bidirecional; vinculado nunca entra na parcela (A) |
 | 6 | Reposição nunca reposta? | Fica `pendente` até expirar (se tiver prazo) |
-| 7 | Prazo nasce quando? | No **primeiro cancelamento de uma reposição já marcada** |
+| 7 | Prazo nasce quando? | Calculado no envio para a fila, a partir da dataOriginal |
 | 8 | Qual o prazo? | Fim do ciclo vigente, com **piso de 7 dias** |
-| 9 | Recancelar renova o prazo? | **Não.** Mantém o `validoAte` original |
+| 9 | Remarcar renova o prazo? | **Não.** O prazo é função da dataOriginal |
 | 10 | Expiração mexe em valor? | **Nunca.** Nem devolve, nem cobra |
 | 11 | Reabrir expirada? | **Não existe.** PT cria aula avulsa e ajusta no financeiro |
 | 12 | Não cobrável cai em ciclo pago? | Vai para o primeiro ciclo seguinte não pago (⚠️ confirmar) |
