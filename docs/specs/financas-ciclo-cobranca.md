@@ -319,7 +319,17 @@ SENÃO:
 - A UI deve deixar claro o resultado quando o piso for aplicado (`0 aula(s) cobrada(s)`, `R$ 0,00`), sem exibir número negativo de aulas cobradas.
 - Ajuste manual em ciclo **pago** é rejeitado (HTTP 409) — ver 5.8.
 
-### 5.6 Cálculo do `status`
+### 5.6 Invariante de não sobreposição de ciclos abertos
+
+**Regra invariante**: um aluno não pode ter mais de um ciclo não pago com intervalos sobrepostos.
+
+Quando a configuração financeira do aluno muda durante um ciclo em curso, o ciclo anterior não pago deve ser encerrado de forma determinística antes da criação do novo ciclo, para não deixar duas janelas de cobrança simultâneas e evitar que a mesma aula seja atribuída a dois ciclos ou contada duas vezes.
+
+**Decisão de produto adotada**: opção (a). Quando a mudança de regra acontece no meio do ciclo atual, o ciclo anterior é encurtado até a véspera do início do novo ciclo, cobrando proporcionalmente apenas o período realmente válido. Isso evita sobreposição imediata, preserva a regra nova para o próximo ciclo sem atrasar a mudança em mais um mês e impede a duplicação de cobrança.
+
+Esta invariante é aplicada antes de criar o ciclo vigente em `obterOuCriarCicloVigente` e é a proteção correta para trocas de `diaVencimento`/`fechamentoMesCheio` com ciclo em aberto.
+
+### 5.7 Cálculo do `status`
 
 ```
 SE dataPagamento preenchida: status = 'pago'
@@ -329,11 +339,11 @@ SENÃO: status = 'em_aberto'
 
 Pode ser persistido por conveniência, mas é recalculado a cada leitura (exceto 'pago', definitivo até estorno — fora de escopo).
 
-### 5.7 Primeiro ciclo de um aluno novo
+### 5.8 Primeiro ciclo de um aluno novo
 
 `criadoEm` do `Aluno` é o piso mínimo de `cicloInicio` no primeiro ciclo. Sem cálculo proporcional de valor — aulas anteriores ao cadastro entram via ajuste manual positivo (5.5), se necessário.
 
-### 5.8 Recontagem de aulas em ciclo ainda não pago
+### 5.9 Recontagem de aulas em ciclo ainda não pago
 
 A contagem passa a seguir o **modelo de competência** definido na seção 5 de `reposicoes-e-competencia.md`: agendamentos normais não vinculados a reposição, mais reposições cobráveis com origem no ciclo, mais reposições não cobráveis resolvidas no ciclo.
 
@@ -349,7 +359,7 @@ A contagem passa a seguir o **modelo de competência** definido na seção 5 de 
 
 **Caso "quero excluir da agenda mas ainda cobrar"**: resolvido pelo ajuste manual positivo (5.5). Não criar mecanismo adicional.
 
-### 5.9 Fonte do preço no recálculo: sempre o snapshot
+### 5.10 Fonte do preço no recálculo: sempre o snapshot
 
 **Problema identificado em revisão**: o recálculo de 5.8 usava o preço **atual** do cadastro do aluno. Consequência: reajustar o preço de um aluno alterava retroativamente o valor de ciclos antigos ainda não pagos — o oposto da intenção dos campos snapshot (3.2).
 

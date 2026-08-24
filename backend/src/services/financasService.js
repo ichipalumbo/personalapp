@@ -173,6 +173,23 @@ function calcularPrazoReposicao(aluno, dataOriginal) {
   };
 }
 
+function filtrarHistoricoExcluindoCicloAtual(aluno, hoje, ciclos) {
+  const lista = Array.isArray(ciclos) ? ciclos : [];
+  if (lista.length === 0) return [];
+
+  const cicloAtual = calcularCicloVigente(aluno, hoje);
+  if (!cicloAtual || !cicloAtual.cicloInicioISO) {
+    return lista;
+  }
+
+  return lista.filter((ciclo) => {
+    const inicioCiclo = ciclo && ciclo.cicloInicioISO
+      ? ciclo.cicloInicioISO
+      : toISODateOnly(ciclo && ciclo.cicloInicio);
+    return !!inicioCiclo && inicioCiclo !== cicloAtual.cicloInicioISO;
+  });
+}
+
 function normalizarAulasContadas(agendamento, cicloInicio, cicloFim) {
   const dataInicio = new Date(
     cicloInicio.getFullYear(),
@@ -698,6 +715,50 @@ function aplicarStatusCiclo(ciclo, hoje = new Date()) {
   return ciclo;
 }
 
+function encerrarCicloSobrepostoSeNecessario(cicloAnterior, cicloNovo) {
+  if (!cicloAnterior || !cicloNovo) return cicloAnterior;
+
+  const inicioAnterior = normalizarDateOnly(cicloAnterior.cicloInicio);
+  const fimAnterior = normalizarDateOnly(cicloAnterior.cicloFim);
+  const inicioNovo = normalizarDateOnly(cicloNovo.cicloInicio);
+  const fimNovo = normalizarDateOnly(cicloNovo.cicloFim);
+
+  if (!inicioAnterior || !fimAnterior || !inicioNovo || !fimNovo) {
+    return cicloAnterior;
+  }
+
+  const sobrepoe = inicioAnterior <= fimNovo && inicioNovo <= fimAnterior;
+  if (!sobrepoe) {
+    return cicloAnterior;
+  }
+
+  const fimAnteriorCorreto = new Date(inicioNovo.getTime());
+  fimAnteriorCorreto.setDate(fimAnteriorCorreto.getDate() - 1);
+
+  const fimISO = toISODateOnly(fimAnteriorCorreto);
+  if (!fimISO) {
+    return cicloAnterior;
+  }
+
+  const fimAntes = cicloAnterior.cicloFim;
+  const statusAntes = cicloAnterior.status;
+
+  cicloAnterior.cicloFim = fimISO;
+  if (Object.prototype.hasOwnProperty.call(cicloAnterior, "cicloFimISO")) {
+    cicloAnterior.cicloFimISO = fimISO;
+  }
+
+  if (cicloAnterior.status === "em_aberto" || cicloAnterior.status === "atrasado") {
+    cicloAnterior.status = calcularStatusCiclo(cicloAnterior, new Date());
+  }
+
+  if (cicloAnterior.cicloFim !== fimAntes || cicloAnterior.status !== statusAntes) {
+    cicloAnterior._alteradoPorSobreposicao = true;
+  }
+
+  return cicloAnterior;
+}
+
 async function obterOuCriarCicloVigente(
   ownerEmail,
   aluno,
@@ -707,6 +768,29 @@ async function obterOuCriarCicloVigente(
 ) {
   const ciclo = calcularCicloVigente(aluno, hoje);
   if (!ciclo) return null;
+
+  const ciclosAbertos = await CicloFinanceiro.find({
+    ownerEmail,
+    alunoId: aluno.id,
+    dataPagamento: null,
+    status: { $ne: "pago" },
+  }).sort({ cicloInicio: 1 });
+
+  for (const cicloAberto of ciclosAbertos) {
+    if (String(cicloAberto.cicloInicio) === String(ciclo.cicloInicioISO)) continue;
+
+    const fimAntes = cicloAberto.cicloFim;
+    const statusAntes = cicloAberto.status;
+    encerrarCicloSobrepostoSeNecessario(cicloAberto, ciclo);
+
+    if (
+      cicloAberto.cicloFim !== fimAntes ||
+      cicloAberto.status !== statusAntes
+    ) {
+      await cicloAberto.save();
+    }
+  }
+
   const query = {
     ownerEmail,
     alunoId: aluno.id,
@@ -866,6 +950,9 @@ async function obterHistoricoFinancasPorAluno(
   if (ciclos.length === 0) return [];
 
   const aluno = await Aluno.findOne({ ownerEmail, id: alunoId });
+  if (!aluno) return [];
+
+  const ciclosSemAtual = filtrarHistoricoExcluindoCicloAtual(aluno, hoje, ciclos);
   const agendamentos = await Agendamento.find({ ownerEmail });
   const reposicoes = await Reposicao.find({ ownerEmail });
   const reposicoesAtualizadas = await reposicaoService.sincronizarExpiracaoLazy(
@@ -875,7 +962,7 @@ async function obterHistoricoFinancasPorAluno(
   );
   const historico = [];
 
-  for (const doc of ciclos) {
+  for (const doc of ciclosSemAtual) {
     await sincronizarCicloComAgenda(doc, aluno, agendamentos, reposicoesAtualizadas);
     const statusCalculado = calcularStatusCiclo(doc, hoje);
     if (doc.status !== statusCalculado) {
@@ -969,6 +1056,8 @@ module.exports = {
   PRAZO_MINIMO_REPOSICAO_DIAS,
   calcularPrazoReposicao,
   calcularCicloVigente,
+  filtrarHistoricoExcluindoCicloAtual,
+  encerrarCicloSobrepostoSeNecessario,
   calcularAulasContadasDoCiclo,
   calcularValorTotalCiclo,
   calcularTotalAulasCobradas,
