@@ -646,10 +646,19 @@ document.addEventListener('DOMContentLoaded', () => {
                     alunos[index].diaVencimento = diaVencimento;
                     alunos[index].metodoCobranca = metodoCobranca;
                     alunos[index].valorFixoCiclo = valorFixoCiclo;
+                    window.log.info('[alunos]', 'Aluno editado', {
+                        id: idEdicao,
+                        nome: nome,
+                        metodoCobranca: metodoCobranca
+                    });
 
                     // [TAG-CASCADE-SYNC] Se nome ou local mudou, sincroniza agendamentos futuros
                     if (alunoAntigo.nome !== nome || alunoAntigo.local !== local) {
-                        console.log('[view-alunos] Detectada mudança no nome ou local, acionando cascade sync...');
+                        window.log.debug('[view-alunos]', 'Mudança no nome ou local detectada; acionando cascade sync', {
+                            id: idEdicao,
+                            nome: nome,
+                            local: local
+                        });
                         if (typeof sincronizarAgendamentosDoAluno === 'function') {
                             sincronizarAgendamentosDoAluno(idEdicao, {
                                 nome: nome,
@@ -678,6 +687,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     valorFixoCiclo: valorFixoCiclo
                 };
                 alunos.push(novoAluno);
+                window.log.info('[alunos]', 'Aluno criado', {
+                    id: novoAluno.id,
+                    nome: nome,
+                    metodoCobranca: metodoCobranca
+                });
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno cadastrado com sucesso!');
             }
             if (typeof salvarDados === 'function') salvarDados();

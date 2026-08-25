@@ -25,7 +25,7 @@ function enriquecerAgendamentoComDadosFrescos(agendamento) {
         agendamento.local = aluno.local || agendamento.local;
         agendamento.objetivo = aluno.objetivo || agendamento.objetivo;
 
-        console.log('[enrich] Agendamento enriquecido com dados frescos:', {
+        window.log.debug('[cascade]', 'Agendamento enriquecido com dados frescos', {
             alunoNome: agendamento.alunoNome,
             local: agendamento.local,
             objetivo: agendamento.objetivo
@@ -49,7 +49,9 @@ window.enriquecerAgendamentoComDadosFrescos = enriquecerAgendamentoComDadosFresc
  */
 async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
     if (!alunoId || !alunoNovosDados) {
-        console.warn('[cascade] sincronizarAgendamentosDoAluno: parâmetros inválidos');
+        window.log.warn('[cascade]', 'Parâmetros inválidos para sincronizar agendamentos do aluno', {
+            alunoId: alunoId
+        });
         return;
     }
 
@@ -84,13 +86,17 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
         });
 
         if (agendamentosFuturos.length === 0) {
-            console.log('[cascade] Nenhum agendamento futuro para o aluno', alunoId);
+            window.log.debug('[cascade]', 'Nenhum agendamento futuro para o aluno', { alunoId: alunoId });
             return;
         }
 
         const series = agendamentosFuturos.filter(function (a) { return a.frequencia === 'semanal'; }).length;
         const pontuais = agendamentosFuturos.length - series;
-        console.log('[cascade] Encontrados ' + agendamentosFuturos.length + ' agendamento(s) para atualizar (' + series + ' série(s), ' + pontuais + ' pontual(is)).');
+        window.log.debug('[cascade]', 'Agendamentos futuros encontrados para cascade', {
+            total: agendamentosFuturos.length,
+            series: series,
+            pontuais: pontuais
+        });
 
         // 2. Atualiza cada agendamento localmente com os novos dados
         agendamentosFuturos.forEach(function (aula) {
@@ -107,20 +113,20 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
             await _atualizarAgendamentosNoGCal(agendamentosFuturos);
         }
 
-        console.log('[cascade] ✅ Cascade sync concluído para ' + agendamentosFuturos.length + ' agendamento(s).');
+        window.log.info('[cascade]', 'Cascade concluído', { total: agendamentosFuturos.length });
         if (typeof mostrarToast === 'function') {
             mostrarToast('✅ ' + agendamentosFuturos.length + ' agendamento(s) atualizado(s) com os novos dados do aluno!', 'success');
         }
 
     } catch (err) {
         if (err && (err.message === 'AUTH_REQUIRED' || err.code === 'AUTH_REQUIRED')) {
-            console.warn('[cascade] Sessão Google ausente ou expirada. Login necessário para sincronizar agendamentos.');
+            window.log.warn('[cascade]', 'Sessão Google ausente ou expirada. Login necessário para sincronizar agendamentos.');
             if (typeof mostrarToast === 'function') {
                 mostrarToast('Faça login com Google para sincronizar os agendamentos.', 'warning');
             }
             return;
         }
-        console.error('[cascade] Erro ao sincronizar agendamentos do aluno:', err);
+        window.log.error('[cascade]', 'Erro ao sincronizar agendamentos do aluno:', err);
         if (typeof mostrarToast === 'function') {
             mostrarToast('⚠️ Erro ao atualizar agendamentos. Verifique o console.', 'warning');
         }
@@ -179,12 +185,12 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
             throw new Error('Backend retornou ' + res.status);
         }
 
-        console.log('[cascade] ✅ Agendamentos persistidos no MongoDB');
+        window.log.info('[cascade]', 'Agendamentos persistidos no MongoDB', { total: agendamentos.length });
     } catch (err) {
         if (err && (err.message === 'AUTH_REQUIRED' || err.code === 'AUTH_REQUIRED')) {
             throw err;
         }
-        console.error('[cascade] Erro ao persistir agendamentos no backend:', err);
+        window.log.error('[cascade]', 'Erro ao persistir agendamentos no backend:', err);
         throw err;
     }
 }
@@ -195,7 +201,7 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
  */
 async function _atualizarAgendamentosNoGCal(agendamentos) {
     if (!window.gcal) {
-        console.warn('[cascade] Google Calendar não disponível');
+        window.log.warn('[cascade]', 'Google Calendar não disponível');
         return;
     }
 
@@ -204,11 +210,13 @@ async function _atualizarAgendamentosNoGCal(agendamentos) {
     });
 
     if (agendamentosComGCal.length === 0) {
-        console.log('[cascade] Nenhum agendamento com googleCalendarEventId para atualizar');
+        window.log.debug('[cascade]', 'Nenhum agendamento com googleCalendarEventId para atualizar');
         return;
     }
 
-    console.log('[cascade] Atualizando ' + agendamentosComGCal.length + ' evento(s) no Google Calendar...');
+    window.log.debug('[cascade]', 'Atualizando eventos no Google Calendar', {
+        total: agendamentosComGCal.length
+    });
 
     let sucessos = 0;
     let erros = 0;
@@ -218,14 +226,20 @@ async function _atualizarAgendamentosNoGCal(agendamentos) {
             // Usa a função existente updateEvent que já constrói o payload correto
             await window.gcal.updateEvent(agendamento.googleCalendarEventId, agendamento);
             sucessos++;
-            console.log('[cascade] ✅ GCal atualizado para agendamento ' + agendamento.id);
+            window.log.debug('[cascade]', 'GCal atualizado para agendamento', { id: agendamento.id });
         } catch (err) {
             erros++;
-            console.warn('[cascade] ❌ Erro ao atualizar GCal para ' + agendamento.id + ':', err.message);
+            window.log.warn('[cascade]', 'Erro ao atualizar GCal para agendamento', {
+                id: agendamento.id,
+                motivo: err && err.message ? err.message : 'falha_gcal'
+            });
         }
     }
 
-    console.log('[cascade] GCal sync: ' + sucessos + ' sucesso(s), ' + erros + ' erro(s)');
+    window.log.debug('[cascade]', 'GCal sync resumida', {
+        sucessos: sucessos,
+        erros: erros
+    });
 }
 
 // Expõe globalmente

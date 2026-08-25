@@ -644,7 +644,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         await window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' });
                     } catch (erroGCal) {
-                        console.error('❌ Falha ao sincronizar reposição no Google Calendar:', erroGCal);
+                        window.log.error('[reposicao]', 'Falha ao sincronizar reposição no Google Calendar:', erroGCal);
                         avisoGCal = ' Reposição salva, mas não foi possível sincronizar com Google Agenda.';
                     }
                 }
@@ -902,6 +902,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!diaInteiro) delete compromisso.fullDay;
             }
 
+            if (freq === 'semanal') {
+                const escopoAplicado = escopoRecorrencia === 'occurrence'
+                    ? 'instancia'
+                    : (escopoRecorrencia === 'entireSeries' ? 'serie' : 'split');
+                window.log.info('[agenda]', 'Edição de série aplicada', {
+                    id: compromisso.id,
+                    escopo: escopoAplicado
+                });
+            }
+
             window.fecharModalAcaoSlot();
             
             // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
@@ -976,6 +986,12 @@ document.addEventListener('DOMContentLoaded', () => {
             window.abrirModalEscolhaCobrancaReposicao(compromisso, async (cobravel) => {
                 try {
                     const reposicao = await enviarParaReposicao(compromisso, dataAlvoISO, cobravel);
+                    const alunoAtual = typeof window.getAluno === 'function' ? window.getAluno(compromisso.alunoId) : null;
+                    window.log.info('[reposicao]', 'Reposição criada', {
+                        id: reposicao && reposicao.id ? reposicao.id : '',
+                        aluno: alunoAtual ? alunoAtual.nome : (compromisso.alunoId || ''),
+                        prazo: reposicao && reposicao.validoAte ? reposicao.validoAte : null
+                    });
                     const _idxReposicao = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
                     if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
                     window.fecharModalAcaoSlot();
@@ -995,6 +1011,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return reposicao;
                 } catch (erro) {
+                    window.log.warn('[reposicao]', 'Rollback disparado', {
+                        id: compromisso && compromisso.id ? compromisso.id : '',
+                        motivo: erro && erro.message ? erro.message : 'falha_persistencia'
+                    });
                     if (typeof mostrarToast === 'function') {
                         mostrarToast(erro && erro.message ? erro.message : 'Falha ao enviar para reposição.', 'error');
                     } else {
@@ -1022,6 +1042,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
             }
+            window.log.info('[agenda]', 'Exceção adicionada ao agendamento', {
+                id: compromisso.id,
+                data: dataAlvoStr
+            });
+            window.log.info('[agenda]', 'Instância cancelada', {
+                idSerie: compromisso.id,
+                dataExcecao: dataAlvoStr
+            });
 
             window.fecharModalAcaoSlot();
 
@@ -1062,6 +1090,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!compromisso.excecoes.includes(dataAlvoStr)) {
                         compromisso.excecoes.push(dataAlvoStr);
                     }
+                    window.log.info('[agenda]', 'Exceção adicionada ao agendamento', {
+                        id: compromisso.id,
+                        data: dataAlvoStr
+                    });
 
                     window.fecharModalAcaoSlot();
                     const resultadoPersistencia = typeof salvarDados === 'function'
@@ -1084,6 +1116,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return reposicao;
                 } catch (erro) {
+                    window.log.warn('[reposicao]', 'Rollback disparado', {
+                        id: compromisso && compromisso.id ? compromisso.id : '',
+                        motivo: erro && erro.message ? erro.message : 'falha_persistencia'
+                    });
                     if (typeof mostrarToast === 'function') {
                         mostrarToast(erro && erro.message ? erro.message : 'Falha ao reagendar a reposição.', 'error');
                     } else {
@@ -1116,6 +1152,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (_idxSerie !== -1) aulas.splice(_idxSerie, 1);
+            const ocorrenciasAfetadasSerie = Array.isArray(_serieDeletar && _serieDeletar.excecoes)
+                ? _serieDeletar.excecoes.length
+                : (Array.isArray(_serieDeletar && _serieDeletar.ocorrencias) ? _serieDeletar.ocorrencias.length : 0);
+            window.log.info('[agenda]', 'Série excluída', {
+                id: _serieDeletar ? _serieDeletar.id : '',
+                ocorrenciasAfetadas: ocorrenciasAfetadasSerie
+            });
             window.fecharModalAcaoSlot();
             if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(async () => {

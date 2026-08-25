@@ -875,6 +875,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             aulas.push(resultado.payload);
+            const payloadAgendamento = resultado.payload || {};
+            const alunoAgendamento = typeof window.getAluno === 'function' ? window.getAluno(payloadAgendamento.alunoId) : null;
+            if (payloadAgendamento.tipo === 'bloqueio') {
+                window.log.info('[agenda]', 'Bloqueio criado', {
+                    data: payloadAgendamento.data || '',
+                    horario: payloadAgendamento.horarioInicio || ''
+                });
+            } else if (payloadAgendamento.frequencia === 'semanal') {
+                window.log.info('[agenda]', 'Série criada', {
+                    id: payloadAgendamento.id || '',
+                    aluno: alunoAgendamento ? alunoAgendamento.nome : (payloadAgendamento.alunoId || ''),
+                    diasSemana: Array.isArray(payloadAgendamento.diasSemana) ? payloadAgendamento.diasSemana : [],
+                    condicaoFim: payloadAgendamento.recorrenciaFimCondicao || payloadAgendamento.endCondition || 'never'
+                });
+            } else {
+                window.log.info('[agenda]', 'Aula avulsa criada', {
+                    id: payloadAgendamento.id || '',
+                    aluno: alunoAgendamento ? alunoAgendamento.nome : (payloadAgendamento.alunoId || ''),
+                    data: payloadAgendamento.data || '',
+                    horario: payloadAgendamento.horarioInicio || ''
+                });
+            }
             // Fecha o modal imediatamente; o overlay bloqueará re-interação durante o salvamento
             document.getElementById('modalAgendamento').style.display = 'none';
 
