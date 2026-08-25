@@ -733,6 +733,53 @@ async function fetchCalendarPage(oauth2Client, path) {
   };
 }
 
+function extrairDataISOValida(valor) {
+  if (valor === undefined || valor === null || valor === '') {
+    return null;
+  }
+
+  const texto = valor instanceof Date ? valor.toISOString() : String(valor);
+  return normalizarDataParaISO(texto);
+}
+
+function obterJanelaConsulta(payload) {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const timeMin = extrairDataISOValida(payload.timeMin);
+  const timeMax = extrairDataISOValida(payload.timeMax);
+
+  if (!timeMin || !timeMax || timeMin > timeMax) {
+    return null;
+  }
+
+  return {
+    timeMin,
+    timeMax
+  };
+}
+
+function isBloqueioDentroDaJanela(bloqueio, janela) {
+  if (!bloqueio || !janela) {
+    return false;
+  }
+
+  const dataBloqueio = extrairDataISOValida(bloqueio.data);
+  if (!dataBloqueio) {
+    return false;
+  }
+
+  const timeMin = extrairDataISOValida(janela.timeMin);
+  const timeMax = extrairDataISOValida(janela.timeMax);
+
+  if (!timeMin || !timeMax || timeMin > timeMax) {
+    return false;
+  }
+
+  return dataBloqueio >= timeMin && dataBloqueio <= timeMax;
+}
+
 async function listCalendarEvents(oauth2Client, connection) {
   const syncToken = connection.syncToken || null;
 
@@ -749,7 +796,11 @@ async function listCalendarEvents(oauth2Client, connection) {
       maxResults: '250'
     });
 
-    return fetchCalendarPage(oauth2Client, `/calendars/${encodeURIComponent(connection.calendarId || 'primary')}/events?${params.toString()}`);
+    return {
+      ...(await fetchCalendarPage(oauth2Client, `/calendars/${encodeURIComponent(connection.calendarId || 'primary')}/events?${params.toString()}`)),
+      timeMin: null,
+      timeMax: null
+    };
   }
 
   const timeMin = new Date();
@@ -766,7 +817,13 @@ async function listCalendarEvents(oauth2Client, connection) {
     timeMax: timeMax.toISOString()
   });
 
-  return fetchCalendarPage(oauth2Client, `/calendars/${encodeURIComponent(connection.calendarId || 'primary')}/events?${params.toString()}`);
+  const result = await fetchCalendarPage(oauth2Client, `/calendars/${encodeURIComponent(connection.calendarId || 'primary')}/events?${params.toString()}`);
+
+  return {
+    ...result,
+    timeMin: timeMin.toISOString(),
+    timeMax: timeMax.toISOString()
+  };
 }
 
 async function upsertBloqueio(ownerEmail, event) {
@@ -856,17 +913,43 @@ async function persistSyncResults(connection, payload) {
   }
 
   if (!connection.syncToken) {
+    const janelaConsulta = obterJanelaConsulta(payload);
+
+    if (!janelaConsulta) {
+      console.warn('[GcalWebhookDiag] Full sync sem janela válida; nenhum purge executado por segurança.', {
+        ownerEmail,
+        payload: payload && typeof payload === 'object' ? {
+          timeMin: payload.timeMin,
+          timeMax: payload.timeMax
+        } : null
+      });
+      return;
+    }
+
     const currentRemoteIds = new Set(remoteIds);
-    const localBloqueios = await BloqueioExterno.find({ ownerEmail }).select('googleCalendarEventId').lean();
+    const localBloqueios = await BloqueioExterno.find({ ownerEmail }).select('googleCalendarEventId data').lean();
 
     for (const bloqueio of localBloqueios) {
       if (!bloqueio || !bloqueio.googleCalendarEventId) {
         continue;
       }
 
-      if (!currentRemoteIds.has(bloqueio.googleCalendarEventId)) {
-        await deleteBloqueio(ownerEmail, bloqueio.googleCalendarEventId);
+      if (currentRemoteIds.has(bloqueio.googleCalendarEventId)) {
+        continue;
       }
+
+      if (!isBloqueioDentroDaJanela(bloqueio, janelaConsulta)) {
+        console.log('[GcalWebhookDiag] Preservando bloqueio local fora da janela de full sync.', {
+          ownerEmail,
+          eventId: bloqueio.googleCalendarEventId,
+          data: bloqueio.data,
+          timeMin: janelaConsulta.timeMin,
+          timeMax: janelaConsulta.timeMax
+        });
+        continue;
+      }
+
+      await deleteBloqueio(ownerEmail, bloqueio.googleCalendarEventId);
     }
   }
 }
@@ -1092,6 +1175,8 @@ async function syncConnectionByWebhookHeaders(channelId, resourceId) {
 module.exports = {
   syncConnection,
   syncConnectionByWebhookHeaders,
+  listCalendarEvents,
+  persistSyncResults,
   pushEventToGoogle,
   updateEventInGoogle,
   deleteEventFromGoogle,

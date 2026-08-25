@@ -3,14 +3,17 @@ const assert = require('node:assert/strict');
 
 const Agendamento = require('../src/models/Agendamento');
 const Aluno = require('../src/models/Aluno');
+const BloqueioExterno = require('../src/models/BloqueioExterno');
 const {
   APP_ORIGIN,
   adicionarDiasISO,
   classificarEventoDeLeitura,
   getHorarioPadraoFim,
+  listCalendarEvents,
   montarEventoGoogle,
   montarRecurrence,
   montarTituloEvento,
+  persistSyncResults,
   resolverDataISO,
   isAppOwnedEvent,
 } = require('../src/services/gcalSyncService');
@@ -476,4 +479,178 @@ test('montarEventoGoogle inclui recurrence em serie e omite quando avulso', () =
   });
 
   assert.equal(avulso.recurrence, undefined);
+});
+
+test('listCalendarEvents inclui janela consultada no full sync e null no incremental', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    json: async () => ({ items: [] })
+  });
+
+  try {
+    const full = await listCalendarEvents({
+      getAccessToken: async () => 'token-test'
+    }, {
+      ownerEmail: 'joao@example.com',
+      calendarId: 'primary',
+      syncToken: null
+    });
+
+    assert.ok(full.timeMin);
+    assert.ok(full.timeMax);
+    assert.ok(full.timeMin < full.timeMax);
+
+    const incremental = await listCalendarEvents({
+      getAccessToken: async () => 'token-test'
+    }, {
+      ownerEmail: 'joao@example.com',
+      calendarId: 'primary',
+      syncToken: 'sync-token-123'
+    });
+
+    assert.equal(incremental.timeMin, null);
+    assert.equal(incremental.timeMax, null);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('full sync não apaga bloqueio local fora da janela consultada', async () => {
+  const originalFind = BloqueioExterno.find;
+  const originalDelete = BloqueioExterno.findOneAndDelete;
+  const deletados = [];
+
+  BloqueioExterno.find = () => ({
+    select: () => ({
+      lean: async () => [{
+        googleCalendarEventId: 'evt-fora-janela',
+        data: '2026-05-01'
+      }]
+    })
+  });
+  BloqueioExterno.findOneAndDelete = async ({ googleCalendarEventId }) => {
+    deletados.push(googleCalendarEventId);
+    return { googleCalendarEventId };
+  };
+
+  try {
+    await persistSyncResults({ ownerEmail: 'joao@example.com', syncToken: null }, {
+      activeItems: [],
+      cancelledItems: [],
+      timeMin: '2026-07-01T00:00:00.000Z',
+      timeMax: '2026-09-30T23:59:59.999Z'
+    });
+
+    assert.deepEqual(deletados, []);
+  } finally {
+    BloqueioExterno.find = originalFind;
+    BloqueioExterno.findOneAndDelete = originalDelete;
+  }
+});
+
+test('full sync apaga bloqueio local dentro da janela que não veio do remoto', async () => {
+  const originalFind = BloqueioExterno.find;
+  const originalDelete = BloqueioExterno.findOneAndDelete;
+  const deletados = [];
+
+  BloqueioExterno.find = () => ({
+    select: () => ({
+      lean: async () => [{
+        googleCalendarEventId: 'evt-fora-janela',
+        data: '2026-05-01'
+      }, {
+        googleCalendarEventId: 'evt-dentro-janela',
+        data: '2026-08-15'
+      }]
+    })
+  });
+  BloqueioExterno.findOneAndDelete = async ({ googleCalendarEventId }) => {
+    deletados.push(googleCalendarEventId);
+    return { googleCalendarEventId };
+  };
+
+  try {
+    await persistSyncResults({ ownerEmail: 'joao@example.com', syncToken: null }, {
+      activeItems: [],
+      cancelledItems: [],
+      timeMin: '2026-07-01T00:00:00.000Z',
+      timeMax: '2026-09-30T23:59:59.999Z'
+    });
+
+    assert.deepEqual(deletados, ['evt-dentro-janela']);
+  } finally {
+    BloqueioExterno.find = originalFind;
+    BloqueioExterno.findOneAndDelete = originalDelete;
+  }
+});
+
+test('sync incremental não dispara purge por varredura', async () => {
+  const originalFind = BloqueioExterno.find;
+  const originalDelete = BloqueioExterno.findOneAndDelete;
+  const deletados = [];
+
+  BloqueioExterno.find = () => ({
+    select: () => ({
+      lean: async () => [{
+        googleCalendarEventId: 'evt-local',
+        data: '2026-08-15'
+      }]
+    })
+  });
+  BloqueioExterno.findOneAndDelete = async ({ googleCalendarEventId }) => {
+    deletados.push(googleCalendarEventId);
+    return { googleCalendarEventId };
+  };
+
+  try {
+    await persistSyncResults({ ownerEmail: 'joao@example.com', syncToken: 'sync-token-123' }, {
+      activeItems: [],
+      cancelledItems: [],
+      timeMin: '2026-07-01T00:00:00.000Z',
+      timeMax: '2026-09-30T23:59:59.999Z'
+    });
+
+    assert.deepEqual(deletados, []);
+  } finally {
+    BloqueioExterno.find = originalFind;
+    BloqueioExterno.findOneAndDelete = originalDelete;
+  }
+});
+
+test('janela ausente ou inválida não dispara delete em full sync', async () => {
+  const originalFind = BloqueioExterno.find;
+  const originalDelete = BloqueioExterno.findOneAndDelete;
+  const deletados = [];
+
+  BloqueioExterno.find = () => ({
+    select: () => ({
+      lean: async () => [{
+        googleCalendarEventId: 'evt-local',
+        data: '2026-08-15'
+      }]
+    })
+  });
+  BloqueioExterno.findOneAndDelete = async ({ googleCalendarEventId }) => {
+    deletados.push(googleCalendarEventId);
+    return { googleCalendarEventId };
+  };
+
+  try {
+    await persistSyncResults({ ownerEmail: 'joao@example.com', syncToken: null }, {
+      activeItems: [],
+      cancelledItems: []
+    });
+    await persistSyncResults({ ownerEmail: 'joao@example.com', syncToken: null }, {
+      activeItems: [],
+      cancelledItems: [],
+      timeMin: 'invalido',
+      timeMax: '2026-09-30T23:59:59.999Z'
+    });
+
+    assert.deepEqual(deletados, []);
+  } finally {
+    BloqueioExterno.find = originalFind;
+    BloqueioExterno.findOneAndDelete = originalDelete;
+  }
 });
