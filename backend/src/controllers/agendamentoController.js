@@ -277,7 +277,8 @@ async function atualizarAgendamento(req, res) {
       { new: true, upsert: true, runValidators: true }
     );
 
-    const atualizadoParaGCal = normalizarAgendamentoParaResposta(atualizado);
+    const atualizadoParaGCalBase = normalizarAgendamentoParaResposta(atualizado);
+    const atualizadoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, atualizadoParaGCalBase);
 
     try {
       let resultadoGCal = null;
@@ -296,11 +297,11 @@ async function atualizarAgendamento(req, res) {
         }
       }
 
-      if (resultadoGCal && resultadoGCal.googleCalendarEventId && !atualizadoParaGCal.googleCalendarEventId) {
-        atualizadoParaGCal.googleCalendarEventId = resultadoGCal.googleCalendarEventId;
+      if (resultadoGCal && resultadoGCal.googleCalendarEventId && !atualizadoParaGCalBase.googleCalendarEventId) {
+        atualizadoParaGCalBase.googleCalendarEventId = resultadoGCal.googleCalendarEventId;
       }
 
-      return res.json(atualizadoParaGCal);
+      return res.json(atualizadoParaGCalBase);
     } catch (gcalErr) {
       return montarRespostaFalhaGcal(res, gcalErr, 'atualizar', atualizadoParaGCal);
     }
