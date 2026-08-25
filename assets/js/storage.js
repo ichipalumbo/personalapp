@@ -311,7 +311,7 @@ function mapearBloqueioExterno(bloqueioRaw) {
     // Garante que googleCalendarEventId está presente
     const googleCalendarEventId = bloqueioRaw.googleCalendarEventId || bloqueioRaw.id;
     if (!googleCalendarEventId) {
-        console.warn('[storage] Bloqueio externo sem googleCalendarEventId, ignorando:', bloqueioRaw);
+        window.log.warn('[storage]', 'Bloqueio externo sem googleCalendarEventId, ignorando', bloqueioRaw);
         return null;
     }
 
@@ -601,10 +601,10 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                     const payload = await resCriar.clone().json();
                     if (payload && payload.gcalSyncFailed === true) {
                         gcalSyncFailed = true;
-                        console.warn('[sync] Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
+                        window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
                     }
                 } catch (error) {
-                    console.debug('[sync] Falha de parse ao confirmar gcalSyncFailed em POST', {
+                    window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em POST', {
                         id: agendamento.id,
                         status: resCriar.status,
                         message: error && error.message ? error.message : String(error)
@@ -630,10 +630,10 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                     const payload = await resAtualizar.clone().json();
                     if (payload && payload.gcalSyncFailed === true) {
                         gcalSyncFailed = true;
-                        console.warn('[sync] Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
+                        window.log.warn('[sync]', 'Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
                     }
                 } catch (error) {
-                    console.debug('[sync] Falha de parse ao confirmar gcalSyncFailed em PUT', {
+                    window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em PUT', {
                         id: agendamento.id,
                         status: resAtualizar.status,
                         message: error && error.message ? error.message : String(error)
@@ -660,10 +660,10 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                 const payload = await resExcluir.clone().json();
                 if (payload && payload.gcalSyncFailed === true) {
                     gcalSyncFailed = true;
-                    console.warn('[sync] Falha no Google Calendar ao excluir agendamento', { id: agendamentoRemoto.id, operacao: 'DELETE' });
+                    window.log.warn('[sync]', 'Falha no Google Calendar ao excluir agendamento', { id: agendamentoRemoto.id, operacao: 'DELETE' });
                 }
             } catch (error) {
-                console.debug('[sync] Falha de parse ao confirmar gcalSyncFailed em DELETE', {
+                window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em DELETE', {
                     id: agendamentoRemoto.id,
                     status: resExcluir.status,
                     message: error && error.message ? error.message : String(error)
@@ -686,7 +686,7 @@ async function carregarDados(opcoes = {}) {
         _cachePossuiDados = resultadoLocal.temDados;
 
         if (_cachePossuiDados && !forcarRemoto) {
-            console.log('⚡ Cache local carregado instantaneamente. Sem chamada inicial à API.');
+            window.log.info('[storage]', 'Cache local carregado instantaneamente. Sem chamada inicial à API.');
             if (typeof window.preencherFiltrosAlunos === 'function') {
                 window.preencherFiltrosAlunos();
             }
@@ -726,7 +726,7 @@ async function carregarDados(opcoes = {}) {
 
     try {
         const timeoutAtual = _primeiraRequisicao ? 40000 : API_TIMEOUT_MS;
-        console.log('🔄 Iniciando sincronização com o banco de dados online...');
+        window.log.info('[storage]', 'Iniciando sincronização com o banco de dados online...');
         const onRetry = () => carregarDados({ ...opcoes, forcarRemoto: true });
 
         const [resAlunos, resAgendamentos, dadosConfig, resBloqueiosExt, dadosReposicoes] = await executarOperacaoRemotaComFeedback(async () => {
@@ -739,10 +739,10 @@ async function carregarDados(opcoes = {}) {
                 // para não quebrar carregarDados() enquanto a rota do backend ainda não está deployed.
                 apiFetchBackend(`${API_BASE_URL}/bloqueios-externos`, {}, timeoutAtual)
                     .then(res => res.ok ? res.json() : [])
-                    .catch(err => { console.warn('⚠️ /bloqueios-externos indisponível:', err.message); return []; }),
+                    .catch(err => { window.log.warn('[storage]', '/bloqueios-externos indisponível', err.message); return []; }),
                 apiFetchBackend(`${API_BASE_URL}/reposicoes`, {}, timeoutAtual)
                     .then(res => res.ok ? res.json() : [])
-                    .catch(err => { console.warn('⚠️ /reposicoes indisponível:', err.message); return []; })
+                    .catch(err => { window.log.warn('[storage]', '/reposicoes indisponível', err.message); return []; })
             ]);
             }, { contexto: 'carregando', onRetry, silenciosoUI });
 
@@ -803,7 +803,7 @@ async function carregarDados(opcoes = {}) {
             }
 
             if (alunosLocais.length > 0 || aulasLocais.length > 0) {
-                console.log("📤 Banco online vazio! Migrando dados locais antigos para o MongoDB Atlas...", {
+                window.log.info('[storage]', 'Banco online vazio. Migrando dados locais antigos para o MongoDB Atlas.', {
                     alunos: alunosLocais.length,
                     aulas: aulasLocais.length
                 });
@@ -835,18 +835,31 @@ async function carregarDados(opcoes = {}) {
             
             if (bloqueiosMapeados.length > 0) {
                 aulasParaCarregar = listaAulasAPI.concat(bloqueiosMapeados);
-                console.log("📅 " + bloqueiosMapeados.length + " bloqueio(s) externo(s) carregado(s) do MongoDB.");
+                window.log.info('[storage]', 'Bloqueios externos carregados do MongoDB.', { total: bloqueiosMapeados.length });
             }
         }
         atualizarAlunos(listaAlunosAPI);
         atualizarAulas(aulasParaCarregar);
 
         if (houveMigracaoPersistenteAlunos) {
-            console.log('🔁 Migração de objetivos de alunos aplicada. Persistindo no banco remoto...');
+            window.log.info('[storage]', 'Migração de objetivos de alunos aplicada. Persistindo no banco remoto...');
             await salvarDados(true);
         }
 
-        console.log('🔍 Aulas carregadas no frontend (após merge com bloqueios externos):', obterAulas());
+        const aulasCarregadas = obterAulas();
+        const totalAulas = aulasCarregadas.length;
+        const totalSeries = aulasCarregadas.filter((aula) => aula && aula.frequencia === 'semanal').length;
+        const totalAvulsas = aulasCarregadas.filter((aula) => aula && aula.frequencia !== 'semanal' && (aula.tipo || 'aula') !== 'bloqueio').length;
+        const totalExternos = aulasCarregadas.filter((aula) => aula && aula.source === 'google_external').length;
+        window.log.info('[storage]', 'Aulas carregadas no frontend', {
+            total: totalAulas,
+            series: totalSeries,
+            avulsas: totalAvulsas,
+            externos: totalExternos
+        });
+        window.log.grupo('[storage] Detalhe de aulas carregadas no frontend', () => {
+            window.log.debug('[storage]', 'Aulas carregadas', aulasCarregadas);
+        });
 
         if (dadosConfig) {
             atualizarLimitesGrade({
@@ -870,7 +883,7 @@ async function carregarDados(opcoes = {}) {
 
         _primeiraRequisicao = false;
         _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
-        console.log("✅ Dados sincronizados do MongoDB com sucesso!", {
+        window.log.info('[storage]', 'Dados sincronizados do MongoDB com sucesso!', {
             alunos: obterAlunos().length,
             aulas: obterAulas().length,
             grade: obterLimitesGrade()
@@ -899,7 +912,7 @@ async function carregarDados(opcoes = {}) {
 
             return { origem: 'local-auth-expirado' };
         }
-        console.error("❌ Falha na conexão com a API. Usando localStorage temporariamente.", error);
+        window.log.error('[storage]', 'Falha na conexão com a API. Usando localStorage temporariamente.', error);
         const resultadoLocal = carregarDadosDoLocalStorage();
         _cachePossuiDados = resultadoLocal.temDados;
 
@@ -929,7 +942,7 @@ async function salvarDados(silencioso = false) {
     }
 
     try {
-        console.log('💾 Sincronizando alterações com o MongoDB Atlas...');
+        window.log.info('[storage]', 'Sincronizando alterações com o MongoDB Atlas...');
 
         const alunosData = obterAlunos();
         // [TAG-STORAGE-FILTER-EXTERNO] Eventos externos do Google Calendar vivem em `bloqueios_externos`;
@@ -970,7 +983,7 @@ async function salvarDados(silencioso = false) {
                     teveFalhaGcal = true;
                 }
             } catch (error) {
-                console.debug('[sync] Resposta sem payload para validar gcalSyncFailed', {
+                window.log.debug('[sync]', 'Resposta sem payload para validar gcalSyncFailed', {
                     status: resposta && resposta.status,
                     message: error && error.message ? error.message : String(error)
                 });
@@ -979,10 +992,10 @@ async function salvarDados(silencioso = false) {
 
         salvarNoLocalStorage();
         _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
-        console.log('☁️ Alterações sincronizadas com o banco remoto!');
+        window.log.info('[storage]', 'Alterações sincronizadas com o banco remoto!');
 
         if (teveFalhaGcal) {
-            console.warn('⚠️ Banco remoto gravou, mas a Google Agenda não foi atualizada.');
+            window.log.warn('[storage]', 'Banco remoto gravou, mas a Google Agenda não foi atualizada.');
             if (!silencioso && typeof mostrarToast === 'function') {
                 mostrarToast('Salvo, mas a Google Agenda não foi atualizada', 'warning');
             }
@@ -1001,7 +1014,7 @@ async function salvarDados(silencioso = false) {
             }
             return { ok: false, motivo: 'sessao_expirada' };
         }
-        console.error('❌ Erro ao salvar dados na API:', error);
+        window.log.error('[storage]', 'Erro ao salvar dados na API:', error);
         if (!silencioso && typeof mostrarToast === 'function') {
             mostrarToast('Erro de conexão. Salvo temporariamente no aparelho.', 'error');
         }
@@ -1095,7 +1108,7 @@ window.sincronizarBancoDados = async function (opcoes = {}) {
             mostrarToast('Dados sincronizados com sucesso no MongoDB!', 'success');
         }
     } catch (error) {
-        console.error('[storage] Erro na sincronização manual do banco:', error);
+        window.log.error('[storage]', 'Erro na sincronização manual do banco:', error);
     } finally {
         _syncBancoEmAndamento = false;
         _setEstadoBotaoSyncBanco('pronto');
