@@ -94,7 +94,26 @@ Regras:
   do roadmap). Funciona hoje por causa da configuração dos projetos Vercel.
   Não "conserte" isso de passagem — é mudança que exige validar os dois deploys.
 
-### 4.3 Ordem de declaração de rotas
+### 4.3 Implementação única de cálculo de regra de negócio
+
+Regra permanente: **cálculo de regra de negócio implementado no backend não pode
+ser reimplementado no frontend.**
+
+- Se o frontend precisar do resultado, deve consumir da resposta da API.
+- Se o cálculo precisar existir nos dois lados, deve morar em módulo compartilhado
+  único (hoje em `assets/js/shared/`) e ser consumido por ambos.
+- É proibido manter cópias divergentes da mesma regra em arquivos diferentes.
+
+Motivo concreto: no fluxo de reposições, uma cópia local da regra de prazo
+divergiu da implementação oficial e o erro só apareceu em produção.
+
+Regras para módulo compartilhado:
+
+- Arquivos em `assets/js/shared/` não podem depender de `window`, `document` nem DOM.
+- Todo módulo compartilhado consumido no frontend precisa de tag `<script>` em
+  `index.html`, carregada antes dos consumidores diretos.
+
+### 4.4 Ordem de declaração de rotas
 
 Rotas literais devem ser declaradas **antes** de rotas com parâmetro.
 Ex.: `/api/alunos/consistencia-agenda` vem antes de `/:id`, senão o Express

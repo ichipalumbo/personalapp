@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-08-20
+> **Status**: Documento vivo · **Atualizado**: 2026-08-25
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -33,12 +33,13 @@ Cada item traz:
 
 ---
 
-### [ ] 0.2 Mover o módulo isomórfico de recorrência para dentro de `backend/`
-- **O que é**: Hoje `backend/src/services/financasService.js` importa `assets/js/shared/recurrence-helpers.js` com um `require` relativo que atravessa três níveis para fora da pasta `backend/`.
-- **Por que importa**: Funciona em produção, mas depende de configuração dos projetos Vercel que **não está versionada** — a API tem *Root Directory* = `backend/`, e o app aponta para a raiz do repositório. Se essa configuração mudar, quebra em produção sem aviso.
-- **Onde mexer**: Mover para `backend/src/shared/recurrence-helpers.js`, backend passando a requerer localmente, e o frontend consumindo de lá via tag `<script>` em `index.html` (o projeto do app publica o repositório inteiro, então alcança esse caminho — a assimetria joga a favor desta direção). Manter **um único módulo**: duplicar o arquivo reintroduz o risco de divergência entre "o que a agenda mostra" e "o que o financeiro cobra".
-- **Atenção**: `calendario-engine.js` lança erro explícito se `recurrence-helpers.js` não tiver sido carregado antes — a ordem das tags em `index.html` precisa ser preservada.
-- **Esforço**: Baixo (mudança de caminho + ajuste de `require` e da tag `<script>`), mas exige validar o deploy dos dois projetos.
+### [ ] 0.2 Consolidar módulos compartilhados (`assets/js/shared/`) sem travessia `backend/ -> assets/`
+- **O que é**: A dívida deixou de ser pontual. Hoje o backend atravessa a fronteira da pasta `backend/` para consumir **dois** módulos em `assets/js/shared/`:
+  - `recurrence-helpers.js` (usado por `backend/src/services/financasService.js`);
+  - `reposicao-flow-helpers.js` (usado em teste de regressão do backend).
+- **Por que importa**: Funciona no setup atual, mas acopla backend à estrutura do frontend e à configuração de deploy dos dois projetos Vercel.
+- **Onde mexer**: Definir um ponto único compartilhado (sem duplicação de lógica) e eliminar imports que sobem para fora de `backend/`. Preservar a ordem de carga no frontend (`index.html`) para qualquer módulo que continue via `<script>`.
+- **Esforço**: Baixo–Médio (depende da estratégia de reorganização dos compartilhados) e exige validar deploy dos dois projetos.
 
 ---
 
@@ -57,11 +58,11 @@ Cada item traz:
 
 ---
 
-### [ ] 0.5 Collection `Reposicao` + modelo de competência
-- **O que é**: Nova collection para fila de reposição e mudança do modelo financeiro de cobrança por ocorrência para competência de ciclo.
-- **Por que importa**: Corrige a perda de informação da fila e elimina a cobrança dupla em ciclos adjacentes por causa de reposições. É a entrega principal da spec nova.
-- **Onde mexer**: `docs/specs/reposicoes-e-competencia.md`, `backend/src/models/Reposicao.js`, `backend/src/services/financasService.js` e fluxo de envio para reposição.
-- **Esforço**: Médio.
+### [~] 0.5 Collection `Reposicao` + modelo de competência — **IMPLEMENTADO NA BRANCH, NÃO PUBLICADO**
+- **Status real**: Implementado na `new/reposicao-feature` (backend + fluxo de frontend), com validação de regressões no backend. O frontend ainda não está publicado em produção.
+- **O que já existe**: collection `Reposicao`, integração no financeiro por competência, fluxo de envio/reagendamento com vínculo `reposicaoId` / `agendamentoReposicaoId`.
+- **Pendências**: publicação do frontend e fechamento dos resíduos/documentação de rollout.
+- **Esforço restante**: Baixo (rollout e fechamento), sem mudança conceitual de regra.
 
 ### [ ] 0.6 Extrato do ciclo
 - **O que é**: Exibir em cada ciclo o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado.
@@ -80,6 +81,13 @@ Cada item traz:
 - **Por que importa**: Dá visibilidade útil sem exigir notificação externa; é o próximo passo de UX após a regra de negócio.
 - **Onde mexer**: `view-alunos.js`, painel de aluno e endpoint de fila de reposição.
 - **Esforço**: Baixo–Médio.
+
+### [ ] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado
+- **O que é**: Tornar o cálculo de prazo reutilizável sem duplicação entre backend e frontend.
+- **Por que importa**: Já houve divergência real quando a regra foi reimplementada no cliente. A única fonte de cálculo precisa ser compartilhada.
+- **Dependência**: item 0.2 (consolidação de compartilhados e remoção da travessia `backend/ -> assets/`).
+- **Onde mexer**: módulo compartilhado de domínio (sem dependência de `window`/DOM), backend consumindo diretamente e frontend apenas exibindo resultado da API quando aplicável.
+- **Esforço**: Médio.
 
 ---
 
@@ -298,7 +306,7 @@ Cada item traz:
 | 6 | Relatório exportável de faturamento (1.2) | Fácil | Baixo |
 | 7 | Status de no-show/cancelamento (1.5) | Fácil–Médio | Médio |
 | 8 | Aulas a repor no card do aluno (1.8) | Fácil–Médio | Baixo–Médio |
-| 9 | Débitos 0.2 e 0.3 (de carona) | Débito | Baixo |
+| 9 | Débitos 0.2, 0.3 e 0.9 (de carona) | Débito | Baixo–Médio |
 | 10 | Aniversário do aluno (1.6) | Fácil | Baixo |
 | 11 | Banco de desenvolvimento separado (3.4) | Ambiente | Médio–Alto |
 | 12 | Cobrança automatizada (2.1) | Complexo | Alto |

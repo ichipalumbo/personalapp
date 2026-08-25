@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Parcialmente implementada (seção 6 no ar) · **Versão**: 2 · **Atualizado**: 2026-08-24
+> **Status**: Backend da seção 6 publicado em produção; fluxo de frontend implementado na branch `new/reposicao-feature` (ainda não publicado em produção) · **Versão**: 3 · **Atualizado**: 2026-08-25
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v6).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -11,24 +11,20 @@
 
 ## 1. Problema
 
-Hoje o app tem uma "fila de reposição" (`aulasParaRepor`) que:
+### 1.1 Contexto que motivou a mudança (histórico)
 
-1. **Não é persistida em lugar nenhum** — é `let aulasParaRepor = []` em `state.js`.
-   Não é gravada na API nem no `localStorage`. Some no primeiro reload e não existe em
-   outro dispositivo.
-2. **Guarda três campos** (`id`, `alunoId`, `dataCancelamento`) e nenhum vínculo com o
-   compromisso de origem.
-3. **Remove a ocorrência da agenda** ao enviar para reposição (splice no caso avulso,
-   exceção na série no caso recorrente). Como o financeiro conta ocorrências da agenda,
-   a aula **deixa de ser cobrada silenciosamente**.
+Antes da collection `Reposicao`, o app mantinha uma fila local em `aulasParaRepor`, sem
+persistência remota e sem vínculo financeiro robusto. Esse desenho causava perda de
+rastreabilidade e inconsistências de cobrança entre ciclos.
 
-Resultado atual: uma aula enviada para reposição desaparece do financeiro e a informação
-de que ela existiu se perde no primeiro refresh.
+### 1.2 Estado atual da implementação
 
-Além disso, o modelo atual (cobrança **por ocorrência**) produz um caso de cobrança dupla:
-uma aula do fim de um ciclo **já pago** que é reagendada para o ciclo seguinte é cobrada
-duas vezes — o ciclo pago está congelado (decisão 16 da spec de Finanças) e a reposição
-é contada como aula nova no ciclo seguinte.
+Na branch `new/reposicao-feature`, a fila já é persistida em backend (`Reposicao`), com
+vínculo bidirecional entre agendamento e reposição (`reposicaoId` /
+`agendamentoReposicaoId`) e cálculo de competência no financeiro.
+
+Os ajustes desta v3 documentam o comportamento real do código, inclusive decisões de
+ordem de persistência, sincronização com Google Calendar e limitações conhecidas.
 
 ---
 
@@ -267,8 +263,8 @@ SE (validoAte - dataOriginal) < 7 dias:
 fim do ciclo nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por
 um prazo que nunca foi factível.
 
-Quando o piso é aplicado, a UI **avisa explicitamente**: _"Prazo definido para o fim do
-ciclo seguinte (16/05), por faltarem menos de 7 dias para o fim do ciclo atual."_
+Quando o piso é aplicado, o backend marca `pisoAplicado: true` na resposta de criação da
+reposição. A UI atual não exibe um aviso dedicado para esse caso.
 
 ### 6.3 Aluno sem ciclo configurado
 
@@ -460,7 +456,7 @@ Segundo passo, após o clique em "Enviar para reposição". Modal pequeno, conte
 - **Duas opções explícitas, sem default pré-selecionado** — as duas são legítimas e a
   escolha é irreversível.
 - Um disclaimer curto por opção, explicando a consequência.
-- Quando o piso de 7 dias for aplicado (6.2), o aviso correspondente.
+- O prazo mostrado no modal de escolha vem do campo retornado pela API (`validoAte`).
 
 **Cabeçalho**
 
@@ -489,10 +485,11 @@ Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o 
 
 ### 9.4 Painel de reposições
 
-- Cada item mostra: aluno, data original, se é cobrável, e o prazo (se houver).
-- Reposições **vencendo em breve** (≤ 7 dias) recebem destaque visual.
-- Reposições **expiradas** aparecem em seção separada ou com marcação clara, e não
-  oferecem ação de remarcar.
+- A lista da Home renderiza apenas reposições com `status: 'pendente'`.
+- Cada item mostra aluno e data original (rotulada como "Cancelada em ..."), com ação de
+  reagendar.
+- `cobravel`, `validoAte`, destaque de vencimento e seção de expiradas ainda não aparecem
+  no painel atual.
 
 ### 9.5 Aviso no card do aluno
 
@@ -521,8 +518,8 @@ roadmap). Cabe ali, sem refatoração:
 | `index.html`                                     | rótulos dos botões + modal de escolha                                                                |
 
 **Áreas sensíveis tocadas** (confirmar antes de mexer): motor de recorrência não muda,
-mas o fluxo de exceção da série sim; sync com Google Calendar é acionado nos dois
-handlers de envio para reposição.
+mas o fluxo de exceção da série sim; sync com Google Calendar acontece no envio avulso e
+no reagendamento via modal, mas não no envio para reposição de instância recorrente.
 
 ---
 
@@ -541,11 +538,59 @@ handlers de envio para reposição.
 | 9   | Remarcar renova o prazo?        | **Não.** Remarcar/cancelar não altera prazo                  |
 | 10  | Expiração mexe em valor?        | **Nunca.** Nem devolve, nem cobra                            |
 | 11  | Reabrir expirada?               | **Não existe.** PT cria aula avulsa e ajusta no financeiro   |
-| 12  | Não cobrável cai em ciclo pago? | Vai para o primeiro ciclo seguinte não pago (⚠️ confirmar)   |
+| 12  | Não cobrável cai em ciclo pago? | Vai para o primeiro ciclo seguinte não pago                  |
 | 13  | Aluno `valor_fixo`?             | Escolha registrada, **não afeta valor**. Extrato informativo |
 | 14  | Aluno sem ciclo configurado?    | `validoAte` nulo, não expira                                 |
 | 15  | Registro é deletado?            | **Nunca.** `realizada` / `expirada` são estados finais       |
 | 16  | Migração de dados?              | **Não há.** Base de produção zerada, app não lançado         |
+| 17  | Salvar antes do PATCH?          | **Sim.** PATCH só segue com confirmação de persistência (`{ ok: true }`) |
+| 18  | Contrato de `salvarDados`       | `{ ok, motivo }`, com quatro motivos estáveis (`sucesso`, `falha_remota`, `nao_autenticado`, `sessao_expirada`) |
+| 19  | Ordem do reagendamento          | Inserir em memória → `salvarDados(true)` → PATCH → GCal      |
+| 20  | Reagendar cria nova reposição?  | **Não.** Reagendar consome pendente via PATCH; POST só no envio para fila |
+| 21  | Prazo é calculado no frontend?  | **Não.** Frontend apenas exibe `validoAte` retornado pela API |
+| 22  | Dedupe de pendente no POST      | `409` e nenhum segundo documento quando o id pendente já existe |
+
+### 11.1 Contrato de persistência antes do PATCH (C4.1a-fix)
+
+`salvarDados(silencioso)` retorna objeto `{ ok, motivo }` com contrato:
+
+- `ok: true, motivo: 'sucesso'`: persistência remota confirmada.
+- `ok: false, motivo: 'falha_remota'`: erro de conexão/falha remota.
+- `ok: false, motivo: 'nao_autenticado'`: sem sessão autenticada no app.
+- `ok: false, motivo: 'sessao_expirada'`: sessão expirou durante a operação.
+
+Nos dois caminhos de reposição que fazem PATCH (`formReagendarAula` e
+`btnReagendarInstancia`), a decisão de seguir ou abortar usa
+`reposicao-flow-helpers.deveEnviarPatch(resultadoPersistencia)`. Sem `ok: true`, o PATCH
+não é enviado.
+
+### 11.2 Cobertura de teste atual: parcial
+
+O teste `se a persistencia do agendamento falhar, o patch nao e enviado`
+(`backend/test/reposicao-c4-regressao.test.js`) importa o helper real
+`reposicao-flow-helpers` e valida os dois ramos:
+
+- falha de persistência (`ok: false`) → PATCH não enviado;
+- sucesso (`ok: true`) → PATCH enviado.
+
+A cobertura é **parcial**: o teste valida a decisão encapsulada no helper, mas
+reimplementa localmente o fluxo chamador e não prova, sozinho, que
+`modal-acao-slot.js` está sempre usando essa decisão em runtime.
+
+### 11.3 Caso conhecido — mutação sem rollback no caminho da série
+
+No envio para reposição de instância recorrente (`btnReagendarInstancia`), a exceção é
+adicionada a `compromisso.excecoes` antes de `salvarDados(true)`. Se a persistência
+falhar, o erro é mostrado, mas a exceção permanece em memória até reload, mantendo a
+aula fora da agenda local temporariamente.
+
+Impacto atual:
+
+- ocorre apenas em cenário de falha de rede/persistência;
+- recarregar dados/reload restaura o estado da fonte remota.
+
+Correção possível (ainda não implementada): snapshot anterior de `excecoes` e rollback no
+`catch` quando `salvarDados` retornar falha.
 
 ---
 
