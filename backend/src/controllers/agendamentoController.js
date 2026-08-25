@@ -83,7 +83,21 @@ function montarPayloadGCal(agendamento) {
     descricao: agendamento.descricao,
     local: local ? String(local) : '',
     fullDay: agendamento.fullDay,
-    googleCalendarEventId: agendamento.googleCalendarEventId
+    googleCalendarEventId: agendamento.googleCalendarEventId,
+    tipoRecorrencia: agendamento.tipoRecorrencia,
+    frequencia: agendamento.frequencia,
+    intervaloRecorrencia: agendamento.intervaloRecorrencia,
+    diasSemana: Array.isArray(agendamento.diasSemana) ? agendamento.diasSemana : [],
+    dia: agendamento.dia,
+    recorrenciaEscopo: agendamento.recorrenciaEscopo,
+    recorrenciaDataInicio: agendamento.recorrenciaDataInicio,
+    recorrenciaDataFim: agendamento.recorrenciaDataFim,
+    recorrenciaFimCondicao: agendamento.recorrenciaFimCondicao,
+    recorrenciaQuantidadeOcorrencias: agendamento.recorrenciaQuantidadeOcorrencias,
+    dataCriacao: agendamento.dataCriacao,
+    excecoes: Array.isArray(agendamento.excecoes) ? agendamento.excecoes : [],
+    excecoesDetalhadas: Array.isArray(agendamento.excecoesDetalhadas) ? agendamento.excecoesDetalhadas : [],
+    timeZone: agendamento.timeZone
   };
 }
 
@@ -373,5 +387,6 @@ module.exports = {
   criarAgendamento,
   atualizarAgendamento,
   excluirAgendamento,
-  patchAgendamento
+  patchAgendamento,
+  montarPayloadGCal
 };
