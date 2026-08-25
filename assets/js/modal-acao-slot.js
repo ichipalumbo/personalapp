@@ -1050,6 +1050,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
+            const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
+            let _mutouExcecoes = false;
 
             window.abrirModalEscolhaCobrancaReposicao(compromisso, async (cobravel) => {
                 try {
@@ -1061,6 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!compromisso.excecoes) compromisso.excecoes = [];
                     if (!compromisso.excecoes.includes(dataAlvoStr)) {
                         compromisso.excecoes.push(dataAlvoStr);
+                        _mutouExcecoes = true;
                     }
 
                     window.fecharModalAcaoSlot();
@@ -1084,6 +1087,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return reposicao;
                 } catch (erro) {
+                    if (_mutouExcecoes) {
+                        compromisso.excecoes = [...(_snapshot.excecoes || [])];
+                    }
+                    // Reposição remota permanece criada no servidor; o rollback reverte somente a aula na agenda local.
                     if (typeof mostrarToast === 'function') {
                         mostrarToast(erro && erro.message ? erro.message : 'Falha ao reagendar a reposição.', 'error');
                     } else {
