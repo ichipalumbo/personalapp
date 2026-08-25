@@ -1,7 +1,7 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 6 · **Atualizado**: 2026-08-20
-> **Defeitos em aberto**: 1 (ver seção 12.3)
+> **Status**: Em produção · **Versão**: 7 · **Atualizado**: 2026-08-25
+> **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
 > Projeto: Agenda Personal Trainer (Prô Josy) — frontend JS vanilla + backend Node/Express/MongoDB.
@@ -574,22 +574,20 @@ Status: **adiado**. É melhoria de robustez, não correção de defeito — o co
 
 Regras da visão mensal removida (`.calendario-mensal`, `.calendario-grid`, `.dia-cell`, `.kpi-dashboard`, `#tela-calendario`) permanecem em `assets/css/style.css`. Não removidas para evitar risco de afetar seletores compartilhados com as visões de dia/semana. Requer verificação cuidadosa antes de limpar.
 
-### 12.3 Defeito em aberto — o bloco "Ver ciclos anteriores" fecha sozinho no re-render
+### 12.3 Defeito corrigido — o bloco "Ver ciclos anteriores" persiste aberto em re-render
 
-**Sintoma**: em `view-financas.js`, `renderizarCards()` reescreve a lista inteira via `innerHTML` e `renderizarCard()` monta o `<details>` sem nunca aplicar `open`. Como `carregarFinancas()` renderiza o cache primeiro e chama `renderizarCards()` novamente quando a resposta remota chega, um `<details>` recém-expandido volta a fechar sozinho — inclusive no meio do `"Carregando ciclos anteriores..."`. O mesmo ocorre ao trocar de filtro, marcar como pago e salvar ajuste.
+**Estado atual**: o bug foi corrigido em `view-financas.js` persistindo o estado de expansão em `STATE` em vez de depender apenas do DOM. O comportamento atual é o seguinte:
 
-**Impacto**: apenas visual/de estado. Não há perda de dados nem chamada de rede duplicada — o conteúdo já carregado é restaurado corretamente por `montarHtmlHistorico()` na remontagem, e o estado de erro (com o botão "Tentar novamente") também sobrevive. O bloco apenas aparece fechado.
+1. o histórico mantém o estado em `STATE.historicoAberto`;
+2. o listener de `toggle` continua em fase de captura e grava **abertura e fechamento** da chave;
+3. `renderizarCard()` reaplica `open` quando o aluno está marcado como expandido;
+4. um `<details>` já montado com `open` não dispara efeito colateral redundante.
 
-**Contradição com a spec**: viola o espírito de 6.2.2 (expansão imediata e feedback visível durante o carregamento), por uma via diferente da prevista.
+Esse mesmo padrão foi estendido ao extrato do ciclo: `STATE.extratoAberto` guarda a chave por identificador do ciclo (`extrato-atual-...`, `extrato-historico-...`), e a renderização reabre quando a opção estiver marcada. O guard do listener continua isolado por `data-financas-historico-details` versus `data-financas-extrato-details`, evitando que um bloco altere o outro.
 
-**Correção prevista** (não implementada): persistir o estado de expansão no `STATE` em vez de no DOM —
+**Impacto**: apenas visual/estado. Não há perda de dados nem chamada de rede duplicada, e o conteúdo carregado sobrevive ao re-render do card. O bloco permanece expandido quando o usuário o abriu, mesmo depois de filtro, pagamento, ajuste ou refresh.
 
-1. registrar os alunos expandidos no `STATE` (ex.: `STATE.historicoAberto`);
-2. o listener de `toggle` (já em fase de captura) passa a registrar abertura **e** fechamento;
-3. `renderizarCard()` aplica `open` quando o aluno estiver marcado como expandido;
-4. garantir que o `toggle` disparado por um `<details>` já renderizado com `open` não cause chamada redundante (o retorno antecipado de `carregarHistoricoAluno` para os estados `pronto`/`carregando` já cobre isso, mas precisa ser verificado).
-
-Alterações contidas em `view-financas.js`. Não requer mudança de backend.
+**Correção documentada**: persistência do estado em `STATE`, com `open` condicionando o `<details>` e o `toggle` do histórico/extrato gravando e apagando a chave correspondente. Não requer mudança de backend.
 
 ### 12.4 Documentação de apoio desatualizada
 

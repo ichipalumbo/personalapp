@@ -106,8 +106,8 @@ Como o deploy funciona de fato:
 
 ### 2.1 Fluxo de branches
 
-- **Feature grande acumula numa branch própria** — a de reposições é
-  `new/reposicao-feature`. Correção de feature vai para a branch da feature, **não** para
+- **Feature grande acumula numa branch própria** — a branch atual da feature é
+  `feat/gcal-sync`. Correção de feature vai para a branch da feature, **não** para
   a `main`.
 - **Push na feature branch é seguro** e é o fluxo normal: não publica nada, porque só a
   `main` tem deploy automático.
@@ -650,9 +650,9 @@ mesma mensagem._
 **12. Presumir que todo fix ia para a `main`.**
 Por três rodadas prescrevi "commit local, sem push" e branch `wip-` descartável, porque
 tratei a `main` como destino de cada correção. Ele trabalha com feature branch
-(`new/reposicao-feature`), onde push é seguro e o trabalho acumula normalmente. A
-cautela era desnecessária e criou passo extra à toa. _Lição: perguntar como ele organiza
-branches antes de dar conselho sobre fluxo de git. Ele tem processo — eu supus que não._
+(`feat/gcal-sync`), onde push é seguro e o trabalho acumula normalmente. A cautela era
+desnecessária e criou passo extra à toa. _Lição: perguntar como ele organiza branches
+antes de dar conselho sobre fluxo de git. Ele tem processo — eu supus que não._
 
 **13. Dar comando em sintaxe do shell errado.**
 Entreguei bloco de verificação com `grep` e `&&` depois de ele ter dito que mudou para
@@ -675,7 +675,7 @@ ambiente no topo do prompt para o agente também não errar._
   `calcularPrazoReposicao`, `sincronizarExpiracaoLazy`.
 - **Suíte de testes** em `backend/test/` (`node:test`, sem dependência nova).
 
-### Na branch `new/reposicao-feature` (não publicado)
+### Na branch `feat/gcal-sync` (pendente de rollout)
 
 - **C4 (roadmap 0.5), parcial**: modal de escolha cobrável/não cobrável com os textos
   literais da spec, renames de 9.1, `enviarParaReposicao` extraída, POST ao enviar
@@ -705,8 +705,8 @@ ambiente no topo do prompt para o agente também não errar._
     confirmada" (ver 3.7).
   - Cobertura parcial do teste do item 2 — cobre a decisão, não a fiação (ver 3.4.3).
   - Resíduo de mutação sem rollback no caminho da série (ver 3.8).
-  - Cabeçalho de status dizendo que a implementação está em `new/reposicao-feature`, não
-    em produção.
+  - Cabeçalho de status dizendo que a implementação está em `feat/gcal-sync`, não
+    no rollout do frontend.
   - Item 0.9 no roadmap + nota de que a dívida 0.2 passou a ter dois consumidores
     (ver 3.2).
   - Regra de implementação única no `copilot-instructions.md`.

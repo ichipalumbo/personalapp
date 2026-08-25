@@ -459,12 +459,31 @@ function _alunosSaoIguais(alunoA, alunoB) {
     }
 }
 
+function _ordenarChavesRecursivamente(valor) {
+    if (Array.isArray(valor)) {
+        return valor.map((item) => _ordenarChavesRecursivamente(item));
+    }
+
+    if (valor && typeof valor === 'object') {
+        const chavesOrdenadas = Object.keys(valor).sort();
+        const objetoOrdenado = {};
+
+        for (const chave of chavesOrdenadas) {
+            objetoOrdenado[chave] = _ordenarChavesRecursivamente(valor[chave]);
+        }
+
+        return objetoOrdenado;
+    }
+
+    return valor;
+}
+
 function _normalizarAgendamentoParaComparacao(agendamento) {
     const copia = { ...(agendamento || {}) };
     delete copia.ownerEmail;
     delete copia._id;
     delete copia.__v;
-    return copia;
+    return _ordenarChavesRecursivamente(copia);
 }
 
 function _agendamentosSaoIguais(agendamentoA, agendamentoB) {
