@@ -12,6 +12,7 @@ const {
   resolverDataISO,
   isAppOwnedEvent,
 } = require('../src/services/gcalSyncService');
+const { montarPayloadGCal } = require('../src/controllers/agendamentoController');
 const recurrenceHelpers = require('../../assets/js/shared/recurrence-helpers');
 
 test('getHorarioPadraoFim usa +60 minutos em horário normal', () => {
@@ -256,6 +257,89 @@ test('count de recorrencia inclui excecoes sem reduzir a contagem', () => {
   assert.equal(recurrenceHelpers.checarCompromissoNaData(comp, new Date(2026, 7, 18), '09:00', dias), true);
   assert.equal(recurrenceHelpers.checarCompromissoNaData(comp, new Date(2026, 7, 25), '09:00', dias), false);
   assert.equal(recurrenceHelpers.checarCompromissoNaData(comp, new Date(2026, 8, 1), '09:00', dias), false);
+});
+
+test('montarPayloadGCal preserva campos de recorrência e mantém a whitelist fechada', () => {
+  const agendamento = {
+    id: 'ag-123',
+    alunoId: 'al-456',
+    alunoNome: 'Maria',
+    objetivo: 'Hipertrofia',
+    data: '2026-08-20',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipo: 'aula',
+    descricao: 'Aula recorrente',
+    local: 'Academia',
+    fullDay: false,
+    googleCalendarEventId: 'evt-123',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    intervaloRecorrencia: 2,
+    diasSemana: ['Segunda', 'Quinta'],
+    dia: 'Segunda',
+    recorrenciaEscopo: 'monthOfDate',
+    recorrenciaDataInicio: '2026-08-20',
+    recorrenciaDataFim: '27/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaQuantidadeOcorrencias: 10,
+    dataCriacao: '2026-08-15',
+    excecoes: ['25/08/2026'],
+    excecoesDetalhadas: [{ data: '25/08/2026', horarioInicio: '09:00' }],
+    timeZone: 'America/Sao_Paulo',
+    _id: 'mongo-id',
+    __v: 1,
+    ownerEmail: 'maria@example.com'
+  };
+
+  const payload = montarPayloadGCal(agendamento);
+
+  assert.equal(payload.tipoRecorrencia, 'semanal');
+  assert.equal(payload.frequencia, 'semanal');
+  assert.equal(payload.intervaloRecorrencia, 2);
+  assert.deepEqual(payload.diasSemana, ['Segunda', 'Quinta']);
+  assert.equal(payload.recorrenciaFimCondicao, 'untilDate');
+  assert.equal(payload.recorrenciaDataFim, '27/08/2026');
+  assert.equal(payload.dataCriacao, '2026-08-15');
+  assert.deepEqual(payload.excecoes, ['25/08/2026']);
+  assert.equal(payload.timeZone, 'America/Sao_Paulo');
+  assert.equal(payload._id, undefined);
+  assert.equal(payload.__v, undefined);
+  assert.equal(payload.ownerEmail, undefined);
+
+  const evento = montarEventoGoogle(payload);
+  assert.ok(Array.isArray(evento.recurrence));
+  assert.equal(evento.recurrence[0].startsWith('RRULE:'), true);
+  assert.match(evento.recurrence[0], /^RRULE:FREQ=WEEKLY/);
+  assert.ok(evento.recurrence[0].includes('BYDAY=MO,TH'));
+  assert.ok(evento.recurrence[0].includes('UNTIL=20260827T235959Z'));
+
+  const agendamentoAvulso = {
+    id: 'ag-999',
+    data: '2026-08-20',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipo: 'aula',
+    local: 'Academia',
+    fullDay: false,
+    googleCalendarEventId: 'evt-999'
+  };
+
+  const eventoAvulso = montarEventoGoogle(montarPayloadGCal(agendamentoAvulso));
+  assert.equal(eventoAvulso.recurrence, undefined);
+
+  const payloadSemArrays = montarPayloadGCal({
+    id: 'ag-100',
+    data: '2026-08-20',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipo: 'aula',
+    tipoRecorrencia: 'semanal'
+  });
+
+  assert.deepEqual(payloadSemArrays.diasSemana, []);
+  assert.deepEqual(payloadSemArrays.excecoes, []);
+  assert.deepEqual(payloadSemArrays.excecoesDetalhadas, []);
 });
 
 test('montarRecurrence gera EXDATE com hora e TZID para evento cronometrado e data para dia inteiro', () => {
