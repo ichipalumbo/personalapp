@@ -435,10 +435,11 @@ function montarCorObjetivoTangerinaMigracao() {
     return { nome: 'Tangerina', hex: '#FF887C' };
 }
 
-function _respostaVirtual(status) {
+function _respostaVirtual(status, extras = {}) {
     return {
         status,
-        ok: status >= 200 && status < 300
+        ok: status >= 200 && status < 300,
+        ...extras
     };
 }
 
@@ -578,6 +579,7 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
 
     const remotoPorId = new Map(listaRemota.map((agendamento) => [agendamento.id, agendamento]));
     const localPorId = new Map(listaLocal.map((agendamento) => [agendamento.id, agendamento]));
+    let gcalSyncFailed = false;
 
     for (const agendamento of listaLocal) {
         if (!agendamento || !agendamento.id) continue;
@@ -593,6 +595,22 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
             if (!resCriar.ok) {
                 return resCriar;
             }
+
+            if (typeof resCriar.clone === 'function') {
+                try {
+                    const payload = await resCriar.clone().json();
+                    if (payload && payload.gcalSyncFailed === true) {
+                        gcalSyncFailed = true;
+                        console.warn('[sync] Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
+                    }
+                } catch (error) {
+                    console.debug('[sync] Falha de parse ao confirmar gcalSyncFailed em POST', {
+                        id: agendamento.id,
+                        status: resCriar.status,
+                        message: error && error.message ? error.message : String(error)
+                    });
+                }
+            }
             continue;
         }
 
@@ -605,6 +623,22 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
 
             if (!resAtualizar.ok) {
                 return resAtualizar;
+            }
+
+            if (typeof resAtualizar.clone === 'function') {
+                try {
+                    const payload = await resAtualizar.clone().json();
+                    if (payload && payload.gcalSyncFailed === true) {
+                        gcalSyncFailed = true;
+                        console.warn('[sync] Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
+                    }
+                } catch (error) {
+                    console.debug('[sync] Falha de parse ao confirmar gcalSyncFailed em PUT', {
+                        id: agendamento.id,
+                        status: resAtualizar.status,
+                        message: error && error.message ? error.message : String(error)
+                    });
+                }
             }
         }
     }
@@ -620,9 +654,25 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
         if (!resExcluir.ok && resExcluir.status !== 404) {
             return resExcluir;
         }
+
+        if (typeof resExcluir.clone === 'function' && resExcluir.ok) {
+            try {
+                const payload = await resExcluir.clone().json();
+                if (payload && payload.gcalSyncFailed === true) {
+                    gcalSyncFailed = true;
+                    console.warn('[sync] Falha no Google Calendar ao excluir agendamento', { id: agendamentoRemoto.id, operacao: 'DELETE' });
+                }
+            } catch (error) {
+                console.debug('[sync] Falha de parse ao confirmar gcalSyncFailed em DELETE', {
+                    id: agendamentoRemoto.id,
+                    status: resExcluir.status,
+                    message: error && error.message ? error.message : String(error)
+                });
+            }
+        }
     }
 
-    return _respostaVirtual(200);
+    return _respostaVirtual(200, { gcalSyncFailed });
 }
 
 async function carregarDados(opcoes = {}) {
@@ -908,15 +958,22 @@ async function salvarDados(silencioso = false) {
         let teveFalhaGcal = false;
         for (const resposta of [resAlunos, resAgendamentos, resConfig]) {
             if (!resposta || !resposta.ok) continue;
+            if (resposta.gcalSyncFailed === true) {
+                teveFalhaGcal = true;
+                continue;
+            }
+            if (typeof resposta.clone !== 'function') continue;
 
             try {
                 const payload = await resposta.clone().json();
                 if (payload && payload.gcalSyncFailed === true) {
                     teveFalhaGcal = true;
-                    break;
                 }
             } catch (error) {
-                // Respostas vazias ou não-JSON são ignoradas; o fluxo de sucesso/erro continua normal.
+                console.debug('[sync] Resposta sem payload para validar gcalSyncFailed', {
+                    status: resposta && resposta.status,
+                    message: error && error.message ? error.message : String(error)
+                });
             }
         }
 
