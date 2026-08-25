@@ -5,6 +5,7 @@ const Reposicao = require('../src/models/Reposicao');
 const Agendamento = require('../src/models/Agendamento');
 const Aluno = require('../src/models/Aluno');
 const reposicaoController = require('../src/controllers/reposicaoController');
+const reposicaoFlowHelpers = require('../../assets/js/shared/reposicao-flow-helpers');
 
 function criarRespostaMock() {
   return {
@@ -53,7 +54,7 @@ test('PATCH com agendamentoReposicaoId inexistente retorna 400', async () => {
   }
 });
 
-test('reagendar reposicao pendente nao cria um segundo documento: contagem permanece 1', async () => {
+test('POST com id de reposicao pendente ja existente retorna 409 e mantem contagem 1', async () => {
   const findOneOriginal = Reposicao.findOne;
   const createOriginal = Reposicao.create;
   const alunoFindOneOriginal = Aluno.findOne;
@@ -193,22 +194,30 @@ test('envio de instancia de serie cria reposicao pendente e nao cria agendamento
 });
 
 test('se a persistencia do agendamento falhar, o patch nao e enviado', async () => {
-  const salvarDadosOriginal = global.salvarDados;
-  const apiFetchOriginal = global.apiFetchBackend;
-
-  try {
-    global.salvarDados = async () => { throw new Error('SAVE_FAILED'); };
-    global.apiFetchBackend = async () => ({ ok: true, json: async () => ({ status: 'agendada', validoAte: '2026-08-31' }) });
-
-    const req = { body: { id: 'repo-5', alunoId: 'aluno-1', dataOriginal: '2026-07-27', horarioOriginal: '08:00', cobravel: true, agendamentoOriginalId: 'ag-5' }, auth: { ownerEmail: 'pro@example.com' } };
-    const res = criarRespostaMock();
-
-    await assert.rejects(async () => {
-      await global.salvarDados();
-    }, /SAVE_FAILED/);
-    assert.equal(typeof global.apiFetchBackend, 'function');
-  } finally {
-    global.salvarDados = salvarDadosOriginal;
-    global.apiFetchBackend = apiFetchOriginal;
+  const chamadasPatch = [];
+  async function executarFluxoDecisao(resultadoPersistencia, enviarPatch) {
+    if (!reposicaoFlowHelpers.deveEnviarPatch(resultadoPersistencia)) {
+      return { patchEnviado: false };
+    }
+    await enviarPatch();
+    return { patchEnviado: true };
   }
+
+  const resultadoFalha = await executarFluxoDecisao(
+    { ok: false, motivo: 'falha_remota' },
+    async () => {
+      chamadasPatch.push('PATCH');
+    },
+  );
+  assert.equal(resultadoFalha.patchEnviado, false);
+  assert.equal(chamadasPatch.length, 0);
+
+  const resultadoSucesso = await executarFluxoDecisao(
+    { ok: true, motivo: 'sucesso' },
+    async () => {
+      chamadasPatch.push('PATCH');
+    },
+  );
+  assert.equal(resultadoSucesso.patchEnviado, true);
+  assert.equal(chamadasPatch.length, 1);
 });

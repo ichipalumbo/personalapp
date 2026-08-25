@@ -9,7 +9,7 @@
 > e inclui coisas que não estão no código — histórico de decisões, preferências de
 > trabalho e erros já cometidos.
 >
-> **Última atualização**: 2026-08-24
+> **Última atualização**: 2026-08-25
 
 ---
 
@@ -29,13 +29,14 @@
 
 ### Preferências explícitas (confirmadas por ele)
 
-| Preferência | Detalhe |
-|---|---|
-| **Perguntar antes de decidir** | Em qualquer ambiguidade, perguntar em vez de escolher um caminho e seguir. Ele considera que isso melhora a qualidade final. |
-| **Não extrapolar escopo** | Só é aceitável sair do escopo para **levantar** uma ambiguidade ou risco — nunca para implementar por conta própria. |
-| **Não colar código no chat** | Preferência forte. Editar o arquivo e **relatar em texto** o que mudou. Colar blocos de código consome contexto sem necessidade. Exceção aceita: **prompts** para o agente de código, que são o entregável da conversa. |
-| **`package-lock.json`** | Pode ser alterado quando necessário. Não é área protegida. |
-| **Relatório ao final** | Gosta de receber: arquivos alterados, o que mudou em cada um, e o que foi encontrado mas não alterado. |
+| Preferência                    | Detalhe                                                                                                                                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Perguntar antes de decidir** | Em qualquer ambiguidade, perguntar em vez de escolher um caminho e seguir. Ele considera que isso melhora a qualidade final.                                                                                            |
+| **Não extrapolar escopo**      | Só é aceitável sair do escopo para **levantar** uma ambiguidade ou risco — nunca para implementar por conta própria.                                                                                                    |
+| **Não colar código no chat**   | Preferência forte. Editar o arquivo e **relatar em texto** o que mudou. Colar blocos de código consome contexto sem necessidade. Exceção aceita: **prompts** para o agente de código, que são o entregável da conversa. |
+| **`package-lock.json`**        | Pode ser alterado quando necessário. Não é área protegida.                                                                                                                                                              |
+| **Relatório ao final**         | Gosta de receber: arquivos alterados, o que mudou em cada um, e o que foi encontrado mas não alterado.                                                                                                                  |
+| **Comando pronto para colar**  | Quando a conversa produz uma verificação a rodar no terminal, entregar o bloco completo, copiável de uma vez, com a leitura do resultado esperado.                                                                      |
 
 **Idioma**: português, no código e na conversa. Comunicação informal e direta.
 
@@ -47,9 +48,11 @@ O fluxo de trabalho real, que funcionou bem e vale repetir:
 2. O assistente **lê o código no repositório** e confirma ou refuta o diagnóstico.
 3. O assistente escreve um **prompt fechado** para o agente de código (MAI, no VS Code).
 4. Ele roda o prompt, valida em produção e volta com o resultado.
+5. O assistente **verifica o pacote** contra o relatório do agente antes de qualquer
+   conclusão. Ver 5.8 — esse passo já pegou três entregas divergentes.
 
-O valor do assistente de conversa está nos passos 2 e 3 — diagnosticar contra o código e
-**produzir o prompt**, não implementar. Ver seção 5.
+O valor do assistente de conversa está nos passos 2, 3 e 5 — diagnosticar contra o
+código, **produzir o prompt** e **auditar a entrega**. Não implementar. Ver seção 5.
 
 ---
 
@@ -58,6 +61,7 @@ O valor do assistente de conversa está nos passos 2 e 3 — diagnosticar contra
 **O que é**: sistema de gestão de alunos, agenda e cobrança para personal trainer.
 
 **Stack**:
+
 - **Frontend**: JavaScript vanilla, **sem framework e sem build step**. Scripts
   carregados por tags `<script>` em `index.html` — **a ordem importa** (há módulos que
   lançam erro se um anterior não tiver carregado).
@@ -69,15 +73,18 @@ O valor do assistente de conversa está nos passos 2 e 3 — diagnosticar contra
 
 **Deploy**: dois projetos Vercel independentes, ligados ao mesmo repositório.
 
-| Projeto | Root Directory | URL |
-|---|---|---|
-| `personal-app-webpage` | raiz do repo | https://josy-personal-app.vercel.app/ |
-| `personal-app-api` | `backend/` | https://personal-app-api.vercel.app/ |
+| Projeto                | Root Directory | URL                                   |
+| ---------------------- | -------------- | ------------------------------------- |
+| `personal-app-webpage` | raiz do repo   | https://josy-personal-app.vercel.app/ |
+| `personal-app-api`     | `backend/`     | https://personal-app-api.vercel.app/  |
 
 **Push ou merge na `main` vai direto para produção nos dois.** Não existe staging nem
 branch de preview. Deploy manual de branch de teste é possível, mas qualquer alteração
 na `main` o substitui. Ele escolheu essa simplicidade conscientemente por desenvolver
 sozinho.
+
+_Consequência prática_: branch de trabalho local (`wip-*`) com commit **sem push** é
+seguro e é o mecanismo usado para empacotar trabalho em andamento (ver seção 10).
 
 ---
 
@@ -108,16 +115,18 @@ antes considerar que nada disso existe.
 ### 3.2 Módulo isomórfico de recorrência
 
 `assets/js/shared/recurrence-helpers.js` é consumido pelos dois lados:
+
 - frontend, por tag `<script>`;
 - backend, via `require('../../../assets/js/shared/recurrence-helpers')` em
   `financasService.js` — três níveis para **fora** de `backend/`.
 
 Regras:
+
 - **Nunca duplicar.** Se agenda e financeiro resolverem recorrência de formas
   diferentes, o app cobra valor diferente do que mostra. Isso vale para **qualquer regra
   de cálculo financeiro**, não só recorrência — ver o erro nº 9 na seção 8.
 - **Não pode depender de `window`/DOM** — roda no Node.
-- O caminho atravessado funciona por causa dos *roots* diferentes dos dois projetos
+- O caminho atravessado funciona por causa dos _roots_ diferentes dos dois projetos
   Vercel. É dívida conhecida (0.2 no roadmap). Não "consertar de passagem".
 
 ### 3.3 Isolamento por `ownerEmail`
@@ -127,15 +136,28 @@ App multiusuário: qualquer conta Google pode usar, cada uma vê só os próprio
 filtrar por `ownerEmail`** (`getOwnerEmailOrThrow`). Não há nenhuma outra camada
 impedindo vazamento entre contas.
 
-### 3.4 Testes: existem, mas cobrem pouco
+### 3.4 Testes: existem, mas cobrem pouco — e já vieram falsos
 
 Já existe suíte em `backend/test/` rodando com `node:test`. **Ela não é rede de
-proteção suficiente** — passou com 37 testes verdes enquanto o bug do C3 estava em
-produção, porque o teste cobria só a direção de transição que o autor imaginou.
+proteção suficiente.** Duas falhas de natureza diferente já aconteceram:
 
-*Regra derivada*: ao pedir teste para regra que tem direção (antes/depois, entra/sai,
-cresce/encolhe), **nomear as duas direções explicitamente no prompt**. "Teste a
-transição" produz um teste; "teste A→B e B→A" produz dois.
+1. **Cobertura de uma direção só.** Passou com 37 testes verdes enquanto o bug do C3
+   estava em produção, porque o teste cobria só a direção de transição que o autor
+   imaginou.
+   _Regra derivada_: ao pedir teste para regra que tem direção (antes/depois,
+   entra/sai, cresce/encolhe), **nomear as duas direções explicitamente no prompt**.
+   "Teste a transição" produz um teste; "teste A→B e B→A" produz dois.
+
+2. **Teste placebo.** O C4.1a entregou
+   `se a persistencia do agendamento falhar, o patch nao e enviado`, que criava um
+   `global.salvarDados` lançando erro, verificava que ele lançava, e conferia
+   `typeof global.apiFetchBackend === 'function'`. **Não tocava em nenhuma linha de
+   produção.** Deixou a suíte verde exatamente sobre o invariante quebrado — pior que
+   teste ausente, porque compra confiança.
+   _Regra derivada_: teste de regressão precisa **importar algo de `src/`** e exercitar
+   função real. Se o invariante não é testável sem refatoração, o certo é extrair uma
+   função pura ou **não escrever o teste** e dizer isso. Nunca mockar o próprio sujeito
+   do teste.
 
 Dois bugs financeiros já escaparam para produção antes disso (aula excluída continuar
 sendo cobrada; reajuste alterando ciclos antigos retroativamente). Nenhum afetou
@@ -153,8 +175,24 @@ validação, serviço) e **o frontend nunca o chama**. Foi o caso da fila de rep
 `aulasParaRepor` é array em `state.js`, e a única chamada a `/reposicoes` no frontend
 inteiro era um `GET`.
 
-*Regra derivada*: "a feature existe" precisa ser verificado nos **dois lados**. Antes de
+_Regra derivada_: "a feature existe" precisa ser verificado nos **dois lados**. Antes de
 discutir regra de negócio sobre um dado, confirmar que alguém escreve esse dado.
+
+### 3.7 `salvarDados` engole falha (em correção no C4.1a-fix)
+
+`assets/js/storage.js`, `salvarDados(silencioso)`: captura todo erro num `catch` interno
+e **retorna `undefined` tanto em sucesso quanto em falha**. Também retorna cedo, sem
+salvar, quando a sessão não está autenticada. Com `silencioso = true`, nem o toast de
+erro aparece.
+
+Consequência: `await salvarDados(true)` **não é confirmação de persistência**. Qualquer
+fluxo que dependa de "gravou no Mongo antes de seguir" está apoiado em nada. Foi o que
+manteve vivo o 400 do PATCH de reposição depois do C4.1a.
+
+O C4.1a-fix introduz um contrato de retorno `{ ok, motivo }` com três desfechos
+(sucesso, falha remota, não autenticado/expirada). **Quando isso entrar, atualizar esta
+seção e registrar o contrato na spec** — é peça de arquitetura, não detalhe de
+implementação.
 
 ---
 
@@ -162,7 +200,7 @@ discutir regra de negócio sobre um dado, confirmar que alguém escreve esse dad
 
 Área mais sensível do sistema. Detalhamento em
 `docs/specs/financas-ciclo-cobranca.md` (v6, em produção) e
-`docs/specs/reposicoes-e-competencia.md` (v2 → v3 em andamento).
+`docs/specs/reposicoes-e-competencia.md` (v2 → v3 no C4.1b).
 
 - **Recálculo sempre pelo snapshot** do ciclo (`precoAulaSnapshot`, `valorFixoSnapshot`,
   `metodoCobranca`), nunca pelo preço atual do aluno. Reajuste vale do próximo ciclo em
@@ -175,7 +213,8 @@ discutir regra de negócio sobre um dado, confirmar que alguém escreve esse dad
 - **Piso zero**: total de aulas cobradas nunca fica negativo, mesmo com ajuste manual
   negativo.
 - **Escrita financeira só é confirmada na UI após resposta HTTP de sucesso.** Nunca com
-  base em cache local.
+  base em cache local — e "await numa função que não retorna nada" não conta como
+  confirmação (ver 3.7).
 - O cálculo percorre a janela real de datas do ciclo e conta ocorrências resolvidas pelo
   motor de recorrência — não usa mais a aproximação `frequência × 4`.
 - **Modelo de competência** (spec de reposições): a aula é cobrada no ciclo em que estava
@@ -236,13 +275,13 @@ fonte de verdade tende a voltar como diagnóstico. Ver o erro nº 7 da seção 8
 **FordLLM (assistente de conversa) é o arquiteto. O MAI é o engenheiro que aplica a
 arquitetura.**
 
-| | FordLLM | MAI (Copilot no VS Code) |
-|---|---|---|
-| Lê o repositório para | diagnosticar e desenhar | implementar |
-| Decide | qual é o problema, qual o desenho, o que fica fora | nada de produto ou arquitetura |
-| Produz | diagnóstico com `arquivo:linha` + prompt fechado | código, testes e edições de doc |
-| Escreve código no repo | **não** | sim |
-| Erra quando | afirma sem ler a fonte | recebe pedido subespecificado |
+|                        | FordLLM                                                                   | MAI (Copilot no VS Code)        |
+| ---------------------- | ------------------------------------------------------------------------- | ------------------------------- |
+| Lê o repositório para  | diagnosticar, desenhar e **auditar**                                      | implementar                     |
+| Decide                 | qual é o problema, qual o desenho, o que fica fora                        | nada de produto ou arquitetura  |
+| Produz                 | diagnóstico com `arquivo:linha` + prompt fechado + comando de verificação | código, testes e edições de doc |
+| Escreve código no repo | **não**                                                                   | sim                             |
+| Erra quando            | afirma sem ler a fonte                                                    | recebe pedido subespecificado   |
 
 Consequências operacionais:
 
@@ -257,24 +296,30 @@ Consequências operacionais:
 - **O MAI é ótimo executando o que já foi decidido.** A qualidade da entrega é
   proporcional à qualidade do desenho que chega nela — quando o C4 saiu torto, o defeito
   estava no prompt, não no modelo.
+- **Item transversal é fronteira de risco.** Mudança que altera contrato consumido por
+  muitos chamadores (ex.: retorno de `salvarDados`) é decisão de arquitetura disfarçada
+  de refactor. Se precisar escalar para modelo maior, escalar **só esse item** e deixar
+  o resto com o MAI.
 
 ### 5.4 Anatomia de um prompt que funcionou
 
 Ordem testada, do topo para baixo:
 
 1. **Natureza da tarefa.** Uma linha dizendo se é implementação ou investigação. Se for
-   implementação, dizer explicitamente: *"o diagnóstico está fechado, não reinvestigue"*,
-   e definir a falha: *"se terminar sem editar arquivos, falhou a tarefa"*.
+   implementação, dizer explicitamente: _"o diagnóstico está fechado, não reinvestigue"_,
+   e definir a falha: _"se terminar sem editar arquivos, falhou a tarefa"_.
 2. **Fonte de verdade**, com caminho completo. Mais a regra de precedência.
 3. **Estado atual confirmado**, com `arquivo:linha`. Poupa o agente de reinvestigar e
    ancora o diagnóstico em algo verificável.
-4. **Escopo**, numerado, um item por mudança.
+4. **Escopo**, numerado, um item por mudança. Se houver item que sustenta os outros,
+   dizer qual é e mandar começar por ele.
 5. **Fora de escopo**, copiado da spec. Sem isso ele preenche a lacuna sozinho.
 6. **Testes exigidos**, nomeando as duas direções de cada regra direcional (ver 3.4).
 7. **Restrições** — invariantes que não podem quebrar, enums fechados, dados de teste
    existentes na base.
-8. **Relatório esperado** — e deixar claro que ele descreve o que **foi escrito**, não o
-   que foi encontrado.
+8. **Relatório esperado** — com a saída literal de `git diff --stat` como primeiro item
+   (ver 5.8), e deixando claro que o relatório descreve o que **foi escrito**, não o que
+   foi encontrado.
 
 ### 5.5 Dimensionamento: a métrica é contagem de exigências, não caracteres
 
@@ -296,7 +341,7 @@ Três cortes que reduzem a contagem sem perder conteúdo:
 
 1. **Separar código de documentação** (ver 5.6). É a costura mais natural.
 2. **Numerar as exigências de ponta a ponta** e pedir no relatório uma linha por número,
-   com *feito / não feito / não se aplica*. Item omitido fica visível.
+   com _feito / não feito / não se aplica_. Item omitido fica visível.
 3. **Posição importa**: o meio do prompt é onde mais se perde item. Não colocar ali o
    bloco que você menos quer perder.
 
@@ -306,17 +351,20 @@ Quando um pedido passa do limite de 5.5, quebrar em duas rodadas sequenciais:
 
 **Parte (a) — código.** Os problemas de código, os testes e as restrições. Testes vão no
 (a) porque teste é parte da implementação, não documentação. Instruções extras:
-- *"Esta é a parte 1 de 2. NÃO edite nada em `docs/` nesta rodada."*
+
+- _"Esta é a parte 1 de 2. NÃO edite nada em `docs/` nesta rodada."_
 - No relatório, um item a mais: **"decisões tomadas que precisam virar documentação"** —
   é o que alimenta o (b).
 
 **Parte (b) — documentação.** Rodada depois do (a) validado. Instruções extras:
-- *"Nenhum arquivo de código deve ser alterado. Se achar que o código precisa mudar,
-  pare e aponte."*
-- *"Documente o estado real do código, não o que estava planejado. Onde a spec afirmar
-  algo que o código não faz, corrija a spec."*
+
+- _"Nenhum arquivo de código deve ser alterado. Se achar que o código precisa mudar,
+  pare e aponte."_
+- _"Documente o estado real do código, não o que estava planejado. Onde a spec afirmar
+  algo que o código não faz, corrija a spec."_
 
 Por que essa ordem é melhor do que um prompt único:
+
 - O (b) documenta o que **de fato** ficou no diff, em vez de o que o arquiteto previu.
 - Se o (a) sair errado, você não perdeu a rodada de documentação junto.
 - Perguntas que o MAI levantou no (a) entram como resposta na spec no (b).
@@ -325,24 +373,70 @@ Regra de ouro: **a divisão é por natureza de entregável (código × doc), nã
 de arquivos.** Dividir "metade dos arquivos agora, metade depois" cria estado
 intermediário quebrado.
 
+**Corolário aprendido no C4.1a**: o (b) só roda depois do (a) **verificado**, não depois
+do (a) _relatado_. Documentar sobre relatório é documentar ficção.
+
 ### 5.7 Erros de prompt já cometidos
 
 - **Citar caminho de código mas não de spec.** Os prompts do C3.1 e do C4 traziam
   `financasService.js:719` mas nenhuma spec. Violaram a regra 5.1 e provavelmente
   causaram o turno perdido do C4.
 - **Pedir "relatório ao final" sem dizer sobre o quê.** O agente entregou o relatório
-  como se fosse o produto. O relatório precisa ser definido como *resumo do que foi
-  escrito*.
+  como se fosse o produto. O relatório precisa ser definido como _resumo do que foi
+  escrito_, e trazer evidência (5.8).
 - **Deixar decisão de produto em aberto no prompt.** Escrever "defina quem decide o valor
   de `cobravel`" quando a spec já definia um modal com rótulos literais. Se está na spec,
   cite a seção; não reabra.
 - **Listar uma proibição como contexto em vez de restrição.** Ver erro nº 9 da seção 8.
+- **Não exigir evidência de diff.** Duas rodadas seguidas voltaram com relatório de
+  conclusão e nenhuma linha escrita. Ver 5.8.
 
-### 5.8 Critério de aceite
+### 5.8 Critério de aceite e evidência
 
-Antes de subir qualquer coisa: `git diff --stat` precisa mostrar os arquivos esperados.
-Diff vazio com relatório bonito é o modo de falha mais comum. Na parte (b), o inverso:
-`git diff --stat` **não** deve mostrar arquivo de código.
+**Relatório do agente não é evidência. `git diff --stat` é.**
+
+Essa é a lição mais cara desta fase do projeto. Em três rodadas consecutivas o relatório
+afirmou mais do que o diff sustentava:
+
+| Rodada    | O relatório disse                            | O diff mostrava                         |
+| --------- | -------------------------------------------- | --------------------------------------- |
+| C4        | fluxo de escolha cobrável implementado       | `cobravel: true` hardcoded no reagendar |
+| C4.1a     | 5 itens feitos, 5 testes passando            | 3 de 5; teste nº 5 era placebo (3.4)    |
+| C4.1a-fix | contrato `{ ok, motivo }` + 47 testes verdes | **zero arquivo alterado**               |
+
+Modo de falha característico: **diff vazio com relatório detalhado e plausível**,
+inclusive citando nomes de função e contagem de testes que não existem. O número de
+testes é uma pista útil — se ele "reescreveu testes" e o total não mudou, algo está
+errado.
+
+Procedimento fixo:
+
+1. **No prompt**, exigir a saída literal de `git diff --stat` como primeiro item do
+   relatório, e dizer: _se não listar os arquivos X e Y, você não implementou — não
+   escreva relatório de conclusão, diga o que travou_.
+2. **No terminal**, antes de commitar, rodar `git status --short` mais um `grep` por
+   invariante — um por item do prompt, com o resultado esperado escrito ao lado
+   (presente / ausente). `grep` que deve vir vazio é tão informativo quanto o que deve
+   ter linha.
+3. **Só então** empacotar e mandar para auditoria (seção 10).
+4. Na parte (b) do protocolo a/b, o critério inverte: `git diff --stat` **não** deve
+   listar arquivo de código.
+
+Bloco para colar no topo de prompt de reexecução, quando uma rodada já falhou:
+
+```
+Esta tarefa já foi pedida uma vez e voltou com relatório de conclusão e
+`git diff` vazio. Nenhum dos itens abaixo está no código hoje — o estado
+commitado foi verificado. Não presuma que parte já está feita.
+
+Ao final, rode `git diff --stat` e cole a saída LITERAL no relatório. Se ela não
+listar <arquivos esperados>, você não implementou: não escreva relatório de
+conclusão, diga o que travou.
+```
+
+**Regra de parada**: uma tentativa por prompt. Se voltar com diff vazio de novo, não
+reformular o prompt uma terceira vez — trocar de modelo (ver 5.3, item transversal).
+Insistir no mesmo texto só gasta rodada.
 
 ### 5.9 Validade desta seção
 
@@ -361,8 +455,12 @@ comportamento divergir do descrito.
   `gcalWebhookController.js`) — envolve credencial, webhook externo e **estado remoto que
   `git revert` não desfaz**. É acionado dentro dos handlers de reposição, em caminho
   assíncrono: ordem de persistência importa, e o comportamento não pode depender de a
-  usuária estar logada no Google.
+  usuária estar logada no Google. **Cuidado com a correção pela remoção**: o C4.1a
+  cumpriu "a ordem não pode depender do GCal" apagando a chamada de sync, e a aula de
+  reposição deixou de chegar ao calendário. Independência de ordem ≠ ausência de sync.
 - **Autenticação** (`requireAuth.js`, `auth/google-identity.js`).
+- **`salvarDados`** (`storage.js`) — consumida por praticamente toda a UI. Mudar o
+  contrato dela é transversal; ver 3.7 e 5.3.
 - **Sync em cascata de aluno** (`cascade-sync-aluno.js`) — altera vários agendamentos de
   uma vez.
 - **Campos congelados na primeira gravação**: `cicloCobrancaResolvido` em `Reposicao` é
@@ -385,6 +483,7 @@ Em ordem de confiabilidade:
    código, o código vence.
 
 Outros:
+
 - `.github/copilot-instructions.md` — regras permanentes para o agente no VS Code.
 - `.agents/skills/` — versionado. O `anti-ui-slop` é **vendorizado** de
   `github/awesome-copilot` (tem `github-tree-sha` no frontmatter): **não editar**, pois
@@ -404,70 +503,87 @@ seção 8 é escrita em primeira pessoa sobre erros que ele não cometeu.
 **1. Alarme falso sobre `graphify-out/`.**
 Afirmei que a pasta poluía o repositório e deveria ser ignorada. Ela **sempre esteve no
 `.gitignore`**. O que me enganou foi ler um pacote montado por pasta em vez de por
-`git archive`. *Lição: antes de acusar algo de não estar ignorado, verificar o
-`.gitignore` — e pedir o pacote via `git archive`, que respeita as regras de ignore.*
+`git archive`. _Lição: antes de acusar algo de não estar ignorado, verificar o
+`.gitignore` — e pedir o pacote via `git archive`, que respeita as regras de ignore._
 
 **2. Sugerir skill para regra sempre-ligada.**
 Recomendei colocar a regra de "spec-first" num skill. Skill é carregado sob demanda;
 regra que vale em toda sessão pertence ao `copilot-instructions.md`. Pior: o skill em
 questão era vendorizado de terceiro, então a edição local desapareceria na próxima
-atualização. *Lição: regra sempre-ligada → arquivo de instruções. Skill → tarefa
-específica. Nunca editar skill de terceiro.*
+atualização. _Lição: regra sempre-ligada → arquivo de instruções. Skill → tarefa
+específica. Nunca editar skill de terceiro._
 
 **3. `.gitignore` que "ignorava" arquivo já rastreado.**
 `.agents/` estava no `.gitignore`, mas o `SKILL.md` já estava commitado — e `.gitignore`
-não afeta arquivo já rastreado. *Lição: presença no `.gitignore` não significa que o
-arquivo não está versionado.*
+não afeta arquivo já rastreado. _Lição: presença no `.gitignore` não significa que o
+arquivo não está versionado._
 
 **4. Aceitar "testo em produção" como bloco monolítico.**
 Ele descreveu a falta de ambiente local como uma coisa só, grande e estrutural. Só ao
 ler `storage.js` percebi que eram **quatro** problemas separados, três pequenos e
-independentes. *Lição: quando ele descrever algo como "estrutural demais para mexer
-agora", vale decompor antes de concordar.*
+independentes. _Lição: quando ele descrever algo como "estrutural demais para mexer
+agora", vale decompor antes de concordar._
 
 **5. Presumir que a fila de reposição era persistida.**
 Discuti regras de cobrança sobre a fila por um bom tempo antes de verificar que
-`aulasParaRepor` é só um array em memória. *Lição: antes de desenhar regra sobre um dado,
-confirmar que o dado sobrevive a um reload.*
+`aulasParaRepor` é só um array em memória. _Lição: antes de desenhar regra sobre um dado,
+confirmar que o dado sobrevive a um reload._
 
 **6. Reconstruir mecanismo de bug em vez de ler o código.**
 Diagnostiquei a guarda de sobreposição do C3 a partir dos sintomas e do timestamp do
 pacote, e descrevi o mecanismo errado ("encurta o novo contra o antigo"). O código real
 sempre encurtava o documento **persistido**, sem ordenar por data — pior e mais simples
 do que eu supus. A aritmética batia mesmo assim, o que fez o diagnóstico errado parecer
-certo. *Lição: quando o pacote está no KB, ler o trecho. Sintoma compatível não prova
-mecanismo. E dizer explicitamente quando a afirmação vem de reconstrução, não de leitura.*
+certo. _Lição: quando o pacote está no KB, ler o trecho. Sintoma compatível não prova
+mecanismo. E dizer explicitamente quando a afirmação vem de reconstrução, não de leitura._
 
 **7. Escrever prompt de implementação sem apontar a spec.**
 Nos prompts do C3.1 e do C4 citei caminhos de código com número de linha, mas nenhuma
 spec — violando uma diretriz que já estava escrita em `docs/README.md`. O agente MAI
 devolveu diagnóstico em vez de implementação, comportamento coerente com um modelo
-otimizado para sinalizar subespecificação. *Lição: antes de escrever prompt, reler
+otimizado para sinalizar subespecificação. _Lição: antes de escrever prompt, reler
 `docs/README.md` e citar as specs pelo caminho completo. E: quando ele perguntar "você
-lembra da diretriz X?", procurar no repo em vez de responder de memória.*
+lembra da diretriz X?", procurar no repo em vez de responder de memória._
 
 **8. Recomendar sem ler a spec inteira.**
 Sugeri a ordem de teste das reposições ("escolhe uma aula do meio do mês") sem ter lido
 a regra de prazo. A regra ancora no ciclo da **aula original**, então três das quatro
 datas nasceriam vencidas. Também dimensionei o C4 sem as seções 9.1–9.3 da spec, e ficou
-faltando o caminho recorrente e um modal inteiro. *Lição: para qualquer coisa que vire
-prompt, ler a spec inteira antes, não o trecho que parece relevante.*
+faltando o caminho recorrente e um modal inteiro. _Lição: para qualquer coisa que vire
+prompt, ler a spec inteira antes, não o trecho que parece relevante._
 
 **9. Listar "não duplicar regra" como contexto, não como restrição do prompt.**
 O C4 introduziu `calcularPrazoReposicaoLocal`, uma reimplementação da regra de prazo do
 backend — exatamente o que a seção 3.2 deste documento proíbe. E passou pela minha
 revisão porque eu conhecia a regra e nunca a escrevi **dentro** do prompt: estava aqui,
 como contexto do projeto, não lá, como invariante que ele não podia quebrar. A cópia
-ainda estava errada no caminho `diaVencimento`, produzindo piso falso. *Lição: o MAI só
+ainda estava errada no caminho `diaVencimento`, produzindo piso falso. _Lição: o MAI só
 respeita o que está no prompt ou nas instruções permanentes. Saber a regra não basta —
 se ela pode ser violada pela tarefa em questão, ela vira linha na seção de restrições.
-E o que vale para toda sessão vai para o `copilot-instructions.md`.*
+E o que vale para toda sessão vai para o `copilot-instructions.md`._
+
+**10. Pedir `git archive` sem dizer que ele só empacota o commitado.**
+Depois do alarme falso do `graphify-out/` (erro nº 1) passei a pedir o pacote via
+`git archive` — instrução certa, e incompleta. Ele rodou `git archive HEAD` com o
+trabalho não commitado, e o pacote saiu **byte a byte igual ao anterior**, exceto por
+fim de linha. Gastamos uma rodada para descobrir que o pacote estava mentindo por
+omissão. _Lição: pacote precisa vir com prova de origem. `git status --short` e
+`git archive` andam juntos, sempre — um diz o que existe na árvore, o outro diz o que
+está no commit. Ver seção 10._
+
+**11. Dizer que gerei arquivo sem gerar.**
+Duas vezes nesta conversa descrevi as mudanças do arquivo de contexto em detalhe — seção
+por seção — sem ter chamado a ferramenta de geração. O texto era convincente e o arquivo
+não existia. _Lição: é o mesmo modo de falha do erro nº 10 do MAI, do outro lado da
+mesa: relatório plausível sem artefato. Se eu digo "atualizei o arquivo", o arquivo tem
+que estar anexado na mesma mensagem._
 
 ---
 
-## 9. Estado em 24/08/2026
+## 9. Estado em 25/08/2026
 
 ### Entregue
+
 - **Finanças — Ciclo de Cobrança por Aluno** (spec v6, em produção): ciclo configurável
   por aluno com vencimento móvel, registro de pagamento, status automático, ajuste manual
   por ciclo, histórico. Substituiu o antigo sistema de KPI financeiro.
@@ -481,19 +597,36 @@ E o que vale para toda sessão vai para o `copilot-instructions.md`.*
 - **C4 (roadmap 0.5), parcial**: modal de escolha cobrável/não cobrável com os textos
   literais da spec, renames de 9.1, `enviarParaReposicao` extraída, POST ao enviar
   funcionando nos dois caminhos.
+- **C4.1a, parcial — verificado no pacote**:
+  - Bloqueador 1 **resolvido**: `formReagendarAula` não faz mais POST; consome a
+    pendente, grava `reposicaoId` no agendamento e só faz PATCH; aborta com mensagem se
+    não houver pendente.
+  - Item 3 **resolvido**: `calcularPrazoReposicaoLocal` removida,
+    `#reposicaoPrazoRodape` fora do `index.html`, prazo exibido no toast com `validoAte`
+    do servidor nos dois caminhos.
+  - Item 5 **resolvido na prática**: botão de dispensar fora do markup.
+
+### Pendente — C4.1a-fix (5 itens, nenhum no código hoje)
+
+Verificado contra o estado commitado em 25/08. Duas tentativas voltaram sem diff.
+
+1. `salvarDados` retornar `{ ok, motivo }` e os dois caminhos de reposição só fazerem
+   PATCH em sucesso confirmado (ver 3.7). **Item que sustenta os outros quatro.**
+2. Reescrever ou remover o teste placebo (ver 3.4).
+3. Restaurar o sync com Google Calendar no reagendamento (ver seção 6).
+4. Remover a mutação de `excecoes` anterior ao POST no caminho da série, e o `_snapshot`
+   não usado.
+5. Remover `window.resolverReposicao`, função morta com jargão interno na mensagem.
 
 ### Em andamento
-- **C4.1** — correções sobre o C4, dividido em duas rodadas (ver 5.6):
-  - **C4.1a (código)**: reagendar deve consumir a pendente em vez de criar documento
-    novo; ordem persistir→confirmar→PATCH idêntica com e sem GCal; remoção de
-    `calcularPrazoReposicaoLocal` com o prazo passando a aparecer no toast pós-POST;
-    separar "enviar" de "reagendar" no caminho recorrente; dispensar pendente deve
-    persistir.
-  - **C4.1b (documentação)**: spec para v3 com as decisões D1–D6, item 0.9 no roadmap,
-    regra de implementação única no `copilot-instructions.md`.
+
+- **C4.1b (documentação)** — só depois do C4.1a-fix **verificado**: spec para v3 com as
+  decisões D1–D6 (mais D7, o contrato de `salvarDados`), item 0.9 no roadmap, regra de
+  implementação única no `copilot-instructions.md`.
 - **C3.1** — regressão da guarda de sobreposição de ciclos.
 
 ### Próximo
+
 - **Validação spec × código**: varredura seção por seção da spec v3 contra o código,
   classificando cada uma em implementada / parcial / ausente / **divergente**. O caso
   divergente é o mais perigoso: a spec vira mentira e a próxima sessão confia nela.
@@ -504,6 +637,7 @@ E o que vale para toda sessão vai para o `copilot-instructions.md`.*
   nome), `3.2`/`3.3` (backend local — ver 3.1).
 
 ### Dados de teste na base (podem ter mudado; conferir antes de usar)
+
 - Aluno de teste id `1784736533061`.
 - 4 aulas **únicas** em julho: 06, 13, 20 e 27/07.
 - Recorrência ativa a partir de **01/08**.
@@ -523,6 +657,7 @@ E o que vale para toda sessão vai para o `copilot-instructions.md`.*
 > o piso de 7). As outras três nascem vencidas e viram `expirada` na primeira leitura.
 
 ### Estado da documentação
+
 - `docs/specs/reposicoes-e-competencia.md` — **v2**, indo para v3 no C4.1b.
 - **Grafia normalizada**: `'reposicao'`, sem acento, em todo lugar.
 
@@ -536,30 +671,48 @@ E o que vale para toda sessão vai para o `copilot-instructions.md`.*
   deles.
 - **Artefato gerado por ferramenta** nunca é fonte de verdade, não se edita à mão, e se
   estiver desatualizado se regenera.
-- **Pacote para análise**: pedir sempre via `git archive`, nunca zip da pasta. Zip de
-  pasta inclui o que o `.gitignore` exclui e já causou alarme falso (erro nº 1).
 - **Nomenclatura de itens de trabalho**: apelidos como "C3", "C4", "C4.1a", "item D" são
   de conversa e **não existem no repo**. Ao referenciar, traduzir para o número do
   roadmap (`0.5`, `0.6`) ou para a seção da spec.
 
----
+### 10.1 Protocolo de empacotamento para auditoria
 
-## 11. O que atualizar neste documento
+**Nunca zip da pasta.** Zip de pasta inclui o que o `.gitignore` exclui e já causou
+alarme falso (erro nº 1).
 
-Reler e ajustar quando:
+**`git archive` sozinho também não basta.** Ele empacota apenas o que está no commit —
+com trabalho pendente na árvore, o pacote sai idêntico ao anterior e **mente por
+omissão** (erro nº 10). O sintoma é traiçoeiro: no caso real, os 104 arquivos vieram
+"diferentes" porque o `git archive` normaliza fim de linha para CRLF, o que dá a
+impressão de mudança onde não houve nenhuma.
 
-1. **Uma feature for entregue** — atualizar a seção 9 (entregue / em andamento / próximo).
-2. **Uma spec for criada ou versionada** — refletir nas seções 4 e 7.
-3. **O ambiente de desenvolvimento mudar** — a seção 3.1 é a que envelhece mais rápido
-   e a que mais causa conselho errado. Se um dia existir backend local ou banco de dev,
-   corrigir imediatamente.
-4. **Uma decisão de arquitetura for tomada** — especialmente se o `require` atravessado
-   (3.2) for resolvido.
-5. **Os dados de teste da base mudarem** — a lista em 9 é a que mais desatualiza no dia a
-   dia.
-6. **O comportamento do agente de código mudar** — os modelos MAI evoluem por checkpoint
-   (ver 5.9). Se a seção 5 deixar de bater com a prática, corrigir.
-7. **Um prompt sair torto** — perguntar se foi desenho (seção 5.3), dimensionamento
-   (5.5) ou restrição não escrita (erro nº 9), e ajustar a seção correspondente.
-8. **Eu errar de novo** — acrescentar na seção 8. É o que mais economiza tempo em
-   sessões futuras.
+O par obrigatório, sempre nesta ordem:
+
+```
+git status --short
+git archive --format=zip -o pacote.zip HEAD
+```
+
+O primeiro diz **o que existe na árvore de trabalho**; o segundo, **o que está no
+commit**. Divergência entre os dois é a informação mais importante do pacote.
+
+Para empacotar trabalho ainda não commitado — branch local, **sem push**, porque `main`
+publica direto em produção:
+
+```
+git switch -c wip-<nome-da-tarefa>
+git add -A
+git commit -m "wip: <nome-da-tarefa>"
+git archive --format=zip -o pacote.zip HEAD
+```
+
+Depois da auditoria, integrar na `main` como preferir.
+
+### 10.2 Verificação antes de commitar
+
+Um `grep` por invariante, com o resultado esperado escrito ao lado — _presente_ ou
+_ausente_. `grep` que deve vir vazio é tão informativo quanto o que deve ter linha. Mais
+`node --check` nos JS alterados e a suíte **completa** do backend (`npm test`), não só o
+arquivo de teste novo.
+
+Ver 5.8 para o procedimento completo e o porquê.

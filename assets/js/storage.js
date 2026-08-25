@@ -856,7 +856,7 @@ async function salvarDados(silencioso = false) {
         if (!silencioso) {
             notificarLoginObrigatorio('Faça login com Google para salvar na nuvem.');
         }
-        return;
+        return { ok: false, motivo: 'nao_autenticado' };
     }
 
     try {
@@ -893,18 +893,20 @@ async function salvarDados(silencioso = false) {
         if (!silencioso && typeof mostrarToast === 'function') {
             mostrarToast('Alterações salvas na nuvem!', 'success');
         }
+        return { ok: true, motivo: 'sucesso' };
 
     } catch (error) {
         if (error && error.message === 'AUTH_REQUIRED') {
             if (!silencioso) {
                 notificarLoginObrigatorio('Sua sessão Google expirou. Entre novamente para salvar na nuvem.');
             }
-            return;
+            return { ok: false, motivo: 'sessao_expirada' };
         }
         console.error('❌ Erro ao salvar dados na API:', error);
         if (!silencioso && typeof mostrarToast === 'function') {
             mostrarToast('Erro de conexão. Salvo temporariamente no aparelho.', 'error');
         }
+        return { ok: false, motivo: 'falha_remota' };
     }
 }
 

@@ -11,7 +11,7 @@
 //         window.getResumoEscopoRecorrencia, window.atualizarResumoEscopoRecorrencia,
 //         window.configurarEscopoRecorrenciaEdicao, window.abrirReagendarAulaModalSlot,
 //         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal,
-//         window.togglePainelReposicoes, window.renderizarListaReposicoes, window.resolverReposicao
+//         window.togglePainelReposicoes, window.renderizarListaReposicoes
 
 // Exposto em window para acesso cross-módulo (widget-stepper-duracao usa para edicao)
 window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
@@ -32,6 +32,27 @@ function obterCompromissoSelecionado() {
 
 function gerarIdReposicao() {
     return `repo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function deveEnviarPatchReposicao(resultadoPersistencia) {
+    if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.deveEnviarPatch === 'function') {
+        return window.reposicaoFlowHelpers.deveEnviarPatch(resultadoPersistencia);
+    }
+    return Boolean(resultadoPersistencia && resultadoPersistencia.ok === true);
+}
+
+function obterMensagemFalhaPersistencia(resultadoPersistencia) {
+    if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia === 'function') {
+        return window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia(resultadoPersistencia);
+    }
+
+    const motivo = resultadoPersistencia && typeof resultadoPersistencia.motivo === 'string'
+        ? resultadoPersistencia.motivo
+        : 'falha_remota';
+    if (motivo === 'nao_autenticado' || motivo === 'sessao_expirada') {
+        return 'Sessão expirada. Faça login com Google para continuar.';
+    }
+    return 'Falha ao salvar alterações antes de concluir a reposição.';
 }
 
 async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
@@ -521,12 +542,6 @@ window.renderizarListaReposicoes = function() {
     }).join('');
 };
 
-window.resolverReposicao = function() {
-    if (typeof mostrarToast === 'function') {
-        mostrarToast('A ação de dispensar reposição não foi definida pela spec atual.', 'warning');
-    }
-};
-
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -603,8 +618,11 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 aulas.push(novoCompromisso);
                 const salvar = typeof window.salvarDados === 'function' ? window.salvarDados : salvarDados;
-                if (typeof salvar === 'function') {
-                    await salvar(true);
+                const resultadoPersistencia = typeof salvar === 'function'
+                    ? await salvar(true)
+                    : { ok: false, motivo: 'falha_remota' };
+                if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+                    throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
                 }
 
                 const respostaPatch = await window.apiFetchBackend(`${window.API_BASE_URL || 'https://personal-app-api.vercel.app/api'}/reposicoes/${encodeURIComponent(repObj.id)}`, {
@@ -619,6 +637,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!respostaPatch.ok) {
                     const erroPatch = await respostaPatch.json().catch(() => ({}));
                     throw new Error(erroPatch.error || 'Falha ao vincular a reposição ao agendamento.');
+                }
+
+                let avisoGCal = '';
+                if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                    try {
+                        await window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' });
+                    } catch (erroGCal) {
+                        console.error('❌ Falha ao sincronizar reposição no Google Calendar:', erroGCal);
+                        avisoGCal = ' Reposição salva, mas não foi possível sincronizar com Google Agenda.';
+                    }
                 }
 
                 aulasParaRepor = aulasParaRepor.filter(r => r.id !== repObj.id);
@@ -639,7 +667,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 } catch (_) {}
                 if (typeof mostrarToast === 'function') {
-                    mostrarToast(`✅ Reposição reagendada com sucesso!${mensagemPrazo}`);
+                    const mensagemSucesso = `✅ Reposição reagendada com sucesso!${mensagemPrazo}`;
+                    if (avisoGCal) {
+                        mostrarToast(`${mensagemSucesso}${avisoGCal}`, 'warning');
+                    } else {
+                        mostrarToast(mensagemSucesso);
+                    }
                 }
             } catch (erro) {
                 if (typeof mostrarToast === 'function') {
@@ -1017,11 +1050,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
-            const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
-            if (!compromisso.excecoes) compromisso.excecoes = [];
-            if (!compromisso.excecoes.includes(dataAlvoStr)) {
-                compromisso.excecoes.push(dataAlvoStr);
-            }
 
             window.abrirModalEscolhaCobrancaReposicao(compromisso, async (cobravel) => {
                 try {
@@ -1036,8 +1064,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     window.fecharModalAcaoSlot();
-                    if (typeof salvarDados === 'function') {
-                        await salvarDados(true);
+                    const resultadoPersistencia = typeof salvarDados === 'function'
+                        ? await salvarDados(true)
+                        : { ok: false, motivo: 'falha_remota' };
+                    if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+                        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
                     }
                     if (typeof window.carregarDados === 'function') {
                         await window.carregarDados({ forcarRemoto: true, silenciosoUI: true });
