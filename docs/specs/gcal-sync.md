@@ -1,13 +1,13 @@
 # Spec — Sincronização com Google Calendar
 
 > **Status**: desenho da Rodada C finalizado e decisão de recorrência registrada no
-> Google Calendar (2026-08-25). Esta v4 mantém a reversão histórica da v2 e documenta
+> Google Calendar (2026-08-25). Esta v5 mantém a reversão histórica da v2 e documenta
 > o desenho final RRULE/EXDATE entregue pela implementação.
 >
-> **Versão**: 4 · **Atualizado**: 2026-08-25
+> **Versão**: 5 · **Atualizado**: 2026-08-25
 > **Defeitos em aberto**: 3 (ver seção 9)
 >
-> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v4) define a
+> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v5) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
 > `docs/specs/financas-ciclo-cobranca.md` (v7) não é afetada — o Google não participa de
 > nenhum cálculo financeiro.
@@ -110,17 +110,25 @@ A decisão acima é coerente com a API do Google e com a RFC 5545.
 - Gramática do `RRULE`, `UNTIL`, `COUNT`, `BYDAY`, `BYMONTHDAY`, `WKST`: [RFC 5545 § 3.3.10](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10)
 - Comportamento de `events.list` com e sem `singleEvents`: [Google Calendar Events.list](https://developers.google.com/workspace/calendar/api/v3/reference/events/list)
 
-Duas armadilhas importantes da RFC que a Rodada C precisa respeitar:
+### 2.6 Regras da RFC 5545 que o app precisa manter
 
-- `COUNT` e `UNTIL` são **mutuamente exclusivos** na mesma `RRULE`. A especificação da RFC
-  5545 diz que `UNTIL` ou `COUNT` são opcionais, mas “`UNTIL` ou `COUNT` ... MUST NOT occur in
-  the same recur” (não podem aparecer juntos na mesma regra).
+- `COUNT` e `UNTIL` são **mutuamente exclusivos** na mesma `RRULE`.
 - Quando o `DTSTART` tem `TZID`, o `UNTIL` precisa ser expresso em **UTC**, com sufixo `Z`.
   Esse é o caso do nosso `start.dateTime` com `timeZone`, e a regra vale para o `UNTIL` que
   vier de `recorrenciaDataFim` ou de qualquer limite convertido no app. Se a data local for
   `dd/mm/yyyy`, ela precisa ser convertida para UTC antes de entrar no `RRULE`.
+- A RFC exige a **forma básica** do `UNTIL`: `20260827T235959Z`, sem hífens e sem dois
+  pontos. `toISOString()` produz a **forma estendida** (`2026-08-27T23:59:59.000Z`), e o
+  Google rejeita esse formato. Esse foi o bug corrigido no C-Fix; a formatação ficou
+  centralizada em `formatarDataUtcRfc5545` (`backend/src/services/gcalSyncService.js`).
+- O `UNTIL` é **inclusivo** do último dia para casar com o motor local, que trata
+  `recorrenciaDataFim` como inclusiva.
+- `COUNT` limita o conjunto gerado pela `RRULE`, e o `EXDATE` remove **depois** da expansão.
+  Logo, a ocorrência cancelada continua consumindo uma vaga do `COUNT`. A regra foi
+  implementada em `contarOcorrenciasAteData` (`assets/js/shared/recurrence-helpers.js`) de
+  propósito; quem “corrigir” para descontar exceções reintroduz divergência entre app e Google.
 
-> **Observação de confirmação**: as duas armadilhas acima foram confirmadas na RFC 5545 e no
+> **Observação de confirmação**: as armadilhas acima foram confirmadas na RFC 5545 e no
 > guia de eventos recorrentes. A linguagem do Google foi usada como referência para o modelo
 > de pai + instâncias e para `singleEvents=true`, não como substituto da RFC.
 
@@ -233,7 +241,7 @@ em `assets/js/shared/recurrence-helpers.js` e do serializador em
 | `tipoRecorrencia` | `mensal` sem `diasSemana` | `FREQ=MONTHLY;BYMONTHDAY=` |
 | `tipoRecorrencia` | `anual` | `FREQ=YEARLY` |
 | `intervaloRecorrencia` | `N` | `INTERVAL=N` |
-| `recorrenciaFimCondicao` | `untilDate` | `UNTIL=` em UTC |
+| `recorrenciaFimCondicao` | `untilDate` | `UNTIL=` em UTC, forma básica RFC 5545 |
 | `recorrenciaFimCondicao` | `occurrences` | `COUNT=` |
 | `recorrenciaEscopo` | `monthOfDate` | `UNTIL=` no último dia do mês |
 | `excecoes[]` | datas em `pt-BR` | `EXDATE` |
@@ -470,22 +478,23 @@ maior (I/O real) e não uma pendência de correção de regra do calendário.
 `ownerEmail` era declarado com `index: true` e também com um índice único. O campo agora
 mantém apenas o índice único, que é a garantia relevante.
 
-### 9.11 `occurrences` não é aplicado no engine local — RESOLVIDO (Rodada C)
+### 9.11 `COUNT` e `EXDATE` no motor local — RESOLVIDO (Rodada C)
 
-**Problema**: o serializador grava `recorrenciaQuantidadeOcorrencias` e a condição
-`recorrenciaFimCondicao: 'occurrences'`, mas o motor local só trata `untilDate` em
-`checarCompromissoNaData` (`assets/js/shared/recurrence-helpers.js:131-137`). O fluxo de
-serialização que preenche o payload está em `aplicarRecorrenciaLegada`
-(`assets/js/features/modals/scheduling-serializer.js:241-249`).
+**Problema**: a regra local e a regra do Google divergem se uma ocorrência cancelada for
+contada como se não consumisse vaga do `COUNT`. A RFC define `COUNT` como limite do conjunto
+expandido pela `RRULE`, e o `EXDATE` só remove **depois** da expansão. Em outras palavras:
+a ocorrência cancelada continua consumindo uma vaga do `COUNT`.
 
-**Consequência**: o app local e o Google podem divergir. Se a série for publicada com
-`COUNT`, o Google a encerra segundo a regra, mas o app local continua contando instâncias
-como se a série fosse infinita. Isso é uma divergência de regra, não um detalhe visual.
+**Correção atual**: `contarOcorrenciasAteData` em
+`assets/js/shared/recurrence-helpers.js` foi ajustado para incluir a exceção na contagem,
+sem remover a proteção que já filtra a data em `checarCompromissoNaData` antes da
+expansão da agenda. Isso deixa o motor local coerente com a regra do Google e evita
+reintroduzir divergência na parte financeira.
 
-**Risco financeiro**: `recurrence-helpers.js` é consumido em
+**Risco financeiro**: `recurrence-helpers.js` continua sendo consumido em
 `backend/src/services/financasService.js:6` e em `normalizarAulasContadas`
-(`backend/src/services/financasService.js:193-225`), então a regra de contagem impacta
-`aulasContadas` e, por extensão, o valor do ciclo. Não é mudança cosmética.
+(`backend/src/services/financasService.js:193-225`), então a regra de contagem ainda afeta
+`aulasContadas` e, por extensão, o valor do ciclo. A correção não é cosmética.
 
 ### 9.12 `EXDATE` de evento com hora precisa do horário — RESOLVIDO (Rodada C)
 

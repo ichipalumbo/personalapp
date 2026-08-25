@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Backend da seção 6 publicado em produção; extrato do ciclo implementado na branch e frontend ainda não publicado em produção · **Versão**: 4 · **Atualizado**: 2026-08-25
+> **Status**: Backend da seção 6 ativo; extrato do ciclo implementado na branch e frontend ainda pendente de rollout · **Versão**: 5 · **Atualizado**: 2026-08-25
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -19,11 +19,11 @@ rastreabilidade e inconsistências de cobrança entre ciclos.
 
 ### 1.2 Estado atual da implementação
 
-Na branch `new/reposicao-feature`, a fila já é persistida em backend (`Reposicao`), com
+Na branch `feat/gcal-sync`, a fila já é persistida em backend (`Reposicao`), com
 vínculo bidirecional entre agendamento e reposição (`reposicaoId` /
 `agendamentoReposicaoId`) e cálculo de competência no financeiro.
 
-Os ajustes desta v3 documentam o comportamento real do código, inclusive decisões de
+Os ajustes desta v5 documentam o comportamento real do código, inclusive decisões de
 ordem de persistência, sincronização com Google Calendar e limitações conhecidas.
 
 ---
@@ -577,23 +577,24 @@ A cobertura é **parcial**: o teste valida a decisão encapsulada no helper, mas
 reimplementa localmente o fluxo chamador e não prova, sozinho, que
 `modal-acao-slot.js` está sempre usando essa decisão em runtime.
 
-### 11.3 Caso conhecido e aceito — mutação sem rollback no caminho da série
+### 11.3 Caso conhecido e aceito — mutação sem rollback no caminho da série — RESOLVIDO (B2-Fix)
 
-No envio para reposição de instância recorrente (`btnReagendarInstancia`), a exceção é
-adicionada a `compromisso.excecoes` antes de `salvarDados(true)`. Se a persistência
-falhar, o erro é mostrado, mas a exceção permanece em memória até reload, mantendo a
-aula fora da agenda local temporariamente.
+No envio para reposição de instância recorrente (`btnReagendarInstancia`), o fluxo passou
+a capturar snapshot de `compromisso.excecoes` antes do `push` e a marcar com a flag
+`_mutouExcecoes` quando a mutação realmente ocorreu. Em `catch`, o array é restaurado por
+cópia do snapshot anterior, seguindo o mesmo padrão já existente em `btnDeletarInstancia`
+no mesmo arquivo `assets/js/modal-acao-slot.js`.
 
 Impacto atual:
 
-- ocorre apenas em cenário de falha de rede/persistência;
-- recarregar dados/reload restaura o estado da fonte remota.
+- a aula volta na agenda local quando `salvarDados(true)` falha;
+- a reposição remota **permanece** criada no servidor;
+- o resultado é "aula de volta na agenda + reposição órfã no servidor": melhor que
+  antes, mas **não é restauração completa**.
 
-Esse comportamento foi **aceito como conhecido** porque ele é limitado ao cenário de
-falha e não cria outro estado persistente no backend. A correção possível (ainda não
-implementada) é snapshot anterior de `excecoes` e rollback no `catch` quando
-`salvarDados` retornar falha; isso fica como trabalho futuro, não como pendência de
-fechamento desta spec.
+Essa limitação foi registrada de forma explícita. Limpar a reposição remota exigiria
+rota de `delete` e tratamento de falha em cascata; isso fica como trabalho futuro, e não
+como pendência de fechamento da spec.
 
 ---
 

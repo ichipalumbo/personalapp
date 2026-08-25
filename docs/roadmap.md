@@ -58,10 +58,10 @@ Cada item traz:
 
 ---
 
-### [~] 0.5 Collection `Reposicao` + modelo de competência — **IMPLEMENTADO NA BRANCH, NÃO PUBLICADO**
-- **Status real**: Implementado na `new/reposicao-feature` (backend + fluxo de frontend), com validação de regressões no backend. O frontend ainda não está publicado em produção.
+### [~] 0.5 Collection `Reposicao` + modelo de competência — **IMPLEMENTADO NA BRANCH, PENDENTE DE ROLLOUT**
+- **Status real**: Implementado na `feat/gcal-sync` (backend + fluxo de frontend), com validação de regressões no backend. O frontend ainda está pendente de rollout.
 - **O que já existe**: collection `Reposicao`, integração no financeiro por competência, fluxo de envio/reagendamento com vínculo `reposicaoId` / `agendamentoReposicaoId`.
-- **Pendências**: publicação do frontend e fechamento dos resíduos/documentação de rollout.
+- **Pendências**: rollout do frontend e fechamento dos resíduos/documentação de rollout.
 - **Esforço restante**: Baixo (rollout e fechamento), sem mudança conceitual de regra.
 
 ### [x] 0.6 Extrato do ciclo — **ENTREGUE**
