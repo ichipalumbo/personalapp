@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const GoogleCalendarConnectionSchema = new mongoose.Schema({
-  ownerEmail: { type: String, required: true, index: true },
+  ownerEmail: { type: String, required: true },
   googleUserId: { type: String, default: null },
   googleEmail: { type: String, default: null },
   googleName: { type: String, default: null },
