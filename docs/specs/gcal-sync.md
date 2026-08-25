@@ -1,10 +1,10 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: engenharia reversa do código em `main` (2026-08-25). Esta v1 descreve o
-> comportamento **atual**, não o desejado. A seção 9 lista as divergências entre o
-> comportamento atual e o modelo pretendido (seção 2), e é o backlog desta feature.
+> **Status**: documentação atualizada após as rodadas A e A.2 (2026-08-25). A v1 era
+> engenharia reversa do código em `main` e descrevia o estado **pré-correção**. Esta v2
+> registra o comportamento atual do código já corrigido.
 >
-> **Versão**: 1 · **Atualizado**: 2026-08-25
+> **Versão**: 2 · **Atualizado**: 2026-08-25
 >
 > **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v3) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
@@ -163,6 +163,12 @@ usa `start.date`/`end.date` com o fim no dia seguinte.
 
 **`horarioFim` ausente**: default de `+60min` a partir do início.
 
+**Virada de dia e duração zero**: `montarEventoGoogle` compara `fimEmMinutos` e
+`inicioEmMinutos`; quando `fimEmMinutos < inicioEmMinutos`, a data de fim avança um dia
+usando `adicionarDiasISO(dataISO, 1)`. Quando `fimEmMinutos === inicioEmMinutos`, a
+Duração de 0 minutos não vira evento de 24h: o evento fica no mesmo dia. O helper de
+adição usa UTC explícito (`T12:00:00Z` + `setUTCDate`) para evitar drift no servidor.
+
 **`app_origin`** é o mecanismo que permite ao sync de entrada reconhecer o que é do app.
 Não remover.
 
@@ -202,20 +208,28 @@ implementado.
 > Como o app publica eventos avulsos, hoje isso é indiferente na saída; é relevante para
 > eventos recorrentes criados **pela usuária** dentro do Google.
 
+> **Nota importante sobre eventos cancelados**: o ramo incremental **não envia
+> `showDeleted`**, então o Google usa o default `false`. Em resposta de evento
+> apagado, o retorno pode vir com `id` e sem `extendedProperties`. Nesse caso, a
+> detecção de "evento do app" não é confiável no payload de volta; a identificação
+> precisa ser por lookup do id no mapa que o app mantém (Rodada C).
+
 ### 5.3 Persistência
 
-`persistSyncResults`, para cada evento ativo:
+`persistSyncResults` classifica cada evento de leitura em quatro retornos via
+`classificarEventoDeLeitura(event)`:
 
-1. Se `status === 'cancelled'` → `deleteBloqueio` **e `deleteAgendamento`**.
-2. Se `isAppOwnedEvent(event)` → `continue` (ignora).
-3. Senão → `upsertBloqueio`.
+- `ignorar` se `!event || !event.id`;
+- `ignorar` se `isAppOwnedEvent(event)`;
+- `remover` se o evento é externo e `status === 'cancelled'`;
+- `upsert` se o evento é externo e está ativo.
 
-Depois, para cada evento na lista de cancelados, repete o passo 1.
+Na prática, o fluxo de leitura não chama `deleteAgendamento`: ele só apaga
+`BloqueioExterno` para eventos externos cancelados e ignora item do app. No laço de
+cancelados, o mesmo critério é usado antes de qualquer remoção.
 
 No modo full, há uma reconciliação final: `BloqueioExterno` local que não apareceu na
 listagem remota é apagado.
-
-**A ordem dos passos 1 e 2 é o bug 9.2.**
 
 ### 5.4 `BloqueioExterno`
 
@@ -229,11 +243,14 @@ Guarda `titulo`, `data`, `horarioInicio`, `horarioFim`, `fullDay`, `semanaISO`.
 
 ## 6. Falha de sincronização
 
-`montarRespostaFalhaGcal` responde **HTTP 502** com `partialSuccess: true` e o
-agendamento no corpo. Ou seja: o dado **foi gravado no Mongo**, mas a resposta é de erro.
+`montarRespostaFalhaGcal` responde **HTTP 200** com `partialSuccess: true`,
+`gcalSyncFailed: true` e o agendamento no corpo. Ou seja: o dado **foi gravado no
+Mongo** e a API confirma sucesso de persistência, mas sinaliza a falha externa do
+Google para aviso do usuário e auditoria.
 
-Consequência a jusante: `salvarDados` vê `!resposta.ok` e trata como falha de
-persistência. Ver 9.4.
+Consequência a jusante: `salvarDados` não transforma isso em `{ ok: false,
+motivo: 'falha_remota' }`; o gate de reposição não é mais bloqueado por
+indisponibilidade do Google. Ver 9.4.
 
 ---
 
@@ -251,7 +268,7 @@ persistência. Ver 9.4.
 | 8   | Como o app reconhece o que é dele?    | `extendedProperties.private.app_origin`                     |
 | 9   | Timezone                              | `dateTime` local + `timeZone`; sem conversão para UTC       |
 | 10  | Instância enviada para reposição      | Desaparece do dia original no Google (2.4)                  |
-| 11  | Falha do Google reverte a gravação?   | **Não.** Grava no Mongo e responde 502 com `partialSuccess` |
+| 11  | Falha do Google reverte a gravação?   | **Não.** Grava no Mongo e responde 200 com `gcalSyncFailed: true` + `partialSuccess` |
 
 ---
 
@@ -282,23 +299,32 @@ consegue rastrear.
 **Correção**: exige mudança de schema — mapa `data → googleCalendarEventId` (subdocumento
 ou collection de vínculo), mais a expansão no momento do sync com horizonte (2.3).
 
+**Restrição de desenho para a Rodada C**: quando um evento cancelado volta sem
+`extendedProperties`, a identificação do que é do app não pode depender do payload do
+Google. A distinção precisa ser feita por lookup do `id` no mapa que o app mantém.
+`extendedProperties` continua útil na escrita e em evento ativo, mas não é confiável em
+evento cancelado.
+
 **É o item que destrava todos os outros.** Sem o mapa de ids, 9.3 e 2.4 não têm como ser
 implementados.
 
-### 9.2 Sync de entrada apaga agendamento do app — CRÍTICO (latente)
+### 9.2 Sync de entrada ignora evento do app — RESOLVIDO (Rodada A)
 
-`persistSyncResults` testa `status === 'cancelled'` **antes** de `isAppOwnedEvent`, e
-chama `deleteAgendamento(ownerEmail, event.id)`. Evento do app cancelado dentro do Google
-**apaga o agendamento no app**.
+`persistSyncResults` testava `status === 'cancelled'` **antes** de `isAppOwnedEvent` e
+chamava `deleteAgendamento(ownerEmail, event.id)`. Evento do app cancelado dentro do Google
+**apagava o agendamento no app**.
 
-Viola diretamente 2.1: leitura nunca deveria alterar dado do app.
+Violava diretamente 2.1: leitura nunca deveria alterar dado do app.
 
-Hoje o dano é limitado por acidente — um id por série, e o match é por
-`googleCalendarEventId`. Depois de 9.1, com N ids por série, cancelar **uma** ocorrência no
-Google pode derrubar o documento da série inteira.
+**Estado atual**: `classificarEventoDeLeitura(event)` decide primeiro:
 
-**Correção**: mover o teste de propriedade para antes do teste de cancelamento, e nunca
-chamar `deleteAgendamento` a partir do fluxo de leitura. Isso vale para os dois laços.
+- `ignorar` quando o evento não tem `id`;
+- `ignorar` quando o evento é do app, independentemente do status;
+- `remover` quando o evento é externo e `status === 'cancelled'`;
+- `upsert` quando o evento é externo e está ativo.
+
+`deleteAgendamento` saiu do caminho de leitura; `deleteBloqueio` continua sendo usado para
+`BloqueioExterno` externo cancelado.
 
 ### 9.3 `excecoes` não propagam para o Google — ALTO
 
@@ -309,64 +335,69 @@ continua existindo.
 Efeito prático: **aula cancelada ou enviada para reposição continua no Google**. É a
 violação de 2.4. Depende de 9.1.
 
-### 9.4 Falha do Google mascarada como falha de persistência — MÉDIO
+### 9.4 Falha do Google mascarada como falha de persistência — RESOLVIDO (Rodada A)
 
-O 502 com `partialSuccess: true` (seção 6) faz `salvarDados` retornar
-`{ ok: false, motivo: 'falha_remota' }` mesmo com o dado **gravado**.
+A indisponibilidade do Google não deve ser tratada como falha de gravação no Mongo: o
+backend responde **HTTP 200** com `partialSuccess: true` e `gcalSyncFailed: true`,
+mantendo o agendamento no corpo.
 
-Interage com o contrato criado no C4.1a-fix: o fluxo de reposição usa `{ ok }` como
-autorização para o `PATCH`. Então uma indisponibilidade do Google pode abortar o PATCH de
-uma reposição que já foi persistida, deixando o estado pela metade.
+Com isso, `salvarDados` continua enxergando sucesso de persistência e o gate de
+reposição não é bloqueado por um problema externo de sincronização. O log do servidor
+continua sendo emitido para registrar a falha.
 
-**Correção**: distinguir "falha de persistência" de "falha de sync externo". O 502 com
-`partialSuccess: true` deveria ser tratado como sucesso de gravação com aviso.
+### 9.5 `horarioFim` default cruzando meia-noite — RESOLVIDO (Rodada A)
 
-### 9.5 `horarioFim` default cruzando meia-noite — BAIXO
+O rollback de data não fica em `getHorarioPadraoFim`; ele acontece em
+`montarEventoGoogle`: quando `fimEmMinutos < inicioEmMinutos`, a `end.dateTime` usa
+`adicionarDiasISO(dataISO, 1)`. O default `+60min` continua retornando `23:30 -> 00:30`
+como formato de hora válida, mas o evento real atravessa para o dia seguinte.
 
-O default de `+60min` usa `% 24`. Aula às `23:30` gera fim `00:30` **no mesmo dia** —
-evento com fim antes do início. Não há rollover de data.
+### 9.6 Diff sensível à ordem das chaves — RESOLVIDO (Rodada A)
 
-### 9.6 Diff sensível à ordem das chaves — BAIXO
-
-`_agendamentosSaoIguais` compara `JSON.stringify` sem ordenar chaves. Se a ordem no objeto
-local diferir da que vem do Mongo, todo agendamento é considerado alterado e leva `PUT` a
-cada save — e cada `PUT` é uma chamada ao Google. Também dispara logo após uma criação, se
-o objeto local ainda não tem o `googleCalendarEventId` que o remoto já tem.
-
-Não corrompe dado; consome quota e latência.
+`_agendamentosSaoIguais` passou a serializar objetos após ordenação recursiva das chaves,
+sem mexer na ordem dos arrays. Isso elimina o diff espúrio quando a ordem interna dos
+objetos local e remoto diverge.
 
 ### 9.7 Teste de cancelamento inalcançável no modo full — INFORMATIVO
 
 O full sync pede `showDeleted=false`, então o laço de ativos nunca vê
 `status === 'cancelled'`. Só o incremental traz cancelados. O ramo é código morto em
-metade dos caminhos — e no outro metade é o bug 9.2.
+metade dos caminhos — e no outro metade é o caso do app-owned event que foi corrigido.
 
-### 9.8 Sem cobertura de teste — MÉDIO
+### 9.8 Sem cobertura de teste — PARCIALMENTE RESOLVIDO (Rodada A.2)
 
-Nenhum dos 48 testes toca GCal. `montarEventoGoogle`, `montarTituloEvento`,
-`resolverDataISO`, `mapEventToBloqueio` e `getHorarioPadraoFim` são funções puras e
-testáveis sem rede — inclusive 9.5, que é um teste de três linhas.
+Existe `backend/test/gcal-sync.test.js`, com testes puramente unitários para as funções de
+montagem e classificação. A suíte total do projeto está em **65 testes**.
 
-### 9.9 Documentação desatualizada — INFORMATIVO
+Continua sem cobertura o que depende de I/O: `persistSyncResults` de ponta a ponta e
+`listCalendarEvents` em modo incremental/full com Google real.
 
-- `README.md:256` descreve `google-calendar.js` como "importa eventos externos e
-  sincroniza agendamentos locais". O arquivo hoje é uma ponte que não chama o Google.
-- `README.md:339` e `.github/copilot-instructions.md` seção 5 afirmam que **não há testes
-  no projeto**. Há 48, com `node --test`. É a afirmação mais perigosa das duas, porque
-  instrui agentes a não rodar a suíte.
-- `salvarEventoComGCal` tem nome que descreve o que ela não faz (3.1).
+### 9.9 Documentação desatualizada — RESOLVIDO (Rodada A.2)
+
+- `README.md` foi ajustado para descrever o arquivo `google-calendar.js` como ponte
+  frontend → backend e não como importador direto da API do Google.
+- `.github/copilot-instructions.md` passou a exigir que testes novos sejam provados por
+  regressão/mutação.
+- O nome `salvarEventoComGCal` continua enganoso, mas a documentação agora sinaliza que
+  ele ignora os argumentos recebidos.
+
+### 9.10 Índice duplicado em `GoogleCalendarConnection` — RESOLVIDO (Rodada A.2)
+
+`ownerEmail` era declarado com `index: true` e também com um índice único. O campo agora
+mantém apenas o índice único, que é a garantia relevante.
 
 ---
 
 ## 10. Ordem sugerida de correção
 
-1. **9.2** — pequeno, cirúrgico, e evita perda de dado. Independe de tudo.
-2. **9.4** — pequeno, e destrava o gate de persistência da reposição.
-3. **9.5** e **9.6** — pequenos, oportunistas.
-4. **9.8** — testes das funções puras, antes de mexer em 9.1.
-5. **9.1** — mudança de schema + expansão + horizonte. É o projeto grande.
-6. **9.3** — sai quase de graça depois de 9.1.
-7. **9.9** — junto de qualquer uma das anteriores.
+A sequência sugerida foi executada em parte; o que resta é o desenho de série recorrente e
+as exceções propagadas para o Google.
 
-Os itens 1 a 4 não tocam o modelo de dados e podem ir em uma rodada só. O item 5 merece
-prompt próprio, com decisão de horizonte tomada antes.
+1. **9.2**, **9.4**, **9.5**, **9.6** e **9.8** — resolvidos nas rodadas A e A.2.
+2. **9.1** — mudança de schema + mapa `data → eventId` + horizonte. É o projeto grande.
+3. **9.3** — sai quase de graça depois de 9.1.
+4. **9.9** e **9.10** — documentação e index já registrados como resolvidos.
+
+O que continua fora de escopo nesta spec é o desenho final da recorrência, o mapa de ids,
+exceções e horizonte; a decisão de valor do horizonte precisa ser tomada antes do início da
+Rodada C.

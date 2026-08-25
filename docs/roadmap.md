@@ -96,6 +96,22 @@ Cada item traz:
 
 ---
 
+## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
+
+### [x] 2.0 Rodadas A e A.2 de Google Calendar — **CONCLUÍDO**
+- **O que foi feito**: correções cirúrgicas no read-path de sync, tratamento de falha de sincronização como sucesso de persistência com aviso, ajustes de virada de meia-noite e duração zero, comparação estável de agendamentos e criação da suíte de testes `backend/test/gcal-sync.test.js`.
+- **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
+- **Observação**: o trabalho de expansão e mapa de ids segue como Rodada C, não como continuidade direta desta etapa.
+
+### [ ] 2.1 Publicar série recorrente como ocorrências individuais com mapa `data → eventId`
+- **O que é**: publicar cada ocorrência de uma série recorrente como evento individual no Google, mantendo um mapa `data → eventId` para identificar as instâncias criadas pelo app, com horizonte de publicação e propagação de exceções.
+- **Por que importa**: hoje a série recorrente aparece uma vez só no Google e as alterações de exceção não se propagam de forma consistente.
+- **Onde mexer**: `backend/src/models/Agendamento.js`, `backend/src/services/gcalSyncService.js`, `backend/src/controllers/agendamentoController.js`.
+- **Esforço**: Médio–Alto, com mudança de schema.
+- **Decisão pendente antes de começar**: valor do horizonte (2, 3 ou 6 meses).
+
+---
+
 ## 🧪 Grupo 3 — Ambiente de desenvolvimento e rede de proteção
 
 > **Histórico**: o projeto nasceu com apoio de IA, sem que ninguém definisse ambiente local nem testes. O resultado é que **toda validação sempre foi feita em produção**. Isso funcionou por um bom tempo porque o app é de usuário único conhecido, mas já custou dois bugs financeiros que chegaram ao usuário real.

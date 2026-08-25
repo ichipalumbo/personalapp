@@ -33,6 +33,15 @@
         return `${partes[2]}/${partes[1]}/${partes[0]}`;
     }
 
+    function escaparHtml(valor) {
+        return String(valor == null ? '' : valor)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     function statusOrder(status, configuracaoPendente) {
         if (configuracaoPendente) return 3;
         if (status === 'atrasado') return 0;
@@ -224,6 +233,114 @@
         return `${valor > 0 ? '+' : '−'}${Math.abs(valor)} de ajuste`;
     }
 
+    function renderizarLinhaExtrato(linha, ciclo) {
+        const tipo = String(linha && linha.tipo ? linha.tipo : 'desconhecido');
+        const descricao = escaparHtml(linha && linha.descricao ? linha.descricao : 'Lançamento');
+        const nota = linha && linha.nota ? escaparHtml(String(linha.nota)) : '';
+        const quantidade = Number(linha && linha.quantidade);
+        const valorTotal = Number(linha && linha.valorTotal) || 0;
+        const valorExibicao = ciclo && ciclo.metodoCobranca === 'valor_fixo' ? formatarMoeda(0) : formatarMoeda(valorTotal);
+        const quantidadeHtml = Number.isFinite(quantidade) && quantidade !== 0
+            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.68rem;">Qtd.: ${quantidade}</div>`
+            : '';
+        const notaHtml = nota
+            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.68rem;">Nota: ${nota}</div>`
+            : '';
+
+        let rotuloTipo = 'Lançamento';
+        switch (tipo) {
+            case 'recorrente':
+                rotuloTipo = 'Aula recorrente';
+                break;
+            case 'avulsa':
+                rotuloTipo = 'Aula avulsa';
+                break;
+            case 'reposicao_cobravel_origem':
+                rotuloTipo = 'Reposição cobrável';
+                break;
+            case 'reposicao_nao_cobravel':
+                rotuloTipo = 'Reposição não cobrável';
+                break;
+            case 'reposicao_cobranca_adiada':
+                rotuloTipo = 'Cobrança adiada';
+                break;
+            case 'reposicao_ja_cobrada':
+                rotuloTipo = 'Já cobrada';
+                break;
+            case 'reposicao_expirada':
+                rotuloTipo = 'Reposição expirada';
+                break;
+            case 'reposicao_pendente':
+                rotuloTipo = 'Reposição pendente';
+                break;
+            case 'ajuste_manual':
+                rotuloTipo = 'Ajuste manual';
+                break;
+            case 'piso_zero':
+                rotuloTipo = 'Piso zero';
+                break;
+            case 'valor_fixo':
+                rotuloTipo = 'Valor fixo';
+                break;
+            default:
+                rotuloTipo = 'Lançamento';
+                break;
+        }
+
+        return `
+          <div style="padding:8px 10px;border:1px solid #242424;border-radius:8px;background:#0d0d0d;">
+            <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+              <div style="min-width:0;flex:1;">
+                <div style="color:#f0f0f0;font-size:0.76rem;font-weight:700;">${rotuloTipo}</div>
+                <div style="margin-top:4px;color:#e8e8e8;font-size:0.76rem;word-break:break-word;">${descricao}</div>
+                ${quantidadeHtml}
+                ${notaHtml}
+              </div>
+              <div style="color:#ffd700;font-weight:800;font-size:0.76rem;white-space:nowrap;">${valorExibicao}</div>
+            </div>
+          </div>
+        `;
+    }
+
+    function renderizarConteudoExtrato(ciclo) {
+        if (!ciclo) {
+            return '<div style="color:#8e8e8e;font-size:0.78rem;">Extrato indisponível.</div>';
+        }
+
+        if (ciclo.extrato === null) {
+            return '<div style="color:#8e8e8e;font-size:0.78rem;">Extrato não registrado para este ciclo.</div>';
+        }
+
+        const linhas = Array.isArray(ciclo.extrato) ? ciclo.extrato : [];
+        if (linhas.length === 0) {
+            return '<div style="color:#8e8e8e;font-size:0.78rem;">Não há lançamentos.</div>';
+        }
+
+        const totalLabel = ciclo.metodoCobranca === 'valor_fixo'
+            ? `Total do ciclo ${formatarMoeda(ciclo.valorTotalCiclo)} • valor fixo`
+            : `Total do ciclo ${formatarMoeda(ciclo.valorTotalCiclo)}`;
+
+        return `
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            ${linhas.map((linha) => renderizarLinhaExtrato(linha, ciclo)).join('')}
+            <div style="padding-top:8px;border-top:1px solid #262626;color:#ffd700;font-size:0.78rem;font-weight:800;">${escaparHtml(totalLabel)}</div>
+          </div>
+        `;
+    }
+
+    function renderizarDetalhesExtrato(ciclo, opcoes = {}) {
+        const identificador = opcoes.identificador || `extrato-${String(ciclo && ciclo._id ? ciclo._id : (ciclo && ciclo.cicloInicio) || 'ciclo')}`;
+        const rotulo = opcoes.rotulo || 'Ver extrato do ciclo';
+        const aberto = opcoes.aberto === true ? 'open' : '';
+
+        return `
+          <details data-financas-extrato-details="${escaparHtml(identificador)}" style="border-top:1px solid #262626;padding-top:10px;" ${aberto}>
+            <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.82rem;">${escaparHtml(rotulo)}</summary>
+            <div style="margin-top:10px;">${renderizarConteudoExtrato(ciclo)}</div>
+          </details>
+        `;
+    }
+
     function renderizarListaHistorico(historico) {
         const lista = Array.isArray(historico) ? historico : [];
         if (lista.length === 0) {
@@ -235,6 +352,7 @@
             ${lista.map((ciclo) => {
                 const status = ciclo.status === 'pago' ? 'Pago' : (ciclo.status === 'atrasado' ? 'Atrasado' : 'Em aberto');
                 const valor = formatarMoeda(ciclo.valorTotalCiclo);
+                const extratoKey = String(ciclo && ciclo._id ? ciclo._id : `${ciclo.cicloInicio || ''}-${ciclo.cicloFim || ''}`);
                 return `
                   <div style="border:1px solid #262626;border-radius:10px;padding:10px 12px;background:#0f0f0f;">
                     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
@@ -244,6 +362,7 @@
                     <div style="font-size:0.75rem;color:#9a9a9a;margin-top:6px;">
                       ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
                     </div>
+                    ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-historico-${extratoKey}`, rotulo: 'Ver extrato do ciclo' })}
                   </div>
                 `;
             }).join('')}
@@ -347,7 +466,7 @@
           <article class="aluno-card" data-financas-card-id="${aluno.id || card.alunoId}" style="display:flex;flex-direction:column;gap:10px;position:relative;">
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
               <div style="min-width:0;">
-                <strong style="display:block;color:#fff;font-size:1.02rem;word-break:break-word;">${aluno.nome || 'Aluno'}</strong>
+                <strong style="display:block;color:#fff;font-size:1.02rem;word-break:break-word;">${escaparHtml(aluno.nome || 'Aluno')}</strong>
                 <div style="margin-top:4px;font-size:0.72rem;color:#b8b8b8;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                   <span>${statusLabel}</span>
                   ${card.configuracaoPendente ? '' : `<span>• ${resumoCiclo(card)}</span>`}
@@ -389,6 +508,8 @@
                 <button type="button" class="btn btn-primary" data-financas-pagar="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Marcar como pago</button>
                 <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Editar ajuste</button>
               </div>
+
+              ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-atual-${aluno.id || card.alunoId}`, rotulo: 'Ver extrato do ciclo' })}
 
               <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;" ${STATE.historicoAberto[aluno.id] ? 'open' : ''}>
                 <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.82rem;">Ver ciclos anteriores</summary>
