@@ -179,6 +179,49 @@
         document.body.style.overflow = '';
     }
 
+    async function handleRenewGoogleCalendarWatch() {
+        if (!global.googleIdentity || typeof global.googleIdentity.isSignedIn !== 'function' || !global.googleIdentity.isSignedIn()) {
+            if (window.log && typeof window.log.debug === 'function') {
+                window.log.debug('[gcal]', 'Sem sessão Google; botão manual de renovação ignorado.');
+            }
+            return;
+        }
+
+        const btn = document.getElementById('btnRenewGoogleCalendarWatch');
+        if (btn) {
+            btn.disabled = true;
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Verificando...</span>';
+            btn.dataset.originalHtml = originalHtml;
+        }
+
+        try {
+            const resultado = await global.renovarCanalGoogleCalendar();
+            const mensagem = resultado && resultado.renewed
+                ? 'Canal do Google Agenda renovado e sincronização disparada.'
+                : (resultado && resultado.synced
+                    ? 'Sincronização de recuperação concluída.'
+                    : 'Canal do Google Agenda continua válido.');
+
+            if (typeof global.mostrarToast === 'function') {
+                global.mostrarToast(mensagem, 'success');
+            }
+        } catch (error) {
+            console.warn('[settings-modal] Falha ao verificar/renovar o canal do Google Calendar:', error);
+            if (typeof global.mostrarToast === 'function') {
+                global.mostrarToast('Não foi possível verificar o canal do Google Agenda agora.', 'warning');
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                if (btn.dataset.originalHtml) {
+                    btn.innerHTML = btn.dataset.originalHtml;
+                    btn.dataset.originalHtml = '';
+                }
+            }
+        }
+    }
+
     /**
      * Initialize Settings Modal and button handlers
      */
@@ -220,6 +263,13 @@
         if (btnDisconnectGCal) {
             btnDisconnectGCal.addEventListener('click', function () {
                 handleDisconnectGoogleCalendar();
+            });
+        }
+
+        const btnRenewGCalWatch = document.getElementById('btnRenewGoogleCalendarWatch');
+        if (btnRenewGCalWatch) {
+            btnRenewGCalWatch.addEventListener('click', function () {
+                handleRenewGoogleCalendarWatch();
             });
         }
 

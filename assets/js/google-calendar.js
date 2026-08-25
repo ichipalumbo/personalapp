@@ -43,6 +43,53 @@
         return { ok: true };
     }
 
+    async function _verificarCanalGoogleCalendar() {
+        if (!_isAppSignedIn()) {
+            if (window.log && typeof window.log.debug === 'function') {
+                window.log.debug('[gcal]', 'Sem sessão Google; ignorando verificação do canal de webhook.');
+            }
+            return { renewed: false, synced: false, skipped: true, reason: 'not_signed_in' };
+        }
+
+        const endpoint = `${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/gcal/webhook/renew`;
+
+        try {
+            const resposta = await global.apiFetchBackend(endpoint, { method: 'POST' }, 30000);
+            const dados = await resposta.json().catch(() => ({}));
+            const payload = dados && typeof dados === 'object' ? dados : {};
+            const renewed = !!payload.renewed;
+            const synced = !!payload.synced;
+            const reason = payload.reason || 'unknown';
+
+            if (renewed && window.log && typeof window.log.info === 'function') {
+                window.log.info('[gcal]', 'Canal renovado', {
+                    reason,
+                    synced,
+                    activeItems: Number(payload.activeItems || 0),
+                    cancelledItems: Number(payload.cancelledItems || 0)
+                });
+            } else if (!renewed && reason === 'channel_valid' && window.log && typeof window.log.debug === 'function') {
+                window.log.debug('[gcal]', 'Canal ainda válido, nada a fazer', { reason });
+            }
+
+            if (synced && window.log && typeof window.log.info === 'function') {
+                window.log.info('[gcal]', 'Sync de recuperação concluída', {
+                    reason,
+                    activeItems: Number(payload.activeItems || 0),
+                    cancelledItems: Number(payload.cancelledItems || 0)
+                });
+            }
+
+            return payload;
+        } catch (error) {
+            const mensagem = error && error.message ? error.message : String(error);
+            if (window.log && typeof window.log.warn === 'function') {
+                window.log.warn('[gcal]', 'Falha ao verificar/renovar o canal do Google Calendar.', { mensagem });
+            }
+            return { renewed: false, synced: false, skipped: true, reason: 'renewal_failed', error: mensagem };
+        }
+    }
+
     global.gcal = {
         isSignedIn: function () {
             return _isAppSignedIn();
@@ -57,6 +104,8 @@
             });
         }
     };
+
+    global.renovarCanalGoogleCalendar = _verificarCanalGoogleCalendar;
 
     global.salvarEventoComGCal = async function (_agendamento, opcoes) {
         var opts = opcoes && typeof opcoes === 'object' ? opcoes : {};

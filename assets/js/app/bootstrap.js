@@ -29,6 +29,34 @@
         }
     }
 
+    let gcalWatchCheckDisparado = false;
+
+    async function dispararVerificacaoCanalGCal() {
+        if (gcalWatchCheckDisparado) {
+            return;
+        }
+
+        gcalWatchCheckDisparado = true;
+
+        if (!global.googleIdentity || typeof global.googleIdentity.getOwnerEmail !== 'function') {
+            return;
+        }
+
+        const ownerEmail = global.googleIdentity.getOwnerEmail();
+        if (!ownerEmail) {
+            if (window.log && typeof window.log.debug === 'function') {
+                window.log.debug('[gcal]', 'Sem sessão Google; ignorando verificação do canal no boot.');
+            }
+            return;
+        }
+
+        try {
+            await global.renovarCanalGoogleCalendar();
+        } catch (error) {
+            console.warn('[Bootstrap] Falha ao verificar o canal do Google Calendar no boot:', error);
+        }
+    }
+
     async function initialize() {
         if (!global.__appRouter || typeof global.__appRouter.createRouter !== 'function') {
             throw new Error('Bootstrap da aplicação indisponível: router não encontrado.');
@@ -61,6 +89,12 @@
         });
 
         await router.navigateTo('tela-home');
+
+        if (global.gcal && typeof global.gcal.isSignedIn === 'function' && global.gcal.isSignedIn()) {
+            setTimeout(function () {
+                void dispararVerificacaoCanalGCal();
+            }, 0);
+        }
 
         if (global.gcal && typeof global.gcal.isSignedIn === 'function' && global.gcal.isSignedIn()) {
             if (typeof global.iniciarSyncGoogleCalendarAutomatica === 'function') {
