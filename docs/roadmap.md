@@ -25,11 +25,11 @@ Cada item traz:
 > Itens herdados da entrega de Finanças. Nenhum é urgente: o app está funcionando em produção com todos eles. A ideia é resolvê-los "de carona" na próxima feature que tocar as mesmas áreas, evitando uma rodada de manutenção isolada.
 > Detalhamento técnico completo na seção 12 de [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
 
-### [ ] 0.1 Bug: bloco "Ver ciclos anteriores" fecha sozinho no re-render
-- **O que é**: Em Finanças, ao expandir "Ver ciclos anteriores", o bloco volta a fechar sozinho quando a tela é re-renderizada (chegada da resposta remota, troca de filtro, marcar como pago, salvar ajuste). Chega a fechar no meio do "Carregando ciclos anteriores...".
-- **Por que importa**: É o único defeito conhecido em aberto da feature. Impacto é só visual — nenhum dado é perdido e nenhuma requisição é refeita (o conteúdo já carregado é restaurado corretamente) —, mas dá a sensação de "cliquei e o app desfez".
-- **Onde mexer**: `assets/js/view-financas.js`. O estado de expansão hoje vive só no DOM; precisa ir para o `STATE` (ex.: `STATE.historicoAberto`), o listener de `toggle` (já em fase de captura) passa a registrar abertura **e** fechamento, e `renderizarCard()` reaplica o atributo `open`. Não requer backend.
-- **Esforço**: Muito baixo (3 pontos de alteração, arquivo único).
+### [x] 0.1 Bug: bloco "Ver ciclos anteriores" fecha sozinho no re-render — **RESOLVIDO**
+- **O que foi entregue**: o estado de expansão do histórico foi persistido no `STATE` e reaplicado em `renderizarCard()`, com o listener de `toggle` gravando abertura e fechamento em fase de captura. O mesmo padrão foi estendido ao extrato do ciclo.
+- **Por que importa**: o defeito era visual e fazia o bloco fechar ao re-renderizar a tela, mesmo com os dados já carregados.
+- **Onde mexer**: `assets/js/view-financas.js` (arquivo único). Não requer backend.
+- **Esforço**: Muito baixo (arquivo único, correção focada).
 
 ---
 
@@ -64,10 +64,10 @@ Cada item traz:
 - **Pendências**: publicação do frontend e fechamento dos resíduos/documentação de rollout.
 - **Esforço restante**: Baixo (rollout e fechamento), sem mudança conceitual de regra.
 
-### [ ] 0.6 Extrato do ciclo
-- **O que é**: Exibir em cada ciclo o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado.
-- **Por que importa**: Dá previsibilidade e auditoria para o PT, sem depender de memória ou de contagem ad hoc na agenda.
-- **Onde mexer**: `docs/specs/reposicoes-e-competencia.md`, `backend/src/services/financasService.js`, tela de Finanças.
+### [x] 0.6 Extrato do ciclo — **ENTREGUE**
+- **O que foi entregue**: cada ciclo exibe o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado, com os 11 tipos de linha documentados em `docs/specs/reposicoes-e-competencia.md`.
+- **Por que importa**: dá previsibilidade e auditoria para o PT, sem depender de memória nem de contagem ad hoc na agenda.
+- **Onde mexer**: `backend/src/services/financasService.js`, `assets/js/view-financas.js` e a spec complementar de reposições.
 - **Esforço**: Médio.
 
 ### [ ] 0.7 Prazo de validade + expiração lazy
@@ -98,17 +98,12 @@ Cada item traz:
 
 ## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
 
-### [x] 2.0 Rodadas A e A.2 de Google Calendar — **CONCLUÍDO**
-- **O que foi feito**: correções cirúrgicas no read-path de sync, tratamento de falha de sincronização como sucesso de persistência com aviso, ajustes de virada de meia-noite e duração zero, comparação estável de agendamentos e criação da suíte de testes `backend/test/gcal-sync.test.js`.
+### [x] 2.1 Google Calendar (`RRULE` + `EXDATE`) — **ENTREGUE**
+- **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, e as exceções do app são convertidas em `EXDATE` sem depender de um horizonte ou de um mapa `data → eventId`.
+- **Por que importa**: remove a necessidade de janela de publicação e deixa a expansão de instâncias no Google, mantendo o desenho coerente com o modelo de pais + instâncias da API.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `assets/js/shared/recurrence-helpers.js` e a spec `docs/specs/gcal-sync.md`.
+- **Esforço**: Médio. O custo que ficou aberto foi o gerenciamento de `COUNT`/`UNTIL`, e isso foi documentado como decisão de design, não como pendência de implementação.
 - **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
-- **Observação**: o trabalho de expansão e mapa de ids segue como Rodada C, não como continuidade direta desta etapa.
-
-### [ ] 2.1 Publicar série recorrente como ocorrências individuais com mapa `data → eventId`
-- **O que é**: publicar cada ocorrência de uma série recorrente como evento individual no Google, mantendo um mapa `data → eventId` para identificar as instâncias criadas pelo app, com horizonte de publicação e propagação de exceções.
-- **Por que importa**: hoje a série recorrente aparece uma vez só no Google e as alterações de exceção não se propagam de forma consistente.
-- **Onde mexer**: `backend/src/models/Agendamento.js`, `backend/src/services/gcalSyncService.js`, `backend/src/controllers/agendamentoController.js`.
-- **Esforço**: Médio–Alto, com mudança de schema.
-- **Decisão pendente antes de começar**: valor do horizonte (2, 3 ou 6 meses).
 
 ---
 
@@ -239,16 +234,7 @@ Cada item traz:
 
 ## 🔴 Grupo 2 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
 
-### [ ] 2.0 Recorrência no Google Calendar (`RRULE`) — **em aberto**
-- **O que é**: Publicar a série como um único evento pai no Google, com `recurrence` + `RRULE`, deixando a expansão em instâncias para o próprio Google.
-- **Por que importa**: Remove a necessidade de manter horizonte de publicação, mapa `data → eventId` e reprocessamento da série. A decisão pendente deixou de ser "horizonte" e passou a ser "como tratar `COUNT` quando a série chega ao limite".
-- **Onde mexer**: backend de sync (`backend/src/services/gcalSyncService.js`), montagem do payload e regras de `EXDATE`/`COUNT` no Google Calendar. O campo `googleCalendarEventId` no modelo de agendamento (`backend/src/models/Agendamento.js:19`) continua guardando o id do evento pai e é suficiente para a série.
-- **Ponto de atenção**: o que fazer quando a própria série bater o limite de `COUNT` (item 9.11 da spec) sem deixar a agenda local divergentemente calculada.
-- **Esforço**: Médio.
-
----
-
-### [ ] 2.1 Cobrança automatizada (Pix, boleto, cartão recorrente)
+### [ ] 2.2 Cobrança automatizada (Pix, boleto, cartão recorrente)
 - **O que é**: Gerar cobranças automáticas para os alunos e receber confirmação de pagamento sem o PT precisar fazer nada manualmente.
 - **Por que importa**: Elimina de vez o trabalho manual de cobrar e reconciliar pagamentos, indo além do registro manual entregue no item 1.1.
 - **Complexidade**: Exige integração com gateway de pagamento (ex.: Mercado Pago, Asaas, Stripe), webhooks de confirmação (o padrão já usado para o Google Calendar em `gcalWebhookController.js` serve de referência arquitetural) e tratamento de falha/estorno.
@@ -259,7 +245,7 @@ Cada item traz:
 
 ---
 
-### [ ] 2.2 Notificações automáticas (lembrete de aula, cobrança, etc.)
+### [ ] 2.3 Notificações automáticas (lembrete de aula, cobrança, etc.)
 - **O que é**: Notificar o PT e/ou o aluno automaticamente (push notification ou WhatsApp) antes da aula, ou quando um pagamento está para vencer.
 - **Por que importa**: Reduz faltas e esquecimentos, dos dois lados.
 - **Complexidade**: O app já é PWA com Service Worker registrado (`assets/js/app/service-worker.js`, `sw.js`), o que ajuda como base, mas hoje as notificações são só "toasts" internos (`mostrarToast`). Seria necessário Web Push (VAPID + subscription por usuário) **ou** WhatsApp Business API, mais um scheduler/cron no backend.
@@ -268,7 +254,7 @@ Cada item traz:
 
 ---
 
-### [ ] 2.3 Portal/app do aluno
+### [ ] 2.4 Portal/app do aluno
 - **O que é**: Um espaço onde o próprio aluno acessa sua agenda, seu histórico de pagamento e talvez sua evolução física.
 - **Por que importa**: Hoje o sistema é 100% voltado ao personal trainer — o aluno não tem visibilidade própria, o que gera trocas de mensagem desnecessárias ("qual meu horário de amanhã?", "já paguei esse mês?").
 - **Complexidade**: O modelo de dados segrega tudo por `ownerEmail` (uma conta Google = uma base isolada, ver `backend/src/utils/ownerScope.js` e `requireAuth.js`). Não existe o conceito de múltiplos papéis (PT vs. aluno) sobre o mesmo conjunto de dados. Exigiria desenhar um modelo de autorização (RBAC) do zero.
@@ -276,7 +262,7 @@ Cada item traz:
 
 ---
 
-### [ ] 2.4 Avaliação física / anamnese / evolução do aluno
+### [ ] 2.5 Avaliação física / anamnese / evolução do aluno
 - **O que é**: Registro de medidas corporais, peso, fotos de progresso, PAR-Q, histórico de lesões.
 - **Por que importa**: É expectativa comum de alunos de personal trainer mais estruturados, e ajuda o PT a justificar/ajustar treinos.
 - **Complexidade**: Não existe entidade parecida no modelo atual. Exigiria nova collection com histórico temporal, upload/armazenamento de imagens (hoje só há ícones estáticos em `assets/images/`, sem pipeline de upload) e uma tela de linha do tempo.
@@ -284,7 +270,7 @@ Cada item traz:
 
 ---
 
-### [ ] 2.5 Multi-personal / gestão de equipe (para academias/estúdios)
+### [ ] 2.6 Multi-personal / gestão de equipe (para academias/estúdios)
 - **O que é**: Permitir que uma academia tenha vários personal trainers cadastrados, com alunos vinculados a mais de um profissional.
 - **Por que importa**: Hoje o app só atende o modelo "PT autônomo solo". Para vender a estúdios/academias, seria necessário suportar equipes.
 - **Complexidade**: O isolamento por `ownerEmail` é rígido (1 conta = 1 base). Hierarquia (dono → PTs → alunos compartilhados) exige redesenhar o esquema de permissões inteiro.
@@ -292,7 +278,7 @@ Cada item traz:
 
 ---
 
-### [ ] 2.6 Auditoria / histórico de alterações
+### [ ] 2.7 Auditoria / histórico de alterações
 - **O que é**: Registrar quem alterou o quê e quando (ex.: mudança de valor combinado, remarcação de aula), para resolver disputas com o aluno.
 - **Por que importa**: Não há rastro de mudança — se o valor combinado for editado, o valor anterior se perde.
 - **Nota**: a feature de Finanças resolveu **parcialmente** esse problema no recorte financeiro, via os campos de snapshot (`precoAulaSnapshot`, `valorFixoSnapshot`) do `CicloFinanceiro`: o preço vigente na criação de cada ciclo fica congelado, então um reajuste não reescreve o passado. Mas isso é preservação de valor, **não** log de auditoria — não há registro de *quando* nem de *o que* mudou no cadastro.
@@ -301,14 +287,14 @@ Cada item traz:
 
 ---
 
-### [x] 2.7 Precisão financeira avançada (calendário real em vez de aproximação) — **ENTREGUE**
+### [x] 2.8 Precisão financeira avançada (calendário real em vez de aproximação) — **ENTREGUE**
 - **O que foi entregue**: A fórmula fixa `frequência semanal × 4 × valor` foi **eliminada**. O cálculo agora percorre a janela real de datas do ciclo do aluno e conta as ocorrências efetivas de aulas resolvidas pelo motor de recorrência — o mesmo usado para desenhar a agenda, garantindo que "o que a agenda mostra" e "o que o financeiro cobra" nunca divirjam (módulo isomórfico, seção 2.4 da spec).
 - **O que ficou de fora**: **feriados** não são tratados (uma aula em feriado é contada normalmente, a menos que o PT a remova da agenda) e **faltas** dependem do item 1.5.
 - **Risco que se concretizou**: como previsto aqui, a ausência de testes automatizados fez a validação ser toda manual em produção. Dois defeitos reais escaparam para prod e só foram pegos em revisão posterior (aula excluída continuar sendo cobrada; reajuste de preço alterando ciclos antigos retroativamente). Ambos corrigidos — mas fica o registro de que **o projeto continua sem rede de proteção automatizada** em cima de código que calcula dinheiro. Ver item 3.1.
 
 ---
 
-### [ ] 2.8 Contrato / termo de responsabilidade / assinatura digital
+### [ ] 2.9 Contrato / termo de responsabilidade / assinatura digital
 - **O que é**: Aluno assina digitalmente um termo de responsabilidade ou atestado médico dentro do próprio app.
 - **Por que importa**: Reduz risco jurídico do PT (comum em contratos de prestação de serviço de educação física).
 - **Complexidade**: Exigiria upload/armazenamento seguro de documentos e possivelmente integração com serviço de assinatura eletrônica (ex.: Clicksign, D4Sign) — infraestrutura nova, sem base no projeto atual.
@@ -321,7 +307,7 @@ Cada item traz:
 | Prioridade | Item | Grupo | Esforço |
 |---|---|---|---|
 | — | ~~Controle de pagamento/inadimplência (1.1)~~ | ✅ Entregue | — |
-| — | ~~Precisão financeira avançada (2.7)~~ | ✅ Entregue | — |
+| — | ~~Precisão financeira avançada (2.8)~~ | ✅ Entregue | — |
 | — | ~~Organização da documentação (0.4)~~ | ✅ Entregue | — |
 | 1 | Bug do bloco de histórico (0.1) | Débito | Muito baixo |
 | 2 | Busca por nome na lista de alunos (1.7) | Fácil | Muito baixo |
@@ -334,13 +320,13 @@ Cada item traz:
 | 9 | Débitos 0.2, 0.3 e 0.9 (de carona) | Débito | Baixo–Médio |
 | 10 | Aniversário do aluno (1.6) | Fácil | Baixo |
 | 11 | Banco de desenvolvimento separado (3.4) | Ambiente | Médio–Alto |
-| 12 | Recorrência no Google Calendar (2.0) | Complexo | Médio |
-| 13 | Cobrança automatizada (2.1) | Complexo | Alto |
-| 14 | Notificações automáticas (2.2) | Complexo | Alto |
-| 15 | Avaliação física/anamnese (2.4) | Complexo | Alto |
-| 16 | Auditoria (2.6) | Complexo | Médio–Alto |
-| 17 | Portal do aluno (2.3) | Complexo | Muito alto |
-| 18 | Multi-personal/equipe (2.5) | Complexo | Muito alto |
+| 12 | Cobrança automatizada (2.2) | Complexo | Alto |
+| 13 | Notificações automáticas (2.3) | Complexo | Alto |
+| 14 | Portal do aluno (2.4) | Complexo | Muito alto |
+| 15 | Avaliação física/anamnese (2.5) | Complexo | Alto |
+| 16 | Multi-personal/equipe (2.6) | Complexo | Muito alto |
+| 17 | Auditoria (2.7) | Complexo | Médio–Alto |
+| 18 | Contrato / termo de responsabilidade (2.9) | Complexo | Médio |
 
 **Sugestão de leitura da tabela**: os itens 1 a 6 são todos de esforço baixo e fecham as pontas soltas da entrega de Finanças. O item 3.1 (testes) subiu na lista de propósito: é barato, não depende de nada e é o único que protege código que calcula dinheiro — vale entrar antes de qualquer coisa que mexa em valor cobrado. Os itens 7 e 8 andam juntos e destravam a evolução da regra 5.8 do financeiro (contagem por presença em vez de existência na agenda).
 

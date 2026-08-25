@@ -1,8 +1,8 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Backend da seção 6 publicado em produção; fluxo de frontend implementado na branch `new/reposicao-feature` (ainda não publicado em produção) · **Versão**: 3 · **Atualizado**: 2026-08-25
+> **Status**: Backend da seção 6 publicado em produção; extrato do ciclo implementado na branch e frontend ainda não publicado em produção · **Versão**: 4 · **Atualizado**: 2026-08-25
 >
-> **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v6).
+> **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
 > uma entidade nova. A spec de Finanças continua sendo a fonte de verdade sobre ciclo,
 > snapshot, congelamento e status de pagamento.
@@ -377,9 +377,9 @@ ciclos com muita reposição ou avulsa.
 Uma mesma reposição gera no máximo uma linha por ciclo. A ordem de precedência é: `reposicao_cobravel_origem`, `reposicao_nao_cobravel`, `reposicao_cobranca_adiada`, `reposicao_ja_cobrada`, `reposicao_expirada`, `reposicao_pendente`.
 A reposição expirada aparece no ciclo em que expirou, identificado por `validoAte`; quando `dataOriginal` e `validoAte` caem no mesmo ciclo, `reposicao_cobravel_origem` tem precedência.
 
-A soma das linhas fecha com `valorTotalCiclo` por construção. É proibido qualquer ajuste corretivo de fechamento; a única exceção é a linha nomeada `piso_zero`.
+A soma das linhas fecha com `valorTotalCiclo` por construção. É proibido qualquer ajuste corretivo de fechamento; a única exceção é a linha nomeada `piso_zero`. O total exibido no frontend é exatamente `valorTotalCiclo` e não é recalculado na tela.
 
-Para aluno `valor_fixo` o extrato é informativo: todas as linhas saem com valor zero, exceto a linha `valor_fixo`.
+Para aluno `valor_fixo` o extrato é informativo: todas as linhas saem com valor zero, exceto a linha `valor_fixo`. Em `financasService`, a linha `valor_fixo` continua sendo a única que carrega o valor do ciclo (`valorFixoSnapshot`); as linhas de aula e ajuste vêm com zero vindas do backend, sem recalcular no cliente.
 
 ⚠️ A classificação **olha o vínculo, não o `tipo`** (ver 5.2). O fluxo de remarcar salva
 `tipo: 'aula'`; classificar por tipo faria toda reposição aparecer como avulsa.
@@ -577,7 +577,7 @@ A cobertura é **parcial**: o teste valida a decisão encapsulada no helper, mas
 reimplementa localmente o fluxo chamador e não prova, sozinho, que
 `modal-acao-slot.js` está sempre usando essa decisão em runtime.
 
-### 11.3 Caso conhecido — mutação sem rollback no caminho da série
+### 11.3 Caso conhecido e aceito — mutação sem rollback no caminho da série
 
 No envio para reposição de instância recorrente (`btnReagendarInstancia`), a exceção é
 adicionada a `compromisso.excecoes` antes de `salvarDados(true)`. Se a persistência
@@ -589,8 +589,11 @@ Impacto atual:
 - ocorre apenas em cenário de falha de rede/persistência;
 - recarregar dados/reload restaura o estado da fonte remota.
 
-Correção possível (ainda não implementada): snapshot anterior de `excecoes` e rollback no
-`catch` quando `salvarDados` retornar falha.
+Esse comportamento foi **aceito como conhecido** porque ele é limitado ao cenário de
+falha e não cria outro estado persistente no backend. A correção possível (ainda não
+implementada) é snapshot anterior de `excecoes` e rollback no `catch` quando
+`salvarDados` retornar falha; isso fica como trabalho futuro, não como pendência de
+fechamento desta spec.
 
 ---
 

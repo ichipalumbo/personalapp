@@ -1,14 +1,15 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: desenho da Rodada C e reversão de decisão (2026-08-25). Esta v3 registra
-> a decisão revisada sobre recorrência no Google e preserva o histórico da v2 para não
-> apagar a revisão de desenho.
+> **Status**: desenho da Rodada C finalizado e decisão de recorrência registrada no
+> Google Calendar (2026-08-25). Esta v4 mantém a reversão histórica da v2 e documenta
+> o desenho final RRULE/EXDATE entregue pela implementação.
 >
-> **Versão**: 3 · **Atualizado**: 2026-08-25
+> **Versão**: 4 · **Atualizado**: 2026-08-25
+> **Defeitos em aberto**: 3 (ver seção 9)
 >
-> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v3) define a
+> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v4) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
-> `docs/specs/financas-ciclo-cobranca.md` (v6) não é afetada — o Google não participa de
+> `docs/specs/financas-ciclo-cobranca.md` (v7) não é afetada — o Google não participa de
 > nenhum cálculo financeiro.
 
 ---
@@ -205,14 +206,15 @@ adição usa UTC explícito (`T12:00:00Z` + `setUTCDate`) para evitar drift no s
 **`app_origin`** é o mecanismo que permite ao sync de entrada reconhecer o que é do app.
 Não remover.
 
-### 4.2 O que não é montado (hoje)
+### 4.2 O que é montado hoje
 
-Hoje, o código ainda não monta `RRULE` em nenhum ponto do backend ou do frontend. O
-objetivo da Rodada C é exatamente criar esse payload e, ao mesmo tempo, seguir o que o
-Google entende como evento pai recorrente.
+O backend já monta `recurrence` no payload do evento pai recorrente, com o `RRULE` e o
+`EXDATE` necessários para representar a série e as exceções do app. A Rodada C converteu o
+modelo legado em uma regra recorrente única, em vez de publicar eventos independentes por
+instância.
 
-No desenho v3, a montagem do evento passa a incluir `recurrence`, com as partes do `RRULE`
-que representam o padrão da série e o limite dela. O modelo legado ainda expõe campos como
+No desenho final, a montagem do evento inclui `recurrence` com as partes do `RRULE` que
+representam o padrão da série e o limite dela. O modelo legado ainda expõe campos como
 `frequencia`, `diasSemana`, `intervaloRecorrencia`, `recorrenciaDataInicio`,
 `recorrenciaDataFim`, `recorrenciaQuantidadeOcorrencias` e `excecoes`, mas esses campos
 agora são a entrada para o mapeamento do item 3, não um conjunto de eventos avulsos.
@@ -360,11 +362,10 @@ indisponibilidade do Google. Ver 9.4.
 
 Ordenados por gravidade.
 
-### 9.1 Série recorrente publica apenas uma ocorrência — CRÍTICO
+### 9.1 Série recorrente publica apenas uma ocorrência — RESOLVIDO (Rodada C)
 
-> **Redesenhado na v3**: a solução do item continua aberta, mas agora a correção deixa de
-> ser “publicar N eventos independentes” e passa a ser “publicar a série como um evento pai
-> com `RRULE`”.
+> **Redesenho concluído na v4**: a correção deixa de ser “publicar N eventos
+> independentes” e passa a ser “publicar a série como um evento pai com `RRULE`”.
 
 **Sintoma**: aula semanal aparece uma vez no Google, na data inicial.
 
@@ -399,10 +400,10 @@ Hoje o dano é limitado por acidente — um id por série, e o match é por
 `deleteAgendamento` saiu do caminho de leitura; `deleteBloqueio` continua sendo usado para
 `BloqueioExterno` externo cancelado.
 
-### 9.3 `excecoes` não propagam para o Google — ALTO
+### 9.3 `excecoes` não propagam para o Google — RESOLVIDO (Rodada C)
 
-> **Redesenhado na v3**: a correção deixou de ser “criar um evento separado por data” e passa
-> a ser “transformar a exceção do modelo em `EXDATE` no evento pai recorrente”.
+> **Redesenho concluído na v4**: a correção deixou de ser “criar um evento separado por
+> data” e passa a ser “transformar a exceção do modelo em `EXDATE` no evento pai recorrente”.
 
 Adicionar data em `excecoes` altera o documento, o que dispara `PUT` e
 `updateEventInGoogle` — mas o fluxo atual não traduz `excecoes` para o Google. O modelo
@@ -444,13 +445,16 @@ O full sync pede `showDeleted=false`, então o laço de ativos nunca vê
 `status === 'cancelled'`. Só o incremental traz cancelados. O ramo é código morto em
 metade dos caminhos — e no outro metade é o caso do app-owned event que foi corrigido.
 
+**Status**: observação informativa, não é pendência de trabalho nem ação de engenharia.
+
 ### 9.8 Sem cobertura de teste — PARCIALMENTE RESOLVIDO (Rodada A.2)
 
 Existe `backend/test/gcal-sync.test.js`, com testes puramente unitários para as funções de
-montagem e classificação. A suíte total do projeto está em **65 testes**.
+montagem e classificação. A suíte total do projeto está em **72 testes**.
 
 Continua sem cobertura o que depende de I/O: `persistSyncResults` de ponta a ponta e
-`listCalendarEvents` em modo incremental/full com Google real.
+`listCalendarEvents` em modo incremental/full com Google real. Esse é um nível de esforço
+maior (I/O real) e não uma pendência de correção de regra do calendário.
 
 ### 9.9 Documentação desatualizada — RESOLVIDO (Rodada A.2)
 
@@ -466,7 +470,7 @@ Continua sem cobertura o que depende de I/O: `persistSyncResults` de ponta a pon
 `ownerEmail` era declarado com `index: true` e também com um índice único. O campo agora
 mantém apenas o índice único, que é a garantia relevante.
 
-### 9.11 `occurrences` não é aplicado no engine local — ALTO
+### 9.11 `occurrences` não é aplicado no engine local — RESOLVIDO (Rodada C)
 
 **Problema**: o serializador grava `recorrenciaQuantidadeOcorrencias` e a condição
 `recorrenciaFimCondicao: 'occurrences'`, mas o motor local só trata `untilDate` em
@@ -483,7 +487,7 @@ como se a série fosse infinita. Isso é uma divergência de regra, não um deta
 (`backend/src/services/financasService.js:193-225`), então a regra de contagem impacta
 `aulasContadas` e, por extensão, o valor do ciclo. Não é mudança cosmética.
 
-### 9.12 `EXDATE` de evento com hora precisa do horário — ALTO
+### 9.12 `EXDATE` de evento com hora precisa do horário — RESOLVIDO (Rodada C)
 
 **Problema**: nossas `excecoes` são strings de data em `pt-BR` e o engine trata exclusão por
 `dataStr = dataAlvo.toLocaleDateString('pt-BR')` em `checarCompromissoNaData`
@@ -496,7 +500,7 @@ cronometrado for publicado como recorrência. O payload já carrega `excecoesDet
 `aplicarRecorrenciaLegada` (`assets/js/features/modals/scheduling-serializer.js:238-239`),
 mas a Rodada C precisa decidir qual fonte de verdade será usada.
 
-### 9.13 Volume de leitura aumenta — MÉDIO
+### 9.13 Volume de leitura aumenta — OBSERVAÇÃO, NÃO AÇÃO
 
 `listCalendarEvents` usa `singleEvents=true` (
 `backend/src/services/gcalSyncService.js:449-473`), então o Google devolve instâncias
@@ -506,7 +510,8 @@ classificação de propriedade continua funcionando em `isAppOwnedEvent`
 
 Esse é um custo de payload, não um bug — e passa a ser um ponto de observação se a série
 virar longa. O risco não é a lógica de ignorar o evento do app, e sim o volume de dados
-lidos em cada sync.
+lidos em cada sync. Como o próprio guia da API classifica isso como custo de leitura e não
+como defeito funcional, fica registrado como observação, não como pendência de trabalho.
 
 ## 10. Custo aceito da decisão
 
@@ -524,15 +529,20 @@ Se um dia surgir edição parcial de série, esse é o ponto em que a decisão d
 
 ## 11. Ordem sugerida de correção
 
+Os itens da Rodada C já foram resolvidos e saem do backlog desta spec. O que permanece hoje
+é apenas o que ainda exige trabalho real ou observação de custos/escala:
+
 1. **9.2** — pequeno, cirúrgico, e evita perda de dado. Independe de tudo.
 2. **9.4** — pequeno, e destrava o gate de persistência da reposição.
 3. **9.5** e **9.6** — pequenos, oportunistas.
-4. **9.8** — testes das funções puras, antes de mexer em 9.1.
-5. **9.1** — redesenho da série para `RRULE`; é o projeto grande.
-6. **9.3** — depois da regra pai, trata `EXDATE` e decisão de fonte de exceção.
-7. **9.9** — junto de qualquer uma das anteriores.
-8. **9.11** — depois que a regra pai estiver estável; é o ponto de `COUNT`.
-9. **9.12** e **9.13** — entram junto com a validação do `RRULE` publicado.
+4. **9.8** — cobertura real de I/O; depende de ambiente/Google e não é correção de regra
+   de negócio.
+5. **9.9** — documentação e nomeação, junto de qualquer correção de leitura/escrita em
+   andamento.
+6. **9.13** — observação de payload/volume de leitura; fica como alerta de escala, não como
+   pendência funcional.
 
-Os itens 1 a 4 não tocam o modelo de dados e podem ir em uma rodada só. A parte grande
-é a chegada do `RRULE`, não a manutenção de uma janela de publicação.
+Os itens **9.1**, **9.3**, **9.11** e **9.12** saíram do backlog porque a Rodada C
+concluiu o redesenho para `RRULE`, a propagação de `EXDATE`, o uso de `COUNT` e o ajuste de
+`UNTIL`/`EXDATE` na forma correta. O que sobrou é manutenção e observação, não uma segunda
+revisão de desenho.
