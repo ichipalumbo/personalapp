@@ -253,7 +253,7 @@ Frontend:
 - `assets/js/view-financas.js` [TAG-VIEW-FINANCAS]: aba Financas — ciclo financeiro e cobrancas.
 - `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — visao semanal, sem mensal e sem KPI dashboard.
 - `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
-- `assets/js/google-calendar.js`: integracao com Google Calendar API — importa eventos externos como bloqueios e sincroniza agendamentos locais.
+- `assets/js/google-calendar.js`: ponte frontend → backend para a integracao com Google Calendar. Ela nao chama a API do Google; o sync real acontece em `backend/src/services/gcalSyncService.js` e nos controllers do backend. `salvarEventoComGCal` ignora os argumentos que recebe (`_agendamento`, `opcoes`) e apenas garante a conexao antes de disparar `salvarDados`.
 
 ## Contrato de Camadas (Calendario > Dia)
 
@@ -336,9 +336,14 @@ Payload de escrita — `POST`/`PUT /agendamentos[/:id]`:
 
 ## Testes
 
-Nao ha testes no projeto — nenhum arquivo `.test.*` / `.spec.*`, pasta `test/`, ou script `"test"` no `package.json` do backend. Nao ha framework de teste configurado (Jest, Mocha, Vitest ou similar).
+Ha 65 testes no projeto, executados com `node --test` via `npm test` dentro de `backend/`.
 
-Para adicionar testes: instalar e configurar o framework no `backend/` e criar arquivos de teste junto aos respectivos modulos (ex: `backend/src/services/agendamentoService.test.js`).
+Comando exato:
+
+```bash
+cd backend
+npm test
+```
 
 ## Como Executar Localmente
 

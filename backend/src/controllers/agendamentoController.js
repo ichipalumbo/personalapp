@@ -30,7 +30,7 @@ function normalizarAgendamentoParaResposta(agendamento) {
 }
 
 function montarRespostaFalhaGcal(res, err, contexto, dados) {
-  const statusCode = err && err.statusCode ? err.statusCode : 502;
+  const statusCode = 200;
 
   console.error(`[AgendamentoController] Falha ao sincronizar com Google Calendar durante ${contexto}:`, err.message);
   if (err && err.stack) {
@@ -41,6 +41,7 @@ function montarRespostaFalhaGcal(res, err, contexto, dados) {
     error: `Erro ao sincronizar agendamento com Google Calendar durante ${contexto}`,
     message: err.message,
     partialSuccess: true,
+    gcalSyncFailed: true,
     agendamento: dados || null
   });
 }

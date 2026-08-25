@@ -18,6 +18,22 @@ function isAppOwnedEvent(event) {
   return String(appOrigin || '').toLowerCase() === APP_ORIGIN;
 }
 
+function classificarEventoDeLeitura(event) {
+  if (!event || !event.id) {
+    return 'ignorar';
+  }
+
+  if (isAppOwnedEvent(event)) {
+    return 'ignorar';
+  }
+
+  if (event.status === 'cancelled') {
+    return 'remover';
+  }
+
+  return 'upsert';
+}
+
 function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
   if (!dateTimeValue || !timeZone) {
     return null;
@@ -233,6 +249,12 @@ function montarExtendedProperties(agendamento) {
   };
 }
 
+function adicionarDiasISO(dataISO, quantidadeDias) {
+  const data = new Date(dataISO + 'T12:00:00Z');
+  data.setUTCDate(data.getUTCDate() + quantidadeDias);
+  return data.toISOString().slice(0, 10);
+}
+
 function montarEventoGoogle(agendamento) {
   const dataISO = resolverDataISO(agendamento);
   const titulo = montarTituloEvento(agendamento);
@@ -252,21 +274,25 @@ function montarEventoGoogle(agendamento) {
   }
 
   if (fullDay) {
-    const dtFim = new Date(dataISO + 'T12:00:00Z');
-    dtFim.setUTCDate(dtFim.getUTCDate() + 1);
-    const dataFim = dtFim.toISOString().slice(0, 10);
-
     evento.start = { date: dataISO };
-    evento.end = { date: dataFim };
+    evento.end = { date: adicionarDiasISO(dataISO, 1) };
     return evento;
   }
 
+  const horarioInicio = getHorarioPadraoInicio(agendamento);
+  const horarioFim = getHorarioPadraoFim(agendamento);
+  const [inicioHora, inicioMinuto] = horarioInicio.split(':').map((parte) => Number(parte || 0));
+  const [fimHora, fimMinuto] = horarioFim.split(':').map((parte) => Number(parte || 0));
+  const inicioEmMinutos = (inicioHora * 60) + inicioMinuto;
+  const fimEmMinutos = (fimHora * 60) + fimMinuto;
+  const dataFimISO = fimEmMinutos < inicioEmMinutos ? adicionarDiasISO(dataISO, 1) : dataISO;
+
   evento.start = {
-    dateTime: dataISO + 'T' + getHorarioPadraoInicio(agendamento) + ':00',
+    dateTime: dataISO + 'T' + horarioInicio + ':00',
     timeZone: timezone
   };
   evento.end = {
-    dateTime: dataISO + 'T' + getHorarioPadraoFim(agendamento) + ':00',
+    dateTime: dataFimISO + 'T' + horarioFim + ':00',
     timeZone: timezone
   };
 
@@ -515,21 +541,18 @@ async function persistSyncResults(connection, payload) {
   const remoteIds = new Set();
 
   for (const event of activeEvents) {
-    if (!event || !event.id) {
+    const acao = classificarEventoDeLeitura(event);
+
+    if (acao === 'ignorar') {
       continue;
     }
 
-    if (event.status === 'cancelled') {
+    if (acao === 'remover') {
       console.log('[GcalWebhookDiag] Evento marcado como cancelado durante varredura de ativos; removendo localmente.', {
         ownerEmail,
         eventId: event.id
       });
       await deleteBloqueio(ownerEmail, event.id);
-      await deleteAgendamento(ownerEmail, event.id);
-      continue;
-    }
-
-    if (isAppOwnedEvent(event)) {
       continue;
     }
 
@@ -544,7 +567,13 @@ async function persistSyncResults(connection, payload) {
   }
 
   for (const event of cancelledEvents) {
-    if (!event || !event.id) {
+    const acao = classificarEventoDeLeitura(event);
+
+    if (acao === 'ignorar') {
+      continue;
+    }
+
+    if (acao !== 'remover') {
       continue;
     }
 
@@ -554,7 +583,6 @@ async function persistSyncResults(connection, payload) {
     });
 
     await deleteBloqueio(ownerEmail, event.id);
-    await deleteAgendamento(ownerEmail, event.id);
   }
 
   if (!connection.syncToken) {
@@ -800,6 +828,13 @@ module.exports = {
   registerWebhookChannel,
   renewWebhookChannelForOwner,
   decryptRefreshToken,
+  APP_ORIGIN,
   isAppOwnedEvent,
-  mapEventToBloqueio
+  classificarEventoDeLeitura,
+  mapEventToBloqueio,
+  adicionarDiasISO,
+  getHorarioPadraoFim,
+  montarEventoGoogle,
+  montarTituloEvento,
+  resolverDataISO
 };

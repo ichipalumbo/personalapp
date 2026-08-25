@@ -224,3 +224,9 @@ que pareçam pequenas:
   biblioteca nova, levante a questão antes.
 - **Sem build step no frontend.** Não introduza bundler, transpilador ou
   sintaxe que dependa deles.
+
+## 10. Testes e regressões
+
+- O backend tem suíte automatizada em `backend/` com `node --test` e `npm test`.
+- Teste novo precisa ser provado por mutação: se o fix for revertido, o teste deve
+  falhar. Teste que passa no código antigo não é cobertura.
