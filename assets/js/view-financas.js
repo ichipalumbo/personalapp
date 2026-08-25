@@ -15,7 +15,9 @@
         // Nunca gravado no localStorage; descartado ao recarregar a página.
         historicoPorAluno: {},
         // Alunos com "Ver ciclos anteriores" expandido — persistido por aluno para sobreviver a re-renders.
-        historicoAberto: {}
+        historicoAberto: {},
+        // Detalhes do extrato do ciclo atual, persistidos em memória para sobreviver a re-renders.
+        extratoAberto: {}
     };
 
     function formatarMoeda(valor) {
@@ -239,7 +241,7 @@
         const nota = linha && linha.nota ? escaparHtml(String(linha.nota)) : '';
         const quantidade = Number(linha && linha.quantidade);
         const valorTotal = Number(linha && linha.valorTotal) || 0;
-        const valorExibicao = ciclo && ciclo.metodoCobranca === 'valor_fixo' ? formatarMoeda(0) : formatarMoeda(valorTotal);
+        const valorExibicao = formatarMoeda(valorTotal);
         const quantidadeHtml = Number.isFinite(quantidade) && quantidade !== 0
             ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.68rem;">Qtd.: ${quantidade}</div>`
             : '';
@@ -307,7 +309,7 @@
             return '<div style="color:#8e8e8e;font-size:0.78rem;">Extrato indisponível.</div>';
         }
 
-        if (ciclo.extrato === null) {
+        if (ciclo.extrato == null) {
             return '<div style="color:#8e8e8e;font-size:0.78rem;">Extrato não registrado para este ciclo.</div>';
         }
 
@@ -331,7 +333,8 @@
     function renderizarDetalhesExtrato(ciclo, opcoes = {}) {
         const identificador = opcoes.identificador || `extrato-${String(ciclo && ciclo._id ? ciclo._id : (ciclo && ciclo.cicloInicio) || 'ciclo')}`;
         const rotulo = opcoes.rotulo || 'Ver extrato do ciclo';
-        const aberto = opcoes.aberto === true ? 'open' : '';
+        const estadoPersistido = STATE.extratoAberto[identificador] === true;
+        const aberto = opcoes.aberto === true ? 'open' : (opcoes.aberto === false ? '' : (estadoPersistido ? 'open' : ''));
 
         return `
           <details data-financas-extrato-details="${escaparHtml(identificador)}" style="border-top:1px solid #262626;padding-top:10px;" ${aberto}>
@@ -774,7 +777,21 @@
         // 'toggle' não borbulha, mas a fase de captura no root alcança qualquer <details> descendente.
         root.addEventListener('toggle', function (event) {
             const details = event.target;
-            if (!details || typeof details.matches !== 'function' || !details.matches('[data-financas-historico-details]')) return;
+            if (!details || typeof details.matches !== 'function') return;
+
+            if (details.matches('[data-financas-extrato-details]')) {
+                const identificador = details.getAttribute('data-financas-extrato-details');
+
+                if (!details.open) {
+                    delete STATE.extratoAberto[identificador];
+                    return;
+                }
+
+                STATE.extratoAberto[identificador] = true;
+                return;
+            }
+
+            if (!details.matches('[data-financas-historico-details]')) return;
             const alunoId = details.getAttribute('data-financas-historico-details');
 
             if (!details.open) {
