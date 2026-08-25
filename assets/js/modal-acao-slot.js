@@ -93,9 +93,6 @@ async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
     }
 
     const reposicaoCriada = await resposta.json().catch(() => null);
-    if (typeof window.carregarDados === 'function') {
-        await window.carregarDados({ forcarRemoto: true, silenciosoUI: true });
-    }
     return reposicaoCriada || payload;
 }
 
