@@ -905,10 +905,33 @@ async function salvarDados(silencioso = false) {
             throw new Error('Falha ao salvar dados no banco remoto.');
         }
 
+        let teveFalhaGcal = false;
+        for (const resposta of [resAlunos, resAgendamentos, resConfig]) {
+            if (!resposta || !resposta.ok) continue;
+
+            try {
+                const payload = await resposta.clone().json();
+                if (payload && payload.gcalSyncFailed === true) {
+                    teveFalhaGcal = true;
+                    break;
+                }
+            } catch (error) {
+                // Respostas vazias ou não-JSON são ignoradas; o fluxo de sucesso/erro continua normal.
+            }
+        }
+
         salvarNoLocalStorage();
         _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
         console.log('☁️ Alterações sincronizadas com o banco remoto!');
-        
+
+        if (teveFalhaGcal) {
+            console.warn('⚠️ Banco remoto gravou, mas a Google Agenda não foi atualizada.');
+            if (!silencioso && typeof mostrarToast === 'function') {
+                mostrarToast('Salvo, mas a Google Agenda não foi atualizada', 'warning');
+            }
+            return { ok: true, motivo: 'sucesso_com_falha_gcal' };
+        }
+
         if (!silencioso && typeof mostrarToast === 'function') {
             mostrarToast('Alterações salvas na nuvem!', 'success');
         }
