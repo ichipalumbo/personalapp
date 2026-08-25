@@ -37,13 +37,13 @@ function classificarEventoDeLeitura(event) {
 
 function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
   if (!dateTimeValue || !timeZone) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   const parsed = new Date(String(dateTimeValue));
 
   if (Number.isNaN(parsed.getTime())) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   try {
@@ -66,7 +66,7 @@ function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
     }
 
     if (!values.year || !values.month || !values.day || !values.hour || !values.minute) {
-      ruleParts.push(`COUNT=${quantidade}`);
+      return null;
     }
 
     return {
@@ -74,7 +74,7 @@ function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
       horario: `${values.hour}:${values.minute}`
     };
   } catch (_) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 }
 
@@ -82,7 +82,7 @@ function parseDateTimeLiteralParts(dateTimeValue) {
   const match = String(dateTimeValue || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
 
   if (!match) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   return {
@@ -95,7 +95,7 @@ function parseDateTimeUtcParts(dateTimeValue) {
   const parsed = new Date(String(dateTimeValue || ''));
 
   if (Number.isNaN(parsed.getTime())) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   return {
@@ -258,7 +258,7 @@ function adicionarDiasISO(dataISO, quantidadeDias) {
 
 function parseDataISOParaDate(value) {
   if (!value) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
@@ -274,16 +274,27 @@ function parseDataISOParaDate(value) {
 
   const parsed = recurrenceHelpers.parseDataFlex(value);
   if (!parsed) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   return new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0));
 }
 
+function formatarDataUtcRfc5545(date) {
+  if (!date || Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return date.toISOString()
+    .replace(/-/g, '')
+    .replace(/:/g, '')
+    .replace(/\.\d{3}Z$/, 'Z');
+}
+
 function formatterDateTimeUtcInclusivo(valuePtBr) {
   const parsed = parseDataISOParaDate(valuePtBr);
   if (!parsed) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   const utc = new Date(Date.UTC(
@@ -296,14 +307,13 @@ function formatterDateTimeUtcInclusivo(valuePtBr) {
     0
   ));
 
-  const texto = utc.toISOString().replace(/\.\d{3}Z$/, 'Z');
-  return texto;
+  return formatarDataUtcRfc5545(utc);
 }
 
 function obterUltimoDiaMesISO(dataISO) {
   const data = parseDataISOParaDate(dataISO);
   if (!data) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   const ultimoDiaMes = new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth() + 1, 0, 12, 0, 0));
@@ -494,7 +504,10 @@ function montarRecurrence(agendamento) {
       return null;
     }
     const ultimoDiaMes = new Date(Date.UTC(dataInicio.getUTCFullYear(), dataInicio.getUTCMonth() + 1, 0, 23, 59, 59));
-    const until = ultimoDiaMes.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    const until = formatarDataUtcRfc5545(ultimoDiaMes);
+    if (!until) {
+      return null;
+    }
     ruleParts.push(`UNTIL=${until}`);
   }
 
@@ -669,7 +682,7 @@ async function calendarFetch(oauth2Client, path, options = {}) {
   });
 
   if (response.status === 204) {
-    ruleParts.push(`COUNT=${quantidade}`);
+    return null;
   }
 
   if (!response.ok) {

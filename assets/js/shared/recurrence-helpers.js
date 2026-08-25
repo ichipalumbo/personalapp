@@ -117,11 +117,8 @@
             const diaTexto = mapaDias[diaSemana];
             if (!diaTexto) continue;
 
-            const dataStr = cursor.toLocaleDateString('pt-BR');
-            if (comp && comp.excecoes && comp.excecoes.includes(dataStr)) {
-                continue;
-            }
-
+            // COUNT conta a série gerada pela RRULE; EXDATE só remove a instância após a expansão.
+            // Se uma exceção cair dentro do limite, ela ainda consome uma vaga no COUNT do Google.
             if (resolverCompromissoRecorrenteNaData(comp, new Date(cursor), diaTexto)) {
                 total += 1;
             }

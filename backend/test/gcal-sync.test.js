@@ -12,6 +12,7 @@ const {
   resolverDataISO,
   isAppOwnedEvent,
 } = require('../src/services/gcalSyncService');
+const recurrenceHelpers = require('../../assets/js/shared/recurrence-helpers');
 
 test('getHorarioPadraoFim usa +60 minutos em horário normal', () => {
   assert.equal(getHorarioPadraoFim({ horarioInicio: '09:30' }), '10:30');
@@ -189,7 +190,7 @@ test('montarRecurrence gera RRULE semanal com BYDAY, INTERVAL e UNTIL em UTC', (
   });
 
   assert.deepEqual(recurrence, [
-    'RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;UNTIL=2026-08-27T23:59:59Z'
+    'RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;UNTIL=20260827T235959Z'
   ]);
 });
 
@@ -215,7 +216,7 @@ test('montarRecurrence monta COUNT e monthOfDate sem combinar UNTIL', () => {
   });
 
   assert.deepEqual(monthRule, [
-    'RRULE:FREQ=MONTHLY;BYMONTHDAY=15;UNTIL=2026-02-28T23:59:59Z'
+    'RRULE:FREQ=MONTHLY;BYMONTHDAY=15;UNTIL=20260228T235959Z'
   ]);
 });
 
@@ -227,6 +228,34 @@ test('montarRecurrence devolve null para agendamento avulso ou com dia inválido
     diasSemana: ['Dia imaginário'],
     recorrenciaDataInicio: '2026-08-25'
   }), null);
+});
+
+test('montarRecurrence devolve null quando a data de início é inválida', () => {
+  assert.equal(montarRecurrence({
+    tipoRecorrencia: 'mensal',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: 'data invalida',
+    recorrenciaEscopo: 'monthOfDate'
+  }), null);
+});
+
+test('count de recorrencia inclui excecoes sem reduzir a contagem', () => {
+  const comp = {
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Terça'],
+    recorrenciaDataInicio: '2026-08-18',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 2,
+    horarioInicio: '09:00',
+    excecoes: ['25/08/2026']
+  };
+
+  const dias = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+  assert.equal(recurrenceHelpers.checarCompromissoNaData(comp, new Date(2026, 7, 18), '09:00', dias), true);
+  assert.equal(recurrenceHelpers.checarCompromissoNaData(comp, new Date(2026, 7, 25), '09:00', dias), false);
+  assert.equal(recurrenceHelpers.checarCompromissoNaData(comp, new Date(2026, 8, 1), '09:00', dias), false);
 });
 
 test('montarRecurrence gera EXDATE com hora e TZID para evento cronometrado e data para dia inteiro', () => {
