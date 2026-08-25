@@ -95,6 +95,41 @@
         return false;
     }
 
+    function contarOcorrenciasAteData(comp, dataAlvo, mapaDias) {
+        const recorrenciaDataInicio = parseDataFlex(comp && comp.recorrenciaDataInicio)
+            || parseDataFlex(comp && comp.dataCriacao)
+            || parseDataFlex(comp && comp.data);
+
+        if (!recorrenciaDataInicio || !dataAlvo) {
+            return 0;
+        }
+
+        const dataInicio = new Date(recorrenciaDataInicio.getFullYear(), recorrenciaDataInicio.getMonth(), recorrenciaDataInicio.getDate());
+        const dataLimite = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
+
+        if (dataLimite < dataInicio) {
+            return 0;
+        }
+
+        let total = 0;
+        for (let cursor = new Date(dataInicio); cursor <= dataLimite; cursor.setDate(cursor.getDate() + 1)) {
+            const diaSemana = cursor.getDay();
+            const diaTexto = mapaDias[diaSemana];
+            if (!diaTexto) continue;
+
+            const dataStr = cursor.toLocaleDateString('pt-BR');
+            if (comp && comp.excecoes && comp.excecoes.includes(dataStr)) {
+                continue;
+            }
+
+            if (resolverCompromissoRecorrenteNaData(comp, new Date(cursor), diaTexto)) {
+                total += 1;
+            }
+        }
+
+        return total;
+    }
+
     function checarCompromissoNaData(comp, dataAlvo, horaStr, diasSemanaMap) {
         const mapaDias = Array.isArray(diasSemanaMap) && diasSemanaMap.length > 0
             ? diasSemanaMap
@@ -133,6 +168,16 @@
                 if (fimData) {
                     const fimPura = new Date(fimData.getFullYear(), fimData.getMonth(), fimData.getDate());
                     if (dataAlvoPura > fimPura) return false;
+                }
+            }
+
+            if (comp.recorrenciaFimCondicao === 'occurrences' && comp.recorrenciaQuantidadeOcorrencias) {
+                const quantidade = Number(comp.recorrenciaQuantidadeOcorrencias);
+                if (Number.isFinite(quantidade) && quantidade > 0) {
+                    const ocorrenciasAteData = contarOcorrenciasAteData(comp, dataAlvoPura, mapaDias);
+                    if (ocorrenciasAteData > quantidade) {
+                        return false;
+                    }
                 }
             }
 

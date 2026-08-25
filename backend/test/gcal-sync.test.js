@@ -7,6 +7,7 @@ const {
   classificarEventoDeLeitura,
   getHorarioPadraoFim,
   montarEventoGoogle,
+  montarRecurrence,
   montarTituloEvento,
   resolverDataISO,
   isAppOwnedEvent,
@@ -174,4 +175,114 @@ test('classificarEventoDeLeitura faz upsert de evento externo ativo sem extended
     id: 'evt-externo-ativo',
     status: 'confirmed'
   }), 'upsert');
+});
+
+test('montarRecurrence gera RRULE semanal com BYDAY, INTERVAL e UNTIL em UTC', () => {
+  const recurrence = montarRecurrence({
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    intervaloRecorrencia: 2,
+    diasSemana: ['Segunda', 'Quinta'],
+    recorrenciaDataInicio: '2026-08-20',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '27/08/2026'
+  });
+
+  assert.deepEqual(recurrence, [
+    'RRULE:FREQ=WEEKLY;INTERVAL=2;BYDAY=MO,TH;UNTIL=2026-08-27T23:59:59Z'
+  ]);
+});
+
+test('montarRecurrence monta COUNT e monthOfDate sem combinar UNTIL', () => {
+  const countRule = montarRecurrence({
+    tipoRecorrencia: 'mensal',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '2026-02-10',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 3,
+    recorrenciaEscopo: 'monthOfDate'
+  });
+
+  assert.deepEqual(countRule, [
+    'RRULE:FREQ=MONTHLY;BYMONTHDAY=10;COUNT=3'
+  ]);
+
+  const monthRule = montarRecurrence({
+    tipoRecorrencia: 'mensal',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '2026-02-15',
+    recorrenciaEscopo: 'monthOfDate'
+  });
+
+  assert.deepEqual(monthRule, [
+    'RRULE:FREQ=MONTHLY;BYMONTHDAY=15;UNTIL=2026-02-28T23:59:59Z'
+  ]);
+});
+
+test('montarRecurrence devolve null para agendamento avulso ou com dia inválido', () => {
+  assert.equal(montarRecurrence({ tipo: 'aula', data: '2026-08-25', frequencia: 'uma_vez' }), null);
+  assert.equal(montarRecurrence({
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Dia imaginário'],
+    recorrenciaDataInicio: '2026-08-25'
+  }), null);
+});
+
+test('montarRecurrence gera EXDATE com hora e TZID para evento cronometrado e data para dia inteiro', () => {
+  const recorrenciaTemporizada = montarRecurrence({
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Terça'],
+    recorrenciaDataInicio: '2026-08-25',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-08-27',
+    horarioInicio: '09:00',
+    timeZone: 'America/Sao_Paulo',
+    excecoesDetalhadas: [{ data: '2026-08-26', horarioInicio: '09:00' }]
+  });
+
+  assert.ok(recorrenciaTemporizada.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260826T090000')));
+
+  const recorrenciaDiaInteiro = montarRecurrence({
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Quarta'],
+    recorrenciaDataInicio: '2026-08-26',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-08-27',
+    fullDay: true,
+    excecoes: ['27/08/2026']
+  });
+
+  assert.ok(recorrenciaDiaInteiro.some((entrada) => entrada.includes('EXDATE;VALUE=DATE:20260827')));
+});
+
+test('montarEventoGoogle inclui recurrence em serie e omite quando avulso', () => {
+  const recorrente = montarEventoGoogle({
+    data: '2026-08-25',
+    horarioInicio: '23:00',
+    horarioFim: '00:30',
+    tipo: 'aula',
+    tipoRecorrencia: 'diaria',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '2026-08-25',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-08-27'
+  });
+
+  assert.ok(Array.isArray(recorrente.recurrence));
+  assert.match(recorrente.recurrence[0], /^RRULE:FREQ=DAILY/);
+  assert.equal(recorrente.start.dateTime, '2026-08-25T23:00:00');
+  assert.equal(recorrente.end.dateTime, '2026-08-26T00:30:00');
+
+  const avulso = montarEventoGoogle({
+    data: '2026-08-25',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipo: 'aula',
+    frequencia: 'uma_vez'
+  });
+
+  assert.equal(avulso.recurrence, undefined);
 });

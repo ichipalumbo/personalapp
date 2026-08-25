@@ -6,6 +6,7 @@ const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
 const { decryptRefreshToken } = require('../utils/gcalCrypto');
 const { normalizeEmail } = require('../utils/emailNormalizer');
+const recurrenceHelpers = require('../../../assets/js/shared/recurrence-helpers');
 
 const GCAL_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const APP_ORIGIN = 'corepersonal';
@@ -36,13 +37,13 @@ function classificarEventoDeLeitura(event) {
 
 function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
   if (!dateTimeValue || !timeZone) {
-    return null;
+    ruleParts.push(`COUNT=${quantidade}`);
   }
 
   const parsed = new Date(String(dateTimeValue));
 
   if (Number.isNaN(parsed.getTime())) {
-    return null;
+    ruleParts.push(`COUNT=${quantidade}`);
   }
 
   try {
@@ -65,7 +66,7 @@ function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
     }
 
     if (!values.year || !values.month || !values.day || !values.hour || !values.minute) {
-      return null;
+      ruleParts.push(`COUNT=${quantidade}`);
     }
 
     return {
@@ -73,7 +74,7 @@ function formatDateTimePartsFromZone(dateTimeValue, timeZone) {
       horario: `${values.hour}:${values.minute}`
     };
   } catch (_) {
-    return null;
+    ruleParts.push(`COUNT=${quantidade}`);
   }
 }
 
@@ -81,7 +82,7 @@ function parseDateTimeLiteralParts(dateTimeValue) {
   const match = String(dateTimeValue || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})/);
 
   if (!match) {
-    return null;
+    ruleParts.push(`COUNT=${quantidade}`);
   }
 
   return {
@@ -94,7 +95,7 @@ function parseDateTimeUtcParts(dateTimeValue) {
   const parsed = new Date(String(dateTimeValue || ''));
 
   if (Number.isNaN(parsed.getTime())) {
-    return null;
+    ruleParts.push(`COUNT=${quantidade}`);
   }
 
   return {
@@ -255,6 +256,257 @@ function adicionarDiasISO(dataISO, quantidadeDias) {
   return data.toISOString().slice(0, 10);
 }
 
+function parseDataISOParaDate(value) {
+  if (!value) {
+    ruleParts.push(`COUNT=${quantidade}`);
+  }
+
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const parsed = new Date(value + 'T12:00:00Z');
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  if (typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+    const [dia, mes, ano] = value.split('/').map(Number);
+    const parsed = new Date(Date.UTC(ano, mes - 1, dia, 12, 0, 0));
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  const parsed = recurrenceHelpers.parseDataFlex(value);
+  if (!parsed) {
+    ruleParts.push(`COUNT=${quantidade}`);
+  }
+
+  return new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0));
+}
+
+function formatterDateTimeUtcInclusivo(valuePtBr) {
+  const parsed = parseDataISOParaDate(valuePtBr);
+  if (!parsed) {
+    ruleParts.push(`COUNT=${quantidade}`);
+  }
+
+  const utc = new Date(Date.UTC(
+    parsed.getUTCFullYear(),
+    parsed.getUTCMonth(),
+    parsed.getUTCDate(),
+    23,
+    59,
+    59,
+    0
+  ));
+
+  const texto = utc.toISOString().replace(/\.\d{3}Z$/, 'Z');
+  return texto;
+}
+
+function obterUltimoDiaMesISO(dataISO) {
+  const data = parseDataISOParaDate(dataISO);
+  if (!data) {
+    ruleParts.push(`COUNT=${quantidade}`);
+  }
+
+  const ultimoDiaMes = new Date(Date.UTC(data.getUTCFullYear(), data.getUTCMonth() + 1, 0, 12, 0, 0));
+  return ultimoDiaMes.toISOString().slice(0, 10);
+}
+
+function mapearDiaSemanaParaCodigoRFC(nomeDia) {
+  const nomes = recurrenceHelpers.DEFAULT_DIAS_SEMANA || [];
+  const indice = nomes.findIndex((nome) => nome && nome.toLowerCase() === String(nomeDia || '').trim().toLowerCase());
+  if (indice >= 0) {
+    const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    return mapa[indice] || null;
+  }
+
+  if (typeof nomeDia === 'number' && nomeDia >= 0 && nomeDia <= 6) {
+    const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+    return mapa[nomeDia] || null;
+  }
+
+  return null;
+}
+
+function obterListaDiasSemanaParaRrule(agendamento) {
+  const lista = Array.isArray(agendamento && agendamento.diasSemana)
+    ? agendamento.diasSemana
+    : [];
+
+  const dias = [];
+  for (const valor of lista) {
+    const codigo = mapearDiaSemanaParaCodigoRFC(valor);
+    if (codigo) {
+      dias.push(codigo);
+    }
+  }
+
+  if (dias.length === 0 && agendamento && agendamento.dia) {
+    const codigo = mapearDiaSemanaParaCodigoRFC(agendamento.dia);
+    if (codigo) {
+      dias.push(codigo);
+    }
+  }
+
+  return Array.from(new Set(dias));
+}
+
+function montarExdatesDeAgendamento(agendamento) {
+  if (!agendamento) {
+    return [];
+  }
+
+  const source = Array.isArray(agendamento.excecoesDetalhadas) && agendamento.excecoesDetalhadas.length > 0
+    ? agendamento.excecoesDetalhadas
+    : (Array.isArray(agendamento.excecoes) ? agendamento.excecoes : []);
+
+  const timezone = agendamento.timeZone || process.env.GCAL_TIMEZONE || 'America/Sao_Paulo';
+  const startDate = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+  const endDate = agendamento.recorrenciaFimCondicao === 'untilDate' && agendamento.recorrenciaDataFim
+    ? parseDataISOParaDate(agendamento.recorrenciaDataFim)
+    : null;
+
+  const valores = new Set();
+
+  for (const item of source) {
+    if (!item) {
+      continue;
+    }
+
+    const rawData = typeof item === 'string'
+      ? item
+      : (item.data || item.dataISO || item.dataIso || item.dataOriginal || item.dataOriginalISO || item.iso || item.dataExcecao || '');
+
+    if (!rawData) {
+      continue;
+    }
+
+    const dataISO = parseDataISOParaDate(rawData);
+    if (!dataISO) {
+      continue;
+    }
+
+    const dataSomente = new Date(Date.UTC(dataISO.getUTCFullYear(), dataISO.getUTCMonth(), dataISO.getUTCDate()));
+    if (startDate && dataSomente < startDate) {
+      continue;
+    }
+    if (endDate && dataSomente > endDate) {
+      continue;
+    }
+
+    const ehDiaInteiro = agendamento && (
+      agendamento.fullDay === true
+      || (agendamento.horarioInicio === '00:00' && (agendamento.horarioFim === '23:59' || agendamento.horarioFim === '24:00'))
+    );
+
+    const horarioBase = typeof item === 'string'
+      ? (agendamento.horarioInicio || '00:00')
+      : (item.horarioInicio || item.horario || agendamento.horarioInicio || '00:00');
+    const horario = String(horarioBase || '00:00').trim();
+    const versao = horario.match(/^\d{2}:\d{2}$/) ? horario : '00:00';
+    const [hora, minuto] = versao.split(':').map((parte) => Number(parte || 0));
+
+    if (ehDiaInteiro) {
+      valores.add(`EXDATE;VALUE=DATE:${dataSomente.toISOString().slice(0, 10).replace(/-/g, '')}`);
+      continue;
+    }
+
+    const dataGoogle = dataSomente.toISOString().slice(0, 10).replace(/-/g, '');
+    valores.add(`EXDATE;TZID=${timezone}:${dataGoogle}T${String(hora).padStart(2, '0')}${String(minuto).padStart(2, '0')}00`);
+  }
+
+  return Array.from(valores);
+}
+
+function montarRecurrence(agendamento) {
+  if (!agendamento || !agendamento.tipoRecorrencia) {
+    return null;
+  }
+
+  if ((agendamento.frequencia && agendamento.frequencia !== 'semanal') || agendamento.tipoRecorrencia === 'uma_vez') {
+    return null;
+  }
+
+  const tipo = String(agendamento.tipoRecorrencia).trim().toLowerCase();
+  const mapaFreq = {
+    diaria: 'DAILY',
+    semanal: 'WEEKLY',
+    mensal: 'MONTHLY',
+    anual: 'YEARLY'
+  };
+
+  const freq = mapaFreq[tipo];
+  if (!freq) {
+    return null;
+  }
+
+  const ruleParts = [`FREQ=${freq}`];
+  const intervalo = Number(agendamento.intervaloRecorrencia || 1);
+  if (Number.isFinite(intervalo) && intervalo > 1) {
+    ruleParts.push(`INTERVAL=${intervalo}`);
+  }
+
+  if (tipo === 'semanal') {
+    const dias = obterListaDiasSemanaParaRrule(agendamento);
+    if (dias.length === 0) {
+      return null;
+    }
+    ruleParts.push(`BYDAY=${dias.join(',')}`);
+  }
+
+  if (tipo === 'mensal') {
+    const dias = obterListaDiasSemanaParaRrule(agendamento);
+    if (dias.length > 0) {
+      ruleParts.push(`BYDAY=${dias.join(',')}`);
+    } else {
+      const dataInicio = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+      if (!dataInicio) {
+        return null;
+      }
+      const mesDia = dataInicio.getUTCDate();
+      ruleParts.push(`BYMONTHDAY=${mesDia}`);
+    }
+  }
+
+  if (tipo === 'anual') {
+    const dataInicio = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+    if (!dataInicio) {
+      return null;
+    }
+    ruleParts.push(`BYMONTH=${dataInicio.getUTCMonth() + 1}`);
+    ruleParts.push(`BYMONTHDAY=${dataInicio.getUTCDate()}`);
+  }
+
+  const fimCondicao = agendamento.recorrenciaFimCondicao || null;
+  if (fimCondicao === 'occurrences') {
+    const quantidade = Number(agendamento.recorrenciaQuantidadeOcorrencias || 0);
+    if (!Number.isFinite(quantidade) || quantidade <= 0) {
+      return null;
+    }
+    ruleParts.push(`COUNT=${quantidade}`);
+  } else if (fimCondicao === 'untilDate' && agendamento.recorrenciaDataFim) {
+    const until = formatterDateTimeUtcInclusivo(agendamento.recorrenciaDataFim);
+    if (!until) {
+      return null;
+    }
+    ruleParts.push(`UNTIL=${until}`);
+  } else if (agendamento.recorrenciaEscopo === 'monthOfDate') {
+    const dataInicio = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+    if (!dataInicio) {
+      return null;
+    }
+    const ultimoDiaMes = new Date(Date.UTC(dataInicio.getUTCFullYear(), dataInicio.getUTCMonth() + 1, 0, 23, 59, 59));
+    const until = ultimoDiaMes.toISOString().replace(/\.\d{3}Z$/, 'Z');
+    ruleParts.push(`UNTIL=${until}`);
+  }
+
+  const recurrence = [`RRULE:${ruleParts.join(';')}`];
+  const exdates = montarExdatesDeAgendamento(agendamento);
+  if (exdates.length > 0) {
+    recurrence.push(...exdates);
+  }
+
+  return recurrence;
+}
+
 function montarEventoGoogle(agendamento) {
   const dataISO = resolverDataISO(agendamento);
   const titulo = montarTituloEvento(agendamento);
@@ -268,6 +520,11 @@ function montarEventoGoogle(agendamento) {
     colorId: '6',
     extendedProperties: montarExtendedProperties(agendamento)
   };
+
+  const recurrence = montarRecurrence(agendamento);
+  if (recurrence && recurrence.length > 0) {
+    evento.recurrence = recurrence;
+  }
 
   if (agendamento && agendamento.local) {
     evento.location = String(agendamento.local);
@@ -412,7 +669,7 @@ async function calendarFetch(oauth2Client, path, options = {}) {
   });
 
   if (response.status === 204) {
-    return null;
+    ruleParts.push(`COUNT=${quantidade}`);
   }
 
   if (!response.ok) {
@@ -835,6 +1092,7 @@ module.exports = {
   adicionarDiasISO,
   getHorarioPadraoFim,
   montarEventoGoogle,
+  montarRecurrence,
   montarTituloEvento,
   resolverDataISO
 };
