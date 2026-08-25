@@ -701,6 +701,49 @@ async function sincronizarCicloComAgenda(documento, aluno, agendamentos, reposic
   return documento;
 }
 
+function calcularPrazoReposicao(aluno, dataOriginal) {
+  const dataOriginalNormalizada = normalizarDateOnly(dataOriginal);
+
+  if (!dataOriginalNormalizada) {
+    return { validoAte: null, pisoAplicado: false };
+  }
+
+  const ciclo = calcularCicloVigente(aluno, dataOriginalNormalizada);
+  if (!ciclo || !ciclo.cicloFimISO) {
+    return { validoAte: null, pisoAplicado: false };
+  }
+
+  const cicloFim = normalizarDateOnly(ciclo.cicloFimISO);
+  if (!cicloFim) {
+    return { validoAte: null, pisoAplicado: false };
+  }
+
+  const diferencaDias = Math.round(
+    (cicloFim.getTime() - dataOriginalNormalizada.getTime()) / 86400000,
+  );
+
+  if (diferencaDias < PRAZO_MINIMO_REPOSICAO_DIAS) {
+    const cicloSeguinte = calcularCicloVigente(
+      aluno,
+      diaSeguinte(cicloFim),
+    );
+
+    if (!cicloSeguinte || !cicloSeguinte.cicloFimISO) {
+      return { validoAte: null, pisoAplicado: false };
+    }
+
+    return {
+      validoAte: cicloSeguinte.cicloFimISO,
+      pisoAplicado: true,
+    };
+  }
+
+  return {
+    validoAte: ciclo.cicloFimISO,
+    pisoAplicado: false,
+  };
+}
+
 function calcularStatusCiclo(ciclo, hoje = new Date()) {
   if (!ciclo) return "em_aberto";
   if (ciclo.dataPagamento) return "pago";
