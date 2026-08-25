@@ -25,7 +25,7 @@ function enriquecerAgendamentoComDadosFrescos(agendamento) {
         agendamento.local = aluno.local || agendamento.local;
         agendamento.objetivo = aluno.objetivo || agendamento.objetivo;
 
-        console.log('[enrich] Agendamento enriquecido com dados frescos:', {
+        window.log.debug('[enrich]', 'Agendamento enriquecido com dados frescos', {
             alunoNome: agendamento.alunoNome,
             local: agendamento.local,
             objetivo: agendamento.objetivo
@@ -48,7 +48,7 @@ window.enriquecerAgendamentoComDadosFrescos = enriquecerAgendamentoComDadosFresc
  */
 async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
     if (!alunoId || !alunoNovosDados) {
-        console.warn('[cascade] sincronizarAgendamentosDoAluno: parâmetros inválidos');
+        window.log.warn('[cascade]', 'sincronizarAgendamentosDoAluno: parâmetros inválidos');
         return;
     }
 
@@ -83,13 +83,17 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
         });
 
         if (agendamentosFuturos.length === 0) {
-            console.log('[cascade] Nenhum agendamento futuro para o aluno', alunoId);
+            window.log.debug('[cascade]', 'Nenhum agendamento futuro para o aluno', { id: alunoId });
             return;
         }
 
         const series = agendamentosFuturos.filter(function (a) { return a.frequencia === 'semanal'; }).length;
         const pontuais = agendamentosFuturos.length - series;
-        console.log('[cascade] Encontrados ' + agendamentosFuturos.length + ' agendamento(s) para atualizar (' + series + ' série(s), ' + pontuais + ' pontual(is)).');
+        window.log.debug('[cascade]', 'Encontrados agendamentos para atualizar', {
+            total: agendamentosFuturos.length,
+            series: series,
+            pontuais: pontuais
+        });
 
         // 2. Atualiza cada agendamento localmente com os novos dados
         agendamentosFuturos.forEach(function (aula) {
@@ -101,20 +105,23 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
         // 3. Persiste as mudanças no MongoDB
         await _persistirAgendamentosNoBackend(agendamentosFuturos);
 
-        console.log('[cascade] ✅ Cascade sync concluído para ' + agendamentosFuturos.length + ' agendamento(s).');
+        window.log.info('[aluno]', 'Cascade concluído', {
+            id: alunoId,
+            agendamentosAfetados: agendamentosFuturos.length
+        });
         if (typeof mostrarToast === 'function') {
             mostrarToast('✅ ' + agendamentosFuturos.length + ' agendamento(s) atualizado(s) com os novos dados do aluno!', 'success');
         }
 
     } catch (err) {
         if (err && (err.message === 'AUTH_REQUIRED' || err.code === 'AUTH_REQUIRED')) {
-            console.warn('[cascade] Sessão Google ausente ou expirada. Login necessário para sincronizar agendamentos.');
+            window.log.warn('[cascade]', 'Sessão Google ausente ou expirada. Login necessário para sincronizar agendamentos.');
             if (typeof mostrarToast === 'function') {
                 mostrarToast('Faça login com Google para sincronizar os agendamentos.', 'warning');
             }
             return;
         }
-        console.error('[cascade] Erro ao sincronizar agendamentos do aluno:', err);
+        window.log.error('[cascade]', 'Erro ao sincronizar agendamentos do aluno', err);
         if (typeof mostrarToast === 'function') {
             mostrarToast('⚠️ Erro ao atualizar agendamentos. Verifique o console.', 'warning');
         }
@@ -173,12 +180,12 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
             throw new Error('Backend retornou ' + res.status);
         }
 
-        console.log('[cascade] ✅ Agendamentos persistidos no MongoDB');
+        window.log.debug('[cascade]', 'Agendamentos persistidos no MongoDB');
     } catch (err) {
         if (err && (err.message === 'AUTH_REQUIRED' || err.code === 'AUTH_REQUIRED')) {
             throw err;
         }
-        console.error('[cascade] Erro ao persistir agendamentos no backend:', err);
+        window.log.error('[cascade]', 'Erro ao persistir agendamentos no backend', err);
         throw err;
     }
 }

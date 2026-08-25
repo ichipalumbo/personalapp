@@ -649,7 +649,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // [TAG-CASCADE-SYNC] Se nome ou local mudou, sincroniza agendamentos futuros
                     if (alunoAntigo.nome !== nome || alunoAntigo.local !== local) {
-                        console.log('[view-alunos] Detectada mudança no nome ou local, acionando cascade sync...');
+                        window.log.debug('[view-alunos]', 'Detectada mudança no nome ou local, acionando cascade sync...');
                         if (typeof sincronizarAgendamentosDoAluno === 'function') {
                             sincronizarAgendamentosDoAluno(idEdicao, {
                                 nome: nome,
@@ -659,6 +659,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
 
+                    window.log.info('[aluno]', 'Aluno editado', {
+                        id: idEdicao,
+                        nome: nome,
+                        metodoCobranca: metodoCobranca || 'por_aula'
+                    });
                     if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno atualizado com sucesso!');
                 }
             } else {
@@ -678,6 +683,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     valorFixoCiclo: valorFixoCiclo
                 };
                 alunos.push(novoAluno);
+                window.log.info('[aluno]', 'Aluno criado', {
+                    id: novoAluno.id,
+                    nome: novoAluno.nome,
+                    metodoCobranca: novoAluno.metodoCobranca || 'por_aula'
+                });
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno cadastrado com sucesso!');
             }
             if (typeof salvarDados === 'function') salvarDados();

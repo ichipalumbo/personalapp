@@ -875,6 +875,30 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             aulas.push(resultado.payload);
+            const payloadCriado = resultado.payload || {};
+            const ehSerie = payloadCriado.frequencia === 'semanal' || (payloadCriado.recurrence && payloadCriado.recurrence.enabled === true);
+            const ehBloqueio = (payloadCriado.tipo || 'aula') === 'bloqueio';
+            if (ehBloqueio) {
+                window.log.info('[agenda]', 'Bloqueio criado', {
+                    id: payloadCriado.id,
+                    data: payloadCriado.data || '',
+                    horario: payloadCriado.horarioInicio || null
+                });
+            } else if (ehSerie) {
+                window.log.info('[agenda]', 'Série criada', {
+                    id: payloadCriado.id,
+                    aluno: payloadCriado.alunoId || payloadCriado.alunoNome || null,
+                    diasDaSemana: payloadCriado.diasSemana || (payloadCriado.recurrence && payloadCriado.recurrence.daysOfWeek) || [],
+                    condicaoFim: payloadCriado.recurrence && payloadCriado.recurrence.endCondition ? payloadCriado.recurrence.endCondition : 'sem_fim'
+                });
+            } else {
+                window.log.info('[agenda]', 'Aula avulsa criada', {
+                    id: payloadCriado.id,
+                    aluno: payloadCriado.alunoId || payloadCriado.alunoNome || null,
+                    data: payloadCriado.data || '',
+                    horario: payloadCriado.horarioInicio || null
+                });
+            }
             // Fecha o modal imediatamente; o overlay bloqueará re-interação durante o salvamento
             document.getElementById('modalAgendamento').style.display = 'none';
 

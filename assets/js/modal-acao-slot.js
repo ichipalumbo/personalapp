@@ -93,7 +93,13 @@ async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
     }
 
     const reposicaoCriada = await resposta.json().catch(() => null);
-    return reposicaoCriada || payload;
+    const reposicaoFinal = reposicaoCriada || payload;
+    window.log.info('[reposicao]', 'Reposição criada', {
+        id: reposicaoFinal && reposicaoFinal.id ? reposicaoFinal.id : payload.id,
+        aluno: payload.alunoNome || payload.alunoId || null,
+        prazo: reposicaoFinal && reposicaoFinal.validoAte ? reposicaoFinal.validoAte : null
+    });
+    return reposicaoFinal;
 }
 
 function obterNomesDiasSemanaModalAcao() {
@@ -641,7 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     try {
                         await window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' });
                     } catch (erroGCal) {
-                        console.error('❌ Falha ao sincronizar reposição no Google Calendar:', erroGCal);
+                        window.log.error('[reposicao]', 'Falha ao sincronizar reposição no Google Calendar', erroGCal);
                         avisoGCal = ' Reposição salva, mas não foi possível sincronizar com Google Agenda.';
                     }
                 }
@@ -899,6 +905,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!diaInteiro) delete compromisso.fullDay;
             }
 
+            if (freq === 'semanal') {
+                const escopoLog = escopoRecorrencia === 'occurrence' ? 'instancia' : (escopoRecorrencia === 'entireSeries' ? 'serie' : 'split');
+                window.log.info('[agenda]', 'Edição de série aplicada', {
+                    id: compromisso.id,
+                    escopo: escopoLog,
+                    data: dataAlvoStr
+                });
+            }
+
             window.fecharModalAcaoSlot();
             
             // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
@@ -1019,6 +1034,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!compromisso.excecoes.includes(dataAlvoStr)) {
                 compromisso.excecoes.push(dataAlvoStr);
             }
+            window.log.info('[agenda]', 'Instância cancelada', {
+                id: compromisso.id,
+                dataExcecao: dataAlvoStr
+            });
+            window.log.info('[reposicao]', 'Exceção adicionada ao agendamento', {
+                id: compromisso.id,
+                data: dataAlvoStr
+            });
 
             window.fecharModalAcaoSlot();
 
@@ -1087,6 +1110,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (_mutouExcecoes) {
                         compromisso.excecoes = [...(_snapshot.excecoes || [])];
                     }
+                    window.log.warn('[reposicao]', 'Rollback disparado', {
+                        id: compromisso.id,
+                        motivo: erro && erro.message ? erro.message : 'falha_reagendamento_reposicao'
+                    });
                     // Reposição remota permanece criada no servidor; o rollback reverte somente a aula na agenda local.
                     if (typeof mostrarToast === 'function') {
                         mostrarToast(erro && erro.message ? erro.message : 'Falha ao reagendar a reposição.', 'error');
@@ -1120,6 +1147,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (_idxSerie !== -1) aulas.splice(_idxSerie, 1);
+            const ocorrenciasAfetadas = Array.isArray(_serieDeletar && _serieDeletar.excecoesDetalhadas)
+                ? _serieDeletar.excecoesDetalhadas.length
+                : (Array.isArray(_serieDeletar && _serieDeletar.excecoes) ? _serieDeletar.excecoes.length : undefined);
+            window.log.info('[agenda]', 'Série excluída', {
+                id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
+                ocorrenciasAfetadas: ocorrenciasAfetadas
+            });
             window.fecharModalAcaoSlot();
             if (_serieDeletar && typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 window.salvarEventoComGCal(_serieDeletar, { operacao: 'excluir', snapshotAnterior: _serieDeletar }).then(async () => {
