@@ -1,6 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+const Agendamento = require('../src/models/Agendamento');
+const Aluno = require('../src/models/Aluno');
 const {
   APP_ORIGIN,
   adicionarDiasISO,
@@ -177,6 +179,82 @@ test('classificarEventoDeLeitura faz upsert de evento externo ativo sem extended
     id: 'evt-externo-ativo',
     status: 'confirmed'
   }), 'upsert');
+});
+
+test('atualizarAgendamento enriquece o payload do Google com alunoNome e objetivo antes do update', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const gcalSyncService = require('../src/services/gcalSyncService');
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+  const originalFindOne = Agendamento.findOne;
+  const originalAlunoFindOne = Aluno.findOne;
+  const corpoResposta = {};
+
+  try {
+   delete require.cache[controllerPath];
+   gcalSyncService.updateEventInGoogle = async (ownerEmail, payload) => {
+     corpoResposta.ownerEmail = ownerEmail;
+     corpoResposta.payload = payload;
+     return { googleCalendarEventId: 'evt-789' };
+   };
+
+   Agendamento.findOne = () => ({
+     select: () => ({
+       lean: async () => ({ googleCalendarEventId: 'evt-123' })
+     })
+   });
+   Agendamento.findOneAndUpdate = async (query, update, options) => {
+     if (query && query.id === 'ag-200') {
+       return {
+         id: 'ag-200',
+         alunoId: 'al-111',
+         data: '2026-08-25',
+         horarioInicio: '09:00',
+         horarioFim: '10:00',
+         tipo: 'aula',
+         googleCalendarEventId: 'evt-123'
+       };
+     }
+     return { id: 'ag-200', googleCalendarEventId: 'evt-789' };
+   };
+   Aluno.findOne = () => ({
+     lean: async () => ({ id: 'al-111', nome: 'João', objetivo: 'Hipertrofia' })
+   });
+
+   const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+   const req = {
+     params: { id: 'ag-200' },
+     body: {
+       id: 'ag-200',
+       alunoId: 'al-111',
+       data: '2026-08-25',
+       horarioInicio: '09:00',
+       horarioFim: '10:00',
+       tipo: 'aula'
+     },
+     auth: { ownerEmail: 'joao@example.com' }
+   };
+   const res = {
+     json: (body) => {
+       corpoResposta.response = body;
+       return body;
+     }
+   };
+
+   await atualizarAgendamento(req, res);
+
+   assert.equal(corpoResposta.payload.alunoNome, 'João');
+   assert.equal(corpoResposta.payload.objetivo, 'Hipertrofia');
+   assert.equal(montarTituloEvento(corpoResposta.payload), 'Hipertrofia - João');
+   assert.equal(corpoResposta.response.alunoNome, undefined);
+   assert.equal(corpoResposta.response.objetivo, undefined);
+  } finally {
+   gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+   Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+   Agendamento.findOne = originalFindOne;
+   Aluno.findOne = originalAlunoFindOne;
+   delete require.cache[controllerPath];
+  }
 });
 
 test('montarRecurrence gera RRULE semanal com BYDAY, INTERVAL e UNTIL em UTC', () => {
