@@ -1,9 +1,12 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { OAuth2Client } = require('google-auth-library');
+const { google } = require('googleapis');
 
 const Agendamento = require('../src/models/Agendamento');
 const Aluno = require('../src/models/Aluno');
 const BloqueioExterno = require('../src/models/BloqueioExterno');
+const GoogleCalendarConnection = require('../src/models/GoogleCalendarConnection');
 const {
   APP_ORIGIN,
   adicionarDiasISO,
@@ -14,10 +17,12 @@ const {
   montarRecurrence,
   montarTituloEvento,
   persistSyncResults,
+  renewWebhookChannelForOwner,
   resolverDataISO,
   isAppOwnedEvent,
 } = require('../src/services/gcalSyncService');
 const { montarPayloadGCal } = require('../src/controllers/agendamentoController');
+const { encryptRefreshToken } = require('../src/utils/gcalCrypto');
 const recurrenceHelpers = require('../../assets/js/shared/recurrence-helpers');
 
 test('getHorarioPadraoFim usa +60 minutos em horário normal', () => {
@@ -479,6 +484,242 @@ test('montarEventoGoogle inclui recurrence em serie e omite quando avulso', () =
   });
 
   assert.equal(avulso.recurrence, undefined);
+});
+
+function prepararHarnessRenovacaoCanal(opcoes = {}) {
+  const originalFetch = global.fetch;
+  const originalGoogleCalendar = google.calendar;
+  const originalGetAccessToken = OAuth2Client.prototype.getAccessToken;
+  const originalFindOne = GoogleCalendarConnection.findOne;
+  const originalFindByIdAndUpdate = GoogleCalendarConnection.findByIdAndUpdate;
+  const originalBloqueioFind = BloqueioExterno.find;
+  const originalBloqueioFindOneAndUpdate = BloqueioExterno.findOneAndUpdate;
+  const originalBloqueioFindOneAndDelete = BloqueioExterno.findOneAndDelete;
+  const originalEncryptionKey = process.env.ENCRYPTION_KEY;
+  const originalGoogleClientId = process.env.GOOGLE_CLIENT_ID;
+  const originalGoogleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const originalBackendUrl = process.env.BACKEND_URL;
+  process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'test-gcal-key';
+  process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-google-client-id';
+  process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'test-google-client-secret';
+  process.env.BACKEND_URL = process.env.BACKEND_URL || 'https://example.com';
+
+  const canario = encryptRefreshToken('token-refresh-de-teste');
+  const connection = {
+    _id: 'conn-123',
+    ownerEmail: 'joao@example.com',
+    googleEmail: 'joao@example.com',
+    calendarId: 'primary',
+    refreshTokenEncrypted: canario.encrypted,
+    refreshTokenIv: canario.iv,
+    channelId: 'old-channel-id',
+    channelResourceId: 'old-channel-resource-id',
+    channelExpiration: Object.prototype.hasOwnProperty.call(opcoes, 'channelExpiration')
+      ? opcoes.channelExpiration
+      : new Date(Date.now() + (3 * 24 * 60 * 60 * 1000)),
+    syncToken: null,
+    ...opcoes.connectionOverrides
+  };
+
+  const estado = {
+    watchCalls: 0,
+    stopCalls: 0
+  };
+
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    text: async () => '',
+    json: async () => ({
+      items: [
+        ...(Array.isArray(opcoes.activeItems) ? opcoes.activeItems : []),
+        ...(Array.isArray(opcoes.cancelledItems) ? opcoes.cancelledItems : [])
+      ],
+      nextSyncToken: 'sync-token-recuperado'
+    })
+  });
+
+  GoogleCalendarConnection.findOne = async () => connection;
+  GoogleCalendarConnection.findByIdAndUpdate = async (_id, update) => ({
+    ...connection,
+    ...update.$set,
+    _id
+  });
+  BloqueioExterno.find = () => ({
+    select: () => ({
+      lean: async () => []
+    })
+  });
+  BloqueioExterno.findOneAndUpdate = async (_query, _update) => ({
+    _id: 'local-block-' + Date.now(),
+    googleCalendarEventId: (_query && _query.googleCalendarEventId) || 'stubbed-external-event'
+  });
+  BloqueioExterno.findOneAndDelete = async () => ({
+    _id: 'deleted-local-block'
+  });
+
+  google.calendar = () => ({
+    events: {
+      watch: async () => {
+        estado.watchCalls += 1;
+        return {
+          data: {
+            id: 'new-channel-id',
+            resourceId: 'new-channel-resource-id',
+            expiration: String(Date.now() + (30 * 24 * 60 * 60 * 1000))
+          }
+        };
+      }
+    },
+    channels: {
+      stop: async () => {
+        estado.stopCalls += 1;
+        if (opcoes.stopThrows) {
+          throw new Error('stop failed');
+        }
+      }
+    }
+  });
+
+  OAuth2Client.prototype.getAccessToken = async () => 'stubbed-access-token';
+
+  return {
+    connection,
+    estado,
+    restore: () => {
+      global.fetch = originalFetch;
+      google.calendar = originalGoogleCalendar;
+      OAuth2Client.prototype.getAccessToken = originalGetAccessToken;
+      GoogleCalendarConnection.findOne = originalFindOne;
+      GoogleCalendarConnection.findByIdAndUpdate = originalFindByIdAndUpdate;
+      BloqueioExterno.find = originalBloqueioFind;
+      BloqueioExterno.findOneAndUpdate = originalBloqueioFindOneAndUpdate;
+      BloqueioExterno.findOneAndDelete = originalBloqueioFindOneAndDelete;
+      if (originalEncryptionKey === undefined) {
+        delete process.env.ENCRYPTION_KEY;
+      } else {
+        process.env.ENCRYPTION_KEY = originalEncryptionKey;
+      }
+      if (originalGoogleClientId === undefined) {
+        delete process.env.GOOGLE_CLIENT_ID;
+      } else {
+        process.env.GOOGLE_CLIENT_ID = originalGoogleClientId;
+      }
+      if (originalGoogleClientSecret === undefined) {
+        delete process.env.GOOGLE_CLIENT_SECRET;
+      } else {
+        process.env.GOOGLE_CLIENT_SECRET = originalGoogleClientSecret;
+      }
+      if (originalBackendUrl === undefined) {
+        delete process.env.BACKEND_URL;
+      } else {
+        process.env.BACKEND_URL = originalBackendUrl;
+      }
+    }
+  };
+}
+
+test('expiração distante → não renova, não sincroniza', async () => {
+  const harness = await prepararHarnessRenovacaoCanal({
+    channelExpiration: new Date(Date.now() + (3 * 24 * 60 * 60 * 1000))
+  });
+
+  try {
+    const resultado = await renewWebhookChannelForOwner('joao@example.com');
+
+    assert.equal(resultado.renewed, false);
+    assert.equal(resultado.synced, false);
+    assert.equal(resultado.activeItems, 0);
+    assert.equal(resultado.cancelledItems, 0);
+    assert.equal(harness.estado.watchCalls, 0);
+    assert.equal(harness.estado.stopCalls, 0);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('expiração dentro da margem de 24h → renova e sincroniza', async () => {
+  const harness = await prepararHarnessRenovacaoCanal({
+    channelExpiration: new Date(Date.now() + (12 * 60 * 60 * 1000)),
+    activeItems: [{ id: 'evt-1', status: 'confirmed' }, { id: 'evt-2', status: 'confirmed' }],
+    cancelledItems: [{ id: 'evt-3', status: 'cancelled' }]
+  });
+
+  try {
+    const resultado = await renewWebhookChannelForOwner('joao@example.com');
+
+    assert.equal(resultado.renewed, true);
+    assert.equal(resultado.synced, true);
+    assert.equal(resultado.activeItems, 2);
+    assert.equal(resultado.cancelledItems, 1);
+    assert.equal(harness.estado.watchCalls, 1);
+    assert.equal(harness.estado.stopCalls, 1);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('expiração nula → renova e sincroniza', async () => {
+  const harness = await prepararHarnessRenovacaoCanal({
+    channelExpiration: null,
+    activeItems: [{ id: 'evt-10', status: 'confirmed' }],
+    cancelledItems: []
+  });
+
+  try {
+    const resultado = await renewWebhookChannelForOwner('joao@example.com');
+
+    assert.equal(resultado.renewed, true);
+    assert.equal(resultado.synced, true);
+    assert.equal(resultado.activeItems, 1);
+    assert.equal(harness.estado.watchCalls, 1);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('falha ao encerrar canal antigo → segue e renova mesmo assim', async () => {
+  const harness = await prepararHarnessRenovacaoCanal({
+    channelExpiration: new Date(Date.now() + (6 * 60 * 60 * 1000)),
+    stopThrows: true,
+    activeItems: [{ id: 'evt-20', status: 'confirmed' }],
+    cancelledItems: []
+  });
+
+  try {
+    const resultado = await renewWebhookChannelForOwner('joao@example.com');
+
+    assert.equal(resultado.renewed, true);
+    assert.equal(resultado.synced, true);
+    assert.equal(harness.estado.stopCalls, 1);
+    assert.equal(harness.estado.watchCalls, 1);
+  } finally {
+    harness.restore();
+  }
+});
+
+test('duas chamadas concorrentes → um único registro de canal', async () => {
+  const harness = await prepararHarnessRenovacaoCanal({
+    channelExpiration: new Date(Date.now() + (10 * 60 * 60 * 1000)),
+    activeItems: [{ id: 'evt-30', status: 'confirmed' }],
+    cancelledItems: []
+  });
+
+  try {
+    const [primeira, segunda] = await Promise.all([
+      renewWebhookChannelForOwner('joao@example.com'),
+      renewWebhookChannelForOwner('joao@example.com')
+    ]);
+
+    assert.equal(harness.estado.watchCalls, 1);
+    assert.equal(harness.estado.stopCalls, 1);
+    assert.equal(primeira.renewed, true);
+    assert.equal(segunda.renewed, true);
+    assert.equal(primeira.synced, true);
+    assert.equal(segunda.synced, true);
+  } finally {
+    harness.restore();
+  }
 });
 
 test('listCalendarEvents inclui janela consultada no full sync e null no incremental', async () => {

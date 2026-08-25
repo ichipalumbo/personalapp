@@ -998,9 +998,141 @@ async function registerWebhookChannel(connection, oauth2Client) {
   });
 }
 
+function shouldRenewWebhookChannel(connection) {
+  if (!connection) {
+    return false;
+  }
+
+  const expiration = connection.channelExpiration ? new Date(connection.channelExpiration) : null;
+
+  if (!expiration || Number.isNaN(expiration.getTime())) {
+    return true;
+  }
+
+  const margemMs = 24 * 60 * 60 * 1000;
+  return expiration.getTime() <= Date.now() + margemMs;
+}
+
+async function closeOldWebhookChannel(connection, oauth2Client) {
+  if (!connection || !oauth2Client) {
+    return { closed: false };
+  }
+
+  const channelId = connection.channelId ? String(connection.channelId) : '';
+  const channelResourceId = connection.channelResourceId ? String(connection.channelResourceId) : '';
+
+  if (!channelId || !channelResourceId) {
+    return { closed: false };
+  }
+
+  try {
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    await calendar.channels.stop({
+      requestBody: {
+        id: channelId,
+        resourceId: channelResourceId
+      }
+    });
+
+    return { closed: true };
+  } catch (error) {
+    console.warn('[GcalWebhookDiag] Falha ao encerrar canal antigo antes da renovacao; seguindo mesmo assim.', {
+      ownerEmail: connection.ownerEmail,
+      channelId,
+      channelResourceId,
+      error: error && error.message ? error.message : String(error)
+    });
+
+    return {
+      closed: false,
+      error: error && error.message ? error.message : String(error)
+    };
+  }
+}
+
+const webhookRenewLocks = new Map();
+
 async function renewWebhookChannelForOwner(ownerEmail) {
-  const { connection, oauth2Client } = await getClientForOwner(ownerEmail);
-  return registerWebhookChannel(connection, oauth2Client);
+  const normalizedOwnerEmail = normalizeEmail(ownerEmail);
+
+  if (!normalizedOwnerEmail) {
+    const error = new Error('ownerEmail is required to renew the Google Calendar webhook channel.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (webhookRenewLocks.has(normalizedOwnerEmail)) {
+    return webhookRenewLocks.get(normalizedOwnerEmail);
+  }
+
+  const task = (async () => {
+    try {
+      const connection = await getConnectionForOwner(normalizedOwnerEmail);
+
+      if (!shouldRenewWebhookChannel(connection)) {
+        return {
+          renewed: false,
+          synced: false,
+          activeItems: 0,
+          cancelledItems: 0,
+          reason: 'channel_valid'
+        };
+      }
+
+      const oauth2Client = await createCalendarClient(connection);
+      await closeOldWebhookChannel(connection, oauth2Client);
+      const renewedConnection = await registerWebhookChannel(connection, oauth2Client);
+
+      let syncResult = null;
+      try {
+        syncResult = await syncConnection(renewedConnection);
+      } catch (error) {
+        console.error('[GcalWebhookDiag] Falha na sincronizacao de recuperacao apos renovacao do canal.', {
+          ownerEmail: normalizedOwnerEmail,
+          error: error && error.message ? error.message : String(error)
+        });
+
+        return {
+          renewed: true,
+          synced: false,
+          activeItems: 0,
+          cancelledItems: 0,
+          reason: 'renewed_sync_failed',
+          error: error && error.message ? error.message : String(error)
+        };
+      }
+
+      return {
+        renewed: true,
+        synced: true,
+        activeItems: Number(syncResult && syncResult.activeItems ? syncResult.activeItems : 0),
+        cancelledItems: Number(syncResult && syncResult.cancelledItems ? syncResult.cancelledItems : 0),
+        reason: 'renewed_and_synced'
+      };
+    } catch (error) {
+      console.error('[GcalWebhookDiag] Erro ao renovar canal do Google Calendar.', {
+        ownerEmail: normalizedOwnerEmail,
+        error: error && error.message ? error.message : String(error)
+      });
+
+      return {
+        renewed: false,
+        synced: false,
+        activeItems: 0,
+        cancelledItems: 0,
+        reason: 'renewal_failed',
+        error: error && error.message ? error.message : String(error)
+      };
+    }
+  })();
+
+  webhookRenewLocks.set(normalizedOwnerEmail, task);
+
+  try {
+    return await task;
+  } finally {
+    webhookRenewLocks.delete(normalizedOwnerEmail);
+  }
 }
 
 async function pushEventToGoogle(ownerEmail, agendamento) {

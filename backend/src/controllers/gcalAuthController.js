@@ -202,14 +202,33 @@ async function obterConexaoGoogleCalendar(req, res) {
 async function renewWebhookChannel(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
-    const connection = await renewWebhookChannelForOwner(ownerEmail);
+    const resultado = await renewWebhookChannelForOwner(ownerEmail);
 
     return res.status(200).json({
-      message: 'Google Calendar webhook renewed successfully.',
-      connection: montarRespostaConexao(connection)
+      renewed: !!resultado.renewed,
+      synced: !!resultado.synced,
+      activeItems: Number(resultado.activeItems || 0),
+      cancelledItems: Number(resultado.cancelledItems || 0),
+      message: resultado.renewed
+        ? (resultado.synced
+          ? 'Google Calendar webhook renovado e sincronização de recuperação concluída.'
+          : 'Google Calendar webhook renovado; sincronização de recuperação falhou.')
+        : 'Google Calendar webhook continua válido dentro da janela de segurança.',
+      reason: resultado.reason || 'not_renewed',
+      ...(resultado.error ? { error: resultado.error } : {}),
+      ...(resultado.connection ? { connection: montarRespostaConexao(resultado.connection) } : {})
     });
   } catch (err) {
-    responderErroGcalAuth(res, err, 'renovar webhook do Google Calendar');
+    console.error('[GcalAuthController] Falha ao verificar/renovar o webhook do Google Calendar.', err);
+    return res.status(200).json({
+      renewed: false,
+      synced: false,
+      activeItems: 0,
+      cancelledItems: 0,
+      message: 'Não foi possível verificar o canal do Google Calendar neste momento.',
+      reason: 'renewal_failed',
+      error: err && err.message ? err.message : String(err)
+    });
   }
 }
 
