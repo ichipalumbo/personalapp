@@ -15,6 +15,7 @@ const CicloFinanceiroSchema = new mongoose.Schema({
   status: { type: String, enum: ['em_aberto', 'pago', 'atrasado'], default: 'em_aberto' },
   dataPagamento: { type: String, default: null },
   formaPagamento: { type: String, default: null },
+  extrato: { type: Array, default: null },
   criadoEm: { type: Date, default: Date.now },
   atualizadoEm: { type: Date, default: Date.now }
 }, { strict: false });

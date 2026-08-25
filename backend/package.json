@@ -5,8 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "normalize:agenda-formats": "node ./scripts/normalize-agenda-formats.js",
-    "test": "node --test"
+    "test": "node --test",
+    "normalize:agenda-formats": "node ./scripts/normalize-agenda-formats.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

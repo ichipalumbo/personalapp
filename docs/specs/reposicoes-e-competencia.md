@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Proposta (não implementada) · **Versão**: 1 · **Atualizado**: 2026-08-20
+> **Status**: Backend da seção 6 publicado em produção; fluxo de frontend implementado na branch `new/reposicao-feature` (ainda não publicado em produção) · **Versão**: 3 · **Atualizado**: 2026-08-25
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v6).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -11,24 +11,20 @@
 
 ## 1. Problema
 
-Hoje o app tem uma "fila de reposição" (`aulasParaRepor`) que:
+### 1.1 Contexto que motivou a mudança (histórico)
 
-1. **Não é persistida em lugar nenhum** — é `let aulasParaRepor = []` em `state.js`.
-   Não é gravada na API nem no `localStorage`. Some no primeiro reload e não existe em
-   outro dispositivo.
-2. **Guarda três campos** (`id`, `alunoId`, `dataCancelamento`) e nenhum vínculo com o
-   compromisso de origem.
-3. **Remove a ocorrência da agenda** ao enviar para reposição (splice no caso avulso,
-   exceção na série no caso recorrente). Como o financeiro conta ocorrências da agenda,
-   a aula **deixa de ser cobrada silenciosamente**.
+Antes da collection `Reposicao`, o app mantinha uma fila local em `aulasParaRepor`, sem
+persistência remota e sem vínculo financeiro robusto. Esse desenho causava perda de
+rastreabilidade e inconsistências de cobrança entre ciclos.
 
-Resultado atual: uma aula enviada para reposição desaparece do financeiro e a informação
-de que ela existiu se perde no primeiro refresh.
+### 1.2 Estado atual da implementação
 
-Além disso, o modelo atual (cobrança **por ocorrência**) produz um caso de cobrança dupla:
-uma aula do fim de um ciclo **já pago** que é reagendada para o ciclo seguinte é cobrada
-duas vezes — o ciclo pago está congelado (decisão 16 da spec de Finanças) e a reposição
-é contada como aula nova no ciclo seguinte.
+Na branch `new/reposicao-feature`, a fila já é persistida em backend (`Reposicao`), com
+vínculo bidirecional entre agendamento e reposição (`reposicaoId` /
+`agendamentoReposicaoId`) e cálculo de competência no financeiro.
+
+Os ajustes desta v3 documentam o comportamento real do código, inclusive decisões de
+ordem de persistência, sincronização com Google Calendar e limitações conhecidas.
 
 ---
 
@@ -47,11 +43,11 @@ duas vezes — o ciclo pago está congelado (decisão 16 da spec de Finanças) e
 
 ### 3.1 Os dois modelos
 
-| | Modelo A — por ocorrência (atual) | Modelo B — por competência (esta spec) |
-|---|---|---|
-| Onde a aula é cobrada | no ciclo em que ela **acontece** | no ciclo em que ela estava **originalmente marcada** |
-| Aula na fila de reposição | não é cobrada | pode ser cobrada, conforme escolha |
-| Reposição remarcada | cobrada de novo | não é cobrada de novo se já foi |
+|                           | Modelo A — por ocorrência (atual) | Modelo B — por competência (esta spec)               |
+| ------------------------- | --------------------------------- | ---------------------------------------------------- |
+| Onde a aula é cobrada     | no ciclo em que ela **acontece**  | no ciclo em que ela estava **originalmente marcada** |
+| Aula na fila de reposição | não é cobrada                     | pode ser cobrada, conforme escolha                   |
+| Reposição remarcada       | cobrada de novo                   | não é cobrada de novo se já foi                      |
 
 **Decisão: adotar o Modelo B.**
 
@@ -61,10 +57,10 @@ Ao enviar uma aula para reposição, a PT escolhe **uma única vez** entre dois 
 A escolha é **irreversível** e é herdada por toda a corrente de reagendamentos daquela
 aula (ver 6.4).
 
-| Escolha | Ciclo de origem | Ciclo em que a reposição acontece |
-|---|---|---|
-| **Cobrável** | Conta e é cobrada normalmente | Aparece no extrato com **valor zero** + nota: *"já cobrada no ciclo 17/03–16/04"* |
-| **Não cobrável** | Não conta. Extrato registra: *"1 reposição pendente, não cobrada"* | **Conta e é cobrada aqui** + nota: *"referente ao ciclo 17/03–16/04"* |
+| Escolha          | Ciclo de origem                                                    | Ciclo em que a reposição acontece                                                 |
+| ---------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| **Cobrável**     | Conta e é cobrada normalmente                                      | Aparece no extrato com **valor zero** + nota: _"já cobrada no ciclo 17/03–16/04"_ |
+| **Não cobrável** | Não conta. Extrato registra: _"1 reposição pendente, não cobrada"_ | **Conta e é cobrada aqui** + nota: _"referente ao ciclo 17/03–16/04"_             |
 
 Propriedades garantidas por esse desenho:
 
@@ -94,22 +90,26 @@ Decisão: **collection separada**, não campo no `Agendamento`. Motivo: a fila t
 própria no modelo de negócio (prazo de validade, avisos, e futuramente tela dedicada),
 e ocorrências de séries recorrentes não têm documento próprio para carregar o campo.
 
-| Campo | Tipo | Papel |
-|---|---|---|
-| `ownerEmail` | String, **required**, indexado | isolamento multiusuário (ver 4.3) |
-| `id` | String, required | id de aplicação, no mesmo padrão de `Agendamento` |
-| `alunoId` | String | dono da reposição |
-| `alunoNome` | String | desnormalizado, para exibição |
-| `dataOriginal` | String **ISO** (`YYYY-MM-DD`) | **competência** — define o ciclo de origem |
-| `horarioOriginal` | String `HH:MM` | informativo, para a fila e o extrato |
-| `cobravel` | Boolean | escolha feita no envio (3.2). Imutável |
-| `cicloCobrancaResolvido` | `{ inicio, fim }` ISO ou null | em qual janela foi efetivamente cobrada |
-| `status` | String enum | `pendente` / `agendada` / `realizada` / `expirada` |
-| `agendamentoOriginalId` | String | de onde veio |
-| `agendamentoReposicaoId` | String ou null | para onde foi — **campo crítico**, ver 5.3 |
-| `validoAte` | String ISO ou null | prazo (ver 6). Nulo apenas para aluno sem ciclo configurado |
-| `dataEnvio` | String ISO | quando entrou na fila |
-| `historico` | Array | append-only: `{ evento, data, agendamentoId }` |
+| Campo                    | Tipo                           | Papel                                                                                |
+| ------------------------ | ------------------------------ | ------------------------------------------------------------------------------------ |
+| `ownerEmail`             | String, **required**, indexado | isolamento multiusuário (ver 4.3)                                                    |
+| `id`                     | String, required               | id de aplicação, no mesmo padrão de `Agendamento`                                    |
+| `alunoId`                | String                         | dono da reposição                                                                    |
+| `alunoNome`              | String                         | desnormalizado, para exibição                                                        |
+| `dataOriginal`           | String **ISO** (`YYYY-MM-DD`)  | **competência** — define o ciclo de origem                                           |
+| `horarioOriginal`        | String `HH:MM`                 | informativo, para a fila e o extrato                                                 |
+| `cobravel`               | Boolean                        | escolha feita no envio (3.2). Imutável                                               |
+| `cicloCobrancaResolvido` | `{ inicio, fim }` ISO ou null  | em qual janela foi efetivamente cobrada                                              |
+| `status`                 | String enum                    | `pendente` / `agendada` / `realizada` / `expirada`                                   |
+| `agendamentoOriginalId`  | String                         | de onde veio                                                                         |
+| `agendamentoReposicaoId` | String ou null                 | para onde foi — **campo crítico**, ver 5.3                                           |
+| `validoAte`              | String ISO ou null             | prazo (ver 6). Nulo apenas para aluno sem ciclo configurado                          |
+| `dataEnvio`              | String ISO 8601 completo       | quando entrou na fila; auditoria, precisa de ordem fina                              |
+| `historico`              | Array                          | append-only: `{ evento, data, agendamentoId }`; `data` é timestamp ISO 8601 completo |
+
+A collection usa `strict` padrão do Mongoose, **diferente dos demais schemas do projeto**, que usam `{ strict: false }`. O formato aqui nasce fechado e conhecido; `strict` padrão impede que um typo em nome de campo grave silenciosamente — risco relevante num modelo que alimenta cálculo financeiro.
+
+`dataOriginal`, `validoAte`, `cicloCobrancaResolvido.inicio` e `.fim` são **datas puras** (`YYYY-MM-DD`), porque representam competência e são comparadas contra a janela do ciclo. Já `dataEnvio` e `historico[].data` são **timestamps ISO completos** (`new Date().toISOString()`), porque são auditoria: precisam de ordenação fina mesmo quando dois eventos acontecem no mesmo dia.
 
 Índices: `{ ownerEmail: 1, id: 1 }` único, e `{ ownerEmail: 1, alunoId: 1, status: 1 }`
 para a consulta da fila.
@@ -145,13 +145,18 @@ igual ao resto do sistema. Não há outra camada impedindo vazamento entre conta
 
 ### 4.4 Formato de datas
 
-**Tudo em ISO (`YYYY-MM-DD`) dentro da collection.** O fluxo atual empilha
-`dataCancelamento` em pt-BR vindo direto do modal; na criação do registro isso **precisa**
-passar por `normalizarDataParaISO` (`backend/src/utils/time.js`). Conversão para pt-BR
-só na renderização.
+Existem duas granularidades distintas na collection:
 
-> Sem isso, a comparação com a janela do ciclo falha silenciosamente nas bordas — é o
-> tipo de bug que só aparece no dia 1 e no dia 31.
+- **Datas de competência**: `dataOriginal`, `validoAte`, `cicloCobrancaResolvido.inicio` e
+  `.fim` ficam em ISO puro (`YYYY-MM-DD`). O fluxo atual empilha `dataCancelamento` em
+  pt-BR vindo direto do modal; na criação do registro isso **precisa** passar por
+  `normalizarDataParaISO` (`backend/src/utils/time.js`). Conversão para pt-BR só na
+  renderização.
+- **Auditoria**: `dataEnvio` e `historico[].data` ficam em timestamp ISO completo
+  (`new Date().toISOString()`), para permitir ordenação fina mesmo no mesmo dia.
+
+> Sem a normalização das datas de competência, a comparação com a janela do ciclo falha
+> silenciosamente nas bordas — é o tipo de bug que só aparece no dia 1 e no dia 31.
 
 ---
 
@@ -208,10 +213,18 @@ na mesma operação.
 Se uma reposição `cobravel === false` for marcada para uma data dentro de um ciclo que
 **já está pago** (congelado, decisão 16 da spec de Finanças), ela **não** pode ser
 adicionada àquele ciclo. Ela é cobrada no **primeiro ciclo seguinte que não esteja pago**,
-e `cicloCobrancaResolvido` registra essa janela. O extrato traz a nota:
-*"referente ao ciclo 17/03–16/04, cobrada aqui por ciclo anterior já pago"*.
+e `cicloCobrancaResolvido` registra essa janela. No ciclo que **cobra**, a linha
+`reposicao_nao_cobravel` traz: `referente à aula de dd/mm, cobrada aqui por ciclo anterior já pago`.
+No ciclo onde a aula **ocorreu**, a linha `reposicao_cobranca_adiada` traz:
+`cobrada no ciclo dd/mm–dd/mm`.
 
-⚠️ Confirmar esta regra antes de implementar (ver 13).
+- `cicloCobrancaResolvido` é derivado no servidor. `POST /api/reposicoes` e `PATCH /api/reposicoes/:id` respondem 400 se o campo vier no corpo.
+- O campo é gravado uma única vez, no PATCH que preenche `agendamentoReposicaoId`, e somente quando `cobravel === false`.
+- A data usada é a do `Agendamento` referenciado, nunca uma data enviada pelo cliente.
+- Uma vez preenchido, o campo nunca é recalculado.
+- Quando `cobravel === true`, o campo não é gravado: a cobrança pertence ao ciclo de origem.
+
+> Nota de implementação: o frontend não deve enviar `cicloCobrancaResolvido` em nenhuma requisição de criação ou atualização de reposição, sob pena de 400.
 
 ### 5.5 Aluno com `valor_fixo`
 
@@ -246,12 +259,12 @@ SE (validoAte - dataOriginal) < 7 dias:
     validoAte = último dia do ciclo SEGUINTE
 ```
 
-**Piso mínimo de 7 dias.** Sem ele, uma reposição cuja aula original caiu a um dia do fim
- do ciclo nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por um
-prazo que nunca foi factível.
+**Piso mínimo de 7 dias.** Sem ele, uma reposição cuja aula original caiu a um dia do
+fim do ciclo nasceria praticamente morta — e no caso cobrável o aluno perderia a aula por
+um prazo que nunca foi factível.
 
-Quando o piso é aplicado, a UI **avisa explicitamente**: *"Prazo definido para o fim do
-ciclo seguinte (16/05), por faltarem menos de 7 dias para o fim do ciclo atual."*
+Quando o piso é aplicado, o backend marca `pisoAplicado: true` na resposta de criação da
+reposição. A UI atual não exibe um aviso dedicado para esse caso.
 
 ### 6.3 Aluno sem ciclo configurado
 
@@ -274,6 +287,10 @@ vezes por escolhas inconsistentes.
 
 `PRAZO_MINIMO_REPOSICAO_DIAS = 7`. O mesmo número é usado como janela de "vencendo em
 breve" nos avisos de UI (9.5). Não criar duas constantes.
+
+No extrato, a reposição pendente exibe o prazo na própria linha
+(`aguardando reagendamento; válida até DD/MM`). Registros anteriores a esta versão, e
+alunos sem ciclo configurado, mantêm a nota antiga por não terem prazo.
 
 ---
 
@@ -328,7 +345,7 @@ ou não (via ajuste manual do ciclo). Custo zero de código, resultado equivalen
 
 ### 8.1 Objetivo
 
-Hoje o ciclo mostra só um total. O extrato responde *"de onde vem esse valor"*:
+Hoje o ciclo mostra só um total. O extrato responde _"de onde vem esse valor"_:
 
 > Luccas — ciclo 17/04 a 16/05
 > • 10 aulas recorrentes ......... R$ 800,00
@@ -343,15 +360,26 @@ ciclos com muita reposição ou avulsa.
 
 ### 8.2 Classificação
 
-| Linha | Critério |
-|---|---|
-| **Recorrente** | `frequencia !== 'uma_vez'` e sem vínculo de reposição |
-| **Avulsa** | `frequencia === 'uma_vez'` e sem vínculo de reposição |
-| **Reposição** | possui vínculo com registro de `Reposicao` |
-| **Reposição já cobrada** | vínculo + `cobravel === true` (valor zero + nota) |
-| **Reposição pendente não cobrada** | registro `cobravel === false`, informativo, valor zero |
-| **Reposição expirada** | registro `expirada` no ciclo em que expirou, valor zero + nota |
-| **Ajuste manual** | `aulasManuaisExtras` do ciclo |
+| tipo                        | valor                    | quando aparece                                                                       |
+| --------------------------- | ------------------------ | ------------------------------------------------------------------------------------ |
+| `recorrente`                | cheio                    | aulas de série recorrente na janela                                                  |
+| `avulsa`                    | cheio                    | aulas pontuais na janela                                                             |
+| `reposicao_cobravel_origem` | cheio                    | reposição cobrável cuja `dataOriginal` cai na janela                                 |
+| `reposicao_nao_cobravel`    | cheio                    | reposição não cobrável com `cicloCobrancaResolvido.inicio` igual ao início da janela |
+| `ajuste_manual`             | cheio, pode ser negativo | `aulasManuaisExtras !== 0`                                                           |
+| `reposicao_ja_cobrada`      | zero                     | aula de reposição cobrável realizada nesta janela, cobrada no ciclo de origem        |
+| `reposicao_cobranca_adiada` | zero                     | aula de reposição não cobrável realizada nesta janela, cobrada em ciclo posterior    |
+| `reposicao_expirada`        | zero                     | reposição com status `expirada` e `validoAte` na janela                              |
+| `reposicao_pendente`        | zero                     | reposição não cobrável pendente com `dataOriginal` na janela                         |
+| `piso_zero`                 | positivo                 | apenas quando `aulasContadas + aulasManuaisExtras < 0`                               |
+| `valor_fixo`                | valor do ciclo           | apenas para aluno com `metodoCobranca: 'valor_fixo'`                                 |
+
+Uma mesma reposição gera no máximo uma linha por ciclo. A ordem de precedência é: `reposicao_cobravel_origem`, `reposicao_nao_cobravel`, `reposicao_cobranca_adiada`, `reposicao_ja_cobrada`, `reposicao_expirada`, `reposicao_pendente`.
+A reposição expirada aparece no ciclo em que expirou, identificado por `validoAte`; quando `dataOriginal` e `validoAte` caem no mesmo ciclo, `reposicao_cobravel_origem` tem precedência.
+
+A soma das linhas fecha com `valorTotalCiclo` por construção. É proibido qualquer ajuste corretivo de fechamento; a única exceção é a linha nomeada `piso_zero`.
+
+Para aluno `valor_fixo` o extrato é informativo: todas as linhas saem com valor zero, exceto a linha `valor_fixo`.
 
 ⚠️ A classificação **olha o vínculo, não o `tipo`** (ver 5.2). O fluxo de remarcar salva
 `tipo: 'aula'`; classificar por tipo faria toda reposição aparecer como avulsa.
@@ -383,14 +411,14 @@ dois "cancela" no sentido de dispensar o modal — o dispensar ali já se chama 
 No código eles já se chamam `btnDeletarDefinitivo` e `btnDeletarInstancia`; só o rótulo
 visível ficou desalinhado.
 
-| Elemento | Rótulo hoje | Rótulo novo |
-|---|---|---|
-| `btnDeletarDefinitivo` (avulsa) | Cancelar | **Excluir esta aula** |
-| `btnDeletarInstancia` (série) | Cancelar | **Excluir esta aula** |
-| `btnDeletarSerie` | Cancelar Série Completa | **Excluir série completa** |
-| `btnMandarParaReposicao` (avulsa) | Reagendar | **Enviar para reposição** |
-| `btnReagendarInstancia` (série) | Reagendar | **Enviar para reposição** |
-| Botão de dispensar | Voltar | **Voltar** (inalterado) |
+| Elemento                          | Rótulo hoje             | Rótulo novo                |
+| --------------------------------- | ----------------------- | -------------------------- |
+| `btnDeletarDefinitivo` (avulsa)   | Cancelar                | **Excluir esta aula**      |
+| `btnDeletarInstancia` (série)     | Cancelar                | **Excluir esta aula**      |
+| `btnDeletarSerie`                 | Cancelar Série Completa | **Excluir série completa** |
+| `btnMandarParaReposicao` (avulsa) | Reagendar               | **Enviar para reposição**  |
+| `btnReagendarInstancia` (série)   | Reagendar               | **Enviar para reposição**  |
+| Botão de dispensar                | Voltar                  | **Voltar** (inalterado)    |
 
 "Reagendar" era enganoso: o botão não reagenda nada, manda para a fila. O reagendamento
 de verdade é outro modal (`modalReagendarAula`), aberto pelo painel de reposições.
@@ -398,7 +426,7 @@ de verdade é outro modal (`modalReagendarAula`), aberto pelo painel de reposiç
 **"Cancelar" continua sendo o rótulo de dispensar modal** nos outros cinco modais
 (`modalFormAluno`, `modalEscolhaTipo`, `modalReagendarAula`, `modalAgendamento`,
 `modalRecorrencia`, `modalConfigAgenda`) — esses ficam **intocados**. A distinção passa a
-ser: *Cancelar = fechar sem salvar; Excluir = ação destrutiva*.
+ser: _Cancelar = fechar sem salvar; Excluir = ação destrutiva_.
 
 ### 9.2 Um botão, duas implementações
 
@@ -428,16 +456,40 @@ Segundo passo, após o clique em "Enviar para reposição". Modal pequeno, conte
 - **Duas opções explícitas, sem default pré-selecionado** — as duas são legítimas e a
   escolha é irreversível.
 - Um disclaimer curto por opção, explicando a consequência.
-- Quando o piso de 7 dias for aplicado (6.2), o aviso correspondente.
+- O prazo mostrado no modal de escolha vem do campo retornado pela API (`validoAte`).
 
-Rótulos e textos exatos: ver 13.
+**Cabeçalho**
+
+- Título: `Cobrar esta aula?`
+- Subtítulo em duas linhas: nome do aluno na primeira, data e horário na segunda, no formato `Terça, 10/03 · 08:00`.
+
+O nome do aluno é obrigatório: o modal pode cobrir a informação na tela abaixo dele, e a escolha é irreversível — precisa ficar explícito de quem é a aula.
+
+Duas linhas, e não uma: nome comprido em tela de 320px trunca justamente o nome.
+
+**Opções**
+
+| Rótulo                | Disclaimer                                    |
+| --------------------- | --------------------------------------------- |
+| `Cobrar neste ciclo`  | `Cobrada mesmo se a reposição não acontecer.` |
+| `Cobrar na reposição` | `Se o prazo expirar, não é cobrada.`          |
+
+Sem opção pré-selecionada. As duas são legítimas.
+
+Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o _se_ — o desfecho quando a reposição não acontece, que é a diferença real entre as duas escolhas. Não encurtar os disclaimers a ponto de perder essa informação.
+
+**Rodapé**
+
+- Texto fixo: `Não pode ser alterado depois.`
+- Quando houver prazo (6.2), acrescentar: `Prazo para reposição: até dd/mm.`
 
 ### 9.4 Painel de reposições
 
-- Cada item mostra: aluno, data original, se é cobrável, e o prazo (se houver).
-- Reposições **vencendo em breve** (≤ 7 dias) recebem destaque visual.
-- Reposições **expiradas** aparecem em seção separada ou com marcação clara, e não
-  oferecem ação de remarcar.
+- A lista da Home renderiza apenas reposições com `status: 'pendente'`.
+- Cada item mostra aluno e data original (rotulada como "Cancelada em ..."), com ação de
+  reagendar.
+- `cobravel`, `validoAte`, destaque de vencimento e seção de expiradas ainda não aparecem
+  no painel atual.
 
 ### 9.5 Aviso no card do aluno
 
@@ -446,51 +498,99 @@ roadmap). Cabe ali, sem refatoração:
 
 > **Reposições** — 2 pendentes · 1 vence em 5 dias
 
-"Em breve" = **7 dias**, mesma constante de 6.5.
+"Em breve" = **7 dias**, mesma constante de 6.5. O rótulo da caixinha é **Reposições**, decidido, e se o item 1.8 do roadmap mudar o conteúdo desse espaço o rótulo será revisto junto.
 
 ---
 
 ## 10. Impacto no código existente
 
-| Arquivo | Impacto |
-|---|---|
-| `backend/src/models/Reposicao.js` | **novo** |
-| `backend/src/controllers/reposicaoController.js` | **novo** — CRUD + expiração lazy |
-| `backend/src/services/financasService.js` | parcelas (B) e (C) em `calcularAulasContadasDoCiclo`; extrato; exclusão de vinculados na parcela (A) |
-| `backend/src/models/CicloFinanceiro.js` | campo de composição do extrato congelado |
-| `assets/js/modal-acao-slot.js` | função única `enviarParaReposicao`, modal de escolha, renames |
-| `assets/js/state.js` | `aulasParaRepor` deixa de ser fonte de verdade |
-| `assets/js/storage.js` | carregar/gravar reposições via API |
-| `assets/js/view-financas.js` | renderização do extrato |
-| `assets/js/view-home.js` | contador da fila vindo da API |
-| `index.html` | rótulos dos botões + modal de escolha |
+| Arquivo                                          | Impacto                                                                                              |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `backend/src/models/Reposicao.js`                | **novo**                                                                                             |
+| `backend/src/controllers/reposicaoController.js` | **novo** — CRUD + expiração lazy                                                                     |
+| `backend/src/services/financasService.js`        | parcelas (B) e (C) em `calcularAulasContadasDoCiclo`; extrato; exclusão de vinculados na parcela (A) |
+| `backend/src/models/CicloFinanceiro.js`          | campo de composição do extrato congelado                                                             |
+| `assets/js/modal-acao-slot.js`                   | função única `enviarParaReposicao`, modal de escolha, renames                                        |
+| `assets/js/state.js`                             | `aulasParaRepor` deixa de ser fonte de verdade                                                       |
+| `assets/js/storage.js`                           | carregar/gravar reposições via API                                                                   |
+| `assets/js/view-financas.js`                     | renderização do extrato                                                                              |
+| `assets/js/view-home.js`                         | contador da fila vindo da API                                                                        |
+| `index.html`                                     | rótulos dos botões + modal de escolha                                                                |
 
 **Áreas sensíveis tocadas** (confirmar antes de mexer): motor de recorrência não muda,
-mas o fluxo de exceção da série sim; sync com Google Calendar é acionado nos dois
-handlers de envio para reposição.
+mas o fluxo de exceção da série sim; sync com Google Calendar acontece no envio avulso e
+no reagendamento via modal, mas não no envio para reposição de instância recorrente.
 
 ---
 
 ## 11. Decisões e casos de borda
 
-| # | Pergunta | Decisão |
-|---|---|---|
-| 1 | Ocorrência ou competência? | **Competência** (Modelo B) |
-| 2 | Aula no limbo é cobrada? | Depende da escolha no envio (3.2) |
-| 3 | A escolha pode mudar depois? | **Não.** Feita uma vez, herdada pela corrente |
-| 4 | Fila persistida como quê? | **Collection separada** `Reposicao` |
-| 5 | Como evitar contagem dupla? | Vínculo bidirecional; vinculado nunca entra na parcela (A) |
-| 6 | Reposição nunca reposta? | Fica `pendente` até expirar (se tiver prazo) |
-| 7 | Prazo nasce quando? | Calculado no envio para a fila, a partir da dataOriginal |
-| 8 | Qual o prazo? | Fim do ciclo vigente, com **piso de 7 dias** |
-| 9 | Remarcar renova o prazo? | **Não.** O prazo é função da dataOriginal |
-| 10 | Expiração mexe em valor? | **Nunca.** Nem devolve, nem cobra |
-| 11 | Reabrir expirada? | **Não existe.** PT cria aula avulsa e ajusta no financeiro |
-| 12 | Não cobrável cai em ciclo pago? | Vai para o primeiro ciclo seguinte não pago (⚠️ confirmar) |
-| 13 | Aluno `valor_fixo`? | Escolha registrada, **não afeta valor**. Extrato informativo |
-| 14 | Aluno sem ciclo configurado? | `validoAte` nulo, não expira |
-| 15 | Registro é deletado? | **Nunca.** `realizada` / `expirada` são estados finais |
-| 16 | Migração de dados? | **Não há.** Base de produção zerada, app não lançado |
+| #   | Pergunta                        | Decisão                                                      |
+| --- | ------------------------------- | ------------------------------------------------------------ |
+| 1   | Ocorrência ou competência?      | **Competência** (Modelo B)                                   |
+| 2   | Aula no limbo é cobrada?        | Depende da escolha no envio (3.2)                            |
+| 3   | A escolha pode mudar depois?    | **Não.** Feita uma vez, herdada pela corrente                |
+| 4   | Fila persistida como quê?       | **Collection separada** `Reposicao`                          |
+| 5   | Como evitar contagem dupla?     | Vínculo bidirecional; vinculado nunca entra na parcela (A)   |
+| 6   | Reposição nunca reposta?        | Fica `pendente` até expirar (se tiver prazo)                 |
+| 7   | Prazo nasce quando?             | No envio para a fila, a partir da `dataOriginal`             |
+| 8   | Qual o prazo?                   | Fim do ciclo que contém a dataOriginal, com **piso de 7 dias** |
+| 9   | Remarcar renova o prazo?        | **Não.** Remarcar/cancelar não altera prazo                  |
+| 10  | Expiração mexe em valor?        | **Nunca.** Nem devolve, nem cobra                            |
+| 11  | Reabrir expirada?               | **Não existe.** PT cria aula avulsa e ajusta no financeiro   |
+| 12  | Não cobrável cai em ciclo pago? | Vai para o primeiro ciclo seguinte não pago                  |
+| 13  | Aluno `valor_fixo`?             | Escolha registrada, **não afeta valor**. Extrato informativo |
+| 14  | Aluno sem ciclo configurado?    | `validoAte` nulo, não expira                                 |
+| 15  | Registro é deletado?            | **Nunca.** `realizada` / `expirada` são estados finais       |
+| 16  | Migração de dados?              | **Não há.** Base de produção zerada, app não lançado         |
+| 17  | Salvar antes do PATCH?          | **Sim.** PATCH só segue com confirmação de persistência (`{ ok: true }`) |
+| 18  | Contrato de `salvarDados`       | `{ ok, motivo }`, com quatro motivos estáveis (`sucesso`, `falha_remota`, `nao_autenticado`, `sessao_expirada`) |
+| 19  | Ordem do reagendamento          | Inserir em memória → `salvarDados(true)` → PATCH → GCal      |
+| 20  | Reagendar cria nova reposição?  | **Não.** Reagendar consome pendente via PATCH; POST só no envio para fila |
+| 21  | Prazo é calculado no frontend?  | **Não.** Frontend apenas exibe `validoAte` retornado pela API |
+| 22  | Dedupe de pendente no POST      | `409` e nenhum segundo documento quando o id pendente já existe |
+
+### 11.1 Contrato de persistência antes do PATCH (C4.1a-fix)
+
+`salvarDados(silencioso)` retorna objeto `{ ok, motivo }` com contrato:
+
+- `ok: true, motivo: 'sucesso'`: persistência remota confirmada.
+- `ok: false, motivo: 'falha_remota'`: erro de conexão/falha remota.
+- `ok: false, motivo: 'nao_autenticado'`: sem sessão autenticada no app.
+- `ok: false, motivo: 'sessao_expirada'`: sessão expirou durante a operação.
+
+Nos dois caminhos de reposição que fazem PATCH (`formReagendarAula` e
+`btnReagendarInstancia`), a decisão de seguir ou abortar usa
+`reposicao-flow-helpers.deveEnviarPatch(resultadoPersistencia)`. Sem `ok: true`, o PATCH
+não é enviado.
+
+### 11.2 Cobertura de teste atual: parcial
+
+O teste `se a persistencia do agendamento falhar, o patch nao e enviado`
+(`backend/test/reposicao-c4-regressao.test.js`) importa o helper real
+`reposicao-flow-helpers` e valida os dois ramos:
+
+- falha de persistência (`ok: false`) → PATCH não enviado;
+- sucesso (`ok: true`) → PATCH enviado.
+
+A cobertura é **parcial**: o teste valida a decisão encapsulada no helper, mas
+reimplementa localmente o fluxo chamador e não prova, sozinho, que
+`modal-acao-slot.js` está sempre usando essa decisão em runtime.
+
+### 11.3 Caso conhecido — mutação sem rollback no caminho da série
+
+No envio para reposição de instância recorrente (`btnReagendarInstancia`), a exceção é
+adicionada a `compromisso.excecoes` antes de `salvarDados(true)`. Se a persistência
+falhar, o erro é mostrado, mas a exceção permanece em memória até reload, mantendo a
+aula fora da agenda local temporariamente.
+
+Impacto atual:
+
+- ocorre apenas em cenário de falha de rede/persistência;
+- recarregar dados/reload restaura o estado da fonte remota.
+
+Correção possível (ainda não implementada): snapshot anterior de `excecoes` e rollback no
+`catch` quando `salvarDados` retornar falha.
 
 ---
 
@@ -501,26 +601,14 @@ handlers de envio para reposição.
   do roadmap. Esta spec entrega apenas **aviso in-app**.
 - **Tela dedicada de reposições**, com histórico e filtros. O painel atual continua.
 - **Status de presença / no-show** (item 1.5 do roadmap). Quando existir, a escolha
-  cobrável/não cobrável poderá ser derivada de *quem cancelou* em vez de perguntada.
+  cobrável/não cobrável poderá ser derivada de _quem cancelou_ em vez de perguntada.
 - **Cron / job de expiração.** Expiração é lazy (7).
 - **Estorno e reabertura de ciclo pago.** Continua fora, como na spec de Finanças.
 - **Prazo configurável por aluno.** Por ora é regra global.
 
 ---
 
-## 13. Em aberto (decidir antes de implementar)
-
-1. **Textos exatos do modal de escolha (9.3).** Os rótulos das duas opções e o disclaimer
-   de cada uma. É a peça que a PT vai ler toda vez; não deve ser inventada no código.
-2. **Confirmação da regra 5.4** — reposição não cobrável que cai em ciclo já pago.
-3. **Onde a reposição expirada aparece no extrato** — no ciclo em que expirou (proposto)
-   ou no ciclo de origem?
-4. **Rótulo da caixinha no card do aluno** — "Reposições" ou algo mais específico, dado
-   que o item 1.8 do roadmap previa outro conteúdo para o mesmo espaço.
-
----
-
-## 14. Débitos técnicos criados por esta spec
+## 13. Débitos técnicos criados por esta spec
 
 - **Duas fontes no cálculo financeiro.** `financasService` passa a depender de
   `Agendamento` **e** `Reposicao` para fechar um ciclo. É o preço da collection separada.
@@ -532,3 +620,8 @@ handlers de envio para reposição.
 - **Testes.** Esta spec mexe em código que calcula dinheiro e introduz casos de borda de
   data. O item 3.1 do roadmap (testes das funções puras) deveria vir **antes** ou junto.
   A janela é boa: base de produção zerada e app não lançado.
+- A nota da linha `reposicao_ja_cobrada` indica o ciclo de origem, recalculado a partir de
+  `dataOriginal` com a configuração de ciclo atual do aluno. Não há campo persistido com o
+  ciclo de origem. Se o aluno mudar `diaVencimento` ou `fechamentoMesCheio` entre o ciclo de
+  origem e a leitura, o período exibido na nota pode divergir do ciclo real. A linha vale
+  R$ 0,00, então o valor cobrado não é afetado — apenas o rótulo.

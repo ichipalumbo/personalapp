@@ -11,7 +11,7 @@
 //         window.getResumoEscopoRecorrencia, window.atualizarResumoEscopoRecorrencia,
 //         window.configurarEscopoRecorrenciaEdicao, window.abrirReagendarAulaModalSlot,
 //         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal,
-//         window.togglePainelReposicoes, window.renderizarListaReposicoes, window.resolverReposicao
+//         window.togglePainelReposicoes, window.renderizarListaReposicoes
 
 // Exposto em window para acesso cross-módulo (widget-stepper-duracao usa para edicao)
 window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
@@ -28,6 +28,75 @@ function obterCompromissoPorId(id) {
 
 function obterCompromissoSelecionado() {
     return obterCompromissoPorId(window.idCompromissoSelecionado);
+}
+
+function gerarIdReposicao() {
+    return `repo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function deveEnviarPatchReposicao(resultadoPersistencia) {
+    if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.deveEnviarPatch === 'function') {
+        return window.reposicaoFlowHelpers.deveEnviarPatch(resultadoPersistencia);
+    }
+    return Boolean(resultadoPersistencia && resultadoPersistencia.ok === true);
+}
+
+function obterMensagemFalhaPersistencia(resultadoPersistencia) {
+    if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia === 'function') {
+        return window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia(resultadoPersistencia);
+    }
+
+    const motivo = resultadoPersistencia && typeof resultadoPersistencia.motivo === 'string'
+        ? resultadoPersistencia.motivo
+        : 'falha_remota';
+    if (motivo === 'nao_autenticado' || motivo === 'sessao_expirada') {
+        return 'Sessão expirada. Faça login com Google para continuar.';
+    }
+    return 'Falha ao salvar alterações antes de concluir a reposição.';
+}
+
+async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
+    if (!compromisso || !compromisso.alunoId) {
+        throw new Error('Compromisso inválido para envio para reposição.');
+    }
+
+    const alunoAtual = typeof window.getAluno === 'function' ? window.getAluno(compromisso.alunoId) : null;
+    const dataOriginalISO = window.normalizarDataParaISO(dataAlvoISO || compromisso.data || window.getDataSelecionadaPtBr());
+    const payload = {
+        id: gerarIdReposicao(),
+        alunoId: String(compromisso.alunoId),
+        alunoNome: alunoAtual && alunoAtual.nome ? String(alunoAtual.nome) : '',
+        dataOriginal: dataOriginalISO,
+        horarioOriginal: compromisso.horarioInicio || '00:00',
+        cobravel: Boolean(cobravel),
+        agendamentoOriginalId: compromisso.id || null,
+    };
+
+    if (!payload.dataOriginal) {
+        throw new Error('Data da aula inválida para enviar para reposição.');
+    }
+
+    const baseUrl = (window.API_BASE_URL || 'https://personal-app-api.vercel.app/api');
+    const resposta = await window.apiFetchBackend(`${baseUrl}/reposicoes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!resposta.ok) {
+        let mensagem = 'Não foi possível criar a reposição.';
+        try {
+            const erroJson = await resposta.json();
+            mensagem = erroJson && erroJson.error ? erroJson.error : mensagem;
+        } catch (_) {}
+        throw new Error(mensagem);
+    }
+
+    const reposicaoCriada = await resposta.json().catch(() => null);
+    if (typeof window.carregarDados === 'function') {
+        await window.carregarDados({ forcarRemoto: true, silenciosoUI: true });
+    }
+    return reposicaoCriada || payload;
 }
 
 function obterNomesDiasSemanaModalAcao() {
@@ -262,6 +331,37 @@ window.fecharModalAcaoSlot = function() {
     document.getElementById('modalAcaoSlot').style.display = 'none';
 };
 
+window.abrirModalEscolhaCobrancaReposicao = function(compromisso, callback) {
+    const modal = document.getElementById('modalEscolhaCobrancaReposicao');
+    if (!modal || !compromisso) return;
+
+    const aluno = typeof window.getAluno === 'function' ? window.getAluno(compromisso.alunoId) : null;
+    const dataOriginal = (compromisso.data && typeof compromisso.data === 'string') ? compromisso.data : (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : '');
+    const nomeAluno = aluno && aluno.nome ? String(aluno.nome) : 'Aluno';
+    const dataHora = `${window.formatarDataPtBrLegivel ? window.formatarDataPtBrLegivel(dataOriginal) : dataOriginal} · ${compromisso.horarioInicio || '00:00'}`;
+
+    document.getElementById('reposicaoEscolhaAluno').textContent = nomeAluno;
+    document.getElementById('reposicaoEscolhaDataHorario').textContent = dataHora;
+
+    const opcaoButtons = modal.querySelectorAll('[data-reposicao-cobravel]');
+    opcaoButtons.forEach((botao) => {
+        botao.onclick = async () => {
+            const cobravel = botao.dataset.reposicaoCobravel === 'true';
+            modal.style.display = 'none';
+            if (typeof callback === 'function') {
+                await callback(cobravel);
+            }
+        };
+    });
+
+    modal.style.display = 'flex';
+};
+
+window.fecharModalEscolhaCobrancaReposicao = function() {
+    const modal = document.getElementById('modalEscolhaCobrancaReposicao');
+    if (modal) modal.style.display = 'none';
+};
+
 window.atualizarAvisoConflitoEdicao = function() {
     const impacto = document.getElementById('editEscopoImpacto');
     const compromisso = obterCompromissoSelecionado();
@@ -432,23 +532,14 @@ window.renderizarListaReposicoes = function() {
                         <span style="font-size: 0.72rem; color: #FF5252; font-weight: 600;">Cancelada em ${rep.dataCancelamento}</span>
                     </div>
                 </div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
                     <button class="btn btn-primary btn-sm" onclick="iniciarReagendamentoReposicao('${rep.id}')" style="background: #FFD700; color: #0D0D0D; font-size: 0.7rem; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
                         <i class="fa-solid fa-calendar-check"></i> Reagendar
-                    </button>
-                    <button class="btn btn-secondary btn-sm" onclick="resolverReposicao('${rep.id}')" style="background: #111; color: #AAA; border: 1px solid #333; font-size: 0.7rem; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fa-solid fa-trash"></i> Descartar
                     </button>
                 </div>
             </div>
         `;
     }).join('');
-};
-
-window.resolverReposicao = function(id) {
-    aulasParaRepor = aulasParaRepor.filter(r => r.id !== id);
-    if (typeof salvarDados === 'function') salvarDados();
-    window.inicializarHome();
 };
 
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
@@ -458,30 +549,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formReagendarAula = document.getElementById('formReagendarAula');
     if (formReagendarAula) {
-        formReagendarAula.addEventListener('submit', (e) => {
+        formReagendarAula.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
+
             let alunoId = "";
-            let repId = "";
+            let repObj = null;
 
             if (window.reagendamentoDirectCardId) {
-                const repObj = aulasParaRepor.find(r => r.id === window.reagendamentoDirectCardId);
-                if (!repObj) return;
+                repObj = aulasParaRepor.find(r => r.id === window.reagendamentoDirectCardId);
+                if (!repObj) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast('Reposição pendente não encontrada para este aluno.', 'error');
+                    } else {
+                        alert('Reposição pendente não encontrada para este aluno.');
+                    }
+                    return;
+                }
                 alunoId = repObj.alunoId;
-                repId = repObj.id;
             } else {
                 alunoId = document.getElementById('reagendarAluno').value;
                 if (!alunoId) {
-                    alert("Selecione um aluno para agendar a reposição.");
+                    alert('Selecione um aluno para agendar a reposição.');
                     return;
                 }
-                const repObj = aulasParaRepor.find(r => r.alunoId === alunoId);
-                if (repObj) {
-                    repId = repObj.id;
+                repObj = aulasParaRepor.find(r => r.alunoId === alunoId);
+                if (!repObj) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast('Não existe reposição pendente para este aluno.', 'error');
+                    } else {
+                        alert('Não existe reposição pendente para este aluno.');
+                    }
+                    return;
                 }
             }
 
-            const dia = document.getElementById('reagendarDia').value;
+            const nomeDiaSelecionado = document.getElementById('reagendarDia').value;
             const hInicio = document.getElementById('reagendarHoraInicio').value;
             const duracao = document.getElementById('reagendarDuracao').value;
             const hFim = window.somarMinutos(hInicio, duracao);
@@ -490,38 +592,94 @@ document.addEventListener('DOMContentLoaded', () => {
                 alert('Não é possível agendar reposição para aluno inativo.');
                 return;
             }
+
+            const diaAtualIndex = window.dataSelecionada ? window.dataSelecionada.getDay() : 0;
+            const nomesDias = window.getNomesDiasSemana ? window.getNomesDiasSemana() : ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+            const diaSelecionadoIndex = nomesDias.indexOf(nomeDiaSelecionado);
+            const dataBase = new Date(window.dataSelecionada || new Date());
+            const deslocamento = (diaSelecionadoIndex - diaAtualIndex + 7) % 7;
+            dataBase.setDate(dataBase.getDate() + deslocamento);
+            const dataSelecionadaISO = window.formatarDataLocalParaISODate(dataBase);
+
             let novoCompromisso = {
-                id: Date.now().toString(),
-                dia: dia,
-                data: window.dataSelecionada.toLocaleDateString('pt-BR'),
+                id: `ag-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                dia: nomeDiaSelecionado,
+                data: dataSelecionadaISO,
                 horarioInicio: hInicio,
                 horarioFim: hFim,
                 tipo: 'aula',
                 alunoId: alunoId,
                 frequencia: 'uma_vez',
                 isReposicao: true,
-                reagendada: true
+                reagendada: true,
+                reposicaoId: repObj.id,
             };
 
-            aulas.push(novoCompromisso);
-            if (repId) {
-                aulasParaRepor = aulasParaRepor.filter(r => r.id !== repId);
-            }
+            try {
+                aulas.push(novoCompromisso);
+                const salvar = typeof window.salvarDados === 'function' ? window.salvarDados : salvarDados;
+                const resultadoPersistencia = typeof salvar === 'function'
+                    ? await salvar(true)
+                    : { ok: false, motivo: 'falha_remota' };
+                if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+                    throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+                }
 
-            window.fecharReagendarAulaModal();
-            
-            // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
-            if (typeof window.enriquecerAgendamentoComDadosFrescos === 'function') {
-                window.enriquecerAgendamentoComDadosFrescos(novoCompromisso);
-            }
-            
-            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                // Optimistic UI in salvarEventoComGCal renders immediately — no inicializarHome needed.
-                window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' });
-            } else {
-                if (typeof salvarDados === 'function') salvarDados();
+                const respostaPatch = await window.apiFetchBackend(`${window.API_BASE_URL || 'https://personal-app-api.vercel.app/api'}/reposicoes/${encodeURIComponent(repObj.id)}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        status: 'agendada',
+                        agendamentoReposicaoId: novoCompromisso.id,
+                    })
+                });
+
+                if (!respostaPatch.ok) {
+                    const erroPatch = await respostaPatch.json().catch(() => ({}));
+                    throw new Error(erroPatch.error || 'Falha ao vincular a reposição ao agendamento.');
+                }
+
+                let avisoGCal = '';
+                if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                    try {
+                        await window.salvarEventoComGCal(novoCompromisso, { operacao: 'criar' });
+                    } catch (erroGCal) {
+                        console.error('❌ Falha ao sincronizar reposição no Google Calendar:', erroGCal);
+                        avisoGCal = ' Reposição salva, mas não foi possível sincronizar com Google Agenda.';
+                    }
+                }
+
+                aulasParaRepor = aulasParaRepor.filter(r => r.id !== repObj.id);
+                window.fecharReagendarAulaModal();
+                if (typeof window.enriquecerAgendamentoComDadosFrescos === 'function') {
+                    window.enriquecerAgendamentoComDadosFrescos(novoCompromisso);
+                }
+                if (typeof window.carregarDados === 'function') {
+                    await window.carregarDados({ forcarRemoto: true, silenciosoUI: true });
+                }
                 window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('✅ Reposição marcada com sucesso!');
+
+                let mensagemPrazo = '';
+                try {
+                    const patchJson = await respostaPatch.clone().json();
+                    if (patchJson && patchJson.validoAte) {
+                        mensagemPrazo = ` Prazo: até ${window.formatarDataPtBr ? window.formatarDataPtBr(patchJson.validoAte) : patchJson.validoAte}.`;
+                    }
+                } catch (_) {}
+                if (typeof mostrarToast === 'function') {
+                    const mensagemSucesso = `✅ Reposição reagendada com sucesso!${mensagemPrazo}`;
+                    if (avisoGCal) {
+                        mostrarToast(`${mensagemSucesso}${avisoGCal}`, 'warning');
+                    } else {
+                        mostrarToast(mensagemSucesso);
+                    }
+                }
+            } catch (erro) {
+                if (typeof mostrarToast === 'function') {
+                    mostrarToast(erro && erro.message ? erro.message : 'Falha ao reagendar reposição.', 'error');
+                } else {
+                    alert(erro && erro.message ? erro.message : 'Falha ao reagendar reposição.');
+                }
             }
         });
     }
@@ -809,26 +967,42 @@ document.addEventListener('DOMContentLoaded', () => {
             const compromisso = obterCompromissoSelecionado();
             if (!compromisso) return;
             if (compromissoTemAlunoInativo(compromisso)) {
-                alert('Aluno inativo: não é possível reagendar este compromisso.');
+                alert('Aluno inativo: não é possível enviar este compromisso para reposição.');
                 return;
             }
 
-            aulasParaRepor.push({
-                id: Date.now().toString(),
-                alunoId: compromisso.alunoId,
-                dataCancelamento: compromisso.data || new Date().toLocaleDateString('pt-BR')
+            const dataAlvo = compromisso.data || window.getDataSelecionadaPtBr();
+            const dataAlvoISO = window.normalizarDataParaISO(dataAlvo);
+            window.abrirModalEscolhaCobrancaReposicao(compromisso, async (cobravel) => {
+                try {
+                    const reposicao = await enviarParaReposicao(compromisso, dataAlvoISO, cobravel);
+                    const _idxReposicao = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
+                    if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
+                    window.fecharModalAcaoSlot();
+
+                    if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                        await window.salvarEventoComGCal(compromisso, { operacao: 'excluir', snapshotAnterior: compromisso });
+                    } else {
+                        if (typeof salvarDados === 'function') salvarDados();
+                    }
+
+                    if (typeof window.carregarDados === 'function') {
+                        await window.carregarDados({ forcarRemoto: true, silenciosoUI: true });
+                    }
+                    window.inicializarHome();
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast('✅ Aula enviada para reposição.', 'success');
+                    }
+                    return reposicao;
+                } catch (erro) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast(erro && erro.message ? erro.message : 'Falha ao enviar para reposição.', 'error');
+                    } else {
+                        alert(erro && erro.message ? erro.message : 'Falha ao enviar para reposição.');
+                    }
+                    return null;
+                }
             });
-            
-            const _idxReposicao = aulas.findIndex(a => a.id === window.idCompromissoSelecionado);
-            if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
-            window.fecharModalAcaoSlot();
-            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                window.salvarEventoComGCal(compromisso, { operacao: 'excluir', snapshotAnterior: compromisso }).then(() => window.inicializarHome());
-            } else {
-                if (typeof salvarDados === 'function') salvarDados();
-                window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('🔄 Aula única enviada para reposição!');
-            }
         });
     }
 
@@ -871,40 +1045,53 @@ document.addEventListener('DOMContentLoaded', () => {
             const compromisso = obterCompromissoSelecionado();
             if (!compromisso) return;
             if (compromissoTemAlunoInativo(compromisso)) {
-                alert('Aluno inativo: não é possível reagendar este compromisso.');
+                alert('Aluno inativo: não é possível enviar este compromisso para reposição.');
                 return;
             }
 
             const dataAlvoStr = window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString('pt-BR');
-            const _snapshot = { ...compromisso, excecoes: [...(compromisso.excecoes || [])] };
-            if (!compromisso.excecoes) compromisso.excecoes = [];
-            if (!compromisso.excecoes.includes(dataAlvoStr)) {
-                compromisso.excecoes.push(dataAlvoStr);
-            }
 
-            aulasParaRepor.push({
-                id: Date.now().toString(),
-                alunoId: compromisso.alunoId,
-                dataCancelamento: dataAlvoStr
+            window.abrirModalEscolhaCobrancaReposicao(compromisso, async (cobravel) => {
+                try {
+                    const reposicao = await enviarParaReposicao(compromisso, dataAlvoStr, cobravel);
+                    if (!reposicao || !reposicao.id) {
+                        throw new Error('Reposição não foi criada no servidor.');
+                    }
+
+                    if (!compromisso.excecoes) compromisso.excecoes = [];
+                    if (!compromisso.excecoes.includes(dataAlvoStr)) {
+                        compromisso.excecoes.push(dataAlvoStr);
+                    }
+
+                    window.fecharModalAcaoSlot();
+                    const resultadoPersistencia = typeof salvarDados === 'function'
+                        ? await salvarDados(true)
+                        : { ok: false, motivo: 'falha_remota' };
+                    if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+                        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+                    }
+                    if (typeof window.carregarDados === 'function') {
+                        await window.carregarDados({ forcarRemoto: true, silenciosoUI: true });
+                    }
+                    window.inicializarHome();
+
+                    let mensagemPrazo = '';
+                    if (reposicao && reposicao.validoAte) {
+                        mensagemPrazo = ` Prazo: até ${window.formatarDataPtBr ? window.formatarDataPtBr(reposicao.validoAte) : reposicao.validoAte}.`;
+                    }
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast(`✅ Aula enviada para reposição.${mensagemPrazo}`);
+                    }
+                    return reposicao;
+                } catch (erro) {
+                    if (typeof mostrarToast === 'function') {
+                        mostrarToast(erro && erro.message ? erro.message : 'Falha ao reagendar a reposição.', 'error');
+                    } else {
+                        alert(erro && erro.message ? erro.message : 'Falha ao reagendar a reposição.');
+                    }
+                    return null;
+                }
             });
-
-            window.fecharModalAcaoSlot();
-
-            const _posReagendar = () => {
-                window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
-            };
-
-            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                // Optimistic UI already rendered — show only the toast, skip inicializarHome.
-                window.salvarEventoComGCal(compromisso, { operacao: 'atualizar', snapshotAnterior: _snapshot })
-                    .then(function () {
-                        if (typeof mostrarToast === 'function') mostrarToast(`🔄 Aula de ${dataAlvoStr} enviada para reposição!`);
-                    });
-            } else {
-                if (typeof salvarDados === 'function') salvarDados();
-                _posReagendar();
-            }
         });
     }
 

@@ -15,6 +15,7 @@ const AgendamentoSchema = new mongoose.Schema({
   status: { type: String, default: 'confirmado' },
   diaSemana: Number,
   semanasRecorrencia: Number,
+  reposicaoId: { type: String, default: null },
   googleCalendarEventId: { type: String, default: null }
 }, { strict: false });
 

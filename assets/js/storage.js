@@ -1,12 +1,14 @@
 // [TAG-STORAGE] storage.js
 // Responsabilidade: Persistência de dados — sync com API REST (Vercel/MongoDB) e fallback localStorage
 // Depende de: state.js (alunos, aulas, agendaConfig), utils-kpi.js (mostrarToast)
-// Expõe: carregarDados, salvarDados, obterAlunos, obterAulas, obterLimitesGrade,
-//         atualizarAlunos, atualizarAulas, atualizarLimitesGrade, window.faturamentoMeta
+// Expõe: carregarDados, salvarDados, obterAlunos, obterAulas, obterReposicoes,
+//         obterLimitesGrade, atualizarAlunos, atualizarAulas, atualizarReposicoes,
+//         atualizarLimitesGrade, window.faturamentoMeta
 const API_BASE_URL = "https://personal-app-api.vercel.app/api";
 const API_TIMEOUT_MS = 8000;
 const SLEEP_MODE_THRESHOLD_MS = 3000;
 const FINANCAS_CACHE_KEY = 'personal_financas_cache';
+const REPOSICOES_CACHE_KEY = 'personal_reposicoes';
 
 // [TAG-STORAGE-VERCEL-PING] Warm-up para cold start do Vercel — fire-and-forget, sem await
 fetch('https://personal-app-api.vercel.app/').catch(() => {});
@@ -281,6 +283,13 @@ function obterAulas() {
     return window.aulas || [];
 }
 
+function obterReposicoes() {
+    try {
+        if (typeof aulasParaRepor !== 'undefined') return aulasParaRepor;
+    } catch(e) {}
+    return window.aulasParaRepor || [];
+}
+
 function obterLimitesGrade() {
     try {
         if (typeof limitesGrade !== 'undefined') return limitesGrade;
@@ -320,6 +329,35 @@ function mapearBloqueioExterno(bloqueioRaw) {
     };
 }
 
+function mapearReposicaoParaUI(reposicaoRaw) {
+    if (!reposicaoRaw || typeof reposicaoRaw !== 'object') {
+        return null;
+    }
+
+    const id = reposicaoRaw.id || null;
+    const dataOriginal = reposicaoRaw.dataOriginal || null;
+    if (!id || !dataOriginal) {
+        return null;
+    }
+
+    const dataCancelamento = typeof window.formatarDataPtBr === 'function'
+        ? window.formatarDataPtBr(dataOriginal)
+        : String(dataOriginal).split('-').reverse().join('/');
+
+    return {
+        id: id,
+        alunoId: reposicaoRaw.alunoId,
+        dataCancelamento: dataCancelamento,
+        dataOriginal: String(dataOriginal),
+        horarioOriginal: reposicaoRaw.horarioOriginal || null,
+        alunoNome: reposicaoRaw.alunoNome || null,
+        cobravel: reposicaoRaw.cobravel,
+        status: reposicaoRaw.status || null,
+        validoAte: reposicaoRaw.validoAte || null,
+        agendamentoReposicaoId: reposicaoRaw.agendamentoReposicaoId || null
+    };
+}
+
 function atualizarAlunos(novosAlunos) {
     const lista = Array.isArray(novosAlunos) ? novosAlunos : [];
     try {
@@ -344,6 +382,19 @@ function atualizarAulas(novasAulas) {
         }
     } catch(e) {}
     window.aulas = lista;
+}
+
+function atualizarReposicoes(novasReposicoes) {
+    const lista = Array.isArray(novasReposicoes) ? novasReposicoes : [];
+    try {
+        if (typeof aulasParaRepor !== 'undefined' && Array.isArray(aulasParaRepor)) {
+            aulasParaRepor.length = 0;
+            aulasParaRepor.push(...lista);
+            window.aulasParaRepor = aulasParaRepor;
+            return;
+        }
+    } catch(e) {}
+    window.aulasParaRepor = lista;
 }
 
 function atualizarLimitesGrade(novaGrade) {
@@ -609,7 +660,7 @@ async function carregarDados(opcoes = {}) {
         console.log('🔄 Iniciando sincronização com o banco de dados online...');
         const onRetry = () => carregarDados({ ...opcoes, forcarRemoto: true });
 
-        const [resAlunos, resAgendamentos, dadosConfig, resBloqueiosExt] = await executarOperacaoRemotaComFeedback(async () => {
+        const [resAlunos, resAgendamentos, dadosConfig, resBloqueiosExt, dadosReposicoes] = await executarOperacaoRemotaComFeedback(async () => {
             return Promise.all([
                 apiFetchBackend(`${API_BASE_URL}/alunos`, {}, timeoutAtual).catch(() => { throw new Error('API Alunos fora do ar ou lenta (timeout)'); }),
                 apiFetchBackend(`${API_BASE_URL}/agendamentos`, {}, timeoutAtual).catch(() => { throw new Error('API Agendamentos fora do ar ou lenta (timeout)'); }),
@@ -619,7 +670,10 @@ async function carregarDados(opcoes = {}) {
                 // para não quebrar carregarDados() enquanto a rota do backend ainda não está deployed.
                 apiFetchBackend(`${API_BASE_URL}/bloqueios-externos`, {}, timeoutAtual)
                     .then(res => res.ok ? res.json() : [])
-                    .catch(err => { console.warn('⚠️ /bloqueios-externos indisponível:', err.message); return []; })
+                    .catch(err => { console.warn('⚠️ /bloqueios-externos indisponível:', err.message); return []; }),
+                apiFetchBackend(`${API_BASE_URL}/reposicoes`, {}, timeoutAtual)
+                    .then(res => res.ok ? res.json() : [])
+                    .catch(err => { console.warn('⚠️ /reposicoes indisponível:', err.message); return []; })
             ]);
             }, { contexto: 'carregando', onRetry, silenciosoUI });
 
@@ -650,6 +704,14 @@ async function carregarDados(opcoes = {}) {
                 || corOriginal.hex !== alunoNormalizado.corObjetivo.hex;
         });
         const listaAulasAPI = Array.isArray(dadosAgendamentos) ? dadosAgendamentos : [];
+        const listaReposicoesAPI = Array.isArray(dadosReposicoes) ? dadosReposicoes : [];
+        // [TAG-STORAGE-REPOSICOES-PENDENTES] A fila do painel é só pendente: agendada/realizada/expirada já saíram do fluxo de ação e contam duas vezes se forem listadas aqui.
+        const reposicoesPendentes = listaReposicoesAPI
+            .filter((reposicao) => reposicao && reposicao.status === 'pendente')
+            .map(mapearReposicaoParaUI)
+            .filter(Boolean);
+        atualizarReposicoes(reposicoesPendentes);
+
         if (listaAlunosAPI.length === 0 && listaAulasAPI.length === 0) {
             const backupUnificado = localStorage.getItem('personalTrainerData');
             const backupAlunos = localStorage.getItem('personal_alunos');
@@ -794,7 +856,7 @@ async function salvarDados(silencioso = false) {
         if (!silencioso) {
             notificarLoginObrigatorio('Faça login com Google para salvar na nuvem.');
         }
-        return;
+        return { ok: false, motivo: 'nao_autenticado' };
     }
 
     try {
@@ -831,28 +893,32 @@ async function salvarDados(silencioso = false) {
         if (!silencioso && typeof mostrarToast === 'function') {
             mostrarToast('Alterações salvas na nuvem!', 'success');
         }
+        return { ok: true, motivo: 'sucesso' };
 
     } catch (error) {
         if (error && error.message === 'AUTH_REQUIRED') {
             if (!silencioso) {
                 notificarLoginObrigatorio('Sua sessão Google expirou. Entre novamente para salvar na nuvem.');
             }
-            return;
+            return { ok: false, motivo: 'sessao_expirada' };
         }
         console.error('❌ Erro ao salvar dados na API:', error);
         if (!silencioso && typeof mostrarToast === 'function') {
             mostrarToast('Erro de conexão. Salvo temporariamente no aparelho.', 'error');
         }
+        return { ok: false, motivo: 'falha_remota' };
     }
 }
 
 function carregarDadosDoLocalStorage() {
     const backupAlunos = _parseJSONSeguro(localStorage.getItem('personal_alunos'), []);
     const backupAulas = _parseJSONSeguro(localStorage.getItem('personal_aulas'), []);
+    const backupReposicoes = _parseJSONSeguro(localStorage.getItem(REPOSICOES_CACHE_KEY), []);
     const backupGrade = _parseJSONSeguro(localStorage.getItem('personal_limitesGrade'), { inicio: '06:00', fim: '22:00' });
 
     atualizarAlunos(Array.isArray(backupAlunos) ? backupAlunos : []);
     atualizarAulas(Array.isArray(backupAulas) ? backupAulas : []);
+    atualizarReposicoes(Array.isArray(backupReposicoes) ? backupReposicoes : []);
     atualizarLimitesGrade(backupGrade || { inicio: '06:00', fim: '22:00' });
     const gradeLocal = obterLimitesGrade();
     if (typeof agendaConfig !== 'undefined') {
@@ -869,6 +935,7 @@ function carregarDadosDoLocalStorage() {
 function salvarNoLocalStorage() {
     localStorage.setItem('personal_alunos', JSON.stringify(obterAlunos()));
     localStorage.setItem('personal_aulas', JSON.stringify(obterAulas()));
+    localStorage.setItem(REPOSICOES_CACHE_KEY, JSON.stringify(obterReposicoes()));
     localStorage.setItem('personal_limitesGrade', JSON.stringify(obterLimitesGrade()));
     localStorage.setItem('faturamentoMeta', (window.faturamentoMeta || 0).toString());
 }

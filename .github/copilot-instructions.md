@@ -94,7 +94,26 @@ Regras:
   do roadmap). Funciona hoje por causa da configuração dos projetos Vercel.
   Não "conserte" isso de passagem — é mudança que exige validar os dois deploys.
 
-### 4.3 Ordem de declaração de rotas
+### 4.3 Implementação única de cálculo de regra de negócio
+
+Regra permanente: **cálculo de regra de negócio implementado no backend não pode
+ser reimplementado no frontend.**
+
+- Se o frontend precisar do resultado, deve consumir da resposta da API.
+- Se o cálculo precisar existir nos dois lados, deve morar em módulo compartilhado
+  único (hoje em `assets/js/shared/`) e ser consumido por ambos.
+- É proibido manter cópias divergentes da mesma regra em arquivos diferentes.
+
+Motivo concreto: no fluxo de reposições, uma cópia local da regra de prazo
+divergiu da implementação oficial e o erro só apareceu em produção.
+
+Regras para módulo compartilhado:
+
+- Arquivos em `assets/js/shared/` não podem depender de `window`, `document` nem DOM.
+- Todo módulo compartilhado consumido no frontend precisa de tag `<script>` em
+  `index.html`, carregada antes dos consumidores diretos.
+
+### 4.4 Ordem de declaração de rotas
 
 Rotas literais devem ser declaradas **antes** de rotas com parâmetro.
 Ex.: `/api/alunos/consistencia-agenda` vem antes de `/:id`, senão o Express
@@ -109,7 +128,8 @@ O módulo financeiro (`backend/src/services/financasService.js`, collection
 
 - **Não existe teste automatizado neste repositório.** Não há runner
   configurado em `backend/package.json`. Toda validação é manual, em produção.
-  Dois bugs financeiros reais já escaparam para prod por causa disso.
+  Dois bugs financeiros reais existiram e foram corrigidos por causa disso, mas
+  não afetaram cobrança de aluno real.
 - **Recálculo usa sempre o snapshot do ciclo** (`precoAulaSnapshot`,
   `valorFixoSnapshot`, `metodoCobranca`), nunca o preço atual do aluno. Um
   reajuste vale a partir do próximo ciclo, jamais retroativamente.
@@ -149,9 +169,11 @@ Não existe branch de preview nem ambiente intermediário.
 
 - Deploys manuais de branch de teste são possíveis, mas qualquer alteração na
   `main` os substitui.
-- Consequência prática: **qualquer coisa que entra na `main` está em produção,
-  usada por um usuário real.** Trate mudanças em cálculo financeiro, agenda e
-  sincronização com o Google Calendar com esse nível de cuidado.
+- Consequência prática: **qualquer coisa que entra na `main` faz deploy automático
+  em produção.** O app está publicado, mas ainda não foi lançado oficialmente; a
+  base de produção é usada para teste e limpa em seguida, e hoje está zerada.
+  Trate mudanças em cálculo financeiro, agenda e sincronização com o Google
+  Calendar com esse nível de cuidado.
 - Os _roots_ diferentes dos dois projetos são o que faz o caminho atravessado
   da seção 4.2 funcionar. Mudanças de estrutura de pastas podem quebrar o
   deploy sem quebrar nada localmente.
