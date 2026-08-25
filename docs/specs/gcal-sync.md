@@ -1,10 +1,10 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: engenharia reversa do código em `main` (2026-08-25). Esta v1 descreve o
-> comportamento **atual**, não o desejado. A seção 9 lista as divergências entre o
-> comportamento atual e o modelo pretendido (seção 2), e é o backlog desta feature.
+> **Status**: desenho da Rodada C e reversão de decisão (2026-08-25). Esta v3 registra
+> a decisão revisada sobre recorrência no Google e preserva o histórico da v2 para não
+> apagar a revisão de desenho.
 >
-> **Versão**: 1 · **Atualizado**: 2026-08-25
+> **Versão**: 3 · **Atualizado**: 2026-08-25
 >
 > **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v3) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
@@ -47,48 +47,81 @@ Regras que decorrem disso:
   sobrescrita no próximo sync de saída).
 - Nenhuma operação de leitura pode apagar ou alterar dado que o app criou.
 
-### 2.2 Recorrência: ocorrências individuais, não RRULE
+### 2.2 Recorrência: série no Google como evento recorrente com `RRULE`
 
-Decisão do projeto: **uma série recorrente é publicada no Google como um evento
-independente por ocorrência**, não como evento recorrente com `RRULE`.
+Decisão revisada na v3 do projeto: **uma série recorrente é publicada no Google como um
+único evento pai com `recurrence` e `RRULE`**; a expansão em instâncias é de
+responsabilidade do Google.
 
-Motivo declarado: facilita a gestão granular — editar ou remover uma ocorrência isolada
-sem mexer nas outras.
+> **Histórico da decisão (v2 → v3)**
+> Na v2, o projeto decidiu publicar cada ocorrência como evento independente. Esse desenho
+> exigia:
+> - horizonte de publicação;
+> - mapa `data → eventId` para localizar a instância correta;
+> - gatilho de reabastecimento quando o horizonte mudava;
+> - reprocessamento de toda a série para manter a janela alinhada.
+>
+> A revisão em v3 concluiu que esse custo não existe com `RRULE`: o Google mantém a série e
+> expande as instâncias automaticamente a partir da regra, sem que o app precise decidir uma
+> janela de publicação; o modelo deixa de depender de uma tabela de instâncias locais.
+>
+> O motivo da reversão é direto: a alternativa anterior aumentava irrelevante o acoplamento
+> entre calendário local e Google. Com `RRULE`, o app precisa apenas publicar a regra e o
+> Google resolve a expansão. A pergunta do horizonte deixa de existir: não há janela a
+> escolher.
+>
+> O custo que se aceita em troca é documentado no item 4 desta rodada: a edição de uma
+> instância exige lidar com a instância concreta, e o gerenciamento de `COUNT`/`UNTIL`
+> deixa de ser um detalhe do app para virar um ponto do design de implementação.
 
-Consequências assumidas:
+### 2.3 Sem horizonte de publicação
 
-- O app é quem expande a recorrência. O Google recebe eventos avulsos e não sabe que
-  formam uma série.
-- É preciso um **horizonte** de publicação (2.3), porque série sem data de fim não pode
-  ser expandida até o infinito.
-- Custo: N chamadas à API por série, em vez de uma.
+A partir da v3, **não existe mais horizonte de publicação** como um problema de produto ou
+arquitetura. O app não publica um intervalo em duas dimensões (`hoje até +N meses`) e nem
+mantém um mapa `data → eventId` para abastecer a série.
 
-> **Nota técnica (documentação do Google, consultada em 2026-08-25)**: o Google
-> desaconselha modificar instâncias individualmente quando a intenção é alterar a série
-> inteira, porque <cite index="3-4,3-5">isso cria muitas exceções que poluem o calendário, deixam o acesso mais lento e disparam um número alto de notificações de alteração</cite>.
-> **Esse alerta não se aplica ao modelo escolhido aqui**: como o app publica eventos
-> avulsos, não existe evento-pai nem instância, logo não existe exceção a ser criada.
-> O alerta valeria se a decisão fosse `RRULE` + edição por instância — que é justamente o
-> desenho recusado.
+No desenho `RRULE`:
 
-### 2.3 Horizonte
+- a série é um único evento no Google;
+- a expansão em instâncias fica no Google;
+- as regras de corte da série ficam dentro do próprio `RRULE` (`UNTIL` e/ou `COUNT`);
+- a leitura continua usando `singleEvents=true` para trazer instâncias, mas a escrita não
+  depende de uma janela local de expansão.
 
-Como a expansão é do app, o horizonte também é. Regra pretendida:
-
-- Publicar ocorrências de **hoje até +N meses**, empurrando a janela em cada sync.
-- Série com `recorrenciaDataFim` ou `recorrenciaQuantidadeOcorrencias` para no que vier
-  primeiro entre o limite dela e o horizonte.
-- Série sem condição de fim é publicada até o horizonte, e só.
-
-O valor de `N` é decisão aberta. Referência de mercado: manter a janela próxima do que a
-aplicação de fato precisa, porque <cite index="5-3,5-4">recorrência sem data de fim pode gerar anos de instâncias</cite>.
-A janela de leitura hoje é −1/+2 meses (4.2); espelhar isso na escrita mantém as duas
-pontas coerentes.
+A mudança de desenho é intencional: a janela de publicação não é mais uma decisão de
+negócio a se manter em sync. A decisão que permanece em aberto é outra — o que o app fará
+quando a própria série chegar ao limite de `COUNT` (item 9.11).
 
 ### 2.4 Reposição
 
 Instância enviada para reposição deve **desaparecer** do dia original no Google, igual a
 qualquer aula cancelada pelo app. Quando a reposição é reagendada, a nova data aparece.
+Com `RRULE`, isso se traduz em `EXDATE` e/ou cancelamento de instância do evento recorrente,
+sem depender de expansão manual pelo app.
+
+### 2.5 Referência técnica da API do Google
+
+A decisão acima é coerente com a API do Google e com a RFC 5545.
+
+- `recurrence` do recurso `Event`: array de strings `RRULE`, `RDATE`, `EXDATE` conforme a
+  especificação de calendário iCalendar. Referência: [Google Calendar Events](https://developers.google.com/workspace/calendar/api/v3/reference/events)
+- Modelo evento pai + instâncias, e exceção de instância: [Guia de eventos recorrentes](https://developers.google.com/workspace/calendar/api/guides/recurringevents)
+- Gramática do `RRULE`, `UNTIL`, `COUNT`, `BYDAY`, `BYMONTHDAY`, `WKST`: [RFC 5545 § 3.3.10](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10)
+- Comportamento de `events.list` com e sem `singleEvents`: [Google Calendar Events.list](https://developers.google.com/workspace/calendar/api/v3/reference/events/list)
+
+Duas armadilhas importantes da RFC que a Rodada C precisa respeitar:
+
+- `COUNT` e `UNTIL` são **mutuamente exclusivos** na mesma `RRULE`. A especificação da RFC
+  5545 diz que `UNTIL` ou `COUNT` são opcionais, mas “`UNTIL` ou `COUNT` ... MUST NOT occur in
+  the same recur” (não podem aparecer juntos na mesma regra).
+- Quando o `DTSTART` tem `TZID`, o `UNTIL` precisa ser expresso em **UTC**, com sufixo `Z`.
+  Esse é o caso do nosso `start.dateTime` com `timeZone`, e a regra vale para o `UNTIL` que
+  vier de `recorrenciaDataFim` ou de qualquer limite convertido no app. Se a data local for
+  `dd/mm/yyyy`, ela precisa ser convertida para UTC antes de entrar no `RRULE`.
+
+> **Observação de confirmação**: as duas armadilhas acima foram confirmadas na RFC 5545 e no
+> guia de eventos recorrentes. A linguagem do Google foi usada como referência para o modelo
+> de pai + instâncias e para `singleEvents=true`, não como substituto da RFC.
 
 ---
 
@@ -166,15 +199,55 @@ usa `start.date`/`end.date` com o fim no dia seguinte.
 **`app_origin`** é o mecanismo que permite ao sync de entrada reconhecer o que é do app.
 Não remover.
 
-### 4.2 O que não é montado
+### 4.2 O que não é montado (hoje)
 
-**Não existe `RRULE` em nenhum arquivo do repositório** — nem no backend, nem no
-frontend. Confirmado por varredura em todos os `.js` e `.html`.
+Hoje, o código ainda não monta `RRULE` em nenhum ponto do backend ou do frontend. O
+objetivo da Rodada C é exatamente criar esse payload e, ao mesmo tempo, seguir o que o
+Google entende como evento pai recorrente.
 
-`montarEventoGoogle` produz **um** `start`/`end`, derivado do campo `data`. Campos de
-recorrência do documento (`frequencia`, `diasSemana`, `intervaloRecorrencia`,
-`recorrenciaDataInicio`, `recorrenciaDataFim`, `recorrenciaQuantidadeOcorrencias`,
-`excecoes`) são ignorados na montagem.
+No desenho v3, a montagem do evento passa a incluir `recurrence`, com as partes do `RRULE`
+que representam o padrão da série e o limite dela. O modelo legado ainda expõe campos como
+`frequencia`, `diasSemana`, `intervaloRecorrencia`, `recorrenciaDataInicio`,
+`recorrenciaDataFim`, `recorrenciaQuantidadeOcorrencias` e `excecoes`, mas esses campos
+agora são a entrada para o mapeamento do item 3, não um conjunto de eventos avulsos.
+
+## 4.3 Mapeamento do modelo local para `RRULE`
+
+A tabela abaixo é o mapa de implementação da Rodada C e foi montada a partir do motor local
+em `assets/js/shared/recurrence-helpers.js` e do serializador em
+`assets/js/features/modals/scheduling-serializer.js`.
+
+| Nosso campo | Valor | `RRULE` |
+| --- | --- | --- |
+| `tipoRecorrencia` | `diaria` | `FREQ=DAILY` |
+| `tipoRecorrencia` | `semanal` | `FREQ=WEEKLY` + `BYDAY` |
+| `tipoRecorrencia` | `mensal` com `diasSemana` | `FREQ=MONTHLY` + `BYDAY` |
+| `tipoRecorrencia` | `mensal` sem `diasSemana` | `FREQ=MONTHLY;BYMONTHDAY=` |
+| `tipoRecorrencia` | `anual` | `FREQ=YEARLY` |
+| `intervaloRecorrencia` | `N` | `INTERVAL=N` |
+| `recorrenciaFimCondicao` | `untilDate` | `UNTIL=` em UTC |
+| `recorrenciaFimCondicao` | `occurrences` | `COUNT=` |
+| `recorrenciaEscopo` | `monthOfDate` | `UNTIL=` no último dia do mês |
+| `excecoes[]` | datas em `pt-BR` | `EXDATE` |
+
+A lista de nomes de dia em pt-BR vem da fonte já usada no engine: `DEFAULT_DIAS_SEMANA` em
+`assets/js/shared/recurrence-helpers.js:12` e `window.getNomesDiasSemana` em
+`assets/js/utils-datetime.js:26-28`. O mapa é: `Domingo, Segunda, Terça, Quarta, Quinta,
+Sexta, Sábado`, que correspondem aos códigos RFC `SU, MO, TU, WE, TH, FR, SA`.
+
+Pontos em que o engine local já coincide com a RFC e não precisam de trabalho:
+
+- A semana é deslocada para segunda-feira em `resolverCompromissoRecorrenteNaData`
+  (`assets/js/shared/recurrence-helpers.js:65-74`), equivalente ao `WKST=MO` default da RFC.
+- No caso mensal por dia do mês, o motor exige `dataRef.getDate() === dataCriacao.getDate()`
+  (`assets/js/shared/recurrence-helpers.js:77-85`), o que reproduce o comportamento de
+  `BYMONTHDAY`: meses sem esse dia são simplesmente ignorados.
+
+> **Fonte da serialização**: o payload canônico nasce em `aplicarRecorrenciaLegada`
+> (`assets/js/features/modals/scheduling-serializer.js:214-249`). Esse bloco salva a regra em
+> `tipoRecorrencia`, `intervaloRecorrencia`, `diasSemana`, `recorrenciaEscopo`,
+> `recorrenciaDataInicio`, `recorrenciaDataFim`, `recorrenciaQuantidadeOcorrencias` e
+> `excecoes` antes de qualquer chamada ao Google.
 
 ---
 
@@ -239,19 +312,19 @@ persistência. Ver 9.4.
 
 ## 7. Decisões e casos de borda
 
-| #   | Pergunta                              | Decisão                                                     |
-| --- | ------------------------------------- | ----------------------------------------------------------- |
-| 1   | Quem chama a API do Google?           | **Só o backend**, dentro do CRUD de agendamento             |
-| 2   | Série vai como `RRULE`?               | **Não.** Um evento independente por ocorrência (2.2)        |
-| 3   | Quem expande a recorrência?           | O app                                                       |
-| 4   | Série infinita?                       | Publicada até o horizonte (2.3)                             |
-| 5   | Edição da usuária no Google volta?    | **Não**, em item criado pelo app                            |
-| 6   | Evento criado no Google entra no app? | Sim, como `BloqueioExterno`                                 |
-| 7   | O app edita evento externo?           | **Nunca**                                                   |
-| 8   | Como o app reconhece o que é dele?    | `extendedProperties.private.app_origin`                     |
-| 9   | Timezone                              | `dateTime` local + `timeZone`; sem conversão para UTC       |
-| 10  | Instância enviada para reposição      | Desaparece do dia original no Google (2.4)                  |
-| 11  | Falha do Google reverte a gravação?   | **Não.** Grava no Mongo e responde 502 com `partialSuccess` |
+| #   | Pergunta                              | Decisão                                                                 |
+| --- | ------------------------------------- | ----------------------------------------------------------------------- |
+| 1   | Quem chama a API do Google?           | **Só o backend**, dentro do CRUD de agendamento                         |
+| 2   | Série vai como `RRULE`?               | **Sim.** Evento pai recorrente com `RRULE` (2.2)                        |
+| 3   | Quem expande a recorrência?           | O Google                                                                |
+| 4   | Série infinita?                       | Encerrada por `UNTIL`/`COUNT` na própria regra (2.3)                    |
+| 5   | Edição da usuária no Google volta?    | **Não**, em item criado pelo app                                        |
+| 6   | Evento criado no Google entra no app? | Sim, como `BloqueioExterno`                                             |
+| 7   | O app edita evento externo?           | **Nunca**                                                               |
+| 8   | Como o app reconhece o que é dele?    | `extendedProperties.private.app_origin`                                 |
+| 9   | Timezone                              | `dateTime` local + `timeZone`; `UNTIL` em UTC quando necessário          |
+| 10  | Instância enviada para reposição      | Desaparece do dia original no Google via `EXDATE`/instância (2.4)       |
+| 11  | Falha do Google reverte a gravação?   | **Não.** Grava no Mongo e responde 502 com `partialSuccess`             |
 
 ---
 
@@ -272,18 +345,25 @@ Ordenados por gravidade.
 
 ### 9.1 Série recorrente publica apenas uma ocorrência — CRÍTICO
 
+> **Redesenhado na v3**: a solução do item continua aberta, mas agora a correção deixa de
+> ser “publicar N eventos independentes” e passa a ser “publicar a série como um evento pai
+> com `RRULE`”.
+
 **Sintoma**: aula semanal aparece uma vez no Google, na data inicial.
 
-**Causa**: uma série é **um** documento `Agendamento`, e o schema tem
-`googleCalendarEventId` como **string única**. Um documento não tem onde guardar N ids de
-evento. `montarEventoGoogle` produz um evento só porque é o único que o modelo de dados
-consegue rastrear.
+**Causa**: o app ainda usa uma representação do tipo “evento único com um único
+`googleCalendarEventId`”. O modelo atual expõe um único id por agendamento em
+`backend/src/models/Agendamento.js:19`, e a lógica de escrita do calendário também assume um
+evento único (`backend/src/services/gcalSyncService.js:643-647`).
 
-**Correção**: exige mudança de schema — mapa `data → googleCalendarEventId` (subdocumento
-ou collection de vínculo), mais a expansão no momento do sync com horizonte (2.3).
+**Correção redesenhada**: não é mais um mapa `data → googleCalendarEventId`; a correção passa
+ser o padrão RRULE e o uso do id do evento pai. O campo `googleCalendarEventId` continua
+sendo o identificador do evento pai no Google e continua suficiente para a série;
+não há mais necessidade do horizonte de publicação.
 
-**É o item que destrava todos os outros.** Sem o mapa de ids, 9.3 e 2.4 não têm como ser
-implementados.
+**É o item que destrava todos os outros.** Depois do redesenho, 9.3 e 2.4 passam a ser
+questões de `EXDATE`/instância e de edição parcial da série, não de expansão manual de um
+horizonte.
 
 ### 9.2 Sync de entrada apaga agendamento do app — CRÍTICO (latente)
 
@@ -294,20 +374,27 @@ chama `deleteAgendamento(ownerEmail, event.id)`. Evento do app cancelado dentro 
 Viola diretamente 2.1: leitura nunca deveria alterar dado do app.
 
 Hoje o dano é limitado por acidente — um id por série, e o match é por
-`googleCalendarEventId`. Depois de 9.1, com N ids por série, cancelar **uma** ocorrência no
-Google pode derrubar o documento da série inteira.
+`googleCalendarEventId`. Depois do redesenho v3, o risco continua, mas o caso mais sensível
+é o `EXDATE`/instância do evento pai, não a explosão de ids por data.
 
 **Correção**: mover o teste de propriedade para antes do teste de cancelamento, e nunca
 chamar `deleteAgendamento` a partir do fluxo de leitura. Isso vale para os dois laços.
 
 ### 9.3 `excecoes` não propagam para o Google — ALTO
 
-Adicionar data em `excecoes` altera o documento, o que dispara `PUT` e
-`updateEventInGoogle` — mas `montarEventoGoogle` ignora `excecoes`. O evento no Google
-continua existindo.
+> **Redesenhado na v3**: a correção deixou de ser “criar um evento separado por data” e passa
+> a ser “transformar a exceção do modelo em `EXDATE` no evento pai recorrente”.
 
-Efeito prático: **aula cancelada ou enviada para reposição continua no Google**. É a
-violação de 2.4. Depende de 9.1.
+Adicionar data em `excecoes` altera o documento, o que dispara `PUT` e
+`updateEventInGoogle` — mas o fluxo atual não traduz `excecoes` para o Google. O modelo
+legacy salva `excecoes` e `excecoesDetalhadas` em `aplicarRecorrenciaLegada`
+(`assets/js/features/modals/scheduling-serializer.js:238-249`), mas não há uma tradução
+para `EXDATE` específica de evento recorrente.
+
+Efeito prático: **aula cancelada ou enviada para reposição continua no Google**. O risco real
+na v3 não é mais a expansão do horizonte, e sim a escolha de fonte de verdade entre
+`excecoes` (datas pt-BR) e `excecoesDetalhadas` (amplitude detalhada), especialmente para
+agendamentos em hora e `TZID`.
 
 ### 9.4 Falha do Google mascarada como falha de persistência — MÉDIO
 
@@ -356,17 +443,73 @@ testáveis sem rede — inclusive 9.5, que é um teste de três linhas.
   instrui agentes a não rodar a suíte.
 - `salvarEventoComGCal` tem nome que descreve o que ela não faz (3.1).
 
+### 9.11 `occurrences` não é aplicado no engine local — ALTO
+
+**Problema**: o serializador grava `recorrenciaQuantidadeOcorrencias` e a condição
+`recorrenciaFimCondicao: 'occurrences'`, mas o motor local só trata `untilDate` em
+`checarCompromissoNaData` (`assets/js/shared/recurrence-helpers.js:131-137`). O fluxo de
+serialização que preenche o payload está em `aplicarRecorrenciaLegada`
+(`assets/js/features/modals/scheduling-serializer.js:241-249`).
+
+**Consequência**: o app local e o Google podem divergir. Se a série for publicada com
+`COUNT`, o Google a encerra segundo a regra, mas o app local continua contando instâncias
+como se a série fosse infinita. Isso é uma divergência de regra, não um detalhe visual.
+
+**Risco financeiro**: `recurrence-helpers.js` é consumido em
+`backend/src/services/financasService.js:6` e em `normalizarAulasContadas`
+(`backend/src/services/financasService.js:193-225`), então a regra de contagem impacta
+`aulasContadas` e, por extensão, o valor do ciclo. Não é mudança cosmética.
+
+### 9.12 `EXDATE` de evento com hora precisa do horário — ALTO
+
+**Problema**: nossas `excecoes` são strings de data em `pt-BR` e o engine trata exclusão por
+`dataStr = dataAlvo.toLocaleDateString('pt-BR')` em `checarCompromissoNaData`
+(`assets/js/shared/recurrence-helpers.js:109-115`). Isso funciona para recorrência sem hora,
+mas não é confiável quando o evento tem horário: `EXDATE` precisa casar com o valor do
+`DTSTART`, inclusive hora e `TZID`.
+
+**Risco**: uma exclusão por data pode remover a instância errada ou falhar quando o evento
+cronometrado for publicado como recorrência. O payload já carrega `excecoesDetalhadas` em
+`aplicarRecorrenciaLegada` (`assets/js/features/modals/scheduling-serializer.js:238-239`),
+mas a Rodada C precisa decidir qual fonte de verdade será usada.
+
+### 9.13 Volume de leitura aumenta — MÉDIO
+
+`listCalendarEvents` usa `singleEvents=true` (
+`backend/src/services/gcalSyncService.js:449-473`), então o Google devolve instâncias
+expandidas dentro da janela. Essas instâncias herdam `extendedProperties` do evento pai, e a
+classificação de propriedade continua funcionando em `isAppOwnedEvent`
+(`backend/src/services/gcalSyncService.js:13-18`).
+
+Esse é um custo de payload, não um bug — e passa a ser um ponto de observação se a série
+virar longa. O risco não é a lógica de ignorar o evento do app, e sim o volume de dados
+lidos em cada sync.
+
+## 10. Custo aceito da decisão
+
+A escolha por `RRULE` não é gratuita. O guia de eventos recorrentes da Google explica que,
+para alterar uma única instância, a aplicação precisa buscar a instância e atualizá-la; para
+alterar a série a partir de um ponto, o padrão é aparar a série original com `UNTIL` antes da
+instância alvo e criar uma nova série. A referência é
+`https://developers.google.com/workspace/calendar/api/guides/recurringevents`.
+
+Hoje isso é aceitável porque o app não tem um fluxo de "editar série a partir daqui". O fluxo
+existente é cancelar ocorrência e criar reposição, que é o caso simples com `EXDATE`.
+Se um dia surgir edição parcial de série, esse é o ponto em que a decisão deve ser reaberta.
+
 ---
 
-## 10. Ordem sugerida de correção
+## 11. Ordem sugerida de correção
 
 1. **9.2** — pequeno, cirúrgico, e evita perda de dado. Independe de tudo.
 2. **9.4** — pequeno, e destrava o gate de persistência da reposição.
 3. **9.5** e **9.6** — pequenos, oportunistas.
 4. **9.8** — testes das funções puras, antes de mexer em 9.1.
-5. **9.1** — mudança de schema + expansão + horizonte. É o projeto grande.
-6. **9.3** — sai quase de graça depois de 9.1.
+5. **9.1** — redesenho da série para `RRULE`; é o projeto grande.
+6. **9.3** — depois da regra pai, trata `EXDATE` e decisão de fonte de exceção.
 7. **9.9** — junto de qualquer uma das anteriores.
+8. **9.11** — depois que a regra pai estiver estável; é o ponto de `COUNT`.
+9. **9.12** e **9.13** — entram junto com a validação do `RRULE` publicado.
 
-Os itens 1 a 4 não tocam o modelo de dados e podem ir em uma rodada só. O item 5 merece
-prompt próprio, com decisão de horizonte tomada antes.
+Os itens 1 a 4 não tocam o modelo de dados e podem ir em uma rodada só. A parte grande
+é a chegada do `RRULE`, não a manutenção de uma janela de publicação.

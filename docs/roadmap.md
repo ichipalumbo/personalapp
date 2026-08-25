@@ -223,6 +223,15 @@ Cada item traz:
 
 ## 🔴 Grupo 2 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
 
+### [ ] 2.0 Recorrência no Google Calendar (`RRULE`) — **em aberto**
+- **O que é**: Publicar a série como um único evento pai no Google, com `recurrence` + `RRULE`, deixando a expansão em instâncias para o próprio Google.
+- **Por que importa**: Remove a necessidade de manter horizonte de publicação, mapa `data → eventId` e reprocessamento da série. A decisão pendente deixou de ser "horizonte" e passou a ser "como tratar `COUNT` quando a série chega ao limite".
+- **Onde mexer**: backend de sync (`backend/src/services/gcalSyncService.js`), montagem do payload e regras de `EXDATE`/`COUNT` no Google Calendar. O campo `googleCalendarEventId` no modelo de agendamento (`backend/src/models/Agendamento.js:19`) continua guardando o id do evento pai e é suficiente para a série.
+- **Ponto de atenção**: o que fazer quando a própria série bater o limite de `COUNT` (item 9.11 da spec) sem deixar a agenda local divergentemente calculada.
+- **Esforço**: Médio.
+
+---
+
 ### [ ] 2.1 Cobrança automatizada (Pix, boleto, cartão recorrente)
 - **O que é**: Gerar cobranças automáticas para os alunos e receber confirmação de pagamento sem o PT precisar fazer nada manualmente.
 - **Por que importa**: Elimina de vez o trabalho manual de cobrar e reconciliar pagamentos, indo além do registro manual entregue no item 1.1.
@@ -309,12 +318,13 @@ Cada item traz:
 | 9 | Débitos 0.2, 0.3 e 0.9 (de carona) | Débito | Baixo–Médio |
 | 10 | Aniversário do aluno (1.6) | Fácil | Baixo |
 | 11 | Banco de desenvolvimento separado (3.4) | Ambiente | Médio–Alto |
-| 12 | Cobrança automatizada (2.1) | Complexo | Alto |
-| 13 | Notificações automáticas (2.2) | Complexo | Alto |
-| 14 | Avaliação física/anamnese (2.4) | Complexo | Alto |
-| 15 | Auditoria (2.6) | Complexo | Médio–Alto |
-| 16 | Portal do aluno (2.3) | Complexo | Muito alto |
-| 17 | Multi-personal/equipe (2.5) | Complexo | Muito alto |
+| 12 | Recorrência no Google Calendar (2.0) | Complexo | Médio |
+| 13 | Cobrança automatizada (2.1) | Complexo | Alto |
+| 14 | Notificações automáticas (2.2) | Complexo | Alto |
+| 15 | Avaliação física/anamnese (2.4) | Complexo | Alto |
+| 16 | Auditoria (2.6) | Complexo | Médio–Alto |
+| 17 | Portal do aluno (2.3) | Complexo | Muito alto |
+| 18 | Multi-personal/equipe (2.5) | Complexo | Muito alto |
 
 **Sugestão de leitura da tabela**: os itens 1 a 6 são todos de esforço baixo e fecham as pontas soltas da entrega de Finanças. O item 3.1 (testes) subiu na lista de propósito: é barato, não depende de nada e é o único que protege código que calcula dinheiro — vale entrar antes de qualquer coisa que mexa em valor cobrado. Os itens 7 e 8 andam juntos e destravam a evolução da regra 5.8 do financeiro (contagem por presença em vez de existência na agenda).
 
