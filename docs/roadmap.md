@@ -58,11 +58,11 @@ Cada item traz:
 
 ---
 
-### [~] 0.5 Collection `Reposicao` + modelo de competência — **IMPLEMENTADO NA BRANCH, PENDENTE DE ROLLOUT**
-- **Status real**: Implementado na `feat/gcal-sync` (backend + fluxo de frontend), com validação de regressões no backend. O frontend ainda está pendente de rollout.
+### [x] 0.5 Collection `Reposicao` + modelo de competência — **EM PRODUÇÃO**
+- **Status real**: implementação mergeada na `main` e validada em produção; backend e frontend em produção.
 - **O que já existe**: collection `Reposicao`, integração no financeiro por competência, fluxo de envio/reagendamento com vínculo `reposicaoId` / `agendamentoReposicaoId`.
-- **Pendências**: rollout do frontend e fechamento dos resíduos/documentação de rollout.
-- **Esforço restante**: Baixo (rollout e fechamento), sem mudança conceitual de regra.
+- **Pendências**: a seção 9.5 do card do aluno continua pendente (contador de reposições no card), e a caixinha de avisos de reposição a vencer ficou no item 0.8.
+- **Esforço restante**: baixo (fechamento do card do aluno e documentação de rollout), sem mudança conceitual de regra.
 
 ### [x] 0.6 Extrato do ciclo — **ENTREGUE**
 - **O que foi entregue**: cada ciclo exibe o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado, com os 11 tipos de linha documentados em `docs/specs/reposicoes-e-competencia.md`.
@@ -77,9 +77,11 @@ Cada item traz:
 - **Esforço**: Médio.
 
 ### [ ] 0.8 Avisos in-app de reposição a vencer
-- **O que é**: Card do aluno + painel com alerta para reposição prestes a expirar.
-- **Por que importa**: Dá visibilidade útil sem exigir notificação externa; é o próximo passo de UX após a regra de negócio.
-- **Onde mexer**: `view-alunos.js`, painel de aluno e endpoint de fila de reposição.
+- **O que é**: Card do aluno + painel com alerta para reposição prestes a expirar; a regra de expiração fechada do item 0.7 é a base para calcular "vence em breve".
+- **Por que importa**: Dá visibilidade útil sem exigir notificação externa; com o prazo de validade definido, a UX passa a ter uma regra clara para o que vence.
+- **Onde mexer**: `view-alunos.js`, card do aluno, painel de aluno e endpoint de fila de reposição. O layout do card (`.aluno-card-indicadores`, grid `auto-fit`) **já foi preparado para uma terceira caixinha sem refatoração**; a antiga `contarReposicoesPorAluno` **foi removida** e não deve ser ressuscitada.
+- **Estado de implementação**: não implementado; `Reposições` não aparece em `index.html`, e `view-alunos.js` não renderiza o contador. O bloco continua como item de entrega futura.
+- **Dependência**: item 0.7 (prazo de validade + expiração lazy). Sem a regra de expiração fechada, "vence em breve" não tem base para ser calculado.
 - **Esforço**: Baixo–Médio.
 
 ### [ ] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado
@@ -88,6 +90,12 @@ Cada item traz:
 - **Dependência**: item 0.2 (consolidação de compartilhados e remoção da travessia `backend/ -> assets/`).
 - **Onde mexer**: módulo compartilhado de domínio (sem dependência de `window`/DOM), backend consumindo diretamente e frontend apenas exibindo resultado da API quando aplicável.
 - **Esforço**: Médio.
+
+### [x] 0.10 Deduplicação de `calcularPrazoReposicao`
+- **O que foi entregue**: a primeira declaração (código morto) foi removida; a ativa foi preservada.
+- **Sem mudança de comportamento**: o guard de ciclo não configurado que existia só na versão morta já era coberto por `calcularCicloVigente`, que devolve `null` para aluno sem `fechamentoMesCheio` e sem `diaVencimento`.
+- **Suíte**: a suíte permaneceu em 84 testes, 0 falhas.
+- **Referência**: `docs/_reports/2026-08-26-fix-dedupe-calcular-prazo-reposicao.md`.
 
 ---
 
@@ -103,32 +111,20 @@ Cada item traz:
 - **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
 - **Esforço**: Médio. O custo que ficou aberto foi o gatilho automático no boot e a validação da janela de 24h em 02/09/2026, e isso foi registrado como ressalva da entrega, não como regressão funcional visível.
-- **Validação pendente**: confirmar em produção, por volta de 01–02/09/2026, que a renovação do canal dispara exatamente uma vez por carregamento com `window.log.nivel = 'debug'`.
+- **Validação pendente**: confirmar em produção, por volta de 01–02/09/2026, que a renovação do canal dispara exatamente uma vez por carregamento com `window.log.nivel = 'debug'` e mensagem "Canal renovado". A margem de 24h só dispara nas últimas 24 horas antes do vencimento do canal, que expira em 02/09/2026; fora dessa janela, não deve haver renovação.
 - **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
 
-### [ ] Consolidação da sincronização tripla no boot
+### [ ] 2.10 Consolidação da sincronização tripla no boot
 - **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
 - **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
 - **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
 - **Esforço**: Baixo–Médio.
 
-### [ ] Alargamento da janela do full sync
+### [ ] 2.11 Alargamento da janela do full sync
 - **O que é**: ampliar a janela de rebusca do full sync além do atual `−1 mês a +2 meses` para cobrir mais casos de bloqueios externos fora da janela ativa.
 - **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
 - **Esforço**: Médio.
-
-### [ ] Deduplicação de `calcularPrazoReposicao`
-- **O que é**: eliminar a duplicação da função no módulo `financasService`, onde existem duas implementações com comportamento diferente.
-- **Por que importa**: a versão ativa e a morta têm regras diferentes (`Math.round` vs `Math.floor`, e guard extra em um ramo), e a reordenação do arquivo muda o comportamento silenciosamente.
-- **Onde mexer**: `backend/src/services/financasService.js`.
-- **Esforço**: Baixo.
-
-### [ ] Implementação da caixinha 9.5
-- **O que é**: exibir o contador de reposições pendentes e vencendo em breve no card do aluno.
-- **Por que importa**: o app já reserva o espaço, mas o conteúdo não está implementado.
-- **Onde mexer**: `index.html`, `assets/js/view-alunos.js` e a API de fila de reposições.
-- **Esforço**: Baixo–Médio.
 
 ---
 
@@ -142,15 +138,13 @@ Cada item traz:
 >
 > **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
 
-### [ ] 3.1 Testes automatizados das regras financeiras
+### [ ] 3.1 Ampliar cobertura das regras financeiras
 > *Este item também aparecia como 2.9 nas versões anteriores deste roadmap. Consolidado aqui.*
-- **O que é**: Suíte mínima cobrindo as regras de cálculo de `financasService.js`: janela do ciclo (incluindo dia 31 em mês curto e virada de ano), piso zero do ajuste negativo, congelamento de ciclo pago e uso do snapshot no recálculo (regra 5.9 da spec).
-- **Por que importa**: Os dois bugs financeiros que chegaram a produção teriam sido pegos por testes triviais. É a única coisa desta lista que protege dinheiro.
-- **Por que é barato**: As funções de cálculo já são **puras e exportadas** (`calcularCicloVigente`, `calcularValorTotalCiclo`, `calcularTotalAulasCobradas`). Não precisam de banco, navegador nem ambiente local. O Node traz `node:test` embutido — **zero dependência nova**, sem bundler e sem build step, respeitando a decisão de manter o projeto enxuto.
-- **Onde mexer**: `backend/` — adicionar `"test": "node --test"` em `backend/package.json` e criar os arquivos de teste. Hoje não há nenhum runner configurado.
-- **Ponto de atenção**: não tentar cobrir tudo. O alvo são as funções puras. Testar o que depende de Mongo é outro nível de esforço e pode ficar para depois (ou nunca).
+- **O que é**: ampliar a suíte automatizada das regras de cálculo de `financasService.js` e do fluxo de reposição que já está em `backend/test/`.
+- **O que já existe hoje**: a suíte do backend roda em `node --test` com **84 testes, 0 falhas**. Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
+- **Lacunas verificadas**: não há teste de frontend. Não existe nenhum arquivo de teste em `assets/` e a UI não tem suíte automatizada em `backend/test/`.
+- **Por que importa**: a suíte já cobre as regras puras e de negócio mais sensíveis do backend, e a expansão continua sendo a forma correta de reforçar o cálculo financeiro sem inventar uma lacuna de UI que ainda não existe.
 - **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
-- **Prioridade**: **subiu** com a nova spec de reposições e competência. A contagem do ciclo agora mexe em regras de data e valor, e o melhor momento para escrever estes testes é antes de qualquer mudança de cálculo.
 
 ---
 
@@ -249,11 +243,7 @@ Cada item traz:
 ---
 
 ### [ ] 1.8 Visão de "aulas a repor" no card do aluno
-- **O que é**: Uma caixinha no card do aluno mostrando quantas aulas ele tem pendentes de reposição.
-- **Por que importa**: Foi explicitamente citada como a próxima feature desejada durante o desenho de Finanças, e ficou **fora de escopo** de propósito para não misturar com a mudança do modelo de cobrança.
-- **Onde mexer**: `assets/js/view-alunos.js`. O layout do card (`.aluno-card-indicadores`, grid `auto-fit`) **já foi estruturado para acomodar uma terceira caixinha sem refatoração** — ver seção 11 da spec. No backend, o padrão a seguir é o de `agendaConsistencyService.js` (indicador operacional isolado, exposto por rota própria). ⚠️ A antiga `contarReposicoesPorAluno` **foi removida** e não deve ser ressuscitada — a regra precisa ser redesenhada, provavelmente junto com o item 1.5.
-- **Dependência**: faz mais sentido depois (ou junto) do item 1.5, que define o que gera uma reposição. **Parcialmente atendido pela caixinha de avisos de reposição a vencer** (item 0.8), então o escopo deve ser reavaliado antes de executar.
-- **Esforço**: Baixo–Médio.
+- **Consolidado no item 0.8.**
 
 ---
 
