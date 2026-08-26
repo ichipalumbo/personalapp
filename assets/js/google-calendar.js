@@ -70,6 +70,12 @@
                 });
             } else if (!renewed && reason === 'channel_valid' && window.log && typeof window.log.debug === 'function') {
                 window.log.debug('[gcal]', 'Canal ainda válido, nada a fazer', { reason });
+            } else if (!renewed && reason !== 'channel_valid' && window.log && typeof window.log.warn === 'function') {
+                const logPayload = { reason };
+                if (payload.error) {
+                    logPayload.error = payload.error;
+                }
+                window.log.warn('[gcal]', 'Falha ao verificar/renovar o canal do Google Calendar.', logPayload);
             }
 
             if (synced && window.log && typeof window.log.info === 'function') {
