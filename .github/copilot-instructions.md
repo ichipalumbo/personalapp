@@ -19,6 +19,14 @@ Aplicam-se a **todas** as sessões, independentemente da tarefa.
 - **Ao final, relate**: arquivos alterados, o que mudou em cada um, e o que
   você encontrou mas não alterou.
 - `package-lock.json` pode ser alterado quando necessário.
+- **Nunca comitar direto na `main`**. O agente deve trabalhar sempre na branch
+  atual e confirmar a branch ativa antes de criar ou registrar commits. Se a
+  tarefa for em uma branch de feature, o commit deve ficar nessa branch.
+- **Quando o prompt pedir múltiplos commits**, o agente deve respeitar a ordem
+  pedida, mas o **último commit nunca pode ser feito automaticamente** sem
+  confirmação explícita do usuário. Se a instrução exigir commit final
+  automático, o agente deve parar e pedir autorização antes de registrar o
+  último commit.
 
 ---
 
