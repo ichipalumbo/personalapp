@@ -129,50 +129,6 @@ function calcularCicloVigente(aluno, hoje = new Date()) {
   };
 }
 
-function calcularPrazoReposicao(aluno, dataOriginal) {
-  const dataOriginalNormalizada = normalizarDateOnly(dataOriginal);
-  if (!dataOriginalNormalizada) {
-    return { validoAte: null, pisoAplicado: false };
-  }
-
-  if (
-    aluno &&
-    aluno.objetivo !== "Consultoria Online" &&
-    !aluno.fechamentoMesCheio &&
-    !aluno.diaVencimento
-  ) {
-    return { validoAte: null, pisoAplicado: false };
-  }
-
-  const cicloAtual = calcularCicloVigente(aluno, dataOriginalNormalizada);
-  if (!cicloAtual || !cicloAtual.cicloFimISO) {
-    return { validoAte: null, pisoAplicado: false };
-  }
-
-  const cicloFimAtual = normalizarDateOnly(cicloAtual.cicloFimISO);
-  if (!cicloFimAtual) {
-    return { validoAte: null, pisoAplicado: false };
-  }
-
-  const diferencaDias = Math.floor(
-    (cicloFimAtual.getTime() - dataOriginalNormalizada.getTime()) / 86400000,
-  );
-
-  if (diferencaDias < PRAZO_MINIMO_REPOSICAO_DIAS) {
-    const proximaData = diaSeguinte(cicloFimAtual);
-    const proximoCiclo = calcularCicloVigente(aluno, proximaData);
-    return {
-      validoAte: proximoCiclo && proximoCiclo.cicloFimISO ? proximoCiclo.cicloFimISO : null,
-      pisoAplicado: true,
-    };
-  }
-
-  return {
-    validoAte: cicloAtual.cicloFimISO,
-    pisoAplicado: false,
-  };
-}
-
 function filtrarHistoricoExcluindoCicloAtual(aluno, hoje, ciclos) {
   const lista = Array.isArray(ciclos) ? ciclos : [];
   if (lista.length === 0) return [];

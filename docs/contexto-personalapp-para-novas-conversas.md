@@ -139,6 +139,13 @@ Como o deploy funciona de fato:
   branch. A spec pode legitimamente descrever o estado da branch, desde que o cabeçalho
   de status diga isso.
 
+### Fluxo de branch e commit
+
+A branch é criada pelo usuário antes do prompt, com prefixo `feat/`, `fix/` ou
+`docs/`. O agente edita arquivos e para — **não roda git**. Revisão, commit,
+publicação da branch e pull request são feitos pelo usuário no VS Code.
+Detalhe completo em `.github/copilot-instructions.md`, seção 12.
+
 ---
 
 ## 3. O que o código não conta (e é onde se erra)

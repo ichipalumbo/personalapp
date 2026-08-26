@@ -19,14 +19,6 @@ Aplicam-se a **todas** as sessões, independentemente da tarefa.
 - **Ao final, relate**: arquivos alterados, o que mudou em cada um, e o que
   você encontrou mas não alterou.
 - `package-lock.json` pode ser alterado quando necessário.
-- **Nunca comitar direto na `main`**. O agente deve trabalhar sempre na branch
-  atual e confirmar a branch ativa antes de criar ou registrar commits. Se a
-  tarefa for em uma branch de feature, o commit deve ficar nessa branch.
-- **Quando o prompt pedir múltiplos commits**, o agente deve respeitar a ordem
-  pedida, mas o **último commit nunca pode ser feito automaticamente** sem
-  confirmação explícita do usuário. Se a instrução exigir commit final
-  automático, o agente deve parar e pedir autorização antes de registrar o
-  último commit.
 
 ---
 
@@ -44,7 +36,7 @@ correspondente em `docs/specs/`.
 - Backlog, priorização e débitos técnicos conhecidos: `docs/roadmap.md`.
 - Índice da documentação: `docs/README.md`.
 
-Spec ativa: `docs/specs/financas-ciclo-cobranca.md` (v6, em produção). A spec complementar `docs/specs/reposicoes-e-competencia.md` redefine a regra 5.8 e prevalece em caso de divergência sobre reposições.
+Spec ativa: `docs/specs/financas-ciclo-cobranca.md` (v7, em produção). A spec complementar `docs/specs/reposicoes-e-competencia.md` (v6) redefine a regra 5.8 e prevalece em caso de divergência sobre reposições.
 
 ---
 
@@ -134,10 +126,10 @@ trata `consistencia-agenda` como um id.
 O módulo financeiro (`backend/src/services/financasService.js`, collection
 `CicloFinanceiro`, tela `assets/js/view-financas.js`) exige cuidado extra:
 
-- **Não existe teste automatizado neste repositório.** Não há runner
-  configurado em `backend/package.json`. Toda validação é manual, em produção.
-  Dois bugs financeiros reais existiram e foram corrigidos por causa disso, mas
-  não afetaram cobrança de aluno real.
+- **A suíte automatizada cobre o backend** (`npm test`, via `node --test`), hoje
+  com **84 testes**. Toda alteração em `financasService.js` exige rodar a suíte
+  **antes e depois** da mudança, e reportar os dois números. Não existe teste de
+  frontend: validação de UI é manual, em produção.
 - **Recálculo usa sempre o snapshot do ciclo** (`precoAulaSnapshot`,
   `valorFixoSnapshot`, `metodoCobranca`), nunca o preço atual do aluno. Um
   reajuste vale a partir do próximo ciclo, jamais retroativamente.
@@ -238,3 +230,31 @@ que pareçam pequenas:
 - O backend tem suíte automatizada em `backend/` com `node --test` e `npm test`.
 - Teste novo precisa ser provado por mutação: se o fix for revertido, o teste deve
   falhar. Teste que passa no código antigo não é cobertura.
+
+## 11. Git — o agente não usa git
+
+**O agente não executa nenhum comando git que modifique o repositório.**
+
+Proibidos: `add`, `commit`, `branch`, `checkout`, `switch`, `merge`, `rebase`,
+`push`, `pull`, `stash`, `reset`, `restore`, `revert`, `cherry-pick`, `tag`.
+
+Permitidos, apenas leitura, e só quando o prompt pedir: `git status`, `git log`,
+`git diff`, `git branch --show-current`.
+
+O agente **edita arquivos e para**. A branch é criada pelo usuário **antes** de o
+prompt rodar. Estagiar, commitar, publicar a branch e abrir o pull request é
+responsabilidade exclusiva do usuário, feita pelo VS Code.
+
+Ao concluir qualquer tarefa, o agente deve:
+
+- listar os arquivos que alterou;
+- dizer explicitamente que as alterações estão **na working tree, não commitadas**;
+- relatar o que encontrou e **não** alterou.
+
+**Motivo.** Commit feito pelo agente no terminal esvazia o painel Source Control
+do VS Code, o que torna a mudança invisível na revisão. Em três rodadas
+consecutivas isso levou trabalho direto para a `main` sem revisão e produziu pull
+requests vazios. A regra existe para devolver a etapa de revisão ao usuário.
+
+**Convenção de prefixo de branch** (criada pelo usuário, informativa para o agente):
+`feat/` funcionalidade nova · `fix/` correção ou ajuste · `docs/` só documentação.
