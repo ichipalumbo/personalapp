@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Backend da seção 6 ativo; extrato do ciclo implementado na branch e frontend ainda pendente de rollout · **Versão**: 5 · **Atualizado**: 2026-08-25
+> **Status**: implementação mergeada na main e validada em produção; backend e frontend em produção · **Versão**: 6 · **Atualizado**: 2026-08-26
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -19,11 +19,11 @@ rastreabilidade e inconsistências de cobrança entre ciclos.
 
 ### 1.2 Estado atual da implementação
 
-Na branch `feat/gcal-sync`, a fila já é persistida em backend (`Reposicao`), com
+Na implementação atual, a fila já é persistida em backend (`Reposicao`), com
 vínculo bidirecional entre agendamento e reposição (`reposicaoId` /
 `agendamentoReposicaoId`) e cálculo de competência no financeiro.
 
-Os ajustes desta v5 documentam o comportamento real do código, inclusive decisões de
+Os ajustes desta v6 documentam o comportamento real do código, inclusive decisões de
 ordem de persistência, sincronização com Google Calendar e limitações conhecidas.
 
 ---
@@ -491,14 +491,16 @@ Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o 
 - `cobravel`, `validoAte`, destaque de vencimento e seção de expiradas ainda não aparecem
   no painel atual.
 
-### 9.5 Aviso no card do aluno
+### 9.5 Aviso no card do aluno — PENDENTE
 
-O card do aluno já tem grid `auto-fit` preparado para uma terceira caixinha (item 1.8 do
-roadmap). Cabe ali, sem refatoração:
+**Ainda não implementado.** A busca por `Reposições` em `index.html` não retorna nada, e
+`view-alunos.js` não renderiza esse contador. O card do aluno tem o grid preparado para a
+caixinha, mas o conteúdo e o rótulo não estão ativos em runtime.
 
-> **Reposições** — 2 pendentes · 1 vence em 5 dias
+> **Reposições** — N pendentes · 1 vence em X dias
 
-"Em breve" = **7 dias**, mesma constante de 6.5. O rótulo da caixinha é **Reposições**, decidido, e se o item 1.8 do roadmap mudar o conteúdo desse espaço o rótulo será revisto junto.
+Esse bloco continua como item de entrega futura. Não é comportamento implementado e não deve
+ser tratado como concluído pela spec.
 
 ---
 
@@ -614,6 +616,15 @@ como pendência de fechamento da spec.
 
 ## 13. Débitos técnicos criados por esta spec
 
+- **Divergência de implementação em `calcularPrazoReposicao`.** `backend/src/services/financasService.js`
+  declara a função duas vezes no mesmo escopo de módulo: uma por volta da linha 132, outra por volta da
+  linha 704. Em JavaScript, a segunda declaração sobrescreve a primeira, então a versão efetiva é a de
+  baixo. As implementações não são equivalentes: a versão morta usa `Math.floor`, a ativa usa `Math.round`,
+  e a morta tem um guard extra que devolve `validoAte: null` em função de `aluno.objetivo` e da ausência de
+  `fechamentoMesCheio`/`diaVencimento`.
+  O comportamento em produção é o da segunda declaração. O risco é de manutenção: editar a de cima não
+  produz efeito, e uma reordenação do arquivo trocaria o comportamento silenciosamente; a correção fica para
+  uma rodada de código própria.
 - **Duas fontes no cálculo financeiro.** `financasService` passa a depender de
   `Agendamento` **e** `Reposicao` para fechar um ciclo. É o preço da collection separada.
   Mitigado pela regra 5.3, que torna as parcelas mutuamente exclusivas por construção.
@@ -624,6 +635,9 @@ como pendência de fechamento da spec.
 - **Testes.** Esta spec mexe em código que calcula dinheiro e introduz casos de borda de
   data. O item 3.1 do roadmap (testes das funções puras) deveria vir **antes** ou junto.
   A janela é boa: base de produção zerada e app não lançado.
+- **Ramo morto no `POST` de reposição.** No `reposicaoController`, o POST rejeita qualquer corpo que traga
+  `cicloCobrancaResolvido`, mas mais abaixo existe um bloco que ainda lê `payload.cicloCobrancaResolvido`
+  para montar o documento; esse bloco é inalcançável. É observação de limpeza futura, sem correção nesta rodada.
 - A nota da linha `reposicao_ja_cobrada` indica o ciclo de origem, recalculado a partir de
   `dataOriginal` com a configuração de ciclo atual do aluno. Não há campo persistido com o
   ciclo de origem. Se o aluno mudar `diaVencimento` ou `fechamentoMesCheio` entre o ciclo de

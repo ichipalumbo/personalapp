@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-08-25
+> **Status**: Documento vivo · **Atualizado**: 2026-08-26
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -98,12 +98,37 @@ Cada item traz:
 
 ## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
 
-### [x] 2.1 Google Calendar (`RRULE` + `EXDATE`) — **ENTREGUE**
-- **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, e as exceções do app são convertidas em `EXDATE` sem depender de um horizonte ou de um mapa `data → eventId`.
-- **Por que importa**: remove a necessidade de janela de publicação e deixa a expansão de instâncias no Google, mantendo o desenho coerente com o modelo de pais + instâncias da API.
-- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `assets/js/shared/recurrence-helpers.js` e a spec `docs/specs/gcal-sync.md`.
-- **Esforço**: Médio. O custo que ficou aberto foi o gerenciamento de `COUNT`/`UNTIL`, e isso foi documentado como decisão de design, não como pendência de implementação.
+### [x] 2.1 Google Calendar (`RRULE` + `EXDATE` + renovação ativa do canal) — **ENTREGUE COM RESSALVA**
+- **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
+- **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
+- **Esforço**: Médio. O custo que ficou aberto foi o gatilho automático no boot e a validação da janela de 24h em 02/09/2026, e isso foi registrado como ressalva da entrega, não como regressão funcional visível.
+- **Validação pendente**: confirmar em produção, por volta de 01–02/09/2026, que a renovação do canal dispara exatamente uma vez por carregamento com `window.log.nivel = 'debug'`.
 - **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
+
+### [ ] Consolidação da sincronização tripla no boot
+- **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
+- **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
+- **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
+- **Esforço**: Baixo–Médio.
+
+### [ ] Alargamento da janela do full sync
+- **O que é**: ampliar a janela de rebusca do full sync além do atual `−1 mês a +2 meses` para cobrir mais casos de bloqueios externos fora da janela ativa.
+- **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
+- **Esforço**: Médio.
+
+### [ ] Deduplicação de `calcularPrazoReposicao`
+- **O que é**: eliminar a duplicação da função no módulo `financasService`, onde existem duas implementações com comportamento diferente.
+- **Por que importa**: a versão ativa e a morta têm regras diferentes (`Math.round` vs `Math.floor`, e guard extra em um ramo), e a reordenação do arquivo muda o comportamento silenciosamente.
+- **Onde mexer**: `backend/src/services/financasService.js`.
+- **Esforço**: Baixo.
+
+### [ ] Implementação da caixinha 9.5
+- **O que é**: exibir o contador de reposições pendentes e vencendo em breve no card do aluno.
+- **Por que importa**: o app já reserva o espaço, mas o conteúdo não está implementado.
+- **Onde mexer**: `index.html`, `assets/js/view-alunos.js` e a API de fila de reposições.
+- **Esforço**: Baixo–Médio.
 
 ---
 

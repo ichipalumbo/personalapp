@@ -9,7 +9,7 @@
 > e inclui coisas que não estão no código — histórico de decisões, preferências de
 > trabalho e erros já cometidos.
 >
-> **Última atualização**: 2026-08-25
+> **Última atualização**: 2026-08-26
 
 ---
 
@@ -81,6 +81,23 @@ O valor do assistente está nos passos 2, 3 e 6 — diagnosticar contra o códig
   deliberadamente (ver 4.1 da spec de reposições).
 - **PWA**: service worker registrado.
 
+### 2.1 Log do frontend e regra de uso
+
+Existe `window.log` em `assets/js/logger.js`, com níveis `error` / `warn` / `info` /
+`debug`, persistido em `localStorage`, e `log.grupo` para payload grande. **Código novo em
+`assets/js/` deve usar `window.log`, não `console.*`.**
+
+`console.*` ainda permanece por decisão explícita em: `auth/google-identity.js`,
+`settings-modal.js`, `app/bootstrap.js`, `app/service-worker.js`, `app.js` e no próprio
+`logger.js`. Não migrar sem pedido.
+
+### 2.2 GCal-Watch e renovação ativa do canal
+
+O canal de webhook do Google Calendar exige renovação ativa. Há endpoint de manutenção,
+ gatilho no boot e botão manual no modal de configurações. Essa regra continua sendo
+ tratada de forma separada do ciclo normal de sincronização, para evitar o efeito de
+ "sync redundante" e permitir diagnóstico direto.
+
 **Deploy**: dois projetos Vercel independentes, ligados ao mesmo repositório.
 
 | Projeto                | Root Directory | URL                                   |
@@ -104,7 +121,7 @@ Como o deploy funciona de fato:
 > `ciclofinanceiros`) aconteceria igual. O ganho é poder testar código não mergeado e
 > reverter o deploy em segundos; o dado escrito durante o teste permanece.
 
-### 2.1 Fluxo de branches
+### 2.3 Fluxo de branches
 
 - **Feature grande acumula numa branch própria** — a branch atual da feature é
   `feat/gcal-sync`. Correção de feature vai para a branch da feature, **não** para

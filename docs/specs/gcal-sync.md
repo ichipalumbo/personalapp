@@ -1,13 +1,12 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: desenho da Rodada C finalizado e decisão de recorrência registrada no
-> Google Calendar (2026-08-25). Esta v5 mantém a reversão histórica da v2 e documenta
-> o desenho final RRULE/EXDATE entregue pela implementação.
+> **Status**: desenho da Rodada C finalizado; renovação ativa do webhook e purge de full
+> sync validados em produção em 26/08/2026; validação automática pendente em 02/09/2026.
+> 
+> **Versão**: 6 · **Atualizado**: 2026-08-26
+> **Defeitos em aberto**: 4 (ver seção 9)
 >
-> **Versão**: 5 · **Atualizado**: 2026-08-25
-> **Defeitos em aberto**: 3 (ver seção 9)
->
-> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v5) define a
+> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v6) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
 > `docs/specs/financas-ciclo-cobranca.md` (v7) não é afetada — o Google não participa de
 > nenhum cálculo financeiro.
@@ -272,7 +271,96 @@ Pontos em que o engine local já coincide com a RFC e não precisam de trabalho:
 ### 5.1 Gatilhos
 
 - **Webhook**: `gcalWebhookController` → `syncConnectionByWebhookHeaders(channelId, resourceId)`.
+- **Boot**: `assets/js/app/bootstrap.js` dispara `renovarCanalGoogleCalendar()` após `router.navigateTo('tela-home')`, com guarda `gcalWatchCheckDisparado` e `setTimeout(..., 0)`.
+- **Manual**: botão `btnRenewGoogleCalendarWatch` no modal de configurações chama o mesmo endpoint de renovação e também dispara o catch-up simultâneo.
 - **Manual/automático**: `iniciarSyncGoogleCalendar` no bootstrap, quando há conexão.
+
+### 5.1.1 Renovação ativa do canal de webhook
+
+O canal `events.watch` do Google Calendar expira em cerca de 7 dias. Sem renovação ativa,
+ o webhook para de chegar silenciosamente: não há 4xx nem erro de processamento, apenas
+ ausência de notificação. Esse foi o defeito de produção que originou a rodada GCal-Watch:
+ eventos apagados no Google continuavam aparecendo no app.
+
+`shouldRenewWebhookChannel` decide pela renovação quando `channelExpiration` é nulo,
+ inválido, vencido ou está dentro da margem de 24 horas do vencimento. Quando a conexão
+ existe e a janela de segurança foi atingida, `renewWebhookChannelForOwner` procede em
+ fluxo single-flight por `ownerEmail` usando `Map` de promessas no módulo. O lock vale por
+ processo; em ambiente serverless com múltiplas instâncias paralelas, duas instâncias ainda
+ podem registrar dois canais diferentes no mesmo intervalo.
+
+A renovação encerra o canal antigo com `channels.stop` antes de registrar um novo, quando
+ há `channelId` e `channelResourceId`. Falha no `stop` gera `warning` e o fluxo segue. Depois
+ da renovação, o serviço dispara `syncConnection` imediatamente para recuperar o atraso
+ acumulado enquanto o canal estava morto. Esse é o comportamento obrigatório do sistema
+ hoje; não é uma tentativa opcional de prevenção.
+
+O endpoint de diagnóstico e manutenção é `POST /api/gcal/webhook/renew`, autenticado por
+ `requireAuth`. A decisão de ampliar o endpoint existente em vez de criar um vizinho foi
+ feita para manter o mesmo contrato de verificação do canal e o mesmo diagnóstico de
+ recuperação, sem duplicar lógica de autenticação ou de reconciliação de sincronização.
+
+A rota responde sempre `HTTP 200`, mesmo em falha. O corpo inclui `renewed`, `synced`,
+ `activeItems`, `cancelledItems` e `reason`. Os valores observados de `reason` são
+ `channel_valid`, `renewed_and_synced`, `renewed_sync_failed` e `renewal_failed`.
+
+### 5.1.2 Purge do full sync com janela
+
+`listCalendarEvents` devolve `timeMin`/`timeMax` no modo full e `null` no modo incremental.
+ O purge por varredura só roda quando não há `syncToken` (ou seja, no full sync) e quando
+ existe janela válida. Sem janela válida, o serviço faz `return` defensivo, registra
+ `warning` e não apaga nada — é a escolha do lado seguro.
+
+Esse comportamento corrige o defeito anterior em que o full sync apagava bloqueios locais
+ fora da janela consultada, inclusive registros legítimos fora do alcance da query.
+ `BloqueioExterno.data` é comparado com a janela; o schema grava a data em `YYYY-MM-DD` via
+ `normalizarDataParaISO`, e os limites de `timeMin`/`timeMax` chegam em ISO datetime e passam
+ pela mesma normalização antes da comparação. `isBloqueioDentroDaJanela` foi o ponto de
+ proteção que tornou esse purge seguro.
+
+**Limite conhecido**: a janela do full sync é de `−1 mês a +2 meses`. Um evento externo fora
+ dessa faixa não é repovoado por um full sync. Consequência prática: apagar a collection
+ `BloqueioExterno` faz perder permanentemente bloqueios fora dessa janela, porque o full
+ sync não os traz de volta e o incremental só entrega mudanças.
+
+**Limite conhecido**: bloqueio com `data` nula ou inválida nunca entra no purge. É o lado
+ seguro, mas pode acumular registros órfãos.
+
+### 5.1.3 Gatilho no boot e escape hatch
+
+A verificação do canal no boot está ancorada em `assets/js/app/bootstrap.js`, logo após
+ `router.navigateTo('tela-home')`, protegida por `gcalWatchCheckDisparado` e disparada com
+ `setTimeout(..., 0)` para não bloquear o primeiro render. Ela roda uma vez por carga de
+ página. Nenhum dos três `carregarDados` existentes dispara a renovação; o gatilho do boot é
+ independente do ciclo de sincronização normal.
+
+Se não há sessão Google, a função sai sem forçar login. O botão manual
+ `btnRenewGoogleCalendarWatch` no modal de configurações chama o mesmo endpoint do boot para
+ diagnóstico e verificação de estado, sem depender do código de login ou da janela de
+ sincronização automática.
+
+### 5.1.4 Estado de validação
+
+A validação de produção foi feita manualmente pelo botão em 26/08/2026. A renovação, o
+ catch-up e o purge seguro funcionaram: a recorrência apagada no Google desapareceu do app
+ sem intervenção manual no MongoDB.
+
+Essa validação descartou a hipótese de descasamento entre id de série-mãe e id de instância
+ no `deleteBloqueio`. O lugar onde o problema ocorria era a sincronização de webhook e a
+ reconciliação de `BloqueioExterno`, não o mapa de ids do evento do app.
+
+Ainda não foi validado o gatilho automático no boot. O canal renovado expira em 02/09/2026,
+ e a margem de 24h só dispara nas últimas 24 horas. A verificação pendente é abrir o app
+ com `window.log.nivel = 'debug'` por volta de 01–02/09/2026 e confirmar que
+ "Canal renovado" aparece uma única vez.
+
+### 5.1.5 Débito técnico a registrar
+
+A sincronização é disparada em três pontos independentes no boot: no próprio bootstrap,
+ no listener de auth-change e no `visibilitychange`/auto-refresh. O gatilho de renovação do
+ canal foi deliberadamente mantido fora desse ciclo. A consolidação dos três continua
+ pendente, e o fato de o sync funcionar em teste manual não resolve esse sintoma: o problema
+ é chamada redundante, não erro visível.
 
 ### 5.2 Listagem
 
@@ -508,6 +596,18 @@ mas não é confiável quando o evento tem horário: `EXDATE` precisa casar com 
 cronometrado for publicado como recorrência. O payload já carrega `excecoesDetalhadas` em
 `aplicarRecorrenciaLegada` (`assets/js/features/modals/scheduling-serializer.js:238-239`),
 mas a Rodada C precisa decidir qual fonte de verdade será usada.
+
+### 9.14 Gatilho de sincronização triplo no boot — PENDENTE
+
+A sincronização de leitura do Google Calendar é disparada em três pontos do boot:
+
+- `assets/js/app/bootstrap.js` (gatilho de renovação + sincronização);
+- listener de auth-change (`googleIdentity.addAuthChangeListener`);
+- `visibilitychange` com auto-refresh silencioso.
+
+O gatilho de renovação do canal foi mantido fora desse ciclo deliberadamente; ele é
+explicitamente tratado como rotação do webhook e não como parte do ciclo normal de
+sincronização. A consolidação desses gatilhos continua em pendência.
 
 ### 9.13 Volume de leitura aumenta — OBSERVAÇÃO, NÃO AÇÃO
 
