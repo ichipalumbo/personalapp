@@ -19,6 +19,7 @@ Aplicam-se a **todas** as sessões, independentemente da tarefa.
 - **Ao final, relate**: arquivos alterados, o que mudou em cada um, e o que
   você encontrou mas não alterou.
 - `package-lock.json` pode ser alterado quando necessário.
+
 ---
 
 ## 2. Fonte de verdade das decisões de produto
@@ -230,7 +231,7 @@ que pareçam pequenas:
 - Teste novo precisa ser provado por mutação: se o fix for revertido, o teste deve
   falhar. Teste que passa no código antigo não é cobertura.
 
-## 12. Git — o agente não usa git
+## 11. Git — o agente não usa git
 
 **O agente não executa nenhum comando git que modifique o repositório.**
 
