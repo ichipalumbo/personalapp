@@ -46,12 +46,12 @@ Cada item traz:
 
 ---
 
-### [ ] 0.3 Limpar CSS órfão da visão mensal removida
+### [x] 0.3 Limpar CSS órfão da visão mensal removida — **CONCLUÍDO**
 
-- **O que é**: Regras como `.calendario-mensal`, `.calendario-grid`, `.dia-cell`, `.kpi-dashboard` e `#tela-calendario` continuam em `assets/css/style.css` mesmo após a remoção da visão "Mês".
-- **Por que importa**: Só peso morto e ruído de manutenção. Não afeta o usuário.
-- **Onde mexer**: `assets/css/style.css`. **Cuidado**: alguns seletores podem ser compartilhados com as visões de dia/semana — verificar cada um antes de remover.
-- **Esforço**: Baixo (o trabalho é a verificação, não a remoção).
+- **O que foi entregue**: limpeza dos blocos da visão mensal removida e do KPI mensal em `assets/css/style.css`, com **20 seletores removidos** (23 ocorrências no arquivo, incluindo sobrescritas em `@media`) e **152 linhas excluídas**.
+- **Verificação crítica**: o grupo `.objetivo-*` foi verificado e **mantido** por uso dinâmico em `assets/js/agenda-card-template.js` (`classes.push(\`objetivo-\${normalizarObjetivo(objetivo)}\`)`) e `assets/js/view-alunos.js` (`class="objetivo-\${objetivoClass}"`).
+- **Veredito de risco (mantidos por segurança)**: `#tela-calendario` e `#containerCalendarioDia` foram investigados e **mantidos**; sem evidência suficiente para provar que estão mortos sem validação visual de dia/semana.
+- **Candidatos fora do escopo 0.3**: mantidos para rodada dedicada (não incluídos nesta limpeza).
 
 ---
 
@@ -374,7 +374,7 @@ Cada item traz:
 | 5          | Relatório exportável de faturamento (1.2)              | Fácil       | Baixo       |
 | 6          | Status de no-show/cancelamento (1.5)                   | Fácil–Médio | Médio       |
 | 7          | Avisos in-app de reposição a vencer (0.8)              | Fácil–Médio | Baixo–Médio |
-| 8          | Aniversário do aluno (1.6)                             | Fácil       | Baixo       |
+| 8          | Débitos 0.2 e 0.9 (de carona)                          | Débito técnico | Baixo–Médio |
 | 9          | Banco de desenvolvimento separado (3.4)                | Ambiente    | Médio–Alto  |
 | 10         | Cobrança automatizada (2.2)                            | Complexo    | Alto        |
 | 11         | Notificações automáticas (2.3)                         | Complexo    | Alto        |
