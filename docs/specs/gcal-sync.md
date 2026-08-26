@@ -375,7 +375,7 @@ A sincronização é disparada em três pontos independentes no boot: no própri
 implementado.
 
 > `singleEvents=true` faz o Google devolver **instâncias individuais** dentro da janela:
-> <cite index="3-3">se o parâmetro singleEvents é true, todas as instâncias individuais aparecem no resultado, mas os eventos recorrentes subjacentes não</cite>.
+> se o parâmetro `singleEvents` é `true`, todas as instâncias individuais aparecem no resultado, mas os eventos recorrentes subjacentes não.
 > Como o app publica eventos avulsos, hoje isso é indiferente na saída; é relevante para
 > eventos recorrentes criados **pela usuária** dentro do Google.
 
@@ -597,18 +597,6 @@ cronometrado for publicado como recorrência. O payload já carrega `excecoesDet
 `aplicarRecorrenciaLegada` (`assets/js/features/modals/scheduling-serializer.js:238-239`),
 mas a Rodada C precisa decidir qual fonte de verdade será usada.
 
-### 9.14 Gatilho de sincronização triplo no boot — PENDENTE
-
-A sincronização de leitura do Google Calendar é disparada em três pontos do boot:
-
-- `assets/js/app/bootstrap.js` (gatilho de renovação + sincronização);
-- listener de auth-change (`googleIdentity.addAuthChangeListener`);
-- `visibilitychange` com auto-refresh silencioso.
-
-O gatilho de renovação do canal foi mantido fora desse ciclo deliberadamente; ele é
-explicitamente tratado como rotação do webhook e não como parte do ciclo normal de
-sincronização. A consolidação desses gatilhos continua em pendência.
-
 ### 9.13 Volume de leitura aumenta — OBSERVAÇÃO, NÃO AÇÃO
 
 `listCalendarEvents` usa `singleEvents=true` (
@@ -621,6 +609,18 @@ Esse é um custo de payload, não um bug — e passa a ser um ponto de observaç
 virar longa. O risco não é a lógica de ignorar o evento do app, e sim o volume de dados
 lidos em cada sync. Como o próprio guia da API classifica isso como custo de leitura e não
 como defeito funcional, fica registrado como observação, não como pendência de trabalho.
+
+### 9.14 Gatilho de sincronização triplo no boot — PENDENTE
+
+A sincronização de leitura do Google Calendar é disparada em três pontos do boot:
+
+- `assets/js/app/bootstrap.js` (gatilho de renovação + sincronização);
+- listener de auth-change (`googleIdentity.addAuthChangeListener`);
+- `visibilitychange` com auto-refresh silencioso.
+
+O gatilho de renovação do canal foi mantido fora desse ciclo deliberadamente; ele é
+explicitamente tratado como rotação do webhook e não como parte do ciclo normal de
+sincronização. A consolidação desses gatilhos continua em pendência.
 
 ## 10. Custo aceito da decisão
 
