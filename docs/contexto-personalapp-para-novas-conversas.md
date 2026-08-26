@@ -29,13 +29,19 @@
 
 ### Ambiente de trabalho (atual)
 
-- **Windows 11, PowerShell**, repositório em `E:\Projetos\GIT\personalapp`.
-- **Não usar sintaxe POSIX** em comando sugerido: sem `grep`, sem `&&` encadeando
-  comandos (o PowerShell 5.1 não aceita), sem `cd /caminho/unix`.
-  Equivalentes: `Select-String` no lugar de `grep`, `Set-Location` ou `cd` com caminho
-  Windows, **um comando por linha**.
-- Já houve sessão em ambiente Linux/devcontainer (`/workspaces/personalapp`). Se o
-  caminho aparecer em prompt antigo, está desatualizado.
+- **Windows 11, PowerShell** é o ambiente principal, com repositório em
+  `E:\Projetos\GIT\personalapp`.
+- **Também rodo em GitHub Codespaces/Linux** (`/workspaces/personalapp`), então a
+  regra é detectar o shell antes de sugerir qualquer comando. Se o caminho atual buscar
+  `/workspaces`, trata-se de ambiente Linux; se o caminho for `E:\Projetos\...`, trata-se
+  de ambiente Windows.
+- **No PowerShell/Windows**: não usar sintaxe POSIX em comando sugerido: sem `grep`, sem
+  `&&` encadeando comandos e sem `cd /caminho/unix`. Equivalentes: `Select-String` no
+  lugar de `grep`, `Set-Location` ou `cd` com caminho Windows, **um comando por linha**.
+- **No Linux/Codespaces**: usar sintaxe POSIX. `grep`, `&&`, `cd /workspaces/...` e comandos
+  em shell Unix são válidos.
+- Se o prompt ou o diretório atual não bater com um desses padrões, verificar primeiro com
+  `Get-Location` (PowerShell) ou `pwd` (Linux) antes de montar o comando.
 
 ### Preferências explícitas (confirmadas por ele)
 
