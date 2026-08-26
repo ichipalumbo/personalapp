@@ -19,6 +19,73 @@ Cada item traz:
 - **Onde mexer**: arquivos/áreas do código já existentes que servem de ponto de partida.
 - **Esforço estimado**: relativo, não é estimativa de horas fechada.
 
+**Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
+
+---
+
+## Tabela de acompanhamento
+
+Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolidado em outro item
+
+| Grupo | Item                                             | Status | Depende de                                                       |
+| ----- | ------------------------------------------------ | ------ | ---------------------------------------------------------------- |
+| 0     | 0.1 Bug "Ver ciclos anteriores" fecha sozinho    | `[x]`  | —                                                                |
+| 0     | 0.2 Consolidar módulos compartilhados            | `[ ]`  | —                                                                |
+| 0     | 0.3 Limpar CSS órfão da visão mensal             | `[x]`  | —                                                                |
+| 0     | 0.4 Organização da documentação                  | `[x]`  | —                                                                |
+| 0     | 0.5 Collection `Reposicao` + competência         | `[x]`  | —                                                                |
+| 0     | 0.6 Extrato do ciclo                             | `[x]`  | —                                                                |
+| 0     | 0.7 Prazo de validade + expiração lazy           | `[x]`  | —                                                                |
+| 0     | 0.8 Avisos in-app de reposição a vencer          | `[ ]`  | 0.7 `[x]` — desbloqueado                                         |
+| 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[ ]`  | 0.2                                                              |
+| 0     | 0.10 Deduplicação de `calcularPrazoReposicao`    | `[x]`  | —                                                                |
+| 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
+| 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
+| 1     | 1.3 Observações por aula ou por aluno            | `[ ]`  | —                                                                |
+| 1     | 1.4 Contato rápido via WhatsApp                  | `[ ]`  | —                                                                |
+| 1     | 1.5 Status de no-show / cancelamento             | `[ ]`  | pré-requisito da regra 5.8 (spec Finanças); recomendado após 3.1 |
+| 1     | 1.6 Lembrete de aniversário do aluno             | `[ ]`  | —                                                                |
+| 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
+| 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
+| 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção em 01–02/09/2026                           |
+| 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
+| 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
+| 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
+| 3     | 3.2 Rodar o backend localmente                   | `[ ]`  | —                                                                |
+| 3     | 3.3 Frontend local falando com backend local     | `[ ]`  | 3.2                                                              |
+| 3     | 3.4 Banco de desenvolvimento separado            | `[ ]`  | 3.2                                                              |
+| 4     | 4.1 Cobrança automatizada                        | `[ ]`  | 3.1 a 3.4                                                        |
+| 4     | 4.2 Notificações automáticas                     | `[ ]`  | —                                                                |
+| 4     | 4.3 Portal/app do aluno                          | `[ ]`  | —                                                                |
+| 4     | 4.4 Avaliação física / anamnese                  | `[ ]`  | —                                                                |
+| 4     | 4.5 Multi-personal / gestão de equipe            | `[ ]`  | —                                                                |
+| 4     | 4.6 Auditoria / histórico de alterações          | `[ ]`  | —                                                                |
+| 4     | 4.7 Precisão financeira avançada                 | `[x]`  | —                                                                |
+| 4     | 4.8 Contrato / assinatura digital                | `[ ]`  | —                                                                |
+
+---
+
+## Renumeração de 2026-08-26 — mapa de equivalência
+
+Havia **dois grupos numerados como 2** (Google Calendar e Coisas complexas), o que tornava ambígua qualquer referência a "Grupo 2". Os complexos passaram a ser o **Grupo 4** e os itens de sincronização foram renumerados em sequência.
+
+| Número antigo | Número novo | Item                                         |
+| ------------- | ----------- | -------------------------------------------- |
+| 2.10          | **2.2**     | Consolidação da sincronização tripla no boot |
+| 2.11          | **2.3**     | Alargamento da janela do full sync           |
+| 2.2           | **4.1**     | Cobrança automatizada                        |
+| 2.3           | **4.2**     | Notificações automáticas                     |
+| 2.4           | **4.3**     | Portal/app do aluno                          |
+| 2.5           | **4.4**     | Avaliação física / anamnese                  |
+| 2.6           | **4.5**     | Multi-personal / gestão de equipe            |
+| 2.7           | **4.6**     | Auditoria / histórico de alterações          |
+| 2.8           | **4.7**     | Precisão financeira avançada                 |
+| 2.9           | **4.8**     | Contrato / assinatura digital                |
+
+Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
+
+⚠️ **Atenção ao validar specs**: nem toda referência a "2.x" é item de roadmap. As specs têm numeração própria de seções — por exemplo, "seção 2.4 da spec" (módulo isomórfico) e "regra 5.8" são seções de `specs/financas-ciclo-cobranca.md`, não itens deste documento. Só renumere referências que apontem explicitamente para itens do roadmap.
+
 ---
 
 ## 🔧 Grupo 0 — Débitos técnicos mapeados (entrar junto com a próxima feature)
@@ -46,12 +113,12 @@ Cada item traz:
 
 ---
 
-### [ ] 0.3 Limpar CSS órfão da visão mensal removida
+### [x] 0.3 Limpar CSS órfão da visão mensal removida — **CONCLUÍDO**
 
-- **O que é**: Regras como `.calendario-mensal`, `.calendario-grid`, `.dia-cell`, `.kpi-dashboard` e `#tela-calendario` continuam em `assets/css/style.css` mesmo após a remoção da visão "Mês".
-- **Por que importa**: Só peso morto e ruído de manutenção. Não afeta o usuário.
-- **Onde mexer**: `assets/css/style.css`. **Cuidado**: alguns seletores podem ser compartilhados com as visões de dia/semana — verificar cada um antes de remover.
-- **Esforço**: Baixo (o trabalho é a verificação, não a remoção).
+- **O que foi entregue**: limpeza dos blocos da visão mensal removida e do KPI mensal em `assets/css/style.css`, com **20 seletores removidos** (23 ocorrências no arquivo, incluindo sobrescritas em `@media`) e **152 linhas excluídas**.
+- **Verificação crítica**: o grupo `.objetivo-*` foi verificado e **mantido** por uso dinâmico em `assets/js/agenda-card-template.js` (`classes.push(\`objetivo-\${normalizarObjetivo(objetivo)}\`)`) e `assets/js/view-alunos.js` (`class="objetivo-\${objetivoClass}"`).
+- **Veredito de risco (mantidos por segurança)**: `#tela-calendario` e `#containerCalendarioDia` foram investigados e **mantidos**; sem evidência suficiente para provar que estão mortos sem validação visual de dia/semana.
+- **Candidatos fora do escopo 0.3**: mantidos para rodada dedicada (não incluídos nesta limpeza).
 
 ---
 
@@ -70,12 +137,16 @@ Cada item traz:
 - **Pendências**: a seção 9.5 do card do aluno continua pendente (contador de reposições no card), e a caixinha de avisos de reposição a vencer ficou no item 0.8.
 - **Esforço restante**: baixo (fechamento do card do aluno e documentação de rollout), sem mudança conceitual de regra.
 
+---
+
 ### [x] 0.6 Extrato do ciclo — **ENTREGUE**
 
 - **O que foi entregue**: cada ciclo exibe o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado, com os 11 tipos de linha documentados em `docs/specs/reposicoes-e-competencia.md`.
 - **Por que importa**: dá previsibilidade e auditoria para o PT, sem depender de memória nem de contagem ad hoc na agenda.
 - **Onde mexer**: `backend/src/services/financasService.js`, `assets/js/view-financas.js` e a spec complementar de reposições.
 - **Esforço**: Médio.
+
+---
 
 ### [x] 0.7 Prazo de validade + expiração lazy — **ENTREGUE**
 
@@ -87,14 +158,19 @@ Cada item traz:
 - **Última ponta solta fechada**: a correção desta rodada também aplica a expiração lazy no `GET /api/reposicoes/:id`, deixando a mesma regra consistente entre listagem e leitura individual.
 - **Esforço**: Médio.
 
+---
+
 ### [ ] 0.8 Avisos in-app de reposição a vencer
 
 - **O que é**: Card do aluno + painel com alerta para reposição prestes a expirar; a regra de expiração fechada do item 0.7 é a base para calcular "vence em breve".
 - **Por que importa**: Dá visibilidade útil sem exigir notificação externa; com o prazo de validade definido, a UX passa a ter uma regra clara para o que vence.
 - **Onde mexer**: `view-alunos.js`, card do aluno, painel de aluno e endpoint de fila de reposição. O layout do card (`.aluno-card-indicadores`, grid `auto-fit`) **já foi preparado para uma terceira caixinha sem refatoração**; a antiga `contarReposicoesPorAluno` **foi removida** e não deve ser ressuscitada.
 - **Estado de implementação**: não implementado; `Reposições` não aparece em `index.html`, e `view-alunos.js` não renderiza o contador. O bloco continua como item de entrega futura.
-- **Dependência**: item 0.7 (prazo de validade + expiração lazy). Sem a regra de expiração fechada, "vence em breve" não tem base para ser calculado.
+- **Dependência**: item 0.7 (prazo de validade + expiração lazy) — **já entregue**, portanto este item está desbloqueado.
+- **Nota de escopo**: primeira rodada de frontend da série. Não existe suíte automatizada de frontend no projeto; a validação será visual.
 - **Esforço**: Baixo–Médio.
+
+---
 
 ### [ ] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado
 
@@ -103,6 +179,8 @@ Cada item traz:
 - **Dependência**: item 0.2 (consolidação de compartilhados e remoção da travessia `backend/ -> assets/`).
 - **Onde mexer**: módulo compartilhado de domínio (sem dependência de `window`/DOM), backend consumindo diretamente e frontend apenas exibindo resultado da API quando aplicável.
 - **Esforço**: Médio.
+
+---
 
 ### [x] 0.10 Deduplicação de `calcularPrazoReposicao`
 
@@ -116,86 +194,6 @@ Cada item traz:
 ### ✅ Não é débito: custo da rota de consistência de agenda
 
 `GET /api/alunos/consistencia-agenda` faz 2 consultas de custo **fixo** (alunos + agendamentos) e resolve o resto em memória — não escala por aluno. Chegou a ser levantada como possível dívida, mas foi **reclassificada como comportamento aceito** (seção 10.1 da spec). Não otimizar preventivamente. Se um dia a aba Alunos ficar lenta, o ponto a investigar é o volume de dados trafegado (filtrar `tipo`/`frequencia` já na consulta, ou unificar com a rota de Finanças), não a lógica do indicador.
-
----
-
-## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
-
-### [x] 2.1 Google Calendar (`RRULE` + `EXDATE` + renovação ativa do canal) — **ENTREGUE COM RESSALVA**
-
-- **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
-- **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
-- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
-- **Esforço**: Médio. O custo que ficou aberto foi o gatilho automático no boot e a validação da janela de 24h em 02/09/2026, e isso foi registrado como ressalva da entrega, não como regressão funcional visível.
-- **Validação pendente**: confirmar em produção, por volta de 01–02/09/2026, que a renovação do canal dispara exatamente uma vez por carregamento com `window.log.nivel = 'debug'` e mensagem "Canal renovado". A margem de 24h só dispara nas últimas 24 horas antes do vencimento do canal, que expira em 02/09/2026; fora dessa janela, não deve haver renovação.
-- **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
-
-### [ ] 2.10 Consolidação da sincronização tripla no boot
-
-- **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
-- **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
-- **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
-- **Esforço**: Baixo–Médio.
-
-### [ ] 2.11 Alargamento da janela do full sync
-
-- **O que é**: ampliar a janela de rebusca do full sync além do atual `−1 mês a +2 meses` para cobrir mais casos de bloqueios externos fora da janela ativa.
-- **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
-- **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
-- **Esforço**: Médio.
-
----
-
-## 🧪 Grupo 3 — Ambiente de desenvolvimento e rede de proteção
-
-> **Histórico**: o projeto nasceu com apoio de IA, sem que ninguém definisse ambiente local nem testes. O resultado é que **toda validação sempre foi feita em produção**. Isso funcionou por um bom tempo porque o app é de usuário único conhecido, mas já custou dois bugs financeiros que chegaram ao usuário real.
->
-> **Como é hoje**: frontend servido pela extensão **Live Server** do VS Code; backend **sempre o de produção**, porque `API_BASE_URL` em `assets/js/storage.js` é constante fixa apontando para `https://personal-app-api.vercel.app/api`. Não existe `npm run dev`, watch mode, seed ou banco de desenvolvimento.
->
-> **Consequência a ter clara**: rodando o Live Server, o frontend local **grava no banco de produção**. Não é só "testar em produção" no sentido de publicar antes de validar — é código não publicado escrevendo em dado real.
->
-> **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
-
-### [ ] 3.1 Ampliar cobertura das regras financeiras
-
-- **O que é**: ampliar a suíte automatizada das regras de cálculo de `financasService.js` e do fluxo de reposição que já está em `backend/test/`.
-- **O que já existe hoje**: a suíte do backend roda em `node --test` com **84 testes, 0 falhas**. Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
-- **Lacunas verificadas**: não há teste de frontend. Não existe nenhum arquivo de teste em `assets/` e a UI não tem suíte automatizada em `backend/test/`.
-- **Por que importa**: a suíte já cobre as regras puras e de negócio mais sensíveis do backend, e a expansão continua sendo a forma correta de reforçar o cálculo financeiro sem inventar uma lacuna de UI que ainda não existe.
-- **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
-
----
-
-### [ ] 3.2 Rodar o backend localmente
-
-- **O que é**: Conseguir subir a API na própria máquina, em vez de depender de deploy para testar qualquer mudança de backend.
-- **Por que importa**: Hoje, validar uma alteração de backend exige publicar. Isso torna o ciclo de correção lento e força mudanças não testadas a entrarem em produção.
-- **Por que é menor do que parece**: o script `npm start` (`node server.js`) **já existe** e o `dotenv` **já é dependência**. O que falta é um arquivo `.env` local com a string de conexão do Mongo e os client IDs do Google.
-- **Onde mexer**: criar `.env` em `backend/` (garantir que está no `.gitignore`) e documentar as variáveis necessárias — hoje elas só existem no painel da Vercel. Um `.env.example` versionado, com as chaves e sem os valores, resolve o problema de "esqueci quais variáveis são".
-- **Ponto de atenção**: enquanto não existir o item 3.4, esse backend local vai apontar para o **banco de produção**. Útil para ler, arriscado para escrever.
-- **Esforço**: Baixo. Não altera estrutura de código.
-
----
-
-### [ ] 3.3 Frontend local falando com backend local
-
-- **O que é**: Fazer o Live Server apontar para a API local quando ela estiver rodando, em vez de sempre para produção.
-- **Por que importa**: É o que hoje faz o desenvolvimento local escrever em dado real. Também impede testar qualquer mudança de backend em conjunto com o frontend antes de publicar.
-- **Onde mexer**: `assets/js/storage.js`, na constante `API_BASE_URL`. Basta detectar o host local (`location.hostname === 'localhost'` ou `127.0.0.1`) e apontar para `http://localhost:<porta>/api`, mantendo a URL de produção como padrão. Nenhuma outra linha do arquivo precisa mudar — todas as chamadas já usam a constante.
-- **Ponto de atenção**: o backend precisa aceitar a origem do Live Server no CORS (hoje `cors()` está aberto, então provavelmente já funciona). Verificar também se o login Google funciona a partir de `localhost` com os client IDs atuais.
-- **Dependência**: só faz sentido junto com o 3.2.
-- **Esforço**: Muito baixo — literalmente uma condicional.
-
----
-
-### [ ] 3.4 Banco de desenvolvimento separado
-
-- **O que é**: Uma base MongoDB distinta para desenvolvimento, para que testes locais nunca toquem em dado real do usuário.
-- **Por que importa**: É o que fecha de verdade o problema. Sem isso, mesmo com backend local (3.2) e frontend apontando para ele (3.3), o dado continua sendo o de produção.
-- **Por que é o item grande**: exige criar a base, decidir como popular com dados de teste realistas (aluno com ciclo de vencimento, agendamentos recorrentes, ciclos pagos e em aberto) e manter esses dados úteis ao longo do tempo. É trabalho recorrente, não pontual.
-- **Onde mexer**: nova connection string no `.env` local; opcionalmente um script de seed em `backend/scripts/` (já existe a pasta, com `normalize-agenda-formats.js` como precedente de script utilitário).
-- **Prioridade**: legitimamente baixa. Os itens 3.1 a 3.3 entregam a maior parte do ganho por uma fração do esforço.
-- **Esforço**: Médio–Alto (mais pela manutenção contínua dos dados do que pela configuração inicial).
 
 ---
 
@@ -270,15 +268,107 @@ Cada item traz:
 
 ---
 
-### [ ] 1.8 Visão de "aulas a repor" no card do aluno
+### [→] 1.8 Visão de "aulas a repor" no card do aluno
 
 - **Consolidado no item 0.8.**
 
 ---
 
-## 🔴 Grupo 2 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
+## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
 
-### [ ] 2.2 Cobrança automatizada (Pix, boleto, cartão recorrente)
+### [x] 2.1 Google Calendar (`RRULE` + `EXDATE` + renovação ativa do canal) — **ENTREGUE COM RESSALVA**
+
+- **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
+- **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
+- **Esforço**: Médio. O custo que ficou aberto foi o gatilho automático no boot e a validação da janela de 24h em 02/09/2026, e isso foi registrado como ressalva da entrega, não como regressão funcional visível.
+- **Validação pendente**: confirmar em produção, por volta de 01–02/09/2026, que a renovação do canal dispara exatamente uma vez por carregamento com `window.log.nivel = 'debug'` e mensagem "Canal renovado". A margem de 24h só dispara nas últimas 24 horas antes do vencimento do canal, que expira em 02/09/2026; fora dessa janela, não deve haver renovação.
+- **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
+
+---
+
+### [ ] 2.2 Consolidação da sincronização tripla no boot
+
+> _Numerado como 2.10 até 2026-08-26._
+
+- **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
+- **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
+- **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
+- **Esforço**: Baixo–Médio.
+
+---
+
+### [ ] 2.3 Alargamento da janela do full sync
+
+> _Numerado como 2.11 até 2026-08-26._
+
+- **O que é**: ampliar a janela de rebusca do full sync além do atual `−1 mês a +2 meses` para cobrir mais casos de bloqueios externos fora da janela ativa.
+- **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
+- **Esforço**: Médio.
+
+---
+
+## 🧪 Grupo 3 — Ambiente de desenvolvimento e rede de proteção
+
+> **Histórico**: o projeto nasceu com apoio de IA, sem que ninguém definisse ambiente local nem testes. O resultado é que **toda validação sempre foi feita em produção**. Isso funcionou por um bom tempo porque o app é de usuário único conhecido, mas já custou dois bugs financeiros que chegaram ao usuário real.
+>
+> **Como é hoje**: frontend servido pela extensão **Live Server** do VS Code; backend **sempre o de produção**, porque `API_BASE_URL` em `assets/js/storage.js` é constante fixa apontando para `https://personal-app-api.vercel.app/api`. Não existe `npm run dev`, watch mode, seed ou banco de desenvolvimento.
+>
+> **Consequência a ter clara**: rodando o Live Server, o frontend local **grava no banco de produção**. Não é só "testar em produção" no sentido de publicar antes de validar — é código não publicado escrevendo em dado real.
+>
+> **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
+
+### [ ] 3.1 Ampliar cobertura das regras financeiras
+
+- **O que é**: ampliar a suíte automatizada das regras de cálculo de `financasService.js` e do fluxo de reposição que já está em `backend/test/`.
+- **O que já existe hoje**: a suíte do backend roda em `node --test` com **84 testes, 0 falhas**. Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
+- **Lacunas verificadas**: não há teste de frontend. Não existe nenhum arquivo de teste em `assets/` e a UI não tem suíte automatizada em `backend/test/`.
+- **Por que importa**: a suíte já cobre as regras puras e de negócio mais sensíveis do backend, e a expansão continua sendo a forma correta de reforçar o cálculo financeiro sem inventar uma lacuna de UI que ainda não existe.
+- **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
+
+---
+
+### [ ] 3.2 Rodar o backend localmente
+
+- **O que é**: Conseguir subir a API na própria máquina, em vez de depender de deploy para testar qualquer mudança de backend.
+- **Por que importa**: Hoje, validar uma alteração de backend exige publicar. Isso torna o ciclo de correção lento e força mudanças não testadas a entrarem em produção.
+- **Por que é menor do que parece**: o script `npm start` (`node server.js`) **já existe** e o `dotenv` **já é dependência**. O que falta é um arquivo `.env` local com a string de conexão do Mongo e os client IDs do Google.
+- **Onde mexer**: criar `.env` em `backend/` (garantir que está no `.gitignore`) e documentar as variáveis necessárias — hoje elas só existem no painel da Vercel. Um `.env.example` versionado, com as chaves e sem os valores, resolve o problema de "esqueci quais variáveis são".
+- **Ponto de atenção**: enquanto não existir o item 3.4, esse backend local vai apontar para o **banco de produção**. Útil para ler, arriscado para escrever.
+- **Esforço**: Baixo. Não altera estrutura de código.
+
+---
+
+### [ ] 3.3 Frontend local falando com backend local
+
+- **O que é**: Fazer o Live Server apontar para a API local quando ela estiver rodando, em vez de sempre para produção.
+- **Por que importa**: É o que hoje faz o desenvolvimento local escrever em dado real. Também impede testar qualquer mudança de backend em conjunto com o frontend antes de publicar.
+- **Onde mexer**: `assets/js/storage.js`, na constante `API_BASE_URL`. Basta detectar o host local (`location.hostname === 'localhost'` ou `127.0.0.1`) e apontar para `http://localhost:<porta>/api`, mantendo a URL de produção como padrão. Nenhuma outra linha do arquivo precisa mudar — todas as chamadas já usam a constante.
+- **Ponto de atenção**: o backend precisa aceitar a origem do Live Server no CORS (hoje `cors()` está aberto, então provavelmente já funciona). Verificar também se o login Google funciona a partir de `localhost` com os client IDs atuais.
+- **Dependência**: só faz sentido junto com o 3.2.
+- **Esforço**: Muito baixo — literalmente uma condicional.
+
+---
+
+### [ ] 3.4 Banco de desenvolvimento separado
+
+- **O que é**: Uma base MongoDB distinta para desenvolvimento, para que testes locais nunca toquem em dado real do usuário.
+- **Por que importa**: É o que fecha de verdade o problema. Sem isso, mesmo com backend local (3.2) e frontend apontando para ele (3.3), o dado continua sendo o de produção.
+- **Por que é o item grande**: exige criar a base, decidir como popular com dados de teste realistas (aluno com ciclo de vencimento, agendamentos recorrentes, ciclos pagos e em aberto) e manter esses dados úteis ao longo do tempo. É trabalho recorrente, não pontual.
+- **Onde mexer**: nova connection string no `.env` local; opcionalmente um script de seed em `backend/scripts/` (já existe a pasta, com `normalize-agenda-formats.js` como precedente de script utilitário).
+- **Dependência**: item 3.2 (mesma razão do 3.3 — sem backend local, não há onde apontar a base de desenvolvimento).
+- **Esforço**: Médio–Alto (mais pela manutenção contínua dos dados do que pela configuração inicial).
+
+---
+
+## 🔴 Grupo 4 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
+
+> _Este grupo era numerado como "Grupo 2" até 2026-08-26, em conflito com o Grupo 2 de Google Calendar. Ver o mapa de equivalência no início do documento._
+
+### [ ] 4.1 Cobrança automatizada (Pix, boleto, cartão recorrente)
+
+> _Numerado como 2.2 até 2026-08-26._
 
 - **O que é**: Gerar cobranças automáticas para os alunos e receber confirmação de pagamento sem o PT precisar fazer nada manualmente.
 - **Por que importa**: Elimina de vez o trabalho manual de cobrar e reconciliar pagamentos, indo além do registro manual entregue no item 1.1.
@@ -290,7 +380,9 @@ Cada item traz:
 
 ---
 
-### [ ] 2.3 Notificações automáticas (lembrete de aula, cobrança, etc.)
+### [ ] 4.2 Notificações automáticas (lembrete de aula, cobrança, etc.)
+
+> _Numerado como 2.3 até 2026-08-26._
 
 - **O que é**: Notificar o PT e/ou o aluno automaticamente (push notification ou WhatsApp) antes da aula, ou quando um pagamento está para vencer.
 - **Por que importa**: Reduz faltas e esquecimentos, dos dois lados.
@@ -300,7 +392,9 @@ Cada item traz:
 
 ---
 
-### [ ] 2.4 Portal/app do aluno
+### [ ] 4.3 Portal/app do aluno
+
+> _Numerado como 2.4 até 2026-08-26._
 
 - **O que é**: Um espaço onde o próprio aluno acessa sua agenda, seu histórico de pagamento e talvez sua evolução física.
 - **Por que importa**: Hoje o sistema é 100% voltado ao personal trainer — o aluno não tem visibilidade própria, o que gera trocas de mensagem desnecessárias ("qual meu horário de amanhã?", "já paguei esse mês?").
@@ -309,7 +403,9 @@ Cada item traz:
 
 ---
 
-### [ ] 2.5 Avaliação física / anamnese / evolução do aluno
+### [ ] 4.4 Avaliação física / anamnese / evolução do aluno
+
+> _Numerado como 2.5 até 2026-08-26._
 
 - **O que é**: Registro de medidas corporais, peso, fotos de progresso, PAR-Q, histórico de lesões.
 - **Por que importa**: É expectativa comum de alunos de personal trainer mais estruturados, e ajuda o PT a justificar/ajustar treinos.
@@ -318,7 +414,9 @@ Cada item traz:
 
 ---
 
-### [ ] 2.6 Multi-personal / gestão de equipe (para academias/estúdios)
+### [ ] 4.5 Multi-personal / gestão de equipe (para academias/estúdios)
+
+> _Numerado como 2.6 até 2026-08-26._
 
 - **O que é**: Permitir que uma academia tenha vários personal trainers cadastrados, com alunos vinculados a mais de um profissional.
 - **Por que importa**: Hoje o app só atende o modelo "PT autônomo solo". Para vender a estúdios/academias, seria necessário suportar equipes.
@@ -327,7 +425,9 @@ Cada item traz:
 
 ---
 
-### [ ] 2.7 Auditoria / histórico de alterações
+### [ ] 4.6 Auditoria / histórico de alterações
+
+> _Numerado como 2.7 até 2026-08-26._
 
 - **O que é**: Registrar quem alterou o quê e quando (ex.: mudança de valor combinado, remarcação de aula), para resolver disputas com o aluno.
 - **Por que importa**: Não há rastro de mudança — se o valor combinado for editado, o valor anterior se perde.
@@ -337,7 +437,9 @@ Cada item traz:
 
 ---
 
-### [x] 2.8 Precisão financeira avançada (calendário real em vez de aproximação) — **ENTREGUE**
+### [x] 4.7 Precisão financeira avançada (calendário real em vez de aproximação) — **ENTREGUE**
+
+> _Numerado como 2.8 até 2026-08-26._
 
 - **O que foi entregue**: A fórmula fixa `frequência semanal × 4 × valor` foi **eliminada**. O cálculo agora percorre a janela real de datas do ciclo do aluno e conta as ocorrências efetivas de aulas resolvidas pelo motor de recorrência — o mesmo usado para desenhar a agenda, garantindo que "o que a agenda mostra" e "o que o financeiro cobra" nunca divirjam (módulo isomórfico, seção 2.4 da spec).
 - **O que ficou de fora**: **feriados** não são tratados (uma aula em feriado é contada normalmente, a menos que o PT a remova da agenda) e **faltas** dependem do item 1.5.
@@ -345,46 +447,14 @@ Cada item traz:
 
 ---
 
-### [ ] 2.9 Contrato / termo de responsabilidade / assinatura digital
+### [ ] 4.8 Contrato / termo de responsabilidade / assinatura digital
+
+> _Numerado como 2.9 até 2026-08-26._
 
 - **O que é**: Aluno assina digitalmente um termo de responsabilidade ou atestado médico dentro do próprio app.
 - **Por que importa**: Reduz risco jurídico do PT (comum em contratos de prestação de serviço de educação física).
 - **Complexidade**: Exigiria upload/armazenamento seguro de documentos e possivelmente integração com serviço de assinatura eletrônica (ex.: Clicksign, D4Sign) — infraestrutura nova, sem base no projeto atual.
 - **Esforço**: Alto.
-
----
-
-## Resumo de priorização sugerida
-
-| Prioridade | Item                                                   | Grupo       | Esforço     |
-| ---------- | ------------------------------------------------------ | ----------- | ----------- |
-| —          | ~~Controle de pagamento/inadimplência (1.1)~~          | ✅ Entregue | —           |
-| —          | ~~Precisão financeira avançada (2.8)~~                 | ✅ Entregue | —           |
-| —          | ~~Organização da documentação (0.4)~~                  | ✅ Entregue | —           |
-| —          | ~~Collection `Reposicao` (0.5)~~                       | ✅ Entregue | —           |
-| —          | ~~Extrato do ciclo (0.6)~~                             | ✅ Entregue | —           |
-| —          | ~~Google Calendar (2.1)~~                              | ✅ Entregue | —           |
-| —          | ~~Bug do bloco de histórico (0.1)~~                    | ✅ Entregue | —           |
-| —          | ~~Deduplicação de `calcularPrazoReposicao` (0.10)~~    | ✅ Entregue | —           |
-| —          | ~~Prazo de validade + expiração lazy (0.7)~~           | ✅ Entregue | —           |
-| 1          | Busca por nome na lista de alunos (1.7)                | Fácil       | Muito baixo |
-| 2          | Ampliar cobertura das regras financeiras (3.1)         | Proteção    | Baixo       |
-| 3          | Botão WhatsApp + observações (1.3, 1.4)                | Fácil       | Muito baixo |
-| 4          | Backend local + frontend apontando para ele (3.2, 3.3) | Ambiente    | Baixo       |
-| 5          | Relatório exportável de faturamento (1.2)              | Fácil       | Baixo       |
-| 6          | Status de no-show/cancelamento (1.5)                   | Fácil–Médio | Médio       |
-| 7          | Avisos in-app de reposição a vencer (0.8)              | Fácil–Médio | Baixo–Médio |
-| 8          | Aniversário do aluno (1.6)                             | Fácil       | Baixo       |
-| 9          | Banco de desenvolvimento separado (3.4)                | Ambiente    | Médio–Alto  |
-| 10         | Cobrança automatizada (2.2)                            | Complexo    | Alto        |
-| 11         | Notificações automáticas (2.3)                         | Complexo    | Alto        |
-| 12         | Portal do aluno (2.4)                                  | Complexo    | Muito alto  |
-| 13         | Avaliação física/anamnese (2.5)                        | Complexo    | Alto        |
-| 14         | Multi-personal/equipe (2.6)                            | Complexo    | Muito alto  |
-| 15         | Auditoria (2.7)                                        | Complexo    | Médio–Alto  |
-| 16         | Contrato / termo de responsabilidade (2.9)             | Complexo    | Médio       |
-
-**Sugestão de leitura da tabela**: os itens 1 a 6 continuam sendo os mais baratos e fecham as pontas de entrega que ainda restam no app. O item 3.1 (ampliar cobertura das regras financeiras) passou a ser uma proteção contínua: a suíte já existe, e a expansão contínua é o que segura o cálculo financeiro sem criar uma lacuna de UI que ainda não exista. Os itens 7 e 8 andam juntos e destravam a evolução da regra 5.8 do financeiro (contagem por presença em vez de existência na agenda).
 
 ---
 

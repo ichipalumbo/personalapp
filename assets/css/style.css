@@ -2389,101 +2389,6 @@ body {
   padding: 6px 0px 5px;
 }
 
-/* [TAG-STYLE-CALENDARIO-MENSAL] */
-.calendario-mensal {
-  background: #1a1a1a;
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 20px;
-  border: 1px solid #2a2a2a;
-}
-.calendario-mensal .mes-header {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 15px;
-}
-.calendario-mensal .mes-header h2 {
-  color: #ffd700;
-  font-size: 1.2rem;
-}
-.calendario-mensal .mes-header .mes-nav {
-  display: flex;
-  gap: 6px;
-}
-
-.calendario-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-}
-.calendario-grid .dia-header {
-  text-align: center;
-  padding: 4px 0;
-  font-weight: 700;
-  font-size: 0.72rem;
-  color: #888;
-  text-transform: uppercase;
-}
-.calendario-grid .dia-cell {
-  background: #1e1e1e;
-  border-radius: 8px;
-  padding: 6px;
-  min-height: 60px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-start;
-  border: 1px solid #262626;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-.calendario-grid .dia-cell:active {
-  transform: scale(0.95);
-  background: #2d2d2d;
-}
-.calendario-grid .dia-cell.outro-mes {
-  opacity: 0.25;
-  background: #141414;
-  cursor: default;
-  pointer-events: none;
-}
-.calendario-grid .dia-cell .dia-numero {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #888;
-}
-.calendario-grid .dia-cell.hoje .dia-numero {
-  color: #ffd700;
-}
-.calendario-grid .dia-cell.hoje {
-  border: 1.5px solid #ffd700 !important;
-  background: rgba(255, 215, 0, 0.08) !important;
-  box-shadow: inset 0 0 8px rgba(255, 215, 0, 0.15);
-}
-.dia-stats-badges {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  width: 100%;
-  margin-top: 4px;
-}
-.badge-stat-mensal {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  font-size: 0.62rem;
-  font-weight: 800;
-  padding: 2px 4px;
-  border-radius: 4px;
-  width: 100%;
-  text-align: center;
-}
-.badge-stat-mensal i {
-  font-size: 0.58rem;
-}
 .badge-aula {
   background: rgba(255, 215, 0, 0.12);
   color: #ffd700;
@@ -2887,49 +2792,6 @@ body {
 .filtro-aluno-select option {
   background: #1a1a1a;
   color: #e0e0e0;
-}
-
-/* [TAG-STYLE-KPI-DASHBOARD] - KPI dashboard for month view */
-.kpi-dashboard {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
-  background: rgba(255, 215, 0, 0.04);
-  border: 1px solid rgba(255, 215, 0, 0.15);
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 12px;
-}
-
-.kpi-card {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  border-radius: 7px;
-  padding: 8px 10px;
-  text-align: center;
-  transition: all 0.2s ease;
-}
-
-.kpi-card:hover {
-  border-color: #ffd700;
-  background: #252525;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.1);
-}
-
-.kpi-card-value {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: #ffd700;
-  margin-bottom: 3px;
-  display: block;
-}
-
-.kpi-card-label {
-  font-size: 0.65rem;
-  color: #888;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
 }
 
 .card-stat {
@@ -3383,20 +3245,6 @@ body {
 
   .alunos-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
-  .calendario-grid .dia-cell {
-    min-height: 85px;
-    padding: 8px;
-  }
-  .dia-stats-badges {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-  .badge-stat-mensal {
-    width: auto;
-    flex: 1;
-    min-width: 32px;
   }
   #containerCalendarioDia .agenda-sticky-container {
     padding-left: 0;
