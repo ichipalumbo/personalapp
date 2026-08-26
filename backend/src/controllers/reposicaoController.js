@@ -134,7 +134,8 @@ async function obterReposicao(req, res) {
       return res.status(404).json({ error: `Reposição com id '${id}' não encontrada.` });
     }
 
-    res.json(reposicao);
+    const [reposicaoAtualizada] = await reposicaoService.sincronizarExpiracaoLazy(ownerEmail, [reposicao], new Date());
+    res.json(reposicaoAtualizada || reposicao);
   } catch (err) {
     responderErroReposicao(res, err, 'obter reposição');
   }

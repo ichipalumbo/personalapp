@@ -5,6 +5,9 @@ const {
   PRAZO_MINIMO_REPOSICAO_DIAS,
   calcularPrazoReposicao,
 } = require('../src/services/financasService');
+const Reposicao = require('../src/models/Reposicao');
+const reposicaoService = require('../src/services/reposicaoService');
+const { obterReposicao } = require('../src/controllers/reposicaoController');
 
 function criarAlunoFechamentoMesCheio(overrides = {}) {
   return {
@@ -181,4 +184,104 @@ test('Aluno com objetivo Consultoria Online e ciclo definido calcula prazo do m�
     validoAte: '2024-04-30',
     pisoAplicado: false,
   });
+});
+
+test('obterReposicao expira reposição pendente com validoAte no passado', async () => {
+  const originalFindOne = Reposicao.findOne;
+  const originalSincronizar = reposicaoService.sincronizarExpiracaoLazy;
+
+  try {
+    const reposicaoBase = {
+      id: 'r-001',
+      ownerEmail: 'joao@example.com',
+      status: 'pendente',
+      validoAte: '2024-04-10',
+    };
+
+    Reposicao.findOne = async ({ ownerEmail, id }) => {
+      assert.equal(ownerEmail, 'joao@example.com');
+      assert.equal(id, 'r-001');
+      return reposicaoBase;
+    };
+
+    reposicaoService.sincronizarExpiracaoLazy = async (ownerEmailParam, reposicoes, hoje) => {
+      assert.equal(ownerEmailParam, 'joao@example.com');
+      assert.deepEqual(reposicoes, [reposicaoBase]);
+      assert.ok(hoje instanceof Date);
+      return [{ ...reposicaoBase, status: 'expirada' }];
+    };
+
+    const req = {
+      auth: { ownerEmail: 'joao@example.com' },
+      params: { id: 'r-001' },
+    };
+    const res = {
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(payload) {
+        this.body = payload;
+        return this;
+      },
+    };
+
+    await obterReposicao(req, res);
+
+    assert.equal(res.statusCode, undefined);
+    assert.deepEqual(res.body, { ...reposicaoBase, status: 'expirada' });
+  } finally {
+    Reposicao.findOne = originalFindOne;
+    reposicaoService.sincronizarExpiracaoLazy = originalSincronizar;
+  }
+});
+
+test('obterReposicao preserva status pendente quando validoAte ainda não venceu', async () => {
+  const originalFindOne = Reposicao.findOne;
+  const originalSincronizar = reposicaoService.sincronizarExpiracaoLazy;
+
+  try {
+    const reposicaoBase = {
+      id: 'r-002',
+      ownerEmail: 'joao@example.com',
+      status: 'pendente',
+      validoAte: '2099-12-31',
+    };
+
+    Reposicao.findOne = async ({ ownerEmail, id }) => {
+      assert.equal(ownerEmail, 'joao@example.com');
+      assert.equal(id, 'r-002');
+      return reposicaoBase;
+    };
+
+    reposicaoService.sincronizarExpiracaoLazy = async (ownerEmailParam, reposicoes, hoje) => {
+      assert.equal(ownerEmailParam, 'joao@example.com');
+      assert.deepEqual(reposicoes, [reposicaoBase]);
+      assert.ok(hoje instanceof Date);
+      return [{ ...reposicaoBase, status: 'pendente' }];
+    };
+
+    const req = {
+      auth: { ownerEmail: 'joao@example.com' },
+      params: { id: 'r-002' },
+    };
+    const res = {
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(payload) {
+        this.body = payload;
+        return this;
+      },
+    };
+
+    await obterReposicao(req, res);
+
+    assert.equal(res.statusCode, undefined);
+    assert.deepEqual(res.body, reposicaoBase);
+  } finally {
+    Reposicao.findOne = originalFindOne;
+    reposicaoService.sincronizarExpiracaoLazy = originalSincronizar;
+  }
 });

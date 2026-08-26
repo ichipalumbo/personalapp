@@ -13,6 +13,7 @@
 ## Como usar este documento
 
 Cada item traz:
+
 - **O que é**: descrição da feature/regra/tela.
 - **Por que importa**: a dor real do PT que ela resolve.
 - **Onde mexer**: arquivos/áreas do código já existentes que servem de ponto de partida.
@@ -26,6 +27,7 @@ Cada item traz:
 > Detalhamento técnico completo na seção 12 de [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
 
 ### [x] 0.1 Bug: bloco "Ver ciclos anteriores" fecha sozinho no re-render — **RESOLVIDO**
+
 - **O que foi entregue**: o estado de expansão do histórico foi persistido no `STATE` e reaplicado em `renderizarCard()`, com o listener de `toggle` gravando abertura e fechamento em fase de captura. O mesmo padrão foi estendido ao extrato do ciclo.
 - **Por que importa**: o defeito era visual e fazia o bloco fechar ao re-renderizar a tela, mesmo com os dados já carregados.
 - **Onde mexer**: `assets/js/view-financas.js` (arquivo único). Não requer backend.
@@ -34,6 +36,7 @@ Cada item traz:
 ---
 
 ### [ ] 0.2 Consolidar módulos compartilhados (`assets/js/shared/`) sem travessia `backend/ -> assets/`
+
 - **O que é**: A dívida deixou de ser pontual. Hoje o backend atravessa a fronteira da pasta `backend/` para consumir **dois** módulos em `assets/js/shared/`:
   - `recurrence-helpers.js` (usado por `backend/src/services/financasService.js`);
   - `reposicao-flow-helpers.js` (usado em teste de regressão do backend).
@@ -44,6 +47,7 @@ Cada item traz:
 ---
 
 ### [ ] 0.3 Limpar CSS órfão da visão mensal removida
+
 - **O que é**: Regras como `.calendario-mensal`, `.calendario-grid`, `.dia-cell`, `.kpi-dashboard` e `#tela-calendario` continuam em `assets/css/style.css` mesmo após a remoção da visão "Mês".
 - **Por que importa**: Só peso morto e ruído de manutenção. Não afeta o usuário.
 - **Onde mexer**: `assets/css/style.css`. **Cuidado**: alguns seletores podem ser compartilhados com as visões de dia/semana — verificar cada um antes de remover.
@@ -52,6 +56,7 @@ Cada item traz:
 ---
 
 ### [x] 0.4 Organização da documentação — **CONCLUÍDO**
+
 - **O que foi feito**: Documentação reunida em `docs/` (`docs/README.md` como índice, `docs/roadmap.md`, `docs/specs/`), com os arquivos movidos via `git mv` para preservar histórico. A árvore de arquivos do `README.md` da raiz foi corrigida nos dois lados (frontend e backend). A linha `.agents/` foi removida do `.gitignore`, passando a versionar os skills de forma coerente com o que já estava rastreado. Foi criado `.github/copilot-instructions.md` com as regras permanentes para agentes.
 - **Sobre `graphify-out/`**: já estava no `.gitignore` desde sempre — apareceu em varreduras anteriores apenas porque o pacote de análise foi montado por pasta, não por `git archive`. A pasta foi removida localmente por ora; a ferramenta pode voltar quando houver um uso definido. Artefato gerado nunca é fonte de verdade nem deve ser editado à mão.
 - **Manutenção contínua**: quando uma feature mudar a estrutura de arquivos, atualizar a árvore do README no mesmo commit. Documentação defasada foi o que fez este roadmap começar errado uma vez.
@@ -59,24 +64,31 @@ Cada item traz:
 ---
 
 ### [x] 0.5 Collection `Reposicao` + modelo de competência — **EM PRODUÇÃO**
+
 - **Status real**: implementação mergeada na `main` e validada em produção; backend e frontend em produção.
 - **O que já existe**: collection `Reposicao`, integração no financeiro por competência, fluxo de envio/reagendamento com vínculo `reposicaoId` / `agendamentoReposicaoId`.
 - **Pendências**: a seção 9.5 do card do aluno continua pendente (contador de reposições no card), e a caixinha de avisos de reposição a vencer ficou no item 0.8.
 - **Esforço restante**: baixo (fechamento do card do aluno e documentação de rollout), sem mudança conceitual de regra.
 
 ### [x] 0.6 Extrato do ciclo — **ENTREGUE**
+
 - **O que foi entregue**: cada ciclo exibe o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado, com os 11 tipos de linha documentados em `docs/specs/reposicoes-e-competencia.md`.
 - **Por que importa**: dá previsibilidade e auditoria para o PT, sem depender de memória nem de contagem ad hoc na agenda.
 - **Onde mexer**: `backend/src/services/financasService.js`, `assets/js/view-financas.js` e a spec complementar de reposições.
 - **Esforço**: Médio.
 
-### [ ] 0.7 Prazo de validade + expiração lazy
-- **O que é**: Definir prazo para reposição pendente e expirar os registros de forma automática/lazy sem bloquear a tela de cobrança.
-- **Por que importa**: Evita que a fila fique viva indefinidamente e dá regra de negócio clara para o que vence.
-- **Onde mexer**: `docs/specs/reposicoes-e-competencia.md`, `backend/src/controllers/reposicaoController.js`, rotina de expiração em background ou lazy check.
+### [x] 0.7 Prazo de validade + expiração lazy — **ENTREGUE**
+
+- **O que foi entregue**: a expiração agora é aplicada de forma **lazy** na leitura, com persistência via `findOneAndUpdate` quando o status muda; não há job em background.
+- **Por que importa**: evita que a fila fique viva indefinidamente e deixa a regra de validade explícita para o usuário e para o cálculo de cobrança.
+- **Onde mexer**: `backend/src/services/reposicaoService.js`, `backend/src/controllers/reposicaoController.js` e a spec complementar.
+- **Implementação atual**: `validoAte` é derivado no servidor por `calcularPrazoReposicao`, com piso de 7 dias (`PRAZO_MINIMO_REPOSICAO_DIAS`), e o controller rejeita qualquer valor vindo do cliente. O status passa para `expirada` quando a leitura detecta que a data já venceu.
+- **Cobertura**: há testes automatizados em `backend/test/reposicao-prazo.test.js` e `backend/test/reposicao-extrato-prazo.test.js` cobrindo a regra de expiração e o comportamento de prazo.
+- **Última ponta solta fechada**: a correção desta rodada também aplica a expiração lazy no `GET /api/reposicoes/:id`, deixando a mesma regra consistente entre listagem e leitura individual.
 - **Esforço**: Médio.
 
 ### [ ] 0.8 Avisos in-app de reposição a vencer
+
 - **O que é**: Card do aluno + painel com alerta para reposição prestes a expirar; a regra de expiração fechada do item 0.7 é a base para calcular "vence em breve".
 - **Por que importa**: Dá visibilidade útil sem exigir notificação externa; com o prazo de validade definido, a UX passa a ter uma regra clara para o que vence.
 - **Onde mexer**: `view-alunos.js`, card do aluno, painel de aluno e endpoint de fila de reposição. O layout do card (`.aluno-card-indicadores`, grid `auto-fit`) **já foi preparado para uma terceira caixinha sem refatoração**; a antiga `contarReposicoesPorAluno` **foi removida** e não deve ser ressuscitada.
@@ -85,6 +97,7 @@ Cada item traz:
 - **Esforço**: Baixo–Médio.
 
 ### [ ] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado
+
 - **O que é**: Tornar o cálculo de prazo reutilizável sem duplicação entre backend e frontend.
 - **Por que importa**: Já houve divergência real quando a regra foi reimplementada no cliente. A única fonte de cálculo precisa ser compartilhada.
 - **Dependência**: item 0.2 (consolidação de compartilhados e remoção da travessia `backend/ -> assets/`).
@@ -92,6 +105,7 @@ Cada item traz:
 - **Esforço**: Médio.
 
 ### [x] 0.10 Deduplicação de `calcularPrazoReposicao`
+
 - **O que foi entregue**: a primeira declaração (código morto) foi removida; a ativa foi preservada.
 - **Sem mudança de comportamento**: o guard de ciclo não configurado que existia só na versão morta já era coberto por `calcularCicloVigente`, que devolve `null` para aluno sem `fechamentoMesCheio` e sem `diaVencimento`.
 - **Suíte**: a suíte permaneceu em 84 testes, 0 falhas.
@@ -100,6 +114,7 @@ Cada item traz:
 ---
 
 ### ✅ Não é débito: custo da rota de consistência de agenda
+
 `GET /api/alunos/consistencia-agenda` faz 2 consultas de custo **fixo** (alunos + agendamentos) e resolve o resto em memória — não escala por aluno. Chegou a ser levantada como possível dívida, mas foi **reclassificada como comportamento aceito** (seção 10.1 da spec). Não otimizar preventivamente. Se um dia a aba Alunos ficar lenta, o ponto a investigar é o volume de dados trafegado (filtrar `tipo`/`frequencia` já na consulta, ou unificar com a rota de Finanças), não a lógica do indicador.
 
 ---
@@ -107,6 +122,7 @@ Cada item traz:
 ## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
 
 ### [x] 2.1 Google Calendar (`RRULE` + `EXDATE` + renovação ativa do canal) — **ENTREGUE COM RESSALVA**
+
 - **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
 - **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
@@ -115,12 +131,14 @@ Cada item traz:
 - **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
 
 ### [ ] 2.10 Consolidação da sincronização tripla no boot
+
 - **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
 - **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
 - **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
 - **Esforço**: Baixo–Médio.
 
 ### [ ] 2.11 Alargamento da janela do full sync
+
 - **O que é**: ampliar a janela de rebusca do full sync além do atual `−1 mês a +2 meses` para cobrir mais casos de bloqueios externos fora da janela ativa.
 - **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
@@ -139,7 +157,7 @@ Cada item traz:
 > **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
 
 ### [ ] 3.1 Ampliar cobertura das regras financeiras
-> *Este item também aparecia como 2.9 nas versões anteriores deste roadmap. Consolidado aqui.*
+
 - **O que é**: ampliar a suíte automatizada das regras de cálculo de `financasService.js` e do fluxo de reposição que já está em `backend/test/`.
 - **O que já existe hoje**: a suíte do backend roda em `node --test` com **84 testes, 0 falhas**. Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
 - **Lacunas verificadas**: não há teste de frontend. Não existe nenhum arquivo de teste em `assets/` e a UI não tem suíte automatizada em `backend/test/`.
@@ -149,6 +167,7 @@ Cada item traz:
 ---
 
 ### [ ] 3.2 Rodar o backend localmente
+
 - **O que é**: Conseguir subir a API na própria máquina, em vez de depender de deploy para testar qualquer mudança de backend.
 - **Por que importa**: Hoje, validar uma alteração de backend exige publicar. Isso torna o ciclo de correção lento e força mudanças não testadas a entrarem em produção.
 - **Por que é menor do que parece**: o script `npm start` (`node server.js`) **já existe** e o `dotenv` **já é dependência**. O que falta é um arquivo `.env` local com a string de conexão do Mongo e os client IDs do Google.
@@ -159,6 +178,7 @@ Cada item traz:
 ---
 
 ### [ ] 3.3 Frontend local falando com backend local
+
 - **O que é**: Fazer o Live Server apontar para a API local quando ela estiver rodando, em vez de sempre para produção.
 - **Por que importa**: É o que hoje faz o desenvolvimento local escrever em dado real. Também impede testar qualquer mudança de backend em conjunto com o frontend antes de publicar.
 - **Onde mexer**: `assets/js/storage.js`, na constante `API_BASE_URL`. Basta detectar o host local (`location.hostname === 'localhost'` ou `127.0.0.1`) e apontar para `http://localhost:<porta>/api`, mantendo a URL de produção como padrão. Nenhuma outra linha do arquivo precisa mudar — todas as chamadas já usam a constante.
@@ -169,6 +189,7 @@ Cada item traz:
 ---
 
 ### [ ] 3.4 Banco de desenvolvimento separado
+
 - **O que é**: Uma base MongoDB distinta para desenvolvimento, para que testes locais nunca toquem em dado real do usuário.
 - **Por que importa**: É o que fecha de verdade o problema. Sem isso, mesmo com backend local (3.2) e frontend apontando para ele (3.3), o dado continua sendo o de produção.
 - **Por que é o item grande**: exige criar a base, decidir como popular com dados de teste realistas (aluno com ciclo de vencimento, agendamentos recorrentes, ciclos pagos e em aberto) e manter esses dados úteis ao longo do tempo. É trabalho recorrente, não pontual.
@@ -181,6 +202,7 @@ Cada item traz:
 ## 🟢 Grupo 1 — Coisas fáceis de fazer (baixo esforço, alto ganho percebido)
 
 ### [x] 1.1 Controle de pagamento / inadimplência — **ENTREGUE**
+
 - **O que foi entregue**: Muito além do escopo mínimo previsto aqui. Em vez do controle por mês calendário, foi implementado um modelo de **ciclo de cobrança configurável por aluno** (vencimento móvel, ex.: todo dia 17), com registro de pagamento persistente, status automático (em aberto / atrasado / pago), ajuste manual por ciclo (positivo ou negativo) e histórico de ciclos anteriores.
 - **Onde ficou**: Nova collection `backend/src/models/CicloFinanceiro.js`, serviço `backend/src/services/financasService.js`, aba dedicada "Finanças" (`assets/js/view-financas.js`) e badge no card do aluno em `view-alunos.js`.
 - **Observação**: o campo `historicoPagamentos` do `Aluno.js` — que este item propunha destravar — foi **aposentado** (marcado como `DEPRECATED`) em favor da nova collection. Não usar em lógica nova.
@@ -189,9 +211,10 @@ Cada item traz:
 ---
 
 ### [ ] 1.2 Relatório de faturamento exportável (PDF/Excel)
+
 - **O que é**: Botão "Gerar relatório do período" com faturamento por aluno, total, aulas cobradas e status de pagamento.
 - **Por que importa**: Prestar contas ao contador e ter controle pessoal do que foi efetivamente recebido no período. Hoje a informação existe na tela de Finanças, mas não sai do app.
-- **Onde mexer**: ⚠️ *Base técnica revisada.* As funções que este item citava (`exportarDados()` em `utils-kpi.js` e os cálculos de `kpiService.js`) **foram removidas**. A fonte correta agora é a collection `CicloFinanceiro` e o serviço `backend/src/services/financasService.js` — os valores já vêm calculados e congelados por ciclo, o que na prática **simplifica** este item: é quase só formatação e exportação, sem recalcular nada.
+- **Onde mexer**: ⚠️ _Base técnica revisada._ As funções que este item citava (`exportarDados()` em `utils-kpi.js` e os cálculos de `kpiService.js`) **foram removidas**. A fonte correta agora é a collection `CicloFinanceiro` e o serviço `backend/src/services/financasService.js` — os valores já vêm calculados e congelados por ciclo, o que na prática **simplifica** este item: é quase só formatação e exportação, sem recalcular nada.
 - **Sugestão de escopo mínimo (V1)**: Exportar CSV/Excel dos ciclos de um intervalo de datas, com colunas: aluno, período do ciclo, método de cobrança, aulas cobradas, valor, status, data de pagamento.
 - **Ponto de atenção**: decidir se o relatório exporta o **ciclo vigente** também (que ainda pode mudar enquanto não estiver pago) ou apenas ciclos fechados/pagos. Evitar dependência nova: CSV se resolve sem biblioteca.
 - **Esforço**: Baixo (a lógica de cálculo já está pronta e persistida; falta só a camada de exportação).
@@ -199,6 +222,7 @@ Cada item traz:
 ---
 
 ### [ ] 1.3 Campo de observações/anotações por aula ou por aluno
+
 - **O que é**: Um campo de texto livre para anotar coisas como "reclamou de dor no joelho", "combinar novo horário", "trouxe atestado".
 - **Por que importa**: Hoje não existe nenhum campo de anotação livre nem no modelo `Aluno.js` nem no `Agendamento.js` (que usam `{ strict: false }`, mas nenhuma tela expõe esse campo).
 - **Onde mexer**: Adicionar campo `observacoes` no formulário de `view-alunos.js` e/ou `modal-acao-slot.js` (edição de agendamento). O `{ strict: false }` do schema já aceita esse campo sem migração — mas atenção: por isso mesmo, um typo no nome do campo grava silenciosamente e não gera erro.
@@ -208,6 +232,7 @@ Cada item traz:
 ---
 
 ### [ ] 1.4 Botão de contato rápido via WhatsApp
+
 - **O que é**: Ícone/botão na ficha do aluno que abre uma conversa de WhatsApp direto com o número cadastrado.
 - **Por que importa**: O campo `telefone` já existe no cadastro (`AlunoSchema` em `Aluno.js`), mas não há nenhum atalho de contato — hoje o PT precisa copiar o número manualmente.
 - **Onde mexer**: `view-alunos.js`, adicionando um link `https://wa.me/<telefone>` na renderização do card do aluno.
@@ -217,9 +242,10 @@ Cada item traz:
 ---
 
 ### [ ] 1.5 Status de "não compareceu" (no-show) / cancelamento pelo aluno
+
 - **O que é**: Além do status `confirmado` (default atual em `Agendamento.js`), adicionar estados como `cancelado_pelo_aluno` e `faltou`, para diferenciar de cancelamento feito pelo próprio PT.
 - **Por que importa**: Sem diferenciar falta do aluno, fica difícil cobrar reposição de forma justa ou identificar alunos com muita falta.
-- **⚠️ Dependência crítica do financeiro**: este item é **pré-requisito** para evoluir a regra 5.8 da spec de Finanças. Quando existir, a escolha cobrável/não cobrável pode passar a ser derivada de *quem cancelou*. Hoje o financeiro conta simplesmente "o que existe na agenda" — se a aula for excluída de um ciclo não pago, ela some da cobrança. Quando existir status de presença, a contagem deve passar a considerar *realizada / falta cobrável / cancelada sem cobrança*, em vez da mera existência do compromisso. Registrado como revisão futura nas seções 5.8 e 8 da spec.
+- **⚠️ Dependência crítica do financeiro**: este item é **pré-requisito** para evoluir a regra 5.8 da spec de Finanças. Quando existir, a escolha cobrável/não cobrável pode passar a ser derivada de _quem cancelou_. Hoje o financeiro conta simplesmente "o que existe na agenda" — se a aula for excluída de um ciclo não pago, ela some da cobrança. Quando existir status de presença, a contagem deve passar a considerar _realizada / falta cobrável / cancelada sem cobrança_, em vez da mera existência do compromisso. Registrado como revisão futura nas seções 5.8 e 8 da spec.
 - **Onde mexer**: `backend/src/models/Agendamento.js` (ajustar enum/valores aceitos), `modal-acao-slot.js` (ações de cancelar/faltou) e, em seguida, `backend/src/services/financasService.js` (regra de contagem). ⚠️ A antiga `contarReposicoesPorAluno` de `kpiService.js`, que este item citava, **não existe mais**.
 - **Recomendação**: por mexer em valor cobrado, é o candidato natural para entrar **depois** do item 3.1 (testes). Assim a mudança na contagem entra com rede.
 - **Esforço**: Médio (a parte de UI é simples; a integração com o financeiro exige cuidado).
@@ -227,6 +253,7 @@ Cada item traz:
 ---
 
 ### [ ] 1.6 Lembrete de aniversário do aluno
+
 - **O que é**: Campo de data de nascimento no cadastro + card no dashboard "aniversariantes da semana/mês".
 - **Por que importa**: É um toque de relacionamento simples que ajuda na retenção do aluno, sem exigir integração externa.
 - **Onde mexer**: Novo campo `dataNascimento` em `Aluno.js` (schema `{ strict: false }` aceita sem migração forçada) + widget novo em `view-home.js`.
@@ -235,6 +262,7 @@ Cada item traz:
 ---
 
 ### [~] 1.7 Filtro e busca na lista de alunos — **parcialmente entregue**
+
 - **Já existe hoje**: filtros por **status** (ativo/inativo) e por **objetivo** (Personal Trainer / Consultoria Online) em `view-alunos.js`, com dirty-check de renderização.
 - **O que falta**: **busca por nome** (campo de texto) e, se fizer sentido, filtro por dia da semana em que o aluno treina.
 - **Onde mexer**: `view-alunos.js` — os dados já estão todos em memória (`window.alunos`), então é filtragem client-side. Atenção: a chave de dirty-check (`_ultimaChaveRenderAlunos`) precisa incluir o novo termo de busca, senão a lista não re-renderiza ao digitar.
@@ -243,6 +271,7 @@ Cada item traz:
 ---
 
 ### [ ] 1.8 Visão de "aulas a repor" no card do aluno
+
 - **Consolidado no item 0.8.**
 
 ---
@@ -250,6 +279,7 @@ Cada item traz:
 ## 🔴 Grupo 2 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
 
 ### [ ] 2.2 Cobrança automatizada (Pix, boleto, cartão recorrente)
+
 - **O que é**: Gerar cobranças automáticas para os alunos e receber confirmação de pagamento sem o PT precisar fazer nada manualmente.
 - **Por que importa**: Elimina de vez o trabalho manual de cobrar e reconciliar pagamentos, indo além do registro manual entregue no item 1.1.
 - **Complexidade**: Exige integração com gateway de pagamento (ex.: Mercado Pago, Asaas, Stripe), webhooks de confirmação (o padrão já usado para o Google Calendar em `gcalWebhookController.js` serve de referência arquitetural) e tratamento de falha/estorno.
@@ -261,6 +291,7 @@ Cada item traz:
 ---
 
 ### [ ] 2.3 Notificações automáticas (lembrete de aula, cobrança, etc.)
+
 - **O que é**: Notificar o PT e/ou o aluno automaticamente (push notification ou WhatsApp) antes da aula, ou quando um pagamento está para vencer.
 - **Por que importa**: Reduz faltas e esquecimentos, dos dois lados.
 - **Complexidade**: O app já é PWA com Service Worker registrado (`assets/js/app/service-worker.js`, `sw.js`), o que ajuda como base, mas hoje as notificações são só "toasts" internos (`mostrarToast`). Seria necessário Web Push (VAPID + subscription por usuário) **ou** WhatsApp Business API, mais um scheduler/cron no backend.
@@ -270,6 +301,7 @@ Cada item traz:
 ---
 
 ### [ ] 2.4 Portal/app do aluno
+
 - **O que é**: Um espaço onde o próprio aluno acessa sua agenda, seu histórico de pagamento e talvez sua evolução física.
 - **Por que importa**: Hoje o sistema é 100% voltado ao personal trainer — o aluno não tem visibilidade própria, o que gera trocas de mensagem desnecessárias ("qual meu horário de amanhã?", "já paguei esse mês?").
 - **Complexidade**: O modelo de dados segrega tudo por `ownerEmail` (uma conta Google = uma base isolada, ver `backend/src/utils/ownerScope.js` e `requireAuth.js`). Não existe o conceito de múltiplos papéis (PT vs. aluno) sobre o mesmo conjunto de dados. Exigiria desenhar um modelo de autorização (RBAC) do zero.
@@ -278,6 +310,7 @@ Cada item traz:
 ---
 
 ### [ ] 2.5 Avaliação física / anamnese / evolução do aluno
+
 - **O que é**: Registro de medidas corporais, peso, fotos de progresso, PAR-Q, histórico de lesões.
 - **Por que importa**: É expectativa comum de alunos de personal trainer mais estruturados, e ajuda o PT a justificar/ajustar treinos.
 - **Complexidade**: Não existe entidade parecida no modelo atual. Exigiria nova collection com histórico temporal, upload/armazenamento de imagens (hoje só há ícones estáticos em `assets/images/`, sem pipeline de upload) e uma tela de linha do tempo.
@@ -286,6 +319,7 @@ Cada item traz:
 ---
 
 ### [ ] 2.6 Multi-personal / gestão de equipe (para academias/estúdios)
+
 - **O que é**: Permitir que uma academia tenha vários personal trainers cadastrados, com alunos vinculados a mais de um profissional.
 - **Por que importa**: Hoje o app só atende o modelo "PT autônomo solo". Para vender a estúdios/academias, seria necessário suportar equipes.
 - **Complexidade**: O isolamento por `ownerEmail` é rígido (1 conta = 1 base). Hierarquia (dono → PTs → alunos compartilhados) exige redesenhar o esquema de permissões inteiro.
@@ -294,15 +328,17 @@ Cada item traz:
 ---
 
 ### [ ] 2.7 Auditoria / histórico de alterações
+
 - **O que é**: Registrar quem alterou o quê e quando (ex.: mudança de valor combinado, remarcação de aula), para resolver disputas com o aluno.
 - **Por que importa**: Não há rastro de mudança — se o valor combinado for editado, o valor anterior se perde.
-- **Nota**: a feature de Finanças resolveu **parcialmente** esse problema no recorte financeiro, via os campos de snapshot (`precoAulaSnapshot`, `valorFixoSnapshot`) do `CicloFinanceiro`: o preço vigente na criação de cada ciclo fica congelado, então um reajuste não reescreve o passado. Mas isso é preservação de valor, **não** log de auditoria — não há registro de *quando* nem de *o que* mudou no cadastro.
+- **Nota**: a feature de Finanças resolveu **parcialmente** esse problema no recorte financeiro, via os campos de snapshot (`precoAulaSnapshot`, `valorFixoSnapshot`) do `CicloFinanceiro`: o preço vigente na criação de cada ciclo fica congelado, então um reajuste não reescreve o passado. Mas isso é preservação de valor, **não** log de auditoria — não há registro de _quando_ nem de _o que_ mudou no cadastro.
 - **Complexidade**: Exigiria um padrão de auditoria (coleção paralela de eventos ou versionamento) aplicado a todos os `findOneAndUpdate` espalhados pelos controllers — mudança transversal.
 - **Esforço**: Médio–Alto (mais pela abrangência do que pela dificuldade isolada).
 
 ---
 
 ### [x] 2.8 Precisão financeira avançada (calendário real em vez de aproximação) — **ENTREGUE**
+
 - **O que foi entregue**: A fórmula fixa `frequência semanal × 4 × valor` foi **eliminada**. O cálculo agora percorre a janela real de datas do ciclo do aluno e conta as ocorrências efetivas de aulas resolvidas pelo motor de recorrência — o mesmo usado para desenhar a agenda, garantindo que "o que a agenda mostra" e "o que o financeiro cobra" nunca divirjam (módulo isomórfico, seção 2.4 da spec).
 - **O que ficou de fora**: **feriados** não são tratados (uma aula em feriado é contada normalmente, a menos que o PT a remova da agenda) e **faltas** dependem do item 1.5.
 - **Risco que se concretizou**: como previsto aqui, a ausência de testes automatizados fez a validação ser toda manual em produção. Dois defeitos reais escaparam para prod e só foram pegos em revisão posterior (aula excluída continuar sendo cobrada; reajuste de preço alterando ciclos antigos retroativamente). Ambos corrigidos — mas fica o registro de que **o projeto continua sem rede de proteção automatizada** em cima de código que calcula dinheiro. Ver item 3.1.
@@ -310,6 +346,7 @@ Cada item traz:
 ---
 
 ### [ ] 2.9 Contrato / termo de responsabilidade / assinatura digital
+
 - **O que é**: Aluno assina digitalmente um termo de responsabilidade ou atestado médico dentro do próprio app.
 - **Por que importa**: Reduz risco jurídico do PT (comum em contratos de prestação de serviço de educação física).
 - **Complexidade**: Exigiria upload/armazenamento seguro de documentos e possivelmente integração com serviço de assinatura eletrônica (ex.: Clicksign, D4Sign) — infraestrutura nova, sem base no projeto atual.
@@ -319,32 +356,36 @@ Cada item traz:
 
 ## Resumo de priorização sugerida
 
-| Prioridade | Item | Grupo | Esforço |
-|---|---|---|---|
-| — | ~~Controle de pagamento/inadimplência (1.1)~~ | ✅ Entregue | — |
-| — | ~~Precisão financeira avançada (2.8)~~ | ✅ Entregue | — |
-| — | ~~Organização da documentação (0.4)~~ | ✅ Entregue | — |
-| 1 | Bug do bloco de histórico (0.1) | Débito | Muito baixo |
-| 2 | Busca por nome na lista de alunos (1.7) | Fácil | Muito baixo |
-| 3 | Testes das regras financeiras (3.1) | Proteção | Baixo |
-| 4 | Botão WhatsApp + observações (1.3, 1.4) | Fácil | Muito baixo |
-| 5 | Backend local + frontend apontando para ele (3.2, 3.3) | Ambiente | Baixo |
-| 6 | Relatório exportável de faturamento (1.2) | Fácil | Baixo |
-| 7 | Status de no-show/cancelamento (1.5) | Fácil–Médio | Médio |
-| 8 | Aulas a repor no card do aluno (1.8) | Fácil–Médio | Baixo–Médio |
-| 9 | Débitos 0.2, 0.3 e 0.9 (de carona) | Débito | Baixo–Médio |
-| 10 | Aniversário do aluno (1.6) | Fácil | Baixo |
-| 11 | Banco de desenvolvimento separado (3.4) | Ambiente | Médio–Alto |
-| 12 | Cobrança automatizada (2.2) | Complexo | Alto |
-| 13 | Notificações automáticas (2.3) | Complexo | Alto |
-| 14 | Portal do aluno (2.4) | Complexo | Muito alto |
-| 15 | Avaliação física/anamnese (2.5) | Complexo | Alto |
-| 16 | Multi-personal/equipe (2.6) | Complexo | Muito alto |
-| 17 | Auditoria (2.7) | Complexo | Médio–Alto |
-| 18 | Contrato / termo de responsabilidade (2.9) | Complexo | Médio |
+| Prioridade | Item                                                   | Grupo       | Esforço     |
+| ---------- | ------------------------------------------------------ | ----------- | ----------- |
+| —          | ~~Controle de pagamento/inadimplência (1.1)~~          | ✅ Entregue | —           |
+| —          | ~~Precisão financeira avançada (2.8)~~                 | ✅ Entregue | —           |
+| —          | ~~Organização da documentação (0.4)~~                  | ✅ Entregue | —           |
+| —          | ~~Collection `Reposicao` (0.5)~~                       | ✅ Entregue | —           |
+| —          | ~~Extrato do ciclo (0.6)~~                             | ✅ Entregue | —           |
+| —          | ~~Google Calendar (2.1)~~                              | ✅ Entregue | —           |
+| —          | ~~Bug do bloco de histórico (0.1)~~                    | ✅ Entregue | —           |
+| —          | ~~Deduplicação de `calcularPrazoReposicao` (0.10)~~    | ✅ Entregue | —           |
+| —          | ~~Prazo de validade + expiração lazy (0.7)~~           | ✅ Entregue | —           |
+| 1          | Busca por nome na lista de alunos (1.7)                | Fácil       | Muito baixo |
+| 2          | Ampliar cobertura das regras financeiras (3.1)         | Proteção    | Baixo       |
+| 3          | Botão WhatsApp + observações (1.3, 1.4)                | Fácil       | Muito baixo |
+| 4          | Backend local + frontend apontando para ele (3.2, 3.3) | Ambiente    | Baixo       |
+| 5          | Relatório exportável de faturamento (1.2)              | Fácil       | Baixo       |
+| 6          | Status de no-show/cancelamento (1.5)                   | Fácil–Médio | Médio       |
+| 7          | Avisos in-app de reposição a vencer (0.8)              | Fácil–Médio | Baixo–Médio |
+| 8          | Aniversário do aluno (1.6)                             | Fácil       | Baixo       |
+| 9          | Banco de desenvolvimento separado (3.4)                | Ambiente    | Médio–Alto  |
+| 10         | Cobrança automatizada (2.2)                            | Complexo    | Alto        |
+| 11         | Notificações automáticas (2.3)                         | Complexo    | Alto        |
+| 12         | Portal do aluno (2.4)                                  | Complexo    | Muito alto  |
+| 13         | Avaliação física/anamnese (2.5)                        | Complexo    | Alto        |
+| 14         | Multi-personal/equipe (2.6)                            | Complexo    | Muito alto  |
+| 15         | Auditoria (2.7)                                        | Complexo    | Médio–Alto  |
+| 16         | Contrato / termo de responsabilidade (2.9)             | Complexo    | Médio       |
 
-**Sugestão de leitura da tabela**: os itens 1 a 6 são todos de esforço baixo e fecham as pontas soltas da entrega de Finanças. O item 3.1 (testes) subiu na lista de propósito: é barato, não depende de nada e é o único que protege código que calcula dinheiro — vale entrar antes de qualquer coisa que mexa em valor cobrado. Os itens 7 e 8 andam juntos e destravam a evolução da regra 5.8 do financeiro (contagem por presença em vez de existência na agenda).
+**Sugestão de leitura da tabela**: os itens 1 a 6 continuam sendo os mais baratos e fecham as pontas de entrega que ainda restam no app. O item 3.1 (ampliar cobertura das regras financeiras) passou a ser uma proteção contínua: a suíte já existe, e a expansão contínua é o que segura o cálculo financeiro sem criar uma lacuna de UI que ainda não exista. Os itens 7 e 8 andam juntos e destravam a evolução da regra 5.8 do financeiro (contagem por presença em vez de existência na agenda).
 
 ---
 
-*Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir.*
+_Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir._
