@@ -377,11 +377,14 @@ cd backend
 copy .env.example .env
 ```
 
-Preencher cada variavel do `.env` com os valores corretos para o ambiente local. Em especial:
+Preencher cada variavel do `.env` com os valores corretos para o ambiente local. Para o backend subir e responder as rotas de dados, as obrigatorias sao:
 
-- `MONGODB_URI` deve apontar para o banco de desenvolvimento `personalapp_dev`;
-- o banco `test` e producao e nao deve ser usado localmente;
-- `PORT` pode ficar vazio para usar o default `5000`.
+- `MONGODB_URI` — apontando para o banco de desenvolvimento `personalapp_dev`;
+- `GOOGLE_CLIENT_ID` — sem nenhum client ID configurado, `requireAuth` devolve **500** com a mensagem `"Google auth is not configured on the server."` em todas as rotas protegidas, antes de validar o token e antes de tocar o banco. Esse sintoma engana: parece falha de banco, mas nao e.
+- O banco `test` e producao e nao deve ser usado localmente.
+- O Client ID nao e segredo; ele ja aparece em texto puro em `assets/js/auth/google-identity.js` e e enviado ao navegador em qualquer login Google. O que e segredo e `GOOGLE_CLIENT_SECRET`.
+- Variaveis opcionais no ambiente local, necessarias apenas para o fluxo de Google Calendar (fora de escopo hoje): `GOOGLE_CLIENT_SECRET`, `ENCRYPTION_KEY`, `BACKEND_URL`, `GCAL_TIMEZONE`.
+- Depois de editar `.env`, reinicie o backend: o `dotenv` so le o arquivo no boot.
 
 Validar que o arquivo nao sera versionado:
 
@@ -407,6 +410,8 @@ Sinais esperados de sucesso no bootstrap:
 Sinal esperado de falha se `.env` estiver vazio ou invalido:
 
 - `❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada (MONGODB_URI).`
+
+Nota de troubleshooting: 404 em `/api/gcal/connection` e `/api/auth/connection` no ambiente local e esperado. O banco de dev foi clonado sem a collection `googlecalendarconnections`, de proposito; nao e bug e nao deve ser "corrigido".
 
 Problemas conhecidos:
 
