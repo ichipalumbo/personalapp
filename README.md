@@ -365,18 +365,45 @@ Na pasta `backend`:
 npm install
 ```
 
-Criar arquivo `.env` com valores locais:
+Criar `.env` a partir do exemplo versionado:
 
-```env
-MONGODB_URI=<sua-uri-mongodb>
-PORT=5000
+```bash
+cd backend
+copy .env.example .env
 ```
+
+Preencher cada variavel do `.env` com os valores do painel da Vercel
+(`personal-app-api` -> Settings -> Environment Variables).
+
+Validar que o arquivo nao sera versionado:
+
+```bash
+git status --short
+```
+
+O `.env` nao deve aparecer na saida.
 
 Iniciar API:
 
 ```bash
 npm start
 ```
+
+Sinais esperados de sucesso no bootstrap:
+
+- `🔧 Inicializando servidor...`
+- `📡 Porta: <n>` (default `5000` quando `PORT` estiver vazio)
+- `✅ Conectado ao MongoDB com sucesso!`
+- `🚀 Servidor rodando na porta <n>`
+
+Sinal esperado de falha se `.env` estiver vazio ou invalido:
+
+- `❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada (MONGODB_URI).`
+
+Restricao vigente ate o item 3.4:
+
+- com `MONGODB_URI` de producao, o backend local aponta para o banco real;
+- validacoes desta etapa devem ser somente leitura (ex.: rotas `GET`), sem `POST`, `PATCH`, `PUT` ou `DELETE`.
 
 ### 3) Ajustar URL da API no Frontend (ambiente local)
 
