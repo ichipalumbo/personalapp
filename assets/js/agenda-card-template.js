@@ -206,10 +206,7 @@
             if (comp.reagendada || comp.isReposicao) {
                 tagStatusHtml = `<span class="badge-tag-tipo badge-tag-tipo--reposicao agenda-card-optional agenda-card-status-badge"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
             } else if (comp.frequencia === 'semanal') {
-                const badgeLabel = comp.serieOrigemId
-                    ? `<i class="fa-solid fa-arrow-turn-down-right"></i> Continuação`
-                    : `<i class="fa-solid fa-infinity"></i> Recorrente`;
-                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.recorrente}">${badgeLabel}</span>`;
+                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.recorrente}"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
             } else {
                 tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.unico}"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
             }
