@@ -316,6 +316,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 >
 > **Como é hoje**: frontend servido pela extensão **Live Server** do VS Code; backend **sempre o de produção**, porque `API_BASE_URL` em `assets/js/storage.js` é constante fixa apontando para `https://personal-app-api.vercel.app/api`. Não existe `npm run dev`, watch mode, seed ou banco de desenvolvimento.
 >
+> **Consequência a ter clara**: hoje o frontend local não grava em produção quando o ambiente está corretamente configurado; o risco real que sobrou é usar um `.env` local sem `GOOGLE_CLIENT_ID` ou apontar a URI errada. A dificuldade restante não é "gravar em produção", e sim acertar a configuração do ambiente local.
 > **Consequência a ter clara**: rodando o Live Server, o frontend local **grava no banco de produção**. Não é só "testar em produção" no sentido de publicar antes de validar — é código não publicado escrevendo em dado real.
 >
 > **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
@@ -353,12 +354,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [ ] 3.4 Banco de desenvolvimento separado
 
-- **O que é**: Uma base MongoDB distinta para desenvolvimento, para que testes locais nunca toquem em dado real do usuário.
-- **Por que importa**: É o que fecha de verdade o problema. Sem isso, mesmo com backend local (3.2) e frontend apontando para ele (3.3), o dado continua sendo o de produção.
-- **Por que é o item grande**: exige criar a base, decidir como popular com dados de teste realistas (aluno com ciclo de vencimento, agendamentos recorrentes, ciclos pagos e em aberto) e manter esses dados úteis ao longo do tempo. É trabalho recorrente, não pontual.
-- **Onde mexer**: nova connection string no `.env` local; opcionalmente um script de seed em `backend/scripts/` (já existe a pasta, com `normalize-agenda-formats.js` como precedente de script utilitário).
-- **Dependência**: item 3.2 (mesma razão do 3.3 — sem backend local, não há onde apontar a base de desenvolvimento).
-- **Esforço**: Médio–Alto (mais pela manutenção contínua dos dados do que pela configuração inicial).
+- **O que foi entregue**: foi criado o banco `personalapp_dev` no mesmo cluster M0 do banco de produção, a partir de um clone via `mongodump` / `mongorestore` com remapeamento de namespace (`test.*` → `personalapp_dev.*`). Não houve cluster novo e não houve mudança de arquitetura: o nome do banco fica na própria `MONGODB_URI` local, que continua fora do repositório.
+- **Por que importa**: a base de desenvolvimento agora vive separada da produção, sem tocar em `test`, e o app local pode testar leitura/escrita em um ambiente isolado sem riscos ao dado real do usuário.
+- **Produção e dev**: a produção continua em `test` por decisão histórica da Vercel, e o dev existe apenas no `.env` local; isso é intencional e não é pendência. O banco de produção foi mantido intacto e a Vercel não teve `MONGODB_URI` alterada.
+- **ownerEmail e isolamento do Google Calendar**: `ownerEmail` não exigiu seed nem configuração extra porque vem do `Google ID token` via `requireAuth`. O isolamento do Google Calendar veio da ausência da collection `googlecalendarconnections` no clone local, sem mudança de código — a ausência do documento de conexão impede o bootstrap de disparar a sincronização do calendário real.
+- **Dado real e escopo**: os agendamentos clonados carregam referência a eventos de calendário reais do ambiente do usuário; conectar o GCal localmente exigiria uma decisão separada de conta e sincronização, e ficou fora de escopo desta rodada.
+- **Consequência prática**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
+- **Relatório**: ver [`docs/_reports/2026-08-27-chore-banco-dev.md`](docs/_reports/2026-08-27-chore-banco-dev.md).
 
 ---
 
