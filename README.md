@@ -313,11 +313,11 @@ Todas as rotas exigem `Authorization: Bearer <google_id_token>`. O `ownerEmail` 
 - `GET  /bloqueios-externos` — lista bloqueios do Google Calendar; `POST` — cria; `PUT /:id` — atualiza; `DELETE /:id` — remove
 - `GET  /configuracao` — retorna configuracao da grade
 - `POST /configuracao` — cria/upsert configuracao; `PUT /configuracao/grade_horarios` — atualiza grade
-- `GET  /health` — health check (sem auth)
 
 Observacao importante:
 
 - O modelo de sincronizacao e CRUD granular por item (POST/PUT/DELETE individual). O frontend compara estado local vs remoto e opera item a item — nao ha rota `/sincronizar` bulk.
+- O health check usado pelo warm-up fire-and-forget do frontend e `GET /` na raiz do backend (fora de `/api`), sem auth, com resposta em texto puro.
 
 Payload de escrita — `POST`/`PUT /alunos[/:id]`:
 
@@ -336,7 +336,7 @@ Payload de escrita — `POST`/`PUT /agendamentos[/:id]`:
 
 ## Testes
 
-Ha 65 testes no projeto, executados com `node --test` via `npm test` dentro de `backend/`.
+Ha 86 testes no projeto, executados com `node --test` via `npm test` dentro de `backend/`.
 
 Comando exato:
 
@@ -399,6 +399,12 @@ Sinais esperados de sucesso no bootstrap:
 Sinal esperado de falha se `.env` estiver vazio ou invalido:
 
 - `❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada (MONGODB_URI).`
+
+Problemas conhecidos:
+
+- **`querySrv ECONNREFUSED` no start** — o resolvedor DNS local do Windows nao responde e a resolucao de `mongodb+srv://` falha. O topo de `backend/server.js` forca os DNS da Cloudflare apenas em execucao local, dentro do guard `if (require.main === module)`; em serverless na Vercel usa-se o resolvedor da plataforma. Nao remover essas linhas.
+- **`EADDRINUSE :::5000`** — existe instancia anterior orfa na porta. Diagnosticar com `Get-NetTCPConnection -LocalPort 5000 -State Listen` e encerrar o `OwningProcess`.
+- **`bad auth : authentication failed`** — credencial invalida no `.env`. Copiar a linha `MONGODB_URI` inteira do painel da Vercel (`personal-app-api` -> Settings -> Environment Variables); nao montar a URI a mao nem substituir placeholder de senha manualmente.
 
 Restricao vigente ate o item 3.4:
 
@@ -472,7 +478,8 @@ Padrao de documentacao:
 
 Modelo de seguranca em producao:
 
-- Toda requisicao a `/api/*` (exceto `/api/health`) exige `Authorization: Bearer <google_id_token>`.
+- Todas as rotas `/api/*` exigem `Authorization: Bearer <google_id_token>`, sem excecao.
+- O health check fica fora do prefixo `/api` e atende em `GET /` na raiz do backend.
 - O backend valida o token via `google-auth-library` e rejeita com HTTP 401 se invalido ou expirado.
 - Os dados de cada usuario estao isolados por `ownerEmail` no MongoDB — nenhum usuario acessa dados de outro.
 - O `CLIENT_ID` do Google OAuth esta hardcoded em `assets/js/auth/google-identity.js` (e um Client ID publico, nao e um secret).

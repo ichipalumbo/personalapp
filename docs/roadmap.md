@@ -333,6 +333,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ### [x] 3.2 Rodar o backend localmente
 
 - **O que foi entregue**: `.gitignore` da raiz passou a ignorar `.env`/`*.env` com exceção explícita para `.env.example`, e foi criado `backend/.env.example` com todas as chaves de ambiente usadas pelo backend.
+- **Complemento técnico**: o `backend/server.js` inclui override de DNS local-only para execução local, preservando o resolvedor padrão da plataforma em serverless (Vercel).
 - **Documentação**: o `README.md` agora descreve o fluxo completo para copiar `.env.example`, preencher credenciais pelo painel da Vercel e subir a API local com `npm start`.
 - **Limite atual (até 3.4)**: com `MONGODB_URI` de produção, a validação local deve ser somente leitura (`GET`), sem testes de escrita.
 - **Resultado prático**: a API pode ser iniciada localmente sem alterar código JavaScript e sem depender de deploy prévio para validar mudanças de backend.

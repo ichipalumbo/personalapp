@@ -190,3 +190,10 @@ False
 ℹ todo 0
 ℹ duration_ms 868.4129
 ```
+
+## 9) Adendo pos-fechamento
+
+- O `backend/server.js` passou a ter override de DNS local-only apos o fechamento deste relatorio. Portanto, a afirmacao original do portao de saida sobre "nenhum `.js` alterado" deixou de valer. A justificativa da mudanca foi o resolvedor DNS do Windows, e o guard local-only preserva o resolvedor da plataforma na Vercel.
+- A ordem `app.listen` x `connectToDatabase` foi avaliada e mantida deliberadamente. O `connectToDatabase` no bootstrap e warm-up opcional; a conexao efetiva e garantida pelo middleware de `/api` em `src/app.js`. Mover `listen` para dentro do `.then()` faria o servidor local deixar de subir por falha de um warm-up que, por design, pode falhar.
+- O banco em uso chama-se `test` e isso e intencional: e o banco produtivo real, criado assim pela integracao da Vercel. Nao e resquicio de configuracao e nao deve ser "corrigido".
+- Divergencias de documentacao foram corrigidas nos itens 1 a 5 desta rodada: rota de health, excecao de auth em `/api/*`, contagem de testes e troubleshooting de execucao local.
