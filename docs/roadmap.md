@@ -317,10 +317,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > **Estado atual**: o backend local já é executável (`npm start` em `backend/`), o frontend local já percebe o hostname e aponta para `http://localhost:5000/api` quando servido em `localhost`, e o banco de desenvolvimento já existe em `personalapp_dev` separado do banco de produção em `test`. O que **continua não existindo** são watch mode, `npm run dev`, seed automático de dados e ambiente de preview. O que foi resolvido foi o isolamento do ambiente, não a conveniência do fluxo de desenvolvimento.
 >
 > **Consequência a ter clara**: hoje o frontend local não grava em produção quando o ambiente está corretamente configurado; o risco real que sobrou é usar um `.env` local sem `GOOGLE_CLIENT_ID` ou apontar a URI errada. A dificuldade restante não é "gravar em produção", e sim acertar a configuração do ambiente local.
-<<<<<<< HEAD
 > **Consequência a ter clara**: rodando o Live Server, o frontend local **grava no banco de produção**. Não é só "testar em produção" no sentido de publicar antes de validar — é código não publicado escrevendo em dado real.
-=======
->>>>>>> 761d6a4b8494d51d29622acbe7ee5f986a99f809
 >
 > **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
 
@@ -362,11 +359,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Produção e dev**: a produção continua em `test` por decisão histórica da Vercel, e o dev existe apenas no `.env` local; isso é intencional e não é pendência. O banco de produção foi mantido intacto e a Vercel não teve `MONGODB_URI` alterada.
 - **ownerEmail e isolamento do Google Calendar**: `ownerEmail` não exigiu seed nem configuração extra porque vem do `Google ID token` via `requireAuth`. O isolamento do Google Calendar veio da ausência da collection `googlecalendarconnections` no clone local, sem mudança de código — a ausência do documento de conexão impede o bootstrap de disparar a sincronização do calendário real.
 - **Dado real e escopo**: os agendamentos clonados carregam referência a eventos de calendário reais do ambiente do usuário; conectar o GCal localmente exigiria uma decisão separada de conta e sincronização, e ficou fora de escopo desta rodada.
-<<<<<<< HEAD
 - **Consequência prática**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
-=======
-- **Dependência**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
->>>>>>> 761d6a4b8494d51d29622acbe7ee5f986a99f809
 - **Relatório**: ver [`docs/_reports/2026-08-27-chore-banco-dev.md`](docs/_reports/2026-08-27-chore-banco-dev.md).
 
 ---
