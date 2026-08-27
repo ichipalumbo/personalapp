@@ -52,7 +52,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
-| 3     | 3.3 Frontend local falando com backend local     | `[ ]`  | 3.2                                                              |
+| 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
 | 3     | 3.4 Banco de desenvolvimento separado            | `[ ]`  | 3.2                                                              |
 | 4     | 4.1 Cobrança automatizada                        | `[ ]`  | 3.1 a 3.4                                                        |
 | 4     | 4.2 Notificações automáticas                     | `[ ]`  | —                                                                |
@@ -340,14 +340,15 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 3.3 Frontend local falando com backend local
+### [x] 3.3 Frontend local falando com backend local
 
-- **O que é**: Fazer o Live Server apontar para a API local quando ela estiver rodando, em vez de sempre para produção.
-- **Por que importa**: É o que hoje faz o desenvolvimento local escrever em dado real. Também impede testar qualquer mudança de backend em conjunto com o frontend antes de publicar.
-- **Onde mexer**: `assets/js/storage.js`, na constante `API_BASE_URL`. Basta detectar o host local (`location.hostname === 'localhost'` ou `127.0.0.1`) e apontar para `http://localhost:<porta>/api`, mantendo a URL de produção como padrão. Nenhuma outra linha do arquivo precisa mudar — todas as chamadas já usam a constante.
-- **Ponto de atenção**: o backend precisa aceitar a origem do Live Server no CORS (hoje `cors()` está aberto, então provavelmente já funciona). Verificar também se o login Google funciona a partir de `localhost` com os client IDs atuais.
+- **O que e**: Fazer o frontend servido localmente detectar o hostname e apontar automaticamente para a API local quando estiver em `localhost`, `127.0.0.1` ou `::1`.
+- **Por que importa**: Era o ponto que ainda deixava o desenvolvimento local partido entre backend local e servicos em producao. Tambem impedia validar mudancas de backend com o frontend antes de publicar.
+- **Onde mexeu de verdade**: a descricao anterior estava incompleta. Nao era so a constante `API_BASE_URL` de `assets/js/storage.js`: existiam tres pontos fixos de URL no frontend (constante principal, warm-up da Vercel e rotas de auth/Google Calendar em `assets/js/auth/google-identity.js`). A entrega centralizou os tres em `assets/js/config/api-config.js`.
+- **Entrega incluida**: falha alta quando a configuracao nao carrega antes dos consumidores e tarja visual discreta de ambiente local para evitar confusao durante a validacao.
+- **Ponto de atencao**: o backend local precisa continuar rodando na porta `5000`, e as origens `http://localhost` e `http://localhost:5500` precisam estar liberadas no OAuth do Google para evitar `origin_mismatch`.
 - **Dependência**: só faz sentido junto com o 3.2.
-- **Esforço**: Muito baixo — literalmente uma condicional.
+- **Esforco**: Baixo, mas maior que a descricao original sugeria porque havia mais de um ponto de URL e a entrega precisou cobrir todos eles de forma consistente.
 
 ---
 

@@ -1,17 +1,23 @@
 // [TAG-STORAGE] storage.js
-// Responsabilidade: Persistência de dados — sync com API REST (Vercel/MongoDB) e fallback localStorage
-// Depende de: state.js (alunos, aulas, agendaConfig), utils-kpi.js (mostrarToast)
+// Responsabilidade: Persistencia de dados — sync com API REST (Vercel/MongoDB) e fallback localStorage
+// Depende de: config/api-config.js, state.js (alunos, aulas, agendaConfig), utils-kpi.js (mostrarToast)
 // Expõe: carregarDados, salvarDados, obterAlunos, obterAulas, obterReposicoes,
 //         obterLimitesGrade, atualizarAlunos, atualizarAulas, atualizarReposicoes,
 //         atualizarLimitesGrade, window.faturamentoMeta
-const API_BASE_URL = "https://personal-app-api.vercel.app/api";
+const APP_API_CONFIG = window.APP_API_CONFIG;
+
+if (!APP_API_CONFIG || typeof APP_API_CONFIG.apiBaseUrl !== 'string' || typeof APP_API_CONFIG.apiRootUrl !== 'string') {
+    throw new Error('assets/js/config/api-config.js precisa ser carregado antes de assets/js/storage.js.');
+}
+
+const API_BASE_URL = APP_API_CONFIG.apiBaseUrl;
 const API_TIMEOUT_MS = 8000;
 const SLEEP_MODE_THRESHOLD_MS = 3000;
 const FINANCAS_CACHE_KEY = 'personal_financas_cache';
 const REPOSICOES_CACHE_KEY = 'personal_reposicoes';
 
-// [TAG-STORAGE-VERCEL-PING] Warm-up para cold start do Vercel — fire-and-forget, sem await
-fetch('https://personal-app-api.vercel.app/').catch(() => {});
+// [TAG-STORAGE-VERCEL-PING] Warm-up para cold start da Vercel; em ambiente local e inofensivo. Fire-and-forget, sem await.
+fetch(APP_API_CONFIG.apiRootUrl).catch(() => {});
 
 // Flag para timeout estendido na primeira requisição (cold start do Vercel + conexão MongoDB)
 let _primeiraRequisicao = true;

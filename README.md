@@ -349,13 +349,18 @@ npm test
 
 ### 1) Frontend
 
-Opcao simples:
-
-1. Abrir `index.html` no navegador.
-
 Opcao recomendada para desenvolvimento:
 
 1. Usar uma extensao de servidor local (ex.: Live Server no VS Code).
+2. Servir o frontend em `http://localhost:5500` e padronizar o host como `localhost` (na extensao Live Server, usar `"liveServer.settings.host": "localhost"`).
+3. Nao alternar para `127.0.0.1`: `http://127.0.0.1:5500` e `http://localhost:5500` sao origens diferentes para o Google Identity Services.
+4. A deteccao do ambiente acontece automaticamente por hostname em `assets/js/config/api-config.js`, que passa a ser o unico lugar que define a URL da API no frontend:
+   - `localhost`, `127.0.0.1` e `::1` -> `http://localhost:5000/api`
+   - qualquer outro hostname -> `https://personal-app-api.vercel.app/api`
+5. Em ambiente local, a interface mostra uma tarja discreta no canto inferior direito com `LOCAL` e a `apiBaseUrl` ativa. Essa tarja aparece somente em host local e nunca em producao.
+6. O OAuth do Google precisa aceitar as origens `http://localhost` e `http://localhost:5500` em *Authorized JavaScript origins* do Client ID usado pelo app; se faltar qualquer uma delas, o login falha com `origin_mismatch`.
+7. O service worker (`sw.js`) cacheia `index.html`, `assets/css/style.css` e `assets/js/app.js` (same-origin). Ele nao interfere na API porque ignora requests cross-origin e `/api/`, mas pode servir arquivo antigo depois de editar o frontend. Contorno: DevTools -> Application -> Service Workers -> **Update on reload**.
+8. O backend local precisa estar rodando na porta `5000`; sem isso, as chamadas do frontend falham por conexao recusada.
 
 ### 2) Backend
 
@@ -372,8 +377,11 @@ cd backend
 copy .env.example .env
 ```
 
-Preencher cada variavel do `.env` com os valores do painel da Vercel
-(`personal-app-api` -> Settings -> Environment Variables).
+Preencher cada variavel do `.env` com os valores corretos para o ambiente local. Em especial:
+
+- `MONGODB_URI` deve apontar para o banco de desenvolvimento `personalapp_dev`;
+- o banco `test` e producao e nao deve ser usado localmente;
+- `PORT` pode ficar vazio para usar o default `5000`.
 
 Validar que o arquivo nao sera versionado:
 
@@ -406,26 +414,11 @@ Problemas conhecidos:
 - **`EADDRINUSE :::5000`** — existe instancia anterior orfa na porta. Diagnosticar com `Get-NetTCPConnection -LocalPort 5000 -State Listen` e encerrar o `OwningProcess`.
 - **`bad auth : authentication failed`** — credencial invalida no `.env`. Copiar a linha `MONGODB_URI` inteira do painel da Vercel (`personal-app-api` -> Settings -> Environment Variables); nao montar a URI a mao nem substituir placeholder de senha manualmente.
 
-Restricao vigente ate o item 3.4:
-
-- com `MONGODB_URI` de producao, o backend local aponta para o banco real;
-- validacoes desta etapa devem ser somente leitura (ex.: rotas `GET`), sem `POST`, `PATCH`, `PUT` ou `DELETE`.
-
 ### 3) Ajustar URL da API no Frontend (ambiente local)
 
-`API_BASE_URL` esta **hardcoded** na linha 6 de `assets/js/storage.js` — nao ha deteccao automatica de ambiente:
+Nao ha mais troca manual de constante no frontend. O item 3.3 passou a centralizar tres pontos de URL (constante principal de `storage.js`, warm-up da Vercel e rotas de auth/Google Calendar em `auth/google-identity.js`) em `assets/js/config/api-config.js`.
 
-```js
-const API_BASE_URL = "https://personal-app-api.vercel.app/api"; // producao (Vercel)
-```
-
-Para rodar localmente, substituir manualmente pelo backend local:
-
-```js
-const API_BASE_URL = "http://localhost:5000/api";
-```
-
-Nao ha mais nenhuma outra constante a alterar. Em producao, o frontend faz um warm-up fire-and-forget da funcao serverless Vercel ao inicializar (`fetch('https://personal-app-api.vercel.app/').catch(() => {})`). Timeout padrao de requisicoes: `8000ms`.
+Se `config/api-config.js` nao carregar antes de `state.js`/`storage.js`, o frontend falha alto de proposito, em vez de cair silenciosamente para producao. Isso evita que um ambiente local mal configurado volte a escrever no banco produtivo sem aviso.
 
 ## Fluxos de Navegacao no Codigo
 
