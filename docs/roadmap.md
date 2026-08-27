@@ -344,11 +344,11 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que e**: Fazer o frontend servido localmente detectar o hostname e apontar automaticamente para a API local quando estiver em `localhost`, `127.0.0.1` ou `::1`.
 - **Por que importa**: Era o ponto que ainda deixava o desenvolvimento local partido entre backend local e servicos em producao. Tambem impedia validar mudancas de backend com o frontend antes de publicar.
-- **Onde mexeu de verdade**: a descricao anterior estava incompleta. Nao era so a constante `API_BASE_URL` de `assets/js/storage.js`: existiam tres pontos fixos de URL no frontend (constante principal, warm-up da Vercel e rotas de auth/Google Calendar em `assets/js/auth/google-identity.js`). A entrega centralizou os tres em `assets/js/config/api-config.js`.
-- **Entrega incluida**: falha alta quando a configuracao nao carrega antes dos consumidores e tarja visual discreta de ambiente local para evitar confusao durante a validacao.
+- **Onde mexeu de verdade**: a descricao anterior estava incompleta e subestimou o alcance. O item 3.3 centralizou a configuracao, mas a correcao residual mostrou que restaram 10 ocorrencias em 5 arquivos consumidores (`view-financas.js`, `modal-acao-slot.js`, `cascade-sync-aluno.js`, `view-alunos.js` e `google-calendar.js`) com URL fixa em producao. A correcao desta rodada fechou o restante sem reintroduzir fallback silencioso para `production`.
+- **Entrega incluida**: falha alta quando a configuracao nao carrega antes dos consumidores, tarja visual discreta de ambiente local para evitar confusao durante a validacao e fechamento das chamadas residuais que ainda escreviam em producao.
 - **Ponto de atencao**: o backend local precisa continuar rodando na porta `5000`, e as origens `http://localhost` e `http://localhost:5500` precisam estar liberadas no OAuth do Google para evitar `origin_mismatch`.
 - **Dependência**: só faz sentido junto com o 3.2.
-- **Esforco**: Baixo, mas maior que a descricao original sugeria porque havia mais de um ponto de URL e a entrega precisou cobrir todos eles de forma consistente.
+- **Esforco**: Baixo, mas maior que a descricao original sugeria porque a base de URL foi descoberta em varios pontos diferentes do frontend e a entrega precisou cobrir todos eles de forma consistente.
 
 ---
 

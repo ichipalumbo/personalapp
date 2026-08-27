@@ -76,7 +76,7 @@ async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
         throw new Error('Data da aula inválida para enviar para reposição.');
     }
 
-    const baseUrl = (window.API_BASE_URL || 'https://personal-app-api.vercel.app/api');
+    const baseUrl = window.APP_API_CONFIG.apiBaseUrl;
     const resposta = await window.apiFetchBackend(`${baseUrl}/reposicoes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
                 }
 
-                const respostaPatch = await window.apiFetchBackend(`${window.API_BASE_URL || 'https://personal-app-api.vercel.app/api'}/reposicoes/${encodeURIComponent(repObj.id)}`, {
+                const respostaPatch = await window.apiFetchBackend(`${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(repObj.id)}`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

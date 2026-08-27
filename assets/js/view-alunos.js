@@ -279,7 +279,7 @@ async function carregarDadosComplementaresAlunos() {
 
     if (typeof window.apiFetchBackend === 'function') {
         try {
-            const base = window.API_BASE_URL || 'https://personal-app-api.vercel.app/api';
+            const base = window.APP_API_CONFIG.apiBaseUrl;
             const resposta = await window.apiFetchBackend(`${base}/alunos/consistencia-agenda`);
             if (resposta.ok) {
                 const dados = await resposta.json();

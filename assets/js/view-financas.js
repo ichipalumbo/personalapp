@@ -432,7 +432,7 @@
         renderizarConteudoHistorico(alunoId);
 
         try {
-            const resposta = await global.apiFetchBackend(`${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/financas/${encodeURIComponent(alunoId)}/historico`, {}, opcoes.timeoutMs || 40000);
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(alunoId)}/historico`, {}, opcoes.timeoutMs || 40000);
             if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
             if (!resposta.ok) throw new Error(`Falha ao carregar histórico (${resposta.status})`);
             const dados = await resposta.json();
@@ -576,7 +576,7 @@
         }
 
         try {
-            const resposta = await global.apiFetchBackend(`${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/financas`, {}, opcoes.timeoutMs || 40000);
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas`, {}, opcoes.timeoutMs || 40000);
             if (resposta.status === 401) {
                 throw new Error('AUTH_REQUIRED');
             }
@@ -662,7 +662,7 @@
         atualizarCabecalhoCache();
 
         try {
-            const resposta = await global.apiFetchBackend(`${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/financas/${encodeURIComponent(STATE.cardAtivo.cicloId)}/pagamento`, {
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(STATE.cardAtivo.cicloId)}/pagamento`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -702,7 +702,7 @@
         atualizarCabecalhoCache();
 
         try {
-            const resposta = await global.apiFetchBackend(`${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/financas/${encodeURIComponent(STATE.cardAtivo.cicloId)}/ajuste`, {
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(STATE.cardAtivo.cicloId)}/ajuste`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

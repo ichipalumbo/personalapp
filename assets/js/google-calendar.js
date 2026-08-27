@@ -51,7 +51,7 @@
             return { renewed: false, synced: false, skipped: true, reason: 'not_signed_in' };
         }
 
-        const endpoint = `${(global.API_BASE_URL || 'https://personal-app-api.vercel.app/api')}/gcal/webhook/renew`;
+        const endpoint = `${global.APP_API_CONFIG.apiBaseUrl}/gcal/webhook/renew`;
 
         try {
             const resposta = await global.apiFetchBackend(endpoint, { method: 'POST' }, 30000);

@@ -157,3 +157,11 @@ docs\_reports\2026-08-27-chore-banco-dev.md:71: `personalapp_dev`
 ```
 
 Observacao final: a regra "nao rodar git" foi respeitada. A validacao documentada foi feita com `Select-String`, `Test-Path` e a suite real de backend (`npm test`), sem alterar codigo nem tocar no repositório em modo de git.
+
+## Adendo: correção residual do item 3.3
+
+A entrega inicial do item 3.3 centralizou a url da API em `assets/js/config/api-config.js`, mas a verificacao de regressao mostrou que a descricao original da tarefa estava incompleta: o frontend ainda tinha 10 ocorrencias de URL de producao em 5 arquivos consumidores (`view-financas.js`, `modal-acao-slot.js`, `cascade-sync-aluno.js`, `view-alunos.js` e `google-calendar.js`).
+
+A causa raiz foi a mesma da falha original: `const API_BASE_URL = ...` em um script global nao cria propriedade em `window`, e qualquer fallback do tipo `window.API_BASE_URL || 'https://personal-app-api.vercel.app/api'` resolvia sempre para producao. Nesse caso, a leitura local passava por `localhost`, mas as operacoes de escrita e sincronizacao ainda saiam para a Vercel.
+
+A correção feita na rodada seguinte manteve a regra de falha alta e eliminou os `||` de URL fixa: cada consumidor passou a ler `window.APP_API_CONFIG.apiBaseUrl` ou `global.APP_API_CONFIG.apiBaseUrl` diretamente, sem fallback silencioso. Isso evita gravar dados de teste em producao sem aviso visivel.

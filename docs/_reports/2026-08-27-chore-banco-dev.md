@@ -31,11 +31,7 @@ Esta rodada foi de documentacao. Nada de codigo foi alterado: o item 3.4 ja havi
    - **Motivo**: `http://localhost:5500` e `http://127.0.0.1:5500` nao sao a mesma origem para o Google. A padronizacao evita login quebrado e torna a validacao consistente.
 
 9. **Percalco de validacao real: `.env` local sem `GOOGLE_CLIENT_ID`**.
-<<<<<<< HEAD
    - **Motivo**: o `requireAuth` responde **500** com `"Google auth is not configured on the server."` antes de validar token e antes de tocar o banco. O sintoma enganoso era "falha de banco" em todas as rotas protegidas, mas o verdadeiro problema era a configuracao do app local. O ajuste foi preencher `GOOGLE_CLIENT_ID` no `.env` local e reiniciar o backend.
-=======
-   - **Motivo**: o `requireAuth` responde **500** com `"Google auth is not configured on the server."` antes de validar token e antes de tocar o banco. O sintoma enganoso era "falha de banco" em todas as rotas protegidas, mas o vero problema era a configuracao do app local. O ajuste foi preencher `GOOGLE_CLIENT_ID` no `.env` local e reiniciar o backend.
->>>>>>> 761d6a4b8494d51d29622acbe7ee5f986a99f809
 
 ## 3) Evidencias de validacao (literais)
 
@@ -123,7 +119,6 @@ Test-Path 'docs\_reports\2026-08-27-chore-banco-dev.md'
 Saida:
 
 ```text
-<<<<<<< HEAD
 docs\roadmap.md:56:| 3     | 3.4 Banco de desenvolvimento separado            | `[ ]`  | 3.2
                                    |
 docs\roadmap.md:355:### [ ] 3.4 Banco de desenvolvimento separado
@@ -134,18 +129,6 @@ Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-compet
 `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`,
 `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`,
 `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de
-=======
-docs\roadmap.md:56:| 3     | 3.4 Banco de desenvolvimento separado            | `[ ]`  | 3.2                           
-                                   |
-docs\roadmap.md:355:### [ ] 3.4 Banco de desenvolvimento separado
-docs\roadmap.md:190:- **Suíte**: a suíte permaneceu em 84 testes, 0 falhas.
-docs\roadmap.md:326:- **O que já existe hoje**: a suíte do backend roda em `node --test` com **84 testes, 0 falhas**. 
-Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como 
-`calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, 
-`filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, 
-`montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, 
-`reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de 
->>>>>>> 761d6a4b8494d51d29622acbe7ee5f986a99f809
 criação/expiração e o prazo de validade.
 False
 ```
@@ -168,11 +151,7 @@ Saida apos as correcoes:
 docs\roadmap.md:56:| 3     | 3.4 Banco de desenvolvimento separado            | `[x]`  | 3.2                                                              |
 docs\roadmap.md:355:### [x] 3.4 Banco de desenvolvimento separado
 docs\roadmap.md:190:- **Suíte**: a suíte permaneceu em 86 testes, 0 falhas.
-<<<<<<< HEAD
 docs\roadmap.md:326:- **O que já existe hoje**: a suíte do backend roda em `node --test` com **86 testes, 0 falhas**.
-=======
-docs\roadmap.md:326:- **O que já existe hoje**: a suíte do backend roda em `node --test` com **86 testes, 0 falhas**. 
->>>>>>> 761d6a4b8494d51d29622acbe7ee5f986a99f809
 README.md:382:- `GOOGLE_CLIENT_ID` — sem nenhum client ID configurado, `requireAuth` devolve **500** com a mensagem `"Google auth is not configured on the server."` em todas as rotas protegidas, antes de validar o token e antes de tocar o banco. Esse sintoma engana: parece falha de banco, mas nao e.
 docs\_reports\2026-08-27-chore-banco-dev.md:71: `personalapp_dev`
 ```

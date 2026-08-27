@@ -145,11 +145,13 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
                 throw new Error('AUTH_REQUIRED');
             };
 
+        const apiBaseUrl = global.APP_API_CONFIG.apiBaseUrl;
+
         const res = await executar(async function () {
             for (const agendamento of aulasData) {
                 if (!agendamento || !agendamento.id) continue;
 
-                const rota = 'https://personal-app-api.vercel.app/api/agendamentos/' + encodeURIComponent(agendamento.id);
+                const rota = apiBaseUrl + '/agendamentos/' + encodeURIComponent(agendamento.id);
                 let resp = await apiFetch(rota, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -157,7 +159,7 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
                 });
 
                 if (resp.status === 404) {
-                    resp = await apiFetch('https://personal-app-api.vercel.app/api/agendamentos', {
+                    resp = await apiFetch(apiBaseUrl + '/agendamentos', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(agendamento)
