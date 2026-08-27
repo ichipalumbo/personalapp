@@ -2,7 +2,11 @@
     'use strict';
 
     const CLIENT_ID = '799456461369-r4g75ok414jf9gb104um8j0k0ucimu1g.apps.googleusercontent.com';
-    const API_BASE_URL = 'https://personal-app-api.vercel.app/api';
+    const APP_API_CONFIG = global.APP_API_CONFIG;
+    if (!APP_API_CONFIG || typeof APP_API_CONFIG.apiBaseUrl !== 'string') {
+        throw new Error('assets/js/config/api-config.js precisa ser carregado antes de assets/js/auth/google-identity.js.');
+    }
+    const API_BASE_URL = APP_API_CONFIG.apiBaseUrl;
     const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
     const PROFILE_CACHE_KEY = 'gis_profile_cache';
     const CALENDAR_STATUS_CACHE_KEY = 'gcal_connection_cache';
