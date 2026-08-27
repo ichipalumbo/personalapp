@@ -51,7 +51,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
-| 3     | 3.2 Rodar o backend localmente                   | `[ ]`  | —                                                                |
+| 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[ ]`  | 3.2                                                              |
 | 3     | 3.4 Banco de desenvolvimento separado            | `[ ]`  | 3.2                                                              |
 | 4     | 4.1 Cobrança automatizada                        | `[ ]`  | 3.1 a 3.4                                                        |
@@ -110,6 +110,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: Funciona no setup atual, mas acopla backend à estrutura do frontend e à configuração de deploy dos dois projetos Vercel.
 - **Onde mexer**: Definir um ponto único compartilhado (sem duplicação de lógica) e eliminar imports que sobem para fora de `backend/`. Preservar a ordem de carga no frontend (`index.html`) para qualquer módulo que continue via `<script>`.
 - **Esforço**: Baixo–Médio (depende da estratégia de reorganização dos compartilhados) e exige validar deploy dos dois projetos.
+- **Validação atual**: com o item 3.2 concluído, este item já pode ser validado localmente no backend antes de publicar em produção.
 
 ---
 
@@ -329,14 +330,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 3.2 Rodar o backend localmente
+### [x] 3.2 Rodar o backend localmente
 
-- **O que é**: Conseguir subir a API na própria máquina, em vez de depender de deploy para testar qualquer mudança de backend.
-- **Por que importa**: Hoje, validar uma alteração de backend exige publicar. Isso torna o ciclo de correção lento e força mudanças não testadas a entrarem em produção.
-- **Por que é menor do que parece**: o script `npm start` (`node server.js`) **já existe** e o `dotenv` **já é dependência**. O que falta é um arquivo `.env` local com a string de conexão do Mongo e os client IDs do Google.
-- **Onde mexer**: criar `.env` em `backend/` (garantir que está no `.gitignore`) e documentar as variáveis necessárias — hoje elas só existem no painel da Vercel. Um `.env.example` versionado, com as chaves e sem os valores, resolve o problema de "esqueci quais variáveis são".
-- **Ponto de atenção**: enquanto não existir o item 3.4, esse backend local vai apontar para o **banco de produção**. Útil para ler, arriscado para escrever.
-- **Esforço**: Baixo. Não altera estrutura de código.
+- **O que foi entregue**: `.gitignore` da raiz passou a ignorar `.env`/`*.env` com exceção explícita para `.env.example`, e foi criado `backend/.env.example` com todas as chaves de ambiente usadas pelo backend.
+- **Complemento técnico**: o `backend/server.js` inclui override de DNS local-only para execução local, preservando o resolvedor padrão da plataforma em serverless (Vercel).
+- **Documentação**: o `README.md` agora descreve o fluxo completo para copiar `.env.example`, preencher credenciais pelo painel da Vercel e subir a API local com `npm start`.
+- **Limite atual (até 3.4)**: com `MONGODB_URI` de produção, a validação local deve ser somente leitura (`GET`), sem testes de escrita.
+- **Resultado prático**: a API pode ser iniciada localmente sem alterar código JavaScript e sem depender de deploy prévio para validar mudanças de backend.
 
 ---
 

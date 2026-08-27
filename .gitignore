@@ -5,3 +5,9 @@ node_modules/
 graphify-out/
 *.zip
 *.ps1
+
+# Variáveis de ambiente locais (NUNCA versionar)
+.env
+.env.local
+*.env
+!.env.example
