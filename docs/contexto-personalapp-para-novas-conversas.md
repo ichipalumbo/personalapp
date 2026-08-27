@@ -12,7 +12,8 @@
 > código no repositório. Este é para o assistente de conversa.
 >
 > **O MAI não deve editar este arquivo** — a seção 6 é escrita em primeira pessoa sobre
-> erros que ele não cometeu.
+> erros que ele não cometeu. Regeneração só a pedido explícito do dono, preservando o
+> texto da seção 6 palavra por palavra.
 >
 > **Última atualização**: 2026-08-27
 
@@ -37,6 +38,30 @@ defasado e induziu a erro; se divergir do código, o código vence.
 **Nunca reproduzir aqui** o estado do roadmap ou o texto de uma spec. Isso envelhece em
 uma rodada e passa a mentir.
 
+### `docs/_reports/` é o histórico do projeto — usar sempre
+
+Toda rodada de prompt termina com um relatório commitado em `docs/_reports/`, no padrão
+`AAAA-MM-DD-<tipo>-<slug>.md` (ex.: `2026-08-27-chore-backend-local-env.md`). Não é
+burocracia: é a única memória do **porquê** de cada decisão, e a razão pela qual uma
+conversa nova consegue retomar o projeto sem reabrir discussão já encerrada.
+
+Como usar:
+
+- **Antes de diagnosticar**, procurar se a área já teve rodada:
+  `Get-ChildItem docs\_reports\ | Select-String -Pattern '<assunto>'` ou
+  `Select-String -Path 'docs\_reports\*.md' -Pattern '<termo>'`.
+- **O relatório é entregável obrigatório do prompt.** Todo prompt para o MAI pede o
+  relatório e diz em que caminho gravá-lo. Sem isso, a rodada não fecha (ver §5).
+- **É onde vive a evidência.** Saída literal de `npm test`, de `git diff --stat` e do
+  portão de base ficam no relatório, não no chat — chat não sobrevive à sessão.
+- **Relatório não é verdade sobre o presente.** Ele registra o que era verdade **naquela
+  data**. Se contradisser o código, o código vence (hierarquia acima). Já aconteceu:
+  um relatório afirmava que nenhum `.js` havia sido alterado e o arquivo mudou depois do
+  fechamento.
+- **Fato descoberto depois do fechamento vira adendo** na seção final do próprio
+  relatório, não edição silenciosa do corpo. O histórico precisa mostrar que mudou.
+- **Não resumir relatório aqui.** Este arquivo aponta para a pasta; o conteúdo mora lá.
+
 ---
 
 ## 2. Quem é o dono e como ele trabalha
@@ -54,14 +79,15 @@ uma rodada e passa a mentir.
 
 ### Preferências confirmadas
 
-| Preferência                    | Detalhe                                                                                                                           |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
-| **Perguntar antes de decidir** | Em qualquer ambiguidade, perguntar em vez de escolher e seguir. Ele considera que isso melhora o resultado.                       |
-| **Não extrapolar escopo**      | Sair do escopo só para **levantar** ambiguidade ou risco — nunca para implementar por conta própria.                              |
-| **Não colar código no chat**   | Preferência forte. Editar o arquivo e **relatar em texto**. Exceção: **prompts** para o agente, que são o entregável da conversa. |
-| **`package-lock.json`**        | Pode ser alterado. Não é área protegida.                                                                                          |
-| **Relatório ao final**         | Arquivos alterados, o que mudou em cada um, e o que foi encontrado mas **não** alterado.                                          |
-| **Comando pronto para colar**  | Bloco completo, copiável de uma vez, na sintaxe do shell dele, com a leitura do resultado esperado.                               |
+| Preferência                    | Detalhe                                                                                                                                                                                                          |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Perguntar antes de decidir** | Em qualquer ambiguidade, perguntar em vez de escolher e seguir. Ele considera que isso melhora o resultado.                                                                                                      |
+| **Não extrapolar escopo**      | Sair do escopo só para **levantar** ambiguidade ou risco — nunca para implementar por conta própria.                                                                                                             |
+| **Não colar código no chat**   | Preferência forte. Vale também para trecho curto, comentário e uma linha só. Editar o arquivo e **relatar em texto**. Exceção: **prompts** para o agente, que são o entregável da conversa e podem levar código. |
+| **Entregável vai em arquivo**  | Prompt, sugestão de texto e qualquer coisa longa vão como **arquivo anexado na mesma mensagem** — não como bloco no chat.                                                                                        |
+| **`package-lock.json`**        | Pode ser alterado. Não é área protegida.                                                                                                                                                                         |
+| **Relatório ao final**         | Arquivos alterados, o que mudou em cada um, e o que foi encontrado mas **não** alterado. Gravado em `docs/_reports/` (ver §1 e §5).                                                                              |
+| **Comando pronto para colar**  | Bloco completo, copiável de uma vez, na sintaxe do shell dele, com a leitura do resultado esperado.                                                                                                              |
 
 **Idioma**: português, no código e na conversa. Tom informal e direto.
 
@@ -73,6 +99,15 @@ uma rodada e passa a mentir.
   `Select-String` no lugar de `grep`, sem `&&`, **um comando por linha**. Caminho
   `/workspaces/...` → POSIX normal.
 - Em dúvida: `Get-Location` ou `pwd` primeiro. Já errei isso (erro nº 13).
+- **DNS do Windows quebra `mongodb+srv://` nesta máquina.** O resolvedor local não responde
+  e a resolução SRV do Atlas falha com `querySrv ECONNREFUSED 127.0.0.1:53`. Contorno em
+  produção no topo de `backend/server.js`: `dns.setServers(['1.1.1.1','1.0.0.1'])` dentro
+  do guard `if (require.main === module)` — vale só em execução local, para não substituir
+  o resolvedor da plataforma na Vercel. **Já foi testado remover: quebra.** Não sugerir a
+  remoção.
+- **`EADDRINUSE :::5000`** costuma ser instância órfã de `npm start` anterior, não conflito
+  com outro programa. Diagnóstico: `Get-NetTCPConnection -LocalPort 5000 -State Listen` e
+  encerrar o `OwningProcess`.
 
 ### Fluxo de trabalho que funciona
 
@@ -101,6 +136,9 @@ implementar.**
   dois projetos para a branch da feature; se der errado, volta para a `main`.
 - **Commit ou PR na `main` dispara deploy automático** e substitui o publicado.
 - Não existe staging.
+- **A URI do Mongo vem pronta do painel** (`personal-app-api` → Settings → Environment
+  Variables). Copiar a linha **inteira** para o `.env` local. Montar à mão ou substituir
+  placeholder de senha já custou uma rodada inteira de diagnóstico (erro nº 15).
 
 ### ⚙️ "Include source files outside of the Root Directory" está **ATIVADA**
 
@@ -126,8 +164,9 @@ Confirmado em 2026-08-27.
   direto. Não levantar essa preocupação nos itens 3.2, 3.3 e 3.4.
 - **A única proteção é a credencial da URI.** Trate `MONGODB_URI` como segredo: nunca
   pedir o valor, nunca colar no chat, nunca deixar um agente preenchê-lo.
-- Se aparecer timeout de _server selection_ ao conectar, **não é firewall** — procurar
-  em credencial, URI ou rede local.
+- Se aparecer timeout de _server selection_ ou `querySrv ECONNREFUSED`, **não é firewall
+  nem IP bloqueado** — ordem de suspeita: **1)** resolvedor DNS local do Windows (§2),
+  **2)** credencial inválida na URI, **3)** rede local.
 
 ### ⚠️ Existe **um único** MongoDB
 
@@ -136,6 +175,11 @@ branch ainda grava dado real. É o que o item 3.4 do roadmap resolve, e ele não
 
 Consequência prática enquanto isso: backend ou frontend rodando local **escrevem em
 produção**. Validação local deve ser **somente leitura**.
+
+**O banco chama-se `test` e isso é intencional** — foi criado assim pela integração da
+Vercel e é o banco produtivo real. Não é resquício de configuração; não sugerir "corrigir"
+o nome nem migrar para outro banco. Como `test` também é o default quando a URI não traz
+nome, a URI atual funciona com ou sem `/test` explícito.
 
 ### Branches
 
@@ -161,6 +205,10 @@ Regra de negócio está nas specs. O que segue é o que só se aprende errando.
   (`getOwnerEmailOrThrow`). Não há outra camada impedindo vazamento entre contas.
 - **Ordem de rotas no Express**: literal antes de paramétrica
   (`/api/alunos/consistencia-agenda` antes de `/:id`).
+- **O README já documentou rota que não existe.** Antes de mandar comando validando
+  endpoint, conferir no `backend/src/routes/*.js` e no `app.use(...)` de
+  `backend/src/app.js`. O health check, por exemplo, é `GET /` na raiz — **não** existe
+  `/api/health` (erro nº 16).
 - **Log do frontend**: código novo em `assets/js/` usa `window.log`, não `console.*`.
   Alguns arquivos mantêm `console.*` por decisão explícita — não migrar sem pedido.
 - **A UI nem sempre chama a API que existe.** Já aconteceu duas vezes: backend completo e
@@ -170,6 +218,12 @@ Regra de negócio está nas specs. O que segue é o que só se aprende errando.
   (`module.exports` + `globalThis`).
 - **Cálculo financeiro tem implementação única.** Se o frontend precisa do resultado,
   consome do módulo compartilhado ou da resposta da API. Nunca reimplementa.
+- **`backend/server.js` está na forma final e é sensível.** O `app.listen` e o override de
+  DNS vivem sob `if (require.main === module)`; `module.exports = app` é o que a Vercel
+  consome. O `connectToDatabase` do bootstrap é **warm-up opcional** — a conexão efetiva é
+  garantida pelo middleware de `/api` em `src/app.js`. Mover o `listen` para dentro do
+  `.then()` da conexão faria o servidor local deixar de subir por falha de um warm-up que,
+  por design, pode falhar. Não sugerir essa reordenação.
 
 ### Testes: existem, mas já vieram falsos
 
@@ -241,10 +295,23 @@ MAI-Code-1-Flash é um modelo pequeno e rápido, treinado contra o harness real 
 - **Portão de saída com evidência.** Exigir `git diff --stat` e colar a **saída literal**
   no relatório. Diff vazio derruba relatório de conclusão.
 - **Ambiente no topo** (Windows/PowerShell ou Linux), para os comandos saírem no shell certo.
+- **Relatório em `docs/_reports/` como último item**, com caminho e nome de arquivo
+  ditados no prompt (`docs/_reports/AAAA-MM-DD-<tipo>-<slug>.md`). Se o prompt não nomear
+  o arquivo, o agente inventa o nome ou não grava — e a rodada perde o histórico.
 - **Não sobrecarregar**: por volta de uma dúzia de exigências verificáveis, o cumprimento
   cai. Preferir duas rodadas curtas a uma longa.
 - **Segredo nunca passa pelo agente.** Em tarefa que envolve credencial, ele cria o
   `.example` e documenta; o valor real é o usuário que preenche.
+
+### O que o relatório da rodada tem que conter
+
+Pedir explicitamente, porque é o que se lê meses depois:
+
+- Arquivos alterados e o que mudou em cada um.
+- O que foi encontrado mas **não** alterado, com o motivo.
+- **Saída literal** dos comandos do portão de base e do portão de saída.
+- Decisões deliberadas de **não** mexer em algo — sem isso, a próxima conversa reabre a
+  discussão do zero (foi o que aconteceu com a ordem `listen` × `connect`).
 
 ### Quando uma rodada volta vazia
 
@@ -271,6 +338,9 @@ troca.)
   pacote que **mente por omissão** (erro nº 10).
 - **Busca textual não cobre tudo**: remoção no meio de um handler e ordem de chamadas só
   a leitura do diff fecha.
+- **Auditar o relatório contra o pacote, não contra si mesmo.** O relatório afirma; o
+  código prova. Divergência entre os dois é achado de auditoria, não detalhe — já houve
+  relatório afirmando "nenhum `.js` alterado" com `server.js` modificado.
 
 ---
 
@@ -309,6 +379,23 @@ troca.)
     de opinar sobre fluxo de git._
 13. **Comando na sintaxe do shell errado** — `grep` e `&&` depois de ele ter dito que
     estava no Windows. _Confirmar o shell antes, e registrar o ambiente no topo do prompt._
+14. **Mandei liberar IP no Network Access do Atlas** — na rodada do 3.2, prescrevi abrir o
+    painel e adicionar o IP da máquina, com a §3 deste arquivo já dizendo que está em
+    `0.0.0.0/0` e que a preocupação não deve ser levantada nos itens 3.2 a 3.4. Além de
+    inútil, reforçou hipótese errada enquanto eu caçava a causa real. _Ler a §3 antes de
+    prescrever qualquer coisa em painel externo._
+15. **Tratei `bad auth` como prova de que o DNS estava resolvido** — o que o erro provava
+    era que o DNS resolvia **com o contorno ativo**, não sozinho. Conclusão: sugeri remover
+    o `dns.setServers`, e a remoção quebrou a conexão. _Erro depois de um contorno não
+    prova que o contorno é dispensável._
+16. **Auditei uma rota pelo README em vez do código** — mandei validar `GET /api/health`,
+    que nunca existiu; o README a documentava e o `healthRoutes.js` define só
+    `router.route('/')`. O 404 do Express custou uma rodada. _É a §1 na prática: código >
+    README. Confirmar rota no arquivo de rotas antes de mandar comando de validação._
+17. **Colei código no chat três vezes na mesma conversa** — rota, comentário e uma linha
+    de refactor, com a preferência registrada na §2. E entreguei prompt como bloco de chat
+    em vez de arquivo, repetindo o padrão do erro nº 11. _Código só dentro de prompt, e
+    prompt sempre em arquivo anexado._
 
 ---
 
@@ -328,3 +415,5 @@ memorizado de sessão anterior. Reconferir consultando antes de raciocinar sobre
   contagem de testes, nome de branch. Isso mora nos arquivos próprios.
 - Ao acrescentar algo, perguntar: _"isso existe em outro arquivo do repo?"_ Se sim, virar
   ponteiro em vez de cópia.
+- **Histórico de rodada não entra aqui** — vai em `docs/_reports/`. Este arquivo só
+  aponta para a pasta e explica como usá-la (§1).
