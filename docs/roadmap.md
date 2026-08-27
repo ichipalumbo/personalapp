@@ -52,8 +52,8 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
-| 3     | 3.3 Frontend local falando com backend local     | `[ ]`  | 3.2                                                              |
-| 3     | 3.4 Banco de desenvolvimento separado            | `[ ]`  | 3.2                                                              |
+| 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
+| 3     | 3.4 Banco de desenvolvimento separado            | `[x]`  | 3.2                                                              |
 | 4     | 4.1 Cobrança automatizada                        | `[ ]`  | 3.1 a 3.4                                                        |
 | 4     | 4.2 Notificações automáticas                     | `[ ]`  | —                                                                |
 | 4     | 4.3 Portal/app do aluno                          | `[ ]`  | —                                                                |
@@ -187,7 +187,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que foi entregue**: a primeira declaração (código morto) foi removida; a ativa foi preservada.
 - **Sem mudança de comportamento**: o guard de ciclo não configurado que existia só na versão morta já era coberto por `calcularCicloVigente`, que devolve `null` para aluno sem `fechamentoMesCheio` e sem `diaVencimento`.
-- **Suíte**: a suíte permaneceu em 84 testes, 0 falhas.
+- **Suíte**: a suíte permaneceu em 86 testes, 0 falhas.
 - **Referência**: `docs/_reports/2026-08-26-fix-dedupe-calcular-prazo-reposicao.md`.
 
 ---
@@ -314,17 +314,20 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 > **Histórico**: o projeto nasceu com apoio de IA, sem que ninguém definisse ambiente local nem testes. O resultado é que **toda validação sempre foi feita em produção**. Isso funcionou por um bom tempo porque o app é de usuário único conhecido, mas já custou dois bugs financeiros que chegaram ao usuário real.
 >
-> **Como é hoje**: frontend servido pela extensão **Live Server** do VS Code; backend **sempre o de produção**, porque `API_BASE_URL` em `assets/js/storage.js` é constante fixa apontando para `https://personal-app-api.vercel.app/api`. Não existe `npm run dev`, watch mode, seed ou banco de desenvolvimento.
+> **Estado atual**: o backend local já é executável (`npm start` em `backend/`), o frontend local já percebe o hostname e aponta para `http://localhost:5000/api` quando servido em `localhost`, e o banco de desenvolvimento já existe em `personalapp_dev` separado do banco de produção em `test`. O que **continua não existindo** são watch mode, `npm run dev`, seed automático de dados e ambiente de preview. O que foi resolvido foi o isolamento do ambiente, não a conveniência do fluxo de desenvolvimento.
 >
 > **Consequência a ter clara**: hoje o frontend local não grava em produção quando o ambiente está corretamente configurado; o risco real que sobrou é usar um `.env` local sem `GOOGLE_CLIENT_ID` ou apontar a URI errada. A dificuldade restante não é "gravar em produção", e sim acertar a configuração do ambiente local.
+<<<<<<< HEAD
 > **Consequência a ter clara**: rodando o Live Server, o frontend local **grava no banco de produção**. Não é só "testar em produção" no sentido de publicar antes de validar — é código não publicado escrevendo em dado real.
+=======
+>>>>>>> 761d6a4b8494d51d29622acbe7ee5f986a99f809
 >
 > **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
 
 ### [ ] 3.1 Ampliar cobertura das regras financeiras
 
 - **O que é**: ampliar a suíte automatizada das regras de cálculo de `financasService.js` e do fluxo de reposição que já está em `backend/test/`.
-- **O que já existe hoje**: a suíte do backend roda em `node --test` com **84 testes, 0 falhas**. Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
+- **O que já existe hoje**: a suíte do backend roda em `node --test` com **86 testes, 0 falhas**. Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
 - **Lacunas verificadas**: não há teste de frontend. Não existe nenhum arquivo de teste em `assets/` e a UI não tem suíte automatizada em `backend/test/`.
 - **Por que importa**: a suíte já cobre as regras puras e de negócio mais sensíveis do backend, e a expansão continua sendo a forma correta de reforçar o cálculo financeiro sem inventar uma lacuna de UI que ainda não existe.
 - **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
@@ -336,30 +339,34 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **O que foi entregue**: `.gitignore` da raiz passou a ignorar `.env`/`*.env` com exceção explícita para `.env.example`, e foi criado `backend/.env.example` com todas as chaves de ambiente usadas pelo backend.
 - **Complemento técnico**: o `backend/server.js` inclui override de DNS local-only para execução local, preservando o resolvedor padrão da plataforma em serverless (Vercel).
 - **Documentação**: o `README.md` agora descreve o fluxo completo para copiar `.env.example`, preencher credenciais pelo painel da Vercel e subir a API local com `npm start`.
-- **Limite atual (até 3.4)**: com `MONGODB_URI` de produção, a validação local deve ser somente leitura (`GET`), sem testes de escrita.
 - **Resultado prático**: a API pode ser iniciada localmente sem alterar código JavaScript e sem depender de deploy prévio para validar mudanças de backend.
 
 ---
 
-### [ ] 3.3 Frontend local falando com backend local
+### [x] 3.3 Frontend local falando com backend local
 
-- **O que é**: Fazer o Live Server apontar para a API local quando ela estiver rodando, em vez de sempre para produção.
-- **Por que importa**: É o que hoje faz o desenvolvimento local escrever em dado real. Também impede testar qualquer mudança de backend em conjunto com o frontend antes de publicar.
-- **Onde mexer**: `assets/js/storage.js`, na constante `API_BASE_URL`. Basta detectar o host local (`location.hostname === 'localhost'` ou `127.0.0.1`) e apontar para `http://localhost:<porta>/api`, mantendo a URL de produção como padrão. Nenhuma outra linha do arquivo precisa mudar — todas as chamadas já usam a constante.
-- **Ponto de atenção**: o backend precisa aceitar a origem do Live Server no CORS (hoje `cors()` está aberto, então provavelmente já funciona). Verificar também se o login Google funciona a partir de `localhost` com os client IDs atuais.
+- **O que e**: Fazer o frontend servido localmente detectar o hostname e apontar automaticamente para a API local quando estiver em `localhost`, `127.0.0.1` ou `::1`.
+- **Por que importa**: Era o ponto que ainda deixava o desenvolvimento local partido entre backend local e servicos em producao. Tambem impedia validar mudancas de backend com o frontend antes de publicar.
+- **Onde mexeu de verdade**: a descricao anterior estava incompleta. Nao era so a constante `API_BASE_URL` de `assets/js/storage.js`: existiam tres pontos fixos de URL no frontend (constante principal, warm-up da Vercel e rotas de auth/Google Calendar em `assets/js/auth/google-identity.js`). A entrega centralizou os tres em `assets/js/config/api-config.js`.
+- **Entrega incluida**: falha alta quando a configuracao nao carrega antes dos consumidores e tarja visual discreta de ambiente local para evitar confusao durante a validacao.
+- **Ponto de atencao**: o backend local precisa continuar rodando na porta `5000`, e as origens `http://localhost` e `http://localhost:5500` precisam estar liberadas no OAuth do Google para evitar `origin_mismatch`.
 - **Dependência**: só faz sentido junto com o 3.2.
-- **Esforço**: Muito baixo — literalmente uma condicional.
+- **Esforco**: Baixo, mas maior que a descricao original sugeria porque havia mais de um ponto de URL e a entrega precisou cobrir todos eles de forma consistente.
 
 ---
 
-### [ ] 3.4 Banco de desenvolvimento separado
+### [x] 3.4 Banco de desenvolvimento separado
 
 - **O que foi entregue**: foi criado o banco `personalapp_dev` no mesmo cluster M0 do banco de produção, a partir de um clone via `mongodump` / `mongorestore` com remapeamento de namespace (`test.*` → `personalapp_dev.*`). Não houve cluster novo e não houve mudança de arquitetura: o nome do banco fica na própria `MONGODB_URI` local, que continua fora do repositório.
 - **Por que importa**: a base de desenvolvimento agora vive separada da produção, sem tocar em `test`, e o app local pode testar leitura/escrita em um ambiente isolado sem riscos ao dado real do usuário.
 - **Produção e dev**: a produção continua em `test` por decisão histórica da Vercel, e o dev existe apenas no `.env` local; isso é intencional e não é pendência. O banco de produção foi mantido intacto e a Vercel não teve `MONGODB_URI` alterada.
 - **ownerEmail e isolamento do Google Calendar**: `ownerEmail` não exigiu seed nem configuração extra porque vem do `Google ID token` via `requireAuth`. O isolamento do Google Calendar veio da ausência da collection `googlecalendarconnections` no clone local, sem mudança de código — a ausência do documento de conexão impede o bootstrap de disparar a sincronização do calendário real.
 - **Dado real e escopo**: os agendamentos clonados carregam referência a eventos de calendário reais do ambiente do usuário; conectar o GCal localmente exigiria uma decisão separada de conta e sincronização, e ficou fora de escopo desta rodada.
+<<<<<<< HEAD
 - **Consequência prática**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
+=======
+- **Dependência**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
+>>>>>>> 761d6a4b8494d51d29622acbe7ee5f986a99f809
 - **Relatório**: ver [`docs/_reports/2026-08-27-chore-banco-dev.md`](docs/_reports/2026-08-27-chore-banco-dev.md).
 
 ---
