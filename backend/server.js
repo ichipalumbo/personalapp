@@ -1,23 +1,31 @@
-require('dotenv').config();
+// Node cai em 127.0.0.1 para DNS nesta máquina; força Cloudflare.
+// Remover quebra a resolução do +srv do Atlas. Testado.
+// Só em execução local — na Vercel o resolvedor da plataforma é melhor.
+if (require.main === module) {
+  const dns = require("dns");
+  dns.setServers(["1.1.1.1", "1.0.0.1"]);
+}
 
-const { createApp } = require('./src/app');
-const { getEnvConfig } = require('./src/config/env');
-const { connectToDatabase } = require('./src/config/database');
+require("dotenv").config();
+
+const { createApp } = require("./src/app");
+const { getEnvConfig } = require("./src/config/env");
+const { connectToDatabase } = require("./src/config/database");
 
 const { port, mongoURI } = getEnvConfig();
 const app = createApp();
 
-console.log('🔧 Inicializando servidor...');
-console.log(`📦 Environment: ${process.env.NODE_ENV || 'desenvolvimento'}`);
+console.log("🔧 Inicializando servidor...");
+console.log(`📦 Environment: ${process.env.NODE_ENV || "desenvolvimento"}`);
 console.log(`📡 Porta: ${port}`);
 
 // Warmup opcional: em Vercel serverless, a conexão efetiva é garantida pelo middleware em /api.
 connectToDatabase(mongoURI).catch((err) => {
-
-  console.warn('⚠️ Warmup opcional do MongoDB falhou:', err && err.message ? err.message : err);
-
+  console.warn(
+    "⚠️ Warmup opcional do MongoDB falhou:",
+    err && err.message ? err.message : err,
+  );
 });
-
 
 if (require.main === module) {
   app.listen(port, () => {
