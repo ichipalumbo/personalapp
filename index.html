@@ -1385,13 +1385,14 @@
           >
             <div
               id="acoesCompromissoUnico"
-              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+              style="display: grid; grid-template-columns: 1fr; gap: 10px"
             >
               <button
                 type="button"
                 class="btn btn-danger"
                 id="btnDeletarDefinitivo"
-                title="Excluir Compromisso"
+                title="Excluir esta aula"
+                style="width: 100%"
               >
                 <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
                 Excluir esta aula
@@ -1400,7 +1401,7 @@
                 type="button"
                 class="btn"
                 id="btnMandarParaReposicao"
-                style="background: #ff9800; color: #fff; border: none"
+                style="background: #ff9800; color: #fff; border: none; width: 100%"
                 title="Enviar para reposição"
               >
                 <i
@@ -1421,37 +1422,38 @@
                   type="button"
                   class="btn btn-danger"
                   id="btnDeletarInstancia"
-                  title="Excluir apenas essa aula"
+                  title="Excluir esta aula"
+                  style="width: 100%"
                 >
                   <i
-                    class="fa-solid fa-calendar-minus"
+                    class="fa-solid fa-trash-can"
                     style="margin-right: 4px"
                   ></i>
                   Excluir esta aula
                 </button>
                 <button
                   type="button"
-                  class="btn"
-                  id="btnReagendarInstancia"
-                  style="background: #ff9800; color: #fff; border: none"
-                  title="Enviar essa aula para reposição"
+                  class="btn btn-danger"
+                  id="btnDeletarSerie"
+                  title="Excluir a série toda"
+                  style="width: 100%"
                 >
-                  <i
-                    class="fa-solid fa-rotate-left"
-                    style="margin-right: 4px"
-                  ></i>
-                  Enviar para reposição
+                  <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
+                  Excluir a série toda
                 </button>
               </div>
               <button
                 type="button"
                 class="btn"
-                id="btnDeletarSerie"
-                style="background: #d32f2f; color: #fff; border: none"
-                title="Excluir toda a série de recorrências"
+                id="btnReagendarInstancia"
+                style="background: #ff9800; color: #fff; border: none; width: 100%"
+                title="Enviar para reposição"
               >
-                <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
-                Excluir série completa
+                <i
+                  class="fa-solid fa-rotate-left"
+                  style="margin-right: 4px"
+                ></i>
+                Enviar para reposição
               </button>
             </div>
 
@@ -1478,6 +1480,10 @@
         <h3 style="margin-top: 0; margin-bottom: 8px;">Cobrar esta aula?</h3>
         <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: #fff; font-size: 0.92rem;"></p>
         <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.84rem;"></p>
+
+        <p style="margin: 0 0 12px; color: #d9d9d9; font-size: 0.78rem; line-height: 1.5;">
+          A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, na aba Reposições.
+        </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
           <button type="button" class="btn btn-primary" data-reposicao-cobravel="true" id="btnCobrarNesteCiclo">
