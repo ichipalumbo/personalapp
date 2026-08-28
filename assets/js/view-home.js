@@ -180,6 +180,21 @@ function garantirHomeTabs() {
       });
     }
   });
+
+  const painelDia = document.getElementById('homeDayPanel');
+  if (painelDia && typeof window.ativarSwipePeriodo === 'function' && painelDia.dataset.swipeAtivo !== 'true') {
+    painelDia.dataset.swipeAtivo = 'true';
+    window.ativarSwipePeriodo(painelDia, {
+      aoAvancar: function () {
+        window.dataSelecionada.setDate(window.dataSelecionada.getDate() + 1);
+        window.renderizarHomeDia();
+      },
+      aoVoltar: function () {
+        window.dataSelecionada.setDate(window.dataSelecionada.getDate() - 1);
+        window.renderizarHomeDia();
+      }
+    });
+  }
 }
 
 window.renderizarHomeDia = function () {

@@ -274,6 +274,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const painelSemana = document.querySelector('.agenda-panel-semana');
+    if (painelSemana && typeof window.ativarSwipePeriodo === 'function' && painelSemana.dataset.swipeAtivo !== 'true') {
+        painelSemana.dataset.swipeAtivo = 'true';
+        window.ativarSwipePeriodo(painelSemana, {
+            aoAvancar: function () {
+                window.semanaReferencia.setDate(window.semanaReferencia.getDate() + 7);
+                window.renderizarHomeSemana();
+            },
+            aoVoltar: function () {
+                window.semanaReferencia.setDate(window.semanaReferencia.getDate() - 7);
+                window.renderizarHomeSemana();
+            }
+        });
+    }
+
     const btnNovaAgendaSemanal = document.getElementById('btnNovaAgendaSemanal');
     if (btnNovaAgendaSemanal) {
         btnNovaAgendaSemanal.addEventListener('click', () => {
