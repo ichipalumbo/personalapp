@@ -13,9 +13,19 @@
         document.documentElement.style.removeProperty('--tabs-height');
     }
 
+    function atualizarAlturaTopbarHome() {
+        const topbar = document.querySelector('.home-weekly-topbar');
+        if (!topbar) {
+            return;
+        }
+        const height = topbar.offsetHeight;
+        document.documentElement.style.setProperty('--home-topbar-height', `${height}px`);
+    }
+
     function atualizarMedidasLayout() {
         atualizarAlturaHeader();
         atualizarAlturaTabsCalendario();
+        atualizarAlturaTopbarHome();
     }
 
     async function refreshActiveView(router) {

@@ -1,5 +1,6 @@
 // [TAG-WIDGET-SWIPE-PERIODO] widget-swipe-periodo.js
-// Responsabilidade: detectar swipe horizontal por toque e disparar callbacks de troca de período
+// Responsabilidade: detectar swipe horizontal por toque e disparar callbacks de troca de período;
+//                   aplicar animação direcional de entrada no grid de conteúdo
 // Depende de: nada
 (function () {
   'use strict';
@@ -80,5 +81,17 @@
         if (aoVoltar) aoVoltar();
       }
     }, { passive: true });
+  };
+
+  window.animarTrocaPeriodo = function (elemento, direcao) {
+    if (!elemento) return;
+    elemento.classList.remove('periodo-anima-avanca', 'periodo-anima-volta');
+    // Forçar reflow para que a remoção seja processada antes de re-adicionar a classe.
+    void elemento.offsetWidth;
+    const classe = direcao === 'volta' ? 'periodo-anima-volta' : 'periodo-anima-avanca';
+    elemento.classList.add(classe);
+    elemento.addEventListener('animationend', function () {
+      elemento.classList.remove(classe);
+    }, { once: true });
   };
 })();
