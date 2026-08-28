@@ -1262,29 +1262,6 @@ body {
 .home-kpi-card-danger .home-kpi-label {
   color: #c7a9a9;
 }
-.agenda-header-wrapper {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 10px;
-  width: 100%;
-}
-
-.agenda-header-info h2 {
-  font-size: 1.25rem;
-  color: #ffd700;
-  margin: 0;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-}
-
-.agenda-header-info span {
-  font-size: 0.75rem;
-  color: #888888;
-  display: block;
-  margin-top: 3px;
-}
-
 .btn-config-icon {
   background: #1c1c1c;
   color: #ffd700;
@@ -1468,55 +1445,7 @@ body {
   }
 }
 
-.agenda-header-navegacao {
-  background: #0b0b0b;
-  border-radius: 10px;
-  padding: 8px 10px;
-  margin-top: 4px;
-  border: 1px solid #1f1f1f;
-}
 
-.agenda-header-navegacao .agenda-data-principal {
-  font-weight: 800;
-  color: #ffd700;
-  font-size: 0.95rem;
-}
-
-.agenda-header-navegacao .nav-calendario {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  flex-wrap: nowrap;
-  width: 100%;
-}
-
-.nav-calendario-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
-}
-
-.agenda-data-principal {
-  font-weight: 700;
-  color: #ffffff;
-  font-size: 1rem;
-  letter-spacing: 0.3px;
-  text-transform: capitalize;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 .agenda-data-linha-topo {
   display: inline-flex;
   align-items: center;
@@ -1534,58 +1463,6 @@ body {
 }
 .agenda-data-dia-mobile {
   display: none;
-}
-.agenda-dia-semana-mobile {
-  display: none;
-}
-
-@media (max-width: 767px) {
-  .agenda-header-navegacao .nav-calendario--home {
-    flex-wrap: wrap;
-    align-items: center;
-    row-gap: 2px;
-  }
-
-  .agenda-header-navegacao .nav-calendario--home .nav-calendario-main {
-    order: 1;
-    width: auto;
-    min-width: 0;
-    flex: 1 1 auto;
-  }
-
-  .agenda-header-navegacao .nav-calendario--home .btn-calendario-hoje {
-    order: 2;
-  }
-
-  .agenda-header-navegacao .nav-calendario--home .agenda-data-principal {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: nowrap;
-  }
-
-  .agenda-header-navegacao .nav-calendario--home .agenda-data-linha-topo {
-    display: none;
-  }
-
-  .agenda-header-navegacao .nav-calendario--home .agenda-data-dia-mobile {
-    display: inline;
-    font-size: 0.95rem;
-    color: #ffd700;
-    font-weight: 800;
-    white-space: nowrap;
-  }
-
-  .agenda-header-navegacao .nav-calendario--home .agenda-dia-semana-mobile {
-    order: 3;
-    display: block;
-    flex: 1 1 100%;
-    font-size: 0.8rem;
-    color: #d3d3d3;
-    font-weight: 600;
-    text-align: center;
-    line-height: 1.1;
-    margin-top: 5px;
-  }
 }
 
 .btn-calendario-hoje {
@@ -2981,10 +2858,6 @@ body {
 
   .nav-calendario-main {
     width: 100%;
-  }
-
-  .agenda-data-principal {
-    font-size: 0.95rem;
   }
 
   .btn-calendario-hoje {

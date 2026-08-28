@@ -8,17 +8,17 @@
 | Metrica | Valor |
 | --- | --- |
 | CSS auditado | `assets\css\style.css` |
-| Linhas / bytes | 3118 / 66976 |
-| Regras (blocos de seletor) | 446 |
+| Linhas / bytes | 2991 / 64366 |
+| Regras (blocos de seletor) | 429 |
 | Arquivos no corpus (.html/.js) | 35 |
-| Classes distintas | 237 |
-| — com uso literal | 204 |
+| Classes distintas | 231 |
+| — com uso literal | 203 |
 | — suspeitas de construcao dinamica | 9 |
-| — **sem nenhum consumidor** | **23** |
+| — **sem nenhum consumidor** | **18** |
 | IDs distintos / sem consumidor | 11 / **1** |
 | @keyframes definidos / orfaos | 8 / **0** |
 | Variaveis CSS definidas / orfas | 19 / **0** |
-| Regras tocadas por candidatos | 47 |
+| Regras tocadas por candidatos | 31 |
 | Pontos de classe dinamica no JS | 14 |
 
 ## Tamanho por secao (marcadores `[TAG-...]`)
@@ -26,16 +26,16 @@
 | Secao | Linhas | Faixa |
 | --- | --- | --- |
 | `TAG-STYLE-HEADER-NAV` | 1042 | 100-1141 |
-| `TAG-STYLE-AGENDA-DIARIA` | 752 | 1142-1893 |
-| `TAG-STYLE-BLOQUEIO-EXTERNO` | 425 | 1894-2318 |
-| `TAG-STYLE-FILTRO-ALUNO-CALENDARIO` | 393 | 2684-3076 |
-| `TAG-STYLE-CALENDARIO-TABS-STICKY` | 169 | 2319-2487 |
-| `TAG-STYLE-OVERLAY-SINC` | 96 | 2554-2649 |
-| `TAG-STYLE-MODAL-TOAST` | 66 | 2488-2553 |
+| `TAG-STYLE-AGENDA-DIARIA` | 629 | 1142-1770 |
+| `TAG-STYLE-BLOQUEIO-EXTERNO` | 425 | 1771-2195 |
+| `TAG-STYLE-FILTRO-ALUNO-CALENDARIO` | 389 | 2561-2949 |
+| `TAG-STYLE-CALENDARIO-TABS-STICKY` | 169 | 2196-2364 |
+| `TAG-STYLE-OVERLAY-SINC` | 96 | 2431-2526 |
+| `TAG-STYLE-MODAL-TOAST` | 66 | 2365-2430 |
 | `TAG-STYLE-OBJETIVOS` | 60 | 1-60 |
-| `TAG-STYLE-RESPONSIVO-DESKTOP` | 42 | 3077-3118 |
+| `TAG-STYLE-RESPONSIVO-DESKTOP` | 42 | 2950-2991 |
 | `TAG-STYLE-BASE` | 39 | 61-99 |
-| `TAG-CSS-INDICADOR-SYNC-BG` | 34 | 2650-2683 |
+| `TAG-CSS-INDICADOR-SYNC-BG` | 34 | 2527-2560 |
 
 ## 1. Classes sem nenhum consumidor — candidatas diretas
 
@@ -46,24 +46,19 @@
 | `.btn-success` | 705 | `.btn-success` |
 | `.status-toggle--compact` | 1091, 1094, 1098, 1104, 1110 | `.status-toggle.status-toggle--compact` |
 | `.home-weekly-filter` | 1180 | `.home-weekly-filter` |
-| `.ultima-sincronizacao-label` | 1226, 3041 | `.ultima-sincronizacao-label` |
-| `.agenda-header-wrapper` | 1265 | `.agenda-header-wrapper` |
-| `.agenda-header-info` | 1273, 1281 | `.agenda-header-info h2` |
-| `.agenda-header-navegacao` | 1471, 1479, 1485, 1543, 1549, 1556, 1560, 1566, 1570, 1578 | `.agenda-header-navegacao` |
-| `.agenda-data-principal` | 1479, 1503, 1560, 2986 | `.agenda-header-navegacao .agenda-data-principal` |
-| `.agenda-dia-semana-mobile` | 1538, 1578 | `.agenda-dia-semana-mobile` |
-| `.home-loading-block` | 2255, 2917 | `.home-loading-block` |
-| `.linha-hora-atual` | 2278, 2287 | `.linha-hora-atual` |
-| `.agenda-dia-horario` | 2287 | `.linha-hora-atual .agenda-dia-horario` |
-| `.pulse-indicador-agora` | 2293 | `.pulse-indicador-agora` |
-| `.badge-bloqueio` | 2330 | `.badge-bloqueio` |
-| `.form-group` | 2502, 2505, 2511 | `.modal .form-group` |
-| `.modal-horarios-duplos` | 2521 | `.modal-horarios-duplos` |
-| `.overlay-sinc-actions` | 2603 | `.overlay-sinc-actions` |
-| `.overlay-sinc-retry` | 2609, 2622, 2626 | `.overlay-sinc-retry` |
-| `.overlay-sinc-later` | 2629, 2642, 2646 | `.overlay-sinc-later` |
-| `.home-loading-line` | 2908 | `.home-loading-line` |
-| `.home-loading-pill` | 2912 | `.home-loading-pill` |
+| `.ultima-sincronizacao-label` | 1226, 2914 | `.ultima-sincronizacao-label` |
+| `.home-loading-block` | 2132, 2794 | `.home-loading-block` |
+| `.linha-hora-atual` | 2155, 2164 | `.linha-hora-atual` |
+| `.agenda-dia-horario` | 2164 | `.linha-hora-atual .agenda-dia-horario` |
+| `.pulse-indicador-agora` | 2170 | `.pulse-indicador-agora` |
+| `.badge-bloqueio` | 2207 | `.badge-bloqueio` |
+| `.form-group` | 2379, 2382, 2388 | `.modal .form-group` |
+| `.modal-horarios-duplos` | 2398 | `.modal-horarios-duplos` |
+| `.overlay-sinc-actions` | 2480 | `.overlay-sinc-actions` |
+| `.overlay-sinc-retry` | 2486, 2499, 2503 | `.overlay-sinc-retry` |
+| `.overlay-sinc-later` | 2506, 2519, 2523 | `.overlay-sinc-later` |
+| `.home-loading-line` | 2785 | `.home-loading-line` |
+| `.home-loading-pill` | 2789 | `.home-loading-pill` |
 
 ## 2. Classes suspeitas de construcao dinamica — conferir a mao
 
@@ -79,14 +74,14 @@ Nao aparecem literalmente, mas o nome tem pista de ser montado em runtime.
 | `.objetivo-PersonalTrainer` | 40 | prefixo `objetivo-` usado em concatenacao |
 | `.objetivo-ConsultoriaOnline` | 45, 51 | prefixo `objetivo-` usado em concatenacao |
 | `.objetivo-Outro` | 56 | prefixo `objetivo-` usado em concatenacao |
-| `.agenda-card-density-compact` | 1995, 2000, 2004, 2011 | prefixo `agenda-card-density-` usado em concatenacao |
-| `.agenda-card-density-tight` | 2018, 2023, 2027, 2034, 2042, 2047, 2055, 2062, 2070, 2076, 2082, 2088, 2095, 2102, 2110, 2117, 2123, 2127, 2134, 2141, 2148 | prefixo `agenda-card-density-` usado em concatenacao |
+| `.agenda-card-density-compact` | 1872, 1877, 1881, 1888 | prefixo `agenda-card-density-` usado em concatenacao |
+| `.agenda-card-density-tight` | 1895, 1900, 1904, 1911, 1919, 1924, 1932, 1939, 1947, 1953, 1959, 1965, 1972, 1979, 1987, 1994, 2000, 2004, 2011, 2018, 2025 | prefixo `agenda-card-density-` usado em concatenacao |
 
 ## 3. IDs sem consumidor
 
 | ID | Linha(s) | Seletor de exemplo |
 | --- | --- | --- |
-| `#btnSyncGoogleCalendar` | 3036 | `.home-weekly-nav-row .sync-actions-row #btnSyncBanco, .home-weekly-nav-row .sync-actions-row #btnSyncGoogleCal` |
+| `#btnSyncGoogleCalendar` | 2909 | `.home-weekly-nav-row .sync-actions-row #btnSyncBanco, .home-weekly-nav-row .sync-actions-row #btnSyncGoogleCal` |
 
 ## 4. @keyframes orfaos
 
