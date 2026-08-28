@@ -2128,22 +2128,6 @@ body {
   }
 }
 
-/* Ghost Loading Blocks (Esqueletos) */
-.home-loading-block {
-  background: linear-gradient(90deg, #1a1a1a 25%, #262626 50%, #1a1a1a 75%);
-  background-size: 200% 100%;
-  animation: loading-pulse 1.5s infinite;
-}
-
-@keyframes loading-pulse {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
-
 .bloqueio-dia-inteiro-ativo {
   opacity: 0.5;
 }
@@ -2780,30 +2764,6 @@ body {
 
 .btn-weekly-add:active {
   transform: scale(0.96);
-}
-
-.home-loading-line {
-  opacity: 0.9;
-}
-
-.home-loading-pill {
-  color: #d4b200;
-  border-color: #2a2a2a;
-}
-
-.home-loading-block {
-  height: 48px;
-  border-radius: 8px;
-  border: 1px solid #232323;
-  background: linear-gradient(110deg, #1a1a1a 8%, #242424 18%, #1a1a1a 33%);
-  background-size: 200% 100%;
-  animation: homeShimmer 1.1s linear infinite;
-}
-
-@keyframes homeShimmer {
-  to {
-    background-position-x: -200%;
-  }
 }
 
 @media (max-width: 430px) {
