@@ -141,6 +141,8 @@
         return 'unknown';
     }
 
+    function _revelarBotaoOficialGoogle() { const container = document.getElementById('googleSignInButtonFallback'); if (container) { container.classList.add('is-visible'); } }
+
     function _tratarResultadoPrompt(notification) {
         if (!notification) {
             return;
@@ -168,10 +170,7 @@
             return;
         }
 
-        if (motivo === 'suppressed_by_user') {
-            _showAuthMessage('O navegador suprimiu o prompt automático. Use o botão "Entrar com Google".', 'warning');
-            return;
-        }
+        if (motivo === 'suppressed_by_user') { _revelarBotaoOficialGoogle(); _showAuthMessage('O Google bloqueou o login automático. Use o botão do Google que apareceu no topo.', 'warning'); return; }
 
         _showAuthMessage('Prompt de login não foi exibido neste contexto. Tente no navegador padrão.', 'warning');
     }
@@ -395,6 +394,8 @@
             console.info('[auth] Restauração silenciosa de sessão não concluída. Motivo:', motivo);
         });
     }
+
+    function _renderGoogleOfficialButton() { const container = document.getElementById('googleSignInButtonFallback'); if (!container || !global.google || !global.google.accounts || !global.google.accounts.id) { return; } if (container.dataset.gisRendered === 'true') { return; } try { global.google.accounts.id.renderButton(container, { type: 'icon', theme: 'filled_black', size: 'medium', shape: 'circle' }); container.dataset.gisRendered = 'true'; } catch (error) { console.warn('[auth] Falha ao renderizar botão oficial do Google:', error); } }
 
     function _bindCustomLoginButton() {
         const customLoginButton = document.getElementById('custom-google-login');
@@ -776,6 +777,7 @@
         });
 
         _bindCustomLoginButton();
+        _renderGoogleOfficialButton();
         _initializeGISCalendarCodeClient();
         _updateUi();
 

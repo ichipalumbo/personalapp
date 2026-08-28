@@ -250,6 +250,16 @@ body {
   outline-offset: 2px;
 }
 
+.google-signin-fallback {
+  display: none;
+}
+
+.google-signin-fallback.is-visible {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
 .btn-google-signout {
   display: inline-flex;
   align-items: center;
