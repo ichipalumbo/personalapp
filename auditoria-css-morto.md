@@ -8,54 +8,38 @@
 | Metrica | Valor |
 | --- | --- |
 | CSS auditado | `assets\css\style.css` |
-| Linhas / bytes | 2951 / 63565 |
-| Regras (blocos de seletor) | 425 |
+| Linhas / bytes | 2761 / 59552 |
+| Regras (blocos de seletor) | 399 |
 | Arquivos no corpus (.html/.js) | 35 |
-| Classes distintas | 228 |
+| Classes distintas | 213 |
 | — com uso literal | 203 |
 | — suspeitas de construcao dinamica | 9 |
-| — **sem nenhum consumidor** | **15** |
-| IDs distintos / sem consumidor | 11 / **1** |
-| @keyframes definidos / orfaos | 6 / **0** |
+| — **sem nenhum consumidor** | **0** |
+| IDs distintos / sem consumidor | 10 / **0** |
+| @keyframes definidos / orfaos | 4 / **0** |
 | Variaveis CSS definidas / orfas | 19 / **0** |
-| Regras tocadas por candidatos | 27 |
+| Regras tocadas por candidatos | 0 |
 | Pontos de classe dinamica no JS | 14 |
 
 ## Tamanho por secao (marcadores `[TAG-...]`)
 
 | Secao | Linhas | Faixa |
 | --- | --- | --- |
-| `TAG-STYLE-HEADER-NAV` | 1042 | 100-1141 |
-| `TAG-STYLE-AGENDA-DIARIA` | 629 | 1142-1770 |
-| `TAG-STYLE-BLOQUEIO-EXTERNO` | 409 | 1771-2179 |
-| `TAG-STYLE-FILTRO-ALUNO-CALENDARIO` | 365 | 2545-2909 |
-| `TAG-STYLE-CALENDARIO-TABS-STICKY` | 169 | 2180-2348 |
-| `TAG-STYLE-OVERLAY-SINC` | 96 | 2415-2510 |
-| `TAG-STYLE-MODAL-TOAST` | 66 | 2349-2414 |
+| `TAG-STYLE-HEADER-NAV` | 987 | 100-1086 |
+| `TAG-STYLE-AGENDA-DIARIA` | 618 | 1087-1704 |
+| `TAG-STYLE-BLOQUEIO-EXTERNO` | 368 | 1705-2072 |
+| `TAG-STYLE-FILTRO-ALUNO-CALENDARIO` | 359 | 2361-2719 |
+| `TAG-STYLE-CALENDARIO-TABS-STICKY` | 164 | 2073-2236 |
 | `TAG-STYLE-OBJETIVOS` | 60 | 1-60 |
-| `TAG-STYLE-RESPONSIVO-DESKTOP` | 42 | 2910-2951 |
+| `TAG-STYLE-OVERLAY-SINC` | 49 | 2278-2326 |
+| `TAG-STYLE-RESPONSIVO-DESKTOP` | 42 | 2720-2761 |
+| `TAG-STYLE-MODAL-TOAST` | 41 | 2237-2277 |
 | `TAG-STYLE-BASE` | 39 | 61-99 |
-| `TAG-CSS-INDICADOR-SYNC-BG` | 34 | 2511-2544 |
+| `TAG-CSS-INDICADOR-SYNC-BG` | 34 | 2327-2360 |
 
 ## 1. Classes sem nenhum consumidor — candidatas diretas
 
-| Classe | Linha(s) no CSS | Seletor de exemplo |
-| --- | --- | --- |
-| `.text-bounce` | 175 | `.text-bounce` |
-| `.sync-auto-pill` | 579 | `.sync-auto-pill` |
-| `.btn-success` | 705 | `.btn-success` |
-| `.status-toggle--compact` | 1091, 1094, 1098, 1104, 1110 | `.status-toggle.status-toggle--compact` |
-| `.home-weekly-filter` | 1180 | `.home-weekly-filter` |
-| `.ultima-sincronizacao-label` | 1226, 2874 | `.ultima-sincronizacao-label` |
-| `.linha-hora-atual` | 2139, 2148 | `.linha-hora-atual` |
-| `.agenda-dia-horario` | 2148 | `.linha-hora-atual .agenda-dia-horario` |
-| `.pulse-indicador-agora` | 2154 | `.pulse-indicador-agora` |
-| `.badge-bloqueio` | 2191 | `.badge-bloqueio` |
-| `.form-group` | 2363, 2366, 2372 | `.modal .form-group` |
-| `.modal-horarios-duplos` | 2382 | `.modal-horarios-duplos` |
-| `.overlay-sinc-actions` | 2464 | `.overlay-sinc-actions` |
-| `.overlay-sinc-retry` | 2470, 2483, 2487 | `.overlay-sinc-retry` |
-| `.overlay-sinc-later` | 2490, 2503, 2507 | `.overlay-sinc-later` |
+_Nenhuma._
 
 ## 2. Classes suspeitas de construcao dinamica — conferir a mao
 
@@ -71,14 +55,12 @@ Nao aparecem literalmente, mas o nome tem pista de ser montado em runtime.
 | `.objetivo-PersonalTrainer` | 40 | prefixo `objetivo-` usado em concatenacao |
 | `.objetivo-ConsultoriaOnline` | 45, 51 | prefixo `objetivo-` usado em concatenacao |
 | `.objetivo-Outro` | 56 | prefixo `objetivo-` usado em concatenacao |
-| `.agenda-card-density-compact` | 1872, 1877, 1881, 1888 | prefixo `agenda-card-density-` usado em concatenacao |
-| `.agenda-card-density-tight` | 1895, 1900, 1904, 1911, 1919, 1924, 1932, 1939, 1947, 1953, 1959, 1965, 1972, 1979, 1987, 1994, 2000, 2004, 2011, 2018, 2025 | prefixo `agenda-card-density-` usado em concatenacao |
+| `.agenda-card-density-compact` | 1806, 1811, 1815, 1822 | prefixo `agenda-card-density-` usado em concatenacao |
+| `.agenda-card-density-tight` | 1829, 1834, 1838, 1845, 1853, 1858, 1866, 1873, 1881, 1887, 1893, 1899, 1906, 1913, 1921, 1928, 1934, 1938, 1945, 1952, 1959 | prefixo `agenda-card-density-` usado em concatenacao |
 
 ## 3. IDs sem consumidor
 
-| ID | Linha(s) | Seletor de exemplo |
-| --- | --- | --- |
-| `#btnSyncGoogleCalendar` | 2869 | `.home-weekly-nav-row .sync-actions-row #btnSyncBanco, .home-weekly-nav-row .sync-actions-row #btnSyncGoogleCal` |
+_Nenhum._
 
 ## 4. @keyframes orfaos
 

@@ -172,21 +172,6 @@ body {
     1.5px 1.5px 0 #ffd700;
 }
 
-.text-bounce {
-  display: inline-block;
-  animation: halterBounce 2.5s infinite ease-in-out;
-}
-
-@keyframes halterBounce {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  50% {
-    transform: translateY(-4px) rotate(8deg);
-  }
-}
-
 .header-session-state,
 .header-session-summary {
   display: flex;
@@ -576,20 +561,6 @@ body {
   cursor: not-allowed;
 }
 
-.sync-auto-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid #27405d;
-  background: #0f1925;
-  color: #9bc3ea;
-  border-radius: 999px;
-  padding: 5px 10px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
 .header-session-avatar {
   width: 30px;
   height: 30px;
@@ -700,10 +671,6 @@ body {
 }
 .btn-danger {
   background: #f44336;
-  color: #fff;
-}
-.btn-success {
-  background: #4caf50;
   color: #fff;
 }
 .btn-sm {
@@ -1088,28 +1055,6 @@ body {
   + .status-toggle-label {
   color: #ff8a80;
 }
-.status-toggle.status-toggle--compact {
-  gap: 7px;
-}
-.status-toggle.status-toggle--compact .status-toggle-track {
-  width: 42px;
-  height: 24px;
-}
-.status-toggle.status-toggle--compact .status-toggle-knob {
-  width: 16px;
-  height: 16px;
-  top: 3px;
-  left: 3px;
-}
-.status-toggle.status-toggle--compact
-  input:checked
-  + .status-toggle-track
-  .status-toggle-knob {
-  transform: translateX(18px);
-}
-.status-toggle.status-toggle--compact .status-toggle-label {
-  font-size: 0.72rem;
-}
 .status-toggle.status-toggle--card {
   gap: 6px;
   justify-content: flex-end;
@@ -1177,10 +1122,6 @@ body {
   flex-direction: column;
   gap: 10px;
 }
-.home-weekly-filter {
-  min-width: 0 !important;
-  width: 100%;
-}
 .home-weekly-nav-row .nav-calendario {
   display: flex;
   flex-direction: row;
@@ -1222,13 +1163,6 @@ body {
 }
 .home-weekly-nav-row .btn-calendario-hoje {
   margin-left: auto;
-}
-.ultima-sincronizacao-label {
-  display: block;
-  max-width: 100%;
-  white-space: normal;
-  overflow-wrap: anywhere;
-  line-height: 1.3;
 }
 .home-kpi-grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2136,47 +2070,6 @@ body {
   pointer-events: none;
   cursor: not-allowed;
 }
-.linha-hora-atual {
-  border: 1.5px solid #ffd700 !important;
-  background: rgba(255, 215, 0, 0.03) !important;
-  border-radius: 12px;
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.1);
-  padding: 5px;
-  position: relative;
-}
-
-.linha-hora-atual .agenda-dia-horario {
-  background: #ffd700 !important;
-  color: #0d0d0d !important;
-  border-color: #ffd700 !important;
-  font-weight: 800;
-}
-.pulse-indicador-agora {
-  position: absolute;
-  top: -3px;
-  right: -3px;
-  width: 8px;
-  height: 8px;
-  background-color: #ef5350;
-  border-radius: 50%;
-  box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.7);
-  animation: pulseAgora 1.6s infinite cubic-bezier(0.66, 0, 0, 1);
-}
-
-@keyframes pulseAgora {
-  0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 83, 80, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 8px rgba(239, 83, 80, 0);
-  }
-  100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(239, 83, 80, 0);
-  }
-}
 /* [TAG-STYLE-CALENDARIO-TABS-STICKY] */
 .badge-aula {
   background: rgba(255, 215, 0, 0.12);
@@ -2187,11 +2080,6 @@ body {
   background: rgba(255, 152, 0, 0.12);
   color: #ff9800;
   border: 1px solid rgba(255, 152, 0, 0.25);
-}
-.badge-bloqueio {
-  background: rgba(239, 83, 80, 0.12);
-  color: #ef5350;
-  border: 1px solid rgba(239, 83, 80, 0.25);
 }
 .semana-dia-box {
   transition:
@@ -2360,31 +2248,6 @@ body {
   color: #ffd700;
   font-size: 1.2rem;
 }
-.modal .form-group {
-  margin-bottom: 12px;
-}
-.modal .form-group label {
-  display: block;
-  font-size: 0.8rem;
-  color: #aaa;
-  margin-bottom: 4px;
-}
-.modal .form-group select,
-.modal .form-group input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #0d0d0d;
-  color: #e0e0e0;
-  font-size: 0.9rem;
-}
-.modal-horarios-duplos {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
 .toast {
   position: fixed;
   bottom: 20px;
@@ -2461,53 +2324,6 @@ body {
 .overlay-sinc-erro .overlay-sinc-msg {
   color: #ffd4d2;
 }
-.overlay-sinc-actions {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-}
-.overlay-sinc-retry {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #e53935;
-  color: #fff;
-  background: #e53935;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 0.86rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.overlay-sinc-retry:hover {
-  background: #ff4d4a;
-  border-color: #ff4d4a;
-}
-.overlay-sinc-retry:active {
-  transform: scale(0.98);
-}
-.overlay-sinc-later {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid #555;
-  color: #ddd;
-  background: #2b2b2b;
-  border-radius: 8px;
-  padding: 10px 14px;
-  font-size: 0.86rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-.overlay-sinc-later:hover {
-  background: #353535;
-  border-color: #6a6a6a;
-}
-.overlay-sinc-later:active {
-  transform: scale(0.98);
-}
-
 /* [TAG-CSS-INDICADOR-SYNC-BG] — Non-blocking background sync indicator (pill badge) */
 .indicador-sync-bg {
   display: none;
@@ -2866,14 +2682,8 @@ body {
     row-gap: 4px;
   }
 
-  .home-weekly-nav-row .sync-actions-row #btnSyncBanco,
-  .home-weekly-nav-row .sync-actions-row #btnSyncGoogleCalendar {
+  .home-weekly-nav-row .sync-actions-row #btnSyncBanco {
     flex: 0 0 auto;
-  }
-
-  .home-weekly-nav-row .sync-actions-row .ultima-sincronizacao-label {
-    flex: 1 1 100%;
-    text-align: left;
   }
 
   .home-kpi-grid {
