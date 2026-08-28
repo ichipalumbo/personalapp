@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-08-26
+> **Status**: Documento vivo · **Atualizado**: 2026-08-28
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -62,6 +62,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 4     | 4.6 Auditoria / histórico de alterações          | `[ ]`  | —                                                                |
 | 4     | 4.7 Precisão financeira avançada                 | `[x]`  | —                                                                |
 | 4     | 4.8 Contrato / assinatura digital                | `[ ]`  | —                                                                |
+| 4     | 4.9 Sessão própria do backend (Opção 1)          | `[ ]`  | —                                                                |
 
 ---
 
@@ -457,6 +458,17 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: Reduz risco jurídico do PT (comum em contratos de prestação de serviço de educação física).
 - **Complexidade**: Exigiria upload/armazenamento seguro de documentos e possivelmente integração com serviço de assinatura eletrônica (ex.: Clicksign, D4Sign) — infraestrutura nova, sem base no projeto atual.
 - **Esforço**: Alto.
+
+---
+
+### [ ] 4.9 Sessão própria do backend (token de sessão com renovação) — **Opção 1 para persistência de login**
+
+- **O que é**: trocar, uma única vez no login, o ID token do Google por um token de sessão emitido e assinado pelo próprio backend, com validade longa e renovação. O `requireAuth` passa a aceitar os dois formatos durante a transição.
+- **Por que importa**: hoje a sessão está amarrada ao ciclo de vida do Google. O ID token expira em 1 hora e não tem renovação, e o PWA instalado é descartado da memória pelo sistema operacional a cada troca de app — o que faz a usuária ver login repetido ou reautenticação automática constante. Com sessão própria, ela loga uma vez e permanece por semanas, sem piscar o One Tap e sem depender do cookie `g_state` do Google.
+- **Relação com o que já foi feito**: a persistência do ID token em `localStorage` (entregue em `feat/login-sessao-persistente`) é **mitigação parcial** — resolve a troca de app dentro da hora de validade, mas não resolve a expiração nem melhora a postura de segurança do armazenamento. Este item é o caminho definitivo.
+- **Onde mexer**: `backend/src/middleware/requireAuth.js` (aceitar dois formatos de token), rota nova de emissão/renovação em `backend/src/routes/`, segredo de assinatura em `backend/src/config/env.js` e `.env.example`, e `assets/js/auth/google-identity.js` no ponto em que a credencial do Google é recebida (`_handleCredentialResponse`) e no logout (`_performSignOut`).
+- **Cuidados**: logout precisa invalidar a sessão no backend, não apenas apagar o cache local; a renovação não pode virar sessão eterna sem reautenticação; e a transição precisa manter o formato antigo funcionando até o frontend estar publicado.
+- **Esforço**: Médio.
 
 ---
 

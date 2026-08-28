@@ -9,6 +9,8 @@
     const API_BASE_URL = APP_API_CONFIG.apiBaseUrl;
     const CALENDAR_SCOPE = 'https://www.googleapis.com/auth/calendar';
     const PROFILE_CACHE_KEY = 'gis_profile_cache';
+    const SESSION_CACHE_KEY = 'gis_session_cache';
+    const TOKEN_SKEW_MS = 5 * 60 * 1000;
     const CALENDAR_STATUS_CACHE_KEY = 'gcal_connection_cache';
     const READY_TIMEOUT_MS = 1500;
     const AUTO_PROMPT_ON_INIT = false;
@@ -17,6 +19,7 @@
     let _initialized = false;
     let _gisInitialized = false;
     let _idToken = null;
+    let _idTokenExpiraEm = 0;
     let _profile = null;
     let _readyResolved = false;
     let _resolveReady = null;
@@ -204,6 +207,109 @@
         }
     }
 
+    function _lerExpiracaoDoToken(token) {
+        try {
+            const partes = String(token).split('.');
+            if (partes.length < 2) {
+                return 0;
+            }
+
+            const base64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
+            if (!payload || typeof payload.exp !== 'number') {
+                return 0;
+            }
+
+            return payload.exp * 1000;
+        } catch (_) {
+            return 0;
+        }
+    }
+
+    function _lerEmailDoToken(token) {
+        try {
+            const partes = String(token).split('.');
+            if (partes.length < 2) {
+                return '';
+            }
+
+            const base64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
+            if (!payload || typeof payload.email !== 'string') {
+                return '';
+            }
+
+            return payload.email.trim().toLowerCase();
+        } catch (_) {
+            return '';
+        }
+    }
+
+    function _tokenAindaValido(expiraEm) {
+        if (!expiraEm) {
+            return false;
+        }
+
+        return expiraEm - Date.now() > TOKEN_SKEW_MS;
+    }
+
+    function _persistSession(token) {
+        try {
+            if (!token) {
+                localStorage.removeItem(SESSION_CACHE_KEY);
+                return;
+            }
+
+            const expiraEm = _lerExpiracaoDoToken(token);
+            if (!_tokenAindaValido(expiraEm)) {
+                localStorage.removeItem(SESSION_CACHE_KEY);
+                return;
+            }
+
+            localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({
+                idToken: token,
+                expiraEm: expiraEm,
+                email: _lerEmailDoToken(token)
+            }));
+        } catch (error) {
+            console.warn('[auth] Não foi possível persistir a sessão:', error);
+        }
+    }
+
+    function _restoreCachedSession() {
+        try {
+            const raw = localStorage.getItem(SESSION_CACHE_KEY);
+            if (!raw) {
+                return;
+            }
+
+            const cache = JSON.parse(raw);
+            if (!cache || !cache.idToken || !_tokenAindaValido(cache.expiraEm)) {
+                localStorage.removeItem(SESSION_CACHE_KEY);
+                return;
+            }
+
+            const emailPerfil = _profile && _profile.email
+                ? String(_profile.email).trim().toLowerCase()
+                : '';
+
+            if (emailPerfil && cache.email && cache.email !== emailPerfil) {
+                console.warn('[auth] Cache de sessão pertence a outra conta. Descartando sessão e perfil.');
+                localStorage.removeItem(SESSION_CACHE_KEY);
+                _persistProfile(null);
+                _profile = null;
+                return;
+            }
+
+            _idToken = cache.idToken;
+            _idTokenExpiraEm = cache.expiraEm;
+            console.info('[auth] Sessão restaurada do dispositivo.');
+        } catch (error) {
+            console.warn('[auth] Cache de sessão inválido. Descartando.', error);
+            localStorage.removeItem(SESSION_CACHE_KEY);
+        }
+    }
+
     function _persistCalendarStatusCache(payload) {
         try {
             if (!payload) {
@@ -279,6 +385,8 @@
         }
 
         _idToken = null;
+        _idTokenExpiraEm = 0;
+        _persistSession(null);
         _profile = null;
         _calendarConnected = false;
         _persistProfile(null);
@@ -331,6 +439,8 @@
         }
 
         _idToken = response.credential;
+        _idTokenExpiraEm = _lerExpiracaoDoToken(_idToken);
+        _persistSession(_idToken);
         _profile = {
             name: payload.name || '',
             email: payload.email || '',
@@ -799,6 +909,7 @@
 
         _initialized = true;
         _restoreCachedProfile();
+        _restoreCachedSession();
         _restoreCalendarStatusCache();
         _updateUi();
         _bindCustomLoginButton();
@@ -848,6 +959,10 @@
             return !!_idToken;
         },
         getIdToken: function () {
+            if (_idToken && _idTokenExpiraEm && !_tokenAindaValido(_idTokenExpiraEm)) {
+                return null;
+            }
+
             return _idToken;
         },
         getOwnerEmail: function () {
