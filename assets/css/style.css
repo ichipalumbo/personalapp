@@ -3,14 +3,11 @@
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
   /* Contrato de camadas da visão Calendário > Dia */
-  --z-cal-dia-container: 1;
   --z-cal-dia-grid-surface: 1;
   --z-cal-dia-grid-lines: 1;
   --z-cal-dia-grid-slots: 2;
   --z-cal-dia-grid-events: 3;
   --z-cal-dia-grid-now-indicator: 4;
-  --z-cal-dia-header-sticky: 20;
-  --z-cal-dia-tabs-sticky: 21;
   --objetivo-funcional-text: var(--objetivo-tangerina);
   --objetivo-funcional-border: var(--objetivo-tangerina);
   --objetivo-hipertrofia-text: var(--objetivo-tangerina);
@@ -100,11 +97,6 @@ body {
   line-height: 1.4;
 }
 
-#tela-calendario {
-  padding-top: 0;
-  padding-left: 15px;
-  padding-right: 15px;
-}
 /* [TAG-STYLE-HEADER-NAV] - Header fixo e navegacao */
 .header {
   display: flex;
@@ -1596,42 +1588,6 @@ body {
   }
 }
 
-.calendario-header-title-wrap {
-  display: flex;
-  flex-direction: column;
-}
-
-.calendario-header-title {
-  margin: 0;
-}
-
-.calendario-header-controls {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.calendario-filtro-container {
-  min-width: 180px;
-}
-
-.calendario-nav-arrows {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.calendario-nav-arrows .btn {
-  min-width: 34px;
-  padding: 6px 10px;
-}
-
-.calendario-nav-arrows .btn i {
-  font-size: 0.78rem;
-}
-
 .btn-calendario-hoje {
   white-space: nowrap;
 }
@@ -2361,31 +2317,6 @@ body {
   }
 }
 /* [TAG-STYLE-CALENDARIO-TABS-STICKY] */
-#containerCalendarioDia {
-  position: relative;
-  z-index: var(--z-cal-dia-container);
-  isolation: isolate;
-}
-
-#tela-calendario > .calendario-tabs-sticky {
-  position: sticky;
-  top: var(--header-height);
-  z-index: var(--z-cal-dia-tabs-sticky);
-  padding: 12px 0;
-  margin-bottom: 12px;
-  background-color: #0b0b0b;
-  border-bottom: 1px solid #1f1f1f;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
-}
-#containerCalendarioDia .agenda-sticky-container {
-  position: sticky;
-  top: calc(var(--header-height) + var(--tabs-height, 0px) - 1px);
-  z-index: var(--z-cal-dia-header-sticky);
-  background-color: #141414;
-  border-bottom: 1px solid #1f1f1f;
-  padding: 6px 0px 5px;
-}
-
 .badge-aula {
   background: rgba(255, 215, 0, 0.12);
   color: #ffd700;
@@ -2751,46 +2682,6 @@ body {
 }
 
 /* [TAG-STYLE-FILTRO-ALUNO-CALENDARIO] - Filter dropdown styling */
-.filtro-aluno-container {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
-}
-
-.filtro-aluno-select {
-  background: #1a1a1a;
-  border: 1px solid #2a2a2a;
-  color: #e0e0e0;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-sizing: border-box;
-  flex: 1 1 auto;
-  width: 100%;
-  max-width: none;
-}
-
-.filtro-aluno-select:hover {
-  border-color: #ffd700;
-  background: #252525;
-}
-
-.filtro-aluno-select:focus {
-  outline: none;
-  border-color: #ffd700;
-  box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
-  background: #1a1a1a;
-}
-
-.filtro-aluno-select option {
-  background: #1a1a1a;
-  color: #e0e0e0;
-}
-
 .card-stat {
   background: #1a1a1a;
   border-radius: 12px;
@@ -3105,25 +2996,6 @@ body {
     white-space: nowrap;
   }
 
-  .calendario-header-controls {
-    justify-content: space-between;
-    row-gap: 8px;
-  }
-
-  .calendario-filtro-container {
-    width: 100%;
-    min-width: 0 !important;
-    flex: 1 1 100%;
-  }
-
-  .calendario-filtro-container .filtro-aluno-select {
-    max-width: none;
-  }
-
-  .calendario-nav-arrows {
-    order: 1;
-  }
-
   .btn-calendario-hoje {
     order: 2;
     flex: 1 1 100%;
@@ -3239,15 +3111,6 @@ body {
   .alunos-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
-  #containerCalendarioDia .agenda-sticky-container {
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  #tela-calendario > .calendario-tabs-sticky {
-    top: var(--header-height);
-  }
-
   #semana-dia-hoje-elemento {
     scroll-margin-top: calc(var(--header-height, 78px) + 170px);
   }
