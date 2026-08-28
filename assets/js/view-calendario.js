@@ -257,6 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSemanaAnterior.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() - 7);
             window.renderizarHomeSemana();
+            if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('calendarioSemanalHomeGrid'), 'volta');
         });
     }
 
@@ -264,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSemanaProxima.addEventListener('click', () => {
             window.semanaReferencia.setDate(window.semanaReferencia.getDate() + 7);
             window.renderizarHomeSemana();
+            if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('calendarioSemanalHomeGrid'), 'avanca');
         });
     }
 
@@ -271,6 +273,24 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSemanaHoje.addEventListener('click', () => {
             window.semanaReferencia = new Date();
             window.renderizarHomeSemana();
+            if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('calendarioSemanalHomeGrid'), 'avanca');
+        });
+    }
+
+    const painelSemana = document.querySelector('.agenda-panel-semana');
+    if (painelSemana && typeof window.ativarSwipePeriodo === 'function' && painelSemana.dataset.swipeAtivo !== 'true') {
+        painelSemana.dataset.swipeAtivo = 'true';
+        window.ativarSwipePeriodo(painelSemana, {
+            aoAvancar: function () {
+                window.semanaReferencia.setDate(window.semanaReferencia.getDate() + 7);
+                window.renderizarHomeSemana();
+                if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('calendarioSemanalHomeGrid'), 'avanca');
+            },
+            aoVoltar: function () {
+                window.semanaReferencia.setDate(window.semanaReferencia.getDate() - 7);
+                window.renderizarHomeSemana();
+                if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('calendarioSemanalHomeGrid'), 'volta');
+            }
         });
     }
 

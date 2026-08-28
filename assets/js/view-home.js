@@ -92,53 +92,41 @@ function garantirHomeTabs() {
     }
   }
 
+  // Cria a barra de navegação do Dia dentro da topbar sticky (mesma posição da toolbar da Semana).
+  const dayNavRow = document.createElement('div');
+  dayNavRow.id = 'homeDayNavRow';
+  dayNavRow.className = 'home-weekly-toolbar';
+  dayNavRow.style.display = 'none';
+  dayNavRow.innerHTML = `
+    <div class="home-weekly-nav-row">
+      <div class="nav-calendario nav-calendario--home nav-calendario--week-home">
+        <div class="nav-calendario-main">
+          <button id="btnHomeDiaAnterior" class="btn btn-secondary btn-sm" title="Dia Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+          <span id="dataAtualHome" class="home-weekly-periodo">Carregando...</span>
+          <button id="btnHomeDiaProximo" class="btn btn-secondary btn-sm" title="Próximo Dia"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <button id="btnHomeDiaHoje" class="btn btn-secondary btn-sm btn-calendario-hoje">Hoje</button>
+      </div>
+    </div>
+    <div class="home-weekly-nav-row" style="justify-content:flex-end;margin-top:6px">
+      <div style="display:flex;gap:8px">
+        <button id="btnHomeDiaNovaAgenda" class="btn-config-icon" title="Novo Agendamento">
+          <i class="fa-solid fa-calendar-plus" style="color:#ffd700"></i>
+        </button>
+        <button id="btnHomeDiaConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
+          <i class="fa-solid fa-gear fa-spin-hover" style="color:#ffd700"></i>
+        </button>
+      </div>
+    </div>
+  `;
+  if (stickyHeader) stickyHeader.appendChild(dayNavRow);
+  else homeMain.appendChild(dayNavRow);
+
   const dayPanel = document.createElement('div');
   dayPanel.id = 'homeDayPanel';
   dayPanel.className = 'agenda-panel';
   dayPanel.style.display = 'none';
-  dayPanel.innerHTML = `
-    <div
-      class="agenda-sticky-container"
-      style="
-        position: sticky;
-        top: var(--header-height);
-        z-index: 20;
-        background-color: #141414;
-        border-bottom: 1px solid #1f1f1f;
-        padding: 6px 0px 5px;
-      "
-    >
-      <div class="agenda-header-wrapper">
-        <div class="agenda-header-info">
-          <h2>
-            <i class="fa-solid fa-calendar-day" style="color:#ffd700;margin-right:8px"></i>
-            Agenda do Dia
-          </h2>
-          <span>Sua rotina de treinos bem organizada!</span>
-        </div>
-        <div style="display:flex;gap:8px">
-          <button id="btnHomeDiaNovaAgenda" class="btn-config-icon" title="Novo Agendamento">
-            <i class="fa-solid fa-calendar-plus" style="color:#ffd700"></i>
-          </button>
-          <button id="btnHomeDiaConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
-            <i class="fa-solid fa-gear fa-spin-hover" style="color:#ffd700"></i>
-          </button>
-        </div>
-      </div>
-      <div class="agenda-header-navegacao">
-        <div class="nav-calendario nav-calendario--home">
-          <div class="nav-calendario-main">
-            <button id="btnHomeDiaAnterior" class="btn-nav-dia" title="Dia Anterior"><i class="fa-solid fa-circle-arrow-left"></i></button>
-            <span id="dataAtualHome" class="agenda-data-principal">Carregando...</span>
-            <button id="btnHomeDiaProximo" class="btn-nav-dia" title="Próximo Dia"><i class="fa-solid fa-circle-arrow-right"></i></button>
-          </div>
-          <button id="btnHomeDiaHoje" class="btn-hoje-pill btn-hoje-agenda"><i class="fa-solid fa-bullseye"></i>Hoje</button>
-          <span id="diaSemanaAtualHome" class="agenda-dia-semana-mobile">Carregando...</span>
-        </div>
-      </div>
-    </div>
-    <div class="agenda-dia-container" id="agendaGridHomeHome"></div>
-  `;
+  dayPanel.innerHTML = `<div class="agenda-dia-container" id="agendaGridHomeHome"></div>`;
 
   if (weeklyGridPanel) {
     weeklyGridPanel.parentNode.insertBefore(dayPanel, weeklyGridPanel.nextSibling);
@@ -157,14 +145,17 @@ function garantirHomeTabs() {
   bindOnce('#btnHomeDiaAnterior', () => {
     window.dataSelecionada.setDate(window.dataSelecionada.getDate() - 1);
     window.renderizarHomeDia();
+    if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('agendaGridHomeHome'), 'volta');
   });
   bindOnce('#btnHomeDiaProximo', () => {
     window.dataSelecionada.setDate(window.dataSelecionada.getDate() + 1);
     window.renderizarHomeDia();
+    if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('agendaGridHomeHome'), 'avanca');
   });
   bindOnce('#btnHomeDiaHoje', () => {
     window.dataSelecionada = new Date();
     window.renderizarHomeDia();
+    if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('agendaGridHomeHome'), 'avanca');
   });
   bindOnce('#btnHomeDiaConfigAgenda', () => {
     window.abrirModalConfigAgenda();
@@ -180,6 +171,23 @@ function garantirHomeTabs() {
       });
     }
   });
+
+  const painelDia = document.getElementById('homeDayPanel');
+  if (painelDia && typeof window.ativarSwipePeriodo === 'function' && painelDia.dataset.swipeAtivo !== 'true') {
+    painelDia.dataset.swipeAtivo = 'true';
+    window.ativarSwipePeriodo(painelDia, {
+      aoAvancar: function () {
+        window.dataSelecionada.setDate(window.dataSelecionada.getDate() + 1);
+        window.renderizarHomeDia();
+        if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('agendaGridHomeHome'), 'avanca');
+      },
+      aoVoltar: function () {
+        window.dataSelecionada.setDate(window.dataSelecionada.getDate() - 1);
+        window.renderizarHomeDia();
+        if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('agendaGridHomeHome'), 'volta');
+      }
+    });
+  }
 }
 
 window.renderizarHomeDia = function () {
@@ -202,6 +210,8 @@ window.alternarModoHome = function (modo) {
   if (semBtn) semBtn.classList.toggle('active', window.modoHomeAtivo === 'semana');
   if (diaBtn) diaBtn.classList.toggle('active', window.modoHomeAtivo === 'dia');
   if (weekToolbar) weekToolbar.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
+  const dayNavRow = document.getElementById('homeDayNavRow');
+  if (dayNavRow) dayNavRow.style.display = window.modoHomeAtivo === 'dia' ? '' : 'none';
   if (weekGridPanel) weekGridPanel.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
   if (btnNova) btnNova.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
   if (footer) footer.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
