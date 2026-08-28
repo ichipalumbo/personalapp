@@ -13,6 +13,8 @@
     const TOKEN_SKEW_MS = 5 * 60 * 1000;
     const CALENDAR_STATUS_CACHE_KEY = 'gcal_connection_cache';
     const READY_TIMEOUT_MS = 1500;
+    const GIS_RENDER_RETRY_MS = 400;
+    const GIS_RENDER_MAX_TENTATIVAS = 3;
     const AUTO_PROMPT_ON_INIT = false;
     const AUTO_RESTORE_SESSION_ON_INIT = true;
 
@@ -144,6 +146,16 @@
         return 'unknown';
     }
 
+    function _revelarBotaoOficialGoogle() {
+        const container = document.getElementById('googleSignInButtonFallback');
+        if (!container) {
+            return;
+        }
+
+        container.classList.add('is-visible');
+        _renderGoogleOfficialButton();
+    }
+
     function _tratarResultadoPrompt(notification) {
         if (!notification) {
             return;
@@ -172,7 +184,8 @@
         }
 
         if (motivo === 'suppressed_by_user') {
-            _showAuthMessage('O navegador suprimiu o prompt automático. Use o botão "Entrar com Google".', 'warning');
+            _revelarBotaoOficialGoogle();
+            _showAuthMessage('O Google bloqueou o login automático. Use o botão do Google que apareceu no topo.', 'warning');
             return;
         }
 
@@ -502,8 +515,50 @@
                 return;
             }
 
+            if (motivo === 'suppressed_by_user') {
+                _revelarBotaoOficialGoogle();
+            }
+
             console.info('[auth] Restauração silenciosa de sessão não concluída. Motivo:', motivo);
         });
+    }
+
+    function _renderGoogleOfficialButton(tentativa) {
+        const container = document.getElementById('googleSignInButtonFallback');
+        if (!container || !global.google || !global.google.accounts || !global.google.accounts.id) {
+            return;
+        }
+
+        if (container.dataset.gisRendered === 'true') {
+            return;
+        }
+
+        try {
+            global.google.accounts.id.renderButton(container, {
+                type: 'icon',
+                theme: 'filled_black',
+                size: 'medium',
+                shape: 'circle'
+            });
+        } catch (error) {
+            console.warn('[auth] Falha ao renderizar botão oficial do Google:', error);
+            return;
+        }
+
+        if (container.childElementCount > 0) {
+            container.dataset.gisRendered = 'true';
+            return;
+        }
+
+        const proxima = (typeof tentativa === 'number' ? tentativa : 0) + 1;
+        if (proxima >= GIS_RENDER_MAX_TENTATIVAS) {
+            console.warn('[auth] Botão oficial do Google não renderizou após', proxima, 'tentativas.');
+            return;
+        }
+
+        global.setTimeout(function () {
+            _renderGoogleOfficialButton(proxima);
+        }, GIS_RENDER_RETRY_MS);
     }
 
     function _bindCustomLoginButton() {
