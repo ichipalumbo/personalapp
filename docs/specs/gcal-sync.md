@@ -477,6 +477,11 @@ indisponibilidade do Google. Ver 9.4.
 - **Cor por tipo de compromisso.** `colorId` é fixo.
 - **UI de aviso do estado terminal.** A flag `gcalSyncPausado` é contrato de API; o texto do toast e a apresentação visual ficam fora do escopo desta spec.
 - **Tentativa automática do Google no frontend.** O teto é server-side e o frontend só dispara `PUT` quando o diff local/remoto exige a gravação no Mongo.
+- **`PUT` recorrente em item terminal sem edição.** Enquanto o item permanece no teto e não recebe edição, cada ciclo de sync emite um `PUT` que grava no Mongo e não chama o Google. Não é perda de dados; é escrita desperdiçada, consequência deliberada da persistência incondicional. Sem decisão de produto, permanece assim.
+- **Recuperação apenas eventual.** A edição de item em estado terminal não chega ao Google na requisição que a originou, e sim no ciclo seguinte. Não há sinal ao usuário durante o intervalo.
+- **Precedência divergente da data base.** `gcalSyncService` resolve `recorrenciaDataInicio || data || dataCriacao`; `recurrence-helpers` resolve `dataCriacao || recorrenciaDataInicio || data`. Somado ao fallback de `resolverDataISO` para `new Date()`, séries com campos divergentes podem alinhar `DTSTART` de formas diferentes no backend e no motor local. Unificação não foi feita.
+- **Detecção de edição por igualdade estrita.** `agendamentoRecebeuEdicao` usa `isDeepStrictEqual` após normalização. Uma origem futura que envie campos numéricos com tipos inconsistentes pode reabrir a janela de tentativas por diferença de tipo, não de valor. Coerção ampliada não foi implementada.
+- **Séries antigas com `DTSTART` defeituoso.** Séries criadas antes da correção de `DTSTART`/`BYDAY` precisam de reedição manual. Não há migração automática, e após a correção não há como identificá-las.
 
 ---
 
@@ -647,6 +652,22 @@ A sincronização de leitura do Google Calendar é disparada em três pontos do 
 O gatilho de renovação do canal foi mantido fora desse ciclo deliberadamente; ele é
 explicitamente tratado como rotação do webhook e não como parte do ciclo normal de
 sincronização. A consolidação desses gatilhos continua em pendência.
+
+### 9.15 — Série truncada antes do próprio início vira evento avulso. — PENDENTE
+
+Quando `UNTIL` fica estritamente antes do `DTSTART` alinhado (caso de "editar esta e futuras"
+na primeira ocorrência), `dtstartAlinhadoUltrapassaUntil` anula o `recurrence`, mas
+`montarEventoGoogle` continua enviando o evento com `start`/`end`. O app entende
+"série sem aulas"; o Google recebe um evento avulso fora da janela. Responde `HTTP 200`
+sem `gcalSyncFailed`. Fallback correto provavelmente é apagar o evento — exige decisão de
+produto.
+
+### 9.16 — Dia da semana sem acento derruba a recorrência em silêncio. — PENDENTE
+
+`mapearDiaSemanaParaCodigoRFC` compara contra `DEFAULT_DIAS_SEMANA` com `toLowerCase()` mas
+sem remover acento. `'Terca'` não casa com `'Terça'`; o valor é descartado sem log, e se a
+lista esvazia a série vira aula única. Latente hoje (o frontend grava acentuado), ativo com
+dado legado, importação ou problema de encoding.
 
 ## 10. Custo aceito da decisão
 

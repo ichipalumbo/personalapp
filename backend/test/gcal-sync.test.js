@@ -522,9 +522,9 @@ test('montarEventoGoogle preserva COUNT ao alinhar DTSTART com BYDAY', () => {
   assert.equal(evento.start.dateTime, '2026-08-31T09:00:00');
 });
 
-test('montarRecurrence mantém EXDATE existente e não cria nova para a data base', () => {
-  const recurrence = montarRecurrence({
-    id: 'ag-exdate-base',
+test('montarRecurrence gera EXDATE no primeiro dia e respeita bordas de início/fim da série', () => {
+  const primeiroDia = montarRecurrence({
+    id: 'ag-exdate-primeiro-dia',
     tipoRecorrencia: 'semanal',
     frequencia: 'semanal',
     diasSemana: ['Segunda', 'Terça', 'Quarta'],
@@ -533,11 +533,66 @@ test('montarRecurrence mantém EXDATE existente e não cria nova para a data bas
     recorrenciaDataFim: '2026-09-03',
     timeZone: 'America/Sao_Paulo',
     horarioInicio: '09:00',
-    excecoesDetalhadas: [{ data: '2026-08-31', horarioInicio: '09:00' }]
+    excecoesDetalhadas: [{ data: '2026-08-30', horarioInicio: '09:00' }]
   });
+  assert.ok(primeiroDia.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260830T090000')));
 
-  assert.ok(recurrence.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260831T090000')));
-  assert.equal(recurrence.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260830T090000')), false);
+  const umDiaAntes = montarRecurrence({
+    id: 'ag-exdate-um-dia-antes',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-03',
+    timeZone: 'America/Sao_Paulo',
+    horarioInicio: '09:00',
+    excecoesDetalhadas: [{ data: '2026-08-29', horarioInicio: '09:00' }]
+  });
+  assert.equal(umDiaAntes.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260829T090000')), false);
+
+  const ultimoDia = montarRecurrence({
+    id: 'ag-exdate-ultimo-dia',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-03',
+    timeZone: 'America/Sao_Paulo',
+    horarioInicio: '09:00',
+    excecoesDetalhadas: [{ data: '2026-09-03', horarioInicio: '09:00' }]
+  });
+  assert.ok(ultimoDia.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260903T090000')));
+
+  const umDiaDepois = montarRecurrence({
+    id: 'ag-exdate-um-dia-depois',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-03',
+    timeZone: 'America/Sao_Paulo',
+    horarioInicio: '09:00',
+    excecoesDetalhadas: [{ data: '2026-09-04', horarioInicio: '09:00' }]
+  });
+  assert.equal(umDiaDepois.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260904T090000')), false);
+
+  const dataDivergeDaRecorrencia = montarRecurrence({
+    id: 'ag-exdate-primeiro-dia-data-diverge',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    data: '2026-08-24',
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-03',
+    timeZone: 'America/Sao_Paulo',
+    horarioInicio: '09:00',
+    excecoesDetalhadas: [{ data: '2026-08-30', horarioInicio: '09:00' }]
+  });
+  assert.ok(dataDivergeDaRecorrencia.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260830T090000')));
 });
 
 test('montarRecurrence devolve null para agendamento avulso ou com dia inválido', () => {

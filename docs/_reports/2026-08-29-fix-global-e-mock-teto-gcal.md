@@ -243,3 +243,7 @@ git status --short
 - não houve UI nem CSS nesta rodada, porque o pedido era rígido sobre backend, testes e contrato de resposta;
 - não mexemos em `recurrence-helpers.js`, `resolverDataISO`, `financasService.js`, webhook, autenticação nem Google auth controllers; o escopo era o teto de pendência, o vazamento global e a regressão em mock/teste.
 - o estado de “Fora de escopo” foi registrado na spec e mantido fora da mudança de código neste ciclo, de acordo com o desenho já aprovado.
+
+### Adendo de correção do erro de checagem da seção "Fora de escopo"
+
+A afirmação de que a seção "Fora de escopo" não existia na spec era falsa. A busca correta foi feita com `## 8. Fora de escopo` (minúsculo), e a seção já existia antes da rodada B. O erro veio de eu procurar por `Fora de Escopo` com o `E` maiúsculo, o que não corresponde ao cabeçalho real da spec. Isso gerou confusão na rodada B e no relato da rodada C sobre o que já estava documentado.

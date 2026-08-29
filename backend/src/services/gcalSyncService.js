@@ -534,10 +534,17 @@ function montarExdatesDeAgendamento(agendamento) {
     }
 
     const dataSomente = new Date(Date.UTC(dataISO.getUTCFullYear(), dataISO.getUTCMonth(), dataISO.getUTCDate()));
-    if (startDate && dataSomente < startDate) {
+    const startDateSemHora = startDate
+      ? new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()))
+      : null;
+    const endDateSemHora = endDate
+      ? new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()))
+      : null;
+
+    if (startDateSemHora && dataSomente < startDateSemHora) {
       continue;
     }
-    if (endDate && dataSomente > endDate) {
+    if (endDateSemHora && dataSomente > endDateSemHora) {
       continue;
     }
 

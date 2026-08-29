@@ -189,3 +189,7 @@ A correção foi entregue sem reintroduzir o teto no frontend, sem bloquear a gr
 A seção 7 do relatório original listava três afirmações de mutação sem evidência de execução: a projeção truncada em `atualizarAgendamento`, a remoção da flag `gcalSyncPausado` e a reintrodução do corte do Google abaixo do teto. Os testes de execução ativos na rodada de correção mostraram que o mock do caso de teto era placebo: o `findOne` devolvia um objeto com `.lean()` e sem `.select()`, então a ramificação de projeção nunca era exercitada.
 
 Em execução, a mutação real da projeção falha porque `gcalSyncPendingTentativas` desaparece do documento e a resposta de pausa não aparece; a remoção da flag também falha porque `res.body.gcalSyncPausado` vira `undefined`. A correção deste ponto foi documentada em `docs/_reports/2026-08-29-fix-global-e-mock-teto-gcal.md`, e o histórico do relatório anterior foi preservado como adendo, sem apagar a versão original.
+
+### Adendo de correção do erro de checagem da seção "Fora de escopo"
+
+A afirmação de que a seção "Fora de escopo" não existia na spec era falsa. A busca correta foi feita com `## 8. Fora de escopo` (minúsculo), e a seção já existia antes da rodada B. O erro veio de eu procurar por `Fora de Escopo` com o `E` maiúsculo, o que não corresponde ao cabeçalho real da spec. Isso gerou confusão na rodada B e no relato da rodada C sobre o que já estava documentado.

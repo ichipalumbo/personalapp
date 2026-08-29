@@ -161,7 +161,8 @@ function carregarStorageHarness() {
     info() {},
     warn() {},
     debug() {},
-    error() {}
+    error() {},
+    grupo() {}
   };
 
   vm.runInNewContext(script, context, { filename: scriptPath });

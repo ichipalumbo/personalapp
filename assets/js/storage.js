@@ -930,11 +930,9 @@ async function carregarDados(opcoes = {}) {
             avulsas: totalAvulsas,
             externos: totalExternos
         });
-        if (window.log && typeof window.log.grupo === 'function') {
-            window.log.grupo('[storage] Detalhe de aulas carregadas no frontend', () => {
-                window.log.debug('[storage]', 'Aulas carregadas', aulasCarregadas);
-            });
-        }
+        window.log.grupo('[storage] Detalhe de aulas carregadas no frontend', () => {
+            window.log.debug('[storage]', 'Aulas carregadas', aulasCarregadas);
+        });
 
         if (dadosConfig) {
             atualizarLimitesGrade({
