@@ -5,6 +5,7 @@ node_modules/
 graphify-out/
 *.zip
 *.ps1
+.vercel
 
 # Variáveis de ambiente locais (NUNCA versionar)
 .env
