@@ -276,6 +276,37 @@ test('atualizarAgendamento com googleCalendarEventId existente usa updateEventIn
   }
 });
 
+test('pushEventToGoogle rejeita evento cancelado do Google como falha, nao como sucesso', async () => {
+  const agendamento = {
+    id: 'ag-cancelado-1',
+    data: '2026-08-29',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipo: 'aula'
+  };
+  const googleCalendarEventId = gcalSyncService.buildDeterministicGoogleEventId('joao@example.com', agendamento);
+  const harness = criarHarnessGoogleCalendar({
+    fetchHandler(url, options) {
+      if ((options.method || 'GET') === 'POST') {
+        return criarRespostaTexto(409, 'Conflict');
+      }
+      if ((options.method || 'GET') === 'GET') {
+        return criarRespostaJson(200, { id: googleCalendarEventId, status: 'cancelled' });
+      }
+      return criarRespostaJson(200, {});
+    }
+  });
+
+  try {
+    await assert.rejects(
+      () => gcalSyncService.pushEventToGoogle('joao@example.com', agendamento),
+      (error) => error && error.statusCode === 409
+    );
+  } finally {
+    harness.restore();
+  }
+});
+
 test('atualizarAgendamento grava marca de pendencia quando a chamada ao Google falha', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
@@ -328,6 +359,52 @@ test('atualizarAgendamento grava marca de pendencia quando a chamada ao Google f
     assert.equal(typeof res.body.agendamento.gcalSyncPendingAt, 'string');
     assert.equal(updatesMongo.length, 2);
     assert.equal(typeof updatesMongo[1].update.$set.gcalSyncPendingAt, 'string');
+  } finally {
+    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+    delete require.cache[controllerPath];
+  }
+});
+
+test('atualizarAgendamento preserva 200 mesmo quando a persistencia da marca falha', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.updateEventInGoogle = async () => {
+      const error = new Error('timeout no Google');
+      error.statusCode = 504;
+      throw error;
+    };
+    Agendamento.findOne = () => ({
+      lean: async () => ({ gcalSyncPendingTentativas: 2 })
+    });
+    Agendamento.findOneAndUpdate = async () => {
+      const error = new Error('mongo falhou');
+      error.statusCode = 500;
+      throw error;
+    };
+
+    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await atualizarAgendamento({
+      params: { id: 'ag-falha-persistencia-1' },
+      body: {
+        id: 'ag-falha-persistencia-1',
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula'
+      },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.gcalSyncFailed, true);
   } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
@@ -478,6 +555,53 @@ test('portao 2.0: campo novo atravessa PUT e GET, strict false persiste e ausenc
   }
 });
 
+test('storage remove gcalSyncPendingAt da carga remota para evitar deadlock no estado local', async () => {
+  const context = carregarStorageHarness();
+  const agendamentoRemoto = {
+    id: 'ag-local-1',
+    data: '2026-08-29',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipo: 'aula',
+    gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+    gcalSyncPendingTentativas: 2
+  };
+
+  context.window.googleIdentity = {
+    isSignedIn: () => true,
+    getIdToken: () => 'token-test'
+  };
+  context.apiFetchBackend = async (url, options = {}) => {
+    const method = options.method || 'GET';
+
+    if (method === 'GET' && url.endsWith('/alunos')) {
+      return criarRespostaJson(200, []);
+    }
+    if (method === 'GET' && url.endsWith('/agendamentos')) {
+      return criarRespostaJson(200, [agendamentoRemoto]);
+    }
+    if (method === 'GET' && url.includes('/configuracao')) {
+      return criarRespostaJson(200, { horaInicio: '06:00', horaFim: '22:00' });
+    }
+    if (method === 'GET' && url.endsWith('/bloqueios-externos')) {
+      return criarRespostaJson(200, []);
+    }
+    if (method === 'GET' && url.endsWith('/reposicoes')) {
+      return criarRespostaJson(200, []);
+    }
+    if (method === 'PUT' && url.includes('/agendamentos/')) {
+      return criarRespostaJson(200, { ...agendamentoRemoto });
+    }
+    return criarRespostaJson(200, {});
+  };
+
+  await context.carregarDados({ forcarRender: false, forcarRemoto: true, silenciosoUI: true });
+
+  assert.equal(context.window.aulas[0].gcalSyncPendingAt, undefined);
+  assert.equal(context.window.aulas[0].gcalSyncPendingTentativas, undefined);
+  assert.equal(context.localStorage.getItem('personal_aulas').includes('gcalSyncPendingAt'), false);
+});
+
 test('storage mescla googleCalendarEventId local apos POST do agendamento', async () => {
   const context = carregarStorageHarness();
   const agendamentosLocais = [{
@@ -506,6 +630,47 @@ test('storage mescla googleCalendarEventId local apos POST do agendamento', asyn
 
   assert.equal(resposta.ok, true);
   assert.equal(agendamentosLocais[0].googleCalendarEventId, 'evt-local-1');
+});
+
+test('storage para de reemitir PUT quando a pendencia atinge o teto de tentativas', async () => {
+  const context = carregarStorageHarness();
+  const agendamentosLocais = [{
+    id: 'ag-terminal-1',
+    data: '2026-08-29',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipo: 'aula',
+    googleCalendarEventId: 'evt-terminal-1'
+  }];
+  let putCalls = 0;
+
+  context.apiFetchBackend = async (url, options = {}) => {
+    const method = options.method || 'GET';
+
+    if (method === 'GET') {
+      return criarRespostaJson(200, [{
+        id: 'ag-terminal-1',
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-terminal-1',
+        gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+        gcalSyncPendingTentativas: 5
+      }]);
+    }
+
+    if (method === 'PUT') {
+      putCalls += 1;
+      return criarRespostaJson(200, { ...agendamentosLocais[0] });
+    }
+
+    return criarRespostaJson(200, {});
+  };
+
+  await context._sincronizarAgendamentosViaCRUD(agendamentosLocais, 8000);
+
+  assert.equal(putCalls, 0);
 });
 
 test('convergencia: apos limpar a pendencia, sync seguinte nao reemite PUT adicional', async () => {

@@ -1306,6 +1306,18 @@ async function pushEventToGoogle(ownerEmail, agendamento) {
     }
 
     criado = await fetchGoogleEventById(oauth2Client, calendarioId, googleCalendarEventId);
+    if (criado && criado.status === 'cancelled') {
+      const cancelledError = new Error(`Google Calendar event ${googleCalendarEventId} is cancelled and cannot be reused.`);
+      cancelledError.statusCode = 409;
+      cancelledError.googleCalendarEventId = googleCalendarEventId;
+      cancelledError.event = criado;
+      console.warn('[GcalSync] Evento do Google Calendar existente foi encontrado cancelado; tratamos como falha para reprocessamento.', {
+        ownerEmail,
+        googleCalendarEventId,
+        status: criado && criado.status ? criado.status : null
+      });
+      throw cancelledError;
+    }
   }
 
   return {

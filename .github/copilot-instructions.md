@@ -231,30 +231,37 @@ que pareçam pequenas:
 - Teste novo precisa ser provado por mutação: se o fix for revertido, o teste deve
   falhar. Teste que passa no código antigo não é cobertura.
 
-## 11. Git — o agente não usa git
+## 11. it — política de branch
 
-**O agente não executa nenhum comando git que modifique o repositório.**
+O agente pode executar **duas** operações git, e somente após confirmação explícita do dono:
 
-Proibidos: `add`, `commit`, `branch`, `checkout`, `switch`, `merge`, `rebase`,
-`push`, `pull`, `stash`, `reset`, `restore`, `revert`, `cherry-pick`, `tag`.
+- `git fetch origin`
+- `git checkout -b <nome> origin/main`
 
-Permitidos, apenas leitura, e só quando o prompt pedir: `git status`, `git log`,
-`git diff`, `git branch --show-current`.
+Proibido: commit, push, merge, rebase, `reset`, `restore`, `stash`, `checkout` de arquivo,
+tag, alteração de `.git/config`.
 
-O agente **edita arquivos e para**. A branch é criada pelo usuário **antes** de o
-prompt rodar. Estagiar, commitar, publicar a branch e abrir o pull request é
-responsabilidade exclusiva do usuário, feita pelo VS Code.
+**No início de toda rodada**, antes de escrever qualquer arquivo, o agente pergunta:
 
-Ao concluir qualquer tarefa, o agente deve:
+> Deseja que eu crie uma nova branch a partir da `main`, ou prefere continuar na branch
+> atual?
 
-- listar os arquivos que alterou;
-- dizer explicitamente que as alterações estão **na working tree, não commitadas**;
-- relatar o que encontrou e **não** alterou.
+Informando: branch atual, se há alterações não commitadas, e um nome sugerido. Sem indicar
+opção recomendada.
 
-**Motivo.** Commit feito pelo agente no terminal esvazia o painel Source Control
-do VS Code, o que torna a mudança invisível na revisão. Em três rodadas
-consecutivas isso levou trabalho direto para a `main` sem revisão e produziu pull
-requests vazios. A regra existe para devolver a etapa de revisão ao usuário.
+**A pergunta é pré-condição, não tarefa.** Ler código enquanto espera é permitido; escrever
+não. Após a resposta, o agente **continua no mesmo turno** até concluir a rodada. Encerrar
+o turno tendo apenas resolvido a questão da branch é falha.
 
-**Convenção de prefixo de branch** (criada pelo usuário, informativa para o agente):
-`feat/` funcionalidade nova · `fix/` correção ou ajuste · `docs/` só documentação.
+**Resposta ausente ou ambígua:** perguntar de novo. Nunca presumir a escolha do dono.
+
+**Working tree sujo + pedido de branch nova:** parar e relatar. A decisão é do dono.
+
+Nome: `<tipo>/<escopo-curto>`, com `tipo` em `fix`, `feat`, `chore`, `docs`, `diag`,
+`refactor`. O relatório registra a branch usada.
+
+### Por que a restrição existe
+
+Sync com Google Calendar e escrita no Mongo de produção envolvem **estado remoto que
+`git revert` não desfaz**. A trilha de commits precisa ser inteiramente do dono, para que
+exista um ponto de retorno confiável quando o estado externo divergir do código.

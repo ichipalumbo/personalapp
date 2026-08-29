@@ -15,6 +15,8 @@ const API_TIMEOUT_MS = 8000;
 const SLEEP_MODE_THRESHOLD_MS = 3000;
 const FINANCAS_CACHE_KEY = 'personal_financas_cache';
 const REPOSICOES_CACHE_KEY = 'personal_reposicoes';
+const GCAL_SYNC_PENDING_FIELDS = ['gcalSyncPendingAt', 'gcalSyncPendingTentativas'];
+const GCAL_SYNC_PENDING_MAX_TENTATIVAS = 5;
 
 // [TAG-STORAGE-VERCEL-PING] Warm-up para cold start da Vercel; em ambiente local e inofensivo. Fire-and-forget, sem await.
 fetch(APP_API_CONFIG.apiRootUrl).catch(() => {});
@@ -493,6 +495,35 @@ function _normalizarAgendamentoParaComparacao(agendamento) {
     return _ordenarChavesRecursivamente(copia);
 }
 
+function _removerCamposPendenciaGcalDoAgendamento(agendamento) {
+    if (!agendamento || typeof agendamento !== 'object') {
+        return agendamento;
+    }
+
+    for (const campo of GCAL_SYNC_PENDING_FIELDS) {
+        delete agendamento[campo];
+    }
+
+    return agendamento;
+}
+
+function _removerCamposPendenciaGcalDaLista(agendamentos) {
+    if (!Array.isArray(agendamentos)) {
+        return [];
+    }
+
+    return agendamentos.map((agendamento) => _removerCamposPendenciaGcalDoAgendamento(agendamento));
+}
+
+function _agendamentoEmEstadoTerminal(agendamento) {
+    if (!agendamento || typeof agendamento !== 'object') {
+        return false;
+    }
+
+    const tentativas = Number(agendamento.gcalSyncPendingTentativas);
+    return Number.isFinite(tentativas) && tentativas >= GCAL_SYNC_PENDING_MAX_TENTATIVAS;
+}
+
 function _agendamentosSaoIguais(agendamentoA, agendamentoB) {
     try {
         return JSON.stringify(_normalizarAgendamentoParaComparacao(agendamentoA))
@@ -624,7 +655,7 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
 
     const agendamentosRemotos = await respostaLista.json().catch(() => []);
     const listaRemota = Array.isArray(agendamentosRemotos) ? agendamentosRemotos : [];
-    const listaLocal = Array.isArray(agendamentosLocais) ? agendamentosLocais : [];
+    const listaLocal = _removerCamposPendenciaGcalDaLista(Array.isArray(agendamentosLocais) ? agendamentosLocais : []);
 
     const remotoPorId = new Map(listaRemota.map((agendamento) => [agendamento.id, agendamento]));
     const localPorId = new Map(listaLocal.map((agendamento) => [agendamento.id, agendamento]));
@@ -661,6 +692,11 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                     window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
                 }
             }
+            continue;
+        }
+
+        const remotoEmEstadoTerminal = _agendamentoEmEstadoTerminal(remoto);
+        if (remotoEmEstadoTerminal) {
             continue;
         }
 
@@ -823,7 +859,7 @@ async function carregarDados(opcoes = {}) {
                 || corOriginal.nome !== alunoNormalizado.corObjetivo.nome
                 || corOriginal.hex !== alunoNormalizado.corObjetivo.hex;
         });
-        const listaAulasAPI = Array.isArray(dadosAgendamentos) ? dadosAgendamentos : [];
+        const listaAulasAPI = _removerCamposPendenciaGcalDaLista(Array.isArray(dadosAgendamentos) ? dadosAgendamentos : []);
         const listaReposicoesAPI = Array.isArray(dadosReposicoes) ? dadosReposicoes : [];
         // [TAG-STORAGE-REPOSICOES-PENDENTES] A fila do painel é só pendente: agendada/realizada/expirada já saíram do fluxo de ação e contam duas vezes se forem listadas aqui.
         const reposicoesPendentes = listaReposicoesAPI
@@ -883,12 +919,13 @@ async function carregarDados(opcoes = {}) {
             const bloqueiosMapeados = resBloqueiosExt
                 .map(mapearBloqueioExterno)
                 .filter(b => b !== null); // Remove bloqueios mal formados
-            
+             
             if (bloqueiosMapeados.length > 0) {
                 aulasParaCarregar = listaAulasAPI.concat(bloqueiosMapeados);
                 window.log.info('[storage]', 'Bloqueios externos carregados do MongoDB.', { total: bloqueiosMapeados.length });
             }
         }
+        aulasParaCarregar = _removerCamposPendenciaGcalDaLista(aulasParaCarregar);
         atualizarAlunos(listaAlunosAPI);
         atualizarAulas(aulasParaCarregar);
 
@@ -908,9 +945,11 @@ async function carregarDados(opcoes = {}) {
             avulsas: totalAvulsas,
             externos: totalExternos
         });
-        window.log.grupo('[storage] Detalhe de aulas carregadas no frontend', () => {
-            window.log.debug('[storage]', 'Aulas carregadas', aulasCarregadas);
-        });
+        if (window.log && typeof window.log.grupo === 'function') {
+            window.log.grupo('[storage] Detalhe de aulas carregadas no frontend', () => {
+                window.log.debug('[storage]', 'Aulas carregadas', aulasCarregadas);
+            });
+        }
 
         if (dadosConfig) {
             atualizarLimitesGrade({
@@ -1075,7 +1114,7 @@ async function salvarDados(silencioso = false) {
 
 function carregarDadosDoLocalStorage() {
     const backupAlunos = _parseJSONSeguro(localStorage.getItem('personal_alunos'), []);
-    const backupAulas = _parseJSONSeguro(localStorage.getItem('personal_aulas'), []);
+    const backupAulas = _removerCamposPendenciaGcalDaLista(_parseJSONSeguro(localStorage.getItem('personal_aulas'), []));
     const backupReposicoes = _parseJSONSeguro(localStorage.getItem(REPOSICOES_CACHE_KEY), []);
     const backupGrade = _parseJSONSeguro(localStorage.getItem('personal_limitesGrade'), { inicio: '06:00', fim: '22:00' });
 

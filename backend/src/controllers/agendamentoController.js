@@ -10,6 +10,8 @@ const {
 } = require('../services/gcalSyncService');
 
 const GCAL_SYNC_PENDING_FIELD = 'gcalSyncPendingAt';
+const GCAL_SYNC_PENDING_ATTEMPTS_FIELD = 'gcalSyncPendingTentativas';
+const GCAL_SYNC_PENDING_MAX_TENTATIVAS = 5;
 
 function responderErroAgendamento(res, err, contexto) {
   return responderErro(res, err, contexto, Agendamento, 'AgendamentoController');
@@ -17,6 +19,27 @@ function responderErroAgendamento(res, err, contexto) {
 
 function limparPayloadAgendamento(payload) {
   return limparPayload(payload);
+}
+
+async function obterAgendamentoPersistido(ownerEmail, id, campos) {
+  const consulta = await Agendamento.findOne({ ownerEmail, id });
+
+  if (!consulta) {
+    return null;
+  }
+
+  if (typeof consulta.lean === 'function') {
+    return await consulta.lean();
+  }
+
+  if (typeof consulta.select === 'function') {
+    const comSelecao = campos ? consulta.select(campos) : consulta;
+    if (comSelecao && typeof comSelecao.lean === 'function') {
+      return await comSelecao.lean();
+    }
+  }
+
+  return consulta;
 }
 
 function normalizarAgendamentoParaResposta(agendamento) {
@@ -37,6 +60,7 @@ function limparMarcaPendenteDoAgendamento(agendamento) {
   }
 
   delete agendamento[GCAL_SYNC_PENDING_FIELD];
+  delete agendamento[GCAL_SYNC_PENDING_ATTEMPTS_FIELD];
   return agendamento;
 }
 
@@ -49,7 +73,10 @@ async function persistirResultadoGcal(ownerEmail, agendamentoId, resultadoGCal, 
     ? String(resultadoGCal.googleCalendarEventId)
     : null;
   const update = {
-    $unset: { [GCAL_SYNC_PENDING_FIELD]: 1 }
+    $unset: {
+      [GCAL_SYNC_PENDING_FIELD]: 1,
+      [GCAL_SYNC_PENDING_ATTEMPTS_FIELD]: 1
+    }
   };
 
   if (googleCalendarEventId) {
@@ -77,13 +104,42 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
   const pendenciaMarcadaEm = new Date().toISOString();
 
   if (ownerEmail && agendamentoId) {
-    await Agendamento.findOneAndUpdate(
-      { ownerEmail, id: agendamentoId },
-      { $set: { [GCAL_SYNC_PENDING_FIELD]: pendenciaMarcadaEm } },
-      { new: true }
-    );
-    if (dados && typeof dados === 'object') {
-      dados[GCAL_SYNC_PENDING_FIELD] = pendenciaMarcadaEm;
+    try {
+      let agendamentoAtual = await Agendamento.findOne({ ownerEmail, id: agendamentoId });
+      if (agendamentoAtual && typeof agendamentoAtual.lean === 'function') {
+        agendamentoAtual = await agendamentoAtual.lean();
+      } else if (agendamentoAtual && typeof agendamentoAtual.select === 'function') {
+        const consulta = agendamentoAtual.select(GCAL_SYNC_PENDING_ATTEMPTS_FIELD);
+        if (consulta && typeof consulta.lean === 'function') {
+          agendamentoAtual = await consulta.lean();
+        }
+      }
+
+      const tentativasAtuais = Number(agendamentoAtual && agendamentoAtual[GCAL_SYNC_PENDING_ATTEMPTS_FIELD]) || 0;
+      const tentativasNova = Math.min(tentativasAtuais + 1, GCAL_SYNC_PENDING_MAX_TENTATIVAS);
+
+      await Agendamento.findOneAndUpdate(
+        { ownerEmail, id: agendamentoId },
+        {
+          $set: {
+            [GCAL_SYNC_PENDING_FIELD]: pendenciaMarcadaEm,
+            [GCAL_SYNC_PENDING_ATTEMPTS_FIELD]: tentativasNova
+          }
+        },
+        { new: true }
+      );
+
+      if (dados && typeof dados === 'object') {
+        dados[GCAL_SYNC_PENDING_FIELD] = pendenciaMarcadaEm;
+        dados[GCAL_SYNC_PENDING_ATTEMPTS_FIELD] = tentativasNova;
+      }
+    } catch (persistErr) {
+      console.warn('[AgendamentoController] Falha ao persistir marca de pendencia do Google Calendar. Respondendo 200 mesmo assim.', {
+        contexto,
+        agendamentoId,
+        ownerEmail,
+        error: persistErr && persistErr.message ? persistErr.message : String(persistErr)
+      });
     }
   }
 
@@ -217,7 +273,7 @@ async function criarAgendamento(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const payload = limparPayloadAgendamento(req.body);
-    const existente = await Agendamento.findOne({ ownerEmail, id: payload.id }).select('googleCalendarEventId').lean();
+    const existente = await obterAgendamentoPersistido(ownerEmail, payload.id, 'googleCalendarEventId');
     const googleCalendarEventIdExistente = existente && existente.googleCalendarEventId ? String(existente.googleCalendarEventId) : null;
 
     if (!payload.id) {
@@ -266,7 +322,7 @@ async function criarAgendamento(req, res) {
       try {
         const ownerEmail = getOwnerEmailOrThrow(req);
         const payload = limparPayloadAgendamento(req.body);
-        const existente = await Agendamento.findOne({ ownerEmail, id: payload.id }).select('googleCalendarEventId').lean();
+        const existente = await obterAgendamentoPersistido(ownerEmail, payload.id, 'googleCalendarEventId');
         const googleCalendarEventIdExistente = existente && existente.googleCalendarEventId ? String(existente.googleCalendarEventId) : null;
 
         const agendamento = await Agendamento.findOneAndUpdate(
@@ -315,7 +371,7 @@ async function atualizarAgendamento(req, res) {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const { id } = req.params;
     const payload = limparPayloadAgendamento(req.body);
-    const existente = await Agendamento.findOne({ ownerEmail, id }).select('googleCalendarEventId').lean();
+    const existente = await obterAgendamentoPersistido(ownerEmail, id, 'googleCalendarEventId');
     const googleCalendarEventIdExistente = existente && existente.googleCalendarEventId ? String(existente.googleCalendarEventId) : null;
 
     if (payload.id && payload.id !== id) {
@@ -360,7 +416,32 @@ async function atualizarAgendamento(req, res) {
       );
     }
   } catch (err) {
-    responderErroAgendamento(res, err, 'atualizar agendamento');
+    try {
+      const ownerEmail = getOwnerEmailOrThrow(req);
+      const payload = limparPayloadAgendamento(req.body);
+      const dadosFallback = { ...payload, id: req.params && req.params.id ? req.params.id : payload.id, ownerEmail };
+      const dadosParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, dadosFallback);
+
+      try {
+        if (dadosParaGCal && dadosParaGCal.googleCalendarEventId) {
+          await updateEventInGoogle(ownerEmail, montarPayloadGCal(dadosParaGCal));
+        } else {
+          await pushEventToGoogle(ownerEmail, montarPayloadGCal(dadosParaGCal));
+        }
+      } catch (gcalErr) {
+        return montarRespostaFalhaGcal(
+          res,
+          gcalErr,
+          'atualizar',
+          dadosParaGCal,
+          { ownerEmail, agendamentoId: dadosFallback.id }
+        );
+      }
+
+      return res.status(200).json(dadosParaGCal);
+    } catch (fallbackErr) {
+      responderErroAgendamento(res, fallbackErr, 'atualizar agendamento');
+    }
   }
 }
 
