@@ -9,6 +9,8 @@ const {
   deleteEventFromGoogle
 } = require('../services/gcalSyncService');
 
+const GCAL_SYNC_PENDING_FIELD = 'gcalSyncPendingAt';
+
 function responderErroAgendamento(res, err, contexto) {
   return responderErro(res, err, contexto, Agendamento, 'AgendamentoController');
 }
@@ -29,8 +31,61 @@ function normalizarAgendamentoParaResposta(agendamento) {
   return agendamento;
 }
 
-function montarRespostaFalhaGcal(res, err, contexto, dados) {
+function limparMarcaPendenteDoAgendamento(agendamento) {
+  if (!agendamento || typeof agendamento !== 'object') {
+    return agendamento;
+  }
+
+  delete agendamento[GCAL_SYNC_PENDING_FIELD];
+  return agendamento;
+}
+
+async function persistirResultadoGcal(ownerEmail, agendamentoId, resultadoGCal, agendamentoEmMemoria) {
+  if (!ownerEmail || !agendamentoId) {
+    return;
+  }
+
+  const googleCalendarEventId = resultadoGCal && resultadoGCal.googleCalendarEventId
+    ? String(resultadoGCal.googleCalendarEventId)
+    : null;
+  const update = {
+    $unset: { [GCAL_SYNC_PENDING_FIELD]: 1 }
+  };
+
+  if (googleCalendarEventId) {
+    update.$set = { googleCalendarEventId };
+  }
+
+  await Agendamento.findOneAndUpdate(
+    { ownerEmail, id: agendamentoId },
+    update,
+    { new: true }
+  );
+
+  if (agendamentoEmMemoria && typeof agendamentoEmMemoria === 'object') {
+    if (googleCalendarEventId) {
+      agendamentoEmMemoria.googleCalendarEventId = googleCalendarEventId;
+    }
+    limparMarcaPendenteDoAgendamento(agendamentoEmMemoria);
+  }
+}
+
+async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) {
   const statusCode = 200;
+  const ownerEmail = options && options.ownerEmail ? options.ownerEmail : null;
+  const agendamentoId = options && options.agendamentoId ? options.agendamentoId : (dados && dados.id ? dados.id : null);
+  const pendenciaMarcadaEm = new Date().toISOString();
+
+  if (ownerEmail && agendamentoId) {
+    await Agendamento.findOneAndUpdate(
+      { ownerEmail, id: agendamentoId },
+      { $set: { [GCAL_SYNC_PENDING_FIELD]: pendenciaMarcadaEm } },
+      { new: true }
+    );
+    if (dados && typeof dados === 'object') {
+      dados[GCAL_SYNC_PENDING_FIELD] = pendenciaMarcadaEm;
+    }
+  }
 
   console.error(`[AgendamentoController] Falha ao sincronizar com Google Calendar durante ${contexto}:`, err.message);
   if (err && err.stack) {
@@ -194,24 +249,25 @@ async function criarAgendamento(req, res) {
         resultadoGCal = await pushEventToGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal));
       }
 
-      if (resultadoGCal && resultadoGCal.googleCalendarEventId) {
-        agendamento.googleCalendarEventId = resultadoGCal.googleCalendarEventId;
-        await Agendamento.findOneAndUpdate(
-          { ownerEmail, id: agendamento.id },
-          { $set: { googleCalendarEventId: resultadoGCal.googleCalendarEventId } },
-          { new: true }
-        );
-      }
+      await persistirResultadoGcal(ownerEmail, agendamento.id, resultadoGCal, agendamento);
 
       return res.status(200).json(normalizarAgendamentoParaResposta(agendamento));
     } catch (gcalErr) {
-      return montarRespostaFalhaGcal(res, gcalErr, 'criar', normalizarAgendamentoParaResposta(agendamento));
+      return montarRespostaFalhaGcal(
+        res,
+        gcalErr,
+        'criar',
+        normalizarAgendamentoParaResposta(agendamento),
+        { ownerEmail, agendamentoId: agendamento.id }
+      );
     }
   } catch (err) {
     if (err && err.code === 11000) {
       try {
         const ownerEmail = getOwnerEmailOrThrow(req);
         const payload = limparPayloadAgendamento(req.body);
+        const existente = await Agendamento.findOne({ ownerEmail, id: payload.id }).select('googleCalendarEventId').lean();
+        const googleCalendarEventIdExistente = existente && existente.googleCalendarEventId ? String(existente.googleCalendarEventId) : null;
 
         const agendamento = await Agendamento.findOneAndUpdate(
           { ownerEmail, id: payload.id },
@@ -219,7 +275,8 @@ async function criarAgendamento(req, res) {
             $set: {
               ...normalizarBloqueio(payload),
               id: payload.id,
-              ownerEmail
+              ownerEmail,
+              ...(googleCalendarEventIdExistente ? { googleCalendarEventId: googleCalendarEventIdExistente } : {})
             }
           },
           { new: true, upsert: true, runValidators: true }
@@ -229,19 +286,20 @@ async function criarAgendamento(req, res) {
         const agendamentoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, agendamentoParaGCalBase);
 
         try {
-          const resultadoGCal = await pushEventToGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal));
-          if (resultadoGCal && resultadoGCal.googleCalendarEventId) {
-            agendamento.googleCalendarEventId = resultadoGCal.googleCalendarEventId;
-            await Agendamento.findOneAndUpdate(
-              { ownerEmail, id: agendamento.id },
-              { $set: { googleCalendarEventId: resultadoGCal.googleCalendarEventId } },
-              { new: true }
-            );
-          }
+          const resultadoGCal = googleCalendarEventIdExistente
+            ? await updateEventInGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal))
+            : await pushEventToGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal));
+          await persistirResultadoGcal(ownerEmail, agendamento.id, resultadoGCal, agendamento);
 
           return res.status(200).json(normalizarAgendamentoParaResposta(agendamento));
         } catch (gcalErr) {
-          return montarRespostaFalhaGcal(res, gcalErr, 'criar', normalizarAgendamentoParaResposta(agendamento));
+          return montarRespostaFalhaGcal(
+            res,
+            gcalErr,
+            'criar',
+            normalizarAgendamentoParaResposta(agendamento),
+            { ownerEmail, agendamentoId: agendamento.id }
+          );
         }
       } catch (fallbackErr) {
         return responderErroAgendamento(res, fallbackErr, 'criar agendamento');
@@ -287,23 +345,19 @@ async function atualizarAgendamento(req, res) {
         resultadoGCal = await updateEventInGoogle(ownerEmail, montarPayloadGCal(atualizadoParaGCal));
       } else {
         resultadoGCal = await pushEventToGoogle(ownerEmail, montarPayloadGCal(atualizadoParaGCal));
-        if (resultadoGCal && resultadoGCal.googleCalendarEventId) {
-          atualizado.googleCalendarEventId = resultadoGCal.googleCalendarEventId;
-          await Agendamento.findOneAndUpdate(
-            { ownerEmail, id },
-            { $set: { googleCalendarEventId: resultadoGCal.googleCalendarEventId } },
-            { new: true }
-          );
-        }
       }
 
-      if (resultadoGCal && resultadoGCal.googleCalendarEventId && !atualizadoParaGCalBase.googleCalendarEventId) {
-        atualizadoParaGCalBase.googleCalendarEventId = resultadoGCal.googleCalendarEventId;
-      }
+      await persistirResultadoGcal(ownerEmail, id, resultadoGCal, atualizadoParaGCalBase);
 
       return res.json(atualizadoParaGCalBase);
     } catch (gcalErr) {
-      return montarRespostaFalhaGcal(res, gcalErr, 'atualizar', atualizadoParaGCal);
+      return montarRespostaFalhaGcal(
+        res,
+        gcalErr,
+        'atualizar',
+        atualizadoParaGCal,
+        { ownerEmail, agendamentoId: id }
+      );
     }
   } catch (err) {
     responderErroAgendamento(res, err, 'atualizar agendamento');

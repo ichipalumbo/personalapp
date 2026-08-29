@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { google } = require('googleapis');
 const Agendamento = require('../models/Agendamento');
@@ -10,6 +11,36 @@ const recurrenceHelpers = require('../../../assets/js/shared/recurrence-helpers'
 
 const GCAL_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const APP_ORIGIN = 'corepersonal';
+
+function buildDeterministicGoogleEventId(ownerEmail, agendamento) {
+  const normalizedOwnerEmail = normalizeEmail(ownerEmail);
+  const agendamentoId = agendamento && agendamento.id ? String(agendamento.id).trim() : '';
+
+  if (!normalizedOwnerEmail || !agendamentoId) {
+    const error = new Error('ownerEmail e agendamento.id são obrigatórios para derivar um id determinístico do Google Calendar.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const digest = crypto
+    .createHash('sha256')
+    .update(`${normalizedOwnerEmail}:${agendamentoId}`)
+    .digest('hex');
+
+  return `app${digest}`;
+}
+
+function isGoogleCalendarConflictError(error) {
+  const statusCode = error && (error.statusCode || error.status);
+  return statusCode === 409;
+}
+
+async function fetchGoogleEventById(oauth2Client, calendarioId, googleCalendarEventId) {
+  return calendarFetch(
+    oauth2Client,
+    `/calendars/${encodeURIComponent(calendarioId)}/events/${encodeURIComponent(googleCalendarEventId)}`
+  );
+}
 
 function isAppOwnedEvent(event) {
   const appOrigin = event && event.extendedProperties && event.extendedProperties.private
@@ -1256,16 +1287,29 @@ async function renewWebhookChannelForOwner(ownerEmail) {
 
 async function pushEventToGoogle(ownerEmail, agendamento) {
   const { connection, oauth2Client } = await getClientForOwner(ownerEmail);
-  const evento = montarEventoGoogle(agendamento);
+  const googleCalendarEventId = buildDeterministicGoogleEventId(ownerEmail, agendamento);
+  const evento = {
+    ...montarEventoGoogle(agendamento),
+    id: googleCalendarEventId
+  };
   const calendarioId = connection.calendarId || 'primary';
 
-  const criado = await calendarFetch(oauth2Client, `/calendars/${encodeURIComponent(calendarioId)}/events`, {
-    method: 'POST',
-    body: evento
-  });
+  let criado = null;
+  try {
+    criado = await calendarFetch(oauth2Client, `/calendars/${encodeURIComponent(calendarioId)}/events`, {
+      method: 'POST',
+      body: evento
+    });
+  } catch (error) {
+    if (!isGoogleCalendarConflictError(error)) {
+      throw error;
+    }
+
+    criado = await fetchGoogleEventById(oauth2Client, calendarioId, googleCalendarEventId);
+  }
 
   return {
-    googleCalendarEventId: criado && criado.id ? String(criado.id) : null,
+    googleCalendarEventId: criado && criado.id ? String(criado.id) : googleCalendarEventId,
     googleEvent: criado
   };
 }
@@ -1443,5 +1487,6 @@ module.exports = {
   montarEventoGoogle,
   montarRecurrence,
   montarTituloEvento,
+  buildDeterministicGoogleEventId,
   resolverDataISO
 };

@@ -502,6 +502,49 @@ function _agendamentosSaoIguais(agendamentoA, agendamentoB) {
     }
 }
 
+async function _lerPayloadCrudJson(resposta) {
+    if (!resposta || typeof resposta.clone !== 'function') {
+        return null;
+    }
+
+    try {
+        return await resposta.clone().json();
+    } catch (error) {
+        return { _erroParseJson: error };
+    }
+}
+
+function _extrairAgendamentoDoPayloadCrud(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    if (payload.agendamento && typeof payload.agendamento === 'object') {
+        return payload.agendamento;
+    }
+
+    if (payload.id) {
+        return payload;
+    }
+
+    return null;
+}
+
+function _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamentoLocal, payload) {
+    if (!agendamentoLocal || typeof agendamentoLocal !== 'object') {
+        return;
+    }
+
+    const agendamentoResposta = _extrairAgendamentoDoPayloadCrud(payload);
+    const googleCalendarEventId = agendamentoResposta && agendamentoResposta.googleCalendarEventId
+        ? String(agendamentoResposta.googleCalendarEventId)
+        : null;
+
+    if (googleCalendarEventId) {
+        agendamentoLocal.googleCalendarEventId = googleCalendarEventId;
+    }
+}
+
 async function _sincronizarAlunosViaCRUD(alunosLocais, timeoutMs) {
     const respostaLista = await apiFetchBackend(`${API_BASE_URL}/alunos`, {}, timeoutMs);
     if (!respostaLista.ok) {
@@ -602,19 +645,20 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                 return resCriar;
             }
 
-            if (typeof resCriar.clone === 'function') {
-                try {
-                    const payload = await resCriar.clone().json();
-                    if (payload && payload.gcalSyncFailed === true) {
-                        gcalSyncFailed = true;
-                        window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
-                    }
-                } catch (error) {
-                    window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em POST', {
-                        id: agendamento.id,
-                        status: resCriar.status,
-                        message: error && error.message ? error.message : String(error)
-                    });
+            const payloadCriar = await _lerPayloadCrudJson(resCriar);
+            if (payloadCriar && payloadCriar._erroParseJson) {
+                window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em POST', {
+                    id: agendamento.id,
+                    status: resCriar.status,
+                    message: payloadCriar._erroParseJson && payloadCriar._erroParseJson.message
+                        ? payloadCriar._erroParseJson.message
+                        : String(payloadCriar._erroParseJson)
+                });
+            } else if (payloadCriar) {
+                _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamento, payloadCriar);
+                if (payloadCriar.gcalSyncFailed === true) {
+                    gcalSyncFailed = true;
+                    window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
                 }
             }
             continue;
@@ -631,19 +675,20 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                 return resAtualizar;
             }
 
-            if (typeof resAtualizar.clone === 'function') {
-                try {
-                    const payload = await resAtualizar.clone().json();
-                    if (payload && payload.gcalSyncFailed === true) {
-                        gcalSyncFailed = true;
-                        window.log.warn('[sync]', 'Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
-                    }
-                } catch (error) {
-                    window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em PUT', {
-                        id: agendamento.id,
-                        status: resAtualizar.status,
-                        message: error && error.message ? error.message : String(error)
-                    });
+            const payloadAtualizar = await _lerPayloadCrudJson(resAtualizar);
+            if (payloadAtualizar && payloadAtualizar._erroParseJson) {
+                window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em PUT', {
+                    id: agendamento.id,
+                    status: resAtualizar.status,
+                    message: payloadAtualizar._erroParseJson && payloadAtualizar._erroParseJson.message
+                        ? payloadAtualizar._erroParseJson.message
+                        : String(payloadAtualizar._erroParseJson)
+                });
+            } else if (payloadAtualizar) {
+                _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamento, payloadAtualizar);
+                if (payloadAtualizar.gcalSyncFailed === true) {
+                    gcalSyncFailed = true;
+                    window.log.warn('[sync]', 'Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
                 }
             }
         }
