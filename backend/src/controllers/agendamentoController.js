@@ -23,21 +23,21 @@ function limparPayloadAgendamento(payload) {
 }
 
 async function obterAgendamentoPersistido(ownerEmail, id, campos) {
-  const consulta = await Agendamento.findOne({ ownerEmail, id });
+  const consulta = Agendamento.findOne({ ownerEmail, id });
 
   if (!consulta) {
     return null;
   }
 
-  if (typeof consulta.lean === 'function') {
-    return await consulta.lean();
+  if (campos && typeof consulta.select === 'function') {
+    const consultaComSelecao = consulta.select(campos);
+    if (consultaComSelecao && typeof consultaComSelecao.lean === 'function') {
+      return await consultaComSelecao.lean();
+    }
   }
 
-  if (typeof consulta.select === 'function') {
-    const comSelecao = campos ? consulta.select(campos) : consulta;
-    if (comSelecao && typeof comSelecao.lean === 'function') {
-      return await comSelecao.lean();
-    }
+  if (typeof consulta.lean === 'function') {
+    return await consulta.lean();
   }
 
   return consulta;
@@ -132,15 +132,17 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
 
   if (ownerEmail && agendamentoId) {
     try {
-      let agendamentoAtual = await Agendamento.findOne({ ownerEmail, id: agendamentoId });
-      if (agendamentoAtual && typeof agendamentoAtual.lean === 'function') {
-        agendamentoAtual = await agendamentoAtual.lean();
-      } else if (agendamentoAtual && typeof agendamentoAtual.select === 'function') {
-        const consulta = agendamentoAtual.select(GCAL_SYNC_PENDING_ATTEMPTS_FIELD);
-        if (consulta && typeof consulta.lean === 'function') {
-          agendamentoAtual = await consulta.lean();
-        }
-      }
+      const consultaBase = Agendamento.findOne({ ownerEmail, id: agendamentoId });
+      const consulta = consultaBase && typeof consultaBase.select === 'function'
+        ? consultaBase.select([
+          GCAL_SYNC_PENDING_FIELD,
+          GCAL_SYNC_PENDING_ATTEMPTS_FIELD
+        ])
+        : consultaBase;
+
+      let agendamentoAtual = await (consulta && typeof consulta.lean === 'function'
+        ? consulta.lean()
+        : consulta);
 
       const tentativasAtuais = Number(agendamentoAtual && agendamentoAtual[GCAL_SYNC_PENDING_ATTEMPTS_FIELD]) || 0;
       const tentativasNova = Math.min(tentativasAtuais + 1, GCAL_SYNC_PENDING_MAX_TENTATIVAS);
@@ -398,7 +400,7 @@ async function atualizarAgendamento(req, res) {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const { id } = req.params;
     const payload = limparPayloadAgendamento(req.body);
-    const existente = await obterAgendamentoPersistido(ownerEmail, id, 'googleCalendarEventId');
+    const existente = await obterAgendamentoPersistido(ownerEmail, id);
     const googleCalendarEventIdExistente = existente && existente.googleCalendarEventId ? String(existente.googleCalendarEventId) : null;
     const payloadNormalizado = normalizarBloqueio({ ...payload, id });
     const estavaEmEstadoTerminal = agendamentoEmEstadoTerminal(existente);
@@ -425,7 +427,10 @@ async function atualizarAgendamento(req, res) {
     const atualizadoParaGCalBase = normalizarAgendamentoParaResposta(atualizado);
 
     if (estavaEmEstadoTerminal) {
-      return res.json(atualizadoParaGCalBase);
+      return res.json({
+        ...atualizadoParaGCalBase,
+        gcalSyncPausado: true
+      });
     }
 
     const atualizadoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, atualizadoParaGCalBase);

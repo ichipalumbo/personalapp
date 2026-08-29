@@ -207,8 +207,14 @@ test('atualizarAgendamento enriquece o payload do Google com alunoNome e objetiv
    };
 
    Agendamento.findOne = () => ({
-     select: () => ({
-       lean: async () => ({ googleCalendarEventId: 'evt-123' })
+     lean: async () => ({
+       id: 'ag-200',
+       alunoId: 'al-111',
+       data: '2026-08-25',
+       horarioInicio: '09:00',
+       horarioFim: '10:00',
+       tipo: 'aula',
+       googleCalendarEventId: 'evt-123'
      })
    });
    Agendamento.findOneAndUpdate = async (query, update, options) => {

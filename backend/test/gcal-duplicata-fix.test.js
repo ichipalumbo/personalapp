@@ -228,8 +228,13 @@ test('atualizarAgendamento com googleCalendarEventId existente usa updateEventIn
       return { googleCalendarEventId: 'evt-existente-1' };
     };
     Agendamento.findOne = () => ({
-      select: () => ({
-        lean: async () => ({ googleCalendarEventId: 'evt-existente-1' })
+      lean: async () => ({
+        id: 'ag-200',
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-existente-1'
       })
     });
     Agendamento.findOneAndUpdate = async (query, update) => {
@@ -269,6 +274,197 @@ test('atualizarAgendamento com googleCalendarEventId existente usa updateEventIn
     assert.equal(res.body.googleCalendarEventId, 'evt-existente-1');
   } finally {
     gcalSyncService.pushEventToGoogle = originalPushEventToGoogle;
+    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+    delete require.cache[controllerPath];
+  }
+});
+
+test('criarAgendamento honra a projeção de googleCalendarEventId ao reusar evento existente', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalPushEventToGoogle = gcalSyncService.pushEventToGoogle;
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.pushEventToGoogle = async () => ({ googleCalendarEventId: 'evt-criar-projetado' });
+    gcalSyncService.updateEventInGoogle = async () => ({ googleCalendarEventId: 'evt-criar-projetado' });
+    let camposProjetados = null;
+    Agendamento.findOne = () => ({
+      select: (campos) => {
+        camposProjetados = campos;
+        return {
+          lean: async () => ({ googleCalendarEventId: 'evt-criar-projetado' })
+        };
+      }
+    });
+    Agendamento.findOneAndUpdate = async (_query, update) => {
+      assert.equal(update.$set.googleCalendarEventId, 'evt-criar-projetado');
+      return { id: 'ag-criar-projetado', ...update.$set };
+    };
+
+    const { criarAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await criarAgendamento({
+      body: {
+        id: 'ag-criar-projetado',
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula'
+      },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.equal(camposProjetados, 'googleCalendarEventId');
+    assert.equal(res.body.googleCalendarEventId, 'evt-criar-projetado');
+  } finally {
+    gcalSyncService.pushEventToGoogle = originalPushEventToGoogle;
+    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+    delete require.cache[controllerPath];
+  }
+});
+
+test('montarRespostaFalhaGcal não vaza agendamentoAtual no escopo global', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+  delete globalThis.agendamentoAtual;
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.updateEventInGoogle = async () => {
+      throw new Error('falha de teste do Google');
+    };
+    Agendamento.findOne = () => ({
+      select: () => ({
+        lean: async () => ({
+          id: 'ag-global-1',
+          ownerEmail: 'joao@example.com',
+          googleCalendarEventId: 'evt-global-1',
+          gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+          gcalSyncPendingTentativas: 3,
+          data: '2026-08-29',
+          horarioInicio: '09:00',
+          horarioFim: '10:00',
+          tipo: 'aula'
+        })
+      }),
+      lean: async () => ({
+        id: 'ag-global-1',
+        ownerEmail: 'joao@example.com',
+        googleCalendarEventId: 'evt-global-1',
+        gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+        gcalSyncPendingTentativas: 3,
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula'
+      })
+    });
+    Agendamento.findOneAndUpdate = async (_query, update) => ({
+      id: 'ag-global-1',
+      googleCalendarEventId: 'evt-global-1',
+      ...update.$set
+    });
+
+    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await atualizarAgendamento({
+      params: { id: 'ag-global-1' },
+      body: {
+        id: 'ag-global-1',
+        data: '2026-08-29',
+        horarioInicio: '15:00',
+        horarioFim: '16:00',
+        tipo: 'aula'
+      },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.equal(typeof globalThis.agendamentoAtual, 'undefined');
+    assert.equal(res.body.gcalSyncFailed, true);
+  } finally {
+    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+    delete globalThis.agendamentoAtual;
+    delete require.cache[controllerPath];
+  }
+});
+
+test('atualizarAgendamento preserva o documento completo quando o item está em estado terminal e o mock honora o contrato do Mongoose', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+  let selectChamado = false;
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.updateEventInGoogle = async () => {
+      throw new Error('não deve chamar o Google quando o item está em estado terminal');
+    };
+    Agendamento.findOne = () => ({
+      select: (campos) => {
+        selectChamado = true;
+        assert.deepEqual(campos, ['gcalSyncPendingAt', 'gcalSyncPendingTentativas']);
+        return {
+          lean: async () => ({
+            gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+            gcalSyncPendingTentativas: 5
+          })
+        };
+      },
+      lean: async () => ({
+        id: 'ag-terminal-1',
+        ownerEmail: 'joao@example.com',
+        googleCalendarEventId: 'evt-terminal-1',
+        gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+        gcalSyncPendingTentativas: 5,
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula'
+      })
+    });
+    Agendamento.findOneAndUpdate = async (_query, update) => {
+      assert.equal(update.$set.gcalSyncPendingTentativas, 0);
+      return {
+        id: 'ag-terminal-1',
+        googleCalendarEventId: 'evt-terminal-1',
+        gcalSyncPendingTentativas: 0,
+        data: '2026-08-29',
+        horarioInicio: '15:00',
+        horarioFim: '16:00',
+        tipo: 'aula'
+      };
+    };
+
+    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await atualizarAgendamento({
+      params: { id: 'ag-terminal-1' },
+      body: {
+        id: 'ag-terminal-1',
+        data: '2026-08-29',
+        horarioInicio: '15:00',
+        horarioFim: '16:00',
+        tipo: 'aula'
+      },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.equal(selectChamado, false);
+    assert.equal(res.body.gcalSyncPausado, true);
+    assert.equal(res.body.horarioInicio, '15:00');
+  } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
@@ -322,8 +518,14 @@ test('atualizarAgendamento grava marca de pendencia quando a chamada ao Google f
       throw error;
     };
     Agendamento.findOne = () => ({
-      select: () => ({
-        lean: async () => ({ googleCalendarEventId: 'evt-serie-1' })
+      lean: async () => ({
+        id: 'ag-serie-1',
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-serie-1',
+        excecoes: ['29/08/2026']
       })
     });
     Agendamento.findOneAndUpdate = async (query, update) => {
@@ -426,8 +628,15 @@ test('atualizarAgendamento limpa marca de pendencia quando o Google responde com
       googleCalendarEventId: 'evt-serie-1'
     });
     Agendamento.findOne = () => ({
-      select: () => ({
-        lean: async () => ({ googleCalendarEventId: 'evt-serie-1' })
+      lean: async () => ({
+        id: 'ag-serie-1',
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-serie-1',
+        gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+        gcalSyncPendingTentativas: 1
       })
     });
     Agendamento.findOneAndUpdate = async (query, update) => {
@@ -492,8 +701,13 @@ test('portao 2.0: campo novo atravessa PUT e GET, strict false persiste e ausenc
       googleCalendarEventId: 'evt-portao-1'
     });
     Agendamento.findOne = () => ({
-      select: () => ({
-        lean: async () => ({ googleCalendarEventId: 'evt-portao-1' })
+      lean: async () => ({
+        id: 'ag-portao-1',
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-portao-1'
       })
     });
     Agendamento.findOneAndUpdate = async (_query, update) => {

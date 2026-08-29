@@ -178,6 +178,25 @@ Cadeia completa de uma alteração:
 UI → salvarDados → diff → PUT /agendamentos/:id → updateEventInGoogle → Google
 ```
 
+### 3.4 Pendência server-side e teto de re-tentativa
+
+O mecanismo de pendência do Google é **server-side**: os campos
+`gcalSyncPendingAt` e `gcalSyncPendingTentativas` são persistidos no Mongo e nunca entram
+no estado local do frontend. A assimetria é deliberada: `listaLocal` remove os campos
+antes do diff, mas `listaRemota` não remove — é ela que dispara o `PUT` quando o item
+local diverge do remoto.
+
+Quando a chamada ao Google falha, o backend grava:
+
+- `gcalSyncPendingAt`: timestamp do momento da falha;
+- `gcalSyncPendingTentativas`: `min(tentativasAtuais + 1, 5)`.
+
+O teto é 5 tentativas. O limite vale apenas para a **chamada ao Google**: a gravação do
+agendamento no Mongo ocorre antes e continua incondicional. Se o item estiver em estado
+terminal, a rota ainda salva a edição do usuário, zera o contador para `0` e responde com
+`gcalSyncPausado: true`, mas não chama o Google naquele request. O próximo ciclo pode
+reabrir a janela de sincronização sem perder a alteração.
+
 ---
 
 ## 4. Escrita (app → Google)
@@ -419,6 +438,11 @@ Guarda `titulo`, `data`, `horarioInicio`, `horarioFim`, `fullDay`, `semanaISO`.
 Mongo** e a API confirma sucesso de persistência, mas sinaliza a falha externa do
 Google para aviso do usuário e auditoria.
 
+Quando a chamada ao Google foi pulada porque o item está em estado terminal, a rota
+responde **HTTP 200** com `gcalSyncPausado: true` e sem reutilizar `gcalSyncFailed`.
+Esses são estados distintos: a falha transitória é `gcalSyncFailed`, a pausa por teto é
+`gcalSyncPausado`.
+
 Consequência a jusante: `salvarDados` não transforma isso em `{ ok: false,
 motivo: 'falha_remota' }`; o gate de reposição não é mais bloqueado por
 indisponibilidade do Google. Ver 9.4.
@@ -439,7 +463,7 @@ indisponibilidade do Google. Ver 9.4.
 | 8   | Como o app reconhece o que é dele?    | `extendedProperties.private.app_origin`                                 |
 | 9   | Timezone                              | `dateTime` local + `timeZone`; `UNTIL` em UTC quando necessário          |
 | 10  | Instância enviada para reposição      | Desaparece do dia original no Google via `EXDATE`/instância (2.4)       |
-| 11  | Falha do Google reverte a gravação?   | **Não.** Grava no Mongo e responde 502 com `partialSuccess`             |
+| 11  | Falha do Google reverte a gravação?   | **Não.** Grava no Mongo e responde `HTTP 200`; `gcalSyncFailed` sinaliza falha transitória e `gcalSyncPausado` sinaliza pausa por teto |
 
 ---
 
@@ -451,6 +475,8 @@ indisponibilidade do Google. Ver 9.4.
 - **Edição bidirecional.** Explicitamente recusada (2.1).
 - **Importar evento externo como aula.** Evento do Google vira bloqueio, nunca aula.
 - **Cor por tipo de compromisso.** `colorId` é fixo.
+- **UI de aviso do estado terminal.** A flag `gcalSyncPausado` é contrato de API; o texto do toast e a apresentação visual ficam fora do escopo desta spec.
+- **Tentativa automática do Google no frontend.** O teto é server-side e o frontend só dispara `PUT` quando o diff local/remoto exige a gravação no Mongo.
 
 ---
 
