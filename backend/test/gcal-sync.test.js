@@ -307,6 +307,233 @@ test('montarRecurrence monta COUNT e monthOfDate sem combinar UNTIL', () => {
   ]);
 });
 
+test('montarEventoGoogle alinha DTSTART para a primeira ocorrencia semanal fora do BYDAY', () => {
+  const evento = montarEventoGoogle({
+    id: 'ag-2026-08-30',
+    tipo: 'aula',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 10,
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  assert.equal(evento.start.dateTime, '2026-08-31T09:00:00');
+  assert.equal(evento.end.dateTime, '2026-08-31T10:00:00');
+  assert.ok(evento.recurrence[0].includes('BYDAY=MO,TU,WE'));
+  assert.ok(evento.recurrence[0].includes('COUNT=10'));
+});
+
+test('montarEventoGoogle não realinha DTSTART quando a data base já atende ao BYDAY', () => {
+  const evento = montarEventoGoogle({
+    id: 'ag-2026-08-25',
+    tipo: 'aula',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-25',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 4,
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  assert.equal(evento.start.dateTime, '2026-08-25T09:00:00');
+  assert.equal(evento.end.dateTime, '2026-08-25T10:00:00');
+});
+
+test('montarEventoGoogle alinha DTSTART para BYDAY em recorrencia mensal', () => {
+  const evento = montarEventoGoogle({
+    id: 'ag-mensal-bydays',
+    tipo: 'aula',
+    tipoRecorrencia: 'mensal',
+    frequencia: 'semanal',
+    diasSemana: ['Domingo'],
+    recorrenciaDataInicio: '2026-08-31',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 4,
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  assert.equal(evento.start.dateTime, '2026-09-06T09:00:00');
+  assert.ok(evento.recurrence[0].includes('FREQ=MONTHLY'));
+  assert.ok(evento.recurrence[0].includes('BYDAY=SU'));
+});
+
+test('montarEventoGoogle não alinha DTSTART quando a recorrência não gera BYDAY', () => {
+  const diaria = montarEventoGoogle({
+    tipo: 'aula',
+    data: '2026-08-30',
+    tipoRecorrencia: 'diaria',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-01',
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  const mensalPorDiaDoMes = montarEventoGoogle({
+    tipo: 'aula',
+    data: '2026-08-30',
+    tipoRecorrencia: 'mensal',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-30',
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  const anual = montarEventoGoogle({
+    tipo: 'aula',
+    data: '2026-08-30',
+    tipoRecorrencia: 'anual',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2027-08-30',
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  const avulso = montarEventoGoogle({
+    tipo: 'aula',
+    data: '2026-08-30',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'uma_vez'
+  });
+
+  assert.equal(diaria.start.dateTime, '2026-08-30T09:00:00');
+  assert.equal(mensalPorDiaDoMes.start.dateTime, '2026-08-30T09:00:00');
+  assert.equal(anual.start.dateTime, '2026-08-30T09:00:00');
+  assert.equal(avulso.start.dateTime, '2026-08-30T09:00:00');
+});
+
+test('montarEventoGoogle preserva duração após alinhamento do DTSTART', () => {
+  const cruzandoMeiaNoite = montarEventoGoogle({
+    id: 'ag-alinhamento-meia-noite',
+    tipo: 'aula',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 4,
+    horarioInicio: '23:00',
+    horarioFim: '00:30'
+  });
+
+  const diaInteiro = montarEventoGoogle({
+    id: 'ag-alinhamento-dia-inteiro',
+    tipo: 'aula',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 4,
+    fullDay: true,
+    horarioInicio: '00:00',
+    horarioFim: '23:59'
+  });
+
+  assert.equal(cruzandoMeiaNoite.start.dateTime, '2026-08-31T23:00:00');
+  assert.equal(cruzandoMeiaNoite.end.dateTime, '2026-09-01T00:30:00');
+  assert.equal(new Date(cruzandoMeiaNoite.end.dateTime) - new Date(cruzandoMeiaNoite.start.dateTime), 90 * 60 * 1000);
+
+  assert.equal(diaInteiro.start.date, '2026-08-31');
+  assert.equal(diaInteiro.end.date, '2026-09-01');
+});
+
+test('montarRecurrence devolve null para monthOfDate quando DTSTART alinhado cruza o mês', () => {
+  const recurrence = montarRecurrence({
+    id: 'ag-monthofdate-cruza-mes',
+    tipoRecorrencia: 'mensal',
+    frequencia: 'semanal',
+    diasSemana: ['Domingo'],
+    recorrenciaDataInicio: '2026-08-31',
+    recorrenciaEscopo: 'monthOfDate'
+  });
+
+  assert.equal(recurrence, null);
+});
+
+test('montarRecurrence devolve null para untilDate quando DTSTART alinhado ultrapassa o UNTIL', () => {
+  const recurrence = montarRecurrence({
+    id: 'ag-untildate-ultrapassa',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Domingo'],
+    recorrenciaDataInicio: '2026-08-31',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-02',
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  assert.equal(recurrence, null);
+});
+
+test('recorrenciaDataInicio tem precedência sobre data como origem do DTSTART alinhado', () => {
+  const evento = montarEventoGoogle({
+    id: 'ag-precedencia-recorrencia',
+    tipo: 'aula',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça'],
+    data: '2026-08-24',
+    recorrenciaDataInicio: '2026-08-27',
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  assert.ok(evento.start.dateTime.startsWith('2026-08-31'));
+  assert.notEqual(evento.start.dateTime.startsWith('2026-08-24'), true);
+  assert.ok(evento.start.dateTime >= '2026-08-27T09:00:00');
+});
+
+test('montarEventoGoogle preserva COUNT ao alinhar DTSTART com BYDAY', () => {
+  const evento = montarEventoGoogle({
+    id: 'ag-count-alinhado',
+    tipo: 'aula',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 10,
+    horarioInicio: '09:00',
+    horarioFim: '10:00'
+  });
+
+  assert.ok(evento.recurrence[0].includes('COUNT=10'));
+  assert.equal(evento.start.dateTime, '2026-08-31T09:00:00');
+});
+
+test('montarRecurrence mantém EXDATE existente e não cria nova para a data base', () => {
+  const recurrence = montarRecurrence({
+    id: 'ag-exdate-base',
+    tipoRecorrencia: 'semanal',
+    frequencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    recorrenciaDataInicio: '2026-08-30',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '2026-09-03',
+    timeZone: 'America/Sao_Paulo',
+    horarioInicio: '09:00',
+    excecoesDetalhadas: [{ data: '2026-08-31', horarioInicio: '09:00' }]
+  });
+
+  assert.ok(recurrence.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260831T090000')));
+  assert.equal(recurrence.some((entrada) => entrada.includes('EXDATE;TZID=America/Sao_Paulo:20260830T090000')), false);
+});
+
 test('montarRecurrence devolve null para agendamento avulso ou com dia inválido', () => {
   assert.equal(montarRecurrence({ tipo: 'aula', data: '2026-08-25', frequencia: 'uma_vez' }), null);
   assert.equal(montarRecurrence({
