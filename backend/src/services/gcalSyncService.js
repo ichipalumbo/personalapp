@@ -185,6 +185,114 @@ function resolverDataISO(agendamento) {
   return new Date().toISOString().slice(0, 10);
 }
 
+function deveAplicarAlinhamentoDtstart(agendamento) {
+  if (!agendamento || !agendamento.tipoRecorrencia) {
+    return false;
+  }
+
+  const tipoRecorrencia = String(agendamento.tipoRecorrencia).trim().toLowerCase();
+  const frequencia = agendamento.frequencia ? String(agendamento.frequencia).trim().toLowerCase() : '';
+
+  if (tipoRecorrencia === 'uma_vez' || (frequencia && frequencia !== 'semanal')) {
+    return false;
+  }
+
+  if (tipoRecorrencia === 'semanal' || tipoRecorrencia === 'mensal') {
+    return obterListaDiasSemanaParaRrule(agendamento).length > 0;
+  }
+
+  return false;
+}
+
+function resolverDataInicioAlinhada(agendamento) {
+  const dataBase = parseDataISOParaDate(agendamento && (agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao));
+  if (!dataBase) {
+    return resolverDataISO(agendamento);
+  }
+
+  const dias = obterListaDiasSemanaParaRrule(agendamento);
+  if (dias.length === 0) {
+    return dataBase.toISOString().slice(0, 10);
+  }
+
+  const tipoRecorrencia = String((agendamento && agendamento.tipoRecorrencia) || '').trim().toLowerCase();
+  const limiteIteracoes = tipoRecorrencia === 'mensal' ? 366 : (tipoRecorrencia === 'semanal' ? 7 : 0);
+  if (limiteIteracoes === 0) {
+    return dataBase.toISOString().slice(0, 10);
+  }
+
+  const dataInicio = new Date(Date.UTC(dataBase.getUTCFullYear(), dataBase.getUTCMonth(), dataBase.getUTCDate(), 12, 0, 0));
+  const dataBaseISO = dataBase.toISOString().slice(0, 10);
+
+  for (let indice = 0; indice < limiteIteracoes; indice += 1) {
+    const codigoDia = mapearDiaSemanaParaCodigoRFC(dataInicio.getUTCDay());
+    if (dias.includes(codigoDia)) {
+      return dataInicio.toISOString().slice(0, 10);
+    }
+
+    dataInicio.setUTCDate(dataInicio.getUTCDate() + 1);
+  }
+
+  const agendamentoId = agendamento && (agendamento.id || agendamento._id || agendamento.googleCalendarEventId || 'sem-id');
+  console.warn('[GCalSync] Falha ao alinhar DTSTART para BYDAY; mantendo data base.', {
+    agendamentoId,
+    tipoRecorrencia,
+    dias,
+    dataBase: dataBaseISO
+  });
+
+  return dataBaseISO;
+}
+
+function parseRfc5545UntilEmDate(until) {
+  if (!until || typeof until !== 'string') {
+    return null;
+  }
+
+  const match = String(until).match(/^(\d{4})(\d{2})(\d{2})T\d{6}Z$/);
+  if (!match) {
+    return null;
+  }
+
+  const ano = Number(match[1]);
+  const mes = Number(match[2]);
+  const dia = Number(match[3]);
+  const parsed = new Date(Date.UTC(ano, mes - 1, dia, 23, 59, 59));
+
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function dtstartAlinhadoUltrapassaUntil(agendamento, until, motivo = 'DTSTART alinhado após UNTIL') {
+  const dias = obterListaDiasSemanaParaRrule(agendamento);
+  if (dias.length === 0) {
+    return false;
+  }
+
+  const dataBase = parseDataISOParaDate(agendamento && (agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao));
+  const dataBaseISO = dataBase ? dataBase.toISOString().slice(0, 10) : null;
+  const dataInicioAlinhada = resolverDataInicioAlinhada(agendamento);
+  const dataAlinhada = dataInicioAlinhada ? parseDataISOParaDate(dataInicioAlinhada) : null;
+  const untilDate = parseRfc5545UntilEmDate(until);
+
+  if (!dataAlinhada || !untilDate) {
+    return false;
+  }
+
+  if (dataAlinhada > untilDate) {
+    const agendamentoId = agendamento && (agendamento.id || agendamento._id || agendamento.googleCalendarEventId || 'sem-id');
+    console.warn('[GCalSync] Ignorando recorrência porque DTSTART alinhado ultrapassa o UNTIL.', {
+      agendamentoId,
+      dataBase: dataBaseISO,
+      dataInicioAlinhada,
+      until,
+      motivo
+    });
+    return true;
+  }
+
+  return false;
+}
+
 function montarTituloEvento(agendamento) {
   const alunoPopulado = agendamento && agendamento.aluno && typeof agendamento.aluno === 'object'
     ? agendamento.aluno
@@ -497,6 +605,9 @@ function montarRecurrence(agendamento) {
     if (!until) {
       return null;
     }
+    if (dtstartAlinhadoUltrapassaUntil(agendamento, until, 'DTSTART alinhado após UNTIL')) {
+      return null;
+    }
     ruleParts.push(`UNTIL=${until}`);
   } else if (agendamento.recorrenciaEscopo === 'monthOfDate') {
     const dataInicio = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
@@ -508,6 +619,11 @@ function montarRecurrence(agendamento) {
     if (!until) {
       return null;
     }
+
+    if (dtstartAlinhadoUltrapassaUntil(agendamento, until, 'DTSTART alinhado após UNTIL do mês')) {
+      return null;
+    }
+
     ruleParts.push(`UNTIL=${until}`);
   }
 
@@ -521,7 +637,10 @@ function montarRecurrence(agendamento) {
 }
 
 function montarEventoGoogle(agendamento) {
-  const dataISO = resolverDataISO(agendamento);
+  const dataBaseISO = resolverDataISO(agendamento);
+  const dataISO = deveAplicarAlinhamentoDtstart(agendamento)
+    ? (resolverDataInicioAlinhada(agendamento) || dataBaseISO)
+    : dataBaseISO;
   const titulo = montarTituloEvento(agendamento);
   const timezone = process.env.GCAL_TIMEZONE || 'America/Sao_Paulo';
   const fullDay = agendamento && (
