@@ -1,5 +1,6 @@
 const Agendamento = require('../models/Agendamento');
 const Aluno = require('../models/Aluno');
+const { isDeepStrictEqual } = require('node:util');
 const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { normalizarBloqueio } = require('../services/agendamentoService');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
@@ -62,6 +63,32 @@ function limparMarcaPendenteDoAgendamento(agendamento) {
   delete agendamento[GCAL_SYNC_PENDING_FIELD];
   delete agendamento[GCAL_SYNC_PENDING_ATTEMPTS_FIELD];
   return agendamento;
+}
+
+function agendamentoEmEstadoTerminal(agendamento) {
+  const tentativas = Number(agendamento && agendamento[GCAL_SYNC_PENDING_ATTEMPTS_FIELD]);
+  return Number.isFinite(tentativas) && tentativas >= GCAL_SYNC_PENDING_MAX_TENTATIVAS;
+}
+
+function agendamentoRecebeuEdicao(existente, payloadNormalizado) {
+  if (!existente || !payloadNormalizado) {
+    return false;
+  }
+
+  const existenteNormalizado = normalizarBloqueio(normalizarAgendamentoParaResposta(existente));
+  const camposIgnorados = new Set([
+    'id',
+    'ownerEmail',
+    '_id',
+    '__v',
+    GCAL_SYNC_PENDING_FIELD,
+    GCAL_SYNC_PENDING_ATTEMPTS_FIELD
+  ]);
+
+  return Object.keys(payloadNormalizado).some((campo) => (
+    !camposIgnorados.has(campo)
+    && !isDeepStrictEqual(payloadNormalizado[campo], existenteNormalizado[campo])
+  ));
 }
 
 async function persistirResultadoGcal(ownerEmail, agendamentoId, resultadoGCal, agendamentoEmMemoria) {
@@ -373,16 +400,20 @@ async function atualizarAgendamento(req, res) {
     const payload = limparPayloadAgendamento(req.body);
     const existente = await obterAgendamentoPersistido(ownerEmail, id, 'googleCalendarEventId');
     const googleCalendarEventIdExistente = existente && existente.googleCalendarEventId ? String(existente.googleCalendarEventId) : null;
+    const payloadNormalizado = normalizarBloqueio({ ...payload, id });
+    const estavaEmEstadoTerminal = agendamentoEmEstadoTerminal(existente);
+    const deveReabrirTentativas = estavaEmEstadoTerminal && agendamentoRecebeuEdicao(existente, payloadNormalizado);
 
     if (payload.id && payload.id !== id) {
       return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
     }
 
     const agendamentoNormalizado = {
-      ...normalizarBloqueio({ ...payload, id }),
+      ...payloadNormalizado,
       id,
       ownerEmail,
-      ...(googleCalendarEventIdExistente ? { googleCalendarEventId: googleCalendarEventIdExistente } : {})
+      ...(googleCalendarEventIdExistente ? { googleCalendarEventId: googleCalendarEventIdExistente } : {}),
+      ...(deveReabrirTentativas ? { [GCAL_SYNC_PENDING_ATTEMPTS_FIELD]: 0 } : {})
     };
 
     const atualizado = await Agendamento.findOneAndUpdate(
@@ -392,6 +423,11 @@ async function atualizarAgendamento(req, res) {
     );
 
     const atualizadoParaGCalBase = normalizarAgendamentoParaResposta(atualizado);
+
+    if (estavaEmEstadoTerminal) {
+      return res.json(atualizadoParaGCalBase);
+    }
+
     const atualizadoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, atualizadoParaGCalBase);
 
     try {

@@ -465,8 +465,12 @@ test('atualizarAgendamento limpa marca de pendencia quando o Google responde com
     }, res);
 
     assert.equal(updatesMongo.length, 2);
-    assert.deepEqual(updatesMongo[1].update.$unset, { gcalSyncPendingAt: 1 });
+    assert.deepEqual(updatesMongo[1].update.$unset, {
+      gcalSyncPendingAt: 1,
+      gcalSyncPendingTentativas: 1
+    });
     assert.equal(res.body.gcalSyncPendingAt, undefined);
+    assert.equal(res.body.gcalSyncPendingTentativas, undefined);
   } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
@@ -632,13 +636,13 @@ test('storage mescla googleCalendarEventId local apos POST do agendamento', asyn
   assert.equal(agendamentosLocais[0].googleCalendarEventId, 'evt-local-1');
 });
 
-test('storage para de reemitir PUT quando a pendencia atinge o teto de tentativas', async () => {
+test('storage emite PUT para alteracao local mesmo quando a pendencia atinge o teto de tentativas', async () => {
   const context = carregarStorageHarness();
   const agendamentosLocais = [{
     id: 'ag-terminal-1',
     data: '2026-08-29',
-    horarioInicio: '09:00',
-    horarioFim: '10:00',
+    horarioInicio: '15:00',
+    horarioFim: '16:00',
     tipo: 'aula',
     googleCalendarEventId: 'evt-terminal-1'
   }];
@@ -670,7 +674,81 @@ test('storage para de reemitir PUT quando a pendencia atinge o teto de tentativa
 
   await context._sincronizarAgendamentosViaCRUD(agendamentosLocais, 8000);
 
-  assert.equal(putCalls, 0);
+  assert.equal(putCalls, 1);
+});
+
+test('atualizarAgendamento terminal grava no Mongo, reabre tentativas e nao chama o Google no mesmo PUT', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+  const updatesMongo = [];
+  let chamadasGoogle = 0;
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.updateEventInGoogle = async () => {
+      chamadasGoogle += 1;
+      return { googleCalendarEventId: 'evt-terminal-1' };
+    };
+    Agendamento.findOne = async () => ({
+      id: 'ag-terminal-1',
+      ownerEmail: 'joao@example.com',
+      data: '2026-08-29',
+      horarioInicio: '09:00',
+      horarioFim: '10:00',
+      tipo: 'aula',
+      googleCalendarEventId: 'evt-terminal-1',
+      gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+      gcalSyncPendingTentativas: 5
+    });
+    Agendamento.findOneAndUpdate = async (query, update) => {
+      updatesMongo.push({ query, update });
+      return {
+        id: 'ag-terminal-1',
+        ownerEmail: 'joao@example.com',
+        data: '2026-08-29',
+        horarioInicio: '15:00',
+        horarioFim: '16:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-terminal-1',
+        gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+        gcalSyncPendingTentativas: update.$set.gcalSyncPendingTentativas
+      };
+    };
+
+    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await atualizarAgendamento({
+      params: { id: 'ag-terminal-1' },
+      body: {
+        id: 'ag-terminal-1',
+        data: '2026-08-29',
+        horarioInicio: '15:00',
+        horarioFim: '16:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-terminal-1'
+      },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(updatesMongo.length, 1);
+    assert.deepEqual(updatesMongo[0].query, {
+      ownerEmail: 'joao@example.com',
+      id: 'ag-terminal-1'
+    });
+    assert.equal(updatesMongo[0].update.$set.horarioInicio, '15:00');
+    assert.equal(updatesMongo[0].update.$set.gcalSyncPendingTentativas, 0);
+    assert.equal(res.body.horarioInicio, '15:00');
+    assert.equal(res.body.gcalSyncPendingTentativas, 0);
+    assert.equal(chamadasGoogle, 0);
+  } finally {
+    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+    delete require.cache[controllerPath];
+  }
 });
 
 test('convergencia: apos limpar a pendencia, sync seguinte nao reemite PUT adicional', async () => {

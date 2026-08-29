@@ -16,7 +16,6 @@ const SLEEP_MODE_THRESHOLD_MS = 3000;
 const FINANCAS_CACHE_KEY = 'personal_financas_cache';
 const REPOSICOES_CACHE_KEY = 'personal_reposicoes';
 const GCAL_SYNC_PENDING_FIELDS = ['gcalSyncPendingAt', 'gcalSyncPendingTentativas'];
-const GCAL_SYNC_PENDING_MAX_TENTATIVAS = 5;
 
 // [TAG-STORAGE-VERCEL-PING] Warm-up para cold start da Vercel; em ambiente local e inofensivo. Fire-and-forget, sem await.
 fetch(APP_API_CONFIG.apiRootUrl).catch(() => {});
@@ -515,15 +514,6 @@ function _removerCamposPendenciaGcalDaLista(agendamentos) {
     return agendamentos.map((agendamento) => _removerCamposPendenciaGcalDoAgendamento(agendamento));
 }
 
-function _agendamentoEmEstadoTerminal(agendamento) {
-    if (!agendamento || typeof agendamento !== 'object') {
-        return false;
-    }
-
-    const tentativas = Number(agendamento.gcalSyncPendingTentativas);
-    return Number.isFinite(tentativas) && tentativas >= GCAL_SYNC_PENDING_MAX_TENTATIVAS;
-}
-
 function _agendamentosSaoIguais(agendamentoA, agendamentoB) {
     try {
         return JSON.stringify(_normalizarAgendamentoParaComparacao(agendamentoA))
@@ -692,11 +682,6 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                     window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
                 }
             }
-            continue;
-        }
-
-        const remotoEmEstadoTerminal = _agendamentoEmEstadoTerminal(remoto);
-        if (remotoEmEstadoTerminal) {
             continue;
         }
 
