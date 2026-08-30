@@ -142,3 +142,47 @@ test('série sem campos de fim continua sendo tratada como infinita', () => {
 
     assert.equal(window.checarCompromissoNaData(semFim, new Date('2026-09-14T12:00:00')), true);
 });
+
+test('ignorarIds de família remove a série e a continuação do conflito, mas preserva conflito real com outro aluno', () => {
+    const { window } = carregarAgendaConflitos();
+    const mae = criarSerie({
+        id: 'S1',
+        alunoId: 'aluno-1',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        data: '31/08/2026',
+        recorrenciaDataInicio: '31/08/2026',
+        diasSemana: ['Segunda']
+    });
+    const continuacao = criarContinuacaoSerie({
+        id: 'S2',
+        alunoId: 'aluno-1',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        data: '02/09/2026',
+        recorrenciaDataInicio: '02/09/2026',
+        diasSemana: ['Segunda']
+    });
+    const externo = {
+        ...mae,
+        id: 'E1',
+        alunoId: 'aluno-2',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        data: '31/08/2026',
+        recorrenciaDataInicio: '31/08/2026',
+        diasSemana: ['Segunda']
+    };
+
+    window.aulas = [mae, continuacao];
+    const candidato = window.getCompromissoSerializadoParaConflito(mae, '31/08/2026');
+    const conflitosFamilia = window.getConflitosNoDia(candidato, new Date('2026-08-31T12:00:00'), { ignorarIds: ['S1', 'S2'] });
+
+    assert.equal(conflitosFamilia.length, 0);
+
+    window.aulas = [mae, continuacao, externo];
+    const conflitosExterno = window.getConflitosNoDia(candidato, new Date('2026-08-31T12:00:00'), { ignorarIds: ['S1', 'S2'] });
+
+    assert.equal(conflitosExterno.length, 1);
+    assert.equal(conflitosExterno[0].id, 'E1');
+});
