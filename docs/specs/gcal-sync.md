@@ -720,9 +720,12 @@ alterar a série a partir de um ponto, o padrão é aparar a série original com
 instância alvo e criar uma nova série. A referência é
 `https://developers.google.com/workspace/calendar/api/guides/recurringevents`.
 
-Hoje isso é aceitável porque o app não tem um fluxo de "editar série a partir daqui". O fluxo
-existente é cancelar ocorrência e criar reposição, que é o caso simples com `EXDATE`.
-Se um dia surgir edição parcial de série, esse é o ponto em que a decisão deve ser reaberta.
+Hoje isso é aceitável porque o app tem o fluxo de "editar série a partir daqui" no escopo
+`fromDate` ("editar esta e as futuras"), além do cancelamento de ocorrência com `EXDATE`.
+O padrão recomendado pela Google continua sendo aparar a série original com `UNTIL` antes da
+instância alvo e criar uma nova série; o caso degenerado de split na primeira ocorrência foi
+tratado no item 9.15, e a decisão de produto está registrada lá. A chamada de reabertura da
+decisão foi atendida nas rodadas E, F e H.
 
 ---
 
@@ -731,17 +734,17 @@ Se um dia surgir edição parcial de série, esse é o ponto em que a decisão d
 Os itens da Rodada C já foram resolvidos e saem do backlog desta spec. O que permanece hoje
 é apenas o que ainda exige trabalho real ou observação de custos/escala:
 
-1. **9.2** — pequeno, cirúrgico, e evita perda de dado. Independe de tudo.
-2. **9.4** — pequeno, e destrava o gate de persistência da reposição.
-3. **9.5** e **9.6** — pequenos, oportunistas.
-4. **9.8** — cobertura real de I/O; depende de ambiente/Google e não é correção de regra
-   de negócio.
-5. **9.9** — documentação e nomeação, junto de qualquer correção de leitura/escrita em
-   andamento.
-6. **9.13** — observação de payload/volume de leitura; fica como alerta de escala, não como
-   pendência funcional.
+   1. **9.14** — gatilho triplo de sincronização no boot. É o único item funcional realmente
+      pendente, e corresponde ao item **2.2** do `docs/roadmap.md`.
+   2. **9.8** — cobertura parcial de I/O real. Continuamos com validação parcial e não com
+      garantia de regra de negócio, porque depende de ambiente/Google e da execução real do
+      fluxo externo.
+   3. **9.15, sub-item de backend** — só entra aqui se a rodada G deixar esse sub-item em aberto
+      após a verificação do frontend. A correção entregue hoje é a do caminho do app, com teste
+      de mutação e cobertura do split.
+   4. **9.13** — observação de payload/volume de leitura; fica como alerta de escala, não como
+      pendência funcional.
 
-Os itens **9.1**, **9.3**, **9.11** e **9.12** saíram do backlog porque a Rodada C
-concluiu o redesenho para `RRULE`, a propagação de `EXDATE`, o uso de `COUNT` e o ajuste de
-`UNTIL`/`EXDATE` na forma correta. O que sobrou é manutenção e observação, não uma segunda
-revisão de desenho.
+   Os itens **9.1–9.7, 9.9–9.12 e 9.16** saíram do backlog porque a §9 já os marcou como
+   resolvidos (ou, no caso do 9.8, como parcialmente resolvido) e a tabela 9.17 registra o
+   histórico correspondente. A ordem de correção não reabre itens que já encerraram na §9.
