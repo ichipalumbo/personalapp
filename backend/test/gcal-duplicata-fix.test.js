@@ -195,6 +195,16 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
 
   const formEditar = criarElemento('formEditarCompromisso');
   elementos.formEditarCompromisso = formEditar;
+  elementos.formReagendarAula = criarElemento('formReagendarAula');
+  elementos.reagendarDia = criarElemento('reagendarDia', { value: 'Segunda' });
+  elementos.reagendarHoraInicio = criarElemento('reagendarHoraInicio', { value: '09:00' });
+  elementos.reagendarDuracao = criarElemento('reagendarDuracao', { value: '60' });
+  elementos.reagendarAluno = criarElemento('reagendarAluno');
+  elementos.containerSeletorReagendarAluno = criarElemento('containerSeletorReagendarAluno');
+  elementos.containerLockReagendarAluno = criarElemento('containerLockReagendarAluno');
+  elementos.modalReagendarAula = criarElemento('modalReagendarAula');
+  elementos.reagendarAlunoLockedNome = criarElemento('reagendarAlunoLockedNome');
+  elementos.reagendarAlunoIdLocked = criarElemento('reagendarAlunoIdLocked');
   elementos.editHoraInicio = criarElemento('editHoraInicio', { value: '09:00' });
   elementos.editDuracao = criarElemento('editDuracao', { value: '60' });
   elementos.editCompromissoFrequencia = criarElemento('editCompromissoFrequencia', { value: 'semanal' });
@@ -299,6 +309,16 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     converterPtBrParaISO: (valor) => {
       if (!valor || !valor.includes('/')) return valor;
       return valor.split('/').reverse().join('-');
+    },
+    formatarDataLocalParaISODate: (valor) => {
+      if (!valor) return '';
+      if (valor instanceof Date) {
+        return `${valor.getFullYear()}-${String(valor.getMonth() + 1).padStart(2, '0')}-${String(valor.getDate()).padStart(2, '0')}`;
+      }
+      if (typeof valor === 'string' && valor.includes('/')) {
+        return valor.split('/').reverse().join('-');
+      }
+      return valor;
     },
     formatarDataPtBrLegivel: (valor) => valor || '',
     parseDataFlex: (valor) => {
@@ -1978,6 +1998,108 @@ test('avulsa criada por occurrence guarda a série mãe direta em serieOrigemId'
   assert.ok(avulsa);
   assert.equal(avulsa.frequencia, 'uma_vez');
   assert.equal(avulsa.serieOrigemId, 'serie-mae');
+});
+
+test('avulsa criada por occurrence nao herda campos de recorrencia', async () => {
+  const serieMae = criarSerieFamiliaBase({
+    id: 'serie-mae-limpa-recorrencia',
+    tipoRecorrencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    intervaloRecorrencia: 2,
+    recorrenciaEscopo: 'entireSeries',
+    recorrenciaDataInicio: '01/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    recorrenciaQuantidadeOcorrencias: 8,
+  });
+  const aulas = [serieMae];
+  const { form, context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.document.getElementById('editEscopoRecorrencia').value = 'occurrence';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const avulsa = aulas.find((item) => item.id !== 'serie-mae-limpa-recorrencia');
+  assert.ok(avulsa);
+  for (const campo of [
+    'tipoRecorrencia',
+    'diasSemana',
+    'intervaloRecorrencia',
+    'recorrenciaEscopo',
+    'recorrenciaDataInicio',
+    'recorrenciaFimCondicao',
+    'recorrenciaDataFim',
+    'recorrenciaQuantidadeOcorrencias',
+  ]) {
+    assert.strictEqual(Object.hasOwn(avulsa, campo), false, `campo ${campo} nao deveria existir na avulsa`);
+  }
+  assert.equal(avulsa.frequencia, 'uma_vez');
+  assert.equal(avulsa.data, '31/08/2026');
+  assert.equal(avulsa.dia, 'Segunda');
+  assert.equal(avulsa.horarioInicio, '09:00');
+  assert.equal(avulsa.horarioFim, '10:00');
+  assert.equal(avulsa.serieOrigemId, 'serie-mae-limpa-recorrencia');
+});
+
+test('split fromDate mantém tipoRecorrencia e diasSemana na serie nova', async () => {
+  const serieMae = criarSerieFamiliaBase({
+    id: 'serie-split-recorrencia',
+    data: '01/09/2026',
+    tipoRecorrencia: 'semanal',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    intervaloRecorrencia: 1,
+    recorrenciaDataInicio: '01/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  });
+  const aulas = [serieMae];
+  const { form, context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '02/09/2026' });
+  context.document.getElementById('editEscopoRecorrencia').value = 'fromDate';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-split-recorrencia');
+  assert.ok(serieNova);
+  assert.equal(serieNova.tipoRecorrencia, 'semanal');
+  assert.deepEqual(serieNova.diasSemana, ['Segunda', 'Terça', 'Quarta']);
+  assert.equal(serieNova.recorrenciaDataInicio, '02/09/2026');
+});
+
+test('reagendar reposicao cria avulsa sem campos de recorrencia herdados', async () => {
+  const rep = {
+    id: 'rep-1',
+    alunoId: 'aluno-1',
+    dataCancelamento: '01/09/2026',
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [], compromisso: null, dataAlvoStr: '31/08/2026' });
+  context.window.aulasParaRepor = [rep];
+  context.window.reagendamentoDirectCardId = rep.id;
+  context.document.getElementById('reagendarDia').value = 'Segunda';
+  context.document.getElementById('reagendarHoraInicio').value = '09:00';
+  context.document.getElementById('reagendarDuracao').value = '60';
+  context.window.apiFetchBackend = async () => ({ ok: true, json: async () => ({}) });
+
+  await context.document.getElementById('formReagendarAula').listeners.submit({ preventDefault() {} });
+
+  const novaAula = context.window.aulas.find((item) => item.id.startsWith('ag-'));
+  assert.ok(novaAula);
+  assert.equal(novaAula.frequencia, 'uma_vez');
+  assert.equal(novaAula.isReposicao, true);
+  for (const campo of [
+    'tipoRecorrencia',
+    'diasSemana',
+    'intervaloRecorrencia',
+    'recorrenciaEscopo',
+    'recorrenciaDataInicio',
+    'recorrenciaFimCondicao',
+    'recorrenciaDataFim',
+    'recorrenciaQuantidadeOcorrencias',
+  ]) {
+    assert.strictEqual(Object.hasOwn(novaAula, campo), false, `campo ${campo} nao deveria existir na reposicao reagendada`);
+  }
 });
 
 test('split encadeado mantém a mãe direta em serieOrigemId da avulsa', async () => {
