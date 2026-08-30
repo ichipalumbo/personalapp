@@ -1,10 +1,10 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: desenho da Rodada C finalizado; renovação ativa do webhook e purge de full
-> sync validados em produção em 26/08/2026; validação automática pendente em 02/09/2026.
+> **Status**: em produção com ressalva de validação; sincronização, webhook, `RRULE` e
+> `EXDATE` validados ao longo das rodadas A–H; validação em produção 01–02/09/2026.
 > 
-> **Versão**: 6 · **Atualizado**: 2026-08-26
-> **Defeitos em aberto**: 4 (ver seção 9)
+> **Versão**: 7 · **Atualizado**: 2026-08-29
+> **Defeitos em aberto**: 2 (ver seção 9)
 >
 > **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v6) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
@@ -661,21 +661,56 @@ O gatilho de renovação do canal foi mantido fora desse ciclo deliberadamente; 
 explicitamente tratado como rotação do webhook e não como parte do ciclo normal de
 sincronização. A consolidação desses gatilhos continua em pendência.
 
-### 9.15 — Série truncada antes do próprio início vira evento avulso. — PENDENTE
+### 9.15 — Série truncada antes do próprio início vira evento avulso. — RESOLVIDO (Rodada F/H)
 
-Quando `UNTIL` fica estritamente antes do `DTSTART` alinhado (caso de "editar esta e futuras"
-na primeira ocorrência), `dtstartAlinhadoUltrapassaUntil` anula o `recurrence`, mas
-`montarEventoGoogle` continua enviando o evento com `start`/`end`. O app entende
-"série sem aulas"; o Google recebe um evento avulso fora da janela. Responde `HTTP 200`
-sem `gcalSyncFailed`. Fallback correto provavelmente é apagar o evento — exige decisão de
-produto.
+**Decisão de produto**: quando a série truncada fica sem ocorrência restante, o registro sai do
+app em ambos os lados e o evento sai do Google. Não há nada a preservar, porque a série nova
+assume tudo a partir da data editada.
 
-### 9.16 — Dia da semana sem acento derruba a recorrência em silêncio. — PENDENTE
+**Correção no frontend**: `assets/js/modal-acao-slot.js`, bloco de split `fromDate`, foi
+ajustado para remover a série vazia com `aulas.splice(...)` e seguir para a criação da série
+nova. O `DELETE` explícito foi removido na rodada F; a reconciliação de `storage.js` (~linha
+718) já apaga no backend o agendamento remoto ausente da lista local, pelo caminho coberto por
+teste.
 
-`mapearDiaSemanaParaCodigoRFC` compara contra `DEFAULT_DIAS_SEMANA` com `toLowerCase()` mas
-sem remover acento. `'Terca'` não casa com `'Terça'`; o valor é descartado sem log, e se a
-lista esvazia a série vira aula única. Latente hoje (o frontend grava acentuado), ativo com
-dado legado, importação ou problema de encoding.
+**Cobertura de teste**: a Rodada H provou a correção com mutação no arquivo real de produção,
+executando o listener registrado pelo `vm`. `backend/test/gcal-duplicata-fix.test.js` cobre os
+cenários de split na primeira ocorrência e no meio da série, e falha quando a lógica real é
+mutada em `assets/js/modal-acao-slot.js`.
+
+**Sub-item em aberto**: o diagnóstico original do backend continua como alerta de risco em outra
+via de implementação, mas a correção entregue e coberta hoje é a do fluxo do frontend. Se um
+caminho do backend for identificado gerando o mesmo payload fora do split, esse caso deve ser
+registrado como sub-item separado, sem reabrir a decisão de produto já tomada.
+
+### 9.16 — Dia da semana sem acento derruba a recorrência em silêncio. — RESOLVIDO (Rodada E)
+
+`mapearDiaSemanaParaCodigoRFC` e `normalizarDiaSemanaParaComparacao` em
+`backend/src/services/gcalSyncService.js` agora normalizam com `normalize('NFD')` e aceitam
+abreviações de três letras, ramos numéricos e `console.warn` ao descartar valor inválido. O
+código foi protegido por teste comportamental em `backend/test/gcal-sync.test.js` (`montarRecurrence aceita diasSemana sem acento, abreviado, numérico e dispara warning para inválido`).
+
+### 9.17 Relatórios desta spec
+
+| Relatório | Itens da §9 | Estado |
+| --- | --- | --- |
+| `docs/_reports/2026-08-25-gcal-fix.md` | diagnóstico geral | diagnóstico |
+| `docs/_reports/2026-08-25-gcal-watch-boot.md` | 9.14 | em aberto |
+| `docs/_reports/2026-08-25-gcal-watch-purge.md` | diagnóstico de purge / sincronização | diagnóstico |
+| `docs/_reports/2026-08-25-gcal-watch-renovacao.md` | 9.14 | em aberto |
+| `docs/_reports/2026-08-26-doc-sync-gcal-watch.md` | 9.14 | diagnóstico |
+| `docs/_reports/2026-08-26-gcal-watch-log-falha.md` | 9.14 | em aberto |
+| `docs/_reports/2026-08-29-diag-auditoria-completa-gcal.md` | diagnóstico geral | diagnóstico |
+| `docs/_reports/2026-08-29-diag-duplicata-edicao-serie-gcal.md` | 9.15 | diagnóstico |
+| `docs/_reports/2026-08-29-fix-dtstart-byday-gcal.md` | 9.1 / alinhamento `DTSTART` | fechado |
+| `docs/_reports/2026-08-29-fix-duplicata-edicao-serie-gcal.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-29-fix-exdate-primeiro-dia-gcal.md` | 9.12 / borda de `EXDATE` | fechado |
+| `docs/_reports/2026-08-29-fix-global-e-mock-teto-gcal.md` | 9.4 / 9.8 | fechado |
+| `docs/_reports/2026-08-29-fix-harness-split-comportamental.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-29-fix-select-teto-e-spec-gcal.md` | 9.4 / 9.15 / spec | fechado |
+| `docs/_reports/2026-08-29-fix-serie-vazia-e-acento-gcal.md` | 9.15 / 9.16 | fechado |
+| `docs/_reports/2026-08-29-fix-teto-pendencia-gcal.md` | 9.4 / controle de teto | fechado |
+| `docs/_reports/2026-08-29-fix-url-split-e-teste-comportamental.md` | 9.15 | fechado |
 
 ## 10. Custo aceito da decisão
 
@@ -685,9 +720,12 @@ alterar a série a partir de um ponto, o padrão é aparar a série original com
 instância alvo e criar uma nova série. A referência é
 `https://developers.google.com/workspace/calendar/api/guides/recurringevents`.
 
-Hoje isso é aceitável porque o app não tem um fluxo de "editar série a partir daqui". O fluxo
-existente é cancelar ocorrência e criar reposição, que é o caso simples com `EXDATE`.
-Se um dia surgir edição parcial de série, esse é o ponto em que a decisão deve ser reaberta.
+Hoje isso é aceitável porque o app tem o fluxo de "editar série a partir daqui" no escopo
+`fromDate` ("editar esta e as futuras"), além do cancelamento de ocorrência com `EXDATE`.
+O padrão recomendado pela Google continua sendo aparar a série original com `UNTIL` antes da
+instância alvo e criar uma nova série; o caso degenerado de split na primeira ocorrência foi
+tratado no item 9.15, e a decisão de produto está registrada lá. A chamada de reabertura da
+decisão foi atendida nas rodadas E, F e H.
 
 ---
 
@@ -696,17 +734,17 @@ Se um dia surgir edição parcial de série, esse é o ponto em que a decisão d
 Os itens da Rodada C já foram resolvidos e saem do backlog desta spec. O que permanece hoje
 é apenas o que ainda exige trabalho real ou observação de custos/escala:
 
-1. **9.2** — pequeno, cirúrgico, e evita perda de dado. Independe de tudo.
-2. **9.4** — pequeno, e destrava o gate de persistência da reposição.
-3. **9.5** e **9.6** — pequenos, oportunistas.
-4. **9.8** — cobertura real de I/O; depende de ambiente/Google e não é correção de regra
-   de negócio.
-5. **9.9** — documentação e nomeação, junto de qualquer correção de leitura/escrita em
-   andamento.
-6. **9.13** — observação de payload/volume de leitura; fica como alerta de escala, não como
-   pendência funcional.
+   1. **9.14** — gatilho triplo de sincronização no boot. É o único item funcional realmente
+      pendente, e corresponde ao item **2.2** do `docs/roadmap.md`.
+   2. **9.8** — cobertura parcial de I/O real. Continuamos com validação parcial e não com
+      garantia de regra de negócio, porque depende de ambiente/Google e da execução real do
+      fluxo externo.
+   3. **9.15, sub-item de backend** — só entra aqui se a rodada G deixar esse sub-item em aberto
+      após a verificação do frontend. A correção entregue hoje é a do caminho do app, com teste
+      de mutação e cobertura do split.
+   4. **9.13** — observação de payload/volume de leitura; fica como alerta de escala, não como
+      pendência funcional.
 
-Os itens **9.1**, **9.3**, **9.11** e **9.12** saíram do backlog porque a Rodada C
-concluiu o redesenho para `RRULE`, a propagação de `EXDATE`, o uso de `COUNT` e o ajuste de
-`UNTIL`/`EXDATE` na forma correta. O que sobrou é manutenção e observação, não uma segunda
-revisão de desenho.
+   Os itens **9.1–9.7, 9.9–9.12 e 9.16** saíram do backlog porque a §9 já os marcou como
+   resolvidos (ou, no caso do 9.8, como parcialmente resolvido) e a tabela 9.17 registra o
+   histórico correspondente. A ordem de correção não reabre itens que já encerraram na §9.

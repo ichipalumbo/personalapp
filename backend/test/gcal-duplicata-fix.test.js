@@ -178,7 +178,15 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     id,
     value: '',
     checked: false,
+    innerHTML: '',
+    textContent: '',
+    style: { display: '', color: '', visibility: '' },
+    dataset: {},
     listeners: {},
+    classList: { toggle() {} },
+    parentNode: null,
+    querySelectorAll() { return []; },
+    cloneNode() { return criarElemento(`${id}-clone`); },
     addEventListener(eventName, fn) {
       this.listeners[eventName] = fn;
     },
@@ -191,14 +199,44 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   elementos.editDuracao = criarElemento('editDuracao', { value: '60' });
   elementos.editCompromissoFrequencia = criarElemento('editCompromissoFrequencia', { value: 'semanal' });
   elementos.editEscopoRecorrencia = criarElemento('editEscopoRecorrencia', { value: 'fromDate' });
+  elementos.editEscopoRecorrenciaGrid = criarElemento('editEscopoRecorrenciaGrid');
+  elementos.editEscopoRecorrenciaContainer = criarElemento('editEscopoRecorrenciaContainer');
   elementos.editDiaSemana = criarElemento('editDiaSemana', { value: 'Segunda' });
+  elementos.editDiaSemanaContainer = criarElemento('editDiaSemanaContainer');
   elementos.editBloqueioDiaInteiro = criarElemento('editBloqueioDiaInteiro', { checked: false });
   elementos.editDescricao = criarElemento('editDescricao', { value: '' });
+  elementos.editEscopoImpacto = criarElemento('editEscopoImpacto');
+  elementos.editInfoDia = criarElemento('editInfoDia');
+  elementos.editCamposTipoAula = criarElemento('editCamposTipoAula');
+  elementos.editCamposTipoBloqueio = criarElemento('editCamposTipoBloqueio');
+  elementos.editCamposTipoBloqueioDiaInteiro = criarElemento('editCamposTipoBloqueioDiaInteiro');
+  elementos.editAluno = criarElemento('editAluno');
+  elementos.modalAcaoSlot = criarElemento('modalAcaoSlot', { style: { display: 'flex' } });
+  elementos.badgeTipoCompromisso = criarElemento('badgeTipoCompromisso');
+  elementos.acoesCompromissoUnico = criarElemento('acoesCompromissoUnico');
+  elementos.acoesCompromissoRecorrente = criarElemento('acoesCompromissoRecorrente');
+  elementos.btnMandarParaReposicao = criarElemento('btnMandarParaReposicao');
+  elementos.btnReagendarInstancia = criarElemento('btnReagendarInstancia');
 
   const document = {
     listeners: {},
     getElementById(id) {
       return elementos[id] || null;
+    },
+    querySelector(selector) {
+      if (selector === '#formEditarCompromisso button[type="submit"]') {
+        return { disabled: false, dataset: {}, style: { display: '' } };
+      }
+      if (selector === '#acoesCompromissoRecorrente > div') {
+        return null;
+      }
+      return null;
+    },
+    querySelectorAll(selector) {
+      if (selector === '#editEscopoRecorrenciaGrid .btn-escopo-recorrencia') {
+        return [];
+      }
+      return [];
     },
     addEventListener(eventName, fn) {
       this.listeners[eventName] = fn;
@@ -238,6 +276,9 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
       removeItem: () => {}
     },
     aulas: Array.isArray(aulas) ? aulas : [],
+    alunos: [
+      { id: 'aluno-1', nome: 'Aluno Teste' }
+    ],
     aulasParaRepor: [],
     log: {
       info() {},
@@ -253,11 +294,13 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     app: {},
     gcal: { isSignedIn: () => false },
     dataAlvoAcaoStr: dataAlvoStr,
+    dataSelecionada: new Date('2026-08-30T12:00:00'),
     getDataSelecionadaPtBr: () => dataAlvoStr,
     converterPtBrParaISO: (valor) => {
       if (!valor || !valor.includes('/')) return valor;
       return valor.split('/').reverse().join('-');
     },
+    formatarDataPtBrLegivel: (valor) => valor || '',
     parseDataFlex: (valor) => {
       if (!valor) return null;
       const iso = String(valor).includes('/') ? String(valor).split('/').reverse().join('-') : String(valor);
@@ -276,6 +319,18 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
       const novoMinuto = total % 60;
       return `${String(novaHora).padStart(2, '0')}:${String(novoMinuto).padStart(2, '0')}`;
     },
+    diferencaMinutos: (inicio, fim) => {
+      const [hi, mi] = String(inicio).split(':').map(Number);
+      const [hf, mf] = String(fim).split(':').map(Number);
+      return (hf * 60 + mf) - (hi * 60 + mi);
+    },
+    aplicarLimitesDuracaoPorContexto: () => {},
+    sincronizarSteppersDuracao: () => {},
+    ehBloqueioDiaInteiroCompromisso: () => false,
+    atualizarEstadoBloqueioDiaInteiroEdicao: () => {},
+    getLabelEscopoRecorrencia: (escopo) => (escopo === 'occurrence' ? 'Somente esta aula' : escopo === 'entireSeries' ? 'Todas as aulas da série' : 'Daqui pra frente'),
+    getResumoEscopoRecorrencia: () => 'Daqui pra frente',
+    atualizarResumoEscopoRecorrencia: () => {},
     obterNomesDiasSemanaModalAcao: () => [
       'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'
     ],
@@ -283,6 +338,11 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     enriquecerAgendamentoComDadosFrescos: () => {},
     inicializarHome: async () => {},
     idCompromissoSelecionado: compromisso && compromisso.id,
+    HORARIOS: Array.from({ length: 48 }, (_, index) => {
+      const horas = Math.floor(index / 2);
+      const minutos = index % 2 === 0 ? 0 : 30;
+      return `${String(horas).padStart(2, '0')}:${String(minutos).padStart(2, '0')}`;
+    }),
     DURACAO_MAX_AULA_DESLOCAMENTO: 120,
     BLOQUEIO_MAX_MINUTOS: 480,
     BLOQUEIO_DIA_INTEIRO_INICIO: '00:00',
@@ -295,62 +355,16 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     apiRootUrl: 'https://api.example.com'
   };
 
+  context.window.idCompromissoSelecionado = compromisso && compromisso.id ? compromisso.id : '';
   vm.runInNewContext(script, context, { filename: scriptPath });
 
-  formEditar.listeners.submit = async (e) => {
-    if (e && typeof e.preventDefault === 'function') {
-      e.preventDefault();
-    }
+  if (typeof document.listeners.DOMContentLoaded === 'function') {
+    document.listeners.DOMContentLoaded();
+  }
 
-    const serieAtual = compromisso;
-    const dataDestino = dataAlvoStr;
-    const _selDiaFd = document.getElementById('editDiaSemana')?.value || serieAtual.dia;
-    const dataIso = context.converterPtBrParaISO(dataDestino);
-    const dataAlvo = dataIso ? new Date(`${dataIso}T12:00:00`) : null;
-    const dataAnterior = dataAlvo ? new Date(dataAlvo) : null;
-    if (dataAnterior) {
-      dataAnterior.setDate(dataAnterior.getDate() - 1);
-    }
-    const _ptBrAnteriorFd = dataAnterior
-      ? `${String(dataAnterior.getDate()).padStart(2, '0')}/${String(dataAnterior.getMonth() + 1).padStart(2, '0')}/${dataAnterior.getFullYear()}`
-      : dataDestino;
-
-    serieAtual.recorrenciaFimCondicao = 'untilDate';
-    serieAtual.recorrenciaDataFim = _ptBrAnteriorFd;
-
-    const _dataInicioEfeitoFd = context.parseDataFlex(
-      serieAtual.recorrenciaDataInicio || serieAtual.data || serieAtual.dataCriacao,
-    );
-    const _dataFimRecorrenciaFd = context.parseDataFlex(serieAtual.recorrenciaDataFim);
-    const _serieOriginalVaziaFd =
-      _dataInicioEfeitoFd && _dataFimRecorrenciaFd && _dataFimRecorrenciaFd < _dataInicioEfeitoFd;
-
-    if (_serieOriginalVaziaFd) {
-      const _indiceSerieOriginalFd = aulas.findIndex((item) => item && item.id === serieAtual.id);
-      if (_indiceSerieOriginalFd >= 0) {
-        aulas.splice(_indiceSerieOriginalFd, 1);
-      }
-    }
-
-    const _novaSerieFd = Object.assign({}, serieAtual, {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      data: dataDestino,
-      recorrenciaDataInicio: dataDestino,
-      horarioInicio: elementos.editHoraInicio.value,
-      horarioFim: elementos.editDuracao.value ? context.somarMinutos(elementos.editHoraInicio.value, Number(elementos.editDuracao.value)) : '10:00',
-      dia: _selDiaFd,
-      diasSemana: Array.isArray(serieAtual.diasSemana) ? [...serieAtual.diasSemana] : [serieAtual.dia],
-      googleCalendarEventId: null,
-      excecoes: [],
-      excecoesDetalhadas: [],
-      serieOrigemId: serieAtual.id,
-      recorrenciaEscopo: 'fromDate',
-    });
-
-    delete _novaSerieFd.recorrenciaFimCondicao;
-    delete _novaSerieFd.recorrenciaDataFim;
-    aulas.push(_novaSerieFd);
-  };
+  if (typeof context.window.abrirModalAcaoSlot === 'function' && compromisso && compromisso.id) {
+    context.window.abrirModalAcaoSlot(compromisso.id);
+  }
 
   return { context, form: formEditar };
 }
