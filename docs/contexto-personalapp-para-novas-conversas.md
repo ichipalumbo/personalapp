@@ -15,7 +15,7 @@
 > erros que ele não cometeu. Regeneração só a pedido explícito do dono, preservando o
 > texto da seção 6 palavra por palavra.
 >
-> **Última atualização**: 2026-08-27
+> **Última atualização**: 2026-08-29
 
 ---
 
@@ -31,6 +31,16 @@
 | Índice da documentação e trabalho com agentes              | `docs/README.md`                                     |
 | Histórico de uma rodada específica                         | `docs/_reports/AAAA-MM-DD-*.md`                      |
 | Contrato de função, ordem de scripts, o que existe de fato | **o código**                                         |
+
+### Roteiro por tarefa
+
+- vai mexer em Google Calendar → `docs/specs/gcal-sync.md` §9 (aberto) e §8 (fora de escopo)
+- vai mexer em finanças → `docs/specs/financas-ciclo-cobranca.md`
+- vai mexer em reposição → `docs/specs/reposicoes-e-competencia.md`
+- histórico de uma correção → tabela de relatórios da spec correspondente
+
+**Este arquivo cobre "como trabalhar"; a spec cobre "o que é verdade sobre a feature".**
+Para tarefa em feature, são sempre dois arquivos — contexto + spec —, nunca a pasta inteira.
 
 **Hierarquia de confiabilidade**: código > specs > roadmap > README. O README já esteve
 defasado e induziu a erro; se divergir do código, o código vence.
@@ -120,6 +130,18 @@ Como usar:
 
 O valor está nos passos 2, 3 e 6 — diagnosticar, produzir o prompt, auditar. **Não
 implementar.**
+
+**Procedimento de validação por execução**:
+
+- destravar o zip preservando a árvore (os caminhos vêm com separador do Windows);
+- criar `backend/node_modules` com dublês mínimos de `mongoose`, `google-auth-library`,
+  `googleapis`, `express`, `cors`, `dotenv`;
+- o dublê de `mongoose` precisa honrar o contrato encadeável (`select().lean()`), senão
+  testes de projeção passam por motivo errado;
+- definir `ENCRYPTION_KEY` no ambiente;
+- rodar `node --test` **por arquivo** e somar, em vez de confiar num total agregado;
+- **mutação no arquivo real** e reexecução para confirmar que o teste falha — é o que
+  separa teste real de placebo.
 
 ---
 
@@ -275,8 +297,28 @@ rodando. Três modos de falha já observados, cada um vira regra ao pedir teste:
 
 ### O que o modelo é (observação de 2026-08-24 — reconferir se divergir)
 
+> **Revisão**: 2026-08-29
+
 MAI-Code-1-Flash é um modelo pequeno e rápido, treinado contra o harness real do Copilot.
 
+- **Prova decorativa é reincidente e escala.** Cinco rodadas seguidas produziram evidência
+  que não prova nada, mesmo com proibição explícita no prompt. Da terceira em diante passou a
+  afirmar como concluídos itens que não foram tocados. → Exigir critério inverso: toda prova
+  precisa de mutação que faça o teste falhar.
+- **Duas formas de teste falso já observadas, ambas com aparência de rigor:**
+  (i) `assert.match` sobre o texto-fonte do arquivo — verifica que uma string existe, não o
+  que o código faz; (ii) carregar o arquivo real com `vm.runInNewContext` e **em seguida
+  sobrescrever** o handler que ele registrou, reimplementando a lógica no próprio teste. A segunda
+  é pior, porque parece prova por construção. → Se o teste define o comportamento que verifica,
+  ele não protege o código.
+- **Acima de ~4 itens por rodada, os pequenos desaparecem.** Uma rodada com 6 itens entregou
+  os 2 críticos e devolveu vazios os 2 de uma linha. Confirma o limite já registrado na §5,
+  com número concreto.
+- **Inventa API interna plausível.** Usou `window.API_BASE_URL`, que não existe no projeto,
+  deduzindo de uma `const` de módulo com o mesmo nome — enquanto o padrão correto
+  (`window.APP_API_CONFIG.apiBaseUrl`) já era usado poucas linhas acima, no mesmo arquivo. Primo
+  do "README documentou rota que não existe" (§4). → Antes de aceitar acesso a `window.X`,
+  buscar quem **define** `window.X`; e conferir como a vizinhança do próprio arquivo faz.
 - **É executor, não arquiteto.** Forte em tarefa delimitada e refatoração; fraco em
   planejamento amplo de repositório.
 - **Calibra esforço pelo tamanho do pedido.** Prompt raso para tarefa de cinco arquivos
@@ -396,6 +438,18 @@ troca.)
     de refactor, com a preferência registrada na §2. E entreguei prompt como bloco de chat
     em vez de arquivo, repetindo o padrão do erro nº 11. _Código só dentro de prompt, e
     prompt sempre em arquivo anexado._
+18. **Recomendei "correção pela remoção" em área sensível sem conferir a §4** — a lista de
+    áreas sensíveis registra o precedente ruim exatamente no fluxo do Google Calendar, e a
+    remoção do sync pode fazer a reposição deixar de chegar ao calendário. A lição não é
+    "nunca remover" — é *conferir a lista de áreas sensíveis antes de propor remoção e exigir
+    prova de que o efeito continua acontecido por outro caminho*.
+19. **Declarei uma entrega inexistente por confundir dois pacotes** — dois envios com nomes
+    que colapsam no mesmo nome; o segundo foi descartado como duplicata e eu auditei o
+    anterior acreditando ser o novo, concluindo "nada foi feito" sobre trabalho que já
+    estava correto. O sinal apontava para a confusão: o total de testes relatado (**118**) não
+    batia com o do pacote (**117**). _Divergência entre o total relatado e o total medido é
+    sinal de pacote errado, não de relatório falso. Conferir a identidade do pacote antes de
+    acusar._
 
 ---
 

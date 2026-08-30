@@ -12,6 +12,7 @@
 | [`roadmap.md`](roadmap.md) | Backlog vivo do produto, com os débitos técnicos conhecidos mapeados | Antes de escolher a próxima feature |
 | [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno · **v6 · em produção** | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
 | [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md) | Fila de reposições, competência de cobrança, prazo de validade e extrato do ciclo | Antes de definir como aulas enviadas para reposição entram no cálculo e no histórico financeiro |
+| [`specs/gcal-sync.md`](specs/gcal-sync.md) | Sincronização com Google Calendar · **v7 · em produção** | Antes de mexer em recorrência, `EXDATE`, webhook, renovação do canal ou conflitos de sincronização |
 
 ---
 
@@ -20,6 +21,8 @@
 - O **roadmap** é um documento **único e vivo**: muda toda vez que algo é entregue ou repriorizado. Nunca versionar por data nem duplicar em `roadmap-v2.md`.
 - As **specs** são **uma por feature** e congelam o estado de uma decisão. Cada uma tem número de versão no cabeçalho; o histórico fica no Git, não em arquivos paralelos (`v1.md`, `v2.md`).
 - Quando uma feature é entregue, o item correspondente no roadmap é marcado como concluído e passa a **apontar para a spec**, em vez de repetir o conteúdo dela.
+- Cada spec mantém uma seção `Fora de escopo` e uma tabela de relatórios relacionados no fim da seção de itens (ex.: `## 9.17 Relatórios desta spec` em `specs/gcal-sync.md`). O relatório é o histórico, a spec é a fonte de verdade do que está aberto.
+- Relatório de item **fechado** é imutável; relatório de item **em aberto** pode ser corrigido enquanto o trabalho corre. Correção posterior ao fechamento vai em **relatório novo**, que referencia o antigo.
 
 ---
 
@@ -44,7 +47,7 @@ Valores possíveis de **Status**: `Rascunho` · `Aprovada, não implementada` ·
 ### Trabalhando com agentes de IA
 
 - Sempre passe o **caminho completo** da spec no prompt (ex.: `docs/specs/financas-ciclo-cobranca.md`). Referência solta pelo nome faz o agente procurar no lugar errado — e ele costuma seguir em frente sem avisar.
-- A spec deve resolver explicitamente os casos de borda. O que estiver fora dela deve estar na seção "Fora de Escopo" da própria spec, para o agente não inventar solução.
+- A spec deve resolver explicitamente os casos de borda. O que estiver fora dela deve estar na seção "Fora de escopo" da própria spec, para o agente não inventar solução.
 - Instruções permanentes para agentes ficam em `.agents/skills/`, não aqui.
 
 ---
