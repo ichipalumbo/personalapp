@@ -309,9 +309,23 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     },
     getCompromissoSerializadoParaConflito: (compromissoBase) => ({ ...compromissoBase }),
     getDatasConflitoRecorrencia: () => [],
-    getConflitosRecorrenciaEmDatas: () => [],
+    getConflitosRecorrenciaEmDatas: (candidato, datas, opcoes = {}) => {
+      context.chamadasConflito = Array.isArray(context.chamadasConflito) ? context.chamadasConflito : [];
+      context.chamadasConflito.push({
+        fn: 'getConflitosRecorrenciaEmDatas',
+        ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+      });
+      return [];
+    },
     gerarResumoConflitosDatas: () => '',
-    getConflitosNoDia: () => [],
+    getConflitosNoDia: (candidato, dataAlvo, opcoes = {}) => {
+      context.chamadasConflito = Array.isArray(context.chamadasConflito) ? context.chamadasConflito : [];
+      context.chamadasConflito.push({
+        fn: 'getConflitosNoDia',
+        ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+      });
+      return [];
+    },
     somarMinutos: (inicio, minutos) => {
       const [hora, minuto] = String(inicio).split(':').map(Number);
       const total = hora * 60 + minuto + minutos;
@@ -356,6 +370,22 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   };
 
   context.window.idCompromissoSelecionado = compromisso && compromisso.id ? compromisso.id : '';
+  context.chamadasConflito = [];
+  context.window.chamadasConflito = context.chamadasConflito;
+  context.window.getConflitosNoDia = (candidato, dataAlvo, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosNoDia',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+  context.window.getConflitosRecorrenciaEmDatas = (candidato, datas, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosRecorrenciaEmDatas',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
   vm.runInNewContext(script, context, { filename: scriptPath });
 
   if (typeof document.listeners.DOMContentLoaded === 'function') {
@@ -367,6 +397,54 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   }
 
   return { context, form: formEditar };
+}
+
+function criarFamiliaContinuaBase(overrides = {}) {
+  const serieMae = {
+    id: 'serie-mae',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    dataCriacao: '30/08/2026',
+    recorrenciaEscopo: 'fromDate',
+    recorrenciaDataInicio: '31/08/2026',
+    ...overrides
+  };
+
+  const serieFilha = {
+    ...serieMae,
+    id: 'serie-filha',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'serie-mae',
+  };
+
+  const avulsa = {
+    ...serieMae,
+    id: 'avulsa-1',
+    frequencia: 'uma_vez',
+    data: '31/08/2026',
+    serieOrigemId: 'serie-mae',
+  };
+
+  return { serieMae, serieFilha, avulsa, aulas: [serieMae, serieFilha, avulsa] };
+}
+
+function assertIgnorarIdsRecebidos(context, idsEsperados) {
+  const ultimaChamada = context.chamadasConflito[context.chamadasConflito.length - 1];
+  assert.ok(ultimaChamada, 'não houve chamada ao conflict detector');
+  const ignorarIds = Array.isArray(ultimaChamada.ignorarIds)
+    ? [...ultimaChamada.ignorarIds].sort()
+    : [];
+  const esperados = [...new Set(idsEsperados)].sort();
+  assert.deepEqual(ignorarIds, esperados);
 }
 
 test('pushEventToGoogle usa id deterministico e trata 409 como sucesso idempotente', async () => {
@@ -1490,3 +1568,346 @@ test('excluirAgendamento não apaga o Mongo quando o Google falha com 500 e grav
     delete require.cache[controllerPath];
   }
 });
+
+function criarSerieFamiliaBase(overrides = {}) {
+  return {
+    id: 'serie-mae',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    dataCriacao: '30/08/2026',
+    recorrenciaEscopo: 'fromDate',
+    recorrenciaDataInicio: '31/08/2026',
+    ...overrides
+  };
+}
+
+test('modal atualiza aviso de conflito em occurrence com família em ignorarIds', () => {
+  const { serieMae, serieFilha, avulsa, aulas } = criarFamiliaContinuaBase();
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.chamadasConflito = [];
+  context.window.getConflitosNoDia = (candidato, dataAlvo, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosNoDia',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+  context.window.getConflitosRecorrenciaEmDatas = (candidato, datas, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosRecorrenciaEmDatas',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+
+  context.document.getElementById('editEscopoRecorrencia').value = 'occurrence';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  context.window.atualizarAvisoConflitoEdicao();
+  assertIgnorarIdsRecebidos(context, [serieMae.id, serieFilha.id, avulsa.id]);
+});
+
+test('modal atualiza aviso de conflito em recorrente com família em ignorarIds', () => {
+  const { serieMae, serieFilha, avulsa, aulas } = criarFamiliaContinuaBase();
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.chamadasConflito = [];
+  context.window.getDatasConflitoRecorrencia = () => ['2026-09-02'];
+  context.window.getConflitosRecorrenciaEmDatas = (candidato, datas, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosRecorrenciaEmDatas',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+
+  context.document.getElementById('editEscopoRecorrencia').value = 'fromDate';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  context.window.atualizarAvisoConflitoEdicao();
+  assertIgnorarIdsRecebidos(context, [serieMae.id, serieFilha.id, avulsa.id]);
+});
+
+test('submit occurrence propaga família em ignorarIds', async () => {
+  const { serieMae, serieFilha, avulsa, aulas } = criarFamiliaContinuaBase();
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.chamadasConflito = [];
+  context.window.getConflitosNoDia = (candidato, dataAlvo, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosNoDia',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+
+  context.document.getElementById('editEscopoRecorrencia').value = 'occurrence';
+  context.document.getElementById('editCompromissoFrequencia').value = 'semanal';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  await form.listeners.submit({ preventDefault() {} });
+  assertIgnorarIdsRecebidos(context, [serieMae.id, serieFilha.id, avulsa.id]);
+});
+
+test('submit entireSeries propaga família em ignorarIds', async () => {
+  const { serieMae, serieFilha, avulsa, aulas } = criarFamiliaContinuaBase();
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.chamadasConflito = [];
+  context.window.getDatasConflitoRecorrencia = () => ['2026-09-02'];
+  context.window.getConflitosRecorrenciaEmDatas = (candidato, datas, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosRecorrenciaEmDatas',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+
+  context.document.getElementById('editEscopoRecorrencia').value = 'entireSeries';
+  context.document.getElementById('editCompromissoFrequencia').value = 'semanal';
+  context.document.getElementById('editHoraInicio').value = '09:30';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  await form.listeners.submit({ preventDefault() {} });
+  assertIgnorarIdsRecebidos(context, [serieMae.id, serieFilha.id, avulsa.id]);
+});
+
+test('submit fromDate propaga família em ignorarIds', async () => {
+  const { serieMae, serieFilha, avulsa, aulas } = criarFamiliaContinuaBase();
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.chamadasConflito = [];
+  context.window.getDatasConflitoRecorrencia = () => ['2026-09-02'];
+  context.window.getConflitosRecorrenciaEmDatas = (candidato, datas, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosRecorrenciaEmDatas',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+
+  context.document.getElementById('editEscopoRecorrencia').value = 'fromDate';
+  context.document.getElementById('editCompromissoFrequencia').value = 'semanal';
+  context.document.getElementById('editHoraInicio').value = '09:45';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  await form.listeners.submit({ preventDefault() {} });
+  assertIgnorarIdsRecebidos(context, [serieMae.id, serieFilha.id, avulsa.id]);
+});
+
+test('submit monthOfDate propaga família em ignorarIds', async () => {
+  const { serieMae, serieFilha, avulsa, aulas } = criarFamiliaContinuaBase();
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.chamadasConflito = [];
+  context.window.getDatasConflitoRecorrencia = () => ['2026-09-02'];
+  context.window.getConflitosRecorrenciaEmDatas = (candidato, datas, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosRecorrenciaEmDatas',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+
+  context.document.getElementById('editEscopoRecorrencia').value = 'monthOfDate';
+  context.document.getElementById('editCompromissoFrequencia').value = 'semanal';
+  context.document.getElementById('editHoraInicio').value = '10:00';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  await form.listeners.submit({ preventDefault() {} });
+  assertIgnorarIdsRecebidos(context, [serieMae.id, serieFilha.id, avulsa.id]);
+});
+
+test('submit de frequência uma_vez propaga família em ignorarIds', async () => {
+  const { serieMae, serieFilha, avulsa, aulas } = criarFamiliaContinuaBase();
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.chamadasConflito = [];
+  context.window.getConflitosNoDia = (candidato, dataAlvo, opcoes = {}) => {
+    context.chamadasConflito.push({
+      fn: 'getConflitosNoDia',
+      ignorarIds: Array.isArray(opcoes.ignorarIds) ? [...opcoes.ignorarIds] : null,
+    });
+    return [];
+  };
+
+  context.document.getElementById('editEscopoRecorrencia').value = 'fromDate';
+  context.document.getElementById('editCompromissoFrequencia').value = 'uma_vez';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  await form.listeners.submit({ preventDefault() {} });
+  assertIgnorarIdsRecebidos(context, [serieMae.id, serieFilha.id, avulsa.id]);
+});
+
+test('avulsa criada por occurrence guarda a série mãe direta em serieOrigemId', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae' });
+  const aulas = [serieMae];
+  const { form, context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.document.getElementById('editEscopoRecorrencia').value = 'occurrence';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const avulsa = aulas.find((item) => item.id !== 'serie-mae');
+  assert.ok(avulsa);
+  assert.equal(avulsa.frequencia, 'uma_vez');
+  assert.equal(avulsa.serieOrigemId, 'serie-mae');
+});
+
+test('split encadeado mantém a mãe direta em serieOrigemId da avulsa', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae' });
+  const serieFilha = criarSerieFamiliaBase({ id: 'serie-filha', serieOrigemId: 'serie-mae' });
+  const aulas = [serieMae, serieFilha];
+  const { form, context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.document.getElementById('editEscopoRecorrencia').value = 'occurrence';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const avulsa = aulas.find((item) => item.id !== 'serie-mae' && item.id !== 'serie-filha');
+  assert.ok(avulsa);
+  assert.equal(avulsa.frequencia, 'uma_vez');
+  assert.equal(avulsa.serieOrigemId, 'serie-filha');
+});
+
+test('resolverFamiliaSerie devolve a série, a continuação e as avulsas transitivamente', () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae' });
+  const serieFilha = criarSerieFamiliaBase({ id: 'serie-filha', serieOrigemId: 'serie-mae' });
+  const avulsaFilha = {
+    ...serieFilha,
+    id: 'avulsa-filha',
+    frequencia: 'uma_vez',
+    serieOrigemId: 'serie-filha',
+  };
+  const serieNeta = criarSerieFamiliaBase({ id: 'serie-neta', serieOrigemId: 'serie-filha' });
+  const avulsaNeta = {
+    ...serieNeta,
+    id: 'avulsa-neta',
+    frequencia: 'uma_vez',
+    serieOrigemId: 'serie-neta',
+  };
+  const aulas = [serieMae, serieFilha, serieNeta, avulsaFilha, avulsaNeta];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+
+  const ids = Array.from(context.window.resolverFamiliaSerie('serie-mae').map((item) => item.id)).sort();
+  assert.deepEqual(ids, ['avulsa-filha', 'avulsa-neta', 'serie-filha', 'serie-mae', 'serie-neta']);
+});
+
+test('resolverFamiliaSerie nao entra em laço infinito com vínculo circular', () => {
+  const itemA = { id: 'A', serieOrigemId: 'B' };
+  const itemB = { id: 'B', serieOrigemId: 'A' };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [itemA, itemB], compromisso: itemA, dataAlvoStr: '31/08/2026' });
+
+  const ids = Array.from(context.window.resolverFamiliaSerie('A').map((item) => item.id)).sort();
+  assert.deepEqual(ids, ['A', 'B']);
+});
+
+test('resolverFamiliaDescendenteSerie nao sobe para o pai historico', () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae' });
+  const serieFilha = criarSerieFamiliaBase({ id: 'serie-filha', serieOrigemId: 'serie-mae' });
+  const avulsa = {
+    ...serieFilha,
+    id: 'avulsa-filha',
+    frequencia: 'uma_vez',
+    serieOrigemId: 'serie-filha',
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae, serieFilha, avulsa], compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+
+  const ids = Array.from(context.window.resolverFamiliaDescendenteSerie('serie-filha').map((item) => item.id)).sort();
+  assert.deepEqual(ids, ['avulsa-filha', 'serie-filha']);
+});
+
+test('modal usa família completa em ignorarIds para editar ocorrência da continuação', () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae', alunoId: 'aluno-1' });
+  const serieFilha = criarSerieFamiliaBase({ id: 'serie-filha', serieOrigemId: 'serie-mae', alunoId: 'aluno-1' });
+  const aulas = [serieMae, serieFilha];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  const impacto = context.document.getElementById('editEscopoImpacto');
+  const escopo = context.document.getElementById('editEscopoRecorrencia');
+  escopo.value = 'occurrence';
+  context.document.getElementById('editHoraInicio').value = '09:00';
+  context.document.getElementById('editDuracao').value = '60';
+  context.window.dataAlvoAcaoStr = '02/09/2026';
+
+  context.window.atualizarAvisoConflitoEdicao();
+
+  assert.equal(impacto.textContent.includes('Conflito detectado'), false);
+  const idsFamilia = Array.from(context.window.resolverFamiliaSerie('serie-filha').map((item) => item.id)).sort();
+  assert.equal(idsFamilia.join(','), 'serie-filha,serie-mae');
+});
+
+test('removerFamiliaSerie remove só a família da série e preserva o restante', () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae' });
+  const serieFilha = criarSerieFamiliaBase({ id: 'serie-filha', serieOrigemId: 'serie-mae' });
+  const avulsa = {
+    ...serieMae,
+    id: 'avulsa-1',
+    frequencia: 'uma_vez',
+    serieOrigemId: 'serie-mae',
+    alunoId: 'aluno-1',
+  };
+  const outroAluno = {
+    ...serieMae,
+    id: 'outro-1',
+    alunoId: 'aluno-2',
+    serieOrigemId: undefined,
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae, serieFilha, avulsa, outroAluno], compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+
+  const count = context.window.removerFamiliaSerie('serie-mae');
+  assert.equal(count, 3);
+  assert.deepEqual(context.aulas.map((item) => item.id).sort(), ['outro-1']);
+});
+
+test('removerFamiliaSerie nao remove aulas de outro aluno nem sem vínculo', () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae' });
+  const semVinculo = {
+    ...serieMae,
+    id: 'nao-vinculada',
+    alunoId: 'aluno-3',
+    serieOrigemId: undefined,
+  };
+  const outroAluno = {
+    ...serieMae,
+    id: 'outro-aluno',
+    alunoId: 'aluno-2',
+    serieOrigemId: undefined,
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae, semVinculo, outroAluno], compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+
+  const count = context.window.removerFamiliaSerie('serie-mae');
+  assert.equal(count, 1);
+  assert.deepEqual(context.aulas.map((item) => item.id).sort(), ['nao-vinculada', 'outro-aluno']);
+});
+
+test('removerFamiliaSerie preserva reposições e explica a decisão conservadora', () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-mae' });
+  const reposicao = {
+    ...serieMae,
+    id: 'repo-1',
+    isReposicao: true,
+    reposicaoId: 'rep-xyz',
+    serieOrigemId: 'serie-mae',
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae, reposicao], compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+
+  const count = context.window.removerFamiliaSerie('serie-mae');
+  assert.equal(count, 1);
+  assert.deepEqual(context.aulas.map((item) => item.id), ['repo-1']);
+});
+

@@ -146,6 +146,110 @@ function obterNomesDiasSemanaModalAcao() {
     : ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 }
 
+/**
+ * Resolve a família completa de uma série, incluindo a própria série, a série
+ * pai histórico e todos os descendentes desta ligação (séries de continuação e
+ * avulsas), com proteção contra ciclo.
+ * @param {string|Object} idOuCompromisso
+ * @returns {{ id: string }[]} registros da família completa
+ */
+window.resolverFamiliaSerie = function (idOuCompromisso) {
+ const baseId =
+   idOuCompromisso && typeof idOuCompromisso === "object"
+     ? idOuCompromisso.id
+     : idOuCompromisso;
+ if (!baseId || !Array.isArray(aulas)) return [];
+
+ const fila = [baseId];
+ const visitados = new Set();
+ const familia = [];
+
+ while (fila.length > 0) {
+   const atualId = fila.shift();
+   if (!atualId || visitados.has(atualId)) continue;
+   visitados.add(atualId);
+
+   const atual = aulas.find((item) => item && item.id === atualId);
+   if (atual) familia.push(atual);
+
+   aulas.forEach((item) => {
+     if (!item || item.id === atualId) return;
+     const filhoDireto = item.serieOrigemId === atualId;
+     const paiDireto =
+       atual && atual.serieOrigemId && item.id === atual.serieOrigemId;
+     if ((filhoDireto || paiDireto) && !visitados.has(item.id)) {
+       fila.push(item.id);
+     }
+   });
+ }
+
+ return familia.filter(
+   (item, indice, lista) =>
+     item && lista.findIndex((outro) => outro && outro.id === item.id) === indice,
+ );
+};
+
+/**
+ * Resolve apenas os descendentes diretos e transitivos da série, sem subir para
+ * o pai histórico. Serve ao fluxo de exclusão em cascata, que não deve apagar a
+ * série original quando a série em edição é uma continuação.
+ * @param {string|Object} idOuCompromisso
+ * @returns {{ id: string }[]} registros descendentes da família
+ */
+window.resolverFamiliaDescendenteSerie = function (idOuCompromisso) {
+ const baseId =
+   idOuCompromisso && typeof idOuCompromisso === "object"
+     ? idOuCompromisso.id
+     : idOuCompromisso;
+ if (!baseId || !Array.isArray(aulas)) return [];
+
+ const fila = [baseId];
+ const visitados = new Set();
+ const familia = [];
+
+ while (fila.length > 0) {
+   const atualId = fila.shift();
+   if (!atualId || visitados.has(atualId)) continue;
+   visitados.add(atualId);
+
+   const atual = aulas.find((item) => item && item.id === atualId);
+   if (atual) familia.push(atual);
+
+   aulas.forEach((item) => {
+     if (!item || item.id === atualId) return;
+     const filhoDireto = item.serieOrigemId === atualId;
+     if (filhoDireto && !visitados.has(item.id)) {
+       fila.push(item.id);
+     }
+   });
+ }
+
+ return familia.filter(
+   (item, indice, lista) =>
+     item && lista.findIndex((outro) => outro && outro.id === item.id) === indice,
+ );
+};
+
+window.removerFamiliaSerie = function (idOuCompromisso) {
+ if (!Array.isArray(aulas)) return 0;
+ const familia = window.resolverFamiliaDescendenteSerie(idOuCompromisso);
+ const idsParaRemover = new Set(
+   familia
+     .filter((item) => item && !item.isReposicao)
+     .map((item) => item.id),
+ );
+
+ if (idsParaRemover.size === 0) return 0;
+
+ const antes = aulas.length;
+ aulas.splice(
+   0,
+   aulas.length,
+   ...aulas.filter((item) => !idsParaRemover.has(item && item.id)),
+ );
+ return antes - aulas.length;
+};
+
 function compromissoTemAlunoInativo(compromisso) {
   if (!compromisso || (compromisso.tipo || "aula") !== "aula") return false;
   if (
@@ -499,12 +603,14 @@ window.atualizarAvisoConflitoEdicao = function () {
     dataAlvoStr,
   );
 
+  const familiaIgnorarIds = window.resolverFamiliaSerie(compromisso).map((item) => item.id);
+
   if (escopo === "occurrence") {
     const iso = window.converterPtBrParaISO(dataAlvoStr);
     if (!iso) return;
     const data = new Date(`${iso}T12:00:00`);
     const conflitos = window.getConflitosNoDia(candidato, data, {
-      ignorarIds: [compromisso.id],
+      ignorarIds: familiaIgnorarIds,
     });
     if (conflitos.length > 0) {
       impacto.textContent = `Conflito detectado em ${window.formatarDataPtBrLegivel(dataAlvoStr)}.`;
@@ -514,7 +620,7 @@ window.atualizarAvisoConflitoEdicao = function () {
 
   const datas = window.getDatasConflitoRecorrencia(candidato, 16);
   const conflitos = window.getConflitosRecorrenciaEmDatas(candidato, datas, {
-    ignorarIds: [compromisso.id],
+    ignorarIds: familiaIgnorarIds,
   });
   if (conflitos.length > 0) {
     impacto.textContent = `Conflitos previstos em: ${window.gerarResumoConflitosDatas(conflitos, 4)}.`;
@@ -973,8 +1079,9 @@ document.addEventListener("DOMContentLoaded", () => {
               return;
             }
             const data = new Date(`${iso}T12:00:00`);
+            const familiaIgnorarIds = window.resolverFamiliaSerie(compromisso).map((item) => item.id);
             const conflitos = window.getConflitosNoDia(candidato, data, {
-              ignorarIds: [compromisso.id],
+              ignorarIds: familiaIgnorarIds,
             });
             if (conflitos.length > 0) {
               alert(
@@ -1011,16 +1118,18 @@ document.addEventListener("DOMContentLoaded", () => {
               fullDay: diaInteiro,
               excecoes: [],
               excecoesDetalhadas: [],
+              serieOrigemId: compromisso.id,
               googleCalendarEventId: null, // novo evento — não herdar o ID da série
             };
             aulas.push(novoCompromisso);
             _novaOcorrenciaSerie = novoCompromisso;
           } else if (escopoRecorrencia === "entireSeries") {
             const datas = window.getDatasConflitoRecorrencia(candidato, 20);
+            const familiaIgnorarIds = window.resolverFamiliaSerie(compromisso).map((item) => item.id);
             const conflitos = window.getConflitosRecorrenciaEmDatas(
               candidato,
               datas,
-              { ignorarIds: [compromisso.id] },
+              { ignorarIds: familiaIgnorarIds },
             );
             if (conflitos.length > 0) {
               const resumo = window.gerarResumoConflitosDatas(conflitos, 5);
@@ -1093,10 +1202,11 @@ document.addEventListener("DOMContentLoaded", () => {
               dataAlvoStr,
             );
             const _datasFd = window.getDatasConflitoRecorrencia(_candidatoFd, 20);
+            const familiaIgnorarIds = window.resolverFamiliaSerie(compromisso).map((item) => item.id);
             const _conflitosFd = window.getConflitosRecorrenciaEmDatas(
               _candidatoFd,
               _datasFd,
-              { ignorarIds: [compromisso.id] },
+              { ignorarIds: familiaIgnorarIds },
             );
             if (_conflitosFd.length > 0) {
               const _resumoFd = window.gerarResumoConflitosDatas(_conflitosFd, 5);
@@ -1154,10 +1264,11 @@ document.addEventListener("DOMContentLoaded", () => {
           } else {
             // monthOfDate e outros escopos futuros
             const datas = window.getDatasConflitoRecorrencia(candidato, 20);
+            const familiaIgnorarIds = window.resolverFamiliaSerie(compromisso).map((item) => item.id);
             const conflitos = window.getConflitosRecorrenciaEmDatas(
               candidato,
               datas,
-              { ignorarIds: [compromisso.id] },
+              { ignorarIds: familiaIgnorarIds },
             );
             if (conflitos.length > 0) {
               const resumo = window.gerarResumoConflitosDatas(conflitos, 5);
@@ -1179,8 +1290,9 @@ document.addEventListener("DOMContentLoaded", () => {
           const iso = window.converterPtBrParaISO(dataAlvoStr);
           if (iso) {
             const data = new Date(`${iso}T12:00:00`);
+            const familiaIgnorarIds = window.resolverFamiliaSerie(compromisso).map((item) => item.id);
             const conflitos = window.getConflitosNoDia(candidato, data, {
-              ignorarIds: [compromisso.id],
+              ignorarIds: familiaIgnorarIds,
             });
             if (conflitos.length > 0) {
               alert(
@@ -1582,12 +1694,26 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Aluno inativo: não é possível cancelar esta série.");
         return;
       }
-      const mensagemConfirmacaoSerie =
-        "Excluir todas as aulas desta série?\n\nIsso remove a recorrência inteira, incluindo as aulas futuras. Nada será enviado para reposição.";
-      if (!confirm(mensagemConfirmacaoSerie)) return;
-      const _idxSerie = aulas.findIndex(
-        (a) => a.id === window.idCompromissoSelecionado,
+      const _familiaSerie = window.resolverFamiliaSerie(_serieDeletar || window.idCompromissoSelecionado);
+      const _idsRemover = new Set(
+        _familiaSerie
+          .filter((item) => item && !item.isReposicao)
+          .map((item) => item.id),
       );
+      const _totalRemover = _idsRemover.size;
+      const mensagemConfirmacaoSerie =
+        _totalRemover > 0
+          ? `Excluir ${_totalRemover} aulas desta série?\n\nIsso remove a recorrência inteira, incluindo as aulas futuras vinculadas. Reposições continuam preservadas no app.`
+          : "Nenhuma aula desta série pode ser removida porque todas são reposições e continuam preservadas.";
+      if (!confirm(mensagemConfirmacaoSerie)) return;
+      if (_totalRemover === 0) {
+        window.log.info("[agenda]", "Série excluída", {
+          id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
+          ocorrenciasAfetadas: 0,
+          reposicoesPreservadas: _familiaSerie.filter((item) => item && item.isReposicao).length,
+        });
+        return;
+      }
 
       if (_serieDeletar && _serieDeletar.serieOrigemId) {
         const _continuar = confirm(
@@ -1599,17 +1725,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!_continuar) return;
       }
 
-      if (_idxSerie !== -1) aulas.splice(_idxSerie, 1);
-      const ocorrenciasAfetadas = Array.isArray(
-        _serieDeletar && _serieDeletar.excecoesDetalhadas,
-      )
-        ? _serieDeletar.excecoesDetalhadas.length
-        : Array.isArray(_serieDeletar && _serieDeletar.excecoes)
-          ? _serieDeletar.excecoes.length
-          : undefined;
+      const ocorrenciasAfetadas = window.removerFamiliaSerie(
+        _serieDeletar || window.idCompromissoSelecionado,
+      );
       window.log.info("[agenda]", "Série excluída", {
         id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
         ocorrenciasAfetadas: ocorrenciasAfetadas,
+        reposicoesPreservadas: _familiaSerie.filter((item) => item && item.isReposicao).length,
       });
       window.fecharModalAcaoSlot();
       if (
