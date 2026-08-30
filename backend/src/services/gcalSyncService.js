@@ -1,3 +1,4 @@
+const crypto = require('node:crypto');
 const { OAuth2Client } = require('google-auth-library');
 const { google } = require('googleapis');
 const Agendamento = require('../models/Agendamento');
@@ -10,6 +11,36 @@ const recurrenceHelpers = require('../../../assets/js/shared/recurrence-helpers'
 
 const GCAL_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const APP_ORIGIN = 'corepersonal';
+
+function buildDeterministicGoogleEventId(ownerEmail, agendamento) {
+  const normalizedOwnerEmail = normalizeEmail(ownerEmail);
+  const agendamentoId = agendamento && agendamento.id ? String(agendamento.id).trim() : '';
+
+  if (!normalizedOwnerEmail || !agendamentoId) {
+    const error = new Error('ownerEmail e agendamento.id são obrigatórios para derivar um id determinístico do Google Calendar.');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  const digest = crypto
+    .createHash('sha256')
+    .update(`${normalizedOwnerEmail}:${agendamentoId}`)
+    .digest('hex');
+
+  return `app${digest}`;
+}
+
+function isGoogleCalendarConflictError(error) {
+  const statusCode = error && (error.statusCode || error.status);
+  return statusCode === 409;
+}
+
+async function fetchGoogleEventById(oauth2Client, calendarioId, googleCalendarEventId) {
+  return calendarFetch(
+    oauth2Client,
+    `/calendars/${encodeURIComponent(calendarioId)}/events/${encodeURIComponent(googleCalendarEventId)}`
+  );
+}
 
 function isAppOwnedEvent(event) {
   const appOrigin = event && event.extendedProperties && event.extendedProperties.private
@@ -428,16 +459,50 @@ function obterUltimoDiaMesISO(dataISO) {
   return ultimoDiaMes.toISOString().slice(0, 10);
 }
 
+function normalizarDiaSemanaParaComparacao(valor) {
+  if (valor === null || valor === undefined) {
+    return '';
+  }
+
+  return String(valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 function mapearDiaSemanaParaCodigoRFC(nomeDia) {
   const nomes = recurrenceHelpers.DEFAULT_DIAS_SEMANA || [];
-  const indice = nomes.findIndex((nome) => nome && nome.toLowerCase() === String(nomeDia || '').trim().toLowerCase());
-  if (indice >= 0) {
-    const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-    return mapa[indice] || null;
+  const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+  const valorNormalizado = normalizarDiaSemanaParaComparacao(nomeDia);
+  if (valorNormalizado) {
+    const comparacao = {
+      domingo: 'SU', dom: 'SU',
+      segunda: 'MO', seg: 'MO',
+      terca: 'TU', terça: 'TU', ter: 'TU',
+      quarta: 'WE', qua: 'WE',
+      quinta: 'TH', qui: 'TH',
+      sexta: 'FR', sex: 'FR',
+      sabado: 'SA', sab: 'SA'
+    };
+    if (comparacao[valorNormalizado]) {
+      return comparacao[valorNormalizado];
+    }
+
+    const indice = nomes.findIndex((nome) => {
+      if (!nome) {
+        return false;
+      }
+      return normalizarDiaSemanaParaComparacao(nome) === valorNormalizado;
+    });
+    if (indice >= 0) {
+      return mapa[indice] || null;
+    }
   }
 
   if (typeof nomeDia === 'number' && nomeDia >= 0 && nomeDia <= 6) {
-    const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
     return mapa[nomeDia] || null;
   }
 
@@ -454,6 +519,14 @@ function obterListaDiasSemanaParaRrule(agendamento) {
     const codigo = mapearDiaSemanaParaCodigoRFC(valor);
     if (codigo) {
       dias.push(codigo);
+      continue;
+    }
+
+    if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
+      console.warn('[GCalSync] Dia da semana ignorado na recorrência.', {
+        valor,
+        valorNormalizado: normalizarDiaSemanaParaComparacao(valor)
+      });
     }
   }
 
@@ -461,6 +534,11 @@ function obterListaDiasSemanaParaRrule(agendamento) {
     const codigo = mapearDiaSemanaParaCodigoRFC(agendamento.dia);
     if (codigo) {
       dias.push(codigo);
+    } else if (agendamento.dia !== null && agendamento.dia !== undefined && String(agendamento.dia).trim() !== '') {
+      console.warn('[GCalSync] Dia da semana ignorado na recorrência.', {
+        valor: agendamento.dia,
+        valorNormalizado: normalizarDiaSemanaParaComparacao(agendamento.dia)
+      });
     }
   }
 
@@ -503,10 +581,17 @@ function montarExdatesDeAgendamento(agendamento) {
     }
 
     const dataSomente = new Date(Date.UTC(dataISO.getUTCFullYear(), dataISO.getUTCMonth(), dataISO.getUTCDate()));
-    if (startDate && dataSomente < startDate) {
+    const startDateSemHora = startDate
+      ? new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), startDate.getUTCDate()))
+      : null;
+    const endDateSemHora = endDate
+      ? new Date(Date.UTC(endDate.getUTCFullYear(), endDate.getUTCMonth(), endDate.getUTCDate()))
+      : null;
+
+    if (startDateSemHora && dataSomente < startDateSemHora) {
       continue;
     }
-    if (endDate && dataSomente > endDate) {
+    if (endDateSemHora && dataSomente > endDateSemHora) {
       continue;
     }
 
@@ -1256,16 +1341,41 @@ async function renewWebhookChannelForOwner(ownerEmail) {
 
 async function pushEventToGoogle(ownerEmail, agendamento) {
   const { connection, oauth2Client } = await getClientForOwner(ownerEmail);
-  const evento = montarEventoGoogle(agendamento);
+  const googleCalendarEventId = buildDeterministicGoogleEventId(ownerEmail, agendamento);
+  const evento = {
+    ...montarEventoGoogle(agendamento),
+    id: googleCalendarEventId
+  };
   const calendarioId = connection.calendarId || 'primary';
 
-  const criado = await calendarFetch(oauth2Client, `/calendars/${encodeURIComponent(calendarioId)}/events`, {
-    method: 'POST',
-    body: evento
-  });
+  let criado = null;
+  try {
+    criado = await calendarFetch(oauth2Client, `/calendars/${encodeURIComponent(calendarioId)}/events`, {
+      method: 'POST',
+      body: evento
+    });
+  } catch (error) {
+    if (!isGoogleCalendarConflictError(error)) {
+      throw error;
+    }
+
+    criado = await fetchGoogleEventById(oauth2Client, calendarioId, googleCalendarEventId);
+    if (criado && criado.status === 'cancelled') {
+      const cancelledError = new Error(`Google Calendar event ${googleCalendarEventId} is cancelled and cannot be reused.`);
+      cancelledError.statusCode = 409;
+      cancelledError.googleCalendarEventId = googleCalendarEventId;
+      cancelledError.event = criado;
+      console.warn('[GcalSync] Evento do Google Calendar existente foi encontrado cancelado; tratamos como falha para reprocessamento.', {
+        ownerEmail,
+        googleCalendarEventId,
+        status: criado && criado.status ? criado.status : null
+      });
+      throw cancelledError;
+    }
+  }
 
   return {
-    googleCalendarEventId: criado && criado.id ? String(criado.id) : null,
+    googleCalendarEventId: criado && criado.id ? String(criado.id) : googleCalendarEventId,
     googleEvent: criado
   };
 }
@@ -1443,5 +1553,6 @@ module.exports = {
   montarEventoGoogle,
   montarRecurrence,
   montarTituloEvento,
+  buildDeterministicGoogleEventId,
   resolverDataISO
 };

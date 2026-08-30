@@ -15,6 +15,7 @@ const API_TIMEOUT_MS = 8000;
 const SLEEP_MODE_THRESHOLD_MS = 3000;
 const FINANCAS_CACHE_KEY = 'personal_financas_cache';
 const REPOSICOES_CACHE_KEY = 'personal_reposicoes';
+const GCAL_SYNC_PENDING_FIELDS = ['gcalSyncPendingAt', 'gcalSyncPendingTentativas'];
 
 // [TAG-STORAGE-VERCEL-PING] Warm-up para cold start da Vercel; em ambiente local e inofensivo. Fire-and-forget, sem await.
 fetch(APP_API_CONFIG.apiRootUrl).catch(() => {});
@@ -493,12 +494,75 @@ function _normalizarAgendamentoParaComparacao(agendamento) {
     return _ordenarChavesRecursivamente(copia);
 }
 
+function _removerCamposPendenciaGcalDoAgendamento(agendamento) {
+    if (!agendamento || typeof agendamento !== 'object') {
+        return agendamento;
+    }
+
+    for (const campo of GCAL_SYNC_PENDING_FIELDS) {
+        delete agendamento[campo];
+    }
+
+    return agendamento;
+}
+
+function _removerCamposPendenciaGcalDaLista(agendamentos) {
+    if (!Array.isArray(agendamentos)) {
+        return [];
+    }
+
+    return agendamentos.map((agendamento) => _removerCamposPendenciaGcalDoAgendamento(agendamento));
+}
+
 function _agendamentosSaoIguais(agendamentoA, agendamentoB) {
     try {
         return JSON.stringify(_normalizarAgendamentoParaComparacao(agendamentoA))
             === JSON.stringify(_normalizarAgendamentoParaComparacao(agendamentoB));
     } catch (_) {
         return false;
+    }
+}
+
+async function _lerPayloadCrudJson(resposta) {
+    if (!resposta || typeof resposta.clone !== 'function') {
+        return null;
+    }
+
+    try {
+        return await resposta.clone().json();
+    } catch (error) {
+        return { _erroParseJson: error };
+    }
+}
+
+function _extrairAgendamentoDoPayloadCrud(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    if (payload.agendamento && typeof payload.agendamento === 'object') {
+        return payload.agendamento;
+    }
+
+    if (payload.id) {
+        return payload;
+    }
+
+    return null;
+}
+
+function _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamentoLocal, payload) {
+    if (!agendamentoLocal || typeof agendamentoLocal !== 'object') {
+        return;
+    }
+
+    const agendamentoResposta = _extrairAgendamentoDoPayloadCrud(payload);
+    const googleCalendarEventId = agendamentoResposta && agendamentoResposta.googleCalendarEventId
+        ? String(agendamentoResposta.googleCalendarEventId)
+        : null;
+
+    if (googleCalendarEventId) {
+        agendamentoLocal.googleCalendarEventId = googleCalendarEventId;
     }
 }
 
@@ -581,7 +645,7 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
 
     const agendamentosRemotos = await respostaLista.json().catch(() => []);
     const listaRemota = Array.isArray(agendamentosRemotos) ? agendamentosRemotos : [];
-    const listaLocal = Array.isArray(agendamentosLocais) ? agendamentosLocais : [];
+    const listaLocal = _removerCamposPendenciaGcalDaLista(Array.isArray(agendamentosLocais) ? agendamentosLocais : []);
 
     const remotoPorId = new Map(listaRemota.map((agendamento) => [agendamento.id, agendamento]));
     const localPorId = new Map(listaLocal.map((agendamento) => [agendamento.id, agendamento]));
@@ -602,19 +666,20 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                 return resCriar;
             }
 
-            if (typeof resCriar.clone === 'function') {
-                try {
-                    const payload = await resCriar.clone().json();
-                    if (payload && payload.gcalSyncFailed === true) {
-                        gcalSyncFailed = true;
-                        window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
-                    }
-                } catch (error) {
-                    window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em POST', {
-                        id: agendamento.id,
-                        status: resCriar.status,
-                        message: error && error.message ? error.message : String(error)
-                    });
+            const payloadCriar = await _lerPayloadCrudJson(resCriar);
+            if (payloadCriar && payloadCriar._erroParseJson) {
+                window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em POST', {
+                    id: agendamento.id,
+                    status: resCriar.status,
+                    message: payloadCriar._erroParseJson && payloadCriar._erroParseJson.message
+                        ? payloadCriar._erroParseJson.message
+                        : String(payloadCriar._erroParseJson)
+                });
+            } else if (payloadCriar) {
+                _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamento, payloadCriar);
+                if (payloadCriar.gcalSyncFailed === true) {
+                    gcalSyncFailed = true;
+                    window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
                 }
             }
             continue;
@@ -631,19 +696,20 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs) {
                 return resAtualizar;
             }
 
-            if (typeof resAtualizar.clone === 'function') {
-                try {
-                    const payload = await resAtualizar.clone().json();
-                    if (payload && payload.gcalSyncFailed === true) {
-                        gcalSyncFailed = true;
-                        window.log.warn('[sync]', 'Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
-                    }
-                } catch (error) {
-                    window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em PUT', {
-                        id: agendamento.id,
-                        status: resAtualizar.status,
-                        message: error && error.message ? error.message : String(error)
-                    });
+            const payloadAtualizar = await _lerPayloadCrudJson(resAtualizar);
+            if (payloadAtualizar && payloadAtualizar._erroParseJson) {
+                window.log.debug('[sync]', 'Falha de parse ao confirmar gcalSyncFailed em PUT', {
+                    id: agendamento.id,
+                    status: resAtualizar.status,
+                    message: payloadAtualizar._erroParseJson && payloadAtualizar._erroParseJson.message
+                        ? payloadAtualizar._erroParseJson.message
+                        : String(payloadAtualizar._erroParseJson)
+                });
+            } else if (payloadAtualizar) {
+                _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamento, payloadAtualizar);
+                if (payloadAtualizar.gcalSyncFailed === true) {
+                    gcalSyncFailed = true;
+                    window.log.warn('[sync]', 'Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
                 }
             }
         }
@@ -778,7 +844,7 @@ async function carregarDados(opcoes = {}) {
                 || corOriginal.nome !== alunoNormalizado.corObjetivo.nome
                 || corOriginal.hex !== alunoNormalizado.corObjetivo.hex;
         });
-        const listaAulasAPI = Array.isArray(dadosAgendamentos) ? dadosAgendamentos : [];
+        const listaAulasAPI = _removerCamposPendenciaGcalDaLista(Array.isArray(dadosAgendamentos) ? dadosAgendamentos : []);
         const listaReposicoesAPI = Array.isArray(dadosReposicoes) ? dadosReposicoes : [];
         // [TAG-STORAGE-REPOSICOES-PENDENTES] A fila do painel é só pendente: agendada/realizada/expirada já saíram do fluxo de ação e contam duas vezes se forem listadas aqui.
         const reposicoesPendentes = listaReposicoesAPI
@@ -838,12 +904,13 @@ async function carregarDados(opcoes = {}) {
             const bloqueiosMapeados = resBloqueiosExt
                 .map(mapearBloqueioExterno)
                 .filter(b => b !== null); // Remove bloqueios mal formados
-            
+             
             if (bloqueiosMapeados.length > 0) {
                 aulasParaCarregar = listaAulasAPI.concat(bloqueiosMapeados);
                 window.log.info('[storage]', 'Bloqueios externos carregados do MongoDB.', { total: bloqueiosMapeados.length });
             }
         }
+        aulasParaCarregar = _removerCamposPendenciaGcalDaLista(aulasParaCarregar);
         atualizarAlunos(listaAlunosAPI);
         atualizarAulas(aulasParaCarregar);
 
@@ -1030,7 +1097,7 @@ async function salvarDados(silencioso = false) {
 
 function carregarDadosDoLocalStorage() {
     const backupAlunos = _parseJSONSeguro(localStorage.getItem('personal_alunos'), []);
-    const backupAulas = _parseJSONSeguro(localStorage.getItem('personal_aulas'), []);
+    const backupAulas = _removerCamposPendenciaGcalDaLista(_parseJSONSeguro(localStorage.getItem('personal_aulas'), []));
     const backupReposicoes = _parseJSONSeguro(localStorage.getItem(REPOSICOES_CACHE_KEY), []);
     const backupGrade = _parseJSONSeguro(localStorage.getItem('personal_limitesGrade'), { inicio: '06:00', fim: '22:00' });
 

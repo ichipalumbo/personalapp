@@ -7,30 +7,32 @@ A hipótese mais forte continua sendo a combinação de dois fatores confirmados
 1. `assets/js/google-calendar.js` recebe um `_agendamento` e `opcoes`, mas ignora ambos e dispara um bulk sync genérico com `salvarDados()`;
 2. `assets/js/storage.js` compara agendamentos incluindo `excecoes`, então a edição de uma instância ou split de série gera um `PUT` da série pai mesmo quando a mudança é só uma exceção.
 
-Quando a chamada para o Google falha depois do Mongo já ter sido atualizado, o backend responde `HTTP 200` com `gcalSyncFailed: true`, o UI trata isso como sucesso local e não reprocessa a correção. O Google fica com a ocorrência antiga e a nova, e a duplicata vira permanente.
+No fluxo `occurrence`, a primeira chamada a `salvarEventoComGCal` já executa o diff completo do estado local: ela emite o `PUT` da série pai e, na mesma passada, o `POST` da nova ocorrência. A segunda chamada encadeada em `.then()` é sequencial e, no caso normal, vira no-op porque local e remoto já ficaram equivalentes após o primeiro bulk sync.
 
-A correção provável exige refactor de arquitetura do sync, mas este relatório não propõe implementação — apenas diagnostica e documenta a evidência estática.
+Quando a chamada do `PUT` para o Google falha depois do Mongo já ter sido atualizado, o backend responde `HTTP 200` com `gcalSyncFailed: true`, o UI trata isso como sucesso local e o loop segue até criar a nova ocorrência. O Google fica com a ocorrência antiga e a nova, e a duplicata vira permanente porque o sync seguinte considera local e remoto equivalentes e não reemite o `PUT`.
+
+A correção provável exige refactor do mecanismo de retry/ressincronização, mas este relatório não propõe implementação — apenas diagnostica e documenta a evidência estática.
 
 ## Evidência de simulação fora do repositório
 
-Foi executado um mini-harness em `/tmp` sem alterar arquivos do repositório. O objetivo foi registrar a sequência esperada para o fluxo `occurrence` e confirmar o ponto de acoplamento entre o bulk sync da UI e o CRUD local.
+Foi executado um mini-harness fora do repositório para registrar a sequência esperada do fluxo `occurrence` e confirmar o ponto de acoplamento entre o bulk sync da UI e o CRUD local.
 
-Sequência observada:
+Sequência modelada:
 
 ```json
 [
   { "kind": "gcal", "action": "bulk", "id": "serie-1", "op": "atualizar", "hasSnapshot": true },
-  { "kind": "gcal", "action": "bulk", "id": "serie-1-occ-1", "op": "criar", "hasSnapshot": false },
   { "kind": "crud", "action": "PUT", "id": "serie-1" },
-  { "kind": "crud", "action": "POST", "id": "serie-1-occ-1" }
+  { "kind": "crud", "action": "POST", "id": "serie-1-occ-1" },
+  { "kind": "gcal", "action": "bulk", "id": "serie-1-occ-1", "op": "criar", "hasSnapshot": false, "effect": "no-op" }
 ]
 ```
 
-Conclusão da simulação:
+Conclusão da simulação, confirmada pela leitura do código:
 
-- a UI dispara duas sincronizações independentes no mesmo fluxo: `atualizar` na série e `criar` na nova ocorrência;
-- a rotina local de CRUD, quando processa `listaLocal`, coloca `PUT` da série antes do `POST` da nova ocorrência;
-- mas a assinatura do `salvarEventoComGCal` não preserva essa ordem no Google, porque o wrapper ignora o contexto e só chama `salvarDados()`.
+- a UI faz duas chamadas para `salvarEventoComGCal`, mas a segunda fica encadeada em `.then()` e portanto é sequencial;
+- como `salvarEventoComGCal` ignora o agendamento recebido e sempre roda um bulk sync do estado inteiro, a primeira chamada já emite o `PUT` da série e o `POST` da nova ocorrência;
+- a rotina local de CRUD processa `listaLocal` na ordem do array, então a série pai é enviada antes da nova ocorrência quando ambas coexistem em memória.
 
 ## 1. Respostas às 7 perguntas
 
@@ -72,7 +74,7 @@ Todos os parâmetros são descartados.
 
 ### 3) Na ordem de iteração de `_sincronizarAgendamentosViaCRUD`, o PUT da série pai vem antes ou depois do POST da nova ocorrência? A ordem é determinística?
 
-Resposta: sim, dentro do próprio loop local a ordem é determinística e, no caso mais típico de `occurrence`, o `PUT` da série pai vem antes do `POST` da nova ocorrência.
+Resposta: sim. A ordem é determinística e, no caso mais típico de `occurrence`, o `PUT` da série pai vem antes do `POST` da nova ocorrência.
 
 Evidência em [assets/js/storage.js](../../assets/js/storage.js):
 
@@ -92,16 +94,18 @@ for (const agendamento of listaLocal) {
 }
 ```
 
-Como `listaLocal` é iterado em ordem de array, a série pai é processada antes do item novo quando o array estiver em `[série, novaOcorrencia]`. A ordem do loop é determinística.
+Como `listaLocal` é iterado em ordem de array, a série pai é processada antes do item novo quando o array estiver em `[série, novaOcorrencia]`. A ordem do loop é determinística. No fluxo real, `aulas.push(novoCompromisso)` coloca a nova ocorrência no fim do array, preservando a série pai antes dela.
 
-O ponto crítico é que a UI dispara `salvarEventoComGCal` em duas cadeias independentes no fluxo de edição:
+O ponto crítico não é corrida, e sim o fato de a UI chamar um wrapper que ignora o contexto:
 
 ```js
 const _gcalSeriePromise = salvarEventoComGCal(compromisso, { operacao: "atualizar", snapshotAnterior: _snapshotEdicao });
 _gcalSeriePromise.then(() => salvarEventoComGCal(_novaOcorrenciaSerie, { operacao: "criar" }));
 ```
 
-Essas duas chamadas não compartilham um lock nem `await` entre si. A ordem do Google não é garantida pela própria UI; a garantia só existe dentro de um único loop local, não entre as duas sincronizações independentes.
+Essas duas chamadas não são paralelas: a segunda só roda depois da resolução da primeira, porque está dentro de `.then()`. Além disso, a segunda chamada tende a ser no-op: como o primeiro `salvarEventoComGCal` já disparou `salvarDados()` sobre o estado completo, ele próprio faz o `PUT` da série pai e o `POST` da nova ocorrência. Quando a segunda chamada acontece, local e remoto normalmente já estão equivalentes.
+
+Portanto, não há corrida de ordenação a corrigir aqui. O problema real é outro: se o `PUT` da série falha na perna do Google depois de o Mongo já ter gravado a exceção, o fluxo segue e cria a nova ocorrência; no sync seguinte, a igualdade local × remoto impede a reemissão do `PUT`.
 
 ### 4) `pushEventToGoogle` é idempotente?
 
@@ -188,9 +192,9 @@ Há desabilitação de campos para aluno inativo e alguns `confirm()`, mas não 
 
 | Fluxo | Objetos locais que mudam | Requisições HTTP saindo | Ordem e ponto de duplicação |
 | --- | --- | --- | --- |
-| `occurrence` (somente esta aula) | série pai recebe `excecoes` e nova ocorrência é criada com `googleCalendarEventId: null` | `PUT` da série pai + `POST` da nova ocorrência | Em [assets/js/modal-acao-slot.js](../../assets/js/modal-acao-slot.js), o código dispara duas chamadas independentes via `salvarEventoComGCal`; o `PUT` da série aparece antes do `POST` dentro do loop local, mas a ordem no Google não é garantida entre as duas chamadas |
+| `occurrence` (somente esta aula) | série pai recebe `excecoes` e nova ocorrência é criada com `googleCalendarEventId: null` | `PUT` da série pai + `POST` da nova ocorrência | A primeira chamada a `salvarEventoComGCal` já dispara o bulk sync completo; como a nova ocorrência é inserida no fim de `aulas`, o loop envia primeiro o `PUT` da série e depois o `POST` da nova ocorrência. A segunda chamada encadeada em `.then()` é sequencial e tende a no-op |
 | `entireSeries` (toda a série) | apenas a série pai é atualizada | `PUT` da série pai | risco baixo: um único evento de edição, sem criar nova ocorrência |
-| `fromDate` (split de série) | série original recebe `recorrenciaFimCondicao` e `recorrenciaDataFim`; nova série recebe `recorrenciaDataInicio` na data clicada | `PUT` da série original + `POST` da nova série | risco alto: em [assets/js/modal-acao-slot.js](../../assets/js/modal-acao-slot.js), há duas transações do Google disparadas em cadeia independentes |
+| `fromDate` (split de série) | série original recebe `recorrenciaFimCondicao` e `recorrenciaDataFim`; nova série recebe `recorrenciaDataInicio` na data clicada | `PUT` da série original + `POST` da nova série | risco alto: o primeiro bulk sync já processa as duas mutações na ordem do array; se a perna Google falhar ao atualizar a série original, o app ainda assim confirma localmente e segue |
 | exclusão de ocorrência | série pai recebe `excecoes` e o registro da instância é apagado localmente | `PUT` da série pai ou `POST`/`DELETE` na instância, dependendo do fluxo | risco médio: depende de `EXDATE` e de um update remoto bem-sucedido |
 | edição via `modal-agendamento.js` | criação de evento novo na primeira vez | `window.salvarEventoComGCal(resultado.payload, { operacao: 'criar' })` | risco menor do que `occurrence`, mas ainda não é transacional; todo o save é bulk e generic |
 
@@ -202,11 +206,13 @@ Confirmação: verdadeira.
 Evidência: [assets/js/google-calendar.js](../../assets/js/google-calendar.js) define a função, mas só usa `_isAppSignedIn()`, `_ensureCalendarConnection()` e `_persistirDadosComBackend(silencioso)`. Nenhum argumento de operação ou snapshot é consultado.
 
 ### B.2 — duas operações independentes podem desalinhar `EXDATE` e `POST`
-Confirmação: verdadeira, com nuance.
+Refutação parcial: a conclusão de risco é verdadeira, mas a explicação por paralelismo/ordem não.
 
-O código local de [assets/js/storage.js](../../assets/js/storage.js) itera `listaLocal` em ordem de array e faz `PUT`/`POST` em sequência. No fluxo `occurrence`, a primeira operação normalmente é o `PUT` da série pai.
+O código local de [assets/js/storage.js](../../assets/js/storage.js) itera `listaLocal` em ordem de array e faz `PUT`/`POST` em sequência. No fluxo `occurrence`, a primeira operação normalmente é o `PUT` da série pai, seguido do `POST` da nova ocorrência.
 
-Mas a UI de [assets/js/modal-acao-slot.js](../../assets/js/modal-acao-slot.js) dispara duas syncs independentes via `then()`, sem `await` nem guard de serialização. Isso produz duas solicitações em paralelo ao backend e torna a ordem de chegada ao Google não confiável.
+A UI de [assets/js/modal-acao-slot.js](../../assets/js/modal-acao-slot.js) faz duas chamadas para `salvarEventoComGCal`, mas elas não ficam em paralelo: a segunda está dentro de `.then()`. Como o wrapper ignora `_agendamento` e sincroniza o estado inteiro, a primeira chamada já cobre as duas operações. A segunda costuma reencontrar local e remoto equivalentes e não emite nada.
+
+Logo, o desalinamento entre `EXDATE` e criação da nova ocorrência não vem de reorder entre duas requisições concorrentes; vem do caso em que o Mongo confirma a alteração, a perna Google falha, o backend devolve `200` com `gcalSyncFailed: true` e o fluxo continua mesmo assim.
 
 ### B.3 — falha do Google vira sucesso local e trava a duplicata
 Confirmação: verdadeira.
@@ -239,14 +245,15 @@ Consequência direta:
 
 ## 5. Hipótese final do mecanismo da duplicata
 
-Hipótese final: em `occurrence` e `fromDate`, a edição do agendamento recorrente faz duas mutações lógicas que são sincronizadas de forma desacoplada:
+Hipótese final: em `occurrence` e `fromDate`, a edição do agendamento recorrente faz duas mutações lógicas no mesmo estado local:
 
 1. a série pai ganha `EXDATE` ou é encerrada com `UNTIL`/split;
 2. a nova ocorrência ou nova série é criada como objeto novo com `googleCalendarEventId: null`;
-3. duas chamadas independentes de `salvarEventoComGCal` são disparadas, mas o wrapper ignora `operacao` e `snapshotAnterior`;
-4. `_normalizarAgendamentoParaComparacao` inclui `excecoes`, então o `PUT` da série pai é enviado;
-5. se a chamada ao Google falhar, o Mongo já está consistente e a resposta do backend vem como `200` com `gcalSyncFailed: true`;
-6. o app aceita como sucesso e não reprocessa; a série local e a remota passam a comparar iguais, mas o Google conserva a ocorrência antiga e a nova ao mesmo tempo.
+3. a primeira chamada a `salvarEventoComGCal` dispara um bulk sync, e o wrapper ignora `operacao` e `snapshotAnterior`;
+4. `_normalizarAgendamentoParaComparacao` inclui `excecoes`, então o `PUT` da série pai é enviado e, na mesma passada, o `POST` da nova ocorrência também é elegível;
+5. se a perna do Google falhar depois do Mongo gravar a série, a resposta vem como `200` com `gcalSyncFailed: true`;
+6. `resAtualizar.ok === true`, então o loop segue e a nova ocorrência é criada;
+7. o app aceita o resultado como sucesso local com falha de GCal e não marca a série para retry; no sync seguinte, a série local e a remota passam a comparar iguais, mas o Google conserva a ocorrência antiga e a nova ao mesmo tempo.
 
 Grau de confiança: médio-alto para os fluxos `occurrence` e `fromDate`; menor para o caso de edição genérica via `modal-agendamento.js`, porém o mecanismo central continua consistente com a observação do bug.
 
@@ -260,11 +267,15 @@ O que ainda falta para confirmar em produção:
 
 ### Opção A — serializar o sync da edição de série e remover o bulk genérico
 
-Descrição: `salvarEventoComGCal` precisa deixar o contexto explícito, em vez de ignorar `_agendamento`, `operacao` e `snapshotAnterior`. A sincronização de uma série recorrente deve ser uma fila explícita, por operação, com `PUT` da série pai e `POST` da instância nova em ordem controlada.
+Status: descartada como correção deste bug específico.
+
+Descrição: serializar explicitamente `PUT` da série pai e `POST` da instância/nova série.
+
+Justificativa do descarte: a leitura do código não confirma a corrida que esta opção tentaria corrigir. A segunda chamada fica encadeada em `.then()`, logo não é paralela, e a primeira já faz o bulk sync completo do estado local. A ordem do CRUD também é determinística porque `_sincronizarAgendamentosViaCRUD` percorre `listaLocal` na ordem do array. Portanto, serializar melhor o fluxo pode ser refactor válido por clareza, mas não ataca o mecanismo real da duplicata permanente.
 
 - custo: médio;
 - risco: médio;
-- benefício: elimina a ambiguidade do contexto e reduz chance de reorder do Google.
+- benefício: melhora legibilidade/explicitude do fluxo, mas não corrige sozinho a permanência da duplicata.
 
 ### Opção B — tornar o Google sync idempotente por evento
 
@@ -282,6 +293,16 @@ Descrição: deixar a decisão de `PUT`/`POST` no backend ou em uma fila de sinc
 - risco: alto;
 - benefício: a correção mais robusta do ponto de vista transacional, com melhor controle de retry e observabilidade.
 
+### Opção D — falha do Google marca o registro como pendente de ressincronização
+
+Descrição: quando o Mongo grava mas a perna Google falha, o documento fica marcado como pendente. No sync seguinte, o diff detecta a divergência entre local e remoto e reemite a operação em vez de considerar o item convergido.
+
+Dependência: **D depende de B**. Sem idempotência no insert, um retry de `POST` após perda de resposta poderia criar um segundo evento no Google; o mecanismo de retry passaria a ser a nova fonte de duplicata.
+
+- custo: médio-alto;
+- risco: médio;
+- benefício: ataca diretamente a intermitência e explica por que a correção pode convergir sem job em background, desde que o insert seja idempotente.
+
 ## 7. Conclusão
 
 O diagnóstico prévio foi confirmado em quase todos os pontos:
@@ -291,4 +312,16 @@ O diagnóstico prévio foi confirmado em quase todos os pontos:
 - o `PUT` da série pode falhar no Google enquanto o Mongo já confirmou a alteração;
 - o app não reprocessa porque a resposta do backend vem como `200` com `gcalSyncFailed: true` e o estado local/remote passa a concordar.
 
-O único ponto que precisa ser tratado com cuidado é a ordem exata do `PUT` vs `POST` dentro de um loop local: a sequência do CRUD é determinística, mas a UI lança duas syncs independentes sem garantir a ordem remota. Isso é suficiente para explicar a duplicata intermitente e a sua persistência permanente.
+Os dois pontos corrigidos nesta revisão são:
+
+- não há evidência de duas solicitações paralelas ao backend nem de corrida de ordenação no Google; a segunda chamada fica encadeada em `.then()` e a primeira já executa o bulk sync completo;
+- por isso, a Opção A não resolve o mecanismo real do bug e deve ser descartada como correção principal.
+
+O mecanismo que continua explicando a duplicata intermitente e permanente é o já descrito nas seções 3 e 6: o Mongo confirma, a perna Google falha, o fluxo segue com `HTTP 200`, a nova ocorrência é criada e o sistema deixa de marcar a série para retry.
+
+## Nota de revisão
+
+Revisão aplicada para corrigir dois erros do diagnóstico anterior:
+
+1. remoção da hipótese de corrida/paralelismo entre as duas chamadas de `salvarEventoComGCal`, porque a segunda é sequencial e normalmente vira no-op;
+2. descarte explícito da Opção A como correção principal, porque serializar a ordem não resolve o caso real em que o `PUT` da série falha na perna do Google após o Mongo já ter gravado a exceção.
