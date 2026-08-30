@@ -1121,6 +1121,14 @@ document.addEventListener("DOMContentLoaded", () => {
               serieOrigemId: compromisso.id,
               googleCalendarEventId: null, // novo evento — não herdar o ID da série
             };
+            delete novoCompromisso.tipoRecorrencia;
+            delete novoCompromisso.diasSemana;
+            delete novoCompromisso.intervaloRecorrencia;
+            delete novoCompromisso.recorrenciaEscopo;
+            delete novoCompromisso.recorrenciaDataInicio;
+            delete novoCompromisso.recorrenciaFimCondicao;
+            delete novoCompromisso.recorrenciaDataFim;
+            delete novoCompromisso.recorrenciaQuantidadeOcorrencias;
             aulas.push(novoCompromisso);
             _novaOcorrenciaSerie = novoCompromisso;
           } else if (escopoRecorrencia === "entireSeries") {
