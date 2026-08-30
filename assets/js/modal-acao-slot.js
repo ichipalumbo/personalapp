@@ -1239,6 +1239,29 @@ document.addEventListener("DOMContentLoaded", () => {
               }
             }
 
+            const _dataCorteExcecoesFd = window.parseDataFlex(dataAlvoStr);
+            const _filtrarExcecoesAposData = (lista) => {
+              if (!Array.isArray(lista) || lista.length === 0) return [];
+              if (!_dataCorteExcecoesFd) return [...lista];
+
+              return lista.filter((item) => {
+                const valorData =
+                  typeof item === "string"
+                    ? item
+                    : item &&
+                      (item.data ||
+                        item.dataISO ||
+                        item.dataIso ||
+                        item.dataOriginal ||
+                        item.iso ||
+                        item.dataExcecao);
+
+                if (!valorData) return true;
+                const dataValor = window.parseDataFlex(valorData);
+                return !dataValor || dataValor >= _dataCorteExcecoesFd;
+              });
+            };
+
             // Cria nova série a partir da data clicada
             const _novoIdFd = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
             const _novaSerieFd = Object.assign({}, compromisso, {
@@ -1251,8 +1274,8 @@ document.addEventListener("DOMContentLoaded", () => {
               dia: _selDiaFd,
               diasSemana: _diasSemanaNova,
               googleCalendarEventId: null,
-              excecoes: [],
-              excecoesDetalhadas: [],
+              excecoes: _filtrarExcecoesAposData(compromisso.excecoes),
+              excecoesDetalhadas: _filtrarExcecoesAposData(compromisso.excecoesDetalhadas),
               serieOrigemId: compromisso.id,
               recorrenciaEscopo: "fromDate",
             });
