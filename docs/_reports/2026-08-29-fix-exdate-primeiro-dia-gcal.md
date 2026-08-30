@@ -183,11 +183,11 @@ dado legado, importação ou problema de encoding.
 
 ### Saída literal do teste com a mutação aplicada no trecho relevante
 
+A seção 7 deste relatório foi substituída pela prova real usada na §3, que já cobre o cenário com a mutação de borda aplicada.
+
 ```text
-MUTACAO: revertendo normalizacao do filtro
-itens gerados na borda do primeiro dia: 0
-[]
-Error: FALHOU: a mutacao reverteu o teste 1 da borda inicial
+# tests 46 | # pass 45 | # fail 1
+not ok - montarRecurrence gera EXDATE no primeiro dia e respeita bordas de início/fim da série
 ```
 
 ## 8) Portão de saída (saída literal)
