@@ -369,6 +369,14 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     apiRootUrl: 'https://api.example.com'
   };
 
+  const recurrenceHelpersPath = path.resolve(__dirname, '../../assets/js/shared/recurrence-helpers.js');
+  const recurrenceHelpersScript = fs.readFileSync(recurrenceHelpersPath, 'utf8');
+  vm.runInNewContext(recurrenceHelpersScript, context, { filename: recurrenceHelpersPath });
+
+  const calendarioEnginePath = path.resolve(__dirname, '../../assets/js/calendario-engine.js');
+  const calendarioEngineScript = fs.readFileSync(calendarioEnginePath, 'utf8');
+  vm.runInNewContext(calendarioEngineScript, context, { filename: calendarioEnginePath });
+
   context.window.idCompromissoSelecionado = compromisso && compromisso.id ? compromisso.id : '';
   context.chamadasConflito = [];
   context.window.chamadasConflito = context.chamadasConflito;
@@ -1433,6 +1441,210 @@ test('split fromDate no meio da serie preserva a serie original e cria a nova', 
   assert.ok(serieNova);
   assert.equal(serieNova.recorrenciaEscopo, 'fromDate');
   assert.equal(serieNova.data, dataAlvo);
+});
+
+test('split fromDate migra exceções posteriores ou iguais ao corte para a serie nova', async () => {
+  const dataInicio = '01/09/2026';
+  const dataAlvo = '02/09/2026';
+  const compromisso = {
+    id: 'serie-excecoes-1',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-excecoes-1',
+    excecoes: ['31/08/2026', '07/09/2026', '02/09/2026'],
+    excecoesDetalhadas: [{ data: '31/08/2026', horarioInicio: '09:00' }, { data: '07/09/2026', horarioInicio: '09:00' }, { data: '02/09/2026', horarioInicio: '09:00' }],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar no split de excecoes');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-excecoes-1');
+  assert.ok(serieNova);
+  assert.deepEqual(serieNova.excecoes, ['07/09/2026', '02/09/2026']);
+  assert.deepEqual(serieNova.excecoesDetalhadas.map((item) => item.data), ['07/09/2026', '02/09/2026']);
+  assert.equal(serieNova.excecoesDetalhadas[0].horarioInicio, '09:00');
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-07T12:00:00'), '09:00'), false);
+});
+
+test('split fromDate nao migra exceção antes do corte para a serie nova', async () => {
+  const dataInicio = '01/09/2026';
+  const dataAlvo = '02/09/2026';
+  const compromisso = {
+    id: 'serie-excecoes-antes',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-excecoes-antes',
+    excecoes: ['31/08/2026', '07/09/2026'],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar no split de excecoes anteriores');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-excecoes-antes');
+  assert.ok(serieNova);
+  assert.deepEqual(serieNova.excecoes, ['07/09/2026']);
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-08-31T12:00:00'), '09:00'), false);
+});
+
+test('split fromDate mantém a serie nova sem duplicacao quando existe avulsa no mesmo dia do cancelamento', async () => {
+  const dataInicio = '01/09/2026';
+  const dataAlvo = '02/09/2026';
+  const serieOriginal = {
+    id: 'serie-duplicacao-1',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-duplicacao-1',
+    excecoes: ['07/09/2026'],
+  };
+  const avulsa = {
+    id: 'avulsa-duplicacao-1',
+    tipo: 'aula',
+    data: '07/09/2026',
+    dia: 'Quarta',
+    horarioInicio: '11:00',
+    horarioFim: '12:00',
+    frequencia: 'uma_vez',
+    googleCalendarEventId: null,
+    serieOrigemId: 'serie-duplicacao-1',
+    excecoes: [],
+    excecoesDetalhadas: [],
+  };
+  const aulas = [serieOriginal, avulsa];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieOriginal, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar no split com duplicacao');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-duplicacao-1' && item.id !== 'avulsa-duplicacao-1');
+  assert.ok(serieNova);
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-07T12:00:00'), '09:00'), false);
+  assert.ok(aulas.some((item) => item.id === 'avulsa-duplicacao-1'));
+});
+
+test('split fromDate preserva objetos em excecoesDetalhadas sem converter para string', async () => {
+  const dataInicio = '01/09/2026';
+  const dataAlvo = '02/09/2026';
+  const compromisso = {
+    id: 'serie-excecoes-detalhadas',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-excecoes-detalhadas',
+    excecoes: ['02/09/2026', '07/09/2026'],
+    excecoesDetalhadas: [{ data: '02/09/2026', horarioInicio: '09:00', horario: '09:00' }, { data: '07/09/2026', horarioInicio: '13:00' }],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar para excecoesDetalhadas');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-excecoes-detalhadas');
+  assert.ok(serieNova);
+  assert.equal(typeof serieNova.excecoesDetalhadas[0], 'object');
+  assert.equal(serieNova.excecoesDetalhadas[0].horarioInicio, '09:00');
+  assert.equal(serieNova.excecoesDetalhadas[1].horarioInicio, '13:00');
+});
+
+test('split fromDate em serie original vazia preserva excecoes na nova serie', async () => {
+  const dataInicio = '02/09/2026';
+  const dataAlvo = '02/09/2026';
+  const compromisso = {
+    id: 'serie-vazia-excecoes',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-vazia-excecoes',
+    excecoes: ['07/09/2026'],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar na serie original vazia');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(aulas.length, 1);
+  const serieNova = aulas[0];
+  assert.ok(serieNova);
+  assert.equal(serieNova.id !== 'serie-vazia-excecoes', true);
+  assert.deepEqual(serieNova.excecoes, ['07/09/2026']);
+});
+
+test('avulsa criada por occurrence continua com excecoes vazias mesmo quando a serie tem excecao futura', async () => {
+  const serieMae = {
+    id: 'serie-mae-excecao',
+    tipo: 'aula',
+    data: '01/09/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '01/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    excecoes: ['07/09/2026'],
+    googleCalendarEventId: 'evt-mae-excecao',
+  };
+  const aulas = [serieMae];
+  const { form, context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '07/09/2026' });
+  context.document.getElementById('editEscopoRecorrencia').value = 'occurrence';
+  context.document.getElementById('editHoraInicio').value = '11:00';
+  context.document.getElementById('editDuracao').value = '60';
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const avulsa = aulas.find((item) => item.id !== 'serie-mae-excecao');
+  assert.ok(avulsa);
+  assert.equal(Array.isArray(avulsa.excecoes), true);
+  assert.equal(avulsa.excecoes.length, 0);
+  assert.equal(Array.isArray(avulsa.excecoesDetalhadas), true);
+  assert.equal(avulsa.excecoesDetalhadas.length, 0);
 });
 
 test('excluirAgendamento chama Google antes do Mongo e retorna sucesso quando o registro foi apagado', async () => {
