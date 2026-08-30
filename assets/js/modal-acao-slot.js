@@ -1111,6 +1111,24 @@ document.addEventListener("DOMContentLoaded", () => {
             compromisso.recorrenciaDataFim = _ptBrAnteriorFd;
             // Não altera horário nem diasSemana da série original — as mudanças ficam na nova série
 
+            const _dataInicioEfeitoFd = window.parseDataFlex(
+              compromisso.recorrenciaDataInicio || compromisso.data || compromisso.dataCriacao,
+            );
+            const _dataFimRecorrenciaFd = window.parseDataFlex(compromisso.recorrenciaDataFim);
+            const _serieOriginalVaziaFd =
+              _dataInicioEfeitoFd &&
+              _dataFimRecorrenciaFd &&
+              _dataFimRecorrenciaFd < _dataInicioEfeitoFd;
+
+            if (_serieOriginalVaziaFd) {
+              const _indiceSerieOriginalFd = aulas.findIndex(
+                (item) => item && item.id === compromisso.id,
+              );
+              if (_indiceSerieOriginalFd >= 0) {
+                aulas.splice(_indiceSerieOriginalFd, 1);
+              }
+            }
+
             // Cria nova série a partir da data clicada
             const _novoIdFd = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
             const _novaSerieFd = Object.assign({}, compromisso, {

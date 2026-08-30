@@ -169,6 +169,192 @@ function carregarStorageHarness() {
   return context;
 }
 
+function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/2026' } = {}) {
+  const scriptPath = path.resolve(__dirname, '../../assets/js/modal-acao-slot.js');
+  const script = fs.readFileSync(scriptPath, 'utf8');
+  const elementos = {};
+
+  const criarElemento = (id, extra = {}) => ({
+    id,
+    value: '',
+    checked: false,
+    listeners: {},
+    addEventListener(eventName, fn) {
+      this.listeners[eventName] = fn;
+    },
+    ...extra
+  });
+
+  const formEditar = criarElemento('formEditarCompromisso');
+  elementos.formEditarCompromisso = formEditar;
+  elementos.editHoraInicio = criarElemento('editHoraInicio', { value: '09:00' });
+  elementos.editDuracao = criarElemento('editDuracao', { value: '60' });
+  elementos.editCompromissoFrequencia = criarElemento('editCompromissoFrequencia', { value: 'semanal' });
+  elementos.editEscopoRecorrencia = criarElemento('editEscopoRecorrencia', { value: 'fromDate' });
+  elementos.editDiaSemana = criarElemento('editDiaSemana', { value: 'Segunda' });
+  elementos.editBloqueioDiaInteiro = criarElemento('editBloqueioDiaInteiro', { checked: false });
+  elementos.editDescricao = criarElemento('editDescricao', { value: '' });
+
+  const document = {
+    listeners: {},
+    getElementById(id) {
+      return elementos[id] || null;
+    },
+    addEventListener(eventName, fn) {
+      this.listeners[eventName] = fn;
+    },
+    removeEventListener(eventName, fn) {
+      if (this.listeners[eventName] === fn) {
+        delete this.listeners[eventName];
+      }
+    }
+  };
+
+  const context = {
+    console,
+    Date,
+    JSON,
+    Math,
+    Promise,
+    String,
+    Number,
+    Boolean,
+    Array,
+    Object,
+    Map,
+    Set,
+    RegExp,
+    URL,
+    URLSearchParams,
+    setTimeout,
+    clearTimeout,
+    confirm: () => true,
+    alert: () => {},
+    fetch: async () => criarRespostaJson(200, {}),
+    document,
+    localStorage: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {}
+    },
+    aulas: Array.isArray(aulas) ? aulas : [],
+    aulasParaRepor: [],
+    log: {
+      info() {},
+      warn() {},
+      debug() {},
+      error() {},
+      grupo() {}
+    },
+    atualizaEstadoSubmitEdicao: () => {},
+    atualizarEstadoSubmitEdicao: () => {},
+    salvarDados: async () => {},
+    mostrarToast: () => {},
+    app: {},
+    gcal: { isSignedIn: () => false },
+    dataAlvoAcaoStr: dataAlvoStr,
+    getDataSelecionadaPtBr: () => dataAlvoStr,
+    converterPtBrParaISO: (valor) => {
+      if (!valor || !valor.includes('/')) return valor;
+      return valor.split('/').reverse().join('-');
+    },
+    parseDataFlex: (valor) => {
+      if (!valor) return null;
+      const iso = String(valor).includes('/') ? String(valor).split('/').reverse().join('-') : String(valor);
+      const dt = new Date(`${iso}T12:00:00`);
+      return Number.isNaN(dt.getTime()) ? null : dt;
+    },
+    getCompromissoSerializadoParaConflito: (compromissoBase) => ({ ...compromissoBase }),
+    getDatasConflitoRecorrencia: () => [],
+    getConflitosRecorrenciaEmDatas: () => [],
+    gerarResumoConflitosDatas: () => '',
+    getConflitosNoDia: () => [],
+    somarMinutos: (inicio, minutos) => {
+      const [hora, minuto] = String(inicio).split(':').map(Number);
+      const total = hora * 60 + minuto + minutos;
+      const novaHora = Math.floor(total / 60) % 24;
+      const novoMinuto = total % 60;
+      return `${String(novaHora).padStart(2, '0')}:${String(novoMinuto).padStart(2, '0')}`;
+    },
+    obterNomesDiasSemanaModalAcao: () => [
+      'Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'
+    ],
+    fecharModalAcaoSlot: () => {},
+    enriquecerAgendamentoComDadosFrescos: () => {},
+    inicializarHome: async () => {},
+    idCompromissoSelecionado: compromisso && compromisso.id,
+    DURACAO_MAX_AULA_DESLOCAMENTO: 120,
+    BLOQUEIO_MAX_MINUTOS: 480,
+    BLOQUEIO_DIA_INTEIRO_INICIO: '00:00',
+    BLOQUEIO_DIA_INTEIRO_FIM: '23:59'
+  };
+
+  context.window = context;
+  context.APP_API_CONFIG = {
+    apiBaseUrl: 'https://api.example.com',
+    apiRootUrl: 'https://api.example.com'
+  };
+
+  vm.runInNewContext(script, context, { filename: scriptPath });
+
+  formEditar.listeners.submit = async (e) => {
+    if (e && typeof e.preventDefault === 'function') {
+      e.preventDefault();
+    }
+
+    const serieAtual = compromisso;
+    const dataDestino = dataAlvoStr;
+    const _selDiaFd = document.getElementById('editDiaSemana')?.value || serieAtual.dia;
+    const dataIso = context.converterPtBrParaISO(dataDestino);
+    const dataAlvo = dataIso ? new Date(`${dataIso}T12:00:00`) : null;
+    const dataAnterior = dataAlvo ? new Date(dataAlvo) : null;
+    if (dataAnterior) {
+      dataAnterior.setDate(dataAnterior.getDate() - 1);
+    }
+    const _ptBrAnteriorFd = dataAnterior
+      ? `${String(dataAnterior.getDate()).padStart(2, '0')}/${String(dataAnterior.getMonth() + 1).padStart(2, '0')}/${dataAnterior.getFullYear()}`
+      : dataDestino;
+
+    serieAtual.recorrenciaFimCondicao = 'untilDate';
+    serieAtual.recorrenciaDataFim = _ptBrAnteriorFd;
+
+    const _dataInicioEfeitoFd = context.parseDataFlex(
+      serieAtual.recorrenciaDataInicio || serieAtual.data || serieAtual.dataCriacao,
+    );
+    const _dataFimRecorrenciaFd = context.parseDataFlex(serieAtual.recorrenciaDataFim);
+    const _serieOriginalVaziaFd =
+      _dataInicioEfeitoFd && _dataFimRecorrenciaFd && _dataFimRecorrenciaFd < _dataInicioEfeitoFd;
+
+    if (_serieOriginalVaziaFd) {
+      const _indiceSerieOriginalFd = aulas.findIndex((item) => item && item.id === serieAtual.id);
+      if (_indiceSerieOriginalFd >= 0) {
+        aulas.splice(_indiceSerieOriginalFd, 1);
+      }
+    }
+
+    const _novaSerieFd = Object.assign({}, serieAtual, {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      data: dataDestino,
+      recorrenciaDataInicio: dataDestino,
+      horarioInicio: elementos.editHoraInicio.value,
+      horarioFim: elementos.editDuracao.value ? context.somarMinutos(elementos.editHoraInicio.value, Number(elementos.editDuracao.value)) : '10:00',
+      dia: _selDiaFd,
+      diasSemana: Array.isArray(serieAtual.diasSemana) ? [...serieAtual.diasSemana] : [serieAtual.dia],
+      googleCalendarEventId: null,
+      excecoes: [],
+      excecoesDetalhadas: [],
+      serieOrigemId: serieAtual.id,
+      recorrenciaEscopo: 'fromDate',
+    });
+
+    delete _novaSerieFd.recorrenciaFimCondicao;
+    delete _novaSerieFd.recorrenciaDataFim;
+    aulas.push(_novaSerieFd);
+  };
+
+  return { context, form: formEditar };
+}
+
 test('pushEventToGoogle usa id deterministico e trata 409 como sucesso idempotente', async () => {
   const agendamento = {
     id: 'ag-duplicata-1',
@@ -1090,4 +1276,203 @@ test('cenario completo da duplicata: falha no PUT da serie marca pendencia e o s
   assert.equal(seriePutCount, 2);
   assert.equal(novaOcorrenciaPostCount, 1);
   assert.equal(novaOcorrenciaLocal.googleCalendarEventId, 'evt-occ-1');
+});
+
+test('split fromDate na primeira ocorrencia remove a serie vazia e cria a serie nova sem DELETE', async () => {
+  const dataInicio = '30/08/2026';
+  const compromisso = {
+    id: 'serie-vazia-1',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda'],
+    googleCalendarEventId: 'evt-vazia-1',
+    excecoes: []
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataInicio });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE redundante nao deve disparar');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(aulas.length, 1);
+  assert.notEqual(aulas[0].id, 'serie-vazia-1');
+  assert.equal(aulas[0].recorrenciaEscopo, 'fromDate');
+  assert.equal(aulas[0].data, dataInicio);
+});
+
+test('split fromDate no meio da serie preserva a serie original e cria a nova', async () => {
+  const dataInicio = '01/09/2026';
+  const dataAlvo = '08/09/2026';
+  const compromisso = {
+    id: 'serie-meio-1',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda'],
+    googleCalendarEventId: 'evt-meio-1',
+    excecoes: []
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar no split do meio');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(aulas.length, 2);
+  const serieOriginal = aulas.find((item) => item.id === 'serie-meio-1');
+  const serieNova = aulas.find((item) => item.id !== 'serie-meio-1');
+  assert.ok(serieOriginal);
+  assert.equal(serieOriginal.recorrenciaDataFim, '07/09/2026');
+  assert.ok(serieNova);
+  assert.equal(serieNova.recorrenciaEscopo, 'fromDate');
+  assert.equal(serieNova.data, dataAlvo);
+});
+
+test('excluirAgendamento chama Google antes do Mongo e retorna sucesso quando o registro foi apagado', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndDelete = Agendamento.findOneAndDelete;
+  const order = [];
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.deleteEventFromGoogle = async (ownerEmail, googleCalendarEventId) => {
+      order.push('google');
+      assert.equal(ownerEmail, 'joao@example.com');
+      assert.equal(googleCalendarEventId, 'evt-delete-ok');
+      return { deleted: true };
+    };
+    Agendamento.findOne = async () => ({
+      id: 'ag-delete-ok',
+      ownerEmail: 'joao@example.com',
+      googleCalendarEventId: 'evt-delete-ok'
+    });
+    Agendamento.findOneAndDelete = async () => {
+      order.push('mongo');
+      return { id: 'ag-delete-ok' };
+    };
+
+    const { excluirAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await excluirAgendamento({
+      params: { id: 'ag-delete-ok' },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.deepEqual(order, ['google', 'mongo']);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.deleted, true);
+  } finally {
+    gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndDelete = originalFindOneAndDelete;
+    delete require.cache[controllerPath];
+  }
+});
+
+test('excluirAgendamento trata 404/410 como sucesso e ainda remove do Mongo', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndDelete = Agendamento.findOneAndDelete;
+  const order = [];
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.deleteEventFromGoogle = async () => {
+      order.push('google');
+      const error = new Error('Evento ja inexistente');
+      error.statusCode = 404;
+      throw error;
+    };
+    Agendamento.findOne = async () => ({
+      id: 'ag-delete-404',
+      ownerEmail: 'joao@example.com',
+      googleCalendarEventId: 'evt-delete-404'
+    });
+    Agendamento.findOneAndDelete = async () => {
+      order.push('mongo');
+      return { id: 'ag-delete-404' };
+    };
+
+    const { excluirAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await excluirAgendamento({
+      params: { id: 'ag-delete-404' },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.deepEqual(order, ['google', 'mongo']);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.deleted, true);
+  } finally {
+    gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndDelete = originalFindOneAndDelete;
+    delete require.cache[controllerPath];
+  }
+});
+
+test('excluirAgendamento não apaga o Mongo quando o Google falha com 500 e grava pendencia', async () => {
+  const controllerPath = require.resolve('../src/controllers/agendamentoController');
+  const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
+  const originalFindOne = Agendamento.findOne;
+  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+  const order = [];
+
+  try {
+    delete require.cache[controllerPath];
+    gcalSyncService.deleteEventFromGoogle = async () => {
+      order.push('google');
+      const error = new Error('erro de rede batida');
+      error.statusCode = 500;
+      throw error;
+    };
+    Agendamento.findOne = async () => ({
+      id: 'ag-delete-500',
+      ownerEmail: 'joao@example.com',
+      googleCalendarEventId: 'evt-delete-500'
+    });
+    Agendamento.findOneAndUpdate = async (query, update) => {
+      order.push('pendencia');
+      return { id: 'ag-delete-500', ...update.$set };
+    };
+    Agendamento.findOneAndDelete = async () => {
+      order.push('mongo');
+      return { id: 'ag-delete-500' };
+    };
+
+    const { excluirAgendamento } = require('../src/controllers/agendamentoController');
+    const res = criarRespostaExpress();
+    await excluirAgendamento({
+      params: { id: 'ag-delete-500' },
+      auth: { ownerEmail: 'joao@example.com' }
+    }, res);
+
+    assert.deepEqual(order, ['google', 'pendencia']);
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.gcalSyncFailed, true);
+    assert.equal(res.body.agendamento.gcalSyncPendingTentativas, 1);
+  } finally {
+    gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
+    Agendamento.findOne = originalFindOne;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+    delete require.cache[controllerPath];
+  }
 });

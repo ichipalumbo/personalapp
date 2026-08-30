@@ -459,16 +459,50 @@ function obterUltimoDiaMesISO(dataISO) {
   return ultimoDiaMes.toISOString().slice(0, 10);
 }
 
+function normalizarDiaSemanaParaComparacao(valor) {
+  if (valor === null || valor === undefined) {
+    return '';
+  }
+
+  return String(valor)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9]/g, '')
+    .trim()
+    .toLowerCase();
+}
+
 function mapearDiaSemanaParaCodigoRFC(nomeDia) {
   const nomes = recurrenceHelpers.DEFAULT_DIAS_SEMANA || [];
-  const indice = nomes.findIndex((nome) => nome && nome.toLowerCase() === String(nomeDia || '').trim().toLowerCase());
-  if (indice >= 0) {
-    const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
-    return mapa[indice] || null;
+  const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
+
+  const valorNormalizado = normalizarDiaSemanaParaComparacao(nomeDia);
+  if (valorNormalizado) {
+    const comparacao = {
+      domingo: 'SU', dom: 'SU',
+      segunda: 'MO', seg: 'MO',
+      terca: 'TU', terça: 'TU', ter: 'TU',
+      quarta: 'WE', qua: 'WE',
+      quinta: 'TH', qui: 'TH',
+      sexta: 'FR', sex: 'FR',
+      sabado: 'SA', sab: 'SA'
+    };
+    if (comparacao[valorNormalizado]) {
+      return comparacao[valorNormalizado];
+    }
+
+    const indice = nomes.findIndex((nome) => {
+      if (!nome) {
+        return false;
+      }
+      return normalizarDiaSemanaParaComparacao(nome) === valorNormalizado;
+    });
+    if (indice >= 0) {
+      return mapa[indice] || null;
+    }
   }
 
   if (typeof nomeDia === 'number' && nomeDia >= 0 && nomeDia <= 6) {
-    const mapa = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'];
     return mapa[nomeDia] || null;
   }
 
@@ -485,6 +519,14 @@ function obterListaDiasSemanaParaRrule(agendamento) {
     const codigo = mapearDiaSemanaParaCodigoRFC(valor);
     if (codigo) {
       dias.push(codigo);
+      continue;
+    }
+
+    if (valor !== null && valor !== undefined && String(valor).trim() !== '') {
+      console.warn('[GCalSync] Dia da semana ignorado na recorrência.', {
+        valor,
+        valorNormalizado: normalizarDiaSemanaParaComparacao(valor)
+      });
     }
   }
 
@@ -492,6 +534,11 @@ function obterListaDiasSemanaParaRrule(agendamento) {
     const codigo = mapearDiaSemanaParaCodigoRFC(agendamento.dia);
     if (codigo) {
       dias.push(codigo);
+    } else if (agendamento.dia !== null && agendamento.dia !== undefined && String(agendamento.dia).trim() !== '') {
+      console.warn('[GCalSync] Dia da semana ignorado na recorrência.', {
+        valor: agendamento.dia,
+        valorNormalizado: normalizarDiaSemanaParaComparacao(agendamento.dia)
+      });
     }
   }
 

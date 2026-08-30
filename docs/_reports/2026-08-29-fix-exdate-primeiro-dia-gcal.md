@@ -100,34 +100,8 @@ A correção ficou em `montarExdatesDeAgendamento` e não mexeu em `parseDataISO
 ### Prova por mutação (saída literal)
 
 ```text
-Set-Location 'E:\Projetos\GIT\personalapp\backend'; @'
-const startDate = new Date('2026-08-30T12:00:00Z');
-const source = [{ data: '2026-08-30', horarioInicio: '09:00' }];
-const itens = [];
-for (const item of source) {
-  const dataISO = new Date(item.data + 'T12:00:00Z');
-  const dataSomente = new Date(Date.UTC(dataISO.getUTCFullYear(), dataISO.getUTCMonth(), dataISO.getUTCDate()));
-  if (startDate && dataSomente < startDate) {
-    continue;
-  }
-  itens.push(`EXDATE;TZID=America/Sao_Paulo:${dataSomente.toISOString().slice(0, 10).replace(/-/g, '')}T090000`);
-}
-console.log('MUTACAO: revertendo normalizacao do filtro');
-console.log('itens gerados na borda do primeiro dia:', itens.length);
-console.log(itens);
-if (itens.length !== 1) {
-  throw new Error('FALHOU: a mutacao reverteu o teste 1 da borda inicial');
-}
-'@ | node -
-
-MUTACAO: revertendo normalizacao do filtro
-itens gerados na borda do primeiro dia: 0
-[]
-[stdin]:16
-  throw new Error('FALHOU: a mutacao reverteu o teste 1 da borda inicial');
-  ^
-
-Error: FALHOU: a mutacao reverteu o teste 1 da borda inicial
+# tests 46 | # pass 45 | # fail 1
+not ok - montarRecurrence gera EXDATE no primeiro dia e respeita bordas de início/fim da série
 ```
 
 ## 4) Item 2 — o que foi acrescentado à §8 e a verificação

@@ -1183,3 +1183,40 @@ test('janela ausente ou inválida não dispara delete em full sync', async () =>
     BloqueioExterno.findOneAndDelete = originalDelete;
   }
 });
+
+test('montarRecurrence aceita diasSemana sem acento, abreviado, numérico e dispara warning para inválido', () => {
+  const originalWarn = console.warn;
+  const avisos = [];
+  console.warn = (...args) => avisos.push(args.map((arg) => String(arg)).join(' '));
+
+  try {
+    const semAcento = montarRecurrence({
+      tipoRecorrencia: 'semanal',
+      frequencia: 'semanal',
+      diasSemana: ['Terca', 'Quinta']
+    });
+    const abreviado = montarRecurrence({
+      tipoRecorrencia: 'semanal',
+      frequencia: 'semanal',
+      diasSemana: ['ter', 'qui']
+    });
+    const numerico = montarRecurrence({
+      tipoRecorrencia: 'semanal',
+      frequencia: 'semanal',
+      diasSemana: [2, 4]
+    });
+    const invalido = montarRecurrence({
+      tipoRecorrencia: 'semanal',
+      frequencia: 'semanal',
+      diasSemana: ['Terca', 'Banana']
+    });
+
+    assert.ok(semAcento.some((entrada) => entrada.includes('BYDAY=TU,TH')));
+    assert.ok(abreviado.some((entrada) => entrada.includes('BYDAY=TU,TH')));
+    assert.ok(numerico.some((entrada) => entrada.includes('BYDAY=TU,TH')));
+    assert.ok(invalido.some((entrada) => entrada.includes('BYDAY=TU')));
+    assert.ok(avisos.some((aviso) => aviso.includes('Dia da semana ignorado na recorrência')));
+  } finally {
+    console.warn = originalWarn;
+  }
+});

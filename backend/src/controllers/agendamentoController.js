@@ -490,9 +490,9 @@ async function excluirAgendamento(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
     const { id } = req.params;
-    const excluido = await Agendamento.findOneAndDelete({ ownerEmail, id });
+    const agendamentoExistente = await Agendamento.findOne({ ownerEmail, id });
 
-    if (!excluido) {
+    if (!agendamentoExistente) {
       return res.status(200).json({
         ok: true,
         deleted: false,
@@ -501,12 +501,14 @@ async function excluirAgendamento(req, res) {
       });
     }
 
-    const excluidoParaGCal = normalizarAgendamentoParaResposta(excluido);
+    const excluidoParaGCal = normalizarAgendamentoParaResposta(agendamentoExistente);
 
     try {
       if (excluidoParaGCal.googleCalendarEventId) {
         await deleteEventFromGoogle(ownerEmail, excluidoParaGCal.googleCalendarEventId);
       }
+
+      await Agendamento.findOneAndDelete({ ownerEmail, id });
 
       return res.status(200).json({
         ok: true,
@@ -516,6 +518,7 @@ async function excluirAgendamento(req, res) {
     } catch (gcalErr) {
       const status = gcalErr && (gcalErr.statusCode || gcalErr.status);
       if (status === 404 || status === 410) {
+        await Agendamento.findOneAndDelete({ ownerEmail, id });
         return res.status(200).json({
           ok: true,
           deleted: true,
@@ -524,7 +527,7 @@ async function excluirAgendamento(req, res) {
         });
       }
 
-      return montarRespostaFalhaGcal(res, gcalErr, 'excluir', excluidoParaGCal);
+      return montarRespostaFalhaGcal(res, gcalErr, 'excluir', excluidoParaGCal, { ownerEmail, agendamentoId: id });
     }
   } catch (err) {
     responderErroAgendamento(res, err, 'excluir agendamento');

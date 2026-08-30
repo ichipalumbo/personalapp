@@ -597,23 +597,31 @@ maior (I/O real) e não uma pendência de correção de regra do calendário.
 `ownerEmail` era declarado com `index: true` e também com um índice único. O campo agora
 mantém apenas o índice único, que é a garantia relevante.
 
-### 9.11 `COUNT` e `EXDATE` no motor local — RESOLVIDO (Rodada C)
+### 9.11 `COUNT` e `EXDATE` no motor local — FECHADO POR DECISÃO DE PRODUTO
 
-**Problema**: a regra local e a regra do Google divergem se uma ocorrência cancelada for
-contada como se não consumisse vaga do `COUNT`. A RFC define `COUNT` como limite do conjunto
-expandido pela `RRULE`, e o `EXDATE` só remove **depois** da expansão. Em outras palavras:
-a ocorrência cancelada continua consumindo uma vaga do `COUNT`.
+**Decisão**: o `COUNT` serve apenas para encerrar a recorrência após N eventos, seguindo o
+comportamento padrão do Google Calendar. Ele não representa pacote comercial de aulas, nem
+muda o dia a dia da operação com o app.
 
-**Correção atual**: `contarOcorrenciasAteData` em
-`assets/js/shared/recurrence-helpers.js` foi ajustado para incluir a exceção na contagem,
-sem remover a proteção que já filtra a data em `checarCompromissoNaData` antes da
-expansão da agenda. Isso deixa o motor local coerente com a regra do Google e evita
-reintroduzir divergência na parte financeira.
+**Evidência**: a checagem executada na Rodada E confirmou que o motor local e o Google
+concordam em comportamento real.
+
+```text
+MOTOR LOCAL do app:  3 aulas -> 07/09, 14/09, 28/09
+PAYLOAD ao Google:   ["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4", "EXDATE;...20260921T090000"]
+DIVERGEM? NAO
+```
+
+A correção já implementada em `contarOcorrenciasAteData` segue a RFC: o `EXDATE` é aplicado
+após a expansão e a ocorrência cancelada continua consumindo a vaga do `COUNT`; a filtragem
+prematura em `checarCompromissoNaData` continua protegendo o calendário local sem afetar a
+regra de negócio do Google.
 
 **Risco financeiro**: `recurrence-helpers.js` continua sendo consumido em
 `backend/src/services/financasService.js:6` e em `normalizarAulasContadas`
 (`backend/src/services/financasService.js:193-225`), então a regra de contagem ainda afeta
-`aulasContadas` e, por extensão, o valor do ciclo. A correção não é cosmética.
+`aulasContadas` e, por extensão, o valor do ciclo. O fechamento aqui é de produto, não uma
+mudança na regra de cálculo do app.
 
 ### 9.12 `EXDATE` de evento com hora precisa do horário — RESOLVIDO (Rodada C)
 
