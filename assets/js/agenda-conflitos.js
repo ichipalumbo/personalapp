@@ -26,6 +26,9 @@ window.getCompromissoSerializadoParaConflito = function(compromisso, dataAlvoPtB
         dataCriacao: compromisso.dataCriacao || new Date().toISOString(),
         recorrenciaEscopo: compromisso.recorrenciaEscopo || 'fromDate',
         recorrenciaDataInicio: compromisso.recorrenciaDataInicio || compromisso.data || dataAlvoPtBr,
+        recorrenciaFimCondicao: compromisso.recorrenciaFimCondicao || null,
+        recorrenciaDataFim: compromisso.recorrenciaDataFim || null,
+        recorrenciaQuantidadeOcorrencias: compromisso.recorrenciaQuantidadeOcorrencias || null,
         excecoes: Array.isArray(compromisso.excecoes) ? compromisso.excecoes.slice() : [],
         excecoesDetalhadas: Array.isArray(compromisso.excecoesDetalhadas) ? compromisso.excecoesDetalhadas.slice() : []
     };
