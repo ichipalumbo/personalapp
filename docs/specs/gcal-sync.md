@@ -725,7 +725,36 @@ usando o resolver full-chain, sem misturar a semântica de continuação.
 **Cobertura**: a correção foi validada com mutação no arquivo real de produção e com a asserção
 adicional em `backend/test/gcal-duplicata-fix.test.js` para `resumo.ate === '13/09/2026'`.
 
-### 9.18 Relatórios desta spec
+### 9.18 — Motor de aparo de cadeia "daqui pra frente" corta a série sem subir ao ancestral nem mexer no histórico. — FECHADO (2026-08-31)
+
+**Decisão de produto**: existe um motor testável em `assets/js/modal-acao-slot.js`,
+`aparaCadeiaSerieAPartirDe`, que corta a recorrência a partir de uma data sem mexer no histórico
+anterior. O escopo considerado é a família descendente da série selecionada mais as avulsas
+irmãs penduradas no mesmo `serieOrigemId`; o motor nunca sobe até o ancestral, e um descendente
+que terminou completamente antes do corte é ignorado porque já entrou no histórico e não deve ser
+tocado.
+
+**Resolver usado**: em vez de subir até a raiz, ele usa `resolverFamiliaDescendenteSerie` para
+restringir a ação aos descendentes em foco e complementa a varredura com o bloco `mesmoRamo`
+para capturar a avulsa irmã sem sugar o pai. Isso evita o defeito 5 reaparecer por outra porta,
+porque o algoritmo não toma o ancestral nem o ramo já concluído como alvo de aparo ou remoção.
+
+**Semântica do corte**: descendente que começa antes do corte é aparado em vez de removido,
+porque a pessoa pode ter aulas válidas antes da linha de corte, e a exclusão deve preservar esse
+histórico e só reduzir o fim da série para o dia anterior à data escolhida. Avulsa irmã a partir
+do corte é removida, exceto quando é reposição. Reposição continua sempre preservada, e o motor
+retorna `reposicoesPreservadas` para a UI avisar sem recalcular o escopo. A interface ainda não foi
+ligada; o motor existe e a 6b-ui decide o botão e o diálogo final.
+
+**Cobertura**: a lógica foi registrada em `backend/test/gcal-duplicata-fix.test.js` com
+`aparaCadeiaSerieAPartirDe apara a série selecionada e preserva o histórico`,
+`aparaCadeiaSerieAPartirDe apara o descendente que começa antes do corte`,
+`aparaCadeiaSerieAPartirDe remove a série quando o aparo não deixa ocorrência`,
+`aparaCadeiaSerieAPartirDe não toca em descendente que termina antes do corte`,
+`aparaCadeiaSerieAPartirDe não remove o ancestral avulso` e
+`aparaCadeiaSerieAPartirDe preserva reposição irmã e a contabiliza`.
+
+### 9.19 Relatórios desta spec
 
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
@@ -758,6 +787,8 @@ adicional em `backend/test/gcal-duplicata-fix.test.js` para `resumo.ate === '13/
 | `docs/_reports/2026-08-31-fix-heranca-mae-vazia-split.md` | 9.15 | fechado |
 | `docs/_reports/2026-08-31-fix-heranca-contagem-ocorrencias.md` | 9.15 | fechado |
 | `docs/_reports/2026-08-31-fix-excluir-serie-toda-coerente.md` | 9.17 | fechado |
+| `docs/_reports/2026-08-31-feat-aparo-cadeia-serie.md` | 9.18 | fechado |
+| `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
 
 ## 10. Custo aceito da decisão
 

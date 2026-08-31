@@ -376,6 +376,184 @@ window.removerCadeiaCompletaSerie = function (idOuCompromisso) {
  return antes - aulas.length;
 };
 
+window.aparaCadeiaSerieAPartirDe = function (idOuCompromisso, dataCorte) {
+ if (!Array.isArray(aulas) || !dataCorte) {
+   return { aparadas: 0, removidas: 0, reposicoesPreservadas: 0, ids: [] };
+ }
+
+ const baseCompromisso =
+   idOuCompromisso && typeof idOuCompromisso === "object"
+     ? idOuCompromisso
+     : aulas.find((item) => item && item.id === idOuCompromisso);
+
+ if (!baseCompromisso || !baseCompromisso.id) {
+   return { aparadas: 0, removidas: 0, reposicoesPreservadas: 0, ids: [] };
+ }
+
+ const dataCorteJs = window.parseDataFlex(dataCorte);
+ if (!dataCorteJs || Number.isNaN(dataCorteJs.getTime())) {
+   return { aparadas: 0, removidas: 0, reposicoesPreservadas: 0, ids: [] };
+ }
+
+ const formatarDataPtBr = (valor) => {
+   const dataObj =
+     valor instanceof Date && !Number.isNaN(valor.getTime())
+       ? valor
+       : window.parseDataFlex(valor);
+
+   if (!dataObj || Number.isNaN(dataObj.getTime())) return null;
+   const dia = String(dataObj.getDate()).padStart(2, "0");
+   const mes = String(dataObj.getMonth() + 1).padStart(2, "0");
+   const ano = String(dataObj.getFullYear());
+   return `${dia}/${mes}/${ano}`;
+ };
+
+ const dataAparo = new Date(dataCorteJs);
+ dataAparo.setDate(dataAparo.getDate() - 1);
+
+ const serieFicaVaziaAposAparo = (compromisso) => {
+   const dataInicio = window.parseDataFlex(
+     compromisso.recorrenciaDataInicio || compromisso.data || compromisso.dataCriacao,
+   );
+   if (!dataInicio || !dataAparo) return false;
+   if (dataAparo < dataInicio) return true;
+
+   const cursorInicio = new Date(dataInicio);
+   const cursorFim = new Date(dataAparo);
+
+   for (
+     let cursor = new Date(cursorInicio);
+     cursor <= cursorFim;
+     cursor.setDate(cursor.getDate() + 1)
+   ) {
+     const dataTeste = new Date(
+       cursor.getFullYear(),
+       cursor.getMonth(),
+       cursor.getDate(),
+     );
+     if (window.checarCompromissoNaData(compromisso, dataTeste)) {
+       return false;
+     }
+   }
+
+   return true;
+ };
+
+ const idsAtingidos = [];
+ const idsAparadas = [];
+ const idsRemovidas = [];
+ const idsReposicoesPreservadas = new Set();
+
+ const registrarAtingido = (id) => {
+   if (!id || idsAtingidos.includes(id)) return;
+   idsAtingidos.push(id);
+ };
+
+ const removerItem = (item) => {
+   if (!item || !item.id) return;
+   const indice = aulas.findIndex((registro) => registro && registro.id === item.id);
+   if (indice >= 0) {
+     aulas.splice(indice, 1);
+   }
+   registrarAtingido(item.id);
+   if (!idsRemovidas.includes(item.id)) idsRemovidas.push(item.id);
+ };
+
+ const apararItem = (item) => {
+   if (!item || !item.id) return;
+   item.recorrenciaFimCondicao = "untilDate";
+   item.recorrenciaDataFim = formatarDataPtBr(dataAparo);
+   delete item.recorrenciaQuantidadeOcorrencias;
+   registrarAtingido(item.id);
+   if (!idsAparadas.includes(item.id)) idsAparadas.push(item.id);
+ };
+
+ const idsAlvo = new Set();
+ window.resolverFamiliaDescendenteSerie(baseCompromisso).forEach((item) => {
+   if (item && item.id) idsAlvo.add(item.id);
+ });
+
+ const raizRelacionada = baseCompromisso.serieOrigemId || null;
+ aulas.forEach((item) => {
+   if (!item || !item.id) return;
+   const mesmoRamo =
+     item.id === baseCompromisso.id ||
+     item.serieOrigemId === baseCompromisso.id ||
+     (raizRelacionada &&
+       item.serieOrigemId === raizRelacionada &&
+       (item.frequencia === "uma_vez" || item.isReposicao));
+   if (mesmoRamo) idsAlvo.add(item.id);
+ });
+
+ Array.from(idsAlvo)
+   .map((id) => aulas.find((item) => item && item.id === id))
+   .filter(Boolean)
+   .forEach((item) => {
+     if (!item) return;
+
+     const dataItem = window.parseDataFlex(
+       item.data || item.recorrenciaDataInicio || item.dataCriacao,
+     );
+
+     if (item.isReposicao) {
+       if (dataItem && dataItem >= dataCorteJs) {
+         idsReposicoesPreservadas.add(item.id);
+       }
+       return;
+     }
+
+     if (item.frequencia === "uma_vez") {
+       if (dataItem && dataItem >= dataCorteJs) {
+         removerItem(item);
+       }
+       return;
+     }
+
+     if (item.id === baseCompromisso.id) {
+       if (serieFicaVaziaAposAparo(item)) {
+         removerItem(item);
+         return;
+       }
+       apararItem(item);
+       return;
+     }
+
+     const dataInicio = window.parseDataFlex(
+       item.recorrenciaDataInicio || item.data || item.dataCriacao,
+     );
+     if (!dataInicio) return;
+
+     if (dataInicio >= dataCorteJs) {
+       removerItem(item);
+       return;
+     }
+
+     const dataFim = item.recorrenciaDataFim
+       ? window.parseDataFlex(item.recorrenciaDataFim)
+       : null;
+     if (dataFim && dataFim < dataCorteJs) {
+       return;
+     }
+
+     apararItem(item);
+   });
+
+ if (idsRemovidas.length > 0) {
+   aulas.splice(
+     0,
+     aulas.length,
+     ...aulas.filter((item) => !idsRemovidas.includes(item && item.id)),
+   );
+ }
+
+ return {
+   aparadas: idsAparadas.length,
+   removidas: idsRemovidas.length,
+   reposicoesPreservadas: idsReposicoesPreservadas.size,
+   ids: idsAtingidos,
+ };
+};
+
 function compromissoTemAlunoInativo(compromisso) {
   if (!compromisso || (compromisso.tipo || "aula") !== "aula") return false;
   if (
@@ -1986,9 +2164,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (_serieDeletar && _serieDeletar.serieOrigemId) {
         const _continuar = confirm(
           "Esta série é uma continuação de uma série histórica anterior.\n\n" +
-            "Ao excluí-la, a série original (períodos anteriores) continuará existindo separadamente no app. " +
-            'Caso queira removê-la também, exclua manualmente a série marcada como "Recorrente".\n\n' +
-            "Deseja excluir esta série de continuação?",
+            "Ao excluí-la, a série histórica anterior também será removida porque a exclusão sobe até a origem da cadeia.\n\n" +
+            "Deseja excluir esta série e a cadeia histórica relacionada?",
         );
         if (!_continuar) return;
       }

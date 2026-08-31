@@ -2597,3 +2597,323 @@ test('removerCadeiaCompletaSerie remove o mesmo total que o resumo anunciou', ()
   assert.equal(context.aulas.some((item) => item.id === 'R'), true);
 });
 
+test('aparaCadeiaSerieAPartirDe apara a série selecionada e preserva o histórico', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'S1',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'S0',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  };
+  const serieNeta = {
+    ...serieMae,
+    id: 'S3',
+    data: '05/09/2026',
+    recorrenciaDataInicio: '05/09/2026',
+    serieOrigemId: 'S1',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  };
+  const reposicao = {
+    ...serieMae,
+    id: 'R',
+    isReposicao: true,
+    data: '07/09/2026',
+    recorrenciaDataInicio: '07/09/2026',
+    serieOrigemId: 'S1',
+    recorrenciaFimCondicao: undefined,
+    recorrenciaDataFim: undefined,
+  };
+
+  const aulas = [serieMae, serieFilha, serieNeta, reposicao];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '31/08/2026' });
+
+  const resultado = context.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026');
+
+  assert.equal(resultado.aparadas, 2);
+  assert.equal(resultado.removidas, 0);
+  assert.equal(resultado.reposicoesPreservadas, 1);
+  assert.equal(resultado.ids.includes('S1'), true);
+  assert.equal(resultado.ids.includes('S3'), true);
+  assert.equal(context.aulas.some((item) => item.id === 'S0'), true);
+  assert.equal(context.aulas.some((item) => item.id === 'R'), true);
+  assert.equal(serieFilha.recorrenciaDataFim, '06/09/2026');
+  assert.equal(serieNeta.recorrenciaDataFim, '06/09/2026');
+});
+
+test('aparaCadeiaSerieAPartirDe apara o descendente que começa antes do corte', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'S1',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'S0',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  };
+  const serieNeta = {
+    ...serieMae,
+    id: 'S3',
+    data: '05/09/2026',
+    recorrenciaDataInicio: '05/09/2026',
+    serieOrigemId: 'S1',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  };
+  const avulsa = {
+    ...serieMae,
+    id: 'A1',
+    frequencia: 'uma_vez',
+    data: '08/09/2026',
+    recorrenciaDataInicio: '08/09/2026',
+    serieOrigemId: 'S0',
+    recorrenciaFimCondicao: undefined,
+    recorrenciaDataFim: undefined,
+  };
+  const reposicao = {
+    ...serieMae,
+    id: 'R',
+    isReposicao: true,
+    data: '07/09/2026',
+    recorrenciaDataInicio: '07/09/2026',
+    serieOrigemId: 'S1',
+    recorrenciaFimCondicao: undefined,
+    recorrenciaDataFim: undefined,
+  };
+
+  const aulas = [serieMae, serieFilha, serieNeta, avulsa, reposicao];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '31/08/2026' });
+
+  const resultado = context.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026');
+
+  assert.equal(resultado.aparadas, 2);
+  assert.equal(resultado.removidas, 1);
+  assert.equal(resultado.reposicoesPreservadas, 1);
+  assert.equal(context.aulas.some((item) => item.id === 'S3'), true);
+  assert.equal(context.aulas.some((item) => item.id === 'A1'), false);
+  assert.equal(serieNeta.recorrenciaDataFim, '06/09/2026');
+  assert.equal(resultado.ids.includes('A1'), true);
+});
+
+test('aparaCadeiaSerieAPartirDe remove a série quando o aparo não deixa ocorrência', () => {
+  const serie = {
+    id: 'S1',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '07/09/2026',
+    dia: 'Quarta',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '07/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '07/09/2026',
+    diasSemana: ['Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: 'S0',
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serie], compromisso: serie, dataAlvoStr: '07/09/2026' });
+
+  const resultado = context.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026');
+
+  assert.equal(resultado.aparadas, 0);
+  assert.equal(resultado.removidas, 1);
+  assert.equal(resultado.reposicoesPreservadas, 0);
+  assert.equal(context.aulas.some((item) => item.id === 'S1'), false);
+  assert.equal(resultado.ids.includes('S1'), true);
+});
+
+test('aparaCadeiaSerieAPartirDe não toca em descendente que termina antes do corte', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'S1',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'S0',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  };
+  const serieAntesDoCorte = {
+    ...serieMae,
+    id: 'S3',
+    data: '01/09/2026',
+    recorrenciaDataInicio: '01/09/2026',
+    serieOrigemId: 'S1',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '04/09/2026',
+  };
+
+  const aulas = [serieMae, serieFilha, serieAntesDoCorte];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '31/08/2026' });
+
+  const resultado = context.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026');
+
+  assert.equal(resultado.aparadas, 1);
+  assert.equal(resultado.removidas, 0);
+  assert.equal(resultado.reposicoesPreservadas, 0);
+  assert.equal(context.aulas.some((item) => item.id === 'S3'), true);
+  assert.equal(serieAntesDoCorte.recorrenciaDataFim, '04/09/2026');
+  assert.equal(serieFilha.recorrenciaDataFim, '06/09/2026');
+});
+
+test('aparaCadeiaSerieAPartirDe não remove o ancestral avulso', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+  };
+  const avulsaPai = {
+    ...serieMae,
+    id: 'P',
+    frequencia: 'uma_vez',
+    data: '10/09/2026',
+    recorrenciaDataInicio: '10/09/2026',
+    serieOrigemId: undefined,
+    recorrenciaFimCondicao: undefined,
+    recorrenciaDataFim: undefined,
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'C',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'P',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  };
+
+  const aulas = [avulsaPai, serieFilha];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '31/08/2026' });
+
+  const resultado = context.window.aparaCadeiaSerieAPartirDe('C', '07/09/2026');
+
+  assert.equal(resultado.aparadas, 1);
+  assert.equal(resultado.removidas, 0);
+  assert.equal(resultado.reposicoesPreservadas, 0);
+  assert.equal(context.aulas.some((item) => item.id === 'P'), true);
+  assert.equal(serieFilha.recorrenciaDataFim, '06/09/2026');
+});
+
+test('aparaCadeiaSerieAPartirDe preserva reposição irmã e a contabiliza', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'S1',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'S0',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+  };
+  const avulsaIrma = {
+    ...serieMae,
+    id: 'A1',
+    frequencia: 'uma_vez',
+    data: '08/09/2026',
+    recorrenciaDataInicio: '08/09/2026',
+    serieOrigemId: 'S0',
+    recorrenciaFimCondicao: undefined,
+    recorrenciaDataFim: undefined,
+  };
+  const reposicaoIrma = {
+    ...serieMae,
+    id: 'REP',
+    frequencia: 'uma_vez',
+    isReposicao: true,
+    data: '09/09/2026',
+    recorrenciaDataInicio: '09/09/2026',
+    serieOrigemId: 'S0',
+    recorrenciaFimCondicao: undefined,
+    recorrenciaDataFim: undefined,
+  };
+
+  const aulas = [serieMae, serieFilha, avulsaIrma, reposicaoIrma];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '31/08/2026' });
+
+  const resultado = context.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026');
+
+  assert.equal(resultado.aparadas, 1);
+  assert.equal(resultado.removidas, 1);
+  assert.equal(resultado.reposicoesPreservadas, 1);
+  assert.equal(context.aulas.some((item) => item.id === 'REP'), true);
+  assert.equal(context.aulas.some((item) => item.id === 'A1'), false);
+  assert.equal(serieFilha.recorrenciaDataFim, '06/09/2026');
+});
+
