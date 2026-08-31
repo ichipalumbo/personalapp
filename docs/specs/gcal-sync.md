@@ -1,10 +1,13 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: em produção com ressalva de validação; sincronização, webhook, `RRULE` e
-> `EXDATE` validados ao longo das rodadas A–H; validação em produção 01–02/09/2026.
+> **Status**: em produção com validação concluída; sincronização, webhook, `RRULE` e
+> `EXDATE` validados ao longo das rodadas A–H; validação em produção concluída em 31/08/2026.
 > 
-> **Versão**: 7 · **Atualizado**: 2026-08-29
-> **Defeitos em aberto**: 2 (ver seção 9)
+> **Versão**: 9 · **Atualizado**: 2026-08-31
+> **Defeitos em aberto**: 2 (ver seção 9): 9.14 (gatilho triplo de sincronização no boot) e 9.8
+> (cobertura parcial de I/O real no Google). A validação do canal de webhook em 31/08/2026
+> fecha a parte de renovação do canal que estava pendente; os defeitos 5 e 6 entram no item
+> 9.15 e ficaram documentados como complemento do split encadeado.
 >
 > **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v6) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
@@ -360,18 +363,18 @@ Se não há sessão Google, a função sai sem forçar login. O botão manual
 
 ### 5.1.4 Estado de validação
 
-A validação de produção foi feita manualmente pelo botão em 26/08/2026. A renovação, o
- catch-up e o purge seguro funcionaram: a recorrência apagada no Google desapareceu do app
- sem intervenção manual no MongoDB.
+ A validação de produção foi executada manualmente pelo botão em 31/08/2026. A renovação
+ do canal antigo, o registro do novo canal e a sincronização de recuperação funcionaram: a
+ expiração avançou para a semana seguinte, coerente com o teto de ~7 dias do Google.
 
 Essa validação descartou a hipótese de descasamento entre id de série-mãe e id de instância
  no `deleteBloqueio`. O lugar onde o problema ocorria era a sincronização de webhook e a
  reconciliação de `BloqueioExterno`, não o mapa de ids do evento do app.
 
-Ainda não foi validado o gatilho automático no boot. O canal renovado expira em 02/09/2026,
- e a margem de 24h só dispara nas últimas 24 horas. A verificação pendente é abrir o app
- com `window.log.nivel = 'debug'` por volta de 01–02/09/2026 e confirmar que
- "Canal renovado" aparece uma única vez.
+ Ressalva registrada: o disparo automático no boot não foi observado isoladamente — a
+ validação foi por clique manual do mesmo fluxo e do mesmo endpoint. O caminho inteiro foi
+ executado em produção, mas a observação do boot automático permanece fora do escopo da
+ validação documentada nessa rodada.
 
 ### 5.1.5 Débito técnico a registrar
 
@@ -657,29 +660,41 @@ A sincronização de leitura do Google Calendar é disparada em três pontos do 
 - listener de auth-change (`googleIdentity.addAuthChangeListener`);
 - `visibilitychange` com auto-refresh silencioso.
 
-O gatilho de renovação do canal foi mantido fora desse ciclo deliberadamente; ele é
-explicitamente tratado como rotação do webhook e não como parte do ciclo normal de
-sincronização. A consolidação desses gatilhos continua em pendência.
+A validação em produção de 31/08/2026 confirmou que a cadeia de renovação do canal funciona,
+encerrando o canal antigo, registrando o novo e sincronizando a recuperação. O ponto ainda
+pendente é a observação isolada do gatilho automático no boot: a verificação executada foi por
+clique manual no botão de renovação, não por disparo direto do boot.
 
-### 9.15 — Série truncada antes do próprio início vira evento avulso. — RESOLVIDO (Rodada F/H)
+**Status atual**: a renovação do canal está validada; o gatilho triplo do boot continua pendente
+como item funcional e segue registrado em 9.14, sem reabrir a decisão de produto da sincronização
+em si.
+
+### 9.15 — Série truncada antes do próprio início vira evento avulso. — RESOLVIDO (Rodada F/H + 2026-08-31)
 
 **Decisão de produto**: quando a série truncada fica sem ocorrência restante, o registro sai do
 app em ambos os lados e o evento sai do Google. Não há nada a preservar, porque a série nova
 assume tudo a partir da data editada.
 
+**Complemento do defeito 6 (Rodada H / 2026-08-31)**: quando a janela final da série truncada
+fica finita e não produz nenhuma ocorrência válida, a remoção não pode depender de uma
+comparação de datas invertidas. A regra correta é verificar se sobrou alguma ocorrência real, e
+isso deve ser decidido por `checarCompromissoNaData` e pelos helpers de
+`assets/js/shared/recurrence-helpers.js`. A herança de término no split também cobre o caso em
+que a mãe fica vazia: a filha herda quando o fim original é posterior ou igual à data do corte.
+
 **Correção no frontend**: `assets/js/modal-acao-slot.js`, bloco de split `fromDate`, foi
-ajustado para remover a série vazia com `aulas.splice(...)` e seguir para a criação da série
-nova. O `DELETE` explícito foi removido na rodada F; a reconciliação de `storage.js` (~linha
-718) já apaga no backend o agendamento remoto ausente da lista local, pelo caminho coberto por
-teste.
+ajustado para: (a) capturar o fim original da mãe antes do aparo; (b) herdar `recorrenciaDataFim`
+para a série nova apenas quando a mãe era finita e a condição de término era `untilDate`; (c)
+remover a série original quando o corte não sobrou ocorrências válidas; e (d) preservar a série
+nova infinita quando a mãe era infinita.
 
 **Cobertura de teste**: a Rodada H provou a correção com mutação no arquivo real de produção,
 executando o listener registrado pelo `vm`. `backend/test/gcal-duplicata-fix.test.js` cobre os
-cenários de split na primeira ocorrência e no meio da série, e falha quando a lógica real é
-mutada em `assets/js/modal-acao-slot.js`.
+cenários de split na primeira ocorrência, no meio da série, na segunda-feira sem ocorrência e no
+caso de herança de fim para série previamente aparada.
 
 **Sub-item em aberto**: o diagnóstico original do backend continua como alerta de risco em outra
-via de implementação, mas a correção entregue e coberta hoje é a do fluxo do frontend. Se um
+via de implementação, mas a correção entregue e coberta hoje é a do fluxo do app. Se um
 caminho do backend for identificado gerando o mesmo payload fora do split, esse caso deve ser
 registrado como sub-item separado, sem reabrir a decisão de produto já tomada.
 
@@ -695,11 +710,11 @@ código foi protegido por teste comportamental em `backend/test/gcal-sync.test.j
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
 | `docs/_reports/2026-08-25-gcal-fix.md` | diagnóstico geral | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-boot.md` | 9.14 | em aberto |
+| `docs/_reports/2026-08-25-gcal-watch-boot.md` | 9.14 | diagnóstico |
 | `docs/_reports/2026-08-25-gcal-watch-purge.md` | diagnóstico de purge / sincronização | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-renovacao.md` | 9.14 | em aberto |
+| `docs/_reports/2026-08-25-gcal-watch-renovacao.md` | 9.14 | fechado |
 | `docs/_reports/2026-08-26-doc-sync-gcal-watch.md` | 9.14 | diagnóstico |
-| `docs/_reports/2026-08-26-gcal-watch-log-falha.md` | 9.14 | em aberto |
+| `docs/_reports/2026-08-26-gcal-watch-log-falha.md` | 9.14 | diagnóstico |
 | `docs/_reports/2026-08-29-diag-auditoria-completa-gcal.md` | diagnóstico geral | diagnóstico |
 | `docs/_reports/2026-08-29-diag-duplicata-edicao-serie-gcal.md` | 9.15 | diagnóstico |
 | `docs/_reports/2026-08-29-fix-dtstart-byday-gcal.md` | 9.1 / alinhamento `DTSTART` | fechado |
@@ -711,6 +726,16 @@ código foi protegido por teste comportamental em `backend/test/gcal-sync.test.j
 | `docs/_reports/2026-08-29-fix-serie-vazia-e-acento-gcal.md` | 9.15 / 9.16 | fechado |
 | `docs/_reports/2026-08-29-fix-teto-pendencia-gcal.md` | 9.4 / controle de teto | fechado |
 | `docs/_reports/2026-08-29-fix-url-split-e-teste-comportamental.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-30-diag-vinculo-serie-avulsa-e-conflito-fantasma.md` | 9.15 | diagnóstico |
+| `docs/_reports/2026-08-30-fix-avulsa-limpa-campos-recorrencia.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-30-fix-conflito-serializacao-until.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-30-fix-split-preserva-excecoes.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-30-fix-vinculo-serie-familia-correcao.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-30-fix-vinculo-serie-familia-prova-ignorarids.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-30-fix-vinculo-serie-familia.md` | 9.15 | fechado |
+| `docs/_diags_llm/2026-08-31-diag-split-encadeado-defeitos-5-e-6.md` | 9.15 | diagnóstico |
+| `docs/_reports/2026-08-31-fix-split-encadeado-heranca-e-serie-vazia.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-31-fix-heranca-mae-vazia-split.md` | 9.15 | fechado |
 
 ## 10. Custo aceito da decisão
 

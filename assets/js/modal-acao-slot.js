@@ -1224,6 +1224,11 @@ document.addEventListener("DOMContentLoaded", () => {
               return;
             }
 
+            const _recorrenciaDataFimOriginalFd = compromisso.recorrenciaDataFim;
+            const _recorrenciaFimCondicaoOriginalFd = compromisso.recorrenciaFimCondicao;
+            const _recorrenciaQuantidadeOcorrenciasOriginalFd =
+              compromisso.recorrenciaQuantidadeOcorrencias;
+
             // Encerra a série original um dia antes da data clicada
             compromisso.recorrenciaFimCondicao = "untilDate";
             compromisso.recorrenciaDataFim = _ptBrAnteriorFd;
@@ -1233,10 +1238,39 @@ document.addEventListener("DOMContentLoaded", () => {
               compromisso.recorrenciaDataInicio || compromisso.data || compromisso.dataCriacao,
             );
             const _dataFimRecorrenciaFd = window.parseDataFlex(compromisso.recorrenciaDataFim);
-            const _serieOriginalVaziaFd =
-              _dataInicioEfeitoFd &&
-              _dataFimRecorrenciaFd &&
-              _dataFimRecorrenciaFd < _dataInicioEfeitoFd;
+            const _serieOriginalVaziaFd = (() => {
+              if (!_dataInicioEfeitoFd || !_dataFimRecorrenciaFd) {
+                return false;
+              }
+
+              if (_dataFimRecorrenciaFd < _dataInicioEfeitoFd) {
+                return true;
+              }
+
+              const _cursorInicioVaziaFd = new Date(_dataInicioEfeitoFd);
+              const _cursorFimVaziaFd = new Date(_dataFimRecorrenciaFd);
+
+              for (
+                let _cursorVaziaFd = new Date(_cursorInicioVaziaFd);
+                _cursorVaziaFd <= _cursorFimVaziaFd;
+                _cursorVaziaFd.setDate(_cursorVaziaFd.getDate() + 1)
+              ) {
+                if (
+                  window.checarCompromissoNaData(
+                    compromisso,
+                    new Date(
+                      _cursorVaziaFd.getFullYear(),
+                      _cursorVaziaFd.getMonth(),
+                      _cursorVaziaFd.getDate(),
+                    ),
+                  )
+                ) {
+                  return false;
+                }
+              }
+
+              return true;
+            })();
 
             if (_serieOriginalVaziaFd) {
               const _indiceSerieOriginalFd = aulas.findIndex(
@@ -1287,9 +1321,22 @@ document.addEventListener("DOMContentLoaded", () => {
               serieOrigemId: compromisso.id,
               recorrenciaEscopo: "fromDate",
             });
-            // Nova série não tem prazo de término — remove campos de encerramento herdados
-            delete _novaSerieFd.recorrenciaFimCondicao;
-            delete _novaSerieFd.recorrenciaDataFim;
+            const _deveHerdarFimOriginalFd =
+              _recorrenciaFimCondicaoOriginalFd === "untilDate" &&
+              Boolean(_recorrenciaDataFimOriginalFd) &&
+              _dataCorteExcecoesFd &&
+              window.parseDataFlex(_recorrenciaDataFimOriginalFd) >= _dataCorteExcecoesFd;
+
+            delete _novaSerieFd.recorrenciaQuantidadeOcorrencias;
+            if (_deveHerdarFimOriginalFd) {
+              _novaSerieFd.recorrenciaFimCondicao = "untilDate";
+              _novaSerieFd.recorrenciaDataFim = _recorrenciaDataFimOriginalFd;
+            } else {
+              // split fromDate só herda fim do pai quando a série mãe foi truncada por data.
+              // outras regras de término (ex.: occurrences) ficam fora do escopo desta correção.
+              delete _novaSerieFd.recorrenciaFimCondicao;
+              delete _novaSerieFd.recorrenciaDataFim;
+            }
             aulas.push(_novaSerieFd);
             _novaSerieSplit = _novaSerieFd;
           } else {

@@ -1637,6 +1637,196 @@ test('split fromDate em serie original vazia preserva excecoes na nova serie', a
   assert.deepEqual(serieNova.excecoes, ['07/09/2026']);
 });
 
+test('split fromDate herda o fim da mãe quando a mãe já foi aparada por um split anterior', async () => {
+  const diaInicio = '31/08/2026';
+  const dataAlvo = '07/09/2026';
+  const compromisso = {
+    id: 'serie-mae-aparada',
+    tipo: 'aula',
+    data: diaInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: diaInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '08/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-mae-aparada',
+    excecoes: [],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar no split com serie aparada');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-mae-aparada');
+  assert.ok(serieNova);
+  assert.equal(serieNova.recorrenciaFimCondicao, 'untilDate');
+  assert.equal(serieNova.recorrenciaDataFim, '08/09/2026');
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-08T12:00:00'), '09:00'), true);
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-14T12:00:00'), '09:00'), false);
+});
+
+test('split fromDate em serie infinita continua gerando filha infinita', async () => {
+  const diaInicio = '31/08/2026';
+  const dataAlvo = '07/09/2026';
+  const compromisso = {
+    id: 'serie-infinita',
+    tipo: 'aula',
+    data: diaInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: diaInicio,
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-serie-infinita',
+    excecoes: [],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar no split de serie infinita');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-infinita');
+  assert.ok(serieNova);
+  assert.equal(serieNova.recorrenciaFimCondicao, undefined);
+  assert.equal(serieNova.recorrenciaDataFim, undefined);
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-14T12:00:00'), '09:00'), true);
+});
+
+test('split fromDate na primeira ocorrencia herda o fim original da mae quando o corte fica antes do termino', async () => {
+  const dataInicio = '02/09/2026';
+  const dataAlvo = '02/09/2026';
+  const compromisso = {
+    id: 'serie-mesma-primeira-ocorrencia',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '08/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-primeira-ocorrencia',
+    excecoes: [],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar quando a serie mae fica vazia mas a filha herda o fim original');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(aulas.length, 1);
+  const serieNova = aulas[0];
+  assert.ok(serieNova);
+  assert.equal(serieNova.id !== 'serie-mesma-primeira-ocorrencia', true);
+  assert.equal(serieNova.recorrenciaFimCondicao, 'untilDate');
+  assert.equal(serieNova.recorrenciaDataFim, '08/09/2026');
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-07T12:00:00'), '09:00'), true);
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-14T12:00:00'), '09:00'), false);
+});
+
+test('split fromDate remove a serie original quando o corte em segunda-feira nao deixa ocorrencia restante', async () => {
+  const dataInicio = '30/08/2026';
+  const dataAlvo = '31/08/2026';
+  const compromisso = {
+    id: 'serie-vazia-segunda',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Domingo',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: dataInicio,
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-vazia-segunda',
+    excecoes: [],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar para remover serie vazia em segunda');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(aulas.length, 1);
+  const serieNova = aulas[0];
+  assert.ok(serieNova);
+  assert.equal(serieNova.id !== 'serie-vazia-segunda', true);
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-07T12:00:00'), '09:00'), true);
+});
+
+test('split fromDate preserva a serie original quando a semana ainda tem ocorrencia valida apos o corte', async () => {
+  const dataInicio = '31/08/2026';
+  const dataAlvo = '01/09/2026';
+  const compromisso = {
+    id: 'serie-com-ocorrencia-na-semana',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '07/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-com-ocorrencia-na-semana',
+    excecoes: [],
+  };
+  const aulas = [compromisso];
+  const { form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(aulas.length, 2);
+  const serieOriginal = aulas.find((item) => item.id === 'serie-com-ocorrencia-na-semana');
+  assert.ok(serieOriginal);
+  assert.equal(serieOriginal.recorrenciaDataFim, '31/08/2026');
+});
+
+test('split fromDate preserva a serie original quando sobra exatamente uma ocorrencia valida', async () => {
+  const dataInicio = '01/09/2026';
+  const dataAlvo = '02/09/2026';
+  const compromisso = {
+    id: 'serie-com-uma-ocorrencia',
+    tipo: 'aula',
+    data: dataInicio,
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: dataInicio,
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '02/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-com-uma-ocorrencia',
+    excecoes: [],
+  };
+  const aulas = [compromisso];
+  const { form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(aulas.length, 2);
+  const serieOriginal = aulas.find((item) => item.id === 'serie-com-uma-ocorrencia');
+  assert.ok(serieOriginal);
+  assert.equal(serieOriginal.recorrenciaDataFim, '01/09/2026');
+});
+
 test('avulsa criada por occurrence continua com excecoes vazias mesmo quando a serie tem excecao futura', async () => {
   const serieMae = {
     id: 'serie-mae-excecao',

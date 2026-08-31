@@ -47,7 +47,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.6 Lembrete de aniversário do aluno             | `[ ]`  | —                                                                |
 | 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
-| 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção em 01–02/09/2026; saga de correções de 29/08/2026 registrada em `specs/gcal-sync.md` §9 |
+| 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
@@ -284,8 +284,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
 - **Histórico de correção (29/08/2026)**: uma auditoria do mês encontrou defeitos de sincronização (duplicata de série na edição, `EXDATE` do primeiro dia, `DTSTART` desalinhado do `BYDAY`, teto de pendência no lado errado, série truncada sem aulas, dia da semana sem acento e ordem invertida no `DELETE`). As rodadas A–H trataram esse conjunto; o estado final ficou registrado em [`specs/gcal-sync.md`](specs/gcal-sync.md) §9 e na tabela de relatórios da spec.
-- **Esforço**: Médio. O custo que ficou aberto foi o gatilho automático no boot e a validação da janela de 24h em 02/09/2026, e isso foi registrado como ressalva da entrega, não como regressão funcional visível.
-- **Validação pendente**: confirmar em produção, por volta de 01–02/09/2026, que a renovação do canal dispara exatamente uma vez por carregamento com `window.log.nivel = 'debug'` e mensagem "Canal renovado". A margem de 24h só dispara nas últimas 24 horas antes do vencimento do canal, que expira em 02/09/2026; fora dessa janela, não deve haver renovação.
+- **Esforço**: Médio. O custo que ficou aberto continua sendo o gatilho automático no boot, porque a validação executada foi por clique manual do botão de renovação e não por observação isolada do bootstrap; isso foi registrado como ressalva da entrega, não como regressão funcional visível.
+- **Validação concluída**: em 31/08/2026, o botão manual de renovação do canal foi executado e a expiração avançou para a semana seguinte, comprovando a cadeia completa de encerramento do canal antigo, registro do novo e sincronização de recuperação. A ressalva fica no boot: o disparo automático não foi observado isoladamente, mas o caminho da renovação foi validado em produção.
 - **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
 
 ---
