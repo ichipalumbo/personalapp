@@ -15,7 +15,7 @@
 > erros que ele não cometeu. Regeneração só a pedido explícito do dono, preservando o
 > texto da seção 6 palavra por palavra.
 >
-> **Última atualização**: 2026-08-29
+> **Última atualização**: 2026-08-31
 
 ---
 
@@ -27,6 +27,7 @@
 | Regra de negócio do financeiro / ciclo de cobrança         | `docs/specs/financas-ciclo-cobranca.md`              |
 | Regra de reposição, competência, prazo de validade         | `docs/specs/reposicoes-e-competencia.md`             |
 | Regra de sincronização com Google Calendar                 | `docs/specs/gcal-sync.md`                            |
+| **Formato de prompt de etapa, regras anti-loop, procedimento de mutação** | **`docs/TEMPLATE-prompt-etapa-personalapp.md`** |
 | Regras permanentes do agente de código                     | `.github/copilot-instructions.md`                    |
 | Índice da documentação e trabalho com agentes              | `docs/README.md`                                     |
 | Histórico de uma rodada específica                         | `docs/_reports/AAAA-MM-DD-*.md`                      |
@@ -37,6 +38,8 @@
 - vai mexer em Google Calendar → `docs/specs/gcal-sync.md` §9 (aberto) e §8 (fora de escopo)
 - vai mexer em finanças → `docs/specs/financas-ciclo-cobranca.md`
 - vai mexer em reposição → `docs/specs/reposicoes-e-competencia.md`
+- **vai escrever prompt de etapa** → `docs/TEMPLATE-prompt-etapa-personalapp.md` (esqueleto anotado,
+  blocos prontos para copiar, checklist)
 - histórico de uma correção → tabela de relatórios da spec correspondente
 
 **Este arquivo cobre "como trabalhar"; a spec cobre "o que é verdade sobre a feature".**
@@ -68,6 +71,10 @@ Como usar:
   data**. Se contradisser o código, o código vence (hierarquia acima). Já aconteceu:
   um relatório afirmava que nenhum `.js` havia sido alterado e o arquivo mudou depois do
   fechamento.
+- **Relatório pode conter evidência inválida e ainda assim descrever código correto.** Já
+  aconteceu: quatro de sete mutações com saída copiada de outra mutação ou não aplicada,
+  com a correção em si perfeita. Auditar as duas coisas em separado — a correção por
+  execução, a evidência por assinatura de falha (§5).
 - **Fato descoberto depois do fechamento vira adendo** na seção final do próprio
   relatório, não edição silenciosa do corpo. O histórico precisa mostrar que mudou.
 - **Não resumir relatório aqui.** Este arquivo aponta para a pasta; o conteúdo mora lá.
@@ -86,6 +93,9 @@ Como usar:
   oficialmente lançado**; a base de produção é usada para teste e limpa em seguida. Não há
   dado real em risco — o que faz desta a melhor janela para mudança estrutural e para
   escrever teste. **Essa janela fecha no lançamento.**
+- **Custo de token é restrição real.** Ele acompanha o consumo no GitHub Copilot e já pediu
+  para enxugar método por causa disso. Ao propor procedimento repetitivo, dizer o custo e o
+  retorno — e oferecer a versão enxuta (§5, "Prova por mutação — quanto usar").
 
 ### Preferências confirmadas
 
@@ -95,6 +105,7 @@ Como usar:
 | **Não extrapolar escopo**      | Sair do escopo só para **levantar** ambiguidade ou risco — nunca para implementar por conta própria.                                                                                                             |
 | **Não colar código no chat**   | Preferência forte. Vale também para trecho curto, comentário e uma linha só. Editar o arquivo e **relatar em texto**. Exceção: **prompts** para o agente, que são o entregável da conversa e podem levar código. |
 | **Entregável vai em arquivo**  | Prompt, sugestão de texto e qualquer coisa longa vão como **arquivo anexado na mesma mensagem** — não como bloco no chat.                                                                                        |
+| **Ele mesmo cria a branch**    | Tem um `.ps1` próprio, já ajustado às diretrizes dele. O prompt **informa o nome recomendado**; o agente **verifica** e para se divergir (§3).                                                                    |
 | **`package-lock.json`**        | Pode ser alterado. Não é área protegida.                                                                                                                                                                         |
 | **Relatório ao final**         | Arquivos alterados, o que mudou em cada um, e o que foi encontrado mas **não** alterado. Gravado em `docs/_reports/` (ver §1 e §5).                                                                              |
 | **Comando pronto para colar**  | Bloco completo, copiável de uma vez, na sintaxe do shell dele, com a leitura do resultado esperado.                                                                                                              |
@@ -109,6 +120,10 @@ Como usar:
   `Select-String` no lugar de `grep`, sem `&&`, **um comando por linha**. Caminho
   `/workspaces/...` → POSIX normal.
 - Em dúvida: `Get-Location` ou `pwd` primeiro. Já errei isso (erro nº 13).
+- **Saída redirecionada com `>` sai em UTF-16 no PowerShell.** `npm test > log.txt` produz
+  arquivo que as ferramentas de leitura do agente devolvem como lixo — e ele conclui "não
+  consegui verificar" e volta atrás, o que já virou gatilho de loop. Ler no terminal, ou
+  `npm test 2>&1 | Out-File -FilePath log.txt -Encoding utf8`.
 - **DNS do Windows quebra `mongodb+srv://` nesta máquina.** O resolvedor local não responde
   e a resolução SRV do Atlas falha com `querySrv ECONNREFUSED 127.0.0.1:53`. Contorno em
   produção no topo de `backend/server.js`: `dns.setServers(['1.1.1.1','1.0.0.1'])` dentro
@@ -143,6 +158,13 @@ implementar.**
 - **mutação no arquivo real** e reexecução para confirmar que o teste falha — é o que
   separa teste real de placebo.
 
+**Quando o teste tem harness próprio, reaproveitá-lo.** Extrair o construtor de harness do
+arquivo de teste para um módulo auxiliar e rodar cenários diretos contra o arquivo de
+produção é mais rápido e mais confiável que pedir a prova ao agente. Foi assim que se
+confirmou, em uma passada, que uma correção estava certa enquanto a evidência do relatório
+estava inválida. **Preferir isso a uma rodada de agente dedicada só a produzir evidência**
+— custa menos token e não depende da honestidade do relatório.
+
 ---
 
 ## 3. Infra e deploy — o que não está no repositório
@@ -151,8 +173,8 @@ implementar.**
 
 | Projeto                | Root Directory | URL                                   |
 | ---------------------- | -------------- | ------------------------------------- |
-| `personal-app-webpage` | raiz do repo   | https://josy-personal-app.vercel.app/ |
-| `personal-app-api`     | `backend/`     | https://personal-app-api.vercel.app/  |
+| `personal-app-webpage` | raiz do repo   | <https://josy-personal-app.vercel.app/> |
+| `personal-app-api`     | `backend/`     | <https://personal-app-api.vercel.app/>  |
 
 - **Ele escolhe no painel qual branch publicar.** Para validar ponta a ponta, aponta os
   dois projetos para a branch da feature; se der errado, volta para a `main`.
@@ -209,9 +231,19 @@ nome, a URI atual funciona com ou sem `/test` explícito.
   feature, não para a `main`.
 - **Push em feature branch é seguro** — só a `main` publica.
 - **Merge na `main` = publicar.** É o gate consciente dele.
-- **A branch é criada pelo usuário antes do prompt.** O agente edita arquivos e para —
-  não roda git. Commit, push e PR são dele, no VS Code.
+- **A branch é criada pelo dono, com script `.ps1` próprio**, já alinhado às diretrizes
+  dele. O agente **não cria, não troca e não pergunta se deve criar**.
+- **O prompt informa o nome recomendado da branch.** O agente lê
+  `git rev-parse --abbrev-ref HEAD` e:
+  - **se bater**, registra "pré-condição satisfeita" e **segue sem perguntar**;
+  - **se não bater**, emite **uma** mensagem com branch atual, estado do working tree, nome
+    recomendado e duas opções — _"já criei, reverifique"_ ou _"continuar na branch atual"_ —
+    e **para**.
+- **Nunca oferecer "quer que eu crie a branch?"**. A opção não é executável pelo agente e
+  produz loop (§5, regra R1; erro nº 20).
 - **Não presumir qual é a branch atual.** Perguntar ou ler do relatório (erro nº 12).
+- **`git restore -- <caminho>` é exceção autorizada** em rodada de mutação, porque a tarefa
+  exige restaurar arquivo. Não confundir com `checkout` de branch (§5; erro nº 21).
 
 ---
 
@@ -250,7 +282,7 @@ Regra de negócio está nas specs. O que segue é o que só se aprende errando.
 ### Testes: existem, mas já vieram falsos
 
 A suíte roda com `node --test` em `backend/test/`. **Não confie na contagem** — conferir
-rodando. Três modos de falha já observados, cada um vira regra ao pedir teste:
+rodando. Modos de falha já observados, cada um vira regra ao pedir teste:
 
 1. **Cobertura de uma direção só.** Suíte verde com bug em produção porque o teste cobria
    só a direção que o autor imaginou. → Nomear **as duas direções** no prompt: "teste A→B
@@ -260,6 +292,10 @@ rodando. Três modos de falha já observados, cada um vira regra ao pedir teste:
    **importar de `src/` ou `shared/`** e exercitar função real.
 3. **Cobre a decisão, não a fiação.** Testar a função pura sem provar que o chamador a
    usa. → Registrar na spec como **cobertura parcial**, nunca como invariante garantido.
+4. **Teste que monta o objeto que depois verifica.** Apareceu **quatro vezes** neste
+   projeto. Passa sempre, inclusive com o código revertido. → Exigir que o teste invoque o
+   handler registrado pelo arquivo real e asserte sobre o registro que **o código**
+   produziu.
 
 **Não existe suíte de frontend.** Rodada de UI valida visualmente — dizer isso no prompt.
 
@@ -268,6 +304,10 @@ rodando. Três modos de falha já observados, cada um vira regra ao pedir teste:
 - **Motor de recorrência** (`recurrence-helpers.js`, `calendario-engine.js`) — afeta
   agenda e financeiro ao mesmo tempo.
 - **Detecção de conflitos** (`agenda-conflitos.js`).
+- **Split de série no modal** (`modal-acao-slot.js`, escopos `fromDate` e `occurrence`) —
+  concentra correções empilhadas de várias etapas, cada uma com um símbolo próprio que
+  serve de assinatura. Editar sem contar as ocorrências dos símbolos anteriores é como se
+  desfaz correção antiga com a suíte verde (§5).
 - **Google Calendar** (`gcalSyncService.js`, `gcalAuthController.js`,
   `gcalWebhookController.js`) — credencial, webhook e **estado remoto que `git revert` não
   desfaz**. Cuidado com a _correção pela remoção_: já se cumpriu "a ordem não pode depender
@@ -285,6 +325,11 @@ rodando. Três modos de falha já observados, cada um vira regra ao pedir teste:
 
 ## 5. Como escrever prompt para o MAI
 
+> **O formato completo vive em `docs/TEMPLATE-prompt-etapa-personalapp.md`** — esqueleto
+> anotado bloco por bloco, blocos prontos para copiar (branch, procedimento de mutação),
+> checklist antes de enviar e sinais de loop. Esta seção traz só o que é decisão de
+> trabalho, não formato.
+
 ### As três regras do projeto
 
 1. **Sempre o caminho completo da spec** (`docs/specs/financas-ciclo-cobranca.md`).
@@ -295,9 +340,20 @@ rodando. Três modos de falha já observados, cada um vira regra ao pedir teste:
 3. **Instrução permanente vai em `copilot-instructions.md` ou `.agents/skills/`**, não no
    prompt. Regra sempre-ligada → arquivo de instruções. Skill → tarefa específica.
 
+### As quatro regras estruturais (detalhe no template)
+
+- **R1 — nunca fazer o agente perguntar algo cuja resposta exija ação proibida a ele.** Se
+  a ação é do dono, o bloco é "pare e reporte". Violar isso produz loop infinito (erro nº 20).
+- **R2 — todo laço de retentativa precisa de teto e de saída registrada.** "Corrija e
+  repita" sem limite é convite a loop.
+- **R3 — símbolo que aparece mais de uma vez exige linha, indentação e vizinho de
+  contexto.** Sem isso o alvo não casa e o agente cola evidência de outra coisa (erro nº 22).
+- **R4 — se a tarefa exige uma operação, ela não pode estar na lista de proibições.** Ao
+  proibir verbos de git, listar as exceções necessárias (erro nº 21).
+
 ### O que o modelo é (observação de 2026-08-24 — reconferir se divergir)
 
-> **Revisão**: 2026-08-29
+> **Revisão**: 2026-08-31
 
 MAI-Code-1-Flash é um modelo pequeno e rápido, treinado contra o harness real do Copilot.
 
@@ -311,6 +367,21 @@ MAI-Code-1-Flash é um modelo pequeno e rápido, treinado contra o harness real 
   sobrescrever** o handler que ele registrou, reimplementando a lógica no próprio teste. A segunda
   é pior, porque parece prova por construção. → Se o teste define o comportamento que verifica,
   ele não protege o código.
+- **Evidência de mutação pode ser fabricada mesmo com o código certo.** Numa rodada, quatro
+  de sete mutações tinham saída inválida — duas com alvo que não casou (indentação errada) e
+  duas com saída copiada de outra mutação — enquanto a correção estava perfeita, confirmada por
+  execução independente. → Auditar correção e evidência **separadamente**; dar no prompt a
+  **assinatura de falha esperada** de cada mutação (nome do teste e valores), que é o que
+  permite detectar cópia.
+- **Justifica `fail 0` em prosa em vez de admitir que a mutação não aplicou.** Escreveu que
+  "a alteração foi mais leve que a regressão real" e registrou como "pendência de garantia";
+  a mutação funcionava, só não tinha sido aplicada. → Exigir `Select-String` confirmando que o
+  arquivo mudou **antes** de rodar a suíte, e a frase literal "a mutação não aplicou".
+- **Improvisa quando falta a ferramenta certa.** Proibido de usar `git restore` numa rodada
+  cujo trabalho era restaurar, passou a guardar conteúdo em variável e reescrever à mão — o
+  que quebra em BOM, fim de linha e `-NoNewline`, e anunciou que faria as sete mutações **em
+  lote** "para manter o working tree intocado". → Anúncio de lote é sinal de que uma
+  permissão necessária está faltando.
 - **Acima de ~4 itens por rodada, os pequenos desaparecem.** Uma rodada com 6 itens entregou
   os 2 críticos e devolveu vazios os 2 de uma linha. Confirma o limite já registrado na §5,
   com número concreto.
@@ -327,15 +398,48 @@ MAI-Code-1-Flash é um modelo pequeno e rápido, treinado contra o harness real 
 - **Prefere apontar subespecificação a inventar.** Prompt sem spec volta como diagnóstico
   em vez de implementação — comportamento esperado, não defeito.
 
+### Prova por mutação — para que serve e quanto usar
+
+**Para que serve.** Suíte verde só prova que os testes passam no código atual; não prova que
+eles pegariam o defeito de volta. Com correções empilhadas, nada impede que uma etapa nova
+desfaça uma antiga com a suíte continuando verde — porque o teste da etapa antiga talvez
+nunca tenha realmente dependido daquela linha. A mutação responde "se eu quebrar isso de
+novo, algum teste grita?". Foi ela que expôs o antipadrão do teste que monta o objeto que
+depois verifica (§4).
+
+**Formato enxuto, decidido em 2026-08-31 por causa do custo de token:**
+
+| Manter em toda etapa | Cortar |
+| --- | --- |
+| **A** — reverter a correção da etapa | as guardas das etapas anteriores rodadas **a cada** etapa |
+| **B** — a "correção preguiçosa": a solução parcial que passa em A e ainda está errada | rodada separada só para refazer evidência |
+
+- **Duas mutações por etapa**, não sete. Sete cresce linearmente e reprova, etapa após
+  etapa, coisa que já foi provada quando aquela etapa fechou.
+- **B é a que não se corta.** É ela que pega meia-correção com suíte verde.
+- **Guardas das etapas anteriores**: uma passada a cada três ou quatro etapas, ou quando a
+  etapa mexer num arquivo que já tem correção anterior.
+- **Rodada só de evidência não reduz risco técnico** — só arruma o histórico. Se token
+  está apertado, é a primeira coisa a cortar. Preferir a verificação por execução direta
+  feita na conversa (§2).
+- **O custo grande dessas rodadas não é o método**: é o agente errar o alvo, colar saída de
+  outra mutação, brigar com UTF-16 e entrar em loop. Isso é ruído de prompt, e é o que o
+  template ataca.
+
 ### Anatomia que funciona
 
 - **Portão de base no início**: comandos que verificam o estado esperado _antes_ de editar,
   com tabela de valores esperados e a ordem "se divergir, pare e reporte".
+- **Contagem de ocorrências de símbolo** como assinatura de cada etapa anterior. Converte
+  "as etapas anteriores continuam intactas" — que é julgamento — em número que fecha ou não.
+  **Medir no repo antes de escrever o prompt**: número chutado manda o agente parar sem motivo.
 - **Escopo enumerado**, um item por linha.
 - **Restrições como linha explícita.** Saber a regra não basta: se a tarefa pode violá-la,
   ela vira linha na seção de restrições (erro nº 9).
 - **Portão de saída com evidência.** Exigir `git diff --stat` e colar a **saída literal**
-  no relatório. Diff vazio derruba relatório de conclusão.
+  no relatório. Diff vazio derruba relatório de conclusão. Em rodada de mutação, exigir
+  também `git diff --exit-code` — ele compara **bytes** e pega mutação não restaurada que a
+  contagem de símbolos não vê.
 - **Ambiente no topo** (Windows/PowerShell ou Linux), para os comandos saírem no shell certo.
 - **Relatório em `docs/_reports/` como último item**, com caminho e nome de arquivo
   ditados no prompt (`docs/_reports/AAAA-MM-DD-<tipo>-<slug>.md`). Se o prompt não nomear
@@ -373,6 +477,18 @@ conclusão, diga o que travou.
 terceira vez — trocar de modelo. (Na prática, a trava por evidência já resolveu antes da
 troca.)
 
+### Quando o agente entra em loop
+
+Sinais: repete pergunta já respondida; aplica a mesma mutação três vezes sem mudar o alvo;
+refaz o portão de base no meio da execução; diz "não consegui verificar" depois de ler
+arquivo redirecionado; anuncia execução em lote para "manter o working tree intocado".
+
+A mensagem de desbloqueio pronta está no fim de
+`docs/TEMPLATE-prompt-etapa-personalapp.md`. O essencial: declarar a pré-condição como
+**satisfeita**, autorizar explicitamente a operação que faltava, impor teto de tentativas e
+pedir um balanço em três linhas — o que está feito, o que está em andamento, e se algum
+arquivo de produção está mutado e não restaurado.
+
 ### Auditoria do pacote
 
 - **`git status --short` e `git archive` andam juntos, sempre.** Um diz o que existe na
@@ -383,6 +499,9 @@ troca.)
 - **Auditar o relatório contra o pacote, não contra si mesmo.** O relatório afirma; o
   código prova. Divergência entre os dois é achado de auditoria, não detalhe — já houve
   relatório afirmando "nenhum `.js` alterado" com `server.js` modificado.
+- **Auditar correção e evidência em separado.** As duas podem divergir em qualquer direção:
+  já houve correção certa com prova inválida. Correção se audita por **execução**; evidência,
+  por **assinatura de falha**.
 
 ---
 
@@ -441,8 +560,8 @@ troca.)
 18. **Recomendei "correção pela remoção" em área sensível sem conferir a §4** — a lista de
     áreas sensíveis registra o precedente ruim exatamente no fluxo do Google Calendar, e a
     remoção do sync pode fazer a reposição deixar de chegar ao calendário. A lição não é
-    "nunca remover" — é *conferir a lista de áreas sensíveis antes de propor remoção e exigir
-    prova de que o efeito continua acontecido por outro caminho*.
+    "nunca remover" — é _conferir a lista de áreas sensíveis antes de propor remoção e exigir
+    prova de que o efeito continua acontecido por outro caminho_.
 19. **Declarei uma entrega inexistente por confundir dois pacotes** — dois envios com nomes
     que colapsam no mesmo nome; o segundo foi descartado como duplicata e eu auditei o
     anterior acreditando ser o novo, concluindo "nada foi feito" sobre trabalho que já
@@ -450,6 +569,34 @@ troca.)
     batia com o do pacote (**117**). _Divergência entre o total relatado e o total medido é
     sinal de pacote errado, não de relatório falso. Conferir a identidade do pacote antes de
     acusar._
+20. **Escrevi um prompt com permissão contraditória e travei o agente em loop** — o bloco de
+    branch mandava perguntar "criar branch nova a partir da `main`?" e as restrições proibiam
+    `git branch` e `git checkout`. Ele perguntava, recebia "crie", não podia executar,
+    reverificava o estado, encontrava a pré-condição não satisfeita e perguntava de novo.
+    Agravado por eu ter feito a pergunta **incondicional**: estando já na branch certa, ela não
+    tinha função nenhuma. _Nenhuma pergunta do prompt pode ter como única resposta acionável uma
+    ação proibida ao agente. Se a ação é do dono, o bloco é "pare e reporte" (regra R1)._
+21. **Proibi a ferramenta exigida pela própria tarefa** — vetei `git restore` e `git checkout`
+    numa rodada cujo trabalho era mutar e **restaurar** dois arquivos sete vezes. Sem a
+    ferramenta certa, o agente passou a guardar conteúdo em variável e reescrever à mão, que
+    quebra em BOM, fim de linha e `-NoNewline`, e anunciou execução em lote para contornar.
+    _Listar as operações que a tarefa exige, cruzar com a lista de proibições, e declarar as
+    exceções com escopo delimitado (regra R4)._
+22. **Dei alvo de mutação ambíguo e sem indentação** — pedi "remover `serieOrigemId` da
+    avulsa" sem dizer que o símbolo aparece **duas vezes**, e o padrão que o agente montou
+    tinha 15 espaços onde o arquivo tem 14. A mutação não aplicou, e ele colou a saída de
+    outra como se tivesse aplicado. _Símbolo repetido exige linha, indentação e vizinho de
+    contexto identificável (regra R3)._
+23. **Dimensionei sete mutações por etapa sem pesar o custo** — cinco delas eram guardas que
+    reprovavam, etapa após etapa, correções já provadas quando fecharam; e escrevi uma rodada
+    inteira dedicada só a refazer evidência de uma correção que eu já havia verificado por
+    execução. Ele levantou o consumo de token antes de mim. _Procedimento repetitivo tem custo
+    linear crescente: propor sempre a versão enxuta e dizer o que se perde (§5)._
+24. **Repeti o erro nº 11 três vezes na mesma conversa** — descrevi em detalhe o conteúdo de
+    um prompt e de um template sem chamar a ferramenta de geração, uma vez atrás da outra,
+    mesmo com o erro nº 11 escrito neste arquivo. _Não basta a lição estar registrada: antes de
+    enviar mensagem que afirma ter produzido arquivo, conferir que a chamada de geração
+    aconteceu naquele turno._
 
 ---
 
@@ -469,5 +616,8 @@ memorizado de sessão anterior. Reconferir consultando antes de raciocinar sobre
   contagem de testes, nome de branch. Isso mora nos arquivos próprios.
 - Ao acrescentar algo, perguntar: _"isso existe em outro arquivo do repo?"_ Se sim, virar
   ponteiro em vez de cópia.
+- **Formato de prompt não mora aqui.** O esqueleto, os blocos copiáveis e a checklist vivem
+  em `docs/TEMPLATE-prompt-etapa-personalapp.md`; esta seção 5 guarda só as decisões de
+  trabalho e o que se observou do agente.
 - **Histórico de rodada não entra aqui** — vai em `docs/_reports/`. Este arquivo só
   aponta para a pasta e explica como usá-la (§1).
