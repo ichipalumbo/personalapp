@@ -681,6 +681,9 @@ comparação de datas invertidas. A regra correta é verificar se sobrou alguma 
 isso deve ser decidido por `checarCompromissoNaData` e pelos helpers de
 `assets/js/shared/recurrence-helpers.js`. A herança de término no split também cobre o caso em
 que a mãe fica vazia: a filha herda quando o fim original é posterior ou igual à data do corte.
+Na rodada de 2026-08-31, a herança de término passou a cobrir a mãe finita por contagem de
+ocorrências, calculando o fim efetivo a partir da data de início original e usando como saída
+canônica da filha `untilDate` + data.
 
 **Correção no frontend**: `assets/js/modal-acao-slot.js`, bloco de split `fromDate`, foi
 ajustado para: (a) capturar o fim original da mãe antes do aparo; (b) herdar `recorrenciaDataFim`
@@ -736,6 +739,7 @@ código foi protegido por teste comportamental em `backend/test/gcal-sync.test.j
 | `docs/_diags_llm/2026-08-31-diag-split-encadeado-defeitos-5-e-6.md` | 9.15 | diagnóstico |
 | `docs/_reports/2026-08-31-fix-split-encadeado-heranca-e-serie-vazia.md` | 9.15 | fechado |
 | `docs/_reports/2026-08-31-fix-heranca-mae-vazia-split.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-31-fix-heranca-contagem-ocorrencias.md` | 9.15 | fechado |
 
 ## 10. Custo aceito da decisão
 

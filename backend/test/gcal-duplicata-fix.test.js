@@ -1702,6 +1702,40 @@ test('split fromDate em serie infinita continua gerando filha infinita', async (
   assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-14T12:00:00'), '09:00'), true);
 });
 
+test('split fromDate herda o fim efetivo quando a mae termina por contagem de ocorrencias', async () => {
+  const diaInicio = '31/08/2026';
+  const dataAlvo = '07/09/2026';
+  const compromisso = {
+    id: 'serie-por-ocorrencias',
+    tipo: 'aula',
+    data: diaInicio,
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: diaInicio,
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 6,
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-serie-por-ocorrencias',
+    excecoes: [],
+  };
+  const aulas = [compromisso];
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: dataAlvo });
+  context.window.apiFetchBackend = async () => {
+    throw new Error('DELETE nao deve disparar no split com fim por ocorrencias');
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  const serieNova = aulas.find((item) => item.id !== 'serie-por-ocorrencias');
+  assert.ok(serieNova);
+  assert.equal(serieNova.recorrenciaFimCondicao, 'untilDate');
+  assert.equal(serieNova.recorrenciaDataFim, '09/09/2026');
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-09T12:00:00'), '09:00'), true);
+  assert.equal(context.window.checarCompromissoNaData(serieNova, new Date('2026-09-14T12:00:00'), '09:00'), false);
+});
+
 test('split fromDate na primeira ocorrencia herda o fim original da mae quando o corte fica antes do termino', async () => {
   const dataInicio = '02/09/2026';
   const dataAlvo = '02/09/2026';
