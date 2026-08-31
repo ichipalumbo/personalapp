@@ -250,6 +250,132 @@ window.removerFamiliaSerie = function (idOuCompromisso) {
  return antes - aulas.length;
 };
 
+window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso) {
+ if (!Array.isArray(aulas)) {
+   return {
+     total: 0,
+     reposicoesPreservadas: 0,
+     ids: [],
+     desde: null,
+     ate: null,
+     mensagem: "Período: sem dados",
+   };
+ }
+
+ const familia = window.resolverFamiliaSerie(idOuCompromisso);
+ const ids = familia
+   .filter((item) => item && !item.isReposicao)
+   .map((item) => item.id);
+ const reposicoesPreservadas = familia.filter((item) => item && item.isReposicao).length;
+
+ const datasInicio = familia
+   .filter((item) => item && (item.recorrenciaDataInicio || item.data || item.dataCriacao))
+   .map((item) => item.recorrenciaDataInicio || item.data || item.dataCriacao)
+   .filter(Boolean);
+
+ const converterParaDataJs = (valor) => {
+   if (!valor) return null;
+   if (valor instanceof Date && !Number.isNaN(valor.getTime())) return valor;
+   if (typeof valor === "string") {
+     const valorNormalizado = valor.trim();
+     if (/^\d{2}\/\d{2}\/\d{4}$/.test(valorNormalizado)) {
+       const [dia, mes, ano] = valorNormalizado.split("/").map(Number);
+       return new Date(ano, mes - 1, dia);
+     }
+     if (/^\d{4}-\d{2}-\d{2}$/.test(valorNormalizado)) {
+       const [ano, mes, dia] = valorNormalizado.split("-").map(Number);
+       return new Date(ano, mes - 1, dia);
+     }
+     if (typeof window.parseDataFlex === "function") {
+       const data = window.parseDataFlex(valorNormalizado);
+       if (data && !Number.isNaN(data.getTime())) return data;
+     }
+     const dataIso = new Date(valorNormalizado);
+     if (!Number.isNaN(dataIso.getTime())) return dataIso;
+   }
+   return null;
+ };
+
+ const formatarDataPtBr = (valor) => {
+   const data = converterParaDataJs(valor);
+   if (!data) return null;
+   const dia = String(data.getDate()).padStart(2, "0");
+   const mes = String(data.getMonth() + 1).padStart(2, "0");
+   const ano = String(data.getFullYear());
+   return `${dia}/${mes}/${ano}`;
+ };
+
+ const desde = datasInicio.reduce((menor, valorAtual) => {
+   if (!menor) return valorAtual;
+   const menorData = converterParaDataJs(menor);
+   const atualData = converterParaDataJs(valorAtual);
+   if (!menorData || !atualData) return menor;
+   return atualData < menorData ? valorAtual : menor;
+ }, null);
+
+ const membrosComFim = familia.filter(
+   (item) =>
+     item &&
+     !item.isReposicao &&
+     item.frequencia !== "uma_vez" &&
+     item.recorrenciaDataFim,
+ );
+ const datasFim = membrosComFim
+   .map((item) => item.recorrenciaDataFim)
+   .filter(Boolean);
+ const temInfinito = familia.some(
+   (item) =>
+     item &&
+     !item.isReposicao &&
+     item.frequencia !== "uma_vez" &&
+     !item.recorrenciaDataFim,
+ );
+
+ let ate = null;
+ if (!temInfinito && datasFim.length > 0) {
+   ate = datasFim.reduce((maior, valorAtual) => {
+     const maiorData = converterParaDataJs(maior);
+     const atualData = converterParaDataJs(valorAtual);
+     if (!maiorData || !atualData) return maior;
+     return atualData > maiorData ? valorAtual : maior;
+   }, datasFim[0]);
+   ate = formatarDataPtBr(ate);
+ }
+
+ const mensagem = ate
+   ? `Período: desde ${formatarDataPtBr(desde) || desde} até ${ate}`
+   : `Período: desde ${formatarDataPtBr(desde) || desde} até sem data de término`;
+
+ return {
+   total: ids.length,
+   reposicoesPreservadas,
+   ids,
+   desde: formatarDataPtBr(desde) || desde || null,
+   ate,
+   mensagem,
+ };
+};
+
+window.removerCadeiaCompletaSerie = function (idOuCompromisso) {
+ if (!Array.isArray(aulas)) return 0;
+ const familia = window.resolverFamiliaSerie(idOuCompromisso);
+ const idsParaRemover = new Set(
+   familia
+     .filter((item) => item && !item.isReposicao)
+     .map((item) => item.id),
+ );
+
+ if (idsParaRemover.size === 0) return 0;
+
+ const antes = aulas.length;
+ aulas.splice(
+   0,
+   aulas.length,
+   ...aulas.filter((item) => !idsParaRemover.has(item && item.id)),
+ );
+ return antes - aulas.length;
+};
+
 function compromissoTemAlunoInativo(compromisso) {
   if (!compromisso || (compromisso.tipo || "aula") !== "aula") return false;
   if (
@@ -1840,23 +1966,19 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Aluno inativo: não é possível cancelar esta série.");
         return;
       }
-      const _familiaSerie = window.resolverFamiliaSerie(_serieDeletar || window.idCompromissoSelecionado);
-      const _idsRemover = new Set(
-        _familiaSerie
-          .filter((item) => item && !item.isReposicao)
-          .map((item) => item.id),
+      const _resumoExclusao = window.montarResumoExclusaoCadeiaSerie(
+        _serieDeletar || window.idCompromissoSelecionado,
       );
-      const _totalRemover = _idsRemover.size;
       const mensagemConfirmacaoSerie =
-        _totalRemover > 0
-          ? `Excluir ${_totalRemover} aulas desta série?\n\nIsso remove a recorrência inteira, incluindo as aulas futuras vinculadas. Reposições continuam preservadas no app.`
+        _resumoExclusao.total > 0
+          ? `Excluir ${_resumoExclusao.total} aulas desta série?\n\n${_resumoExclusao.mensagem}. Reposições continuam preservadas no app.`
           : "Nenhuma aula desta série pode ser removida porque todas são reposições e continuam preservadas.";
       if (!confirm(mensagemConfirmacaoSerie)) return;
-      if (_totalRemover === 0) {
+      if (_resumoExclusao.total === 0) {
         window.log.info("[agenda]", "Série excluída", {
           id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
           ocorrenciasAfetadas: 0,
-          reposicoesPreservadas: _familiaSerie.filter((item) => item && item.isReposicao).length,
+          reposicoesPreservadas: _resumoExclusao.reposicoesPreservadas,
         });
         return;
       }
@@ -1871,13 +1993,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!_continuar) return;
       }
 
-      const ocorrenciasAfetadas = window.removerFamiliaSerie(
+      const ocorrenciasAfetadas = window.removerCadeiaCompletaSerie(
         _serieDeletar || window.idCompromissoSelecionado,
       );
       window.log.info("[agenda]", "Série excluída", {
         id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
         ocorrenciasAfetadas: ocorrenciasAfetadas,
-        reposicoesPreservadas: _familiaSerie.filter((item) => item && item.isReposicao).length,
+        reposicoesPreservadas: _resumoExclusao.reposicoesPreservadas,
       });
       window.fecharModalAcaoSlot();
       if (

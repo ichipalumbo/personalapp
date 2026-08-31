@@ -708,7 +708,24 @@ registrado como sub-item separado, sem reabrir a decisão de produto já tomada.
 abreviações de três letras, ramos numéricos e `console.warn` ao descartar valor inválido. O
 código foi protegido por teste comportamental em `backend/test/gcal-sync.test.js` (`montarRecurrence aceita diasSemana sem acento, abreviado, numérico e dispara warning para inválido`).
 
-### 9.17 Relatórios desta spec
+### 9.17 — Excluir a série toda usa a mesma resolução da confirmação e preserva reposições. — FECHADO (2026-08-31)
+
+**Decisão de produto**: "excluir a série toda" passou a remover a cadeia completa subindo até a
+série raiz, mas preservando as reposições. A confirmação e a remoção usam o mesmo resolver de
+família, então o número anunciado e o número removido deixam de divergir.
+
+**Cálculo do período**: a confirmação passou a informar o período da cadeia por meio do mesmo
+conjunto de membros que define a remoção. `sem data de término` só aparece quando uma série
+recorrente que será removida de fato não tem fim; avulsa e reposição não contam no cálculo.
+
+**Semântica preservada**: `removerFamiliaSerie` continua com a regra de descendentes para o fluxo
+"continuar em outra série" e para a futura etapa 6b. O caso da remoção da série toda continua
+usando o resolver full-chain, sem misturar a semântica de continuação.
+
+**Cobertura**: a correção foi validada com mutação no arquivo real de produção e com a asserção
+adicional em `backend/test/gcal-duplicata-fix.test.js` para `resumo.ate === '13/09/2026'`.
+
+### 9.18 Relatórios desta spec
 
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
@@ -740,6 +757,7 @@ código foi protegido por teste comportamental em `backend/test/gcal-sync.test.j
 | `docs/_reports/2026-08-31-fix-split-encadeado-heranca-e-serie-vazia.md` | 9.15 | fechado |
 | `docs/_reports/2026-08-31-fix-heranca-mae-vazia-split.md` | 9.15 | fechado |
 | `docs/_reports/2026-08-31-fix-heranca-contagem-ocorrencias.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-31-fix-excluir-serie-toda-coerente.md` | 9.17 | fechado |
 
 ## 10. Custo aceito da decisão
 
