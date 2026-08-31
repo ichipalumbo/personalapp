@@ -1228,6 +1228,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const _recorrenciaFimCondicaoOriginalFd = compromisso.recorrenciaFimCondicao;
             const _recorrenciaQuantidadeOcorrenciasOriginalFd =
               compromisso.recorrenciaQuantidadeOcorrencias;
+            const _recorrenciaDataInicioOriginalFd =
+              compromisso.recorrenciaDataInicio || compromisso.data || compromisso.dataCriacao;
+            const _compromissoOriginalParaCalculoFd = {
+              ...compromisso,
+              recorrenciaFimCondicao: _recorrenciaFimCondicaoOriginalFd,
+              recorrenciaDataFim: _recorrenciaDataFimOriginalFd,
+              recorrenciaQuantidadeOcorrencias: _recorrenciaQuantidadeOcorrenciasOriginalFd,
+            };
 
             // Encerra a série original um dia antes da data clicada
             compromisso.recorrenciaFimCondicao = "untilDate";
@@ -1304,6 +1312,69 @@ document.addEventListener("DOMContentLoaded", () => {
               });
             };
 
+            const _fimEfetivoRecorrenciaOriginalFd = (() => {
+              if (_recorrenciaFimCondicaoOriginalFd === "untilDate") {
+                return _recorrenciaDataFimOriginalFd || null;
+              }
+
+              const _quantidadeOcorrenciasOriginalFd = Number(
+                _recorrenciaQuantidadeOcorrenciasOriginalFd,
+              );
+              if (
+                !Number.isFinite(_quantidadeOcorrenciasOriginalFd) ||
+                _quantidadeOcorrenciasOriginalFd <= 0 ||
+                !_recorrenciaDataInicioOriginalFd
+              ) {
+                return null;
+              }
+
+              const _dataInicioRecorrenciaOriginalFd = window.parseDataFlex(
+                _recorrenciaDataInicioOriginalFd,
+              );
+              if (!_dataInicioRecorrenciaOriginalFd) {
+                return null;
+              }
+
+              const _limiteDiasFimEfetivoFd = Math.min(
+                370,
+                Math.max(1, _quantidadeOcorrenciasOriginalFd * 2),
+              );
+              let _contadorOcorrenciasOriginalFd = 0;
+              const _cursorInicioFimEfetivoFd = new Date(_dataInicioRecorrenciaOriginalFd);
+
+              for (
+                let _indiceDiaFimEfetivoFd = 0;
+                _indiceDiaFimEfetivoFd < _limiteDiasFimEfetivoFd;
+                _indiceDiaFimEfetivoFd += 1
+              ) {
+                const _dataAtualFimEfetivoFd = new Date(
+                  _cursorInicioFimEfetivoFd.getFullYear(),
+                  _cursorInicioFimEfetivoFd.getMonth(),
+                  _cursorInicioFimEfetivoFd.getDate(),
+                );
+
+                if (
+                  window.checarCompromissoNaData(
+                    _compromissoOriginalParaCalculoFd,
+                    _dataAtualFimEfetivoFd,
+                  )
+                ) {
+                  _contadorOcorrenciasOriginalFd += 1;
+                  if (_contadorOcorrenciasOriginalFd === _quantidadeOcorrenciasOriginalFd) {
+                    return [
+                      String(_dataAtualFimEfetivoFd.getDate()).padStart(2, "0"),
+                      String(_dataAtualFimEfetivoFd.getMonth() + 1).padStart(2, "0"),
+                      String(_dataAtualFimEfetivoFd.getFullYear()),
+                    ].join("/");
+                  }
+                }
+
+                _cursorInicioFimEfetivoFd.setDate(_cursorInicioFimEfetivoFd.getDate() + 1);
+              }
+
+              return null;
+            })();
+
             // Cria nova série a partir da data clicada
             const _novoIdFd = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
             const _novaSerieFd = Object.assign({}, compromisso, {
@@ -1322,18 +1393,15 @@ document.addEventListener("DOMContentLoaded", () => {
               recorrenciaEscopo: "fromDate",
             });
             const _deveHerdarFimOriginalFd =
-              _recorrenciaFimCondicaoOriginalFd === "untilDate" &&
-              Boolean(_recorrenciaDataFimOriginalFd) &&
+              Boolean(_fimEfetivoRecorrenciaOriginalFd) &&
               _dataCorteExcecoesFd &&
-              window.parseDataFlex(_recorrenciaDataFimOriginalFd) >= _dataCorteExcecoesFd;
+              window.parseDataFlex(_fimEfetivoRecorrenciaOriginalFd) >= _dataCorteExcecoesFd;
 
             delete _novaSerieFd.recorrenciaQuantidadeOcorrencias;
             if (_deveHerdarFimOriginalFd) {
               _novaSerieFd.recorrenciaFimCondicao = "untilDate";
-              _novaSerieFd.recorrenciaDataFim = _recorrenciaDataFimOriginalFd;
+              _novaSerieFd.recorrenciaDataFim = _fimEfetivoRecorrenciaOriginalFd;
             } else {
-              // split fromDate só herda fim do pai quando a série mãe foi truncada por data.
-              // outras regras de término (ex.: occurrences) ficam fora do escopo desta correção.
               delete _novaSerieFd.recorrenciaFimCondicao;
               delete _novaSerieFd.recorrenciaDataFim;
             }
