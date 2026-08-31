@@ -6,6 +6,7 @@ graphify-out/
 *.zip
 *.ps1
 .vercel
+tests/
 
 # Variáveis de ambiente locais (NUNCA versionar)
 .env
