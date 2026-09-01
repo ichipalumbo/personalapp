@@ -756,9 +756,11 @@ ligada; o motor existe e a 6b-ui decide o botão e o diálogo final.
 
 ### 9.19 — Exclusão de aula/serie passou a usar lixeira única com modal de escolha e despacho por função nomeada. — FECHADO (2026-08-31)
 
-A exclusão passou a ter uma única lixeira, com modal de escolha em três opções: excluir esta aula, excluir daqui pra frente e excluir a série toda. Esse desenho evita a ambiguidade do fluxo anterior, em que a aula deletada deixa de ser cobrada e a ação destrutiva competia com "enviar para reposição". A partir desta rodada, cada opção despacha por função nomeada em `window` em vez de simular clique em botão do DOM removido; a versão anterior tinha dois controles inertes e ainda parecia que a ação ocorria quando nada executava.
+A exclusão passou a ter uma única lixeira, com modal de escolha em três opções: excluir esta aula, excluir daqui pra frente e excluir a série toda. Esse desenho evita a ambiguidade do fluxo anterior, em que a aula deletada deixa de ser cobrada e a ação destrutiva competia com "enviar para reposição". Cada opção despacha por função nomeada em `window` (`executarExclusaoInstancia`, `executarExclusaoSerie`, `executarExclusaoDefinitiva`) em vez de simular clique em botão do DOM removido.
 
 O modal também reusa o padrão `.modal-escolha-*` já existente no app, com ícones escalonados por alcance da exclusão (leve, média e total) e cabeçalho contextual com aluno, data e horário. A confirmação final continua sendo `window.confirm()` nativo, como débito conhecido e explicitado no fluxo. A validação visual do modal ficou manual, porque `index.html` e `assets/css/style.css` não têm suíte automatizada e a checagem do comportamento final no browser precisa ser feita pelo dono.
+
+**Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (`docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md`, commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 (`docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md`) restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
 
 ### 9.20 Relatórios desta spec
 
@@ -796,6 +798,7 @@ O modal também reusa o padrão `.modal-escolha-*` já existente no app, com íc
 | `docs/_reports/2026-08-31-feat-aparo-cadeia-serie.md` | 9.18 | fechado |
 | `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
 | `docs/_reports/2026-08-31-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
+| `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
 
 ## 10. Custo aceito da decisão
 

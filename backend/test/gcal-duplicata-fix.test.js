@@ -3186,3 +3186,158 @@ test('as funções de execução de exclusão estão expostas', () => {
   assert.equal(typeof context.window.executarExclusaoDefinitiva, 'function');
 });
 
+test('executarExclusaoSerie remove o mesmo total que o modal anunciou', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '13/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'S1',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'S0',
+  };
+  const serieNeta = {
+    ...serieMae,
+    id: 'S2',
+    data: '05/09/2026',
+    recorrenciaDataInicio: '05/09/2026',
+    serieOrigemId: 'S1',
+  };
+
+  const aulas = [serieMae, serieFilha, serieNeta];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  context.window.confirm = () => true;
+
+  const opcoes = context.window.montarOpcoesExclusaoSlot(serieFilha, '02/09/2026');
+  const opcaoSerie = opcoes.find((opcao) => opcao.acao === 'serie');
+  const totalAnunciado = Number(String(opcaoSerie.detalhe).match(/^(\d+)/)[1]);
+
+  const totalAntes = context.aulas.length;
+  context.window.executarExclusaoSerie();
+
+  assert.equal(totalAntes - context.aulas.length, totalAnunciado);
+  assert.equal(context.aulas.some((item) => item.id === 'S0'), false);
+});
+
+test('executarExclusaoInstancia remove a aula e persiste', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+  };
+
+  const aulas = [serieMae];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.window.confirm = () => true;
+
+  let salvarChamadas = 0;
+  context.salvarDados = async () => {
+    salvarChamadas += 1;
+  };
+  context.window.salvarDados = context.salvarDados;
+
+  const snapshotAntes = JSON.stringify(context.aulas);
+  context.window.executarExclusaoInstancia();
+
+  assert.notEqual(JSON.stringify(context.aulas), snapshotAntes, 'o array de aulas deveria ter mudado');
+  assert.ok(salvarChamadas >= 1, 'salvarDados deveria ter sido chamada ao menos uma vez');
+});
+
+test('as três ações de exclusão fecham o modal pai', () => {
+  const criarSerie = () => ({
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  });
+
+  ['executarExclusaoInstancia', 'executarExclusaoSerie', 'executarExclusaoDefinitiva'].forEach((nomeFuncao) => {
+    const serie = criarSerie();
+    const { context } = criarHarnessModalAcaoSlot({ aulas: [serie], compromisso: serie, dataAlvoStr: '31/08/2026' });
+    context.window.confirm = () => true;
+
+    let chamadasFechar = 0;
+    context.window.fecharModalAcaoSlot = () => {
+      chamadasFechar += 1;
+    };
+
+    context.window[nomeFuncao]();
+
+    assert.ok(chamadasFechar >= 1, `${nomeFuncao} deveria ter chamado fecharModalAcaoSlot`);
+  });
+});
+
+test('exclusão bloqueada para aluno inativo', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-inativo',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  };
+
+  const aulas = [serieMae];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.window.confirm = () => true;
+  context.window.getAluno = (alunoId) => ({ id: alunoId, ativo: false });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+
+  let salvarChamadas = 0;
+  context.salvarDados = async () => {
+    salvarChamadas += 1;
+  };
+  context.window.salvarDados = context.salvarDados;
+
+  const totalAntes = context.aulas.length;
+  context.window.executarExclusaoSerie();
+
+  assert.equal(context.aulas.length, totalAntes, 'o array de aulas não deveria ter mudado');
+  assert.equal(salvarChamadas, 0, 'salvarDados não deveria ter sido chamada');
+});
+
