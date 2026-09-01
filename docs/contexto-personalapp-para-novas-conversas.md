@@ -15,7 +15,7 @@
 > erros que ele não cometeu. Regeneração só a pedido explícito do dono, preservando o
 > texto da seção 6 palavra por palavra.
 >
-> **Última atualização**: 2026-08-31
+> **Última atualização**: 2026-09-01
 
 ---
 
@@ -126,10 +126,24 @@ Como usar:
 
 - **Windows 11 / PowerShell** é o principal, repo em `E:\Projetos\GIT\personalapp`.
 - **Também roda em GitHub Codespaces/Linux** (`/workspaces/personalapp`).
-- **Detectar o ambiente antes de sugerir comando.** Caminho `E:\...` → PowerShell:
-  `Select-String` no lugar de `grep`, sem `&&`, **um comando por linha**. Caminho
-  `/workspaces/...` → POSIX normal.
+- **E também no notebook corporativo (Windows/PowerShell)**, com o repo dentro de pasta
+  sincronizada do OneDrive — o caminho varia e contém identificação do empregador, então
+  não vale reproduzi-lo aqui.
+- São **três ambientes e nenhum é o padrão.** Não presuma caminho, shell nem o que está
+  instalado.
+- **Detectar o ambiente antes de sugerir comando.** Caminho `E:\...` ou dentro do OneDrive
+  → PowerShell: `Select-String` no lugar de `grep`, sem `&&`, **um comando por linha**.
+  Caminho `/workspaces/...` → POSIX normal.
 - Em dúvida: `Get-Location` ou `pwd` primeiro. Já errei isso (erro nº 13).
+- **O que está instalado varia por ambiente.** `backend/node_modules`, `backend/.env` e a
+  porta `5000` livre são propriedades **da máquina**, não do projeto. Suíte que não roda
+  por falta de dependência (`Cannot find module 'mongoose'`) não é suíte que falhou, e não
+  vira estimativa — é `npm install` faltando.
+- **No ambiente com OneDrive, o repo está dentro de pasta sincronizada.** Isso pode causar
+  lock de arquivo e atraso de sincronização, e arquivo pode **parecer** ter sumido ou
+  voltado sozinho. Confirmar em disco (`Test-Path`) e no `git log` antes de concluir que
+  houve perda de trabalho — já houve alarme falso cuja explicação real era um commit já
+  feito pelo dono.
 - **Saída redirecionada com `>` sai em UTF-16 no PowerShell.** `npm test > log.txt` produz
   arquivo que as ferramentas de leitura do agente devolvem como lixo — e ele conclui "não
   consegui verificar" e volta atrás, o que já virou gatilho de loop. Ler no terminal, ou

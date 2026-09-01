@@ -14,6 +14,36 @@ Não existe `npm run dev`, watch mode, seed automático nem ambiente de staging.
 
 ---
 
+## Ambientes
+
+O repositório é editado a partir de três lugares. Nenhum é o "principal" — o que muda entre eles é shell, caminho e o que está instalado.
+
+| Ambiente | Shell | Raiz do repositório |
+| --- | --- | --- |
+| Máquina pessoal (Windows 11) | PowerShell | `E:\Projetos\GIT\personalapp` |
+| Notebook corporativo (Windows) | PowerShell | pasta sincronizada do OneDrive — caminho varia |
+| GitHub Codespaces | bash (Linux) | `/workspaces/personalapp` |
+
+### Ao trocar de ambiente, cheque antes de rodar
+
+Nada disto é propriedade do projeto: são propriedades da máquina, e faltam com frequência.
+
+1. **`backend/node_modules` existe?** Sem ele, `npm test` falha com `Cannot find module 'mongoose'` — parece defeito do código e não é. Resolve com `npm install` em `backend/`.
+2. **`backend/.env` existe e aponta para `personalapp_dev`?** Sem `GOOGLE_CLIENT_ID`, toda rota protegida devolve 500.
+3. **Porta `5000` livre?** Ver `EADDRINUSE` no troubleshooting.
+4. **Origem local autorizada no OAuth?** Ver `origin_mismatch`.
+
+### Repositório dentro de pasta sincronizada
+
+Um dos ambientes mantém o repositório dentro do OneDrive. Isso funciona, mas tem dois efeitos que confundem:
+
+- sincronização em andamento pode segurar arquivo e atrasar leitura/escrita;
+- arquivo pode **parecer** ter sumido ou voltado sozinho.
+
+Regra: antes de concluir que houve perda de trabalho, confirme em disco (`Test-Path`) e no `git log`. Já houve alarme falso em que a explicação real era um commit já feito.
+
+---
+
 ## 1) Frontend
 
 1. Use uma extensão de servidor local (Live Server no VS Code).
