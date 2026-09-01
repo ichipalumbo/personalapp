@@ -31,16 +31,20 @@
 
     async function _persistirDadosComBackend(silencioso) {
         if (typeof global.salvarDados !== 'function') {
-            return { ok: false, reason: 'salvarDados-unavailable' };
+            return { ok: false, motivo: 'falha_remota' };
         }
 
-        await global.salvarDados(!!silencioso);
+        const resultado = await global.salvarDados(!!silencioso);
+
+        if (resultado && resultado.ok === false) {
+            return resultado;
+        }
 
         if (typeof global.inicializarHome === 'function') {
             await global.inicializarHome();
         }
 
-        return { ok: true };
+        return resultado && typeof resultado === 'object' ? resultado : { ok: true };
     }
 
     async function _verificarCanalGoogleCalendar() {

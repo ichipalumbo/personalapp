@@ -2263,6 +2263,124 @@ test('montarOpcoesExclusaoSlot devolve uma opcao para avulsa', () => {
   assert.equal(opcoes[0].acao, 'instancia');
 });
 
+test('executarExclusaoInstancia com GCal conectado desfaz a excecao se a gravacao falhar', async () => {
+  const compromisso = {
+    id: 'instancia-gcal-falha',
+    tipo: 'aula',
+    data: '01/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '01/09/2026',
+    excecoes: [],
+    googleCalendarEventId: 'evt-instancia-gcal-falha',
+  };
+  const aulas = [compromisso];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: '01/09/2026' });
+  let inicializacoes = 0;
+  const toasts = [];
+
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.salvarEventoComGCal = async () => ({ ok: false, motivo: 'falha_remota' });
+  context.window.inicializarHome = async () => {
+    inicializacoes += 1;
+  };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.obterCompromissoSelecionado = () => compromisso;
+  context.window.confirm = () => true;
+
+  await context.window.executarExclusaoInstancia();
+
+  assert.equal(Array.from(aulas[0].excecoes || []).length, 0);
+  assert.equal(inicializacoes, 0);
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+});
+
+test('executarExclusaoSerie com GCal conectado desfaz a exclusao se a gravacao falhar', async () => {
+  const serieMae = {
+    id: 'serie-gcal-falha',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '31/08/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-serie-gcal-falha',
+    excecoes: [],
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'serie-gcal-falha-filha',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'serie-gcal-falha',
+  };
+  const aulas = [serieMae, serieFilha];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  let inicializacoes = 0;
+  const toasts = [];
+
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.salvarEventoComGCal = async () => ({ ok: false, motivo: 'falha_remota' });
+  context.window.inicializarHome = async () => {
+    inicializacoes += 1;
+  };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.obterCompromissoSelecionado = () => serieMae;
+  context.window.confirm = () => true;
+
+  const antes = aulas.map((item) => item.id);
+  await context.window.executarExclusaoSerie();
+
+  assert.deepEqual(Array.from(aulas.map((item) => item.id)), antes);
+  assert.equal(inicializacoes, 0);
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+});
+
+test('executarExclusaoAulaAvulsa com GCal conectado desfaz a exclusao se a gravacao falhar', async () => {
+  const compromisso = {
+    id: 'avulsa-gcal-falha',
+    tipo: 'aula',
+    data: '01/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'uma_vez',
+    googleCalendarEventId: 'evt-avulsa-gcal-falha',
+  };
+  const aulas = [compromisso, { ...compromisso, id: 'vizinha', data: '02/09/2026', googleCalendarEventId: 'evt-vizinha' }];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: '01/09/2026' });
+  let inicializacoes = 0;
+  const toasts = [];
+
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.salvarEventoComGCal = async () => ({ ok: false, motivo: 'falha_remota' });
+  context.window.inicializarHome = async () => {
+    inicializacoes += 1;
+  };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.obterCompromissoSelecionado = () => compromisso;
+  context.window.idCompromissoSelecionado = compromisso.id;
+  context.window.confirm = () => true;
+
+  const antes = aulas.map((item) => item.id);
+  await context.window.executarExclusaoAulaAvulsa();
+
+  assert.deepEqual(Array.from(aulas.map((item) => item.id)), antes);
+  assert.equal(inicializacoes, 0);
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+});
+
 function criarSerieFamiliaBase(overrides = {}) {
   return {
     id: 'serie-mae',
@@ -3286,12 +3404,133 @@ test('montarOpcoesExclusaoSlot concorda o plural com uma aula só', () => {
     serieOrigemId: null,
   };
   const { context } = criarHarnessModalAcaoSlot({ aulas: [serie], compromisso: serie, dataAlvoStr: '31/08/2026' });
-  const opcoes = context.window.montarOpcoesExclusaoSlot(serie, '31/08/2026');
+  const hoje = new Date(2026, 8, 2);
+  const opcoes = context.window.montarOpcoesExclusaoSlot(serie, '31/08/2026', { hoje });
   const serieOpcao = opcoes.find((opcao) => opcao.acao === 'serie');
 
   assert.ok(serieOpcao, 'deve existir a opção de excluir a série');
-  assert.match(serieOpcao.detalhe, /1 aula,/);
-  assert.doesNotMatch(serieOpcao.detalhe, /1 aulas/);
+  assert.match(serieOpcao.detalhe, /As 2 aulas do passado/);
+  assert.doesNotMatch(serieOpcao.detalhe, /As 1 aulas/);
+});
+
+test('resumo conta as ocorrências passadas da cadeia inteira', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '13/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  };
+  const serieFilha = { ...serieMae, id: 'S1', data: '02/09/2026', recorrenciaDataInicio: '02/09/2026', serieOrigemId: 'S0' };
+  const serieNeta = { ...serieMae, id: 'S2', data: '05/09/2026', recorrenciaDataInicio: '05/09/2026', serieOrigemId: 'S1' };
+  const aulas = [serieMae, serieFilha, serieNeta];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  const hoje = new Date(2026, 8, 7);
+
+  const resumo = context.window.montarResumoExclusaoCadeiaSerie('S1', { hoje });
+
+  assert.equal(resumo.total, 3);
+  assert.equal(resumo.ocorrenciasPassadas, 4);
+  assert.equal(resumo.temAulaFutura, true);
+});
+
+test('dia em exceção não entra na contagem de passado', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '13/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+    excecoes: ['01/09/2026'],
+  };
+  const serieFilha = { ...serieMae, id: 'S1', data: '02/09/2026', recorrenciaDataInicio: '02/09/2026', serieOrigemId: 'S0' };
+  const serieNeta = { ...serieMae, id: 'S2', data: '05/09/2026', recorrenciaDataInicio: '05/09/2026', serieOrigemId: 'S1' };
+  const aulas = [serieMae, serieFilha, serieNeta];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  const hoje = new Date(2026, 8, 7);
+
+  const resumo = context.window.montarResumoExclusaoCadeiaSerie('S1', { hoje });
+
+  assert.equal(resumo.ocorrenciasPassadas, 3);
+  assert.equal(resumo.temAulaFutura, true);
+});
+
+test('série encerrada não promete aulas futuras', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '10/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  };
+  const serieFilha = { ...serieMae, id: 'S1', data: '02/09/2026', recorrenciaDataInicio: '02/09/2026', serieOrigemId: 'S0' };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae, serieFilha], compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
+  const hoje = new Date(2026, 8, 20);
+  const opcoes = context.window.montarOpcoesExclusaoSlot(serieFilha, '02/09/2026', { hoje });
+  const serieOpcao = opcoes.find((opcao) => opcao.acao === 'serie');
+
+  const resumo = context.window.montarResumoExclusaoCadeiaSerie('S1', { hoje });
+
+  assert.equal(resumo.temAulaFutura, false);
+  assert.match(serieOpcao.detalhe, /todas no passado/);
+  assert.doesNotMatch(serieOpcao.detalhe, /futuras/);
+});
+
+test('série que começa amanhã não anuncia aulas passadas', () => {
+  const serie = {
+    id: 'S1',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '10/09/2026',
+    dia: 'Quinta',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '10/09/2026',
+    recorrenciaDataFim: '30/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Quinta'],
+    serieOrigemId: null,
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serie], compromisso: serie, dataAlvoStr: '10/09/2026' });
+  const hoje = new Date(2026, 8, 9);
+  const resumo = context.window.montarResumoExclusaoCadeiaSerie('S1', { hoje });
+  const opcoes = context.window.montarOpcoesExclusaoSlot(serie, '10/09/2026', { hoje });
+  const serieOpcao = opcoes.find((opcao) => opcao.acao === 'serie');
+
+  assert.equal(resumo.ocorrenciasPassadas, 0);
+  assert.equal(resumo.temAulaFutura, true);
+  assert.doesNotMatch(serieOpcao.detalhe, /0 aulas/);
 });
 
 test('as funções de execução de exclusão estão expostas', () => {
@@ -3353,14 +3592,11 @@ test('executarExclusaoSerie remove o mesmo total que o modal anunciou', () => {
   const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '02/09/2026' });
   context.window.confirm = () => true;
 
-  const opcoes = context.window.montarOpcoesExclusaoSlot(serieFilha, '02/09/2026');
-  const opcaoSerie = opcoes.find((opcao) => opcao.acao === 'serie');
-  const totalAnunciado = Number(String(opcaoSerie.detalhe).match(/^(\d+)/)[1]);
-
   const totalAntes = context.aulas.length;
+  const resumoAntes = context.window.montarResumoExclusaoCadeiaSerie('S1');
   context.window.executarExclusaoSerie();
 
-  assert.equal(totalAntes - context.aulas.length, totalAnunciado);
+  assert.equal(totalAntes - context.aulas.length, resumoAntes.total);
   assert.equal(context.aulas.some((item) => item.id === 'S0'), false);
 });
 

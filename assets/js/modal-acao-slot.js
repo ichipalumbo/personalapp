@@ -250,10 +250,12 @@ window.removerFamiliaSerie = function (idOuCompromisso) {
  return antes - aulas.length;
 };
 
-window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso) {
+window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso, hojeReferencia) {
  if (!Array.isArray(aulas)) {
    return {
      total: 0,
+     ocorrenciasPassadas: 0,
+     temAulaFutura: false,
      reposicoesPreservadas: 0,
      ids: [],
      desde: null,
@@ -261,17 +263,6 @@ window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso) {
      mensagem: "Período: sem dados",
    };
  }
-
- const familia = window.resolverFamiliaSerie(idOuCompromisso);
- const ids = familia
-   .filter((item) => item && !item.isReposicao)
-   .map((item) => item.id);
- const reposicoesPreservadas = familia.filter((item) => item && item.isReposicao).length;
-
- const datasInicio = familia
-   .filter((item) => item && (item.recorrenciaDataInicio || item.data || item.dataCriacao))
-   .map((item) => item.recorrenciaDataInicio || item.data || item.dataCriacao)
-   .filter(Boolean);
 
  const converterParaDataJs = (valor) => {
    if (!valor) return null;
@@ -293,8 +284,37 @@ window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso) {
      const dataIso = new Date(valorNormalizado);
      if (!Number.isNaN(dataIso.getTime())) return dataIso;
    }
+   if (valor && typeof valor === "object" && Object.prototype.hasOwnProperty.call(valor, "hoje")) {
+     return converterParaDataJs(valor.hoje);
+   }
    return null;
  };
+
+ const extrairHoje = (valor) => {
+   if (!valor) return new Date();
+   if (valor instanceof Date && !Number.isNaN(valor.getTime())) {
+     return new Date(valor.getFullYear(), valor.getMonth(), valor.getDate());
+   }
+   if (valor && typeof valor === "object" && Object.prototype.hasOwnProperty.call(valor, "hoje")) {
+     return extrairHoje(valor.hoje);
+   }
+   const data = converterParaDataJs(valor);
+   if (data) {
+     return new Date(data.getFullYear(), data.getMonth(), data.getDate());
+   }
+   return new Date();
+ };
+
+ const familia = window.resolverFamiliaSerie(idOuCompromisso);
+ const ids = familia
+   .filter((item) => item && !item.isReposicao)
+   .map((item) => item.id);
+ const reposicoesPreservadas = familia.filter((item) => item && item.isReposicao).length;
+
+ const datasInicio = familia
+   .filter((item) => item && (item.recorrenciaDataInicio || item.data || item.dataCriacao))
+   .map((item) => item.recorrenciaDataInicio || item.data || item.dataCriacao)
+   .filter(Boolean);
 
  const formatarDataPtBr = (valor) => {
    const data = converterParaDataJs(valor);
@@ -304,6 +324,35 @@ window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso) {
    const ano = String(data.getFullYear());
    return `${dia}/${mes}/${ano}`;
  };
+
+ const hoje = extrairHoje(hojeReferencia);
+ const hojePura = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+ const limiteInferior = new Date(hojePura);
+ limiteInferior.setFullYear(hojePura.getFullYear() - 2);
+ const limiteSuperior = new Date(hojePura);
+ limiteSuperior.setFullYear(hojePura.getFullYear() + 2);
+
+ let ocorrenciasPassadas = 0;
+ let temAulaFutura = false;
+
+ familia
+   .filter((item) => item && !item.isReposicao)
+   .forEach((item) => {
+     for (let dataTeste = new Date(hojePura); dataTeste <= limiteSuperior; dataTeste.setDate(dataTeste.getDate() + 1)) {
+       if (window.checarCompromissoNaData(item, dataTeste)) {
+         temAulaFutura = true;
+         break;
+       }
+     }
+
+     const inicioPassado = new Date(hojePura);
+     inicioPassado.setDate(inicioPassado.getDate() - 1);
+     for (let dataTeste = new Date(inicioPassado); dataTeste >= limiteInferior; dataTeste.setDate(dataTeste.getDate() - 1)) {
+       if (window.checarCompromissoNaData(item, dataTeste)) {
+         ocorrenciasPassadas += 1;
+       }
+     }
+   });
 
  const desde = datasInicio.reduce((menor, valorAtual) => {
    if (!menor) return valorAtual;
@@ -348,6 +397,8 @@ window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso) {
 
  return {
    total: ids.length,
+   ocorrenciasPassadas,
+   temAulaFutura,
    reposicoesPreservadas,
    ids,
    desde: formatarDataPtBr(desde) || desde || null,
@@ -376,7 +427,7 @@ window.removerCadeiaCompletaSerie = function (idOuCompromisso) {
  return antes - aulas.length;
 };
 
-window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr) {
+window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeReferencia) {
  if (!compromisso) return [];
 
  const dataExibicao =
@@ -395,11 +446,20 @@ window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr) {
  }
 
  const resumo = window.montarResumoExclusaoCadeiaSerie
-   ? window.montarResumoExclusaoCadeiaSerie(compromisso)
-   : { total: 0, desde: null, reposicoesPreservadas: 0 };
- const totalSerie = Number(resumo && resumo.total ? resumo.total : 0);
- const unidadeSerie = totalSerie === 1 ? "aula" : "aulas";
- const detalheSerie = `${totalSerie || 0} ${unidadeSerie}, desde ${resumo.desde || "início"}. Apaga também o histórico.`;
+   ? window.montarResumoExclusaoCadeiaSerie(compromisso, hojeReferencia)
+   : { total: 0, ocorrenciasPassadas: 0, temAulaFutura: false, desde: null, reposicoesPreservadas: 0 };
+ const ocorrenciasPassadas = Number(resumo && Number.isFinite(resumo.ocorrenciasPassadas) ? resumo.ocorrenciasPassadas : 0);
+ const temAulaFutura = !!(resumo && resumo.temAulaFutura);
+ const unidadePassada = ocorrenciasPassadas === 1 ? "aula" : "aulas";
+
+ let detalheSerie = "Nenhuma aula restante nesta série.";
+ if (ocorrenciasPassadas > 0 && temAulaFutura) {
+   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${resumo.desde || "início"}.`;
+ } else if (ocorrenciasPassadas === 0 && temAulaFutura) {
+   detalheSerie = `Todas as aulas, a partir de hoje. Desde ${resumo.desde || "início"}.`;
+ } else if (ocorrenciasPassadas > 0 && !temAulaFutura) {
+   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${resumo.desde || "início"}.`;
+ }
 
  const opcoes = [
    {
@@ -1225,10 +1285,13 @@ window.executarExclusaoInstancia = async function () {
       window.gcal &&
       window.gcal.isSignedIn()
     ) {
-      await window.salvarEventoComGCal(compromisso, {
+      const resultadoPersistencia = await window.salvarEventoComGCal(compromisso, {
         operacao: "atualizar",
         snapshotAnterior: _snapshot,
       });
+      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+      }
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
@@ -1268,9 +1331,24 @@ window.executarExclusaoSerie = async function () {
   const _resumoExclusao = window.montarResumoExclusaoCadeiaSerie(
     _serieDeletar || window.idCompromissoSelecionado,
   );
+  const ocorrenciasPassadas = Number(
+    _resumoExclusao && Number.isFinite(_resumoExclusao.ocorrenciasPassadas)
+      ? _resumoExclusao.ocorrenciasPassadas
+      : 0,
+  );
+  const temAulaFutura = !!(_resumoExclusao && _resumoExclusao.temAulaFutura);
+  const unidadePassada = ocorrenciasPassadas === 1 ? "aula" : "aulas";
+  let detalheConfirmacaoSerie = "Nenhuma aula restante nesta série.";
+  if (ocorrenciasPassadas > 0 && temAulaFutura) {
+    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${_resumoExclusao.desde || "início"}.`;
+  } else if (ocorrenciasPassadas === 0 && temAulaFutura) {
+    detalheConfirmacaoSerie = `Todas as aulas, a partir de hoje. Desde ${_resumoExclusao.desde || "início"}.`;
+  } else if (ocorrenciasPassadas > 0 && !temAulaFutura) {
+    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${_resumoExclusao.desde || "início"}.`;
+  }
   const mensagemConfirmacaoSerie =
     _resumoExclusao.total > 0
-      ? `Excluir ${_resumoExclusao.total} aulas desta série?\n\n${_resumoExclusao.mensagem}. Reposições continuam preservadas no app.`
+      ? `${detalheConfirmacaoSerie}\n\n${_resumoExclusao.mensagem}. Reposições continuam preservadas no app.`
       : "Nenhuma aula desta série pode ser removida porque todas são reposições e continuam preservadas.";
   if (!confirm(mensagemConfirmacaoSerie)) return;
   if (_resumoExclusao.total === 0) {
@@ -1313,10 +1391,13 @@ window.executarExclusaoSerie = async function () {
       window.gcal &&
       window.gcal.isSignedIn()
     ) {
-      await window.salvarEventoComGCal(_serieDeletar, {
+      const resultadoPersistencia = await window.salvarEventoComGCal(_serieDeletar, {
         operacao: "excluir",
         snapshotAnterior: _serieDeletar,
       });
+      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+      }
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
@@ -1387,10 +1468,13 @@ window.executarExclusaoAulaAvulsa = async function () {
       window.gcal &&
       window.gcal.isSignedIn()
     ) {
-      await window.salvarEventoComGCal(_compDeletar, {
+      const resultadoPersistencia = await window.salvarEventoComGCal(_compDeletar, {
         operacao: "excluir",
         snapshotAnterior: _compDeletar,
       });
+      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+      }
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
