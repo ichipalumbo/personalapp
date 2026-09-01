@@ -36,7 +36,9 @@ correspondente em `docs/specs/`.
 - Backlog, priorização e débitos técnicos conhecidos: `docs/roadmap.md`.
 - Índice da documentação: `docs/README.md`.
 
-Spec ativa: `docs/specs/financas-ciclo-cobranca.md` (v7, em produção). A spec complementar `docs/specs/reposicoes-e-competencia.md` (v6) redefine a regra 5.8 e prevalece em caso de divergência sobre reposições. A spec `docs/specs/gcal-sync.md` (v6) detalha a integração com Google Calendar e a renovação ativa do webhook.
+Spec ativa: `docs/specs/financeiro/financas-ciclo-cobranca.md` (v7, em produção). A spec complementar `docs/specs/financeiro/reposicoes-e-competencia.md` (v6) redefine a regra 5.8 e prevalece em caso de divergência sobre reposições. A spec `docs/specs/integracoes/gcal-sync.md` (v11) detalha a integração com Google Calendar e a renovação ativa do webhook.
+
+As specs são organizadas por domínio, cada um com um índice próprio em `docs/specs/<domínio>/README.md`: `alunos`, `agenda`, `financeiro`, `integracoes` e `plataforma`. O índice aponta; a regra mora na spec. Domínio sem spec escrita significa que o comportamento **não** está decidido — nesse caso o código é o estado de fato, não a decisão de produto.
 
 ---
 
@@ -140,7 +142,7 @@ O módulo financeiro (`backend/src/services/financasService.js`, collection
 - Escrita financeira (`PATCH` de pagamento e ajuste) só é considerada concluída
   na UI após resposta HTTP de sucesso. Nunca confirmar com base em cache local.
 
-Detalhamento completo nas seções 5 e 6 de `docs/specs/financas-ciclo-cobranca.md`.
+Detalhamento completo nas seções 5 e 6 de `docs/specs/financeiro/financas-ciclo-cobranca.md`.
 
 ---
 
@@ -199,12 +201,16 @@ que pareçam pequenas:
 
 ## 8. Documentação e artefatos
 
-- `docs/specs/` — specs de feature, uma por arquivo, versionadas no cabeçalho.
-  Fonte de verdade de regra de negócio.
+- `docs/specs/<domínio>/` — specs de feature, uma por arquivo, versionadas no cabeçalho.
+  Fonte de verdade de regra de negócio. Cada domínio tem um `README.md` de índice, que
+  aponta para as specs e **não** contém regra.
+- `docs/README.md` — índice geral, mapa de domínios e mapa de telas.
+- `docs/ambiente-local.md` — como rodar, `.env` e troubleshooting.
+- `docs/mapa-do-codigo.md` — árvore de arquivos, ordem de carregamento e inventário de rotas.
 - `docs/roadmap.md` — documento vivo, único. Não duplicar nem versionar por data.
-- `README.md` (raiz) — visão geral e onboarding. **A árvore de arquivos pode
-  estar desatualizada**; o código é sempre a referência. Se notar divergência,
-  reporte.
+- `README.md` (raiz) — visão geral do projeto e ponteiros para `docs/`. Detalhe operacional
+  e árvore de arquivos **não** moram mais aqui: estão em `docs/ambiente-local.md` e
+  `docs/mapa-do-codigo.md`. Se notar divergência com o código, reporte.
 - `.agents/skills/` — skills de agente, versionados. O `anti-ui-slop` é
   **vendorizado** de `github/awesome-copilot` (veja o `github-tree-sha` no
   frontmatter): **não edite**, pois alterações locais se perdem na próxima

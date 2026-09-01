@@ -9,10 +9,12 @@
 > testes e verificados em produção pelo dono em 2026-09-01; as duas consultas do §5.1 do
 > diagnóstico retornaram vazias nas duas contas, sem dano gravado.
 >
-> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v6) define a
+> **Relação com outras specs**: `docs/specs/financeiro/reposicoes-e-competencia.md` (v6) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
-> `docs/specs/financas-ciclo-cobranca.md` (v7) não é afetada — o Google não participa de
+> `docs/specs/financeiro/financas-ciclo-cobranca.md` (v7) não é afetada — o Google não participa de
 > nenhum cálculo financeiro.
+>
+> **Domínio**: Integrações · Índice em [`README.md`](README.md)
 
 ---
 

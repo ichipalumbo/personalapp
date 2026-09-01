@@ -2,7 +2,9 @@
 
 > **Status**: implementação mergeada na main e validada em produção; backend e frontend em produção · **Versão**: 6 · **Atualizado**: 2026-08-26
 >
-> **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
+> **Relação com outras specs**: complementa `docs/specs/financeiro/financas-ciclo-cobranca.md` (v7).
+> **Domínio**: Financeiro · Índice em [`README.md`](README.md)
+> **Precedência**: prevalece sobre `financas-ciclo-cobranca.md` em regras de reposição.
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
 > uma entidade nova. A spec de Finanças continua sendo a fonte de verdade sobre ciclo,
 > snapshot, congelamento e status de pagamento.

@@ -24,20 +24,30 @@
 | Preciso saber…                                             | Vá em                                                |
 | ---------------------------------------------------------- | ---------------------------------------------------- |
 | O que está feito, o que falta, dependências entre itens    | `docs/roadmap.md` (tabela de acompanhamento no topo) |
-| Regra de negócio do financeiro / ciclo de cobrança         | `docs/specs/financas-ciclo-cobranca.md`              |
-| Regra de reposição, competência, prazo de validade         | `docs/specs/reposicoes-e-competencia.md`             |
-| Regra de sincronização com Google Calendar                 | `docs/specs/gcal-sync.md`                            |
+| Quais domínios existem e qual tela usa o quê               | `docs/README.md` (mapa de domínios e de telas)       |
+| Regra de negócio do financeiro / ciclo de cobrança         | `docs/specs/financeiro/financas-ciclo-cobranca.md`   |
+| Regra de reposição, competência, prazo de validade         | `docs/specs/financeiro/reposicoes-e-competencia.md`  |
+| Regra de sincronização com Google Calendar                 | `docs/specs/integracoes/gcal-sync.md`                |
+| Rodar o projeto, `.env`, troubleshooting                   | `docs/ambiente-local.md`                             |
+| Árvore de arquivos, ordem de scripts, inventário de rotas  | `docs/mapa-do-codigo.md`                             |
 | **Formato de prompt de etapa, regras anti-loop, procedimento de mutação** | **`docs/TEMPLATE-prompt-etapa-personalapp.md`** |
 | Regras permanentes do agente de código                     | `.github/copilot-instructions.md`                    |
-| Índice da documentação e trabalho com agentes              | `docs/README.md`                                     |
 | Histórico de uma rodada específica                         | `docs/_reports/AAAA-MM-DD-*.md`                      |
-| Contrato de função, ordem de scripts, o que existe de fato | **o código**                                         |
+| Contrato de função, o que existe de fato                   | **o código**                                         |
+
+> As specs vivem em `docs/specs/<domínio>/`, com os domínios `alunos`, `agenda`, `financeiro`,
+> `integracoes` e `plataforma`. Cada domínio tem um `README.md` que **aponta** para as specs;
+> a regra mora na spec. Domínio sem spec escrita significa comportamento **não decidido** —
+> nesse caso o código é o estado de fato, não a decisão de produto.
 
 ### Roteiro por tarefa
 
-- vai mexer em Google Calendar → `docs/specs/gcal-sync.md` §9 (aberto) e §8 (fora de escopo)
-- vai mexer em finanças → `docs/specs/financas-ciclo-cobranca.md`
-- vai mexer em reposição → `docs/specs/reposicoes-e-competencia.md`
+- vai mexer em Google Calendar → `docs/specs/integracoes/gcal-sync.md` §9 (aberto) e §8 (fora de escopo)
+- vai mexer em finanças → `docs/specs/financeiro/financas-ciclo-cobranca.md`
+- vai mexer em reposição → `docs/specs/financeiro/reposicoes-e-competencia.md`
+- vai mexer em agenda, aluno ou plataforma → **não há spec ainda**; leia o `README.md` do domínio
+  em `docs/specs/<domínio>/` para saber onde o comportamento vive no código, e confirme a regra
+  com o dono antes de decidir
 - **vai escrever prompt de etapa** → `docs/TEMPLATE-prompt-etapa-personalapp.md` (esqueleto anotado,
   blocos prontos para copiar, checklist)
 - histórico de uma correção → tabela de relatórios da spec correspondente
@@ -338,9 +348,10 @@ rodando. Modos de falha já observados, cada um vira regra ao pedir teste:
 
 ### As três regras do projeto
 
-1. **Sempre o caminho completo da spec** (`docs/specs/financas-ciclo-cobranca.md`).
+1. **Sempre o caminho completo da spec** (`docs/specs/financeiro/financas-ciclo-cobranca.md`).
    Referência pelo nome faz o agente procurar no lugar errado — e seguir em frente sem
-   avisar.
+   avisar. Desde 01/09/2026 as specs vivem em subpasta de domínio: citar só o nome do
+   arquivo passou a ser ainda mais frágil.
 2. **A spec resolve os casos de borda.** O que estiver fora dela vai para a seção "Fora de
    Escopo" da própria spec, para o agente não inventar.
 3. **Instrução permanente vai em `copilot-instructions.md` ou `.agents/skills/`**, não no

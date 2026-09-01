@@ -1,8 +1,10 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
 > **Status**: Em produção · **Versão**: 7 · **Atualizado**: 2026-08-25
+> **Domínio**: Financeiro · Índice em [`README.md`](README.md)
 > **Defeitos em aberto**: 0
-> **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
+> **Precedência**: cede a `reposicoes-e-competencia.md` em qualquer regra sobre reposições.
+> **Relacionada**: `docs/specs/financeiro/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
 > Projeto: Agenda Personal Trainer (Prô Josy) — frontend JS vanilla + backend Node/Express/MongoDB.
 > Este documento é a **fonte de verdade** das decisões de produto desta feature. Não infira regras de negócio além do que está descrito aqui — onde houver dúvida, ela está explicitamente resolvida na seção 7 ("Decisões e Casos de Borda"). Qualquer regra não coberta aqui deve ser tratada como "Fora de Escopo" (seção 8) e não implementada sem confirmação humana.

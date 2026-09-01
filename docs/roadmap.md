@@ -4,7 +4,7 @@
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
-> **Contexto importante**: a feature **"Finanças — Ciclo de Cobrança por Aluno"** está em produção. Ela **entregou o item 1.1** e **substituiu** o antigo sistema de KPI financeiro (`backend/src/services/kpiService.js` e os cálculos de projeção em `assets/js/utils-kpi.js`), que **não existem mais no código**. Especificação completa em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
+> **Contexto importante**: a feature **"Finanças — Ciclo de Cobrança por Aluno"** está em produção. Ela **entregou o item 1.1** e **substituiu** o antigo sistema de KPI financeiro (`backend/src/services/kpiService.js` e os cálculos de projeção em `assets/js/utils-kpi.js`), que **não existem mais no código**. Especificação completa em [`specs/financeiro/financas-ciclo-cobranca.md`](specs/financeiro/financas-ciclo-cobranca.md).
 >
 > Regras permanentes para agentes de IA: `.github/copilot-instructions.md`.
 
@@ -47,7 +47,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.6 Lembrete de aniversário do aluno             | `[ ]`  | —                                                                |
 | 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
-| 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
+| 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/integracoes/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
@@ -85,14 +85,14 @@ Havia **dois grupos numerados como 2** (Google Calendar e Coisas complexas), o q
 
 Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
-⚠️ **Atenção ao validar specs**: nem toda referência a "2.x" é item de roadmap. As specs têm numeração própria de seções — por exemplo, "seção 2.4 da spec" (módulo isomórfico) e "regra 5.8" são seções de `specs/financas-ciclo-cobranca.md`, não itens deste documento. Só renumere referências que apontem explicitamente para itens do roadmap.
+⚠️ **Atenção ao validar specs**: nem toda referência a "2.x" é item de roadmap. As specs têm numeração própria de seções — por exemplo, "seção 2.4 da spec" (módulo isomórfico) e "regra 5.8" são seções de `specs/financeiro/financas-ciclo-cobranca.md`, não itens deste documento. Só renumere referências que apontem explicitamente para itens do roadmap.
 
 ---
 
 ## 🔧 Grupo 0 — Débitos técnicos mapeados (entrar junto com a próxima feature)
 
 > Itens herdados da entrega de Finanças. Nenhum é urgente: o app está funcionando em produção com todos eles. A ideia é resolvê-los "de carona" na próxima feature que tocar as mesmas áreas, evitando uma rodada de manutenção isolada.
-> Detalhamento técnico completo na seção 12 de [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
+> Detalhamento técnico completo na seção 12 de [`specs/financeiro/financas-ciclo-cobranca.md`](specs/financeiro/financas-ciclo-cobranca.md).
 
 ### [x] 0.1 Bug: bloco "Ver ciclos anteriores" fecha sozinho no re-render — **RESOLVIDO**
 
@@ -143,7 +143,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [x] 0.6 Extrato do ciclo — **ENTREGUE**
 
-- **O que foi entregue**: cada ciclo exibe o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado, com os 11 tipos de linha documentados em `docs/specs/reposicoes-e-competencia.md`.
+- **O que foi entregue**: cada ciclo exibe o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado, com os 11 tipos de linha documentados em `docs/specs/financeiro/reposicoes-e-competencia.md`.
 - **Por que importa**: dá previsibilidade e auditoria para o PT, sem depender de memória nem de contagem ad hoc na agenda.
 - **Onde mexer**: `backend/src/services/financasService.js`, `assets/js/view-financas.js` e a spec complementar de reposições.
 - **Esforço**: Médio.
@@ -206,7 +206,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **O que foi entregue**: Muito além do escopo mínimo previsto aqui. Em vez do controle por mês calendário, foi implementado um modelo de **ciclo de cobrança configurável por aluno** (vencimento móvel, ex.: todo dia 17), com registro de pagamento persistente, status automático (em aberto / atrasado / pago), ajuste manual por ciclo (positivo ou negativo) e histórico de ciclos anteriores.
 - **Onde ficou**: Nova collection `backend/src/models/CicloFinanceiro.js`, serviço `backend/src/services/financasService.js`, aba dedicada "Finanças" (`assets/js/view-financas.js`) e badge no card do aluno em `view-alunos.js`.
 - **Observação**: o campo `historicoPagamentos` do `Aluno.js` — que este item propunha destravar — foi **aposentado** (marcado como `DEPRECATED`) em favor da nova collection. Não usar em lógica nova.
-- **Referência**: [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
+- **Referência**: [`specs/financeiro/financas-ciclo-cobranca.md`](specs/financeiro/financas-ciclo-cobranca.md).
 
 ---
 
@@ -282,11 +282,11 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
 - **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
-- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
-- **Histórico de correção (29/08/2026)**: uma auditoria do mês encontrou defeitos de sincronização (duplicata de série na edição, `EXDATE` do primeiro dia, `DTSTART` desalinhado do `BYDAY`, teto de pendência no lado errado, série truncada sem aulas, dia da semana sem acento e ordem invertida no `DELETE`). As rodadas A–H trataram esse conjunto; o estado final ficou registrado em [`specs/gcal-sync.md`](specs/gcal-sync.md) §9 e na tabela de relatórios da spec.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/integracoes/gcal-sync.md`.
+- **Histórico de correção (29/08/2026)**: uma auditoria do mês encontrou defeitos de sincronização (duplicata de série na edição, `EXDATE` do primeiro dia, `DTSTART` desalinhado do `BYDAY`, teto de pendência no lado errado, série truncada sem aulas, dia da semana sem acento e ordem invertida no `DELETE`). As rodadas A–H trataram esse conjunto; o estado final ficou registrado em [`specs/integracoes/gcal-sync.md`](specs/integracoes/gcal-sync.md) §9 e na tabela de relatórios da spec.
 - **Esforço**: Médio. O custo que ficou aberto continua sendo o gatilho automático no boot, porque a validação executada foi por clique manual do botão de renovação e não por observação isolada do bootstrap; isso foi registrado como ressalva da entrega, não como regressão funcional visível.
 - **Validação concluída**: em 31/08/2026, o botão manual de renovação do canal foi executado e a expiração avançou para a semana seguinte, comprovando a cadeia completa de encerramento do canal antigo, registro do novo e sincronização de recuperação. A ressalva fica no boot: o disparo automático não foi observado isoladamente, mas o caminho da renovação foi validado em produção.
-- **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
+- **Referência**: [`specs/integracoes/gcal-sync.md`](specs/integracoes/gcal-sync.md).
 
 ---
 
@@ -362,7 +362,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **ownerEmail e isolamento do Google Calendar**: `ownerEmail` não exigiu seed nem configuração extra porque vem do `Google ID token` via `requireAuth`. O isolamento do Google Calendar veio da ausência da collection `googlecalendarconnections` no clone local, sem mudança de código — a ausência do documento de conexão impede o bootstrap de disparar a sincronização do calendário real.
 - **Dado real e escopo**: os agendamentos clonados carregam referência a eventos de calendário reais do ambiente do usuário; conectar o GCal localmente exigiria uma decisão separada de conta e sincronização, e ficou fora de escopo desta rodada.
 - **Consequência prática**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
-- **Relatório**: ver [`docs/_reports/2026-08-27-chore-banco-dev.md`](docs/_reports/2026-08-27-chore-banco-dev.md).
+- **Relatório**: ver [`_reports/2026-08-27-chore-banco-dev.md`](_reports/2026-08-27-chore-banco-dev.md).
 
 ---
 

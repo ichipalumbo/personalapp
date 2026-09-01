@@ -2,445 +2,83 @@
 
 Sistema para gestao de alunos e agenda de aulas de personal trainer, com frontend em JavaScript vanilla e API Node.js/Express para persistencia em MongoDB.
 
-Este README foi estruturado para facilitar onboarding tecnico e navegacao rapida de agentes.
+Este README e a porta de entrada: descreve **o que** o projeto e e **como** ele se organiza. Todo detalhe \u2014 regra de negocio, procedimento de ambiente e mapa de codigo \u2014 vive em [`docs/`](docs/README.md).
 
-## Objetivo do Projeto
+## O que o app faz
 
-- Centralizar cadastro de alunos, agenda diaria/semanal/mensal e controle de compromissos.
-- Sincronizar dados com API backend quando online.
-- Manter fallback local (localStorage) em caso de indisponibilidade da API.
+- Centraliza o cadastro de alunos e a agenda de aulas de um personal trainer autonomo.
+- Calcula a cobranca por ciclo de vencimento configuravel por aluno, com fila de reposicoes.
+- Publica os compromissos no Google Calendar e le eventos externos como bloqueios.
+- Funciona como PWA, com fallback local de leitura quando a API esta indisponivel.
+
+**Multiusuario**: qualquer conta Google pode usar o app, e cada conta ve apenas os proprios dados. O isolamento e feito por `ownerEmail` em toda consulta ao banco.
+
+**Modo leitura**: sem login, o app renderiza os dados em cache local mas bloqueia qualquer escrita remota.
 
 ## Documentacao
 
-- [docs/README.md](docs/README.md): indice da documentacao do projeto, reunindo roadmap e specs de features.
+A documentacao vive em [`docs/`](docs/README.md). Este README so descreve o projeto em alto nivel — todo detalhe esta nos arquivos abaixo.
 
-## Autenticacao e Modo de Uso
+| Procurando por | Va em |
+| --- | --- |
+| Indice geral, dominios e mapa de telas | [`docs/README.md`](docs/README.md) |
+| Regra de negocio (fonte de verdade) | [`docs/specs/`](docs/specs/) |
+| Rodar o projeto, `.env`, troubleshooting | [`docs/ambiente-local.md`](docs/ambiente-local.md) |
+| Arvore de arquivos, ordem de scripts, rotas | [`docs/mapa-do-codigo.md`](docs/mapa-do-codigo.md) |
+| O que falta fazer | [`docs/roadmap.md`](docs/roadmap.md) |
+| Regras permanentes do agente de codigo | [`.github/copilot-instructions.md`](.github/copilot-instructions.md) |
 
-**O app exige login Google para gravar dados.** Sem login, opera em modo leitura (dados do localStorage apenas, sem sync com a API).
+**Hierarquia de confiabilidade**: codigo > specs > roadmap > README. Se divergir, o codigo vence.
 
-- **Frontend:** `assets/js/auth/google-identity.js` expoe `window.googleIdentity` com `isSignedIn()`, `getIdToken()`, `getOwnerEmail()`. O botao "Entrar com Google" em `index.html` aciona o fluxo GIS (Google Identity Services).
-- **Como o token flui:** `storage.js::apiFetchBackend` injeta `Authorization: Bearer <id_token>` em toda requisicao. Se nao houver token, lanca `AUTH_REQUIRED` (status 401) antes mesmo de chamar a API.
-- **Backend:** `backend/src/middleware/requireAuth.js` valida o JWT via `google-auth-library` (OAuth2Client), extrai `payload.email` e popula `req.auth.ownerEmail`. Todos os controllers usam `ownerEmail` como chave de isolamento no MongoDB.
-- **Multiusuario:** qualquer conta Google pode usar o app — cada conta ve e edita apenas seus proprios dados. Nao e um app de usuario unico.
-- **Modo leitura:** se `window.googleIdentity.isSignedIn()` retornar `false`, o frontend ainda renderiza dados do localStorage mas bloqueia operacoes de escrita remota com toast de aviso.
+## Dominios de negocio
 
-## Mapa Rapido para Agentes
+As regras estao organizadas por dominio, cada um com seu proprio indice:
 
-- Ponto de entrada da interface: `index.html`
-- Entrada SPA compativel: `assets/js/app.js`
-- App shell da interface: `assets/js/app/bootstrap.js`, `assets/js/app/router.js`, `assets/js/app/service-worker.js`
-- Estado global compartilhado: `assets/js/state.js`
-- Sincronizacao e persistencia (API + localStorage): `assets/js/storage.js`
-- Autenticacao Google (token JWT): `assets/js/auth/google-identity.js`
-- Entrada principal da API: `backend/server.js`
-- Estrutura interna da API: `backend/src/`
-
-Se o objetivo for:
-
-- Ajustar navegacao/UX entre telas: comecar em `assets/js/app.js` e `index.html`
-- Ajustar inicializacao da SPA ou ordem de bootstrap: comecar em `assets/js/app.js`, `assets/js/app/bootstrap.js` e `assets/js/app/router.js`
-- Ajustar a agenda diaria (Home): comecar em `assets/js/view-home.js`
-- Ajustar modais de criacao de agendamento: comecar em `assets/js/modal-agendamento.js`
-- Ajustar edicao/cancelamento/reagendamento: comecar em `assets/js/modal-acao-slot.js`
-- Ajustar regras de recorrencia ou grid mensal: comecar em `assets/js/calendario-engine.js`
-- Ajustar view do calendario (semanal): comecar em `assets/js/view-calendario.js`
-- Ajustar cadastro de alunos: comecar em `assets/js/view-alunos.js`
-- Ajustar utilidades genericas (toast/overlays de sync): comecar em `assets/js/utils-kpi.js`
-- Ajustar persistencia/sincronizacao: comecar em `assets/js/storage.js`, `backend/server.js` e `backend/src/`
-- Ajustar autenticacao Google (login/logout/token): comecar em `assets/js/auth/google-identity.js` e `backend/src/middleware/requireAuth.js`
-- Ajustar integracao com Google Calendar: comecar em `assets/js/google-calendar.js`
+| Dominio | Cobre |
+| --- | --- |
+| [Alunos](docs/specs/alunos/README.md) | cadastro, objetivo, status, ciclo de vida |
+| [Agenda](docs/specs/agenda/README.md) | compromissos, recorrencia, conflito, exclusao, grade |
+| [Financeiro](docs/specs/financeiro/README.md) | ciclo de cobranca, pagamento, reposicoes, extrato |
+| [Integracoes](docs/specs/integracoes/README.md) | Google Calendar, autenticacao Google |
+| [Plataforma](docs/specs/plataforma/README.md) | isolamento por conta, persistencia, resiliencia, deploy |
 
 ## Arquitetura (Visao Geral)
 
 ```text
 [Frontend SPA - browser]
-    |- entrada compativel (app.js)
-    |- app shell: bootstrap.js, router.js, service-worker.js
-    |- views: view-home.js, view-financas.js, view-calendario.js, view-alunos.js
-    |- modais: modal-agendamento.js, modal-acao-slot.js, settings-modal.js
+    |- app shell: app.js, bootstrap.js, router.js, service-worker.js
+    |- views e modais
     |- estado em memoria (state.js)
     |- persistencia/sync (storage.js)
     v
 [API Express - backend/server.js]
-    |- cria app em backend/src/app.js
-    |- config: backend/src/config/
-    |- rotas: backend/src/routes/
-    |- controllers/services/models
+    |- rotas -> controllers -> services -> models
     v
 [MongoDB - via Mongoose]
 ```
 
-Comportamento de resiliencia:
+Decisoes estruturais que valem para qualquer alteracao:
 
-- O frontend tenta carregar e salvar via API.
-- Se houver falha de conexao, usa localStorage temporariamente.
+- **Frontend sem build step.** JavaScript vanilla, sem framework e sem bundler. Os scripts sao carregados por tags `<script>` em `index.html` e a **ordem importa**.
+- **Backend serverless.** Node/Express/Mongoose, publicado na Vercel. Nao ha processo continuo, entao nao existe cron: estado derivado e recalculado na leitura.
+- **Isolamento por `ownerEmail`.** Toda consulta ao MongoDB e filtrada pela conta dona. Nao ha nenhuma outra camada protegendo contra vazamento entre contas.
+- **Regra de negocio tem implementacao unica.** Calculo feito no backend nao e reimplementado no frontend; o que precisa existir dos dois lados mora em modulo isomorfico compartilhado, sem dependencia de `window` ou DOM.
+- **Resiliencia e de leitura, nao de escrita.** Em falha de API o frontend exibe o cache local, mas escrita so e considerada concluida apos resposta de sucesso.
 
-## Estrutura do Projeto
+Detalhamento em [`docs/mapa-do-codigo.md`](docs/mapa-do-codigo.md).
 
-```text
-personalapp/
-|- index.html
-|- README.md
-|- assets/
-|  |- css/
-|  |  |- style.css
-|  |- js/
-|  |  |  --- [0] Auth ---
-|  |  |- auth/
-|  |  |  |- google-identity.js         <- autenticacao Google (GIS JWT) -> window.googleIdentity
-|  |  |  --- [1] Core State & Data ---
-|  |  |- state.js                  <- estado global (alunos, aulas, constantes)
-|  |  |- storage.js                <- sync API + fallback localStorage
-|  |  |  --- [2] Pure Utilities ---
-|  |  |- utils-kpi.js              <- utilidades genericas (toast, overlays de sync)
-|  |  |- utils-datetime.js         <- helpers de data e hora
-|  |  |  --- [3] Domain Helpers ---
-|  |  |- alunos-helpers.js         <- lookup e select de alunos
-|  |  |- calendario-engine.js      <- motor de recorrencia + grid mensal
-|  |  |- shared/
-|  |  |  |- recurrence-helpers.js   <- helpers isomorficos de recorrencia consumidos no frontend/backend
-|  |  |- agenda-conflitos.js       <- deteccao de conflitos de horario
-|  |  |- cascade-sync-aluno.js     <- sync em cascata ao editar/excluir aluno
-|  |  |- settings-modal.js         <- modal de configuracoes/ajustes da agenda
-|  |  |- agenda-card-template.js   <- template do card de agenda reutilizado nas views
-|  |  |  --- [4] UI Widgets ---
-|  |  |- widget-stepper-duracao.js <- widget +/- de duracao
-|  |  |- widget-bloqueio.js        <- helpers de estado "dia inteiro"
-|  |  |  --- [5] Modais ---
-|  |  |- modal-agendamento.js      <- modais: tipo, agendamento unico, recorrente
-|  |  |- modal-acao-slot.js        <- modais: edicao, cancelamento, reagendamento, reposicao
-|  |  |- features/
-|  |  |  |- modals/
-|  |  |  |  |- scheduling-serializer.js   <- serializacao de agendamentos para salvar
-|  |  |  |  |- scheduling-flow-state.js   <- estado interno do fluxo de criacao de agendamento
-|  |  |  |- user/
-|  |  |  |  |- user-area-session-helper.js <- helper de sessao/usuario da area do aluno
-|  |  |  --- [6] Page Views ---
-|  |  |- view-home.js              <- aba Home: agenda diaria
-|  |  |- view-financas.js          <- aba Financas: ciclo financeiro e cobrancas
-|  |  |- view-calendario.js        <- aba Calendario: visao semanal (sem mensal e sem KPI dashboard)
-|  |  |- view-alunos.js            <- aba Alunos: CRM de cadastro/edicao
-|  |  |- google-calendar.js        <- integracao Google Calendar (leitura/escrita de eventos)
-|  |  |  --- [7] App Shell ---
-|  |  |- app/
-|  |  |  |- bootstrap.js           <- inicializacao da SPA e ordem de startup
-|  |  |  |- router.js              <- navegacao entre abas Home/Financas/Alunos
-|  |  |  |- service-worker.js      <- registro do service worker
-|  |  |  --- [8] SPA Entry ---
-|  |  |- app.js                    <- ponto de entrada estavel da interface
-|- backend/
-|  |- package.json
-|  |- server.js                    <- entry point principal do backend
-|  |- src/
-|  |  |- app.js
-|  |  |- config/
-|  |  |  |- database.js
-|  |  |  |- env.js
-|  |  |- middleware/
-|  |  |  |- requireAuth.js          <- valida JWT Google e popula req.auth.ownerEmail
-|  |  |- controllers/
-|  |  |  |- agendamentoController.js
-|  |  |  |- alunoController.js
-|  |  |  |- bloqueioExternoController.js
-|  |  |  |- configController.js
-|  |  |  |- financasController.js
-|  |  |  |- gcalAuthController.js
-|  |  |  |- gcalWebhookController.js
-|  |  |- models/
-|  |  |  |- Agendamento.js
-|  |  |  |- Aluno.js
-|  |  |  |- BloqueioExterno.js
-|  |  |  |- CicloFinanceiro.js
-|  |  |  |- Config.js
-|  |  |  |- GoogleCalendarConnection.js
-|  |  |- routes/
-|  |  |  |- agendamentoRoutes.js
-|  |  |  |- alunoRoutes.js
-|  |  |  |- bloqueioExternoRoutes.js
-|  |  |  |- configRoutes.js
-|  |  |  |- financasRoutes.js
-|  |  |  |- gcalAuthRoutes.js
-|  |  |  |- gcalWebhookRoutes.js
-|  |  |  |- healthRoutes.js
-|  |  |- services/
-|  |  |  |- agendaConsistencyService.js
-|  |  |  |- agendamentoService.js
-|  |  |  |- financasService.js
-|  |  |  |- gcalSyncService.js
-|  |  |- utils/
-|  |  |  |- controllerHelpers.js
-|  |  |  |- emailNormalizer.js
-|  |  |  |- gcalCrypto.js
-|  |  |  |- ownerScope.js
-|  |  |  |- studentValueExtractors.js
-|  |  |  |- time.js
-|  |  |  |- valueNormalizer.js
-|  |- vercel.json
-```
+## Como rodar
 
-## Convencao de Nomes dos Arquivos JS
+Nao existe `npm run dev`, watch mode nem ambiente de staging. O frontend e servido por Live Server e o backend sobe com `npm start` dentro de `backend/`, apontando para o banco de desenvolvimento `personalapp_dev`.
 
-Os arquivos seguem prefixos que indicam sua camada:
+O passo a passo completo — `.env`, portas, origens do OAuth e troubleshooting — esta em [`docs/ambiente-local.md`](docs/ambiente-local.md).
 
-| Prefixo       | Camada                          | Exemplo                             |
-| ------------- | ------------------------------- | ----------------------------------- |
-| `state`       | Estado global                   | `state.js`                          |
-| `storage`     | Persistencia                    | `storage.js`                        |
-| `utils-`      | Utilitarios puros (sem DOM)     | `utils-kpi.js`, `utils-datetime.js` |
-| `alunos-`     | Helpers de dominio (alunos)     | `alunos-helpers.js`                 |
-| `calendario-` | Motor de calendario/recorrencia | `calendario-engine.js`              |
-| `agenda-`     | Logica de agenda                | `agenda-conflitos.js`               |
-| `widget-`     | Componentes UI reutilizaveis    | `widget-stepper-duracao.js`         |
-| `modal-`      | Controladores de modais         | `modal-agendamento.js`              |
-| `view-`       | Views de paginas (abas SPA)     | `view-home.js`                      |
-| `app/`        | App shell SPA                   | `app/bootstrap.js`, `app/router.js` |
-| `app`         | Entrada SPA compativel          | `app.js`                            |
-
-## Ordem de Carregamento dos Scripts (index.html)
-
-A ordem importa porque os scripts usam globais `window.xxx` definidos em outros arquivos:
-
-```
-0.  auth/google-identity.js    <- sem dependencias  // window.googleIdentity (isSignedIn, getIdToken, getOwnerEmail)
-1.  state.js                   <- sem dependencias  // vars module-scope: alunos, aulas, agendaConfig (sem window.X proprio)
-2.  storage.js                 <- depende de state.js  // window.sincronizarBancoDados, window.apiFetchBackend, window.carregarDadosDoLocalStorage; seta window.alunos e window.aulas ao carregar
-3.  utils-kpi.js               <- depende de state.js
-4.  utils-datetime.js          <- depende de state.js (em runtime)  // window.somarMinutos, window.diferencaMinutos, window.getDiaTextoSelecionado, window.formatarDataPtBr
-5.  alunos-helpers.js          <- depende de state.js  // window.getAluno, window.getAlunosParaSelect
-6.  calendario-engine.js       <- depende de state.js  // window.parseDataFlex, window.resolverCompromissoRecorrenteNaData, window.checarCompromissoNaData
-7.  agenda-conflitos.js        <- depende de state.js + calendario-engine.js  // window.getConflitosNoDia, window.getDatasConflitoRecorrencia
-8.  widget-stepper-duracao.js  <- depende de state.js + widget-bloqueio.js (runtime)  // window.configurarStepperDuracao, window.inicializarSteppersDuracao
-9.  widget-bloqueio.js         <- depende de widget-stepper-duracao.js  // window.BLOQUEIO_MAX_MINUTOS, window.ehBloqueioDiaInteiroCompromisso
-10. modal-agendamento.js       <- depende de layers 1-9  // window.abrirNovoAgendamento, window.abrirAgendamentoModal, window.abrirModalRecorrencia
-11. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js  // window.abrirModalAcaoSlot, window.fecharModalAcaoSlot
-12. agenda-card-template.js    <- depende de helpers/modais em runtime
-13. view-home.js               <- depende de layers 1-12  // window.inicializarHome, window.renderizarAgendaDia, window.dataSelecionada
-14. view-calendario.js         <- depende de layers 1-13  // window.inicializarPaginaCalendario, window.renderizarHomeSemana, window.modoCalendarioAtivo, window.preencherFiltrosAlunos
-15. view-alunos.js             <- depende de layers 1-13  // window.inicializarAlunos, window.inicializarPaginaCadastro, window.renderizarListaAlunos
-16. google-calendar.js         <- depende de auth/google-identity.js + layers 1-15
-17. app/service-worker.js      <- sem dependencia de DOM da aplicacao
-18. app/router.js              <- depende dos inicializadores globais das views  // window.__appRouter
-19. app/bootstrap.js           <- depende de app/router.js e service-worker.js
-20. app.js                     <- depende de tudo (deve ser o ultimo)
-```
-
-## Papel dos Arquivos Principais
-
-Frontend:
-
-- `index.html`: estrutura da SPA, containers das telas e modais.
-- `assets/css/style.css`: estilos globais e responsividade.
-- `assets/js/app.js` [TAG-APP-ROUTER]: ponto de entrada estavel que delega a inicializacao para o app shell.
-- `assets/js/app/bootstrap.js`: orquestra startup, bind de navegacao e inicializacao da Home.
-- `assets/js/app/router.js`: controla navegacao entre abas Home / Financas / Alunos e chama os inicializadores globais das views.
-- `assets/js/app/service-worker.js`: centraliza o registro do service worker.
-- `assets/js/auth/google-identity.js`: modulo de autenticacao Google (GIS). Expoe `window.googleIdentity` com `initialize()`, `isSignedIn()`, `getIdToken()`, `getOwnerEmail()`, `addAuthChangeListener()`. Deve ser carregado antes de qualquer script que precise do token.
-- `assets/js/state.js` [TAG-STATE]: variaveis de estado global (alunos, aulas, agendaConfig, constantes).
-- `assets/js/storage.js` [TAG-STORAGE]: GET/POST na API e fallback para localStorage. Toda requisicao remota passa por `apiFetchBackend` que injeta o JWT do `window.googleIdentity`.
-- `assets/js/utils-kpi.js` [TAG-UTILS-KPI]: utilidades genericas (toast, overlays de sync) sem calculos de KPI nem exportacao.
-- `assets/js/utils-datetime.js` [TAG-UTILS-DATETIME]: formatacao, conversao e calculo de datas e horas.
-- `assets/js/alunos-helpers.js` [TAG-ALUNOS-HELPERS]: lookup de aluno por ID, HTML de selects.
-- `assets/js/calendario-engine.js` [TAG-CALENDARIO-ENGINE]: math de recorrencia (diaria/semanal/mensal/anual) + grid mensal.
-- `assets/js/agenda-conflitos.js` [TAG-AGENDA-CONFLITOS]: detecta sobreposicao de horarios entre compromissos.
-- `assets/js/cascade-sync-aluno.js`: ao editar ou excluir um aluno, sincroniza em cascata os agendamentos vinculados. Expoe `window.sincronizarAgendamentosDoAluno` e `window.enriquecerAgendamentoComDadosFrescos`.
-- `assets/js/widget-stepper-duracao.js` [TAG-WIDGET-STEPPER]: widget +/- de duracao com labels formatadas.
-- `assets/js/widget-bloqueio.js` [TAG-WIDGET-BLOQUEIO]: constantes de bloqueio e toggle "Dia Inteiro" nos modais.
-- `assets/js/modal-agendamento.js` [TAG-MODAL-AGENDAMENTO]: modais de criacao — escolha de tipo, agendamento unico e recorrente.
-- `assets/js/modal-acao-slot.js` [TAG-MODAL-ACAO-SLOT]: modais de acao — edicao, cancelamento, reagendamento e fila de reposicao.
-- `assets/js/features/modals/scheduling-serializer.js`: serializa o estado do formulario de agendamento para o formato de payload da API.
-- `assets/js/features/modals/scheduling-flow-state.js`: gerencia o estado interno (multi-step) do fluxo de criacao de agendamento.
-- `assets/js/view-home.js` [TAG-VIEW-HOME]: aba Home — agenda diaria, dashboard e navegacao de datas.
-- `assets/js/view-financas.js` [TAG-VIEW-FINANCAS]: aba Financas — ciclo financeiro e cobrancas.
-- `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — visao semanal, sem mensal e sem KPI dashboard.
-- `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
-- `assets/js/google-calendar.js`: ponte frontend → backend para a integracao com Google Calendar. Ela nao chama a API do Google; o sync real acontece em `backend/src/services/gcalSyncService.js` e nos controllers do backend. `salvarEventoComGCal` ignora os argumentos que recebe (`_agendamento`, `opcoes`) e apenas garante a conexao antes de disparar `salvarDados`.
-
-## Contrato de Camadas (Calendario > Dia)
-
-Para evitar regressao de sobreposicao entre indicadores da grade e elementos sticky, a visao Calendario > Dia segue um contrato fixo de camadas definido em `assets/css/style.css`.
-
-Tokens de camada:
-
-- `--z-cal-dia-container`: base do container da visao Dia
-- `--z-cal-dia-grid-surface`: superficie base da grade
-- `--z-cal-dia-grid-lines`: linhas da grade
-- `--z-cal-dia-grid-slots`: slots clicaveis de fundo
-- `--z-cal-dia-grid-events`: camada de eventos/cards
-- `--z-cal-dia-grid-now-indicator`: indicador da hora atual
-- `--z-cal-dia-header-sticky`: header sticky da agenda diaria
-- `--z-cal-dia-tabs-sticky`: tabs sticky Dia/Mes
-
-Regras obrigatorias:
-
-- Qualquer elemento interno da grade diaria deve ficar abaixo de `--z-cal-dia-header-sticky`.
-- As tabs sticky devem permanecer acima do header sticky e de toda a grade.
-- Novos indicadores visuais (linhas, marcadores, badges absolutos) devem usar token dedicado e nao numero magico.
-- Quando houver sobreposicao com sticky, ajustar token/stacking context no CSS, nao via patch pontual em estilo inline.
-
-Stacking contexts usados para previsibilidade:
-
-- `#containerCalendarioDia` usa `isolation: isolate`.
-- `.time-grid-content-col` usa `isolation: isolate`.
-
-Com isso, o comportamento esperado e deterministico em desktop e mobile: a linha de hora atual fica dentro da grade e nunca atravessa tabs/header sticky.
-
-Backend:
-
-- `backend/server.js`: entry point principal; carrega env, conecta no MongoDB, cria o app e sobe o servidor.
-- `backend/src/app.js`: compoe o app Express, middlewares e montagem das rotas.
-- `backend/src/config/env.js`: leitura das variaveis de ambiente do backend.
-- `backend/src/config/database.js`: inicializacao da conexao MongoDB/Mongoose.
-- `backend/src/middleware/requireAuth.js`: valida o Google ID token (JWT Bearer) via `google-auth-library`. Popula `req.auth.ownerEmail` com o email da conta Google. Todos os controllers dependem deste middleware para isolamento de dados.
-- `backend/src/routes/*.js`: definicao das rotas HTTP por dominio.
-- `backend/src/controllers/*.js`: handlers HTTP das rotas.
-- `backend/src/services/*.js`: regras de calculo do ciclo financeiro, consistencia de agenda e normalizacao de agendamentos.
-- `backend/src/models/*.js`: models Mongoose (Aluno, Agendamento, Config, BloqueioExterno — todos com campo `ownerEmail` obrigatorio).
-- `backend/src/utils/ownerScope.js`: helper `getOwnerEmailOrThrow(req)` — extrai `req.auth.ownerEmail` ou lanca erro 401.
-- `backend/src/utils/time.js`: helper de conversao de horario para minutos.
-- `backend/package.json`: dependencias e script de execucao.
-- `backend/vercel.json`: configuracao de deploy do backend na Vercel.
-
-## API Resumida
-
-Base path: `/api`
-
-Todas as rotas exigem `Authorization: Bearer <google_id_token>`. O `ownerEmail` e extraido do JWT pelo middleware — **nao vai no payload do cliente**.
-
-- `GET  /alunos` — lista alunos
-- `POST /alunos` — cria aluno; `PUT /alunos/:id` — atualiza; `DELETE /alunos/:id` — remove
-- `GET  /agendamentos` — lista agendamentos
-- `POST /agendamentos` — cria agendamento; `PUT /agendamentos/:id` — atualiza; `PATCH /agendamentos/:id` — parcial; `DELETE /agendamentos/:id` — remove
-- `GET  /bloqueios-externos` — lista bloqueios do Google Calendar; `POST` — cria; `PUT /:id` — atualiza; `DELETE /:id` — remove
-- `GET  /configuracao` — retorna configuracao da grade
-- `POST /configuracao` — cria/upsert configuracao; `PUT /configuracao/grade_horarios` — atualiza grade
-
-Observacao importante:
-
-- O modelo de sincronizacao e CRUD granular por item (POST/PUT/DELETE individual). O frontend compara estado local vs remoto e opera item a item — nao ha rota `/sincronizar` bulk.
-- O health check usado pelo warm-up fire-and-forget do frontend e `GET /` na raiz do backend (fora de `/api`), sem auth, com resposta em texto puro.
-
-Payload de escrita — `POST`/`PUT /alunos[/:id]`:
-
-```json
-{ "id": "uuid", "nome": "Ana Souza", "telefone": "11999990000",
-  "status": "ativo", "tipoPreco": "mensal", "valorAlinhado": 350, "aulasSemanais": 3 }
-```
-
-Payload de escrita — `POST`/`PUT /agendamentos[/:id]`:
-
-```json
-{ "id": "uuid", "alunoId": "uuid-aluno", "alunoNome": "Ana Souza",
-  "data": "2025-07-21", "horario": "07:00", "tipo": "aula",
-  "status": "confirmado", "diaSemana": 1 }
-```
-
-## Testes
-
-Ha 86 testes no projeto, executados com `node --test` via `npm test` dentro de `backend/`.
-
-Comando exato:
+Testes do backend:
 
 ```bash
 cd backend
 npm test
 ```
-
-## Como Executar Localmente
-
-### 1) Frontend
-
-Opcao recomendada para desenvolvimento:
-
-1. Usar uma extensao de servidor local (ex.: Live Server no VS Code).
-2. Servir o frontend em `http://localhost:5500` e padronizar o host como `localhost` (na extensao Live Server, usar `"liveServer.settings.host": "localhost"`).
-3. Nao alternar para `127.0.0.1`: `http://127.0.0.1:5500` e `http://localhost:5500` sao origens diferentes para o Google Identity Services.
-4. A deteccao do ambiente acontece automaticamente por hostname em `assets/js/config/api-config.js`, que passa a ser o unico lugar que define a URL da API no frontend:
-   - `localhost`, `127.0.0.1` e `::1` -> `http://localhost:5000/api`
-   - qualquer outro hostname -> `https://personal-app-api.vercel.app/api`
-5. Em ambiente local, a interface mostra uma tarja discreta no canto inferior direito com `LOCAL` e a `apiBaseUrl` ativa. Essa tarja aparece somente em host local e nunca em producao.
-6. O OAuth do Google precisa aceitar as origens `http://localhost` e `http://localhost:5500` em *Authorized JavaScript origins* do Client ID usado pelo app; se faltar qualquer uma delas, o login falha com `origin_mismatch`.
-7. O service worker (`sw.js`) cacheia `index.html`, `assets/css/style.css` e `assets/js/app.js` (same-origin). Ele nao interfere na API porque ignora requests cross-origin e `/api/`, mas pode servir arquivo antigo depois de editar o frontend. Contorno: DevTools -> Application -> Service Workers -> **Update on reload**.
-8. O backend local precisa estar rodando na porta `5000`; sem isso, as chamadas do frontend falham por conexao recusada.
-
-### 2) Backend
-
-Na pasta `backend`:
-
-```bash
-npm install
-```
-
-Criar `.env` a partir do exemplo versionado:
-
-```bash
-cd backend
-copy .env.example .env
-```
-
-Preencher cada variavel do `.env` com os valores corretos para o ambiente local. Para o backend subir e responder as rotas de dados, as obrigatorias sao:
-
-- `MONGODB_URI` — apontando para o banco de desenvolvimento `personalapp_dev`;
-- `GOOGLE_CLIENT_ID` — sem nenhum client ID configurado, `requireAuth` devolve **500** com a mensagem `"Google auth is not configured on the server."` em todas as rotas protegidas, antes de validar o token e antes de tocar o banco. Esse sintoma engana: parece falha de banco, mas nao e.
-- O banco `test` e producao e nao deve ser usado localmente.
-- O Client ID nao e segredo; ele ja aparece em texto puro em `assets/js/auth/google-identity.js` e e enviado ao navegador em qualquer login Google. O que e segredo e `GOOGLE_CLIENT_SECRET`.
-- Variaveis opcionais no ambiente local, necessarias apenas para o fluxo de Google Calendar (fora de escopo hoje): `GOOGLE_CLIENT_SECRET`, `ENCRYPTION_KEY`, `BACKEND_URL`, `GCAL_TIMEZONE`.
-- Depois de editar `.env`, reinicie o backend: o `dotenv` so le o arquivo no boot.
-
-Validar que o arquivo nao sera versionado:
-
-```bash
-git status --short
-```
-
-O `.env` nao deve aparecer na saida.
-
-Iniciar API:
-
-```bash
-npm start
-```
-
-Sinais esperados de sucesso no bootstrap:
-
-- `🔧 Inicializando servidor...`
-- `📡 Porta: <n>` (default `5000` quando `PORT` estiver vazio)
-- `✅ Conectado ao MongoDB com sucesso!`
-- `🚀 Servidor rodando na porta <n>`
-
-Sinal esperado de falha se `.env` estiver vazio ou invalido:
-
-- `❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada (MONGODB_URI).`
-
-Nota de troubleshooting: 404 em `/api/gcal/connection` e `/api/auth/connection` no ambiente local e esperado. O banco de dev foi clonado sem a collection `googlecalendarconnections`, de proposito; nao e bug e nao deve ser "corrigido".
-
-Problemas conhecidos:
-
-- **`querySrv ECONNREFUSED` no start** — o resolvedor DNS local do Windows nao responde e a resolucao de `mongodb+srv://` falha. O topo de `backend/server.js` forca os DNS da Cloudflare apenas em execucao local, dentro do guard `if (require.main === module)`; em serverless na Vercel usa-se o resolvedor da plataforma. Nao remover essas linhas.
-- **`EADDRINUSE :::5000`** — existe instancia anterior orfa na porta. Diagnosticar com `Get-NetTCPConnection -LocalPort 5000 -State Listen` e encerrar o `OwningProcess`.
-- **`bad auth : authentication failed`** — credencial invalida no `.env`. Copiar a linha `MONGODB_URI` inteira do painel da Vercel (`personal-app-api` -> Settings -> Environment Variables); nao montar a URI a mao nem substituir placeholder de senha manualmente.
-
-### 3) Ajustar URL da API no Frontend (ambiente local)
-
-Nao ha mais troca manual de constante no frontend. O item 3.3 passou a centralizar tres pontos de URL (constante principal de `storage.js`, warm-up da Vercel e rotas de auth/Google Calendar em `auth/google-identity.js`) em `assets/js/config/api-config.js`.
-
-Se `config/api-config.js` nao carregar antes de `state.js`/`storage.js`, o frontend falha alto de proposito, em vez de cair silenciosamente para producao. Isso evita que um ambiente local mal configurado volte a escrever no banco produtivo sem aviso.
-
-## Fluxos de Navegacao no Codigo
-
-Fluxo: carregar a aplicacao
-
-1. `index.html` carrega scripts na ordem definida em "Ordem de Carregamento dos Scripts".
-2. `app.js` aguarda `DOMContentLoaded` e chama `window.__appBootstrap.initialize()`.
-3. `bootstrap.js` inicializa `window.googleIdentity` (aguarda `whenReady`), registra o service worker, faz bind da navegacao e navega para `tela-home`.
-4. `storage.js` realiza carga/sincronizacao de dados (tenta API; em falha de auth, carrega localStorage; em falha de rede, usa localStorage + toast "offline").
-5. Se o usuario ja esta autenticado no Google e ha integracao com Google Calendar, `bootstrap.js` dispara `iniciarSyncGoogleCalendar` automaticamente.
-6. `bootstrap.js` registra `addAuthChangeListener`: se o usuario logar/deslogar durante a sessao, recarrega dados (`carregarDados({ forcarRemoto: true })`) e re-renderiza a view atual.
-
-Fluxo: salvar alteracoes de negocio
-
-1. Modulos de tela alteram estado global.
-2. `storage.js` persiste localmente no localStorage.
-3. `storage.js` sincroniza com a API (CRUD granular) quando o usuario esta autenticado e a API esta disponivel.
 
 ## Stack Tecnica
 
@@ -484,7 +122,11 @@ Modelo de seguranca em producao:
 
 ## Observacoes de Manutencao
 
-- Se adicionar novo modulo frontend, atualizar as secoes "Estrutura do Projeto" e "Papel dos Arquivos Principais".
-- Se alterar rotas backend, atualizar a secao "API Resumida".
-- Se mudar estrategia de persistencia, atualizar "Arquitetura" e "Fluxos de Navegacao no Codigo".
-- Se alterar politica de autenticacao (ex: trocar Google por outro provedor), atualizar a secao "Autenticacao e Modo de Uso", `assets/js/auth/google-identity.js` e `backend/src/middleware/requireAuth.js`.
+Este README descreve o projeto em alto nivel. Ao alterar o codigo, atualize o documento correspondente **no mesmo commit**:
+
+- Novo modulo, mudanca na ordem de scripts ou nas rotas → [`docs/mapa-do-codigo.md`](docs/mapa-do-codigo.md)
+- Mudanca em variavel de ambiente, porta ou procedimento local → [`docs/ambiente-local.md`](docs/ambiente-local.md)
+- Mudanca em regra de negocio → a spec do dominio em [`docs/specs/`](docs/specs/)
+- Feature entregue ou repriorizada → [`docs/roadmap.md`](docs/roadmap.md)
+
+Documentacao defasada ja induziu a erro neste projeto: o roadmap chegou a comecar errado por causa disso. Se notar divergencia entre documento e codigo, o codigo vence — e o documento deve ser corrigido.
