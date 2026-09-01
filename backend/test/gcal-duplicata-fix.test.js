@@ -2025,6 +2025,227 @@ test('excluirAgendamento não apaga o Mongo quando o Google falha com 500 e grav
   }
 });
 
+test('aparaCadeiaSerieAPartirDe em modo simulacao nao altera o array', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 6,
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    serieOrigemId: null,
+    googleCalendarEventId: 'evt-s0'
+  };
+  const serieFilha = {
+    id: 'S1',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '02/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '02/09/2026',
+    recorrenciaDataFim: '30/09/2026',
+    serieOrigemId: 'S0',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-s1'
+  };
+  const serieDescendente = {
+    id: 'S3',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '05/09/2026',
+    dia: 'Sexta',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '05/09/2026',
+    recorrenciaDataFim: '30/09/2026',
+    serieOrigemId: 'S1',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-s3'
+  };
+  const avulsa = {
+    id: 'A1',
+    tipo: 'aula',
+    frequencia: 'uma_vez',
+    data: '08/09/2026',
+    dia: 'Quarta',
+    horarioInicio: '11:00',
+    horarioFim: '12:00',
+    serieOrigemId: 'S0',
+    googleCalendarEventId: null
+  };
+  const reposicao = {
+    id: 'REP',
+    tipo: 'aula',
+    frequencia: 'uma_vez',
+    isReposicao: true,
+    data: '09/09/2026',
+    dia: 'Quinta',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    serieOrigemId: 'S0',
+    googleCalendarEventId: 'evt-rep'
+  };
+  const aulas = [serieMae, serieFilha, serieDescendente, avulsa, reposicao];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieFilha, dataAlvoStr: '07/09/2026' });
+
+  const antes = {
+    length: aulas.length,
+    serieFilhaFim: serieFilha.recorrenciaDataFim,
+    serieDescendenteFim: serieDescendente.recorrenciaDataFim,
+    temA1: aulas.some((item) => item.id === 'A1')
+  };
+
+  context.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026', { simular: true });
+
+  assert.equal(aulas.length, antes.length);
+  assert.equal(serieFilha.recorrenciaDataFim, antes.serieFilhaFim);
+  assert.equal(serieDescendente.recorrenciaDataFim, antes.serieDescendenteFim);
+  assert.equal(aulas.some((item) => item.id === 'A1'), antes.temA1);
+});
+
+test('simulacao devolve os mesmos numeros da execucao real', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'occurrences',
+    recorrenciaQuantidadeOcorrencias: 6,
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-s0'
+  };
+  const serieFilha = {
+    id: 'S1',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '02/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '02/09/2026',
+    recorrenciaDataFim: '30/09/2026',
+    serieOrigemId: 'S0',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-s1'
+  };
+  const serieDescendente = {
+    id: 'S3',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '05/09/2026',
+    dia: 'Sexta',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '05/09/2026',
+    recorrenciaDataFim: '30/09/2026',
+    serieOrigemId: 'S1',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-s3'
+  };
+  const avulsa = {
+    id: 'A1',
+    tipo: 'aula',
+    frequencia: 'uma_vez',
+    data: '08/09/2026',
+    dia: 'Quarta',
+    horarioInicio: '11:00',
+    horarioFim: '12:00',
+    serieOrigemId: 'S0',
+    googleCalendarEventId: null
+  };
+  const reposicao = {
+    id: 'REP',
+    tipo: 'aula',
+    frequencia: 'uma_vez',
+    isReposicao: true,
+    data: '09/09/2026',
+    dia: 'Quinta',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    serieOrigemId: 'S0',
+    googleCalendarEventId: 'evt-rep'
+  };
+  const aulasSim = [serieMae, serieFilha, serieDescendente, avulsa, reposicao];
+  const aulasReal = JSON.parse(JSON.stringify(aulasSim));
+
+  const { context: contextSim } = criarHarnessModalAcaoSlot({ aulas: aulasSim, compromisso: serieFilha, dataAlvoStr: '07/09/2026' });
+  const { context: contextReal } = criarHarnessModalAcaoSlot({ aulas: aulasReal, compromisso: aulasReal[1], dataAlvoStr: '07/09/2026' });
+
+  const resultadoSim = contextSim.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026', { simular: true });
+  const resultadoReal = contextReal.window.aparaCadeiaSerieAPartirDe('S1', '07/09/2026');
+
+  assert.equal(resultadoSim.aparadas, resultadoReal.aparadas);
+  assert.equal(resultadoSim.removidas, resultadoReal.removidas);
+  assert.equal(resultadoSim.reposicoesPreservadas, resultadoReal.reposicoesPreservadas);
+});
+
+test('montarOpcoesExclusaoSlot devolve tres opcoes para serie', () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-s0'
+  };
+  const serieFilha = {
+    id: 'S1',
+    tipo: 'aula',
+    frequencia: 'semanal',
+    data: '02/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '02/09/2026',
+    recorrenciaDataFim: '30/09/2026',
+    serieOrigemId: 'S0',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-s1'
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae, serieFilha], compromisso: serieFilha, dataAlvoStr: '07/09/2026' });
+  const resumo = context.window.montarResumoExclusaoCadeiaSerie(serieFilha);
+  const opcoes = context.window.montarOpcoesExclusaoSlot(serieFilha, '07/09/2026');
+
+  assert.equal(opcoes.length, 3);
+  assert.deepEqual(Array.from(opcoes.map((item) => item.acao)), ['instancia', 'daqui', 'serie']);
+  assert.match(opcoes[2].detalhe, new RegExp(String(resumo.total)));
+});
+
+test('montarOpcoesExclusaoSlot devolve uma opcao para avulsa', () => {
+  const avulsa = {
+    id: 'A1',
+    tipo: 'aula',
+    frequencia: 'uma_vez',
+    data: '08/09/2026',
+    dia: 'Quarta',
+    horarioInicio: '11:00',
+    horarioFim: '12:00',
+    googleCalendarEventId: null
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [avulsa], compromisso: avulsa, dataAlvoStr: '08/09/2026' });
+  const opcoes = context.window.montarOpcoesExclusaoSlot(avulsa, '08/09/2026');
+
+  assert.equal(opcoes.length, 1);
+  assert.equal(opcoes[0].acao, 'instancia');
+});
+
 function criarSerieFamiliaBase(overrides = {}) {
   return {
     id: 'serie-mae',

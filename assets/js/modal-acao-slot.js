@@ -376,7 +376,56 @@ window.removerCadeiaCompletaSerie = function (idOuCompromisso) {
  return antes - aulas.length;
 };
 
-window.aparaCadeiaSerieAPartirDe = function (idOuCompromisso, dataCorte) {
+window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr) {
+ if (!compromisso) return [];
+
+ const dataExibicao =
+   dataAlvoStr ||
+   (compromisso.data ? compromisso.data : "esta data") ||
+   "esta data";
+
+ if (compromisso.frequencia === "uma_vez") {
+   return [
+     {
+       acao: "instancia",
+       titulo: "Excluir esta aula",
+       detalhe: `${dataExibicao}. Esta aula não se repete.`,
+     },
+   ];
+ }
+
+ const resumo = window.montarResumoExclusaoCadeiaSerie
+   ? window.montarResumoExclusaoCadeiaSerie(compromisso)
+   : { total: 0, desde: null, reposicoesPreservadas: 0 };
+ const detalheSerie = `${resumo.total || 0} aulas, desde ${resumo.desde || "início"}. Apaga também o histórico.`;
+
+ const opcoes = [
+   {
+     acao: "instancia",
+     titulo: "Excluir esta aula",
+     detalhe: `Só ${dataExibicao} sai. A série continua.`,
+   },
+   {
+     acao: "daqui",
+     titulo: "Excluir daqui pra frente",
+     detalhe: `${dataExibicao} em diante. O histórico anterior fica.`,
+   },
+   {
+     acao: "serie",
+     titulo: "Excluir a série toda",
+     detalhe: detalheSerie,
+   },
+ ];
+
+ if (resumo && resumo.reposicoesPreservadas > 0) {
+   opcoes[2].detalhe = `${opcoes[2].detalhe} As reposições serão mantidas.`;
+ }
+
+ return opcoes;
+};
+
+window.aparaCadeiaSerieAPartirDe = function (idOuCompromisso, dataCorte, opcoes) {
+ const emSimulacao = !!(opcoes && opcoes.simular === true);
  if (!Array.isArray(aulas) || !dataCorte) {
    return { aparadas: 0, removidas: 0, reposicoesPreservadas: 0, ids: [] };
  }
@@ -452,7 +501,7 @@ window.aparaCadeiaSerieAPartirDe = function (idOuCompromisso, dataCorte) {
  const removerItem = (item) => {
    if (!item || !item.id) return;
    const indice = aulas.findIndex((registro) => registro && registro.id === item.id);
-   if (indice >= 0) {
+   if (indice >= 0 && !emSimulacao) {
      aulas.splice(indice, 1);
    }
    registrarAtingido(item.id);
@@ -461,9 +510,11 @@ window.aparaCadeiaSerieAPartirDe = function (idOuCompromisso, dataCorte) {
 
  const apararItem = (item) => {
    if (!item || !item.id) return;
-   item.recorrenciaFimCondicao = "untilDate";
-   item.recorrenciaDataFim = formatarDataPtBr(dataAparo);
-   delete item.recorrenciaQuantidadeOcorrencias;
+   if (!emSimulacao) {
+     item.recorrenciaFimCondicao = "untilDate";
+     item.recorrenciaDataFim = formatarDataPtBr(dataAparo);
+     delete item.recorrenciaQuantidadeOcorrencias;
+   }
    registrarAtingido(item.id);
    if (!idsAparadas.includes(item.id)) idsAparadas.push(item.id);
  };
@@ -538,7 +589,7 @@ window.aparaCadeiaSerieAPartirDe = function (idOuCompromisso, dataCorte) {
      apararItem(item);
    });
 
- if (idsRemovidas.length > 0) {
+ if (!emSimulacao && idsRemovidas.length > 0) {
    aulas.splice(
      0,
      aulas.length,
@@ -1094,10 +1145,109 @@ window.renderizarListaReposicoes = function () {
     .join("");
 };
 
+window.abrirModalEscolhaExclusao = function (opcoes) {
+  const modal = document.getElementById("modalEscolhaExclusao");
+  const container = document.getElementById("modalEscolhaExclusaoLista");
+  if (!modal || !container) return;
+
+  container.innerHTML = "";
+  (Array.isArray(opcoes) ? opcoes : []).forEach((opcao) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "btn";
+    item.style.cssText =
+      "background: #1f1f1f; color: #fff; border: 1px solid #3a3a3a; text-align: left; padding: 12px 14px;";
+    item.innerHTML = `
+      <div style="font-weight: 700; margin-bottom: 4px;">${opcao.titulo || "Ação"}</div>
+      <div style="font-size: 0.8rem; color: #d9d9d9; line-height: 1.4;">${opcao.detalhe || ""}</div>
+    `;
+    item.addEventListener("click", () => {
+      window.fecharModalEscolhaExclusao();
+      const compromisso = obterCompromissoSelecionado();
+      const dataAlvo =
+        window.dataAlvoAcaoStr ||
+        (compromisso && compromisso.data) ||
+        (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+        "";
+
+      if (opcao.acao === "instancia") {
+        const idBotao =
+          compromisso && compromisso.frequencia === "uma_vez"
+            ? "btnDeletarDefinitivo"
+            : "btnDeletarInstancia";
+        const botao = document.getElementById(idBotao);
+        if (botao && typeof botao.click === "function") {
+          botao.click();
+        }
+        return;
+      }
+
+      if (opcao.acao === "daqui") {
+        const previsao = window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo, {
+          simular: true,
+        });
+        const texto =
+          previsao.reposicoesPreservadas > 0
+            ? `Excluir daqui pra frente?\n\n${previsao.aparadas} aulas serão aparadas, ${previsao.removidas} removidas e ${previsao.reposicoesPreservadas} reposição(ões) será(ão) mantida(s).`
+            : `Excluir daqui pra frente?\n\n${previsao.aparadas} aulas serão aparadas e ${previsao.removidas} removidas.`;
+        if (!window.confirm(texto)) return;
+        window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo);
+        if (typeof salvarDados === "function") salvarDados();
+        if (typeof window.inicializarHome === "function") {
+          window.inicializarHome({ sincronizar: true });
+        }
+        return;
+      }
+
+      if (opcao.acao === "serie") {
+        const botao = document.getElementById("btnDeletarSerie");
+        if (botao && typeof botao.click === "function") {
+          botao.click();
+        }
+      }
+    });
+    container.appendChild(item);
+  });
+
+  modal.style.display = "flex";
+};
+
+window.fecharModalEscolhaExclusao = function () {
+  const modal = document.getElementById("modalEscolhaExclusao");
+  if (modal) modal.style.display = "none";
+};
+
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
   window.configurarEscopoRecorrenciaEdicao();
+
+  const btnExcluirSlot = document.getElementById("btnExcluirSlot");
+  if (btnExcluirSlot) {
+    btnExcluirSlot.addEventListener("click", () => {
+      const compromisso = obterCompromissoSelecionado();
+      const dataAlvo =
+        window.dataAlvoAcaoStr ||
+        (compromisso && compromisso.data) ||
+        (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+        "";
+      const opcoes = window.montarOpcoesExclusaoSlot(compromisso, dataAlvo);
+
+      if (!Array.isArray(opcoes) || opcoes.length === 0) return;
+      if (opcoes.length === 1) {
+        const botaoAlvo =
+          compromisso && compromisso.frequencia === "uma_vez"
+            ? document.getElementById("btnDeletarDefinitivo")
+            : document.getElementById("btnDeletarInstancia");
+        if (botaoAlvo && typeof botaoAlvo.click === "function") {
+          botaoAlvo.click();
+        }
+        return;
+      }
+
+      window.abrirModalEscolhaExclusao(opcoes);
+    });
+  }
 
   const formReagendarAula = document.getElementById("formReagendarAula");
   if (formReagendarAula) {
@@ -1699,7 +1849,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const _deveHerdarFimOriginalFd =
               Boolean(_fimEfetivoRecorrenciaOriginalFd) &&
               _dataCorteExcecoesFd &&
-              window.parseDataFlex(_fimEfetivoRecorrenciaOriginalFd) >= _dataCorteExcecoesFd;
+              window.parseDataFlex(_fimEfetivoRecorrenciaOriginalFd) >= _dataCorteExcecoesFd &&
+              ["untilDate", "occurrences"].includes(_recorrenciaFimCondicaoOriginalFd);
 
             delete _novaSerieFd.recorrenciaQuantidadeOcorrencias;
             if (_deveHerdarFimOriginalFd) {
