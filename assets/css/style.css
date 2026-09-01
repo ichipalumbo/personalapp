@@ -2457,6 +2457,48 @@ body {
   color: #fbd75b; /* Banana — reposição */
   background: rgba(251, 215, 91, 0.1);
 }
+.modal-escolha-icone-exclusao-leve {
+  color: #fbd75b; /* Banana — exclusão leve */
+  background: rgba(251, 215, 91, 0.1);
+}
+.modal-escolha-icone-exclusao-media {
+  color: #ffb878; /* Tangerine — exclusão média */
+  background: rgba(255, 184, 120, 0.1);
+}
+.modal-escolha-icone-exclusao-total {
+  color: #dc2127; /* Tomato — exclusão total */
+  background: rgba(220, 33, 39, 0.1);
+}
+.modal-exclusao {
+  max-width: 420px;
+}
+.modal-exclusao-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.modal-exclusao-cabecalho h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+} 
+.modal-escolha-contexto {
+  margin: 6px 0 0;
+  color: #888;
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+.modal-escolha-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid #222;
+  padding-top: 12px;
+  margin-top: 12px;
+}
 .modal-escolha-texto strong {
   display: block;
   font-size: 0.95rem;

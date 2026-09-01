@@ -397,7 +397,9 @@ window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr) {
  const resumo = window.montarResumoExclusaoCadeiaSerie
    ? window.montarResumoExclusaoCadeiaSerie(compromisso)
    : { total: 0, desde: null, reposicoesPreservadas: 0 };
- const detalheSerie = `${resumo.total || 0} aulas, desde ${resumo.desde || "início"}. Apaga também o histórico.`;
+ const totalSerie = Number(resumo && resumo.total ? resumo.total : 0);
+ const unidadeSerie = totalSerie === 1 ? "aula" : "aulas";
+ const detalheSerie = `${totalSerie || 0} ${unidadeSerie}, desde ${resumo.desde || "início"}. Apaga também o histórico.`;
 
  const opcoes = [
    {
@@ -1145,44 +1147,154 @@ window.renderizarListaReposicoes = function () {
     .join("");
 };
 
-window.abrirModalEscolhaExclusao = function (opcoes) {
+window.executarExclusaoInstancia = function () {
+  const compromisso = window.obterCompromissoSelecionado
+    ? window.obterCompromissoSelecionado()
+    : null;
+  if (!compromisso) return;
+
+  const confirmar =
+    typeof window.confirm === "function"
+      ? window.confirm("Excluir esta aula? Esta ação não pode ser desfeita.")
+      : true;
+  if (!confirmar) return;
+
+  if (typeof window.removerInstanciaAula === "function") {
+    window.removerInstanciaAula(compromisso);
+    return;
+  }
+
+  if (typeof window.removerCadeiaInstancia === "function") {
+    window.removerCadeiaInstancia(compromisso);
+  }
+};
+
+window.executarExclusaoSerie = function () {
+  const compromisso = window.obterCompromissoSelecionado
+    ? window.obterCompromissoSelecionado()
+    : null;
+  if (!compromisso) return;
+
+  const confirmar =
+    typeof window.confirm === "function"
+      ? window.confirm("Excluir a série toda? Esta ação não pode ser desfeita.")
+      : true;
+  if (!confirmar) return;
+
+  if (typeof window.removerFamiliaSerie === "function") {
+    window.removerFamiliaSerie(compromisso);
+    return;
+  }
+
+  if (typeof window.removerCadeiaCompletaSerie === "function") {
+    window.removerCadeiaCompletaSerie(compromisso);
+  }
+};
+
+window.executarExclusaoDefinitiva = function () {
+  const compromisso = window.obterCompromissoSelecionado
+    ? window.obterCompromissoSelecionado()
+    : null;
+  if (!compromisso) return;
+
+  const confirmar =
+    typeof window.confirm === "function"
+      ? window.confirm("Excluir daqui pra frente? Esta ação não pode ser desfeita.")
+      : true;
+  if (!confirmar) return;
+
+  if (typeof window.aparaCadeiaSerieAPartirDe === "function") {
+    const dataAlvo =
+      window.dataAlvoAcaoStr ||
+      (compromisso && compromisso.data) ||
+      (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+      "";
+    window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo);
+    return;
+  }
+
+  if (typeof window.removerFamiliaSerie === "function") {
+    window.removerFamiliaSerie(compromisso);
+  }
+};
+
+window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
   const modal = document.getElementById("modalEscolhaExclusao");
   const container = document.getElementById("modalEscolhaExclusaoLista");
+  const titulo = document.getElementById("tituloModalEscolhaExclusao");
+  const info = document.getElementById("infoEscolhaExclusao");
+  const badge = document.getElementById("badgeModalEscolhaExclusao");
   if (!modal || !container) return;
+
+  if (titulo) {
+    titulo.innerHTML = '<i class="fa-solid fa-trash-can"></i> Excluir';
+  }
+
+  const compromisso =
+    contexto && contexto.compromisso
+      ? contexto.compromisso
+      : window.obterCompromissoSelecionado
+        ? window.obterCompromissoSelecionado()
+        : null;
+
+  if (info && compromisso) {
+    const nomeAluno = compromisso.alunoNome || compromisso.aluno || "Aluno";
+    const dia = compromisso.data || compromisso.dataInicio || "esta data";
+    const horario = compromisso.horario || compromisso.horarioInicio || "--:--";
+    info.textContent = `${nomeAluno} · ${dia} · ${horario}`;
+  }
+
+  if (badge) {
+    if (compromisso && compromisso.frequencia && compromisso.frequencia !== "uma_vez") {
+      badge.textContent = "∞ SEMANAL";
+      badge.style.display = "inline-flex";
+    } else {
+      badge.style.display = "none";
+    }
+  }
 
   container.innerHTML = "";
   (Array.isArray(opcoes) ? opcoes : []).forEach((opcao) => {
     const item = document.createElement("button");
     item.type = "button";
-    item.className = "btn";
-    item.style.cssText =
-      "background: #1f1f1f; color: #fff; border: 1px solid #3a3a3a; text-align: left; padding: 12px 14px;";
+    item.className = "btn btn-primary modal-escolha-opcao";
+    const iconeClasse =
+      opcao.acao === "instancia"
+        ? "modal-escolha-icone-exclusao-leve"
+        : opcao.acao === "daqui"
+          ? "modal-escolha-icone-exclusao-media"
+          : "modal-escolha-icone-exclusao-total";
+    const icone =
+      opcao.acao === "instancia"
+        ? "fa-calendar-xmark"
+        : opcao.acao === "daqui"
+          ? "fa-scissors"
+          : "fa-trash-can";
+
     item.innerHTML = `
-      <div style="font-weight: 700; margin-bottom: 4px;">${opcao.titulo || "Ação"}</div>
-      <div style="font-size: 0.8rem; color: #d9d9d9; line-height: 1.4;">${opcao.detalhe || ""}</div>
+      <span class="modal-escolha-icone ${iconeClasse}">
+        <i class="fa-solid ${icone}"></i>
+      </span>
+      <div class="modal-escolha-texto">
+        <strong>${opcao.titulo || "Ação"}</strong>
+        <span>${opcao.detalhe || ""}</span>
+      </div>
     `;
+
     item.addEventListener("click", () => {
       window.fecharModalEscolhaExclusao();
-      const compromisso = obterCompromissoSelecionado();
-      const dataAlvo =
-        window.dataAlvoAcaoStr ||
-        (compromisso && compromisso.data) ||
-        (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
-        "";
 
       if (opcao.acao === "instancia") {
-        const idBotao =
-          compromisso && compromisso.frequencia === "uma_vez"
-            ? "btnDeletarDefinitivo"
-            : "btnDeletarInstancia";
-        const botao = document.getElementById(idBotao);
-        if (botao && typeof botao.click === "function") {
-          botao.click();
-        }
+        window.executarExclusaoInstancia();
         return;
       }
 
       if (opcao.acao === "daqui") {
+        const dataAlvo =
+          window.dataAlvoAcaoStr ||
+          (compromisso && compromisso.data) ||
+          (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+          "";
         const previsao = window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo, {
           simular: true,
         });
@@ -1200,10 +1312,7 @@ window.abrirModalEscolhaExclusao = function (opcoes) {
       }
 
       if (opcao.acao === "serie") {
-        const botao = document.getElementById("btnDeletarSerie");
-        if (botao && typeof botao.click === "function") {
-          botao.click();
-        }
+        window.executarExclusaoSerie();
       }
     });
     container.appendChild(item);
@@ -1235,12 +1344,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!Array.isArray(opcoes) || opcoes.length === 0) return;
       if (opcoes.length === 1) {
-        const botaoAlvo =
-          compromisso && compromisso.frequencia === "uma_vez"
-            ? document.getElementById("btnDeletarDefinitivo")
-            : document.getElementById("btnDeletarInstancia");
-        if (botaoAlvo && typeof botaoAlvo.click === "function") {
-          botaoAlvo.click();
+        if (compromisso && compromisso.frequencia === "uma_vez") {
+          window.executarExclusaoDefinitiva();
+        } else {
+          window.executarExclusaoInstancia();
         }
         return;
       }
@@ -1994,59 +2101,6 @@ document.addEventListener("DOMContentLoaded", () => {
       window.atualizarEstadoBloqueioDiaInteiroEdicao(),
     );
 
-  // ── Ações sobre Slots ─────────────────────────────────────────────────────────────────────
-  const btnDeletar = document.getElementById("btnDeletarDefinitivo");
-  if (btnDeletar) {
-    btnDeletar.addEventListener("click", async () => {
-      const _compDeletar = obterCompromissoSelecionado();
-      if (compromissoTemAlunoInativo(_compDeletar)) {
-        alert(
-          "Aluno inativo: não é possível cancelar ou excluir este compromisso.",
-        );
-        return;
-      }
-      const dataParaTexto =
-        window.dataAlvoAcaoStr ||
-        (_compDeletar && _compDeletar.data) ||
-        (window.getDataSelecionadaPtBr
-          ? window.getDataSelecionadaPtBr()
-          : "") ||
-        "";
-      const mensagemConfirmacao = dataParaTexto
-        ? `Excluir a aula de ${dataParaTexto}?\n\nEla será removida da agenda. Nada será enviado para reposição nem cobrado.`
-        : "Excluir esta aula?\n\nEla será removida da agenda. Nada será enviado para reposição nem cobrado.";
-      if (!confirm(mensagemConfirmacao)) return;
-      const _idxDeletar = aulas.findIndex(
-        (a) => a.id === window.idCompromissoSelecionado,
-      );
-      if (_idxDeletar !== -1) aulas.splice(_idxDeletar, 1);
-      const toastMensagem = dataParaTexto
-        ? `✅ Aula de ${dataParaTexto} excluída.`
-        : "✅ Aula excluída.";
-      window.fecharModalAcaoSlot();
-      if (
-        _compDeletar &&
-        typeof window.salvarEventoComGCal === "function" &&
-        window.gcal &&
-        window.gcal.isSignedIn()
-      ) {
-        window
-          .salvarEventoComGCal(_compDeletar, {
-            operacao: "excluir",
-            snapshotAnterior: _compDeletar,
-          })
-          .then(async () => {
-            await window.inicializarHome({ sincronizar: true });
-            if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
-          });
-      } else {
-        if (typeof salvarDados === "function") salvarDados();
-        await window.inicializarHome({ sincronizar: true });
-        if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
-      }
-    });
-  }
-
   const btnMandarReposicao = document.getElementById("btnMandarParaReposicao");
   if (btnMandarReposicao) {
     btnMandarReposicao.addEventListener("click", () => {
@@ -2122,236 +2176,4 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const btnDeletarInstancia = document.getElementById("btnDeletarInstancia");
-  if (btnDeletarInstancia) {
-    btnDeletarInstancia.addEventListener("click", () => {
-      const compromisso = obterCompromissoSelecionado();
-      if (!compromisso) return;
-      if (compromissoTemAlunoInativo(compromisso)) {
-        alert("Aluno inativo: não é possível cancelar este compromisso.");
-        return;
-      }
-
-      const dataAlvoStr =
-        window.dataAlvoAcaoStr ||
-        window.dataSelecionada.toLocaleDateString("pt-BR");
-      const mensagemConfirmacao = dataAlvoStr
-        ? `Excluir a aula de ${dataAlvoStr}?\n\nSó este dia sai da agenda — a série continua nos outros dias. Nada será enviado para reposição nem cobrado.`
-        : "Excluir esta aula?\n\nSó este dia sai da agenda — a série continua nos outros dias. Nada será enviado para reposição nem cobrado.";
-      if (!confirm(mensagemConfirmacao)) return;
-
-      const _snapshot = {
-        ...compromisso,
-        excecoes: [...(compromisso.excecoes || [])],
-      };
-      if (!compromisso.excecoes) compromisso.excecoes = [];
-      if (!compromisso.excecoes.includes(dataAlvoStr)) {
-        compromisso.excecoes.push(dataAlvoStr);
-      }
-      window.log.info("[agenda]", "Instância cancelada", {
-        id: compromisso.id,
-        dataExcecao: dataAlvoStr,
-      });
-      window.log.info("[reposicao]", "Exceção adicionada ao agendamento", {
-        id: compromisso.id,
-        data: dataAlvoStr,
-      });
-
-      const toastMensagem = dataAlvoStr
-        ? `✅ Aula de ${dataAlvoStr} excluída. A série continua nos outros dias.`
-        : "✅ Aula excluída. A série continua nos outros dias.";
-
-      window.fecharModalAcaoSlot();
-
-      const _posDeletar = async () => {
-        await window.inicializarHome({ sincronizar: true });
-        if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
-      };
-
-      if (
-        typeof window.salvarEventoComGCal === "function" &&
-        window.gcal &&
-        window.gcal.isSignedIn()
-      ) {
-        window
-          .salvarEventoComGCal(compromisso, {
-            operacao: "atualizar",
-            snapshotAnterior: _snapshot,
-          })
-          .then(_posDeletar);
-      } else {
-        if (typeof salvarDados === "function") salvarDados();
-        _posDeletar();
-      }
-    });
-  }
-
-  const btnReagendarInstancia = document.getElementById(
-    "btnReagendarInstancia",
-  );
-  if (btnReagendarInstancia) {
-    btnReagendarInstancia.addEventListener("click", () => {
-      const compromisso = obterCompromissoSelecionado();
-      if (!compromisso) return;
-      if (compromissoTemAlunoInativo(compromisso)) {
-        alert(
-          "Aluno inativo: não é possível enviar este compromisso para reposição.",
-        );
-        return;
-      }
-
-      const dataAlvoStr =
-        window.dataAlvoAcaoStr ||
-        window.dataSelecionada.toLocaleDateString("pt-BR");
-      const _snapshot = {
-        ...compromisso,
-        excecoes: [...(compromisso.excecoes || [])],
-      };
-      let _mutouExcecoes = false;
-
-      window.abrirModalEscolhaCobrancaReposicao(
-        compromisso,
-        async (cobravel) => {
-          try {
-            const reposicao = await enviarParaReposicao(
-              compromisso,
-              dataAlvoStr,
-              cobravel,
-            );
-            if (!reposicao || !reposicao.id) {
-              throw new Error("Reposição não foi criada no servidor.");
-            }
-
-            if (!compromisso.excecoes) compromisso.excecoes = [];
-            if (!compromisso.excecoes.includes(dataAlvoStr)) {
-              compromisso.excecoes.push(dataAlvoStr);
-              _mutouExcecoes = true;
-            }
-
-            window.fecharModalAcaoSlot();
-            const resultadoPersistencia =
-              typeof salvarDados === "function"
-                ? await salvarDados(true)
-                : { ok: false, motivo: "falha_remota" };
-            if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-              throw new Error(
-                obterMensagemFalhaPersistencia(resultadoPersistencia),
-              );
-            }
-            if (typeof window.carregarDados === "function") {
-              await window.carregarDados({
-                forcarRemoto: true,
-                silenciosoUI: true,
-              });
-            }
-            window.inicializarHome();
-
-            let mensagemPrazo = "";
-            if (reposicao && reposicao.validoAte) {
-              mensagemPrazo = ` Prazo: até ${window.formatarDataPtBr ? window.formatarDataPtBr(reposicao.validoAte) : reposicao.validoAte}.`;
-            }
-            if (typeof mostrarToast === "function") {
-              mostrarToast(`✅ Aula enviada para reposição.${mensagemPrazo}`);
-            }
-            return reposicao;
-          } catch (erro) {
-            if (_mutouExcecoes) {
-              compromisso.excecoes = [...(_snapshot.excecoes || [])];
-            }
-            window.log.warn("[reposicao]", "Rollback disparado", {
-              id: compromisso.id,
-              motivo:
-                erro && erro.message
-                  ? erro.message
-                  : "falha_reagendamento_reposicao",
-            });
-            // Reposição remota permanece criada no servidor; o rollback reverte somente a aula na agenda local.
-            if (typeof mostrarToast === "function") {
-              mostrarToast(
-                erro && erro.message
-                  ? erro.message
-                  : "Falha ao reagendar a reposição.",
-                "error",
-              );
-            } else {
-              alert(
-                erro && erro.message
-                  ? erro.message
-                  : "Falha ao reagendar a reposição.",
-              );
-            }
-            return null;
-          }
-        },
-      );
-    });
-  }
-
-  const btnDeletarSerie = document.getElementById("btnDeletarSerie");
-  if (btnDeletarSerie) {
-    btnDeletarSerie.addEventListener("click", async () => {
-      const _serieDeletar = obterCompromissoSelecionado();
-      if (compromissoTemAlunoInativo(_serieDeletar)) {
-        alert("Aluno inativo: não é possível cancelar esta série.");
-        return;
-      }
-      const _resumoExclusao = window.montarResumoExclusaoCadeiaSerie(
-        _serieDeletar || window.idCompromissoSelecionado,
-      );
-      const mensagemConfirmacaoSerie =
-        _resumoExclusao.total > 0
-          ? `Excluir ${_resumoExclusao.total} aulas desta série?\n\n${_resumoExclusao.mensagem}. Reposições continuam preservadas no app.`
-          : "Nenhuma aula desta série pode ser removida porque todas são reposições e continuam preservadas.";
-      if (!confirm(mensagemConfirmacaoSerie)) return;
-      if (_resumoExclusao.total === 0) {
-        window.log.info("[agenda]", "Série excluída", {
-          id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
-          ocorrenciasAfetadas: 0,
-          reposicoesPreservadas: _resumoExclusao.reposicoesPreservadas,
-        });
-        return;
-      }
-
-      if (_serieDeletar && _serieDeletar.serieOrigemId) {
-        const _continuar = confirm(
-          "Esta série é uma continuação de uma série histórica anterior.\n\n" +
-            "Ao excluí-la, a série histórica anterior também será removida porque a exclusão sobe até a origem da cadeia.\n\n" +
-            "Deseja excluir esta série e a cadeia histórica relacionada?",
-        );
-        if (!_continuar) return;
-      }
-
-      const ocorrenciasAfetadas = window.removerCadeiaCompletaSerie(
-        _serieDeletar || window.idCompromissoSelecionado,
-      );
-      window.log.info("[agenda]", "Série excluída", {
-        id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
-        ocorrenciasAfetadas: ocorrenciasAfetadas,
-        reposicoesPreservadas: _resumoExclusao.reposicoesPreservadas,
-      });
-      window.fecharModalAcaoSlot();
-      if (
-        _serieDeletar &&
-        typeof window.salvarEventoComGCal === "function" &&
-        window.gcal &&
-        window.gcal.isSignedIn()
-      ) {
-        window
-          .salvarEventoComGCal(_serieDeletar, {
-            operacao: "excluir",
-            snapshotAnterior: _serieDeletar,
-          })
-          .then(async () => {
-            await window.inicializarHome({ sincronizar: true });
-            if (typeof mostrarToast === "function")
-              mostrarToast("✅ Série excluída — todas as ocorrências.");
-          });
-      } else {
-        if (typeof salvarDados === "function") salvarDados();
-        await window.inicializarHome({ sincronizar: true });
-        if (typeof mostrarToast === "function")
-          mostrarToast("✅ Série excluída — todas as ocorrências.");
-      }
-    });
-  }
 });

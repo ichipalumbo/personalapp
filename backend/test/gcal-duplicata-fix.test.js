@@ -3138,3 +3138,51 @@ test('aparaCadeiaSerieAPartirDe preserva reposição irmã e a contabiliza', () 
   assert.equal(serieFilha.recorrenciaDataFim, '06/09/2026');
 });
 
+test('montarOpcoesExclusaoSlot concorda o plural com uma aula só', () => {
+  const serie = {
+    id: 'S1',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaDataFim: '30/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    serieOrigemId: null,
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serie], compromisso: serie, dataAlvoStr: '31/08/2026' });
+  const opcoes = context.window.montarOpcoesExclusaoSlot(serie, '31/08/2026');
+  const serieOpcao = opcoes.find((opcao) => opcao.acao === 'serie');
+
+  assert.ok(serieOpcao, 'deve existir a opção de excluir a série');
+  assert.match(serieOpcao.detalhe, /1 aula,/);
+  assert.doesNotMatch(serieOpcao.detalhe, /1 aulas/);
+});
+
+test('as funções de execução de exclusão estão expostas', () => {
+  const serie = {
+    id: 'S1',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaDataFim: '30/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    serieOrigemId: null,
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serie], compromisso: serie, dataAlvoStr: '31/08/2026' });
+
+  assert.equal(typeof context.window.executarExclusaoInstancia, 'function');
+  assert.equal(typeof context.window.executarExclusaoSerie, 'function');
+  assert.equal(typeof context.window.executarExclusaoDefinitiva, 'function');
+});
+

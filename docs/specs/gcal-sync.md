@@ -754,7 +754,13 @@ ligada; o motor existe e a 6b-ui decide o botão e o diálogo final.
 `aparaCadeiaSerieAPartirDe não remove o ancestral avulso` e
 `aparaCadeiaSerieAPartirDe preserva reposição irmã e a contabiliza`.
 
-### 9.19 Relatórios desta spec
+### 9.19 — Exclusão de aula/serie passou a usar lixeira única com modal de escolha e despacho por função nomeada. — FECHADO (2026-08-31)
+
+A exclusão passou a ter uma única lixeira, com modal de escolha em três opções: excluir esta aula, excluir daqui pra frente e excluir a série toda. Esse desenho evita a ambiguidade do fluxo anterior, em que a aula deletada deixa de ser cobrada e a ação destrutiva competia com "enviar para reposição". A partir desta rodada, cada opção despacha por função nomeada em `window` em vez de simular clique em botão do DOM removido; a versão anterior tinha dois controles inertes e ainda parecia que a ação ocorria quando nada executava.
+
+O modal também reusa o padrão `.modal-escolha-*` já existente no app, com ícones escalonados por alcance da exclusão (leve, média e total) e cabeçalho contextual com aluno, data e horário. A confirmação final continua sendo `window.confirm()` nativo, como débito conhecido e explicitado no fluxo. A validação visual do modal ficou manual, porque `index.html` e `assets/css/style.css` não têm suíte automatizada e a checagem do comportamento final no browser precisa ser feita pelo dono.
+
+### 9.20 Relatórios desta spec
 
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
@@ -789,6 +795,7 @@ ligada; o motor existe e a 6b-ui decide o botão e o diálogo final.
 | `docs/_reports/2026-08-31-fix-excluir-serie-toda-coerente.md` | 9.17 | fechado |
 | `docs/_reports/2026-08-31-feat-aparo-cadeia-serie.md` | 9.18 | fechado |
 | `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
+| `docs/_reports/2026-08-31-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
 
 ## 10. Custo aceito da decisão
 
