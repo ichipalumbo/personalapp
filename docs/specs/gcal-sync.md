@@ -847,8 +847,15 @@ originais. A suíte ficou em 187 testes.
 1. **Agrupar a cadeia na interface** — direção registrada no §6.4 do diagnóstico, escopo grande, sem previsão.
 2. **Espera perceptível na exclusão** — consequência aceita da 6e; reduzir a recarga é decisão do dono.
 3. **Dois ids duplicados no DOM** para "Enviar para reposição", e o id `btnReagendarInstancia` que não descreve a ação.
-4. **Ramo Google Calendar nas exclusões** — quando a agenda está conectada, as quatro funções chamam `salvarEventoComGCal` e não chamam `salvarDados`. **Registrar como pergunta em aberto**, não como defeito: falta confirmar se `salvarEventoComGCal` persiste no MongoDB. Se não persistir, a corrida corrigida na 6e continua viva nesse caminho.
+4. **Ramo Google Calendar nas exclusões** — confirmando a persistência: `salvarEventoComGCal` persiste via `salvarDados`. A corrida não existia, e a falha silenciosa era real e foi corrigida — ver item `9.26`.
 5. **Relatório da 6d sem as quatro mutações** — as mutações exigidas pelo prompt da 6d não foram executadas. O código foi verificado por auditoria externa e está correto; o registro é que ficou incompleto.
+6. **Seis pontos de chamada de `salvarEventoComGCal` fora do escopo da 6h** — criação em `modal-agendamento.js:907`; edição/split em `modal-acao-slot.js` nos trechos `novoCompromisso`, `_novaOcorrenciaSerie`, `_novaSerieSplit` e o par `compromisso`/`_snapshotEdicao`. Esses caminhos são criação e edição, não exclusão, e a decisão de UX para "salvar falhou silenciosamente" neles é diferente da de excluir e permanece como candidato a etapa 6i.
+
+### 9.26 — Falha silenciosa de persistência no caminho com Google Calendar conectado — FECHADO (2026-09-01)
+
+A falha silenciosa de persistência no caminho com Google Calendar conectado foi corrigida. `_persistirDadosComBackend` passou a propagar o retorno real de `salvarDados`, e os três handlers de exclusão passaram a checá-lo antes de seguir, revertendo a exclusão local em caso de falha. O relatório completo da correção está em `docs/_reports/2026-09-01-fix-persistencia-silenciosa-gcal.md`.
+
+A suspeita de **corrida** entre salvar e recarregar nesse caminho foi descartada, não corrigida: `_persistirDadosComBackend` já era sequencial e a recarga interna não dispara busca no servidor.
 
 ### 9.25 — Rótulo "Excluir a série toda" — FECHADO (2026-09-01)
 
@@ -897,6 +904,7 @@ A regra de negócio do `total` continua intacta: ele continua contando registros
 | `docs/_reports/2026-09-01-refactor-nomes-exclusao-e-promise-cobranca.md` | 9.19 / 9.20 | fechado |
 | `docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md` | 9.21 | fechado |
 | `docs/_reports/2026-09-01-docs-fechamento-etapa-6.md` | 9.22 / 9.23 | fechado |
+| `docs/_reports/2026-09-01-fix-persistencia-silenciosa-gcal.md` | 9.26 | fechado |
 | `docs/_reports/2026-09-01-feat-rotulo-exclusao-serie-toda.md` | 9.25 | fechado |
 
 ## 10. Custo aceito da decisão
