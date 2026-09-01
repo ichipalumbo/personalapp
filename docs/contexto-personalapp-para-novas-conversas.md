@@ -268,6 +268,12 @@ Regra de negócio está nas specs. O que segue é o que só se aprende errando.
 - **A UI nem sempre chama a API que existe.** Já aconteceu duas vezes: backend completo e
   frontend que nunca chama. Antes de discutir regra sobre um dado, **confirmar que alguém
   escreve esse dado** e que ele sobrevive a um reload.
+- **Toda alteração de UI precisa pensar em UX e optimistic-ui por padrão.** Antes de
+  implementar, perguntar se a interação fica bloqueada enquanto a rede/API responde:
+  preferir atualização local imediata, feedback contextual, indicador de sincronização em
+  background e retry/rollback explícito quando fizer sentido. Exceções precisam vir da spec
+  ou de decisão explícita do dono; exemplo importante: financeiro não pode confirmar
+  pagamento/ajuste definitivo antes de HTTP 200.
 - **Módulo compartilhado não pode depender de `window`/DOM** — roda no Node. Padrão UMD
   (`module.exports` + `globalThis`).
 - **Cálculo financeiro tem implementação única.** Se o frontend precisa do resultado,
