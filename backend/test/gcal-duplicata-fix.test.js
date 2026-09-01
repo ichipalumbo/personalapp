@@ -4359,7 +4359,7 @@ test('Ponto 3 — falha na gravação do reagendamento devolve a reposição par
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
 });
 
-function prepararEnvioAvulsaParaReposicao({ gcalResultado }) {
+function prepararEnvioAvulsaParaReposicao({ gcalResultado, falharDelete = false }) {
   const compromisso = {
     id: 'avulsa-p6',
     tipo: 'aula',
@@ -4387,11 +4387,15 @@ function prepararEnvioAvulsaParaReposicao({ gcalResultado }) {
   context.window.salvarEventoComGCal = async () => gcalResultado;
   context.window.carregarDados = async () => {};
   context.window.apiFetchBackend = async (url, opcoes = {}) => {
+    const method = opcoes.method || 'GET';
     chamadasApi.push({
       url: String(url),
-      method: opcoes.method || 'GET',
+      method,
       body: opcoes.body ? JSON.parse(opcoes.body) : null,
     });
+    if (falharDelete && method === 'DELETE') {
+      throw new Error('rede indisponível');
+    }
     return criarRespostaJson(200, { id: 'rep-criada-p6', status: 'pendente' });
   };
   context.window.abrirModalEscolhaCobrancaReposicao = async (_compromisso, callback) => {
@@ -4420,6 +4424,43 @@ test('Ponto 6 — falha na gravação do envio para reposição devolve a aula a
   await context.window.executarEnvioParaReposicao();
 
   assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6', 'avulsa-p6-vizinha']);
+  assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
+});
+
+// ── Etapa 6i-b — reposição órfã é apagada quando o rollback do Ponto 6 dispara ─────────────────
+
+test('Ponto 6 — falha na gravação dispara DELETE da reposição criada, com o id correto', async () => {
+  const { context, chamadasApi } = prepararEnvioAvulsaParaReposicao({
+    gcalResultado: { ok: false, motivo: 'falha_remota' },
+  });
+
+  await context.window.executarEnvioParaReposicao();
+
+  const deletes = chamadasApi.filter((c) => c.method === 'DELETE');
+  assert.equal(deletes.length, 1, 'a reposição órfã precisa ser apagada');
+  assert.equal(deletes[0].url, 'https://api.example.com/reposicoes/rep-criada-p6');
+});
+
+test('Ponto 6 — sucesso na gravação não dispara DELETE de reposição', async () => {
+  const { context, chamadasApi } = prepararEnvioAvulsaParaReposicao({
+    gcalResultado: { ok: true, motivo: 'sucesso' },
+  });
+
+  await context.window.executarEnvioParaReposicao();
+
+  assert.equal(chamadasApi.filter((c) => c.method === 'DELETE').length, 0);
+});
+
+test('Ponto 6 — DELETE que falha não impede a aula de voltar nem o toast de erro', async () => {
+  const { context, aulas, chamadasApi, toasts } = prepararEnvioAvulsaParaReposicao({
+    gcalResultado: { ok: false, motivo: 'falha_remota' },
+    falharDelete: true,
+  });
+
+  await context.window.executarEnvioParaReposicao();
+
+  assert.equal(chamadasApi.filter((c) => c.method === 'DELETE').length, 1, 'o DELETE foi tentado');
+  assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6', 'avulsa-p6-vizinha'], 'a aula volta mesmo assim');
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
 });
 

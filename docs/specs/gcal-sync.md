@@ -786,7 +786,9 @@ real. A limpeza do DOM e do nome do botão continuaram fora do escopo da etapa d
 
 **Feita**: a etapa 6d corrigiu o cancelamento do modal de cobrança ao fazer `window.fecharModalEscolhaCobrancaReposicao()` resolver a Promise em escopo compartilhado, de forma idempotente, sem chamar o callback. O `await` em `window.executarEnvioParaReposicao()` volta ao fluxo normal quando o usuário cancelou, e `executarExclusaoDefinitiva` foi renomeado para `executarExclusaoAulaAvulsa` para manter o nome coerente com o escopo real da ação.
 
-**Ordem pessimista por decisão de produto**: o caminho de série em `window.executarEnvioParaReposicao` é deliberadamente pessimista. A ordem registrada é: criar a reposição no servidor, marcar a exceção local, fechar a UI, persistir e só então confirmar sucesso após o HTTP 200. Isso foi decidido porque a reposição carrega `cobravel` e o motor financeiro das aulas está no backend; confirmar na UI antes do 200 criaria estado financeiro que o servidor pode recusar. O rollback existe e reverte a criação remota e a marcação local em caso de falha; essa ordem não deve ser "otimizada" sem decisão explícita do dono.
+**Ordem pessimista por decisão de produto**: o caminho de série em `window.executarEnvioParaReposicao` é deliberadamente pessimista. A ordem registrada é: criar a reposição no servidor, marcar a exceção local, fechar a UI, persistir e só então confirmar sucesso após o HTTP 200. Isso foi decidido porque a reposição carrega `cobravel` e o motor financeiro das aulas está no backend; confirmar na UI antes do 200 criaria estado financeiro que o servidor pode recusar. Essa ordem não deve ser "otimizada" sem decisão explícita do dono.
+
+**Correção de redação (2026-09-01, etapa 6i-b)**: a versão anterior deste item afirmava que "o rollback existe e reverte a criação remota e a marcação local em caso de falha". A parte de reversão remota estava **incorreta** para o ramo `ehSerie`: o `catch` desse ramo apenas restaura `compromisso.excecoes` a partir do snapshot em memória e exibe o toast de erro — não dispara nenhuma chamada de rede que desfaça a reposição criada. A reversão remota existe apenas no ramo `!ehSerie`, e passou a existir só na etapa 6i-b (ver item `9.27`). Corrigir o ramo `ehSerie` não foi pedido pelo dono e permanece fora de escopo.
 
 **Cobertura**: a regressão foi validada em `backend/test/gcal-duplicata-fix.test.js` com os
 quatro efeitos esperados: `envio para reposição em série preserva a série e marca exceção`,
@@ -868,7 +870,16 @@ Os seis pontos de chamada de `salvarEventoComGCal` que a 6h deixou fora (criaç�
 
 **Gravação de compensação.** Quando a segunda gravação do split falha, a primeira já persistiu no servidor e desfazê-la só na memória não basta. O estado local é restaurado a partir do snapshot do array `aulas` e uma terceira chamada a `salvarEventoComGCal(compromissoRestaurado, { operacao: "atualizar" })` empurra esse estado restaurado para o servidor. Esse mecanismo não existia antes desta etapa — a 6h só precisava de reversão local — e foi construído aqui.
 
-**Limite conhecido do ponto 6 — reversão remota da reposição criada não foi implementada.** A decisão do dono previa desfazer no servidor a reposição já criada, reaproveitando o mecanismo que o ramo `ehSerie` da mesma função supostamente usaria. Esse mecanismo **não existe**: o `catch` do ramo `ehSerie` reverte apenas `compromisso.excecoes` em memória, e a API de reposições não oferece caminho para anular uma reposição criada — `backend/src/routes/reposicaoRoutes.js` expõe `GET`, `POST` e `PATCH`, sem `DELETE`, e o `enum` de `status` em `backend/src/models/Reposicao.js` é `['pendente', 'agendada', 'realizada', 'expirada']`, sem estado de cancelamento. Implementar a decisão exigiria alteração de backend, fora do escopo desta etapa. Consequência prática: em falha de gravação no ponto 6 a aula volta para a agenda, mas a reposição criada permanece na fila e precisa ser tratada manualmente. Isso vira débito novo.
+**Reposição órfã do ponto 6 — RESOLVIDO na etapa 6i-b (2026-09-01).** A versão original deste item registrava como limite conhecido o fato de que, em falha de gravação no ponto 6, a aula voltava para a agenda mas a reposição já criada permanecia pendente no servidor, apontando para uma aula que nunca saiu do lugar. Não havia como desfazê-la: a API de reposições não expunha `DELETE` e o `enum` de `status` não tinha estado de cancelamento.
+
+A etapa 6i-b fechou esse buraco. Por decisão do dono, a reposição órfã é **apagada**, não marcada como cancelada — assim o `enum` de `status` em `backend/src/models/Reposicao.js` continua intocado, e uma reposição que a Josy nunca chegou a ver (a falha acontece no mesmo fluxo, sem tela intermediária) não tem histórico a preservar. O que foi feito:
+
+- `DELETE /api/reposicoes/:id` novo, em `backend/src/routes/reposicaoRoutes.js`, atendido por `excluirReposicao` em `backend/src/controllers/reposicaoController.js`. Segue o mesmo contrato de `excluirAgendamento`: escopado por `ownerEmail` e **idempotente** — id inexistente responde `200` com `{ ok: true, deleted: false }`, não `404`;
+- no `catch` de `window.executarEnvioParaReposicao`, ramo `!ehSerie`, a restauração do array `aulas` passou a ser seguida de um `DELETE` para a reposição criada. A variável `reposicao` foi movida para fora do `try` para que o `catch` a alcance.
+
+**O `DELETE` é best-effort e pode falhar.** Ele fica dentro de um `try/catch` próprio que apenas registra log de erro, sem relançar. O motivo é deliberado: quando esse caminho roda, a Josy já teve a aula devolvida à tela, e travar essa recuperação por causa de uma segunda chamada de rede que pode falhar por conta própria seria pior. Consequência a assumir: **não há garantia de que a reposição órfã sempre será apagada** — se a rede cair entre as duas chamadas, ela sobrevive e precisa de tratamento manual. O toast de erro exibido não promete o contrário.
+
+Relatório: `docs/_reports/2026-09-01-fix-cancelar-reposicao-orfa.md`.
 
 ### 9.26 — Falha silenciosa de persistência no caminho com Google Calendar conectado — FECHADO (2026-09-01)
 
@@ -927,6 +938,7 @@ A regra de negócio do `total` continua intacta: ele continua contando registros
 | `docs/_reports/2026-09-01-feat-rotulo-exclusao-serie-toda.md` | 9.25 | fechado |
 | `docs/_reports/2026-09-01-diag-persistencia-silenciosa-criacao-edicao.md` | 9.23 nº 6 | diagnóstico |
 | `docs/_reports/2026-09-01-fix-persistencia-silenciosa-criacao-edicao.md` | 9.27 / 9.23 nº 6 | fechado |
+| `docs/_reports/2026-09-01-fix-cancelar-reposicao-orfa.md` | 9.27 / 9.20 | fechado |
 
 ## 10. Custo aceito da decisão
 

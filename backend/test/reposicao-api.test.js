@@ -227,3 +227,117 @@ test('calcularPrazoReposicao aplica piso para 2026-07-27 com fechamentoMesCheio'
   assert.equal(prazo.validoAte, '2026-08-31');
   assert.equal(prazo.pisoAplicado, true);
 });
+
+// ── Etapa 6i-b — DELETE /reposicoes/:id ───────────────────────────────────────────────────────
+
+test('DELETE remove a reposicao do banco e responde deleted true', async () => {
+  const findOneOriginal = Reposicao.findOne;
+  const findOneAndDeleteOriginal = Reposicao.findOneAndDelete;
+  const apagados = [];
+
+  try {
+    Reposicao.findOne = async ({ ownerEmail, id }) => ({ ownerEmail, id, status: 'pendente' });
+    Reposicao.findOneAndDelete = async (query) => {
+      apagados.push(query);
+      return { id: query.id };
+    };
+
+    const req = {
+      params: { id: 'repo-del-1' },
+      auth: { ownerEmail: 'pro@example.com' },
+    };
+    const res = criarRespostaMock();
+
+    await reposicaoController.excluirReposicao(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.ok, true);
+    assert.equal(res.payload.deleted, true);
+    assert.equal(res.payload.id, 'repo-del-1');
+    assert.equal(apagados.length, 1, 'findOneAndDelete precisa ser chamado');
+    assert.deepEqual(apagados[0], { ownerEmail: 'pro@example.com', id: 'repo-del-1' });
+  } finally {
+    Reposicao.findOne = findOneOriginal;
+    Reposicao.findOneAndDelete = findOneAndDeleteOriginal;
+  }
+});
+
+test('DELETE de id inexistente responde 200 com deleted false, nao 404', async () => {
+  const findOneOriginal = Reposicao.findOne;
+  const findOneAndDeleteOriginal = Reposicao.findOneAndDelete;
+  let chamouDelete = false;
+
+  try {
+    Reposicao.findOne = async () => null;
+    Reposicao.findOneAndDelete = async () => {
+      chamouDelete = true;
+      return null;
+    };
+
+    const req = {
+      params: { id: 'repo-inexistente' },
+      auth: { ownerEmail: 'pro@example.com' },
+    };
+    const res = criarRespostaMock();
+
+    await reposicaoController.excluirReposicao(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.ok, true);
+    assert.equal(res.payload.deleted, false);
+    assert.equal(chamouDelete, false, 'nao deve tentar apagar o que nao existe');
+  } finally {
+    Reposicao.findOne = findOneOriginal;
+    Reposicao.findOneAndDelete = findOneAndDeleteOriginal;
+  }
+});
+
+test('DELETE respeita o escopo por ownerEmail e nao apaga reposicao de outro dono', async () => {
+  const findOneOriginal = Reposicao.findOne;
+  const findOneAndDeleteOriginal = Reposicao.findOneAndDelete;
+  const buscas = [];
+  let chamouDelete = false;
+
+  const bancoSimulado = [{ ownerEmail: 'dona@example.com', id: 'repo-del-2', status: 'pendente' }];
+
+  try {
+    Reposicao.findOne = async ({ ownerEmail, id }) => {
+      buscas.push({ ownerEmail, id });
+      return bancoSimulado.find((r) => r.ownerEmail === ownerEmail && r.id === id) || null;
+    };
+    Reposicao.findOneAndDelete = async () => {
+      chamouDelete = true;
+      return null;
+    };
+
+    const req = {
+      params: { id: 'repo-del-2' },
+      auth: { ownerEmail: 'intrusa@example.com' },
+    };
+    const res = criarRespostaMock();
+
+    await reposicaoController.excluirReposicao(req, res);
+
+    assert.deepEqual(buscas[0], { ownerEmail: 'intrusa@example.com', id: 'repo-del-2' });
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.deleted, false);
+    assert.equal(chamouDelete, false, 'reposicao de outro dono nao pode ser apagada');
+    assert.equal(bancoSimulado.length, 1);
+  } finally {
+    Reposicao.findOne = findOneOriginal;
+    Reposicao.findOneAndDelete = findOneAndDeleteOriginal;
+  }
+});
+
+test('rota de reposicoes expoe DELETE em /:id', () => {
+  const criarRotas = require('express').Router;
+  assert.equal(typeof criarRotas, 'function');
+
+  const router = require('../src/routes/reposicaoRoutes');
+  const camadaId = router.stack.find(
+    (camada) => camada.route && camada.route.path === '/:id',
+  );
+
+  assert.ok(camadaId, 'a rota /:id precisa existir');
+  assert.equal(camadaId.route.methods.delete, true, 'DELETE precisa estar registrado em /:id');
+});

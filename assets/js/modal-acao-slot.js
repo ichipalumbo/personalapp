@@ -2615,8 +2615,10 @@ document.addEventListener("DOMContentLoaded", () => {
     await window.abrirModalEscolhaCobrancaReposicao(
       compromisso,
       async (cobravel) => {
+        // Fora do `try` para que o `catch` alcance a reposição já criada e possa apagá-la.
+        let reposicao = null;
         try {
-          const reposicao = await enviarParaReposicao(
+          reposicao = await enviarParaReposicao(
             compromisso,
             ehSerie ? dataAlvoStr : dataAlvoISO,
             cobravel,
@@ -2725,6 +2727,22 @@ document.addEventListener("DOMContentLoaded", () => {
                   ? erro.message
                   : "falha_envio_para_reposicao",
             });
+
+            // Best-effort: a UI já foi recuperada acima e não pode ficar refém desta chamada.
+            if (reposicao && reposicao.id) {
+              try {
+                await window.apiFetchBackend(
+                  `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(reposicao.id)}`,
+                  { method: "DELETE" },
+                );
+              } catch (erroExclusaoReposicao) {
+                window.log.error(
+                  "[reposicao]",
+                  "Falha ao desfazer a reposição órfã após rollback da exclusão",
+                  erroExclusaoReposicao,
+                );
+              }
+            }
           }
           if (ehSerie) {
             window.log.warn("[reposicao]", "Rollback disparado", {
