@@ -332,6 +332,31 @@ async function atualizarReposicao(req, res) {
   }
 }
 
+// Idempotente: id inexistente responde 200 com `deleted: false`, porque o rollback do frontend
+// pode chegar depois de a reposição já ter sumido por outro caminho.
+async function excluirReposicao(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const { id } = req.params;
+    const reposicaoExistente = await Reposicao.findOne({ ownerEmail, id });
+
+    if (!reposicaoExistente) {
+      return res.status(200).json({
+        ok: true,
+        deleted: false,
+        id,
+        message: 'Reposição já não existia. Operação idempotente concluída.'
+      });
+    }
+
+    await Reposicao.findOneAndDelete({ ownerEmail, id });
+
+    return res.status(200).json({ ok: true, deleted: true, id });
+  } catch (err) {
+    responderErroReposicao(res, err, 'excluir reposição');
+  }
+}
+
 async function adicionarHistoricoReposicao(req, res) {
   try {
     const ownerEmail = getOwnerEmailOrThrow(req);
@@ -378,5 +403,6 @@ module.exports = {
   obterReposicao,
   criarReposicao,
   atualizarReposicao,
+  excluirReposicao,
   adicionarHistoricoReposicao
 };
