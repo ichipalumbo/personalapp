@@ -118,7 +118,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ### [x] 0.3 Limpar CSS órfão da visão mensal removida — **CONCLUÍDO**
 
 - **O que foi entregue**: limpeza dos blocos da visão mensal removida e do KPI mensal em `assets/css/style.css`, com **20 seletores removidos** (23 ocorrências no arquivo, incluindo sobrescritas em `@media`) e **152 linhas excluídas**.
-- **Verificação crítica**: o grupo `.objetivo-*` foi verificado e **mantido** por uso dinâmico em `assets/js/agenda-card-template.js` (`classes.push(\`objetivo-\${normalizarObjetivo(objetivo)}\`)`) e `assets/js/view-alunos.js` (`class="objetivo-\${objetivoClass}"`).
+- **Verificação crítica**: o grupo `.objetivo-*` foi verificado e **mantido** por uso dinâmico em `assets/js/agenda-card-template.js` (`classes.push(\`objetivo-\${normalizarObjetivo(objetivo)}\`)`) e`assets/js/view-alunos.js`(`class="objetivo-\${objetivoClass}"`).
 - **Veredito de risco (mantidos por segurança)**: `#tela-calendario` e `#containerCalendarioDia` foram investigados e **mantidos**; sem evidência suficiente para provar que estão mortos sem validação visual de dia/semana.
 - **Candidatos fora do escopo 0.3**: mantidos para rodada dedicada (não incluídos nesta limpeza).
 

@@ -1390,16 +1390,6 @@
             >
               <button
                 type="button"
-                class="btn btn-danger"
-                id="btnDeletarDefinitivo"
-                title="Excluir esta aula"
-                style="width: 100%"
-              >
-                <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
-                Excluir esta aula
-              </button>
-              <button
-                type="button"
                 class="btn"
                 id="btnMandarParaReposicao"
                 style="background: #ff9800; color: #fff; border: none; width: 100%"
@@ -1416,33 +1406,6 @@
               id="acoesCompromissoRecorrente"
               style="display: none; flex-direction: column; gap: 8px"
             >
-              <div
-                style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px"
-              >
-                <button
-                  type="button"
-                  class="btn btn-danger"
-                  id="btnDeletarInstancia"
-                  title="Excluir esta aula"
-                  style="width: 100%"
-                >
-                  <i
-                    class="fa-solid fa-trash-can"
-                    style="margin-right: 4px"
-                  ></i>
-                  Excluir esta aula
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-danger"
-                  id="btnDeletarSerie"
-                  title="Excluir a série toda"
-                  style="width: 100%"
-                >
-                  <i class="fa-solid fa-trash-can" style="margin-right: 6px"></i>
-                  Excluir a série toda
-                </button>
-              </div>
               <button
                 type="button"
                 class="btn"
@@ -1459,8 +1422,23 @@
             </div>
 
             <div
-              style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                gap: 10px;
+                margin-top: 8px;
+              "
             >
+              <button
+                type="button"
+                class="btn btn-danger"
+                id="btnExcluirSlot"
+                title="Excluir"
+                style="margin-right: auto"
+              >
+                <i class="fa-solid fa-trash"></i>
+              </button>
               <button
                 type="button"
                 class="btn btn-secondary"
@@ -1504,6 +1482,21 @@
 
         <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
           <button type="button" class="btn btn-secondary" onclick="window.fecharModalEscolhaCobrancaReposicao()">Voltar</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-overlay" id="modalEscolhaExclusao" style="display: none">
+      <div class="modal modal-exclusao">
+        <div class="modal-exclusao-cabecalho">
+          <div>
+            <h3 id="tituloModalEscolhaExclusao"><i class="fa-solid fa-trash-can"></i> Excluir</h3>
+            <p id="infoEscolhaExclusao" class="modal-escolha-contexto">Aluno · dia · horário</p>
+          </div>
+          <span id="badgeModalEscolhaExclusao" class="modal-badge" style="display: none">∞ SEMANAL</span>
+        </div>
+        <div id="modalEscolhaExclusaoLista" class="modal-escolha-lista"></div>
+        <div class="modal-escolha-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.fecharModalEscolhaExclusao()">Voltar</button>
         </div>
       </div>
     </div>

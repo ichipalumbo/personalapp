@@ -708,7 +708,129 @@ registrado como sub-item separado, sem reabrir a decisão de produto já tomada.
 abreviações de três letras, ramos numéricos e `console.warn` ao descartar valor inválido. O
 código foi protegido por teste comportamental em `backend/test/gcal-sync.test.js` (`montarRecurrence aceita diasSemana sem acento, abreviado, numérico e dispara warning para inválido`).
 
-### 9.17 Relatórios desta spec
+### 9.17 — Excluir a série toda usa a mesma resolução da confirmação e preserva reposições. — FECHADO (2026-08-31)
+
+**Decisão de produto**: "excluir a série toda" passou a remover a cadeia completa subindo até a
+série raiz, mas preservando as reposições. A confirmação e a remoção usam o mesmo resolver de
+família, então o número anunciado e o número removido deixam de divergir.
+
+**Cálculo do período**: a confirmação passou a informar o período da cadeia por meio do mesmo
+conjunto de membros que define a remoção. `sem data de término` só aparece quando uma série
+recorrente que será removida de fato não tem fim; avulsa e reposição não contam no cálculo.
+
+**Semântica preservada**: `removerFamiliaSerie` continua com a regra de descendentes para o fluxo
+"continuar em outra série" e para a futura etapa 6b. O caso da remoção da série toda continua
+usando o resolver full-chain, sem misturar a semântica de continuação.
+
+**Cobertura**: a correção foi validada com mutação no arquivo real de produção e com a asserção
+adicional em `backend/test/gcal-duplicata-fix.test.js` para `resumo.ate === '13/09/2026'`.
+
+### 9.18 — Motor de aparo de cadeia "daqui pra frente" corta a série sem subir ao ancestral nem mexer no histórico. — FECHADO (2026-08-31)
+
+**Decisão de produto**: existe um motor testável em `assets/js/modal-acao-slot.js`,
+`aparaCadeiaSerieAPartirDe`, que corta a recorrência a partir de uma data sem mexer no histórico
+anterior. O escopo considerado é a família descendente da série selecionada mais as avulsas
+irmãs penduradas no mesmo `serieOrigemId`; o motor nunca sobe até o ancestral, e um descendente
+que terminou completamente antes do corte é ignorado porque já entrou no histórico e não deve ser
+tocado.
+
+**Resolver usado**: em vez de subir até a raiz, ele usa `resolverFamiliaDescendenteSerie` para
+restringir a ação aos descendentes em foco e complementa a varredura com o bloco `mesmoRamo`
+para capturar a avulsa irmã sem sugar o pai. Isso evita o defeito 5 reaparecer por outra porta,
+porque o algoritmo não toma o ancestral nem o ramo já concluído como alvo de aparo ou remoção.
+
+**Semântica do corte**: descendente que começa antes do corte é aparado em vez de removido,
+porque a pessoa pode ter aulas válidas antes da linha de corte, e a exclusão deve preservar esse
+histórico e só reduzir o fim da série para o dia anterior à data escolhida. Avulsa irmã a partir
+do corte é removida, exceto quando é reposição. Reposição continua sempre preservada, e o motor
+retorna `reposicoesPreservadas` para a UI avisar sem recalcular o escopo. A interface ainda não foi
+ligada; o motor existe e a 6b-ui decide o botão e o diálogo final.
+
+**Cobertura**: a lógica foi registrada em `backend/test/gcal-duplicata-fix.test.js` com
+`aparaCadeiaSerieAPartirDe apara a série selecionada e preserva o histórico`,
+`aparaCadeiaSerieAPartirDe apara o descendente que começa antes do corte`,
+`aparaCadeiaSerieAPartirDe remove a série quando o aparo não deixa ocorrência`,
+`aparaCadeiaSerieAPartirDe não toca em descendente que termina antes do corte`,
+`aparaCadeiaSerieAPartirDe não remove o ancestral avulso` e
+`aparaCadeiaSerieAPartirDe preserva reposição irmã e a contabiliza`.
+
+### 9.19 — Exclusão de aula/serie passou a usar lixeira única com modal de escolha e despacho por função nomeada. — FECHADO (2026-09-01)
+
+A exclusão passou a ter uma única lixeira, com modal de escolha em quatro opções de ação de exclusão e duas camadas de despacho: excluir esta aula, excluir daqui pra frente, excluir a série toda e a senteça de "daqui pra frente" extraída para `executarExclusaoSerieAPartirDe`. Esse desenho evita a ambiguidade do fluxo anterior, em que a aula deletada deixa de ser cobrada e a ação destrutiva competia com "enviar para reposição". Cada opção despacha por função nomeada em `window` (`executarExclusaoInstancia`, `executarExclusaoAulaAvulsa`, `executarExclusaoSerieAPartirDe`, `executarExclusaoSerie`) em vez de simular clique em botão do DOM removido.
+
+O modal também reusa o padrão `.modal-escolha-*` já existente no app, com ícones escalonados por alcance da exclusão (leve, média e total) e cabeçalho contextual com aluno, data e horário. A confirmação final continua sendo `window.confirm()` nativo, como débito conhecido e explicitado no fluxo. A validação visual do modal ficou manual, porque `index.html` e `assets/css/style.css` não têm suíte automatizada e a checagem do comportamento final no browser precisa ser feita pelo dono.
+
+**Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (`docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md`, commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 (`docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md`) restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
+
+**Ajuste de 2026-09-01 (rodada 6d)**: a etapa 6d renomeou o handler avulso de `executarExclusaoDefinitiva` para `executarExclusaoAulaAvulsa` e extraiu a ação "daqui pra frente" para `executarExclusaoSerieAPartirDe`, sem alterar a lógica de negócio nem o desenho visual. O mapeamento de leitura de relatórios antigos é `executarExclusaoDefinitiva` → `executarExclusaoAulaAvulsa`.
+
+### 9.20 — Envio para reposição em série usa despachante único com dois caminhos internos. — FECHADO (2026-09-01)
+
+A ação de "Enviar para reposição" passou a ter um despachante único em `window`,
+`window.executarEnvioParaReposicao`. Ele reutiliza a área de seleção/validação do modal
+existente e conecta os dois botões do DOM (`btnMandarParaReposicao` e o resquício
+`btnReagendarInstancia`) ao mesmo ponto de entrada, sem unificar o layout visual no mesmo
+round de correção.
+
+**Semântica preservada**:
+
+- `compromisso.frequencia === "uma_vez"` usa `splice` para remover a aula do array;
+- caso contrário, usa `excecoes.push(dataAlvo)` para marcar somente a data alvo como exceção e
+  preservar a série remanescente;
+- a guarda de aluno inativo continua obrigatória antes de qualquer mutação;
+- após persistência bem-sucedida, o fluxo fecha `window.fecharModalAcaoSlot()`.
+
+**Débito conhecido**: o DOM ainda expõe dois ids equivalentes com rótulo idêntico
+(`btnMandarParaReposicao` e `btnReagendarInstancia`), e o id do recorrente não descreve a ação
+real. A limpeza do DOM e do nome do botão continuaram fora do escopo da etapa de correção.
+
+**Feita**: a etapa 6d corrigiu o cancelamento do modal de cobrança ao fazer `window.fecharModalEscolhaCobrancaReposicao()` resolver a Promise em escopo compartilhado, de forma idempotente, sem chamar o callback. O `await` em `window.executarEnvioParaReposicao()` volta ao fluxo normal quando o usuário cancelou, e `executarExclusaoDefinitiva` foi renomeado para `executarExclusaoAulaAvulsa` para manter o nome coerente com o escopo real da ação.
+
+**Ordem pessimista por decisão de produto**: o caminho de série em `window.executarEnvioParaReposicao` é deliberadamente pessimista. A ordem registrada é: criar a reposição no servidor, marcar a exceção local, fechar a UI, persistir e só então confirmar sucesso após o HTTP 200. Isso foi decidido porque a reposição carrega `cobravel` e o motor financeiro das aulas está no backend; confirmar na UI antes do 200 criaria estado financeiro que o servidor pode recusar. O rollback existe e reverte a criação remota e a marcação local em caso de falha; essa ordem não deve ser "otimizada" sem decisão explícita do dono.
+
+**Cobertura**: a regressão foi validada em `backend/test/gcal-duplicata-fix.test.js` com os
+quatro efeitos esperados: `envio para reposição em série preserva a série e marca exceção`,
+`envio para reposição em avulsa remove a aula`, `os dois botões despacham para a mesma função`
+ e `envio para reposição bloqueado para aluno inativo`, além dos dois testes de 6d para `executarExclusaoSerieAPartirDe apara a série e preserva o histórico` e `cancelar a escolha de cobrança não deixa a operação pendurada`.
+
+### 9.21 — Exclusão destrutiva aguarda confirmação de gravação e reverte em falha. — FECHADO (2026-09-01)
+
+**Sintoma antigo**: os fluxos de exclusão mutavam o array local, disparavam `salvarDados()` sem
+`await` e logo em seguida executavam `inicializarHome({ sincronizar: true })`. Isso gerava corrida
+entre o `PUT` do save e o `GET` de sincronização: se o GET chegasse antes do PUT, a aula reaparecia
+na tela ao trocar de semana, e só sumia depois de um novo `Sincronizar Dados` quando o servidor já
+estava correto. Esse interleaving é justamente o motivo do efeito "a aula reaparece e depois some"
+relatado pelo dono.
+
+**Falha silenciosa**: a persistência devolve `{ ok, motivo }` e algumas falhas reais (`nao_autenticado`,
+`sessao_expirada`, `falha_remota`) eram ignoradas porque nenhum handler lia o retorno. Em vez de
+mostrar o erro, a UI aceitava o estado local como se a exclusão tivesse concluído, enquanto o
+servidor mantinha a aula viva. A correção 6e tratou isso explicitamente e agora a tela só confirma
+após a persistência real, com rollback do snapshot local em caso de falha.
+
+**Decisão de produto**: as quatro ações de exclusão passaram a seguir a mesma ordem já registrada
+para a reposição e para a determinação do efeito financeiro: snapshot do estado antes da mutação,
+mutação local, `await salvarDados()`, validação com `deveEnviarPatchReposicao(resultado)`, rollback
+com `aulas.splice(0, aulas.length, ..._snapshotAulas)` quando o save falha e sem recarregar a tela
+nessa condição. A ordem é deliberadamente pessimista: a professora vê o estado confirmado só depois
+que o servidor responde. Isso contraria o padrão optimistic-UI do contexto de novas conversas, mas
+é necessário porque a exclusão é destrutiva e irreversível pelo usuário; confirmar antes do servidor
+criar divergência que não há como perceber nem desfazer.
+
+**Erro do usuário**: em caso de falha, o array local volta ao estado anterior, `mostrarToast(...)` ou
+`alert(...)` informa a falha e não há recarga. Essa decisão preserva a honestidade do estado da
+interface, e evita o cenário de “a aula tinha sumido na tela e reviveu no servidor”.
+
+**Débito de UX**: a espera é perceptível e o comportamento é mais lento do que uma otimização
+optimistic-UI. Reduzir a recarga sem `sincronizar: true` depois da gravação confirmada permanece
+como débito de UX para uma rodada futura, com decisão do dono.
+
+**Cobertura**: a correção foi validada em `backend/test/gcal-duplicata-fix.test.js` com os testes
+`exclusão de série só recarrega depois de a gravação confirmar`,
+`falha de gravação desfaz a exclusão local e não recarrega`,
+`excluir daqui pra frente aguarda a gravação` e `falha de gravação restaura a série aparada`.
+
+### 9.22 Relatórios desta spec
 
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
@@ -740,6 +862,14 @@ código foi protegido por teste comportamental em `backend/test/gcal-sync.test.j
 | `docs/_reports/2026-08-31-fix-split-encadeado-heranca-e-serie-vazia.md` | 9.15 | fechado |
 | `docs/_reports/2026-08-31-fix-heranca-mae-vazia-split.md` | 9.15 | fechado |
 | `docs/_reports/2026-08-31-fix-heranca-contagem-ocorrencias.md` | 9.15 | fechado |
+| `docs/_reports/2026-08-31-fix-excluir-serie-toda-coerente.md` | 9.17 | fechado |
+| `docs/_reports/2026-08-31-feat-aparo-cadeia-serie.md` | 9.18 | fechado |
+| `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
+| `docs/_reports/2026-08-31-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
+| `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
+| `docs/_reports/2026-09-01-fix-envio-reposicao-serie.md` | 9.20 | fechado |
+| `docs/_reports/2026-09-01-refactor-nomes-exclusao-e-promise-cobranca.md` | 9.19 / 9.20 | fechado |
+| `docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md` | 9.21 | fechado |
 
 ## 10. Custo aceito da decisão
 
