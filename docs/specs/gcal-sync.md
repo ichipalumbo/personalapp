@@ -754,13 +754,15 @@ ligada; o motor existe e a 6b-ui decide o botão e o diálogo final.
 `aparaCadeiaSerieAPartirDe não remove o ancestral avulso` e
 `aparaCadeiaSerieAPartirDe preserva reposição irmã e a contabiliza`.
 
-### 9.19 — Exclusão de aula/serie passou a usar lixeira única com modal de escolha e despacho por função nomeada. — FECHADO (2026-08-31)
+### 9.19 — Exclusão de aula/serie passou a usar lixeira única com modal de escolha e despacho por função nomeada. — FECHADO (2026-09-01)
 
-A exclusão passou a ter uma única lixeira, com modal de escolha em três opções: excluir esta aula, excluir daqui pra frente e excluir a série toda. Esse desenho evita a ambiguidade do fluxo anterior, em que a aula deletada deixa de ser cobrada e a ação destrutiva competia com "enviar para reposição". Cada opção despacha por função nomeada em `window` (`executarExclusaoInstancia`, `executarExclusaoSerie`, `executarExclusaoDefinitiva`) em vez de simular clique em botão do DOM removido.
+A exclusão passou a ter uma única lixeira, com modal de escolha em quatro opções de ação de exclusão e duas camadas de despacho: excluir esta aula, excluir daqui pra frente, excluir a série toda e a senteça de "daqui pra frente" extraída para `executarExclusaoSerieAPartirDe`. Esse desenho evita a ambiguidade do fluxo anterior, em que a aula deletada deixa de ser cobrada e a ação destrutiva competia com "enviar para reposição". Cada opção despacha por função nomeada em `window` (`executarExclusaoInstancia`, `executarExclusaoAulaAvulsa`, `executarExclusaoSerieAPartirDe`, `executarExclusaoSerie`) em vez de simular clique em botão do DOM removido.
 
 O modal também reusa o padrão `.modal-escolha-*` já existente no app, com ícones escalonados por alcance da exclusão (leve, média e total) e cabeçalho contextual com aluno, data e horário. A confirmação final continua sendo `window.confirm()` nativo, como débito conhecido e explicitado no fluxo. A validação visual do modal ficou manual, porque `index.html` e `assets/css/style.css` não têm suíte automatizada e a checagem do comportamento final no browser precisa ser feita pelo dono.
 
 **Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (`docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md`, commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 (`docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md`) restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
+
+**Ajuste de 2026-09-01 (rodada 6d)**: a etapa 6d renomeou o handler avulso de `executarExclusaoDefinitiva` para `executarExclusaoAulaAvulsa` e extraiu a ação "daqui pra frente" para `executarExclusaoSerieAPartirDe`, sem alterar a lógica de negócio nem o desenho visual. O mapeamento de leitura de relatórios antigos é `executarExclusaoDefinitiva` → `executarExclusaoAulaAvulsa`.
 
 ### 9.20 — Envio para reposição em série usa despachante único com dois caminhos internos. — FECHADO (2026-09-01)
 
@@ -782,14 +784,14 @@ round de correção.
 (`btnMandarParaReposicao` e `btnReagendarInstancia`), e o id do recorrente não descreve a ação
 real. A limpeza do DOM e do nome do botão continuaram fora do escopo da etapa de correção.
 
-**Planejado**: a etapa 6d renomeia `executarExclusaoDefinitiva` para
-`executarExclusaoAulaAvulsa`, e a ação "daqui pra frente" continua anônima e inline no código do
-modal, sem nome público dedicado.
+**Feita**: a etapa 6d corrigiu o cancelamento do modal de cobrança ao fazer `window.fecharModalEscolhaCobrancaReposicao()` resolver a Promise em escopo compartilhado, de forma idempotente, sem chamar o callback. O `await` em `window.executarEnvioParaReposicao()` volta ao fluxo normal quando o usuário cancelou, e `executarExclusaoDefinitiva` foi renomeado para `executarExclusaoAulaAvulsa` para manter o nome coerente com o escopo real da ação.
+
+**Ordem pessimista por decisão de produto**: o caminho de série em `window.executarEnvioParaReposicao` é deliberadamente pessimista. A ordem registrada é: criar a reposição no servidor, marcar a exceção local, fechar a UI, persistir e só então confirmar sucesso após o HTTP 200. Isso foi decidido porque a reposição carrega `cobravel` e o motor financeiro das aulas está no backend; confirmar na UI antes do 200 criaria estado financeiro que o servidor pode recusar. O rollback existe e reverte a criação remota e a marcação local em caso de falha; essa ordem não deve ser "otimizada" sem decisão explícita do dono.
 
 **Cobertura**: a regressão foi validada em `backend/test/gcal-duplicata-fix.test.js` com os
 quatro efeitos esperados: `envio para reposição em série preserva a série e marca exceção`,
 `envio para reposição em avulsa remove a aula`, `os dois botões despacham para a mesma função`
- e `envio para reposição bloqueado para aluno inativo`.
+ e `envio para reposição bloqueado para aluno inativo`, além dos dois testes de 6d para `executarExclusaoSerieAPartirDe apara a série e preserva o histórico` e `cancelar a escolha de cobrança não deixa a operação pendurada`.
 
 ### 9.21 Relatórios desta spec
 
@@ -829,6 +831,7 @@ quatro efeitos esperados: `envio para reposição em série preserva a série e 
 | `docs/_reports/2026-08-31-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
 | `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
 | `docs/_reports/2026-09-01-fix-envio-reposicao-serie.md` | 9.20 | fechado |
+| `docs/_reports/2026-09-01-refactor-nomes-exclusao-e-promise-cobranca.md` | 9.19 / 9.20 | fechado |
 
 ## 10. Custo aceito da decisão
 

@@ -881,11 +881,23 @@ window.fecharModalAcaoSlot = function () {
   document.getElementById("modalAcaoSlot").style.display = "none";
 };
 
+let resolveEscolhaCobrancaReposicao = null;
+
 window.abrirModalEscolhaCobrancaReposicao = function (compromisso, callback) {
   return new Promise((resolve) => {
+    const finalizar = () => {
+      if (typeof resolve === "function") {
+        const resolver = resolve;
+        resolve = null;
+        resolver();
+      }
+    };
+    resolveEscolhaCobrancaReposicao = finalizar;
+
     const modal = document.getElementById("modalEscolhaCobrancaReposicao");
     if (!modal || !compromisso) {
-      resolve();
+      finalizar();
+      resolveEscolhaCobrancaReposicao = null;
       return;
     }
 
@@ -915,7 +927,7 @@ window.abrirModalEscolhaCobrancaReposicao = function (compromisso, callback) {
             await callback(cobravel);
           }
         } finally {
-          resolve();
+          finalizar();
         }
       };
     });
@@ -927,6 +939,11 @@ window.abrirModalEscolhaCobrancaReposicao = function (compromisso, callback) {
 window.fecharModalEscolhaCobrancaReposicao = function () {
   const modal = document.getElementById("modalEscolhaCobrancaReposicao");
   if (modal) modal.style.display = "none";
+  if (typeof resolveEscolhaCobrancaReposicao === "function") {
+    const resolver = resolveEscolhaCobrancaReposicao;
+    resolveEscolhaCobrancaReposicao = null;
+    resolver();
+  }
 };
 
 window.atualizarAvisoConflitoEdicao = function () {
@@ -1286,7 +1303,7 @@ window.executarExclusaoSerie = async function () {
   }
 };
 
-window.executarExclusaoDefinitiva = async function () {
+window.executarExclusaoAulaAvulsa = async function () {
   const _compDeletar = window.obterCompromissoSelecionado
     ? window.obterCompromissoSelecionado()
     : null;
@@ -1333,6 +1350,32 @@ window.executarExclusaoDefinitiva = async function () {
     await window.inicializarHome({ sincronizar: true });
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
   }
+};
+
+window.executarExclusaoSerieAPartirDe = function () {
+  const compromisso =
+    window.obterCompromissoSelecionado
+      ? window.obterCompromissoSelecionado()
+      : null;
+  const dataAlvo =
+    window.dataAlvoAcaoStr ||
+    (compromisso && compromisso.data) ||
+    (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+    "";
+  const previsao = window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo, {
+    simular: true,
+  });
+  const texto =
+    previsao.reposicoesPreservadas > 0
+      ? `Excluir daqui pra frente?\n\n${previsao.aparadas} aulas serão aparadas, ${previsao.removidas} removidas e ${previsao.reposicoesPreservadas} reposição(ões) será(ão) mantida(s).`
+      : `Excluir daqui pra frente?\n\n${previsao.aparadas} aulas serão aparadas e ${previsao.removidas} removidas.`;
+  if (!window.confirm(texto)) return;
+  window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo);
+  if (typeof salvarDados === "function") salvarDados();
+  if (typeof window.inicializarHome === "function") {
+    window.inicializarHome({ sincronizar: true });
+  }
+  window.fecharModalAcaoSlot();
 };
 
 window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
@@ -1407,25 +1450,7 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
       }
 
       if (opcao.acao === "daqui") {
-        const dataAlvo =
-          window.dataAlvoAcaoStr ||
-          (compromisso && compromisso.data) ||
-          (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
-          "";
-        const previsao = window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo, {
-          simular: true,
-        });
-        const texto =
-          previsao.reposicoesPreservadas > 0
-            ? `Excluir daqui pra frente?\n\n${previsao.aparadas} aulas serão aparadas, ${previsao.removidas} removidas e ${previsao.reposicoesPreservadas} reposição(ões) será(ão) mantida(s).`
-            : `Excluir daqui pra frente?\n\n${previsao.aparadas} aulas serão aparadas e ${previsao.removidas} removidas.`;
-        if (!window.confirm(texto)) return;
-        window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo);
-        if (typeof salvarDados === "function") salvarDados();
-        if (typeof window.inicializarHome === "function") {
-          window.inicializarHome({ sincronizar: true });
-        }
-        window.fecharModalAcaoSlot();
+        window.executarExclusaoSerieAPartirDe();
         return;
       }
 
@@ -1463,7 +1488,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!Array.isArray(opcoes) || opcoes.length === 0) return;
       if (opcoes.length === 1) {
         if (compromisso && compromisso.frequencia === "uma_vez") {
-          window.executarExclusaoDefinitiva();
+          window.executarExclusaoAulaAvulsa();
         } else {
           window.executarExclusaoInstancia();
         }
