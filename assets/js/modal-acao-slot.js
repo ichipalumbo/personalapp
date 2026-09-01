@@ -1285,10 +1285,13 @@ window.executarExclusaoInstancia = async function () {
       window.gcal &&
       window.gcal.isSignedIn()
     ) {
-      await window.salvarEventoComGCal(compromisso, {
+      const resultadoPersistencia = await window.salvarEventoComGCal(compromisso, {
         operacao: "atualizar",
         snapshotAnterior: _snapshot,
       });
+      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+      }
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
@@ -1388,10 +1391,13 @@ window.executarExclusaoSerie = async function () {
       window.gcal &&
       window.gcal.isSignedIn()
     ) {
-      await window.salvarEventoComGCal(_serieDeletar, {
+      const resultadoPersistencia = await window.salvarEventoComGCal(_serieDeletar, {
         operacao: "excluir",
         snapshotAnterior: _serieDeletar,
       });
+      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+      }
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
@@ -1462,10 +1468,13 @@ window.executarExclusaoAulaAvulsa = async function () {
       window.gcal &&
       window.gcal.isSignedIn()
     ) {
-      await window.salvarEventoComGCal(_compDeletar, {
+      const resultadoPersistencia = await window.salvarEventoComGCal(_compDeletar, {
         operacao: "excluir",
         snapshotAnterior: _compDeletar,
       });
+      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
+      }
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"

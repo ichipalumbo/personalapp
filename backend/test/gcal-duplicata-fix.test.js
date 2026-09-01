@@ -2263,6 +2263,124 @@ test('montarOpcoesExclusaoSlot devolve uma opcao para avulsa', () => {
   assert.equal(opcoes[0].acao, 'instancia');
 });
 
+test('executarExclusaoInstancia com GCal conectado desfaz a excecao se a gravacao falhar', async () => {
+  const compromisso = {
+    id: 'instancia-gcal-falha',
+    tipo: 'aula',
+    data: '01/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '01/09/2026',
+    excecoes: [],
+    googleCalendarEventId: 'evt-instancia-gcal-falha',
+  };
+  const aulas = [compromisso];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: '01/09/2026' });
+  let inicializacoes = 0;
+  const toasts = [];
+
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.salvarEventoComGCal = async () => ({ ok: false, motivo: 'falha_remota' });
+  context.window.inicializarHome = async () => {
+    inicializacoes += 1;
+  };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.obterCompromissoSelecionado = () => compromisso;
+  context.window.confirm = () => true;
+
+  await context.window.executarExclusaoInstancia();
+
+  assert.equal(Array.from(aulas[0].excecoes || []).length, 0);
+  assert.equal(inicializacoes, 0);
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+});
+
+test('executarExclusaoSerie com GCal conectado desfaz a exclusao se a gravacao falhar', async () => {
+  const serieMae = {
+    id: 'serie-gcal-falha',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'semanal',
+    recorrenciaDataInicio: '31/08/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    googleCalendarEventId: 'evt-serie-gcal-falha',
+    excecoes: [],
+  };
+  const serieFilha = {
+    ...serieMae,
+    id: 'serie-gcal-falha-filha',
+    data: '02/09/2026',
+    recorrenciaDataInicio: '02/09/2026',
+    serieOrigemId: 'serie-gcal-falha',
+  };
+  const aulas = [serieMae, serieFilha];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  let inicializacoes = 0;
+  const toasts = [];
+
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.salvarEventoComGCal = async () => ({ ok: false, motivo: 'falha_remota' });
+  context.window.inicializarHome = async () => {
+    inicializacoes += 1;
+  };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.obterCompromissoSelecionado = () => serieMae;
+  context.window.confirm = () => true;
+
+  const antes = aulas.map((item) => item.id);
+  await context.window.executarExclusaoSerie();
+
+  assert.deepEqual(Array.from(aulas.map((item) => item.id)), antes);
+  assert.equal(inicializacoes, 0);
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+});
+
+test('executarExclusaoAulaAvulsa com GCal conectado desfaz a exclusao se a gravacao falhar', async () => {
+  const compromisso = {
+    id: 'avulsa-gcal-falha',
+    tipo: 'aula',
+    data: '01/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'uma_vez',
+    googleCalendarEventId: 'evt-avulsa-gcal-falha',
+  };
+  const aulas = [compromisso, { ...compromisso, id: 'vizinha', data: '02/09/2026', googleCalendarEventId: 'evt-vizinha' }];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: '01/09/2026' });
+  let inicializacoes = 0;
+  const toasts = [];
+
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.salvarEventoComGCal = async () => ({ ok: false, motivo: 'falha_remota' });
+  context.window.inicializarHome = async () => {
+    inicializacoes += 1;
+  };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.obterCompromissoSelecionado = () => compromisso;
+  context.window.idCompromissoSelecionado = compromisso.id;
+  context.window.confirm = () => true;
+
+  const antes = aulas.map((item) => item.id);
+  await context.window.executarExclusaoAulaAvulsa();
+
+  assert.deepEqual(Array.from(aulas.map((item) => item.id)), antes);
+  assert.equal(inicializacoes, 0);
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+});
+
 function criarSerieFamiliaBase(overrides = {}) {
   return {
     id: 'serie-mae',
