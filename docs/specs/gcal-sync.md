@@ -3,11 +3,11 @@
 > **Status**: em produção com validação concluída; sincronização, webhook, `RRULE` e
 > `EXDATE` validados ao longo das rodadas A–H; validação em produção concluída em 31/08/2026.
 > 
-> **Versão**: 9 · **Atualizado**: 2026-08-31
+> **Versão**: 11 · **Atualizado**: 2026-09-01
 > **Defeitos em aberto**: 2 (ver seção 9): 9.14 (gatilho triplo de sincronização no boot) e 9.8
-> (cobertura parcial de I/O real no Google). A validação do canal de webhook em 31/08/2026
-> fecha a parte de renovação do canal que estava pendente; os defeitos 5 e 6 entram no item
-> 9.15 e ficaram documentados como complemento do split encadeado.
+> (cobertura parcial de I/O real no Google). Os defeitos 5 e 6 foram corrigidos, cobertos por
+> testes e verificados em produção pelo dono em 2026-09-01; as duas consultas do §5.1 do
+> diagnóstico retornaram vazias nas duas contas, sem dano gravado.
 >
 > **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v6) define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
@@ -830,7 +830,33 @@ como débito de UX para uma rodada futura, com decisão do dono.
 `falha de gravação desfaz a exclusão local e não recarrega`,
 `excluir daqui pra frente aguarda a gravação` e `falha de gravação restaura a série aparada`.
 
-### 9.22 Relatórios desta spec
+### 9.22 — Fechamento da etapa 6 — FECHADO (2026-09-01)
+
+A etapa 6 fechou em seis rodadas — 6a, 6b-core, 6b-ui, 6c, 6d e 6e — mais as rodadas de
+restauração `6a.2`, `6b-core.2`, `6b-ui.2` e `6b-ui.3`. As quatro ações de exclusão têm
+função nomeada e são as três opções do modal mais a avulsa.
+
+A limpeza retroativa foi executada e não encontrou nada: as duas consultas do §5.1 do
+diagnóstico voltaram vazias na conta de teste e na de produção em 2026-09-01. Esse é um
+fato verificado e registrado com a data, para evitar reabrir a suspeita em rodadas futuras.
+O ambiente de teste do §7 do diagnóstico foi limpo pelo dono, que guardou as collections
+originais. A suíte ficou em 187 testes.
+
+### 9.23 — Débitos remanescentes da etapa 6 — REGISTRO
+
+1. **Agrupar a cadeia na interface** — direção registrada no §6.4 do diagnóstico, escopo grande, sem previsão.
+2. **Espera perceptível na exclusão** — consequência aceita da 6e; reduzir a recarga é decisão do dono.
+3. **Dois ids duplicados no DOM** para "Enviar para reposição", e o id `btnReagendarInstancia` que não descreve a ação.
+4. **Ramo Google Calendar nas exclusões** — quando a agenda está conectada, as quatro funções chamam `salvarEventoComGCal` e não chamam `salvarDados`. **Registrar como pergunta em aberto**, não como defeito: falta confirmar se `salvarEventoComGCal` persiste no MongoDB. Se não persistir, a corrida corrigida na 6e continua viva nesse caminho.
+5. **Relatório da 6d sem as quatro mutações** — as mutações exigidas pelo prompt da 6d não foram executadas. O código foi verificado por auditoria externa e está correto; o registro é que ficou incompleto.
+
+### 9.25 — Rótulo "Excluir a série toda" — FECHADO (2026-09-01)
+
+O rótulo foi ajustado para descrever o efeito real da exclusão na cadeia, sem dizer que a série tem menos aulas do que realmente apaga. A frase agora conta o passado, que é finito e numérico, e não promete um total para o futuro, que pode ser infinito e não precisa de número. Essa escolha evita a contradição que causou o defeito: o texto passou a dizer que o apaga a série toda é **"As N aulas do passado mais todas as aulas futuras"** quando há futuro, **"Todas as aulas, a partir de hoje"** quando o futuro continua e **"As N aulas desta série, todas no passado"** quando a série já encerrou; em caso de série sem aulas restantes, o texto diz **"Nenhuma aula restante nesta série."**.
+
+A regra de negócio do `total` continua intacta: ele continua contando registros removíveis da cadeia, porque esse valor é a guarda que impele o casco invisível que a etapa 5 corrigiu. Em outras palavras, o rótulo descreve o efeito em aulas, mas `total` continua sendo a contagem de registros que a remoção efetivamente afetará e, por isso, continua protegendo a condição de `if (_resumoExclusao.total === 0)`.
+
+### 9.24 Relatórios desta spec
 
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
@@ -865,11 +891,13 @@ como débito de UX para uma rodada futura, com decisão do dono.
 | `docs/_reports/2026-08-31-fix-excluir-serie-toda-coerente.md` | 9.17 | fechado |
 | `docs/_reports/2026-08-31-feat-aparo-cadeia-serie.md` | 9.18 | fechado |
 | `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
-| `docs/_reports/2026-08-31-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
+| `docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
 | `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
 | `docs/_reports/2026-09-01-fix-envio-reposicao-serie.md` | 9.20 | fechado |
 | `docs/_reports/2026-09-01-refactor-nomes-exclusao-e-promise-cobranca.md` | 9.19 / 9.20 | fechado |
 | `docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md` | 9.21 | fechado |
+| `docs/_reports/2026-09-01-docs-fechamento-etapa-6.md` | 9.22 / 9.23 | fechado |
+| `docs/_reports/2026-09-01-feat-rotulo-exclusao-serie-toda.md` | 9.25 | fechado |
 
 ## 10. Custo aceito da decisão
 
