@@ -793,7 +793,44 @@ quatro efeitos esperados: `envio para reposição em série preserva a série e 
 `envio para reposição em avulsa remove a aula`, `os dois botões despacham para a mesma função`
  e `envio para reposição bloqueado para aluno inativo`, além dos dois testes de 6d para `executarExclusaoSerieAPartirDe apara a série e preserva o histórico` e `cancelar a escolha de cobrança não deixa a operação pendurada`.
 
-### 9.21 Relatórios desta spec
+### 9.21 — Exclusão destrutiva aguarda confirmação de gravação e reverte em falha. — FECHADO (2026-09-01)
+
+**Sintoma antigo**: os fluxos de exclusão mutavam o array local, disparavam `salvarDados()` sem
+`await` e logo em seguida executavam `inicializarHome({ sincronizar: true })`. Isso gerava corrida
+entre o `PUT` do save e o `GET` de sincronização: se o GET chegasse antes do PUT, a aula reaparecia
+na tela ao trocar de semana, e só sumia depois de um novo `Sincronizar Dados` quando o servidor já
+estava correto. Esse interleaving é justamente o motivo do efeito "a aula reaparece e depois some"
+relatado pelo dono.
+
+**Falha silenciosa**: a persistência devolve `{ ok, motivo }` e algumas falhas reais (`nao_autenticado`,
+`sessao_expirada`, `falha_remota`) eram ignoradas porque nenhum handler lia o retorno. Em vez de
+mostrar o erro, a UI aceitava o estado local como se a exclusão tivesse concluído, enquanto o
+servidor mantinha a aula viva. A correção 6e tratou isso explicitamente e agora a tela só confirma
+após a persistência real, com rollback do snapshot local em caso de falha.
+
+**Decisão de produto**: as quatro ações de exclusão passaram a seguir a mesma ordem já registrada
+para a reposição e para a determinação do efeito financeiro: snapshot do estado antes da mutação,
+mutação local, `await salvarDados()`, validação com `deveEnviarPatchReposicao(resultado)`, rollback
+com `aulas.splice(0, aulas.length, ..._snapshotAulas)` quando o save falha e sem recarregar a tela
+nessa condição. A ordem é deliberadamente pessimista: a professora vê o estado confirmado só depois
+que o servidor responde. Isso contraria o padrão optimistic-UI do contexto de novas conversas, mas
+é necessário porque a exclusão é destrutiva e irreversível pelo usuário; confirmar antes do servidor
+criar divergência que não há como perceber nem desfazer.
+
+**Erro do usuário**: em caso de falha, o array local volta ao estado anterior, `mostrarToast(...)` ou
+`alert(...)` informa a falha e não há recarga. Essa decisão preserva a honestidade do estado da
+interface, e evita o cenário de “a aula tinha sumido na tela e reviveu no servidor”.
+
+**Débito de UX**: a espera é perceptível e o comportamento é mais lento do que uma otimização
+optimistic-UI. Reduzir a recarga sem `sincronizar: true` depois da gravação confirmada permanece
+como débito de UX para uma rodada futura, com decisão do dono.
+
+**Cobertura**: a correção foi validada em `backend/test/gcal-duplicata-fix.test.js` com os testes
+`exclusão de série só recarrega depois de a gravação confirmar`,
+`falha de gravação desfaz a exclusão local e não recarrega`,
+`excluir daqui pra frente aguarda a gravação` e `falha de gravação restaura a série aparada`.
+
+### 9.22 Relatórios desta spec
 
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
@@ -832,6 +869,7 @@ quatro efeitos esperados: `envio para reposição em série preserva a série e 
 | `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
 | `docs/_reports/2026-09-01-fix-envio-reposicao-serie.md` | 9.20 | fechado |
 | `docs/_reports/2026-09-01-refactor-nomes-exclusao-e-promise-cobranca.md` | 9.19 / 9.20 | fechado |
+| `docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md` | 9.21 | fechado |
 
 ## 10. Custo aceito da decisão
 

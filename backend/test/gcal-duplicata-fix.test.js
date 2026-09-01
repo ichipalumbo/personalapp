@@ -3399,6 +3399,179 @@ test('executarExclusaoInstancia remove a aula e persiste', () => {
   assert.ok(salvarChamadas >= 1, 'salvarDados deveria ter sido chamada ao menos uma vez');
 });
 
+test('exclusão de série só recarrega depois de a gravação confirmar', async () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  };
+
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae], compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.window.confirm = () => true;
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+  context.window.mostrarToast = () => {};
+
+  const eventos = [];
+  context.window.salvarDados = async () => {
+    await Promise.resolve();
+    eventos.push('salvou');
+    return { ok: true, motivo: 'sucesso' };
+  };
+  context.window.inicializarHome = async () => {
+    eventos.push('recarregou');
+  };
+
+  const snapshotAntes = JSON.stringify(context.aulas);
+  await context.window.executarExclusaoSerie();
+
+  assert.ok(eventos.includes('salvou'), 'a gravação precisa confirmar antes do recarregamento');
+  assert.ok(eventos.includes('recarregou'), 'a exclusão precisa recarregar após persistir');
+  assert.ok(eventos.indexOf('salvou') < eventos.indexOf('recarregou'), 'o recarregamento só deve acontecer depois de salvar');
+  assert.notEqual(JSON.stringify(context.aulas), snapshotAntes, 'a série deve permanecer excluída depois da confirmação');
+});
+
+test('falha de gravação desfaz a exclusão local e não recarrega', async () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  };
+
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae], compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.window.confirm = () => true;
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+
+  const eventos = [];
+  const toasts = [];
+  context.window.salvarDados = async () => {
+    eventos.push('salvou');
+    return { ok: false, motivo: 'falha_remota' };
+  };
+  context.window.inicializarHome = async () => {
+    eventos.push('recarregou');
+  };
+  context.window.mostrarToast = (...args) => {
+    eventos.push('toast');
+    toasts.push(args);
+  };
+
+  const idsAntes = context.aulas.map((item) => item.id);
+  await context.window.executarExclusaoSerie();
+
+  assert.deepEqual(context.aulas.map((item) => item.id), idsAntes, 'o array de aulas precisa voltar ao estado original em falha de gravação');
+  assert.equal(eventos.includes('recarregou'), false, 'a falha não deve disparar recarga');
+  assert.ok(toasts.some((args) => args[1] === 'error'), 'deve haver toast de erro ao falhar a persistência');
+});
+
+test('excluir daqui pra frente aguarda a gravação', async () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  };
+
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae], compromisso: serieMae, dataAlvoStr: '10/09/2026' });
+  context.window.confirm = () => true;
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+  context.window.mostrarToast = () => {};
+
+  const eventos = [];
+  context.window.salvarDados = async () => {
+    await Promise.resolve();
+    eventos.push('salvou');
+    return { ok: true, motivo: 'sucesso' };
+  };
+  context.window.inicializarHome = async () => {
+    eventos.push('recarregou');
+  };
+
+  await context.window.executarExclusaoSerieAPartirDe();
+
+  assert.ok(eventos.includes('salvou'), 'a ação deve aguardar a persistência antes de recarregar');
+  assert.ok(eventos.includes('recarregou'), 'a ação deve recarregar após a confirmação de persistência');
+  assert.ok(eventos.indexOf('salvou') < eventos.indexOf('recarregou'), 'o recarregamento só deve vir depois do save');
+});
+
+test('falha de gravação restaura a série aparada', async () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    recorrenciaDataFim: '30/09/2026',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    serieOrigemId: null,
+  };
+
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serieMae], compromisso: serieMae, dataAlvoStr: '15/09/2026' });
+  context.window.confirm = () => true;
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+  context.window.mostrarToast = () => {};
+
+  const eventos = [];
+  context.window.salvarDados = async () => {
+    eventos.push('salvou');
+    return { ok: false, motivo: 'falha_remota' };
+  };
+  context.window.inicializarHome = async () => {
+    eventos.push('recarregou');
+  };
+
+  const fimOriginal = context.aulas[0].recorrenciaDataFim;
+  await context.window.executarExclusaoSerieAPartirDe();
+
+  assert.equal(context.aulas[0].recorrenciaDataFim, fimOriginal, 'o aparo da série precisa ser revertido quando a gravação falha');
+  assert.equal(eventos.includes('recarregou'), false, 'não deve recarregar em caso de falha de persistência');
+});
+
 test('as três ações de exclusão fecham o modal pai', () => {
   const criarSerie = () => ({
     id: 'S0',
