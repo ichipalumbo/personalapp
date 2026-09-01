@@ -305,7 +305,7 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     },
     atualizaEstadoSubmitEdicao: () => {},
     atualizarEstadoSubmitEdicao: () => {},
-    salvarDados: async () => {},
+    salvarDados: async () => ({ ok: true, motivo: 'sucesso' }),
     mostrarToast: () => {},
     app: {},
     gcal: { isSignedIn: () => false },
@@ -4063,4 +4063,364 @@ test('envio para reposição bloqueado para aluno inativo', async () => {
   assert.equal(context.aulas.length, totalAntes, 'o array não deve ser alterado para aluno inativo');
   assert.equal(salvarChamadas, 0, 'a persistência não deve ocorrer para aluno inativo');
 });
+
+// ── Etapa 6i — persistência silenciosa em criação, edição, split e envio para reposição ────────
+
+function prepararEdicaoComGCal({ aulas, compromisso, dataAlvoStr, escopo, horaInicio = '10:00', duracao = '60' }) {
+  const { context, form } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr });
+  const gravacoes = [];
+  const toasts = [];
+  const reaberturas = [];
+
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.abrirModalAcaoSlot = (id) => {
+    reaberturas.push(id);
+  };
+  context.document.getElementById('editEscopoRecorrencia').value = escopo;
+  context.document.getElementById('editHoraInicio').value = horaInicio;
+  context.document.getElementById('editDuracao').value = duracao;
+
+  return { context, form, gravacoes, toasts, reaberturas };
+}
+
+test('Ponto 2 — edição sem split com gravação bem-sucedida não reverte nem reabre o modal', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p2-ok', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '31/08/2026',
+    escopo: 'entireSeries',
+  });
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    return { ok: true, motivo: 'sucesso' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 1);
+  assert.deepEqual(gravacoes[0], { id: 'serie-p2-ok', operacao: 'atualizar' });
+  assert.equal(aulas[0].horarioInicio, '10:00');
+  assert.equal(reaberturas.length, 0);
+  assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
+});
+
+test('Ponto 2 — edição sem split reverte, avisa e reabre o modal preenchido quando a gravação falha', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p2-falha', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '31/08/2026',
+    escopo: 'entireSeries',
+  });
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    return { ok: false, motivo: 'falha_remota' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 1);
+  assert.equal(aulas.length, 1);
+  assert.equal(aulas[0].horarioInicio, '09:00', 'o horário anterior precisa voltar');
+  assert.equal(aulas[0].horarioFim, '10:00');
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+  assert.deepEqual(reaberturas, ['serie-p2-falha']);
+  assert.equal(context.document.getElementById('editHoraInicio').value, '10:00', 'o modal reabre com o que a Josy submeteu');
+  assert.equal(context.document.getElementById('editEscopoRecorrencia').value, 'entireSeries');
+});
+
+test('Ponto 4 — split occurrence com as duas gravações bem-sucedidas mantém a ocorrência nova', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p4-ok', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '31/08/2026',
+    escopo: 'occurrence',
+  });
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    return { ok: true, motivo: 'sucesso' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 2);
+  assert.equal(gravacoes[0].operacao, 'atualizar');
+  assert.equal(gravacoes[1].operacao, 'criar');
+  assert.equal(aulas.length, 2);
+  assert.ok(aulas[0].excecoes.includes('31/08/2026'));
+  assert.equal(reaberturas.length, 0);
+  assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
+});
+
+test('Ponto 4 — falha na PRIMEIRA gravação do split occurrence impede a segunda e reverte tudo', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p4-falha1', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '31/08/2026',
+    escopo: 'occurrence',
+  });
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    return { ok: false, motivo: 'falha_remota' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 1, 'a segunda gravação não pode ser disparada quando a primeira falha');
+  assert.equal(gravacoes[0].operacao, 'atualizar');
+  assert.equal(aulas.length, 1, 'a ocorrência nova precisa sair do array');
+  assert.deepEqual(Array.from(aulas[0].excecoes || []), [], 'o EXDATE precisa ser desfeito');
+  assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
+  assert.deepEqual(reaberturas, ['serie-p4-falha1']);
+  assert.equal(context.document.getElementById('editEscopoRecorrencia').value, 'occurrence');
+});
+
+test('Ponto 4 — falha na SEGUNDA gravação do split occurrence dispara compensação da primeira', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p4-falha2', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '31/08/2026',
+    escopo: 'occurrence',
+  });
+  const excecoesPorGravacao = [];
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    excecoesPorGravacao.push(Array.isArray(alvo && alvo.excecoes) ? [...alvo.excecoes] : null);
+    return gravacoes.length === 2
+      ? { ok: false, motivo: 'falha_remota' }
+      : { ok: true, motivo: 'sucesso' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 3, 'primeira, segunda e a gravação de compensação');
+  assert.equal(gravacoes[0].operacao, 'atualizar');
+  assert.equal(gravacoes[1].operacao, 'criar');
+  assert.equal(gravacoes[2].operacao, 'atualizar', 'a compensação devolve a série ao estado anterior no servidor');
+  assert.equal(gravacoes[2].id, 'serie-p4-falha2');
+  assert.deepEqual(Array.from(excecoesPorGravacao[2] || []), [], 'a compensação envia a série já sem o EXDATE');
+  assert.equal(aulas.length, 1);
+  assert.deepEqual(Array.from(aulas[0].excecoes || []), []);
+  assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
+  assert.deepEqual(reaberturas, ['serie-p4-falha2']);
+});
+
+test('Ponto 5 — split fromDate com as duas gravações bem-sucedidas mantém a série nova', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p5-ok', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '02/09/2026',
+    escopo: 'fromDate',
+  });
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    return { ok: true, motivo: 'sucesso' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 2);
+  assert.equal(gravacoes[0].operacao, 'atualizar');
+  assert.equal(gravacoes[1].operacao, 'criar');
+  assert.equal(aulas.length, 2);
+  assert.equal(aulas[0].recorrenciaDataFim, '01/09/2026');
+  assert.equal(reaberturas.length, 0);
+  assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
+});
+
+test('Ponto 5 — falha na PRIMEIRA gravação do split fromDate impede a segunda e reverte tudo', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p5-falha1', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '02/09/2026',
+    escopo: 'fromDate',
+  });
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    return { ok: false, motivo: 'falha_remota' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 1, 'a segunda gravação não pode ser disparada quando a primeira falha');
+  assert.equal(aulas.length, 1, 'a série nova precisa sair do array');
+  assert.equal(aulas[0].id, 'serie-p5-falha1');
+  assert.equal(aulas[0].recorrenciaDataFim, undefined, 'o UNTIL do corte precisa ser desfeito');
+  assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
+  assert.deepEqual(reaberturas, ['serie-p5-falha1']);
+  assert.equal(context.document.getElementById('editEscopoRecorrencia').value, 'fromDate');
+});
+
+test('Ponto 5 — falha na SEGUNDA gravação do split fromDate dispara compensação da primeira', async () => {
+  const serieMae = criarSerieFamiliaBase({ id: 'serie-p5-falha2', excecoes: [] });
+  const aulas = [serieMae];
+  const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
+    aulas,
+    compromisso: serieMae,
+    dataAlvoStr: '02/09/2026',
+    escopo: 'fromDate',
+  });
+  const fimPorGravacao = [];
+  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+    gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
+    fimPorGravacao.push(alvo ? alvo.recorrenciaDataFim : null);
+    return gravacoes.length === 2
+      ? { ok: false, motivo: 'falha_remota' }
+      : { ok: true, motivo: 'sucesso' };
+  };
+
+  await form.listeners.submit({ preventDefault() {} });
+
+  assert.equal(gravacoes.length, 3, 'primeira, segunda e a gravação de compensação');
+  assert.equal(gravacoes[2].operacao, 'atualizar');
+  assert.equal(gravacoes[2].id, 'serie-p5-falha2');
+  assert.equal(fimPorGravacao[0], '01/09/2026', 'a primeira gravou o corte');
+  assert.equal(fimPorGravacao[2], undefined, 'a compensação devolve a série sem o corte');
+  assert.equal(aulas.length, 1);
+  assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
+  assert.deepEqual(reaberturas, ['serie-p5-falha2']);
+});
+
+function prepararReagendamentoReposicao({ gcalResultado }) {
+  const rep = { id: 'rep-6i', alunoId: 'aluno-1', dataCancelamento: '01/09/2026' };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [], compromisso: null, dataAlvoStr: '31/08/2026' });
+  const chamadasApi = [];
+  const toasts = [];
+
+  context.window.aulasParaRepor = [rep];
+  context.window.reagendamentoDirectCardId = rep.id;
+  context.document.getElementById('reagendarDia').value = 'Segunda';
+  context.document.getElementById('reagendarHoraInicio').value = '09:00';
+  context.document.getElementById('reagendarDuracao').value = '60';
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.salvarEventoComGCal = async () => gcalResultado;
+  context.window.apiFetchBackend = async (url, opcoes = {}) => {
+    chamadasApi.push({
+      url: String(url),
+      method: opcoes.method || 'GET',
+      body: opcoes.body ? JSON.parse(opcoes.body) : null,
+    });
+    return criarRespostaJson(200, {});
+  };
+
+  return { context, chamadasApi, toasts, rep };
+}
+
+test('Ponto 3 — reagendamento de reposição com gravação bem-sucedida mantém a aula e tira a reposição da fila', async () => {
+  const { context, chamadasApi, toasts } = prepararReagendamentoReposicao({
+    gcalResultado: { ok: true, motivo: 'sucesso' },
+  });
+
+  await context.document.getElementById('formReagendarAula').listeners.submit({ preventDefault() {} });
+
+  const novaAula = context.window.aulas.find((item) => item.id.startsWith('ag-'));
+  assert.ok(novaAula, 'a aula da reposição precisa continuar no array');
+  assert.equal(context.window.aulasParaRepor.length, 0);
+  assert.equal(chamadasApi.filter((c) => c.method === 'PATCH').length, 1);
+  assert.equal(chamadasApi[0].body.status, 'agendada');
+  assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
+});
+
+test('Ponto 3 — falha na gravação do reagendamento devolve a reposição para pendente e remove a aula', async () => {
+  const { context, chamadasApi, toasts } = prepararReagendamentoReposicao({
+    gcalResultado: { ok: false, motivo: 'falha_remota' },
+  });
+
+  await context.document.getElementById('formReagendarAula').listeners.submit({ preventDefault() {} });
+
+  const novaAula = context.window.aulas.find((item) => item.id.startsWith('ag-'));
+  assert.equal(novaAula, undefined, 'a aula criada precisa sair do array');
+  assert.equal(context.window.aulasParaRepor.length, 1, 'a reposição continua na fila');
+
+  const patches = chamadasApi.filter((c) => c.method === 'PATCH');
+  assert.equal(patches.length, 2, 'o PATCH de agendada precisa ser desfeito por um segundo PATCH');
+  assert.equal(patches[0].body.status, 'agendada');
+  assert.equal(patches[1].body.status, 'pendente');
+  assert.equal(patches[1].body.agendamentoReposicaoId, null);
+  assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
+});
+
+function prepararEnvioAvulsaParaReposicao({ gcalResultado }) {
+  const compromisso = {
+    id: 'avulsa-p6',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    data: '01/09/2026',
+    dia: 'Terça',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'uma_vez',
+    googleCalendarEventId: 'evt-avulsa-p6',
+  };
+  const vizinha = { ...compromisso, id: 'avulsa-p6-vizinha', data: '02/09/2026' };
+  const aulas = [compromisso, vizinha];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr: '01/09/2026' });
+  const chamadasApi = [];
+  const toasts = [];
+
+  context.window.idCompromissoSelecionado = compromisso.id;
+  context.window.gcal = { isSignedIn: () => true };
+  context.window.mostrarToast = (...args) => {
+    toasts.push(args);
+  };
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = () => true;
+  context.window.salvarEventoComGCal = async () => gcalResultado;
+  context.window.carregarDados = async () => {};
+  context.window.apiFetchBackend = async (url, opcoes = {}) => {
+    chamadasApi.push({
+      url: String(url),
+      method: opcoes.method || 'GET',
+      body: opcoes.body ? JSON.parse(opcoes.body) : null,
+    });
+    return criarRespostaJson(200, { id: 'rep-criada-p6', status: 'pendente' });
+  };
+  context.window.abrirModalEscolhaCobrancaReposicao = async (_compromisso, callback) => {
+    await callback(true);
+  };
+
+  return { context, aulas, chamadasApi, toasts };
+}
+
+test('Ponto 6 — envio de aula avulsa para reposição com gravação bem-sucedida remove a aula da agenda', async () => {
+  const { context, aulas, toasts } = prepararEnvioAvulsaParaReposicao({
+    gcalResultado: { ok: true, motivo: 'sucesso' },
+  });
+
+  await context.window.executarEnvioParaReposicao();
+
+  assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6-vizinha']);
+  assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
+});
+
+test('Ponto 6 — falha na gravação do envio para reposição devolve a aula avulsa à agenda e avisa', async () => {
+  const { context, aulas, toasts } = prepararEnvioAvulsaParaReposicao({
+    gcalResultado: { ok: false, motivo: 'falha_remota' },
+  });
+
+  await context.window.executarEnvioParaReposicao();
+
+  assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6', 'avulsa-p6-vizinha']);
+  assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
+});
+
 

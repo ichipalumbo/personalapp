@@ -849,7 +849,26 @@ originais. A suíte ficou em 187 testes.
 3. **Dois ids duplicados no DOM** para "Enviar para reposição", e o id `btnReagendarInstancia` que não descreve a ação.
 4. **Ramo Google Calendar nas exclusões** — confirmando a persistência: `salvarEventoComGCal` persiste via `salvarDados`. A corrida não existia, e a falha silenciosa era real e foi corrigida — ver item `9.26`.
 5. **Relatório da 6d sem as quatro mutações** — as mutações exigidas pelo prompt da 6d não foram executadas. O código foi verificado por auditoria externa e está correto; o registro é que ficou incompleto.
-6. **Seis pontos de chamada de `salvarEventoComGCal` fora do escopo da 6h** — criação em `modal-agendamento.js:907`; edição/split em `modal-acao-slot.js` nos trechos `novoCompromisso`, `_novaOcorrenciaSerie`, `_novaSerieSplit` e o par `compromisso`/`_snapshotEdicao`. Esses caminhos são criação e edição, não exclusão, e a decisão de UX para "salvar falhou silenciosamente" neles é diferente da de excluir e permanece como candidato a etapa 6i.
+6. **Seis pontos de chamada de `salvarEventoComGCal` fora do escopo da 6h** — FECHADO na etapa 6i, ver item `9.27`. Os seis eram: criação em `modal-agendamento.js` (handler de `formAgendamento`); e, em `modal-acao-slot.js`, o `novoCompromisso` do handler de `formReagendarAula`, o par `compromisso`/`_snapshotEdicao` do handler de `formEditarCompromisso`, as duas gravações de split desse mesmo handler (`_novaOcorrenciaSerie` e `_novaSerieSplit`) e a gravação de `compromisso` no ramo `!ehSerie` de `window.executarEnvioParaReposicao`. A redação original deste débito não citava `executarEnvioParaReposicao` explicitamente, embora ela estivesse dentro da contagem de seis; o diagnóstico da 6i-a apontou a imprecisão e ela está corrigida aqui.
+
+### 9.27 — Persistência silenciosa em criação, edição, split e envio para reposição — FECHADO (2026-09-01)
+
+Os seis pontos de chamada de `salvarEventoComGCal` que a 6h deixou fora (criação e edição, não exclusão) passaram a checar o retorno da persistência antes de seguir. Decisões de UX do dono, implementadas ponto a ponto:
+
+| Ponto | Onde | Reação a falha de gravação |
+| --- | --- | --- |
+| 1 | `modal-agendamento.js`, handler de `submit` de `formAgendamento` | Reverte (remove a aula criada), avisa por toast e reabre o formulário com os dados preenchidos. |
+| 2 | `modal-acao-slot.js`, handler de `submit` de `formEditarCompromisso`, escopos sem split | Reverte para o snapshot, avisa por toast e reabre o modal de edição com os dados submetidos. |
+| 3 | `modal-acao-slot.js`, handler de `submit` de `formReagendarAula` | Desfaz o `PATCH` que marcou a reposição como `agendada` (volta para `pendente` com `agendamentoReposicaoId: null`), remove o compromisso criado e avisa por toast. A tela de reagendamento nunca chega a fechar nesse caminho, então continua aberta com o dia/horário escolhidos. |
+| 4 | Mesmo handler do ponto 2, ramo `escopoRecorrencia === "occurrence"` | Reverte as duas gravações, avisa e reabre o modal no mesmo escopo. |
+| 5 | Mesmo handler do ponto 2, ramo `escopoRecorrencia === "fromDate"` | Idem ponto 4, no escopo `fromDate`. |
+| 6 | `modal-acao-slot.js`, `window.executarEnvioParaReposicao`, ramo `!ehSerie` | Devolve a aula avulsa à agenda e avisa por toast. Sem reabrir tela. |
+
+**Ordem de execução dos splits corrigida junto.** Nos pontos 4 e 5 as duas gravações rodavam em sequência sem `return` entre elas: se a primeira falhasse, a segunda disparava mesmo assim. Agora a segunda só roda se a primeira tiver sido confirmada.
+
+**Gravação de compensação.** Quando a segunda gravação do split falha, a primeira já persistiu no servidor e desfazê-la só na memória não basta. O estado local é restaurado a partir do snapshot do array `aulas` e uma terceira chamada a `salvarEventoComGCal(compromissoRestaurado, { operacao: "atualizar" })` empurra esse estado restaurado para o servidor. Esse mecanismo não existia antes desta etapa — a 6h só precisava de reversão local — e foi construído aqui.
+
+**Limite conhecido do ponto 6 — reversão remota da reposição criada não foi implementada.** A decisão do dono previa desfazer no servidor a reposição já criada, reaproveitando o mecanismo que o ramo `ehSerie` da mesma função supostamente usaria. Esse mecanismo **não existe**: o `catch` do ramo `ehSerie` reverte apenas `compromisso.excecoes` em memória, e a API de reposições não oferece caminho para anular uma reposição criada — `backend/src/routes/reposicaoRoutes.js` expõe `GET`, `POST` e `PATCH`, sem `DELETE`, e o `enum` de `status` em `backend/src/models/Reposicao.js` é `['pendente', 'agendada', 'realizada', 'expirada']`, sem estado de cancelamento. Implementar a decisão exigiria alteração de backend, fora do escopo desta etapa. Consequência prática: em falha de gravação no ponto 6 a aula volta para a agenda, mas a reposição criada permanece na fila e precisa ser tratada manualmente. Isso vira débito novo.
 
 ### 9.26 — Falha silenciosa de persistência no caminho com Google Calendar conectado — FECHADO (2026-09-01)
 
@@ -906,6 +925,8 @@ A regra de negócio do `total` continua intacta: ele continua contando registros
 | `docs/_reports/2026-09-01-docs-fechamento-etapa-6.md` | 9.22 / 9.23 | fechado |
 | `docs/_reports/2026-09-01-fix-persistencia-silenciosa-gcal.md` | 9.26 | fechado |
 | `docs/_reports/2026-09-01-feat-rotulo-exclusao-serie-toda.md` | 9.25 | fechado |
+| `docs/_reports/2026-09-01-diag-persistencia-silenciosa-criacao-edicao.md` | 9.23 nº 6 | diagnóstico |
+| `docs/_reports/2026-09-01-fix-persistencia-silenciosa-criacao-edicao.md` | 9.27 / 9.23 nº 6 | fechado |
 
 ## 10. Custo aceito da decisão
 

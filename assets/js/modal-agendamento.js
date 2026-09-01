@@ -790,6 +790,79 @@ function confirmarConflitosRecorrenciaSeNecessario(resultadoSerializacao) {
     return window.confirm(obterMensagemConfirmacaoConflitosRecorrencia(resultadoSerializacao.conflitosResumo || ''));
 }
 
+// ── Persistência do agendamento — checagem e reversão ─────────────────────────────────────────
+
+function persistenciaAgendamentoConcluida(resultadoPersistencia) {
+    if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.deveEnviarPatch === 'function') {
+        return window.reposicaoFlowHelpers.deveEnviarPatch(resultadoPersistencia);
+    }
+    return Boolean(resultadoPersistencia && resultadoPersistencia.ok === true);
+}
+
+function obterMensagemFalhaPersistenciaAgendamento(resultadoPersistencia) {
+    if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia === 'function') {
+        return window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia(resultadoPersistencia);
+    }
+    return 'Não foi possível confirmar a persistência dos dados.';
+}
+
+function capturarValoresFormularioAgendamento() {
+    return {
+        tipo: document.getElementById('agendaTipo')?.value || 'aula',
+        dia: slotSelecionadoDiaTexto,
+        alunoId: document.getElementById('agendaAluno')?.value || '',
+        descricao: document.getElementById('agendaDescricao')?.value || '',
+        horarioInicio: document.getElementById('agendaHoraInicio')?.value || slotSelecionadoHora || '',
+        duracao: document.getElementById('agendaDuracao')?.value || '60',
+        diaInteiro: document.getElementById('agendaBloqueioDiaInteiro')?.checked === true,
+        // Referência ao rascunho de recorrência; `abrirAgendamentoModal` cria um novo e descarta este.
+        rascunho: rascunhoFluxoAgendamento
+    };
+}
+
+function reabrirFormularioAgendamentoComValores(valores) {
+    if (!valores || typeof window.abrirAgendamentoModal !== 'function') return;
+
+    window.abrirAgendamentoModal(valores.dia, valores.horarioInicio, valores.tipo);
+
+    const selectAluno = document.getElementById('agendaAluno');
+    if (selectAluno) selectAluno.value = valores.alunoId || '';
+    const inputDescricao = document.getElementById('agendaDescricao');
+    if (inputDescricao) inputDescricao.value = valores.descricao || '';
+    const selectHoraInicio = document.getElementById('agendaHoraInicio');
+    if (selectHoraInicio && valores.horarioInicio) selectHoraInicio.value = valores.horarioInicio;
+    const selectDuracao = document.getElementById('agendaDuracao');
+    if (selectDuracao) selectDuracao.value = valores.duracao || '60';
+    const checkDiaInteiro = document.getElementById('agendaBloqueioDiaInteiro');
+    if (checkDiaInteiro) checkDiaInteiro.checked = valores.diaInteiro === true;
+
+    if (typeof window.atualizarEstadoBloqueioDiaInteiroAgenda === 'function') {
+        window.atualizarEstadoBloqueioDiaInteiroAgenda();
+    }
+    if (typeof window.sincronizarSteppersDuracao === 'function') {
+        window.sincronizarSteppersDuracao();
+    }
+
+    if (valores.rascunho) {
+        rascunhoFluxoAgendamento = valores.rascunho;
+        atualizarResumoRecorrenciaAgendamentoPrincipal();
+    }
+}
+
+function reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormulario) {
+    const indiceCriado = aulas.findIndex((item) => item && payloadCriado && item.id === payloadCriado.id);
+    if (indiceCriado !== -1) aulas.splice(indiceCriado, 1);
+
+    const mensagemErro = obterMensagemFalhaPersistenciaAgendamento(resultadoPersistencia);
+    if (typeof mostrarToast === 'function') {
+        mostrarToast(mensagemErro, 'error');
+    } else {
+        alert(mensagemErro);
+    }
+
+    reabrirFormularioAgendamentoComValores(valoresFormulario);
+}
+
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -849,7 +922,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formAgendamento = document.getElementById('formAgendamento');
     if (formAgendamento) {
-        formAgendamento.addEventListener('submit', (e) => {
+        formAgendamento.addEventListener('submit', async (e) => {
             e.preventDefault();
             capturarFormularioPrincipalNoRascunho();
 
@@ -875,6 +948,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             aulas.push(resultado.payload);
+            const valoresFormularioAgendamento = capturarValoresFormularioAgendamento();
             const payloadCriado = resultado.payload || {};
             const ehSerie = payloadCriado.frequencia === 'semanal' || (payloadCriado.recurrence && payloadCriado.recurrence.enabled === true);
             const ehBloqueio = (payloadCriado.tipo || 'aula') === 'bloqueio';
@@ -904,9 +978,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 // Optimistic UI in salvarEventoComGCal renders the new event immediately.
-                window.salvarEventoComGCal(resultado.payload, { operacao: 'criar' });
+                const resultadoPersistencia = await window.salvarEventoComGCal(resultado.payload, { operacao: 'criar' });
+                if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
+                    reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
+                    return;
+                }
             } else {
-                if (typeof salvarDados === 'function') salvarDados();
+                const resultadoPersistencia = typeof salvarDados === 'function'
+                    ? await salvarDados()
+                    : { ok: false, motivo: 'falha_remota' };
+                if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
+                    reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
+                    return;
+                }
                 window.inicializarHome();
                 if (typeof mostrarToast === 'function') mostrarToast('✅ Horário agendado com sucesso!');
             }
