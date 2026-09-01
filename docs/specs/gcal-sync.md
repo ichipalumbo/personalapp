@@ -762,7 +762,36 @@ O modal também reusa o padrão `.modal-escolha-*` já existente no app, com íc
 
 **Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (`docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md`, commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 (`docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md`) restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
 
-### 9.20 Relatórios desta spec
+### 9.20 — Envio para reposição em série usa despachante único com dois caminhos internos. — FECHADO (2026-09-01)
+
+A ação de "Enviar para reposição" passou a ter um despachante único em `window`,
+`window.executarEnvioParaReposicao`. Ele reutiliza a área de seleção/validação do modal
+existente e conecta os dois botões do DOM (`btnMandarParaReposicao` e o resquício
+`btnReagendarInstancia`) ao mesmo ponto de entrada, sem unificar o layout visual no mesmo
+round de correção.
+
+**Semântica preservada**:
+
+- `compromisso.frequencia === "uma_vez"` usa `splice` para remover a aula do array;
+- caso contrário, usa `excecoes.push(dataAlvo)` para marcar somente a data alvo como exceção e
+  preservar a série remanescente;
+- a guarda de aluno inativo continua obrigatória antes de qualquer mutação;
+- após persistência bem-sucedida, o fluxo fecha `window.fecharModalAcaoSlot()`.
+
+**Débito conhecido**: o DOM ainda expõe dois ids equivalentes com rótulo idêntico
+(`btnMandarParaReposicao` e `btnReagendarInstancia`), e o id do recorrente não descreve a ação
+real. A limpeza do DOM e do nome do botão continuaram fora do escopo da etapa de correção.
+
+**Planejado**: a etapa 6d renomeia `executarExclusaoDefinitiva` para
+`executarExclusaoAulaAvulsa`, e a ação "daqui pra frente" continua anônima e inline no código do
+modal, sem nome público dedicado.
+
+**Cobertura**: a regressão foi validada em `backend/test/gcal-duplicata-fix.test.js` com os
+quatro efeitos esperados: `envio para reposição em série preserva a série e marca exceção`,
+`envio para reposição em avulsa remove a aula`, `os dois botões despacham para a mesma função`
+ e `envio para reposição bloqueado para aluno inativo`.
+
+### 9.21 Relatórios desta spec
 
 | Relatório | Itens da §9 | Estado |
 | --- | --- | --- |
@@ -799,6 +828,7 @@ O modal também reusa o padrão `.modal-escolha-*` já existente no app, com íc
 | `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
 | `docs/_reports/2026-08-31-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
 | `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
+| `docs/_reports/2026-09-01-fix-envio-reposicao-serie.md` | 9.20 | fechado |
 
 ## 10. Custo aceito da decisão
 

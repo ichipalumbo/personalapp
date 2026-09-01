@@ -882,37 +882,46 @@ window.fecharModalAcaoSlot = function () {
 };
 
 window.abrirModalEscolhaCobrancaReposicao = function (compromisso, callback) {
-  const modal = document.getElementById("modalEscolhaCobrancaReposicao");
-  if (!modal || !compromisso) return;
+  return new Promise((resolve) => {
+    const modal = document.getElementById("modalEscolhaCobrancaReposicao");
+    if (!modal || !compromisso) {
+      resolve();
+      return;
+    }
 
-  const aluno =
-    typeof window.getAluno === "function"
-      ? window.getAluno(compromisso.alunoId)
-      : null;
-  const dataOriginal =
-    compromisso.data && typeof compromisso.data === "string"
-      ? compromisso.data
-      : window.getDataSelecionadaPtBr
-        ? window.getDataSelecionadaPtBr()
-        : "";
-  const nomeAluno = aluno && aluno.nome ? String(aluno.nome) : "Aluno";
-  const dataHora = `${window.formatarDataPtBrLegivel ? window.formatarDataPtBrLegivel(dataOriginal) : dataOriginal} · ${compromisso.horarioInicio || "00:00"}`;
+    const aluno =
+      typeof window.getAluno === "function"
+        ? window.getAluno(compromisso.alunoId)
+        : null;
+    const dataOriginal =
+      compromisso.data && typeof compromisso.data === "string"
+        ? compromisso.data
+        : window.getDataSelecionadaPtBr
+          ? window.getDataSelecionadaPtBr()
+          : "";
+    const nomeAluno = aluno && aluno.nome ? String(aluno.nome) : "Aluno";
+    const dataHora = `${window.formatarDataPtBrLegivel ? window.formatarDataPtBrLegivel(dataOriginal) : dataOriginal} · ${compromisso.horarioInicio || "00:00"}`;
 
-  document.getElementById("reposicaoEscolhaAluno").textContent = nomeAluno;
-  document.getElementById("reposicaoEscolhaDataHorario").textContent = dataHora;
+    document.getElementById("reposicaoEscolhaAluno").textContent = nomeAluno;
+    document.getElementById("reposicaoEscolhaDataHorario").textContent = dataHora;
 
-  const opcaoButtons = modal.querySelectorAll("[data-reposicao-cobravel]");
-  opcaoButtons.forEach((botao) => {
-    botao.onclick = async () => {
-      const cobravel = botao.dataset.reposicaoCobravel === "true";
-      modal.style.display = "none";
-      if (typeof callback === "function") {
-        await callback(cobravel);
-      }
-    };
+    const opcaoButtons = modal.querySelectorAll("[data-reposicao-cobravel]");
+    opcaoButtons.forEach((botao) => {
+      botao.onclick = async () => {
+        const cobravel = botao.dataset.reposicaoCobravel === "true";
+        modal.style.display = "none";
+        try {
+          if (typeof callback === "function") {
+            await callback(cobravel);
+          }
+        } finally {
+          resolve();
+        }
+      };
+    });
+
+    modal.style.display = "flex";
   });
-
-  modal.style.display = "flex";
 };
 
 window.fecharModalEscolhaCobrancaReposicao = function () {
@@ -2210,79 +2219,173 @@ document.addEventListener("DOMContentLoaded", () => {
       window.atualizarEstadoBloqueioDiaInteiroEdicao(),
     );
 
-  const btnMandarReposicao = document.getElementById("btnMandarParaReposicao");
-  if (btnMandarReposicao) {
-    btnMandarReposicao.addEventListener("click", () => {
-      const compromisso = obterCompromissoSelecionado();
-      if (!compromisso) return;
-      if (compromissoTemAlunoInativo(compromisso)) {
-        alert(
-          "Aluno inativo: não é possível enviar este compromisso para reposição.",
-        );
-        return;
-      }
+  window.executarEnvioParaReposicao = async function () {
+    const compromisso = obterCompromissoSelecionado();
+    if (!compromisso) return;
+    if (compromissoTemAlunoInativo(compromisso)) {
+      alert(
+        "Aluno inativo: não é possível enviar este compromisso para reposição.",
+      );
+      return;
+    }
 
-      const dataAlvo = compromisso.data || window.getDataSelecionadaPtBr();
-      const dataAlvoISO = window.normalizarDataParaISO(dataAlvo);
-      window.abrirModalEscolhaCobrancaReposicao(
-        compromisso,
-        async (cobravel) => {
-          try {
-            const reposicao = await enviarParaReposicao(
-              compromisso,
-              dataAlvoISO,
-              cobravel,
-            );
+    const dataAlvo = compromisso.data || window.getDataSelecionadaPtBr();
+    const dataAlvoISO = window.normalizarDataParaISO(dataAlvo);
+    const dataAlvoStr =
+      window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString("pt-BR");
+    const ehSerie = compromisso.frequencia !== "uma_vez";
+    const _snapshot = ehSerie
+      ? { ...compromisso, excecoes: [...(compromisso.excecoes || [])] }
+      : null;
+    let _mutouExcecoes = false;
+
+    await window.abrirModalEscolhaCobrancaReposicao(
+      compromisso,
+      async (cobravel) => {
+        try {
+          const reposicao = await enviarParaReposicao(
+            compromisso,
+            ehSerie ? dataAlvoStr : dataAlvoISO,
+            cobravel,
+          );
+          if (!reposicao || !reposicao.id) {
+            throw new Error("Reposição não foi criada no servidor.");
+          }
+
+          if (ehSerie) {
+            if (!compromisso.excecoes) compromisso.excecoes = [];
+            if (!compromisso.excecoes.includes(dataAlvoStr)) {
+              compromisso.excecoes.push(dataAlvoStr);
+              _mutouExcecoes = true;
+            }
+          } else {
             const _idxReposicao = aulas.findIndex(
               (a) => a.id === window.idCompromissoSelecionado,
             );
             if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
-            window.fecharModalAcaoSlot();
+          }
 
-            if (
-              typeof window.salvarEventoComGCal === "function" &&
-              window.gcal &&
-              window.gcal.isSignedIn()
-            ) {
-              await window.salvarEventoComGCal(compromisso, {
-                operacao: "excluir",
-                snapshotAnterior: compromisso,
-              });
-            } else {
-              if (typeof salvarDados === "function") salvarDados();
+          window.fecharModalAcaoSlot();
+
+          if (ehSerie) {
+            const resultadoPersistencia =
+              typeof salvarDados === "function"
+                ? await salvarDados(true)
+                : { ok: false, motivo: "falha_remota" };
+            if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
+              throw new Error(
+                obterMensagemFalhaPersistencia(resultadoPersistencia),
+              );
             }
-
             if (typeof window.carregarDados === "function") {
               await window.carregarDados({
                 forcarRemoto: true,
                 silenciosoUI: true,
               });
             }
-            window.inicializarHome();
+            if (typeof window.inicializarHome === "function") {
+              await window.inicializarHome();
+            }
+
+            let mensagemPrazo = "";
+            if (reposicao && reposicao.validoAte) {
+              mensagemPrazo = ` Prazo: até ${window.formatarDataPtBr ? window.formatarDataPtBr(reposicao.validoAte) : reposicao.validoAte}.`;
+            }
             if (typeof mostrarToast === "function") {
-              mostrarToast("✅ Aula enviada para reposição.", "success");
+              mostrarToast(`✅ Aula enviada para reposição.${mensagemPrazo}`);
             }
             return reposicao;
-          } catch (erro) {
+          }
+
+          if (
+            typeof window.salvarEventoComGCal === "function" &&
+            window.gcal &&
+            window.gcal.isSignedIn()
+          ) {
+            await window.salvarEventoComGCal(compromisso, {
+              operacao: "excluir",
+              snapshotAnterior: compromisso,
+            });
+          } else if (typeof salvarDados === "function") {
+            await salvarDados();
+          }
+
+          if (typeof window.carregarDados === "function") {
+            await window.carregarDados({
+              forcarRemoto: true,
+              silenciosoUI: true,
+            });
+          }
+          if (typeof window.inicializarHome === "function") {
+            await window.inicializarHome();
+          }
+          if (typeof mostrarToast === "function") {
+            mostrarToast("✅ Aula enviada para reposição.", "success");
+          }
+          return reposicao;
+        } catch (erro) {
+          if (ehSerie && _mutouExcecoes) {
+            compromisso.excecoes = [...(_snapshot.excecoes || [])];
+          }
+          if (ehSerie) {
+            window.log.warn("[reposicao]", "Rollback disparado", {
+              id: compromisso.id,
+              motivo:
+                erro && erro.message
+                  ? erro.message
+                  : "falha_reagendamento_reposicao",
+            });
             if (typeof mostrarToast === "function") {
               mostrarToast(
                 erro && erro.message
                   ? erro.message
-                  : "Falha ao enviar para reposição.",
+                  : "Falha ao reagendar a reposição.",
                 "error",
               );
             } else {
               alert(
                 erro && erro.message
                   ? erro.message
-                  : "Falha ao enviar para reposição.",
+                  : "Falha ao reagendar a reposição.",
               );
             }
             return null;
           }
-        },
-      );
-    });
+
+          if (typeof mostrarToast === "function") {
+            mostrarToast(
+              erro && erro.message
+                ? erro.message
+                : "Falha ao enviar para reposição.",
+              "error",
+            );
+          } else {
+            alert(
+              erro && erro.message
+                ? erro.message
+                : "Falha ao enviar para reposição.",
+            );
+          }
+          return null;
+        }
+      },
+    );
+  };
+
+  const btnMandarReposicao = document.getElementById("btnMandarParaReposicao");
+  if (btnMandarReposicao) {
+    btnMandarReposicao.addEventListener(
+      "click",
+      window.executarEnvioParaReposicao,
+    );
+  }
+
+  const btnReagendarInstancia = document.getElementById("btnReagendarInstancia");
+  if (btnReagendarInstancia) {
+    btnReagendarInstancia.addEventListener(
+      "click",
+      window.executarEnvioParaReposicao,
+    );
   }
 
 });

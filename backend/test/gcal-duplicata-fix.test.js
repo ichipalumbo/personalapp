@@ -306,6 +306,17 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     dataAlvoAcaoStr: dataAlvoStr,
     dataSelecionada: new Date('2026-08-30T12:00:00'),
     getDataSelecionadaPtBr: () => dataAlvoStr,
+    normalizarDataParaISO: (valor) => {
+      if (!valor) return '';
+      if (valor instanceof Date) {
+        return `${valor.getFullYear()}-${String(valor.getMonth() + 1).padStart(2, '0')}-${String(valor.getDate()).padStart(2, '0')}`;
+      }
+      const texto = String(valor).trim();
+      const semHora = texto.split('T')[0];
+      if (semHora.includes('/')) return semHora.split('/').reverse().join('-');
+      if (semHora.includes('-')) return semHora;
+      return texto;
+    },
     converterPtBrParaISO: (valor) => {
       if (!valor || !valor.includes('/')) return valor;
       return valor.split('/').reverse().join('-');
@@ -3339,5 +3350,188 @@ test('exclusão bloqueada para aluno inativo', () => {
 
   assert.equal(context.aulas.length, totalAntes, 'o array de aulas não deveria ter mudado');
   assert.equal(salvarChamadas, 0, 'salvarDados não deveria ter sido chamada');
+});
+
+test('envio para reposição em série preserva a série e marca exceção', async () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaDataFim: '30/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    excecoes: [],
+  };
+
+  const aulas = [serieMae];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.window.idCompromissoSelecionado = serieMae.id;
+  context.window.dataAlvoAcaoStr = '31/08/2026';
+  context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) => {
+    return callback(true);
+  };
+  context.window.apiFetchBackend = async () => ({
+    ok: true,
+    json: async () => ({ id: 'repo-serie-1', validoAte: '2026-09-15' }),
+  });
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+  context.salvarDados = async () => ({ ok: true });
+  context.window.salvarDados = async () => ({ ok: true });
+  context.window.carregarDados = async () => {};
+  context.window.inicializarHome = async () => {};
+  context.window.fecharModalAcaoSlot = () => {};
+  context.window.formatarDataPtBr = (valor) => valor || '';
+
+  const totalAntes = context.aulas.length;
+  await context.window.executarEnvioParaReposicao();
+
+  assert.equal(context.aulas.length, totalAntes, 'a série não deve ser removida do array');
+  assert.ok(context.aulas[0].excecoes.includes('31/08/2026'), 'a data alvo deve entrar em excecoes');
+});
+
+test('envio para reposição em avulsa remove a aula', async () => {
+  const avulsa = {
+    id: 'A0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'uma_vez',
+    data: '31/08/2026',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+  };
+
+  const aulas = [avulsa];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: avulsa, dataAlvoStr: '31/08/2026' });
+  context.window.idCompromissoSelecionado = avulsa.id;
+  context.window.dataAlvoAcaoStr = '31/08/2026';
+  context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) => {
+    return callback(true);
+  };
+  context.window.apiFetchBackend = async () => ({
+    ok: true,
+    json: async () => ({ id: 'repo-avulsa-1' }),
+  });
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+
+  let salvarChamadas = 0;
+  context.salvarDados = async () => {
+    salvarChamadas += 1;
+    return { ok: true };
+  };
+  context.window.salvarDados = async () => {
+    salvarChamadas += 1;
+    return { ok: true };
+  };
+  context.window.carregarDados = async () => {};
+  context.window.inicializarHome = async () => {};
+  context.window.fecharModalAcaoSlot = () => {};
+
+  await context.window.executarEnvioParaReposicao();
+
+  assert.equal(context.aulas.length, 0, 'a aula avulsa deve sair do array');
+  assert.equal(salvarChamadas, 1, 'a persistência da avulsa deve ser chamada');
+});
+
+test('os dois botões despacham para a mesma função', async () => {
+  const serie = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+  };
+
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [serie], compromisso: serie, dataAlvoStr: '31/08/2026' });
+  context.window.idCompromissoSelecionado = serie.id;
+  context.window.dataAlvoAcaoStr = '31/08/2026';
+  context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) => {
+    return callback(true);
+  };
+  context.window.apiFetchBackend = async () => ({
+    ok: true,
+    json: async () => ({ id: 'repo-click-1' }),
+  });
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+  context.salvarDados = async () => ({ ok: true });
+  context.window.salvarDados = async () => ({ ok: true });
+  context.window.carregarDados = async () => {};
+  context.window.inicializarHome = async () => {};
+  context.window.fecharModalAcaoSlot = () => {};
+
+  const btnMandar = context.document.getElementById('btnMandarParaReposicao');
+  const btnReagendar = context.document.getElementById('btnReagendarInstancia');
+  assert.ok(btnMandar && btnReagendar, 'ambos os botões devem existir no harness');
+  assert.equal(btnMandar.listeners.click, btnReagendar.listeners.click, 'os dois botões devem compartilhar o mesmo dispatcher');
+
+  const chamadas = [];
+  const original = btnMandar.listeners.click;
+  btnMandar.listeners.click = async (...args) => {
+    chamadas.push('mandar');
+    return original.apply(btnMandar, args);
+  };
+  btnReagendar.listeners.click = async (...args) => {
+    chamadas.push('reagendar');
+    return original.apply(btnReagendar, args);
+  };
+
+  await btnMandar.listeners.click();
+  await btnReagendar.listeners.click();
+
+  assert.deepEqual(chamadas, ['mandar', 'reagendar']);
+});
+
+test('envio para reposição bloqueado para aluno inativo', async () => {
+  const serieMae = {
+    id: 'S0',
+    tipo: 'aula',
+    alunoId: 'aluno-inativo',
+    frequencia: 'semanal',
+    data: '31/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    tipoRecorrencia: 'semanal',
+    intervaloRecorrencia: 1,
+    recorrenciaDataInicio: '31/08/2026',
+    recorrenciaDataFim: '30/09/2026',
+    recorrenciaFimCondicao: 'untilDate',
+    diasSemana: ['Segunda', 'Terça', 'Quarta'],
+    excecoes: [],
+  };
+
+  const aulas = [serieMae];
+  const { context } = criarHarnessModalAcaoSlot({ aulas, compromisso: serieMae, dataAlvoStr: '31/08/2026' });
+  context.window.idCompromissoSelecionado = serieMae.id;
+  context.window.dataAlvoAcaoStr = '31/08/2026';
+  context.window.getAluno = (id) => ({ id, ativo: false });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+  context.window.abrirModalEscolhaCobrancaReposicao = () => {
+    throw new Error('não deveria abrir o modal quando o aluno está inativo');
+  };
+
+  let salvarChamadas = 0;
+  context.window.salvarDados = async () => {
+    salvarChamadas += 1;
+    return { ok: true };
+  };
+
+  const totalAntes = context.aulas.length;
+  await context.window.executarEnvioParaReposicao();
+
+  assert.equal(context.aulas.length, totalAntes, 'o array não deve ser alterado para aluno inativo');
+  assert.equal(salvarChamadas, 0, 'a persistência não deve ocorrer para aluno inativo');
 });
 
