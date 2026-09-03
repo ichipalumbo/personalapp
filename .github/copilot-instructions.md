@@ -254,7 +254,20 @@ que pareçam pequenas:
 O agente pode executar **duas** operações git, e somente após confirmação explícita do dono:
 
 - `git fetch origin`
-- `git checkout -b <nome> origin/main`
+- `git switch -c <nome> origin/main --no-track`
+
+**O `--no-track` é obrigatório.** Sem ele, o Git configura o upstream da branch nova como
+`origin/main`, e qualquer push posterior — inclusive o "Sync Changes" do VS Code — vai
+direto para a `main`, sem PR e sem merge commit. Foi o que aconteceu com
+`chore/remove-toggle-escopo-recorrencia` em 2026-09-03: dois commits chegaram à `main` e
+dispararam deploy em produção sem revisão. **Nunca use `git checkout -b <nome> origin/main`.**
+
+O push é sempre do dono, e o primeiro precisa de `-u` para criar a branch remota e permitir
+o PR:
+
+```
+git push -u origin <nome>
+```
 
 Proibido: commit, push, merge, rebase, `reset`, `restore`, `stash`, `checkout` de arquivo,
 tag, alteração de `.git/config`.
@@ -277,6 +290,11 @@ o turno tendo apenas resolvido a questão da branch é falha.
 
 Nome: `<tipo>/<escopo-curto>`, com `tipo` em `fix`, `feat`, `chore`, `docs`, `diag`,
 `refactor`. O relatório registra a branch usada.
+
+**Toda mudança entra na `main` por pull request.** Push direto na `main` não é o fluxo,
+mesmo nos casos em que o Git permite. Se o agente notar que a branch atual tem upstream
+apontando para `refs/heads/main`, deve reportar antes de qualquer escrita — verificável com
+`git config --get-regexp "branch\..*\.merge"`.
 
 ### Por que a restrição existe
 
