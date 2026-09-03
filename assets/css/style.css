@@ -1340,20 +1340,6 @@ body {
   padding-bottom: 12px;
 }
 
-.recorrencia-escopo-criacao-container {
-  margin-bottom: 16px;
-}
-
-.recorrencia-escopo-toggle-wrap {
-  margin-bottom: 0px;
-}
-
-.recorrencia-escopo-criacao-resumo {
-  display: block;
-  color: #bdbdbd;
-  font-size: 0.78rem;
-}
-
 @media (min-width: 768px) {
   .auth-banner {
     max-width: 68%;

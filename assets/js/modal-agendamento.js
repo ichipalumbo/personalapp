@@ -12,9 +12,7 @@
 //         window.abrirAgendamentoModal, window.selecionarTipoAgendamento,
 //         window.inicializarMultiSelectPills, window.atualizarTextoPreviewRecorrencia,
 //         window.atualizarResumoRecorrenciaCadastro, window.mudarPadraoRecorrencia,
-//         window.abrirModalRecorrencia, window.selecionarTipoRecorrente,
-//         window.obterResumoEscopoCriacaoRecorrencia, window.atualizarResumoEscopoCriacaoRecorrencia,
-//         window.configurarEscopoCriacaoRecorrencia
+//         window.abrirModalRecorrencia, window.selecionarTipoRecorrente
 
 // ── Variáveis de estado do modal (privadas a este módulo) ──────────────────────────────────────
 let slotSelecionadoHora = "";
@@ -551,8 +549,6 @@ function preencherFormularioRecorrencia(recorrencia) {
     const inputCondicaoFim = document.getElementById('recorrenciaEndCondition');
     const inputDataFim = document.getElementById('recorrenciaUntilDate');
     const inputOcorrencias = document.getElementById('recorrenciaOccurrencesCount');
-    const inputEscopo = document.getElementById('recorrenciaEscopoCriacao');
-    const inputIncluirMesAtual = document.getElementById('recorrenciaIncluirMesAtualRetroativo');
 
     if (inputPadrao) inputPadrao.value = recurrenceState.pattern || 'semanal';
     if (inputIntervalo) inputIntervalo.value = `${recurrenceState.interval || 1}`;
@@ -560,8 +556,6 @@ function preencherFormularioRecorrencia(recorrencia) {
     if (inputCondicaoFim) inputCondicaoFim.value = recurrenceState.endCondition || 'never';
     if (inputDataFim) inputDataFim.value = recurrenceState.untilDateIso || '';
     if (inputOcorrencias) inputOcorrencias.value = `${recurrenceState.occurrencesCount || 1}`;
-    if (inputEscopo) inputEscopo.value = recurrenceState.scope || 'fromDate';
-    if (inputIncluirMesAtual) inputIncluirMesAtual.checked = recurrenceState.includeCurrentMonthBackfill === true;
 
     document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill').forEach((btn) => {
         btn.classList.toggle('active', recurrenceState.daysOfWeek.includes(btn.getAttribute('data-dia')));
@@ -570,7 +564,6 @@ function preencherFormularioRecorrencia(recorrencia) {
     window.mudarPadraoRecorrencia();
     window.atualizarEstadoFimRecorrencia();
     window.atualizarTextoPreviewRecorrencia();
-    window.atualizarResumoEscopoCriacaoRecorrencia();
 }
 
 function lerFormularioRecorrencia() {
@@ -581,7 +574,6 @@ function lerFormularioRecorrencia() {
     const untilDateIso = document.getElementById('recorrenciaUntilDate')?.value || '';
     const occurrencesCount = parseInt(document.getElementById('recorrenciaOccurrencesCount')?.value || '1', 10) || 1;
     const scope = 'fromDate';
-    const includeCurrentMonthBackfill = document.getElementById('recorrenciaIncluirMesAtualRetroativo')?.checked === true;
     const daysOfWeek = [];
 
     document.querySelectorAll('#containerDiasSemanaRecorrencia .btn-dia-pill.active').forEach((btn) => {
@@ -599,7 +591,6 @@ function lerFormularioRecorrencia() {
         untilDateIso: endCondition === 'untilDate' ? untilDateIso : '',
         occurrencesCount: endCondition === 'occurrences' ? occurrencesCount : 1,
         scope,
-        includeCurrentMonthBackfill,
         hasCustomSettings: true
     });
 }
@@ -731,54 +722,6 @@ window.fecharModalRecorrencia = function() {
 
 window.selecionarTipoRecorrente = function() {
     return rascunhoFluxoAgendamento?.creationType || 'aula';
-};
-
-// ── Escopo de Criação da Recorrência ──────────────────────────────────────────────────────────
-
-window.obterResumoEscopoCriacaoRecorrencia = function(incluirMesAtualRetroativo) {
-    if (incluirMesAtualRetroativo === true) {
-        return 'Início da série recuado para o 1º dia do mês — inclui todas as datas válidas do mês.';
-    }
-    return 'Cria a série desta data em diante.';
-};
-
-window.atualizarResumoEscopoCriacaoRecorrencia = function() {
-    const inputIncluirMesAtual = document.getElementById('recorrenciaIncluirMesAtualRetroativo');
-    const resumo = document.getElementById('recorrenciaEscopoCriacaoResumo');
-    if (!resumo) return;
-    resumo.textContent = window.obterResumoEscopoCriacaoRecorrencia(inputIncluirMesAtual?.checked === true);
-};
-
-window.configurarEscopoCriacaoRecorrencia = function() {
-    const inputIncluirMesAtual = document.getElementById('recorrenciaIncluirMesAtualRetroativo');
-    if (!inputIncluirMesAtual) {
-        window.atualizarResumoEscopoCriacaoRecorrencia();
-        return;
-    }
-    const novoInput = inputIncluirMesAtual.cloneNode(true);
-    inputIncluirMesAtual.parentNode.replaceChild(novoInput, inputIncluirMesAtual);
-    novoInput.addEventListener('change', () => {
-        const inputDataInicio = document.getElementById('recorrenciaDataInicio');
-        if (inputDataInicio) {
-            if (novoInput.checked) {
-                // Recua o início da série para o 1º dia do mês corrente
-                const hoje = new Date();
-                const primeiroDia = hoje.getFullYear() + '-'
-                    + String(hoje.getMonth() + 1).padStart(2, '0') + '-01';
-                inputDataInicio.value = primeiroDia;
-            } else {
-                // Restaura para a data original do slot clicado
-                const dataOriginal = rascunhoFluxoAgendamento && rascunhoFluxoAgendamento.slotContext
-                    ? rascunhoFluxoAgendamento.slotContext.dataIso || ''
-                    : '';
-                inputDataInicio.value = dataOriginal;
-            }
-        }
-        window.atualizarTextoPreviewRecorrencia();
-        window.atualizarResumoEscopoCriacaoRecorrencia();
-        window.atualizarResumoRecorrenciaCadastro();
-    });
-    window.atualizarResumoEscopoCriacaoRecorrencia();
 };
 
 function confirmarConflitosRecorrenciaSeNecessario(resultadoSerializacao) {
@@ -1129,7 +1072,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    window.configurarEscopoCriacaoRecorrencia();
     window.inicializarMultiSelectPills();
     window.atualizarEstadoFimRecorrencia();
     window.atualizarTextoPreviewRecorrencia();
