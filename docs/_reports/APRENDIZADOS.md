@@ -178,6 +178,19 @@ na prática — mas o código que as gerou pode não ter mudado.
   maiúsculo, não achou a seção `## 8. Fora de escopo` que já existia, e reportou como
   ausente. As duas rodadas seguintes trabalharam em cima da premissa errada. Buscar cabeçalho
   sempre case-insensitive.
+- **`git checkout -b <nome> origin/main` manda o push direto para a `main`.** Em 2026-09-03,
+  a branch `chore/remove-toggle-escopo-recorrencia` foi criada assim. O comando configura o
+  upstream da branch nova como `origin/main` (`branch.<nome>.merge = refs/heads/main`), então
+  o "Sync Changes" do VS Code empurrou dois commits direto para a `main`, em fast-forward, sem
+  PR e sem merge commit — disparando deploy em produção nos dois projetos Vercel. A branch
+  nunca chegou a existir em `origin`, então não havia o que revisar. Diagnóstico:
+  `git config --get-regexp "branch\..*\.merge"` — se o upstream for `refs/heads/main` e o nome
+  local for outro, a armadilha está armada. Correções, da mais fraca para a mais forte:
+  `git branch --unset-upstream` na branch afetada; criar branch com `--no-track`;
+  `git config --global branch.autoSetupMerge false`; e regra de branch protegida na `main` no
+  GitHub exigindo PR — a única que não depende de disciplina. A seção 11 de
+  `.github/copilot-instructions.md` prescrevia o comando armadilhado e foi corrigida na mesma
+  data.
 - **Cobertura de frontend existe, mas é parcial.** Desde 2026-09-03 há uma suíte em
   `tests-frontend/` cobrindo `shared/recurrence-helpers.js`, `calendario-engine.js` e a ordem
   das tags `<script>` do `index.html`. **Tela continua sem cobertura**: `view-*.js`, modais e
