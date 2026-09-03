@@ -189,7 +189,6 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **O que foi entregue**: a primeira declaração (código morto) foi removida; a ativa foi preservada.
 - **Sem mudança de comportamento**: o guard de ciclo não configurado que existia só na versão morta já era coberto por `calcularCicloVigente`, que devolve `null` para aluno sem `fechamentoMesCheio` e sem `diaVencimento`.
 - **Suíte**: a suíte permaneceu em 86 testes, 0 falhas.
-- **Referência**: `docs/_reports/2026-08-26-fix-dedupe-calcular-prazo-reposicao.md`.
 
 ---
 
@@ -362,7 +361,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **ownerEmail e isolamento do Google Calendar**: `ownerEmail` não exigiu seed nem configuração extra porque vem do `Google ID token` via `requireAuth`. O isolamento do Google Calendar veio da ausência da collection `googlecalendarconnections` no clone local, sem mudança de código — a ausência do documento de conexão impede o bootstrap de disparar a sincronização do calendário real.
 - **Dado real e escopo**: os agendamentos clonados carregam referência a eventos de calendário reais do ambiente do usuário; conectar o GCal localmente exigiria uma decisão separada de conta e sincronização, e ficou fora de escopo desta rodada.
 - **Consequência prática**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
-- **Relatório**: ver [`docs/_reports/2026-08-27-chore-banco-dev.md`](docs/_reports/2026-08-27-chore-banco-dev.md).
+- **Como reproduzir**: ver [`docs/setup-ambiente-local.md`](setup-ambiente-local.md).
 
 ---
 

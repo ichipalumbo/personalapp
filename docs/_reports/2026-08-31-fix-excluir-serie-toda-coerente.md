@@ -10,8 +10,7 @@ git rev-parse --abbrev-ref HEAD
 fix/excluir-serie-toda-coerente
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/test/gcal-duplicata-fix.test.js
+[... saida podada ...]
 
 Select-String -Path 'assets\js\modal-acao-slot.js' -Pattern 'montarResumoExclusaoCadeiaSerie'
 assets\js\modal-acao-slot.js:253:window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso) {
@@ -106,27 +105,16 @@ Saída literal do `npm test` após a mutação:
 > personal-api@1.0.0 test
 > node --test
 
-✔ getCompromissoSerializadoParaConflito preserva o fim da série (2.0145ms)
-✔ candidato serializado não ocorre depois do UNTIL (15.1133ms)
-✔ série aparada não conflita com a própria continuação (1.831ms)
-✔ série sem campos de fim continua sendo tratada como infinita (1.035ms)
-✔ ignorarIds de família remove a série e a continuação do conflito,
+[... saida podada ...]
 ...
-✖ montarResumoExclusaoCadeiaSerie conta a cadeia inteira e preserva reposições (2.2993ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   + actual - expected
   
   + null
   - '13/09/2026'
   
-      at TestContext.<anonymous> (E:\Projetos\GIT\personalapp\backend\test\gcal-duplicata-fix.test.js:2533:10)
-      at Test.runInAsyncScope (node:async_hooks:227:14)
-      at Test.run (node:internal/test_runner/test:1325:25)
-      at Test.processPendingSubtests (node:internal/test_runner/test:911:18)
-      at Test.postRun (node:internal/test_runner/test:1465:19)
-      at Test.run (node:internal/test_runner/test:1390:14)
-      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-      at async Test.processPendingSubtests (node:internal/test_runner/test:911:7) {
+[... saida podada ...]
     generatedMessage: true,
     code: 'ERR_ASSERTION',
     actual: null,
@@ -150,7 +138,7 @@ Nome do teste que caiu:
 
 ```text
 test at test\gcal-duplicata-fix.test.js:2472:1
-✖ montarResumoExclusaoCadeiaSerie conta a cadeia inteira e preserva reposições
+[... saida podada ...]
 ```
 
 Prova da restauração:
@@ -216,9 +204,7 @@ git rev-parse --abbrev-ref HEAD
 fix/excluir-serie-toda-coerente
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/test/gcal-duplicata-fix.test.js
- M docs/specs/gcal-sync.md
+[... saida podada ...]
 
 Select-String -Path 'assets\js\modal-acao-slot.js' -Pattern 'temInfinito'
 assets\js\modal-acao-slot.js:326: const temInfinito = familia.some(
@@ -260,10 +246,10 @@ A assinatura prevista neste prompt era:
 A assinatura observada na execução real foi a seguinte:
 
 ```text
-✖ failing tests:
+[... saida podada ...]
 
 test at test\gcal-duplicata-fix.test.js:2472:1
-✖ montarResumoExclusaoCadeiaSerie conta a cadeia inteira e preserva reposições (2.2993ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   + actual - expected
   

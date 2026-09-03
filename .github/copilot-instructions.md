@@ -36,7 +36,9 @@ correspondente em `docs/specs/`.
 - Backlog, priorização e débitos técnicos conhecidos: `docs/roadmap.md`.
 - Índice da documentação: `docs/README.md`.
 
-Spec ativa: `docs/specs/financas-ciclo-cobranca.md` (v7, em produção). A spec complementar `docs/specs/reposicoes-e-competencia.md` (v6) redefine a regra 5.8 e prevalece em caso de divergência sobre reposições. A spec `docs/specs/gcal-sync.md` (v6) detalha a integração com Google Calendar e a renovação ativa do webhook.
+Spec ativa: `docs/specs/financas-ciclo-cobranca.md`. A spec complementar `docs/specs/reposicoes-e-competencia.md` redefine a regra 5.8 e prevalece em caso de divergência sobre reposições. A spec `docs/specs/gcal-sync.md` detalha a integração com Google Calendar e a renovação ativa do webhook.
+
+**Versão e status de cada spec vivem no cabeçalho da própria spec e não são repetidos aqui.** Leia o cabeçalho antes de confiar no conteúdo.
 
 ---
 

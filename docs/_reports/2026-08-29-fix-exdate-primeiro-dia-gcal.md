@@ -50,7 +50,7 @@ npm test
 > personal-api@1.0.0 test
 > node --test
 
-✔ ...
+[... saida podada ...]
 ℹ tests 112
 ℹ suites 0
 ℹ pass 112
@@ -198,7 +198,7 @@ npm test
 > personal-api@1.0.0 test
 > node --test
 
-✔ ...
+[... saida podada ...]
 ℹ tests 112
 ℹ suites 0
 ℹ pass 112
@@ -220,14 +220,7 @@ docs/specs/gcal-sync.md                            | 21 +++++++
 7 files changed, 104 insertions(+), 14 deletions(-)
 
 git status --short
- M assets/js/storage.js
- M backend/src/services/gcalSyncService.js
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/gcal-sync.test.js
- M docs/_reports/2026-08-29-fix-global-e-mock-teto-gcal.md
- M docs/_reports/2026-08-29-fix-select-teto-e-spec-gcal.md
- M docs/specs/gcal-sync.md
-?? docs/_reports/2026-08-29-fix-exdate-primeiro-dia-gcal.md
+[... saida podada ...]
 ```
 
 ## 9) Branch usada

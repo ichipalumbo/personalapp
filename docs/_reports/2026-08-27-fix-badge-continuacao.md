@@ -108,7 +108,7 @@ assets\js\modal-acao-slot.js:1545:      if (_serieDeletar && _serieDeletar.serie
  assets/js/agenda-card-template.js | 5 +----
  1 file changed, 1 insertion(+), 4 deletions(-)
 ---
- M assets/js/agenda-card-template.js
+[... saida podada ...]
 ```
 
 ## 6) Teste manual documentado

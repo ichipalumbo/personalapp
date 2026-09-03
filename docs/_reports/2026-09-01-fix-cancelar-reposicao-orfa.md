@@ -17,10 +17,7 @@ git status --short
 <sem saída — working tree limpa>
 
 git log --oneline -4
-655f3c3 (HEAD -> fix/excluir-serie-toda-coerent, origin/fix/excluir-serie-toda-coerent) feat: implement silent persistence handling for event creation, editing, and rescheduling
-c6829df feat: add detailed diagnostic report for silent persistence failures in event creation and editing
-1dfdaf1 feat: confirm persistence of deletions with Google Calendar connected and update documentation
-9c2cbbd feat: enhance error handling in event deletion functions and add tests for persistence failures
+[... saida podada ...]
 ```
 
 A etapa 6i já estava commitada (`655f3c3`), então esta rodada partiu de árvore limpa.
@@ -152,15 +149,15 @@ que já existiam não foram alterados.
 ```text
 npm test
 
-✖ failing tests:
+[... saida podada ...]
 
 test at test\gcal-duplicata-fix.test.js:4432:1
-✖ Ponto 6 — falha na gravação dispara DELETE da reposição criada, com o id correto (4.9432ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: a reposição órfã precisa ser apagada
   0 !== 1
 
 test at test\gcal-duplicata-fix.test.js:4454:1
-✖ Ponto 6 — DELETE que falha não impede a aula de voltar nem o toast de erro (3.4287ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: o DELETE foi tentado
   0 !== 1
 
@@ -181,10 +178,10 @@ responder `deleted: true` sem apagar nada.
 ```text
 npm test
 
-✖ failing tests:
+[... saida podada ...]
 
 test at test\reposicao-api.test.js:233:1
-✖ DELETE remove a reposicao do banco e responde deleted true (1.2125ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: findOneAndDelete precisa ser chamado
   0 !== 1
 
@@ -257,13 +254,7 @@ npm test
 Set-Location 'C:\Users\LBRESSIA\OneDrive - azureford\Documents\GitHub Person\personalapp'
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/src/controllers/reposicaoController.js
- M backend/src/routes/reposicaoRoutes.js
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/reposicao-api.test.js
- M docs/specs/gcal-sync.md
-?? docs/_reports/2026-09-01-fix-cancelar-reposicao-orfa.md
+[... saida podada ...]
 
 git diff --stat
  assets/js/modal-acao-slot.js                   |  20 ++++-

@@ -10,9 +10,11 @@
 | Documento | O que é | Quando ler |
 |---|---|---|
 | [`roadmap.md`](roadmap.md) | Backlog vivo do produto, com os débitos técnicos conhecidos mapeados | Antes de escolher a próxima feature |
-| [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno · **v6 · em produção** | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
+| [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
 | [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md) | Fila de reposições, competência de cobrança, prazo de validade e extrato do ciclo | Antes de definir como aulas enviadas para reposição entram no cálculo e no histórico financeiro |
-| [`specs/gcal-sync.md`](specs/gcal-sync.md) | Sincronização com Google Calendar · **v7 · em produção** | Antes de mexer em recorrência, `EXDATE`, webhook, renovação do canal ou conflitos de sincronização |
+| [`specs/gcal-sync.md`](specs/gcal-sync.md) | Sincronização com Google Calendar | Antes de mexer em recorrência, `EXDATE`, webhook, renovação do canal ou conflitos de sincronização |
+| [`setup-ambiente-local.md`](setup-ambiente-local.md) | Passo a passo para deixar uma máquina nova rodando frontend, backend e banco de dev | Ao configurar um computador novo, ou quando o ambiente local parar de funcionar |
+| [`_reports/APRENDIZADOS.md`](_reports/APRENDIZADOS.md) | Riscos, limites aceitos e armadilhas consolidados de todos os relatórios | Antes de abrir uma rodada numa área sensível |
 
 ---
 
@@ -20,9 +22,12 @@
 
 - O **roadmap** é um documento **único e vivo**: muda toda vez que algo é entregue ou repriorizado. Nunca versionar por data nem duplicar em `roadmap-v2.md`.
 - As **specs** são **uma por feature** e congelam o estado de uma decisão. Cada uma tem número de versão no cabeçalho; o histórico fica no Git, não em arquivos paralelos (`v1.md`, `v2.md`).
+- **Versão e status de uma spec existem em um lugar só: o cabeçalho da própria spec.** Nenhum outro documento — nem este índice, nem o roadmap, nem `.github/copilot-instructions.md` — repete o número. Repetir cria drift silencioso: já aconteceu de uma spec andar cinco versões com o índice parado, e um agente confiar no número errado.
 - Quando uma feature é entregue, o item correspondente no roadmap é marcado como concluído e passa a **apontar para a spec**, em vez de repetir o conteúdo dela.
-- Cada spec mantém uma seção `Fora de escopo` e uma tabela de relatórios relacionados no fim da seção de itens (ex.: `## 9.17 Relatórios desta spec` em `specs/gcal-sync.md`). O relatório é o histórico, a spec é a fonte de verdade do que está aberto.
-- Relatório de item **fechado** é imutável; relatório de item **em aberto** pode ser corrigido enquanto o trabalho corre. Correção posterior ao fechamento vai em **relatório novo**, que referencia o antigo.
+- **Spec não referencia relatório.** A spec é a fonte de verdade e precisa sobreviver à poda periódica de `_reports/`. Se um fato de um relatório importa para a regra, ele é escrito na spec — não linkado.
+- Relatório de item **fechado** não é reescrito por rodada de correção ou diagnóstico: correção posterior ao fechamento vai em **relatório novo**. Relatório de item **em aberto** pode ser corrigido enquanto o trabalho corre.
+- **Poda periódica é exceção autorizada à regra acima.** De tempos em tempos, `_reports/` é podada para tirar peso morto — saída literal de suíte, `git status`, `git log` e blocos duplicados. A poda remove **evidência bruta**, nunca conclusão, decisão ou defeito registrado. O que tiver valor durável migra para a spec ou para `_reports/APRENDIZADOS.md` **antes** de qualquer remoção.
+- **`_reports/SAGA-*.md`** consolida várias rodadas de um mesmo esforço num arquivo só: linha do tempo, causa-raiz, o que ficou de pé, decisões deliberadas e limites herdados. Quando um problema exige mais de uma rodada, o histórico vira saga e os relatórios intermediários saem.
 
 ---
 

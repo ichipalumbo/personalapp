@@ -4,34 +4,12 @@
 
 ```text
 fix/avulsa-limpa-campos-recorrencia
- M assets/js/agenda-conflitos.js
- M assets/js/modal-acao-slot.js
- M backend/test/gcal-duplicata-fix.test.js
+[... saida podada ...]
 
 > personal-api@1.0.0 test
 > node --test
 
-✔ getCompromissoSerializadoParaConflito preserva o fim da série (2.1913ms)
-✔ candidato serializado não ocorre depois do UNTIL (17.5964ms)
-✔ série aparada não conflita com a própria continuação (2.3915ms)
-✔ série sem campos de fim continua sendo tratada como infinita (1.0836ms)
-✔ ignorarIds de família remove a série e a continuação do conflito, mas preserva conflito real com outro aluno (1.1659ms)
-✔ calcularAulasContadasDoCiclo: agendamento com reposicaoId não entra na parcela (A) (0.752ms)
-✔ calcularAulasContadasDoCiclo: reposição cobrável pendente conta na parcela (B) (0.2289ms)
-✔ calcularAulasContadasDoCiclo: reposição não cobrável só conta quando cicloCobrancaResolvido.inicio bate (0.1056ms)
-✔ montarExtratoDoCiclo: ciclo simples fecha com valorTotalCiclo (10.6977ms)
-✔ montarExtratoDoCiclo: ciclo com ajuste manual negativo fecha com valorTotalCiclo (0.4142ms)
-✔ montarExtratoDoCiclo: reposição cobrável de origem fecha com valorTotalCiclo (0.2226ms)
-✔ montarExtratoDoCiclo: cobrável expirada com dataOriginal e validoAte no mesmo ciclo gera uma única linha (0.1666ms)
-✔ montarExtratoDoCiclo: reposição já cobrada gera linha zero sem inflar o total (0.4632ms)
-✔ montarExtratoDoCiclo: reposição não cobrável fora do ciclo traz nota de ciclo anterior (0.2421ms)
-✔ calcularCicloVigente ajusta dia 31 em mês curto (1.6093ms)
-✔ calcularCicloVigente cruza o fim de ano corretamente (0.2084ms)
-✔ calcularCicloVigente usa fechamentoMesCheio em vez de diaVencimento (0.1971ms)
-✔ calcularTotalAulasCobradas respeita piso zero para ajuste negativo (0.1247ms)
-✔ calcularValorTotalCiclo ignora contagem quando metodoCobranca == valor_fixo (0.1676ms)
-✔ filtrarHistoricoExcluindoCicloAtual remove o ciclo vigente e preserva ciclos anteriores (0.4661ms)
-✔ encerrarCicloSobrepostoSeNecessario fecha o ciclo anterior antes do início do novo ciclo (0.2738ms)
+[... saida podada ...]
 
 ℹ tests 152
 ℹ suites 0
@@ -148,7 +126,7 @@ Os testes foram adicionados em `backend/test/gcal-duplicata-fix.test.js` e usam 
 Aplicação: inserir `tipoRecorrencia: compromisso.tipoRecorrencia || null` no bloco de `novoCompromisso`.
 
 ```text
-✖ avulsa criada por occurrence nao herda campos de recorrencia (1.282ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: campo tipoRecorrencia nao deveria existir na avulsa
   true !== false
 ```
@@ -160,7 +138,7 @@ Restauração: arquivo voltou ao estado final correto.
 Aplicação: inserir `diasSemana: Array.isArray(compromisso.diasSemana) ? [...compromisso.diasSemana] : null`.
 
 ```text
-✖ avulsa criada por occurrence nao herda campos de recorrencia (1.2854ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: campo tipoRecorrencia nao deveria existir na avulsa
   true !== false
 ```
@@ -172,7 +150,7 @@ Restauração: arquivo voltou ao estado final correto.
 Aplicação: reinserir os três campos do objeto de recorrência no literal do `novoCompromisso`.
 
 ```text
-✖ removerFamiliaSerie preserva reposições e explica a decisão conservadora (1.2308ms)
+[... saida podada ...]
   E:\Projetos\GIT\personalapp\assets\js\modal-acao-slot.js:1125
               recorrenciaFimCondicao: compromisso.recorrenciaFimCondicao || null,
                                     ^
@@ -186,7 +164,7 @@ Restauração: arquivo voltou ao estado final correto.
 Aplicação: reinserir ambos campos no bloco de `novoCompromisso`.
 
 ```text
-✖ removerFamiliaSerie preserva reposições e explica a decisão conservadora (1.2477ms)
+[... saida podada ...]
   E:\Projetos\GIT\personalapp\assets\js\modal-acao-slot.js:1125
               recorrenciaQuantidadeOcorrencias: compromisso.recorrenciaQuantidadeOcorrencias || null,
                                               ^
@@ -200,7 +178,7 @@ Restauração: arquivo voltou ao estado final correto.
 Aplicação: remover `tipoRecorrencia` e `diasSemana` do objeto de continuação criado por `fromDate`.
 
 ```text
-✖ split fromDate mantém tipoRecorrencia e diasSemana na serie nova (1.3367ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   + actual - expected
   + undefined
@@ -229,7 +207,7 @@ Restauração: arquivo voltou ao estado final correto.
 Aplicação: trocar `serieOrigemId: compromisso.id` por `serieOrigemId: undefined`.
 
 ```text
-✖ split encadeado mantém a mãe direta em serieOrigemId da avulsa (0.9761ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   + actual - expected
   
@@ -244,19 +222,19 @@ Restauração: arquivo voltou ao estado final correto.
 Aplicação: remover a linha `recorrenciaDataFim: compromisso.recorrenciaDataFim || null` da serialização em `assets/js/agenda-conflitos.js`.
 
 ```text
-✖ getCompromissoSerializadoParaConflito preserva o fim da série (1.9087ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   + actual - expected
   
   + undefined
   - '01/09/2026'
 
-✖ candidato serializado não ocorre depois do UNTIL (11.5567ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   true !== false
 
-✖ série aparada não conflita com a própria continuação (1.8531ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
   
   18 !== 0
@@ -276,35 +254,7 @@ Depois da correção final e da restauração das mutações de prova: 152 teste
 > personal-api@1.0.0 test
 > node --test
 
-✔ getCompromissoSerializadoParaConflito preserva o fim da série (2.8583ms)
-✔ candidato serializado não ocorre depois do UNTIL (15.5039ms)
-✔ série aparada não conflita com a própria continuação (1.9988ms)
-✔ série sem campos de fim continua sendo tratada como infinita (1.0512ms)
-✔ ignorarIds de família remove a série e a continuação do conflito, mas preserva conflito real com outro aluno (1.1395ms)
-✔ calcularAulasContadasDoCiclo: agendamento com reposicaoId não entra na parcela (A) (0.8997ms)
-✔ calcularAulasContadasDoCiclo: reposição cobrável pendente conta na parcela (B) (0.2914ms)
-✔ calcularAulasContadasDoCiclo: reposição não cobrável só conta quando cicloCobrancaResolvido.inicio bate (0.1618ms)
-✔ montarExtratoDoCiclo: ciclo simples fecha com valorTotalCiclo (13.2467ms)
-✔ montarExtratoDoCiclo: ciclo com ajuste manual negativo fecha com valorTotalCiclo (0.354ms)
-✔ montarExtratoDoCiclo: reposição cobrável de origem fecha com valorTotalCiclo (0.2615ms)
-✔ montarExtratoDoCiclo: cobrável expirada com dataOriginal e validoAte no mesmo ciclo gera uma única linha (0.2179ms)
-✔ montarExtratoDoCiclo: reposição já cobrada gera linha zero sem inflar o total (0.5205ms)
-✔ montarExtratoDoCiclo: reposição não cobrável fora do ciclo traz nota de ciclo anterior (0.248ms)
-✔ calcularCicloVigente ajusta dia 31 em mês curto (1.0981ms)
-✔ calcularCicloVigente cruza o fim de ano corretamente (0.1398ms)
-✔ calcularCicloVigente usa fechamentoMesCheio em vez de diaVencimento (0.1111ms)
-✔ calcularTotalAulasCobradas respeita piso zero para ajuste negativo (0.0794ms)
-✔ calcularValorTotalCiclo ignora contagem quando metodoCobranca == valor_fixo (0.1194ms)
-✔ filtrarHistoricoExcluindoCicloAtual remove o ciclo vigente e preserva ciclos anteriores (0.4ms)
-✔ encerrarCicloSobrepostoSeNecessario fecha o ciclo anterior antes do início do novo ciclo (0.1857ms)
-✔ avulsa criada por occurrence guarda a série mãe direta em serieOrigemId (0.9295ms)
-✔ avulsa criada por occurrence nao herda campos de recorrencia (0.9757ms)
-✔ split fromDate mantém tipoRecorrencia e diasSemana na serie nova (1.0303ms)
-✔ reagendar reposicao cria avulsa sem campos de recorrencia herdados (1.0407ms)
-✔ split encadeado mantém a mãe direta em serieOrigemId da avulsa (0.9415ms)
-✔ resolverFamiliaSerie devolve a série, a continuação e as avulsas transitivamente (0.8447ms)
-✔ resolverFamiliaSerie nao entra em laço infinito com vínculo circular (0.8008ms)
-✔ resolverFamiliaDescendenteSerie nao sobe para o pai historico (0.9367ms)
+[... saida podada ...]
 
 ℹ tests 152
 ℹ suites 0
@@ -318,8 +268,7 @@ fix/avulsa-limpa-campos-recorrencia
  assets/js/modal-acao-slot.js            |   8 +++
  backend/test/gcal-duplicata-fix.test.js | 122 ++++++++++++++++++++++++++++++++
  2 files changed, 130 insertions(+)
- M assets/js/modal-acao-slot.js
- M backend/test/gcal-duplicata-fix.test.js
+[... saida podada ...]
 
 assets\js\modal-acao-slot.js:1119:              excecoes: [],
 assets\js\modal-acao-slot.js:1251:            const _filtrarExcecoesAposData = (lista) => {

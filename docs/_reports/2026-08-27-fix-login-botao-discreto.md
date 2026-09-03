@@ -149,8 +149,7 @@ assets\js\modal-acao-slot.js:1545:      if (_serieDeletar && _serieDeletar.serie
  index.html                        |  1 +
  3 files changed, 46 insertions(+), 1 deletion(-)
 ---
- M assets/css/style.css
- M assets/js/auth/google-identity.js
+[... saida podada ...]
  M index.html
 ```
 

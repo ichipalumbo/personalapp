@@ -10,13 +10,7 @@ git rev-parse --abbrev-ref HEAD
 fix/duplicata-edicao-serie-gcal
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/src/controllers/agendamentoController.js
- M backend/src/services/gcalSyncService.js
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/gcal-sync.test.js
- M docs/specs/gcal-sync.md
-?? docs/_reports/2026-08-29-fix-serie-vazia-e-acento-gcal.md
+[... saida podada ...]
 
 Select-String -Path 'assets\js\modal-acao-slot.js' -Pattern 'API_BASE_URL'
 
@@ -90,11 +84,11 @@ Mutação obrigatória aplicada no arquivo real para quebrar a regra e provar qu
 ```text
 MUT: _dataFimRecorrenciaFd > _dataInicioEfeitoFd
 
-✖ split fromDate na primeira ocorrencia remove a serie vazia e cria a serie nova sem DELETE
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
   + actual - expected
 
-  at TestContext.<anonymous> (E:\Projetos\GIT\personalapp\backend\test\gcal-duplicata-fix.test.js:1207:12)
+[... saida podada ...]
 
 ℹ tests 20
 ℹ pass 19
@@ -138,7 +132,7 @@ Adendo acrescentado ao final do relatório da rodada E:
 ```text
 Set-Location 'E:\Projetos\GIT\personalapp\backend'
 npm test
-✔ ...
+[... saida podada ...]
 ℹ tests 118
 ℹ suites 0
 ℹ pass 118
@@ -160,14 +154,7 @@ git diff --stat
  docs/_reports/2026-08-29-fix-url-split-e-teste-comportamental.md
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/src/controllers/agendamentoController.js
- M backend/src/services/gcalSyncService.js
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/gcal-sync.test.js
- M docs/specs/gcal-sync.md
-?? docs/_reports/2026-08-29-fix-serie-vazia-e-acento-gcal.md
-?? docs/_reports/2026-08-29-fix-url-split-e-teste-comportamental.md
+[... saida podada ...]
 ```
 
 ## 9) Branch usada

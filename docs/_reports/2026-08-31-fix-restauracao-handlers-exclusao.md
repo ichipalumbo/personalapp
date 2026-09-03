@@ -14,14 +14,7 @@ fix/excluir-serie-toda-coerente
 (sem saída — working tree limpo)
 
 > git log --oneline -8
-1cb0679 (HEAD) feat: enhance exclusion modal with new options and visual improvements
-3517b62 feat: add options for slot deletion and implement simulation mode for series trimming
-2d4fd95 feat: implementa motor de aparo de cadeia a partir de uma data, preservando histórico e reposições
-61147d5 feat: implement full chain series removal with preservation of replacements and confirmation summary
-d5cee71 Merge pull request #52 from ichipalumbo/fix/split-heranca-contagem-ocorrencias
-cd946fe feat: enhance split fromDate logic to correctly inherit effective end date based on occurrence count
-8fa0cd2 Merge pull request #51 from ichipalumbo/chore/prova-mutacao-5b
-12049b9 Atualiza documentação com novas diretrizes e correções...
+[... saida podada ...]
 ```
 
 Contagens no `HEAD` (antes de qualquer edição):
@@ -206,9 +199,9 @@ harness que impedisse a asserção decisiva.
 - Confirmado depois: 3 ocorrências restantes (as não afetadas).
 - `npm test`:
   ```
-  ✖ as três ações de exclusão fecham o modal pai (1.5046ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: executarExclusaoInstancia deveria ter chamado fecharModalAcaoSlot
-    at gcal-duplicata-fix.test.js:3302:12
+[... saida podada ...]
     actual: false,
     expected: true,
   ℹ fail 1
@@ -225,7 +218,7 @@ harness que impedisse a asserção decisiva.
 - Confirmado depois: `Select-String -Pattern 'removerFamiliaSerie\('` → 1 ocorrência (a nova).
 - `npm test`:
   ```
-  ✖ executarExclusaoSerie remove o mesmo total que o modal anunciou (1.6838ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
     2 !== 3
     actual: 2,
@@ -247,7 +240,7 @@ harness que impedisse a asserção decisiva.
 - Confirmado depois: 0 ocorrências do texto.
 - `npm test`:
   ```
-  ✖ exclusão bloqueada para aluno inativo (1.5364ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: o array de aulas não deveria ter mudado
     0 !== 1
     actual: 0,
@@ -266,9 +259,9 @@ harness que impedisse a asserção decisiva.
 - Confirmado depois: 5 ocorrências de `typeof salvarDados === "function"` (uma a menos).
 - `npm test`:
   ```
-  ✖ executarExclusaoInstancia remove a aula e persiste (1.3628ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: salvarDados deveria ter sido chamada ao menos uma vez
-    at gcal-duplicata-fix.test.js:3268:10
+[... saida podada ...]
     actual: false,
     expected: true,
   ℹ fail 1
@@ -324,8 +317,7 @@ na tabela §9.20 apontando para este relatório, estado `fechado`.
 fix/excluir-serie-toda-coerente
 
 > git status --short
- M assets/js/modal-acao-slot.js
- M backend/test/gcal-duplicata-fix.test.js
+[... saida podada ...]
  (docs/specs/gcal-sync.md e este relatório também modificados/criados, não mostrados no --short
   acima por terem sido adicionados após a captura inicial deste bloco)
 

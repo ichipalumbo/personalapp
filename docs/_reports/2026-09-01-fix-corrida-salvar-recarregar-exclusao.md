@@ -8,15 +8,10 @@ git rev-parse --abbrev-ref HEAD
 fix/excluir-serie-toda-coerente
 
 git status --short
- M assets/js/modal-acao-slot.js
-?? docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md
+[... saida podada ...]
 
 git log --oneline -5
-0fd0534 feat: refactor exclusion handlers and improve modal promise resolution
-fd949eb feat: restore series replacement dispatcher and ensure exception handling
-7651fe3 feat: restore deletion handlers and improve modal functionality
-1cb0679 feat: enhance exclusion modal with new options and visual improvements
-3517b62 feat: add options for slot deletion and implement simulation mode for series trimming
+[... saida podada ...]
 
 Select-String -Path 'assets\js\modal-acao-slot.js' -Pattern 'salvarDados'
 assets\js\modal-acao-slot.js:1235:          ? await salvarDados()
@@ -172,10 +167,7 @@ git rev-parse --abbrev-ref HEAD
 fix/excluir-serie-toda-coerente
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/test/gcal-duplicata-fix.test.js
- M docs/specs/gcal-sync.md
-?? docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md
+[... saida podada ...]
 
 git diff --stat
  assets/js/modal-acao-slot.js            | 266 ++++++++++++++++++++++----------

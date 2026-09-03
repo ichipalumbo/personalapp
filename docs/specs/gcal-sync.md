@@ -760,7 +760,7 @@ A exclusão passou a ter uma única lixeira, com modal de escolha em quatro opç
 
 O modal também reusa o padrão `.modal-escolha-*` já existente no app, com ícones escalonados por alcance da exclusão (leve, média e total) e cabeçalho contextual com aluno, data e horário. A confirmação final continua sendo `window.confirm()` nativo, como débito conhecido e explicitado no fluxo. A validação visual do modal ficou manual, porque `index.html` e `assets/css/style.css` não têm suíte automatizada e a checagem do comportamento final no browser precisa ser feita pelo dono.
 
-**Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (`docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md`, commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 (`docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md`) restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
+**Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
 
 **Ajuste de 2026-09-01 (rodada 6d)**: a etapa 6d renomeou o handler avulso de `executarExclusaoDefinitiva` para `executarExclusaoAulaAvulsa` e extraiu a ação "daqui pra frente" para `executarExclusaoSerieAPartirDe`, sem alterar a lógica de negócio nem o desenho visual. O mapeamento de leitura de relatórios antigos é `executarExclusaoDefinitiva` → `executarExclusaoAulaAvulsa`.
 
@@ -879,11 +879,9 @@ A etapa 6i-b fechou esse buraco. Por decisão do dono, a reposição órfã é *
 
 **O `DELETE` é best-effort e pode falhar.** Ele fica dentro de um `try/catch` próprio que apenas registra log de erro, sem relançar. O motivo é deliberado: quando esse caminho roda, a Josy já teve a aula devolvida à tela, e travar essa recuperação por causa de uma segunda chamada de rede que pode falhar por conta própria seria pior. Consequência a assumir: **não há garantia de que a reposição órfã sempre será apagada** — se a rede cair entre as duas chamadas, ela sobrevive e precisa de tratamento manual. O toast de erro exibido não promete o contrário.
 
-Relatório: `docs/_reports/2026-09-01-fix-cancelar-reposicao-orfa.md`.
-
 ### 9.26 — Falha silenciosa de persistência no caminho com Google Calendar conectado — FECHADO (2026-09-01)
 
-A falha silenciosa de persistência no caminho com Google Calendar conectado foi corrigida. `_persistirDadosComBackend` passou a propagar o retorno real de `salvarDados`, e os três handlers de exclusão passaram a checá-lo antes de seguir, revertendo a exclusão local em caso de falha. O relatório completo da correção está em `docs/_reports/2026-09-01-fix-persistencia-silenciosa-gcal.md`.
+A falha silenciosa de persistência no caminho com Google Calendar conectado foi corrigida. `_persistirDadosComBackend` passou a propagar o retorno real de `salvarDados`, e os três handlers de exclusão passaram a checá-lo antes de seguir, revertendo a exclusão local em caso de falha.
 
 A suspeita de **corrida** entre salvar e recarregar nesse caminho foi descartada, não corrigida: `_persistirDadosComBackend` já era sequencial e a recarga interna não dispara busca no servidor.
 
@@ -892,53 +890,6 @@ A suspeita de **corrida** entre salvar e recarregar nesse caminho foi descartada
 O rótulo foi ajustado para descrever o efeito real da exclusão na cadeia, sem dizer que a série tem menos aulas do que realmente apaga. A frase agora conta o passado, que é finito e numérico, e não promete um total para o futuro, que pode ser infinito e não precisa de número. Essa escolha evita a contradição que causou o defeito: o texto passou a dizer que o apaga a série toda é **"As N aulas do passado mais todas as aulas futuras"** quando há futuro, **"Todas as aulas, a partir de hoje"** quando o futuro continua e **"As N aulas desta série, todas no passado"** quando a série já encerrou; em caso de série sem aulas restantes, o texto diz **"Nenhuma aula restante nesta série."**.
 
 A regra de negócio do `total` continua intacta: ele continua contando registros removíveis da cadeia, porque esse valor é a guarda que impele o casco invisível que a etapa 5 corrigiu. Em outras palavras, o rótulo descreve o efeito em aulas, mas `total` continua sendo a contagem de registros que a remoção efetivamente afetará e, por isso, continua protegendo a condição de `if (_resumoExclusao.total === 0)`.
-
-### 9.24 Relatórios desta spec
-
-| Relatório | Itens da §9 | Estado |
-| --- | --- | --- |
-| `docs/_reports/2026-08-25-gcal-fix.md` | diagnóstico geral | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-boot.md` | 9.14 | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-purge.md` | diagnóstico de purge / sincronização | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-renovacao.md` | 9.14 | fechado |
-| `docs/_reports/2026-08-26-doc-sync-gcal-watch.md` | 9.14 | diagnóstico |
-| `docs/_reports/2026-08-26-gcal-watch-log-falha.md` | 9.14 | diagnóstico |
-| `docs/_reports/2026-08-29-diag-auditoria-completa-gcal.md` | diagnóstico geral | diagnóstico |
-| `docs/_reports/2026-08-29-diag-duplicata-edicao-serie-gcal.md` | 9.15 | diagnóstico |
-| `docs/_reports/2026-08-29-fix-dtstart-byday-gcal.md` | 9.1 / alinhamento `DTSTART` | fechado |
-| `docs/_reports/2026-08-29-fix-duplicata-edicao-serie-gcal.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-29-fix-exdate-primeiro-dia-gcal.md` | 9.12 / borda de `EXDATE` | fechado |
-| `docs/_reports/2026-08-29-fix-global-e-mock-teto-gcal.md` | 9.4 / 9.8 | fechado |
-| `docs/_reports/2026-08-29-fix-harness-split-comportamental.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-29-fix-select-teto-e-spec-gcal.md` | 9.4 / 9.15 / spec | fechado |
-| `docs/_reports/2026-08-29-fix-serie-vazia-e-acento-gcal.md` | 9.15 / 9.16 | fechado |
-| `docs/_reports/2026-08-29-fix-teto-pendencia-gcal.md` | 9.4 / controle de teto | fechado |
-| `docs/_reports/2026-08-29-fix-url-split-e-teste-comportamental.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-diag-vinculo-serie-avulsa-e-conflito-fantasma.md` | 9.15 | diagnóstico |
-| `docs/_reports/2026-08-30-fix-avulsa-limpa-campos-recorrencia.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-conflito-serializacao-until.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-split-preserva-excecoes.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-vinculo-serie-familia-correcao.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-vinculo-serie-familia-prova-ignorarids.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-vinculo-serie-familia.md` | 9.15 | fechado |
-| `docs/_diags_llm/2026-08-31-diag-split-encadeado-defeitos-5-e-6.md` | 9.15 | diagnóstico |
-| `docs/_reports/2026-08-31-fix-split-encadeado-heranca-e-serie-vazia.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-31-fix-heranca-mae-vazia-split.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-31-fix-heranca-contagem-ocorrencias.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-31-fix-excluir-serie-toda-coerente.md` | 9.17 | fechado |
-| `docs/_reports/2026-08-31-feat-aparo-cadeia-serie.md` | 9.18 | fechado |
-| `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
-| `docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
-| `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
-| `docs/_reports/2026-09-01-fix-envio-reposicao-serie.md` | 9.20 | fechado |
-| `docs/_reports/2026-09-01-refactor-nomes-exclusao-e-promise-cobranca.md` | 9.19 / 9.20 | fechado |
-| `docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md` | 9.21 | fechado |
-| `docs/_reports/2026-09-01-docs-fechamento-etapa-6.md` | 9.22 / 9.23 | fechado |
-| `docs/_reports/2026-09-01-fix-persistencia-silenciosa-gcal.md` | 9.26 | fechado |
-| `docs/_reports/2026-09-01-feat-rotulo-exclusao-serie-toda.md` | 9.25 | fechado |
-| `docs/_reports/2026-09-01-diag-persistencia-silenciosa-criacao-edicao.md` | 9.23 nº 6 | diagnóstico |
-| `docs/_reports/2026-09-01-fix-persistencia-silenciosa-criacao-edicao.md` | 9.27 / 9.23 nº 6 | fechado |
-| `docs/_reports/2026-09-01-fix-cancelar-reposicao-orfa.md` | 9.27 / 9.20 | fechado |
 
 ## 10. Custo aceito da decisão
 

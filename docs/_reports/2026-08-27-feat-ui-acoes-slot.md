@@ -164,7 +164,7 @@ excluída — todas as ocorrências.');
  index.html                   | 44 +++++++++++++++++++++++++-------------------
  2 files changed, 47 insertions(+), 24 deletions(-)
 ---
- M assets/js/modal-acao-slot.js
+[... saida podada ...]
  M index.html
 ```
 

@@ -190,7 +190,7 @@ assets\js\modal-acao-slot.js:1545:      if (_serieDeletar && _serieDeletar.serie
  assets/js/auth/google-identity.js | 44 ++++++++++++++++++++++++++++----
  1 file changed, 40 insertions(+), 4 deletions(-)
 ---
- M assets/js/auth/google-identity.js
+[... saida podada ...]
 ```
 
 Observação: a contagem de `_promptBloqueado` ficou inalterada no escopo, conforme a regra do prompt. O `node --check` foi concluído sem erro. Nenhum arquivo em `index.html`, `assets/css/style.css` ou `backend/` foi alterado nesta rodada.
