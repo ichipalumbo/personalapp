@@ -13,7 +13,7 @@
 | [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
 | [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md) | Fila de reposições, competência de cobrança, prazo de validade e extrato do ciclo | Antes de definir como aulas enviadas para reposição entram no cálculo e no histórico financeiro |
 | [`specs/gcal-sync.md`](specs/gcal-sync.md) | Sincronização com Google Calendar | Antes de mexer em recorrência, `EXDATE`, webhook, renovação do canal ou conflitos de sincronização |
-| [`setup-ambiente-local.md`](setup-ambiente-local.md) | Passo a passo para deixar uma máquina nova rodando frontend, backend e banco de dev | Ao configurar um computador novo, ou quando o ambiente local parar de funcionar |
+| [`setup-ambiente-local.md`](setup-ambiente-local.md) | Passo a passo para deixar uma máquina nova rodando frontend, backend e banco de dev, mais como rodar as duas suítes de teste | Ao configurar um computador novo, quando o ambiente local parar de funcionar, ou antes de escrever teste novo |
 | [`_reports/APRENDIZADOS.md`](_reports/APRENDIZADOS.md) | Riscos, limites aceitos e armadilhas consolidados de todos os relatórios | Antes de abrir uma rodada numa área sensível |
 
 ---

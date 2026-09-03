@@ -178,9 +178,12 @@ na prática — mas o código que as gerou pode não ter mudado.
   maiúsculo, não achou a seção `## 8. Fora de escopo` que já existia, e reportou como
   ausente. As duas rodadas seguintes trabalharam em cima da premissa errada. Buscar cabeçalho
   sempre case-insensitive.
-- **Não há teste de frontend.** Toda validação de UI é manual e roda contra a API de produção.
-  Nenhuma correção de `assets/js/**` tem prova automatizada — a prova por mutação só vale
-  para o que está em `backend/`.
+- **Cobertura de frontend existe, mas é parcial.** Desde 2026-09-03 há uma suíte em
+  `tests-frontend/` cobrindo `shared/recurrence-helpers.js`, `calendario-engine.js` e a ordem
+  das tags `<script>` do `index.html`. **Tela continua sem cobertura**: `view-*.js`, modais e
+  `agenda-conflitos.js` são validados manualmente. A prova por mutação agora vale para
+  `backend/` e para o que está em `tests-frontend/` — para o resto de `assets/js/**`, não.
+  _Este item dizia "não há teste de frontend" até 2026-09-03._
 - **Prova de mutação em guarda de frontend não fechou.** Na etapa de split, as guardas E/F/G
   não falharam no harness real. O impedimento não estava na correção, estava na prova.
 - **Dublê observacional não é correção.** Um espião de `getConflitosNoDia` prova que o

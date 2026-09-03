@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-08-29
+> **Status**: Documento vivo · **Atualizado**: 2026-09-03
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -54,6 +54,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
 | 3     | 3.4 Banco de desenvolvimento separado            | `[x]`  | 3.2                                                              |
+| 3     | 3.5 Suíte de testes de frontend                   | `[x]`  | —                                                                |
 | 4     | 4.1 Cobrança automatizada                        | `[ ]`  | 3.1 a 3.4                                                        |
 | 4     | 4.2 Notificações automáticas                     | `[ ]`  | —                                                                |
 | 4     | 4.3 Portal/app do aluno                          | `[ ]`  | —                                                                |
@@ -169,7 +170,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Onde mexer**: `view-alunos.js`, card do aluno, painel de aluno e endpoint de fila de reposição. O layout do card (`.aluno-card-indicadores`, grid `auto-fit`) **já foi preparado para uma terceira caixinha sem refatoração**; a antiga `contarReposicoesPorAluno` **foi removida** e não deve ser ressuscitada.
 - **Estado de implementação**: não implementado; `Reposições` não aparece em `index.html`, e `view-alunos.js` não renderiza o contador. O bloco continua como item de entrega futura.
 - **Dependência**: item 0.7 (prazo de validade + expiração lazy) — **já entregue**, portanto este item está desbloqueado.
-- **Nota de escopo**: primeira rodada de frontend da série. Não existe suíte automatizada de frontend no projeto; a validação será visual.
+- **Nota de escopo**: primeira rodada de frontend da série. **Atualizado em 2026-09-03**: quando este item foi escrito não havia suíte de frontend e a validação seria só visual. Hoje existe suíte (item 3.5), mas ela **não cobre tela** — a validação de UI deste item continua manual.
 - **Esforço**: Baixo–Médio.
 
 ---
@@ -315,18 +316,19 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 > **Histórico**: o projeto nasceu com apoio de IA, sem que ninguém definisse ambiente local nem testes. O resultado é que **toda validação sempre foi feita em produção**. Isso funcionou por um bom tempo porque o app é de usuário único conhecido, mas já custou dois bugs financeiros que chegaram ao usuário real.
 >
-> **Estado atual**: o backend local já é executável (`npm start` em `backend/`), o frontend local já percebe o hostname e aponta para `http://localhost:5000/api` quando servido em `localhost`, e o banco de desenvolvimento já existe em `personalapp_dev` separado do banco de produção em `test`. O que **continua não existindo** são watch mode, `npm run dev`, seed automático de dados e ambiente de preview. O que foi resolvido foi o isolamento do ambiente, não a conveniência do fluxo de desenvolvimento.
+> **Estado atual**: o backend local já é executável (`npm start` em `backend/`), o frontend local já percebe o hostname e aponta para `http://localhost:5000/api` quando servido em `localhost`, e o banco de desenvolvimento já existe em `personalapp_dev` separado do banco de produção em `test`. **Atualizado em 2026-09-03**: passaram a existir duas suítes automatizadas — backend (`backend/`, 218 testes) e frontend (`tests-frontend/`, 37 testes, item 3.5). O que **continua não existindo** são watch mode, `npm run dev`, seed automático de dados, ambiente de preview e cobertura automatizada de tela.
 >
 > **Consequência a ter clara**: hoje o frontend local não grava em produção quando o ambiente está corretamente configurado; o risco real que sobrou é usar um `.env` local sem `GOOGLE_CLIENT_ID` ou apontar a URI errada. A dificuldade restante não é "gravar em produção", e sim acertar a configuração do ambiente local.
-> **Consequência a ter clara**: rodando o Live Server, o frontend local **grava no banco de produção**. Não é só "testar em produção" no sentido de publicar antes de validar — é código não publicado escrevendo em dado real.
+>
+> _Havia aqui uma segunda "Consequência a ter clara" dizendo que o Live Server gravava no banco de produção. **Removida em 2026-09-03**: era anterior aos itens 3.3 e 3.4 e contradizia o parágrafo acima._
 >
 > **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
 
 ### [ ] 3.1 Ampliar cobertura das regras financeiras
 
 - **O que é**: ampliar a suíte automatizada das regras de cálculo de `financasService.js` e do fluxo de reposição que já está em `backend/test/`.
-- **O que já existe hoje**: a suíte do backend roda em `node --test` com **86 testes, 0 falhas**. Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
-- **Lacunas verificadas**: não há teste de frontend. Não existe nenhum arquivo de teste em `assets/` e a UI não tem suíte automatizada em `backend/test/`.
+- **O que já existe hoje**: a suíte do backend roda em `node --test` com **218 testes, 0 falhas** (medido em 2026-09-03). Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
+- **Lacunas verificadas**: do lado do frontend, o item 3.5 cobriu o módulo isomórfico de recorrência e a ordem de carga do `index.html`. Continuam **sem cobertura** as telas (`view-financas.js`, `view-alunos.js`, `view-home.js`), os modais e `agenda-conflitos.js`.
 - **Por que importa**: a suíte já cobre as regras puras e de negócio mais sensíveis do backend, e a expansão continua sendo a forma correta de reforçar o cálculo financeiro sem inventar uma lacuna de UI que ainda não existe.
 - **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
 
@@ -362,6 +364,24 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Dado real e escopo**: os agendamentos clonados carregam referência a eventos de calendário reais do ambiente do usuário; conectar o GCal localmente exigiria uma decisão separada de conta e sincronização, e ficou fora de escopo desta rodada.
 - **Consequência prática**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
 - **Como reproduzir**: ver [`docs/setup-ambiente-local.md`](setup-ambiente-local.md).
+
+---
+
+### [x] 3.5 Suíte de testes de frontend
+
+- **O que foi entregue**: primeira suíte automatizada do frontend, em `tests-frontend/`, com **37 testes, 0 falhas**. Roda com `node --test`, o mesmo runner do backend, e tem `package.json` próprio — as duas suítes são independentes e têm números separados.
+- **Por que a pasta é isolada**: o projeto Vercel `personal-app-webpage` tem _Root Directory_ na raiz do repositório. Um `package.json` na raiz mudaria o que a Vercel detecta no build do frontend estático. A pasta separada, mais um `.vercelignore` que a exclui, mantém o deploy intocado.
+- **O que é coberto**:
+  - `assets/js/shared/recurrence-helpers.js` (24 testes) — `parseDataFlex` nos três formatos aceitos, recorrência diária/semanal/mensal/anual, escopo `monthOfDate`, exceções e as duas condições de fim (`untilDate` e `occurrences`). É o módulo isomórfico da seção 2.4 da spec de Finanças: divergência aqui faz o app cobrar valor diferente do que a agenda mostra.
+  - `assets/js/calendario-engine.js` (8 testes) — guard de ordem de carga, fidelidade dos repasses para `recurrenceHelpers` (por identidade de função, não por `typeof`) e fallback do `diasSemanaMap`.
+  - **Ordem das tags `<script>` do `index.html`** (5 testes) — ver abaixo.
+- **Guard de ordem do `index.html`**: sem bundler, a ordem das tags **é** a resolução de dependências. O teste valida que todo `src` local existe no disco, que nenhum é declarado duas vezes, que as dependências de tempo de carga vêm antes dos dependentes, e que carregar o par na ordem inversa realmente lança.
+- **Dependências de tempo de carga mapeadas**: a varredura encontrou exatamente duas leituras de global durante a avaliação do script, ambas já protegidas por `throw` explícito — `calendario-engine.js` lendo `window.recurrenceHelpers` e `storage.js` lendo `window.APP_API_CONFIG`. As demais dependências declaradas nos cabeçalhos `// Depende de:` são de runtime, não de carga, e ficaram fora do guard de propósito: `agenda-conflitos.js` declara depender de `view-home.js`, que carrega **depois** dele.
+- **Como os scripts rodam em Node**: os arquivos do frontend não exportam nada, apenas registram em `window`. `tests-frontend/setup/carregar-frontend.js` executa cada um num contexto `vm` novo, começando por `globalThis.window = globalThis` — no browser os dois são o mesmo objeto, no `vm` não, e sem essa linha o UMD de `recurrence-helpers` registra num lugar onde `calendario-engine` não enxerga. Contexto novo por carga também elimina redeclaração de `const` entre testes.
+- **Prova de mutação**: três mutações aplicadas e revertidas, conforme a seção 10 de `.github/copilot-instructions.md` — neutralizar o guard e o fallback do `calendario-engine` (3 falhas), remover o `T12:00:00` do parse ISO (1 falha) e inverter a ordem das tags no `index.html` (2 falhas).
+- **jsdom**: instalado como `devDependency`, mas **ainda sem nenhum teste consumindo**. Foi decisão deliberada para deixar pronto o caminho da cobertura de DOM. Enquanto não houver teste usando, é dependência ociosa.
+- **O que continua sem cobertura**: telas, modais e `agenda-conflitos.js`. Ver item 3.1.
+- **Como rodar**: ver [`docs/setup-ambiente-local.md`](setup-ambiente-local.md).
 
 ---
 
@@ -446,7 +466,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que foi entregue**: A fórmula fixa `frequência semanal × 4 × valor` foi **eliminada**. O cálculo agora percorre a janela real de datas do ciclo do aluno e conta as ocorrências efetivas de aulas resolvidas pelo motor de recorrência — o mesmo usado para desenhar a agenda, garantindo que "o que a agenda mostra" e "o que o financeiro cobra" nunca divirjam (módulo isomórfico, seção 2.4 da spec).
 - **O que ficou de fora**: **feriados** não são tratados (uma aula em feriado é contada normalmente, a menos que o PT a remova da agenda) e **faltas** dependem do item 1.5.
-- **Risco que se concretizou**: como previsto aqui, a ausência de testes automatizados fez a validação ser toda manual em produção. Dois defeitos reais escaparam para prod e só foram pegos em revisão posterior (aula excluída continuar sendo cobrada; reajuste de preço alterando ciclos antigos retroativamente). Ambos corrigidos — mas fica o registro de que **o projeto continua sem rede de proteção automatizada** em cima de código que calcula dinheiro. Ver item 3.1.
+- **Risco que se concretizou**: como previsto aqui, a ausência de testes automatizados fez a validação ser toda manual em produção. Dois defeitos reais escaparam para prod e só foram pegos em revisão posterior (aula excluída continuar sendo cobrada; reajuste de preço alterando ciclos antigos retroativamente). Ambos corrigidos. **Atualizado em 2026-09-03**: o registro original dizia que o projeto continuava sem rede de proteção automatizada. Hoje existem duas suítes — backend (218 testes) e frontend (37 testes, item 3.5) — e o motor de recorrência que alimenta este cálculo está coberto dos dois lados. A camada de tela continua sem cobertura.
 
 ---
 

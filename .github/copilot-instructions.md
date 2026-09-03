@@ -128,10 +128,12 @@ trata `consistencia-agenda` como um id.
 O módulo financeiro (`backend/src/services/financasService.js`, collection
 `CicloFinanceiro`, tela `assets/js/view-financas.js`) exige cuidado extra:
 
-- **A suíte automatizada cobre o backend** (`npm test`, via `node --test`), hoje
-  com **84 testes**. Toda alteração em `financasService.js` exige rodar a suíte
-  **antes e depois** da mudança, e reportar os dois números. Não existe teste de
-  frontend: validação de UI é manual, em produção.
+- **A suíte do backend é a rede de proteção deste módulo** (`npm test` em
+  `backend/`, via `node --test`). Toda alteração em `financasService.js` exige
+  rodar a suíte **antes e depois** da mudança, e reportar os dois números
+  medidos — não confie em contagem escrita em documentação, que envelhece.
+  A suíte de frontend (`tests-frontend/`) **não cobre tela**: validação de UI
+  continua manual. Ver seção 10.
 - **Recálculo usa sempre o snapshot do ciclo** (`precoAulaSnapshot`,
   `valorFixoSnapshot`, `metodoCobranca`), nunca o preço atual do aluno. Um
   reajuste vale a partir do próximo ciclo, jamais retroativamente.
@@ -222,16 +224,30 @@ que pareçam pequenas:
 - **Idioma**: código, comentários, nomes de variáveis e mensagens de UI em
   português. Mantenha o padrão do arquivo que estiver editando.
 - **Sem dependências novas sem confirmar.** O projeto é deliberadamente enxuto:
-  o frontend não tem nenhuma, e o backend tem seis. Se algo exigir uma
+  o frontend não tem nenhuma, o backend tem seis, e `tests-frontend/` tem uma
+  (`jsdom`, devDependency, ainda sem teste consumindo). Se algo exigir uma
   biblioteca nova, levante a questão antes.
 - **Sem build step no frontend.** Não introduza bundler, transpilador ou
   sintaxe que dependa deles.
 
 ## 10. Testes e regressões
 
-- O backend tem suíte automatizada em `backend/` com `node --test` e `npm test`.
+- **Duas suítes independentes**, ambas com `node --test` e `npm test`, cada uma
+  com seu `package.json` e seu próprio número:
+  - `backend/` — regras de negócio, finanças, reposições e sync do GCal.
+  - `tests-frontend/` — lógica pura do frontend e a ordem das tags `<script>`
+    do `index.html`.
+- **`tests-frontend/` não cobre tela.** `view-*.js`, modais e
+  `agenda-conflitos.js` seguem sem cobertura; a validação de UI é manual.
+- Rode a suíte afetada antes e depois da mudança e **reporte os números que você
+  mediu**, nunca os que leu em documentação.
 - Teste novo precisa ser provado por mutação: se o fix for revertido, o teste deve
-  falhar. Teste que passa no código antigo não é cobertura.
+  falhar. Teste que passa no código antigo não é cobertura. Reverta a mutação e
+  confirme com `git status` antes de seguir.
+- Ao adicionar um `<script>` em `index.html` que leia um global no topo do
+  arquivo, acrescente o par em `DEPENDENCIAS_DE_CARGA` de
+  `tests-frontend/index-html-ordem.test.js`.
+- Comandos e armadilhas de execução: `docs/setup-ambiente-local.md`.
 
 ## 11. it — política de branch
 

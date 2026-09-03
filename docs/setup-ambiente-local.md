@@ -3,7 +3,7 @@
 > Passo a passo para deixar uma máquina nova rodando o app inteiro localmente:
 > frontend em `localhost:5500`, backend em `localhost:5000`, banco `personalapp_dev`.
 >
-> Reconstruído a partir das rodadas 3.2, 3.3 e 3.4 do `roadmap.md`. Se algum passo aqui
+> Reconstruído a partir das rodadas 3.2, 3.3, 3.4 e 3.5 do `roadmap.md`. Se algum passo aqui
 > divergir do código, o código é a referência — reporte a divergência.
 
 ---
@@ -31,7 +31,7 @@ para a API de produção — ou seja, **escreve no banco de produção**. A dete
 
 | Item | Observação |
 |---|---|
-| Node.js | O backend usa `node --test`, que exige Node 18+ |
+| Node.js | As duas suítes usam `node --test`, que exige Node 18+ |
 | Extensão Live Server (VS Code) | É o único servidor do frontend — não há build step |
 | MongoDB Database Tools | `mongodump` e `mongorestore`, para clonar a base |
 | Acesso ao painel Vercel | Projeto `personal-app-api`, para copiar as variáveis |
@@ -177,15 +177,94 @@ ao calendário real.**
 
 ---
 
-## 7. Rodar a suíte
+## 7. Rodar as suítes
+
+São **duas suítes independentes**, cada uma com seu `package.json` e seu próprio número. Nenhuma
+delas precisa do backend rodando, de `.env` ou de banco — são todas de lógica pura, em processo.
+
+**Backend** — 218 testes:
 
 ```powershell
 cd backend
+npm install
 npm test
 ```
 
-Só existe suíte no backend. `assets/js/**` não tem cobertura automatizada — validação de UI
-é manual.
+**Frontend** — 37 testes:
+
+```powershell
+cd tests-frontend
+npm install
+npm test
+```
+
+Ambas usam `node --test`, o runner nativo do Node. Não há Jest, Vitest nem watch mode.
+
+> Ao rodar no PowerShell, **não filtre a saída com `Select-String` ou `Select-Object`**: o pipe
+> mascara o código de saída e a suíte parece falhar mesmo com 0 falhas. Se precisar do código
+> real, use `npm test *> $null; $LASTEXITCODE`.
+
+### O que a suíte de frontend cobre
+
+| Arquivo | Cobre |
+|---|---|
+| `tests-frontend/recurrence-helpers.test.js` | `assets/js/shared/recurrence-helpers.js` — o módulo isomórfico consumido pela agenda e pelo financeiro |
+| `tests-frontend/calendario-engine.test.js` | `assets/js/calendario-engine.js` — guard de ordem de carga, repasses e fallback do mapa de dias |
+| `tests-frontend/index-html-ordem.test.js` | A ordem das tags `<script>` em `index.html` |
+
+**Não cobre tela.** `view-*.js`, os modais e `agenda-conflitos.js` continuam sem cobertura
+automatizada, e a validação de UI segue manual. O `jsdom` já está instalado como
+`devDependency`, mas ainda não há teste usando.
+
+### Por que a pasta é separada da raiz
+
+O projeto Vercel do frontend tem _Root Directory_ na raiz do repositório. Um `package.json` na
+raiz mudaria o que a Vercel detecta no build. Por isso a suíte mora em `tests-frontend/`, e o
+[.vercelignore](.vercelignore) da raiz exclui a pasta do deploy.
+
+### Como os scripts do frontend rodam fora do browser
+
+Os arquivos de `assets/js/` não exportam nada — apenas registram funções em `window`.
+`tests-frontend/setup/carregar-frontend.js` executa cada um num contexto `vm` novo, e a
+primeira coisa que faz é `globalThis.window = globalThis`. No browser os dois são o mesmo
+objeto; no `vm`, não. Sem essa linha, o UMD de `recurrence-helpers` se registra num lugar onde
+`calendario-engine` não enxerga, e nada carrega.
+
+Contexto novo a cada carga também é o que permite testar o mesmo arquivo várias vezes sem
+esbarrar em redeclaração de `const`.
+
+### Escrevendo teste novo
+
+Todo teste novo precisa ser **provado por mutação**: quebre de propósito o comportamento que
+ele cobre e confirme que ele falha. Teste que passa no código quebrado não é cobertura. A regra
+está na seção 10 de `.github/copilot-instructions.md`.
+
+Lembre de reverter a mutação e conferir com `git status` antes de seguir.
+
+---
+
+## 8. O guard de ordem do `index.html`
+
+O frontend não tem bundler: **a ordem das tags `<script>` é a resolução de dependências**.
+`tests-frontend/index-html-ordem.test.js` protege isso verificando que todo `src` local existe
+no disco, que nenhum é declarado duas vezes, que as dependências de tempo de carga vêm antes
+dos dependentes, e que carregar o par na ordem inversa realmente lança.
+
+Só entram no guard as dependências lidas **durante a avaliação do script**, não em runtime.
+Hoje são duas, ambas protegidas por `throw` explícito no próprio código:
+
+| Precisa carregar antes | Dependente | Global lido |
+|---|---|---|
+| `assets/js/config/api-config.js` | `assets/js/storage.js` | `window.APP_API_CONFIG` |
+| `assets/js/shared/recurrence-helpers.js` | `assets/js/calendario-engine.js` | `window.recurrenceHelpers` |
+
+Os cabeçalhos `// Depende de:` dos arquivos declaram bem mais que isso, mas a maioria é
+dependência de runtime e **não** governa ordem de carga — `agenda-conflitos.js`, por exemplo,
+declara depender de `view-home.js`, que carrega depois dele. Aplicar a regra genérica dos
+cabeçalhos faria o guard falhar sem que houvesse defeito.
+
+**Ao adicionar um script novo em `index.html`**, se ele ler um global no topo do arquivo,
+acrescente o par em `DEPENDENCIAS_DE_CARGA` no arquivo de teste.
 
 ---
 
