@@ -47,6 +47,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.6 Lembrete de aniversário do aluno             | `[ ]`  | —                                                                |
 | 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
+| 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[ ]`  | 3.1 (recomendado)                                                |
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
@@ -277,6 +278,17 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ### [→] 1.8 Visão de "aulas a repor" no card do aluno
 
 - **Consolidado no item 0.8.**
+
+---
+
+### [ ] 1.9 Pagar/ajustar ciclo anterior (do histórico)
+
+- **O que é**: permitir "Marcar como pago" e "Editar ajuste" em um ciclo **encerrado**, exibido dentro de "Ver ciclos anteriores" no card de Finanças. Hoje os dois botões existem **apenas** no ciclo vigente; o histórico é somente leitura por decisão da spec (seção 6.2) — mas as rotas `PATCH /api/financas/:cicloId/pagamento` e `/ajuste` já operam por `:cicloId`, ou seja, o backend já aceita o alvo genérico.
+- **Por que importa**: o PT teve exatamente esta dor em produção (2026-09-18): um ciclo anterior ficou **Atrasado** e não havia nenhum caminho na UI para marcá-lo pago — só se pagava enquanto o ciclo ainda era o vigente.
+- **Regras que precisam ser explicitadas antes de implementar** (hoje não estão na spec): (a) um ciclo anterior **não pago** pode continuar sendo pago no passado (data de pagamento no período do ciclo) — a regra de congelamento 5.8 só trava ciclo **pago**; (b) ajuste em ciclo anterior **não pago** é permitido (rejeição 409 vale só para pago); (c) encerramento sobreposto (5.6) é o único caso em que um "anterior" pode ter sido encurtado — pagar um ciclo encurtado manualmente precisa ser pensado junto.
+- **Onde mexer**: `assets/js/view-financas.js` (adicionar os dois botões em `renderizarListaHistorico` reutilizando `abrirModalPagamento`/`abrirModalAjuste` e a validação por `cicloId` já existente) + spec `docs/specs/financas-ciclo-cobranca.md` (regras (a)–(c) antes do código).
+- **Dependência recomendada**: item 3.1 (mais testes de regra financeira) — mexe em status de cobrança e o custo de errar é dinheiro; a mudança em si é pequena (reuso de fluxo existente).
+- **Esforço**: Baixo (UI + regras documentadas) a Médio (se (c) exigir regra nova de encerramento).
 
 ---
 
