@@ -52,13 +52,9 @@ npm test
 > personal-api@1.0.0 test
 > node --test
 
-✔ calcularAulasContadasDoCiclo: agendamento com reposicaoId não entra na parcela (A) (0.5807ms)
-✔ calcularAulasContadasDoCiclo: reposição cobrável pendente conta na parcela (B) (0.2345ms)
-✔ calcularAulasContadasDoCiclo: reposição não cobrável só conta quando cicloCobrancaResolvido.inicio bate (0.1055ms)
-✔ montarExtratoDoCiclo: ciclo simples fecha com valorTotalCiclo (10.3588ms)
-✔ montarExtratoDoCiclo: ciclo com ajuste manual negativo fecha com valorTotal
+[... saida podada ...]
 ...
-✔ obterReposicao preserva status pendente quando validoAte ainda não venceu (0.140ms)
+[... saida podada ...]
 ℹ tests 122
 ℹ suites 0
 ℹ pass 122
@@ -127,10 +123,7 @@ Arquivo: `backend/test/agenda-conflitos.test.js`
 ```text
 Set-Location 'E:\Projetos\GIT\personalapp\backend'; node --test test\agenda-conflitos.test.js
 
-✖ getCompromissoSerializadoParaConflito preserva o fim da série (2.0124ms)
-✖ candidato serializado não ocorre depois do UNTIL (11.4187ms)
-✖ série aparada não conflita com a própria continuação (1.6766ms)
-✔ série sem campos de fim continua sendo tratada como infinita (0.8319ms)
+[... saida podada ...]
 ℹ tests 4
 ℹ pass 1
 ℹ fail 3
@@ -143,10 +136,7 @@ Arquivo restaurado após a mutação; a implementação final voltou para a vers
 ```text
 Set-Location 'E:\Projetos\GIT\personalapp\backend'; node --test test\agenda-conflitos.test.js
 
-✖ getCompromissoSerializadoParaConflito preserva o fim da série (1.9953ms)
-✖ candidato serializado não ocorre depois do UNTIL (11.3278ms)
-✖ série aparada não conflita com a própria continuação (1.7164ms)
-✔ série sem campos de fim continua sendo tratada como infinita (0.8261ms)
+[... saida podada ...]
 ℹ tests 4
 ℹ pass 1
 ℹ fail 3
@@ -172,10 +162,7 @@ Select-String -Path 'assets\js\agenda-conflitos.js' -Pattern 'recorrenciaDataFim
 Select-String -Path 'assets\js\agenda-conflitos.js' -Pattern 'recorrenciaFimCondicao'
 Select-String -Path 'assets\js\modal-acao-slot.js' -Pattern 'ignorarIds'
 
-✔ expiração nula → renova e sincroniza (0.5423ms)
-✔ falha ao encerrar canal antigo → segue e renova mesmo assim (0.6389ms)
-✔ duas chamadas concorrentes → um único registro de canal (0.4879ms)
-✔ listCalendarEvents inclui janela consultada no full sync e null no incremental (0.2552ms)
+[... saida podada ...]
 ...
 ℹ tests 126
 ℹ suites 0
@@ -191,9 +178,7 @@ fix/conflito-serializacao-until
  assets/js/agenda-conflitos.js | 3 +++
  1 file changed, 3 insertions(+)
 ---STATUS---
- M assets/js/agenda-conflitos.js
-?? backend/test/agenda-conflitos.test.js
-?? docs/_reports/2026-08-30-fix-conflito-serializacao-until.md
+[... saida podada ...]
 ---DATAFIM---
 
 assets\js\agenda-conflitos.js:30:        recorrenciaDataFim: compromisso.recorrenciaDataFim || null,

@@ -10,19 +10,14 @@ git rev-parse --abbrev-ref HEAD
 fix/duplicata-edicao-serie-gcal
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/src/controllers/agendamentoController.js
- M backend/src/services/gcalSyncService.js
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/gcal-sync.test.js
- M docs/specs/gcal-sync.md
+[... saida podada ...]
 
 Set-Location 'E:\Projetos\GIT\personalapp\backend'
 npm test
 > personal-api@1.0.0 test
 > node --test
 
-✔ ...
+[... saida podada ...]
 ℹ tests 117
 ℹ suites 0
 ℹ pass 117
@@ -105,7 +100,7 @@ if (_serieOriginalVaziaFd) {
 Mutação aplicada ao arquivo real para desligar a detecção de série vazia e validar que o teste falha.
 
 ```text
-✖ split fromDate detecta serie vazia e dispara DELETE em vez de PUT (1.0209ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: The input did not match the regular expression /const _dataInicioEfeitoFd = window\.parseDataFlex/. Input:
 
   '// [TAG-MODAL-ACAO-SLOT] modal-acao-slot.js\r\n' +
@@ -147,7 +142,7 @@ A correção no `backend/src/controllers/agendamentoController.js` ficou assim:
 Mutação aplicada ao código real para reverter a ordem antiga do `DELETE` e provar a regressão.
 
 ```text
-✖ excluirAgendamento chama Google antes do Mongo e retorna sucesso quando o registro foi apagado (0.837ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
   + actual - expected
 
@@ -157,9 +152,9 @@ Mutação aplicada ao código real para reverter a ordem antiga do `DELETE` e pr
   -   'mongo'
     ]
 
-      at TestContext.<anonymous> (E:\Projetos\GIT\personalapp\backend\test\gcal-duplicata-fix.test.js:1134:12)
+[... saida podada ...]
 
-✖ excluirAgendamento trata 404/410 como sucesso e ainda remove do Mongo (0.375ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
   + actual - expected
 
@@ -169,7 +164,7 @@ Mutação aplicada ao código real para reverter a ordem antiga do `DELETE` e pr
       'mongo'
     ]
 
-✖ excluirAgendamento não apaga o Mongo quando o Google falha com 500 e grava pendencia (0.471ms)
+[... saida podada ...]
   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
   + actual - expected
 
@@ -228,10 +223,7 @@ console.warn('[GCalSync] Dia da semana ignorado na recorrência.', {
 A mutação foi aplicada no arquivo real para remover o suporte ao mapeamento de terça e a fallback por `DEFAULT_DIAS_SEMANA`, o que destrói a compatibilidade do sem-acento sem a normalização. A suíte falha como esperado.
 
 ```text
-✖ montarEventoGoogle alinha DTSTART para a primeira ocorrencia semanal fora do BYDAY (2.8716ms)
-✖ montarEventoGoogle não realinha DTSTART quando a data base já atende ao BYDAY (0.4731ms)
-✖ montarRecurrence gera EXDATE com hora e TZID para evento cronometrado e data para dia inteiro (0.1899ms)
-✖ montarRecurrence aceita diasSemana sem acento, abreviado, numérico e dispara warning para inválido (0.3175ms)
+[... saida podada ...]
 
 ℹ tests 47
 ℹ pass 43
@@ -276,7 +268,7 @@ npm test
 > personal-api@1.0.0 test
 > node --test
 
-✔ ...
+[... saida podada ...]
 ℹ tests 117
 ℹ suites 0
 ℹ pass 117
@@ -293,13 +285,7 @@ docs/specs/gcal-sync.md                          |  30 +++--
 6 files changed, 281 insertions(+), 20 deletions(-)
 
 git status --short
- M assets/js/modal-acao-slot.js
- M backend/src/controllers/agendamentoController.js
- M backend/src/services/gcalSyncService.js
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/gcal-sync.test.js
- M docs/specs/gcal-sync.md
-?? docs/_reports/2026-08-29-fix-serie-vazia-e-acento-gcal.md
+[... saida podada ...]
 ```
 
 ## 10) Branch usada

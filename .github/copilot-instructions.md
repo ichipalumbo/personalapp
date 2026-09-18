@@ -36,7 +36,9 @@ correspondente em `docs/specs/`.
 - Backlog, priorização e débitos técnicos conhecidos: `docs/roadmap.md`.
 - Índice da documentação: `docs/README.md`.
 
-Spec ativa: `docs/specs/financas-ciclo-cobranca.md` (v7, em produção). A spec complementar `docs/specs/reposicoes-e-competencia.md` (v6) redefine a regra 5.8 e prevalece em caso de divergência sobre reposições. A spec `docs/specs/gcal-sync.md` (v6) detalha a integração com Google Calendar e a renovação ativa do webhook.
+Spec ativa: `docs/specs/financas-ciclo-cobranca.md`. A spec complementar `docs/specs/reposicoes-e-competencia.md` redefine a regra 5.8 e prevalece em caso de divergência sobre reposições. A spec `docs/specs/gcal-sync.md` detalha a integração com Google Calendar e a renovação ativa do webhook.
+
+**Versão e status de cada spec vivem no cabeçalho da própria spec e não são repetidos aqui.** Leia o cabeçalho antes de confiar no conteúdo.
 
 ---
 
@@ -126,10 +128,12 @@ trata `consistencia-agenda` como um id.
 O módulo financeiro (`backend/src/services/financasService.js`, collection
 `CicloFinanceiro`, tela `assets/js/view-financas.js`) exige cuidado extra:
 
-- **A suíte automatizada cobre o backend** (`npm test`, via `node --test`), hoje
-  com **84 testes**. Toda alteração em `financasService.js` exige rodar a suíte
-  **antes e depois** da mudança, e reportar os dois números. Não existe teste de
-  frontend: validação de UI é manual, em produção.
+- **A suíte do backend é a rede de proteção deste módulo** (`npm test` em
+  `backend/`, via `node --test`). Toda alteração em `financasService.js` exige
+  rodar a suíte **antes e depois** da mudança, e reportar os dois números
+  medidos — não confie em contagem escrita em documentação, que envelhece.
+  A suíte de frontend (`tests-frontend/`) **não cobre tela**: validação de UI
+  continua manual. Ver seção 10.
 - **Recálculo usa sempre o snapshot do ciclo** (`precoAulaSnapshot`,
   `valorFixoSnapshot`, `metodoCobranca`), nunca o preço atual do aluno. Um
   reajuste vale a partir do próximo ciclo, jamais retroativamente.
@@ -220,23 +224,50 @@ que pareçam pequenas:
 - **Idioma**: código, comentários, nomes de variáveis e mensagens de UI em
   português. Mantenha o padrão do arquivo que estiver editando.
 - **Sem dependências novas sem confirmar.** O projeto é deliberadamente enxuto:
-  o frontend não tem nenhuma, e o backend tem seis. Se algo exigir uma
+  o frontend não tem nenhuma, o backend tem seis, e `tests-frontend/` tem uma
+  (`jsdom`, devDependency, ainda sem teste consumindo). Se algo exigir uma
   biblioteca nova, levante a questão antes.
 - **Sem build step no frontend.** Não introduza bundler, transpilador ou
   sintaxe que dependa deles.
 
 ## 10. Testes e regressões
 
-- O backend tem suíte automatizada em `backend/` com `node --test` e `npm test`.
+- **Duas suítes independentes**, ambas com `node --test` e `npm test`, cada uma
+  com seu `package.json` e seu próprio número:
+  - `backend/` — regras de negócio, finanças, reposições e sync do GCal.
+  - `tests-frontend/` — lógica pura do frontend e a ordem das tags `<script>`
+    do `index.html`.
+- **`tests-frontend/` não cobre tela.** `view-*.js`, modais e
+  `agenda-conflitos.js` seguem sem cobertura; a validação de UI é manual.
+- Rode a suíte afetada antes e depois da mudança e **reporte os números que você
+  mediu**, nunca os que leu em documentação.
 - Teste novo precisa ser provado por mutação: se o fix for revertido, o teste deve
-  falhar. Teste que passa no código antigo não é cobertura.
+  falhar. Teste que passa no código antigo não é cobertura. Reverta a mutação e
+  confirme com `git status` antes de seguir.
+- Ao adicionar um `<script>` em `index.html` que leia um global no topo do
+  arquivo, acrescente o par em `DEPENDENCIAS_DE_CARGA` de
+  `tests-frontend/index-html-ordem.test.js`.
+- Comandos e armadilhas de execução: `docs/setup-ambiente-local.md`.
 
 ## 11. it — política de branch
 
 O agente pode executar **duas** operações git, e somente após confirmação explícita do dono:
 
 - `git fetch origin`
-- `git checkout -b <nome> origin/main`
+- `git switch -c <nome> origin/main --no-track`
+
+**O `--no-track` é obrigatório.** Sem ele, o Git configura o upstream da branch nova como
+`origin/main`, e qualquer push posterior — inclusive o "Sync Changes" do VS Code — vai
+direto para a `main`, sem PR e sem merge commit. Foi o que aconteceu com
+`chore/remove-toggle-escopo-recorrencia` em 2026-09-03: dois commits chegaram à `main` e
+dispararam deploy em produção sem revisão. **Nunca use `git checkout -b <nome> origin/main`.**
+
+O push é sempre do dono, e o primeiro precisa de `-u` para criar a branch remota e permitir
+o PR:
+
+```
+git push -u origin <nome>
+```
 
 Proibido: commit, push, merge, rebase, `reset`, `restore`, `stash`, `checkout` de arquivo,
 tag, alteração de `.git/config`.
@@ -259,6 +290,11 @@ o turno tendo apenas resolvido a questão da branch é falha.
 
 Nome: `<tipo>/<escopo-curto>`, com `tipo` em `fix`, `feat`, `chore`, `docs`, `diag`,
 `refactor`. O relatório registra a branch usada.
+
+**Toda mudança entra na `main` por pull request.** Push direto na `main` não é o fluxo,
+mesmo nos casos em que o Git permite. Se o agente notar que a branch atual tem upstream
+apontando para `refs/heads/main`, deve reportar antes de qualquer escrita — verificável com
+`git config --get-regexp "branch\..*\.merge"`.
 
 ### Por que a restrição existe
 

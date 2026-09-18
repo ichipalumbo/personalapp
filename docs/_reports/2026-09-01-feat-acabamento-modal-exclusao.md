@@ -8,15 +8,9 @@ A validação final foi executada no repositório e o resultado literal foi:
 > personal-api@1.0.0 test
 > node --test
 
-✔ getCompromissoSerializadoParaConflito preserva o fim da série (2.1132ms)
-✔ candidato serializado não ocorre depois do UNTIL (12.7009ms)
-✔ série aparada não conflita com a própria continuação (2.4368ms)
-✔ série sem campos de fim continua sendo tratada como infinita (1.1049ms)
-✔ ignorarIds de família remove a série e a continuação do conflito, mas preserva conflito real com outro aluno (1.0769ms)
-✔ calcularAulasContadasDoCiclo: agendamento com reposicaoI
+[... saida podada ...]
 ...
-✔ obterReposicao expira reposição pendente com validoAte no passado (0.33ms)
-✔ obterReposicao preserva status pendente quando validoAte ainda não venceu (0.2048ms)
+[... saida podada ...]
 ℹ tests 173
 ℹ suites 0
 ℹ pass 173
@@ -26,10 +20,7 @@ A validação final foi executada no repositório e o resultado literal foi:
 ℹ todo 0
 ℹ duration_ms 10991.4345
 fix/excluir-serie-toda-coerente
- M assets/css/style.css
- M assets/js/modal-acao-slot.js
- M backend/test/gcal-duplicata-fix.test.js
- M docs/specs/gcal-sync.md
+[... saida podada ...]
  M index.html
  assets/css/style.css                    |  42 +++
  assets/js/modal-acao-slot.js            | 454 ++++++++++----------------------

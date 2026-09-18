@@ -1,0 +1,12 @@
+{
+  "name": "personalapp-tests-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Suite de testes automatizados do frontend da Agenda Personal Trainer",
+  "scripts": {
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
+  }
+}

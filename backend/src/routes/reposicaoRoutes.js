@@ -4,6 +4,7 @@ const {
   obterReposicao,
   criarReposicao,
   atualizarReposicao,
+  excluirReposicao,
   adicionarHistoricoReposicao
 } = require('../controllers/reposicaoController');
 
@@ -17,6 +18,7 @@ router.route('/')
 
 router.route('/:id')
   .get(obterReposicao)
-  .patch(atualizarReposicao);
+  .patch(atualizarReposicao)
+  .delete(excluirReposicao);
 
 module.exports = router;

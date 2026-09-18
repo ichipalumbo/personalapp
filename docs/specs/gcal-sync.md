@@ -760,7 +760,7 @@ A exclusão passou a ter uma única lixeira, com modal de escolha em quatro opç
 
 O modal também reusa o padrão `.modal-escolha-*` já existente no app, com ícones escalonados por alcance da exclusão (leve, média e total) e cabeçalho contextual com aluno, data e horário. A confirmação final continua sendo `window.confirm()` nativo, como débito conhecido e explicitado no fluxo. A validação visual do modal ficou manual, porque `index.html` e `assets/css/style.css` não têm suíte automatizada e a checagem do comportamento final no browser precisa ser feita pelo dono.
 
-**Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (`docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md`, commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 (`docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md`) restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
+**Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
 
 **Ajuste de 2026-09-01 (rodada 6d)**: a etapa 6d renomeou o handler avulso de `executarExclusaoDefinitiva` para `executarExclusaoAulaAvulsa` e extraiu a ação "daqui pra frente" para `executarExclusaoSerieAPartirDe`, sem alterar a lógica de negócio nem o desenho visual. O mapeamento de leitura de relatórios antigos é `executarExclusaoDefinitiva` → `executarExclusaoAulaAvulsa`.
 
@@ -786,7 +786,9 @@ real. A limpeza do DOM e do nome do botão continuaram fora do escopo da etapa d
 
 **Feita**: a etapa 6d corrigiu o cancelamento do modal de cobrança ao fazer `window.fecharModalEscolhaCobrancaReposicao()` resolver a Promise em escopo compartilhado, de forma idempotente, sem chamar o callback. O `await` em `window.executarEnvioParaReposicao()` volta ao fluxo normal quando o usuário cancelou, e `executarExclusaoDefinitiva` foi renomeado para `executarExclusaoAulaAvulsa` para manter o nome coerente com o escopo real da ação.
 
-**Ordem pessimista por decisão de produto**: o caminho de série em `window.executarEnvioParaReposicao` é deliberadamente pessimista. A ordem registrada é: criar a reposição no servidor, marcar a exceção local, fechar a UI, persistir e só então confirmar sucesso após o HTTP 200. Isso foi decidido porque a reposição carrega `cobravel` e o motor financeiro das aulas está no backend; confirmar na UI antes do 200 criaria estado financeiro que o servidor pode recusar. O rollback existe e reverte a criação remota e a marcação local em caso de falha; essa ordem não deve ser "otimizada" sem decisão explícita do dono.
+**Ordem pessimista por decisão de produto**: o caminho de série em `window.executarEnvioParaReposicao` é deliberadamente pessimista. A ordem registrada é: criar a reposição no servidor, marcar a exceção local, fechar a UI, persistir e só então confirmar sucesso após o HTTP 200. Isso foi decidido porque a reposição carrega `cobravel` e o motor financeiro das aulas está no backend; confirmar na UI antes do 200 criaria estado financeiro que o servidor pode recusar. Essa ordem não deve ser "otimizada" sem decisão explícita do dono.
+
+**Correção de redação (2026-09-01, etapa 6i-b)**: a versão anterior deste item afirmava que "o rollback existe e reverte a criação remota e a marcação local em caso de falha". A parte de reversão remota estava **incorreta** para o ramo `ehSerie`: o `catch` desse ramo apenas restaura `compromisso.excecoes` a partir do snapshot em memória e exibe o toast de erro — não dispara nenhuma chamada de rede que desfaça a reposição criada. A reversão remota existe apenas no ramo `!ehSerie`, e passou a existir só na etapa 6i-b (ver item `9.27`). Corrigir o ramo `ehSerie` não foi pedido pelo dono e permanece fora de escopo.
 
 **Cobertura**: a regressão foi validada em `backend/test/gcal-duplicata-fix.test.js` com os
 quatro efeitos esperados: `envio para reposição em série preserva a série e marca exceção`,
@@ -849,11 +851,37 @@ originais. A suíte ficou em 187 testes.
 3. **Dois ids duplicados no DOM** para "Enviar para reposição", e o id `btnReagendarInstancia` que não descreve a ação.
 4. **Ramo Google Calendar nas exclusões** — confirmando a persistência: `salvarEventoComGCal` persiste via `salvarDados`. A corrida não existia, e a falha silenciosa era real e foi corrigida — ver item `9.26`.
 5. **Relatório da 6d sem as quatro mutações** — as mutações exigidas pelo prompt da 6d não foram executadas. O código foi verificado por auditoria externa e está correto; o registro é que ficou incompleto.
-6. **Seis pontos de chamada de `salvarEventoComGCal` fora do escopo da 6h** — criação em `modal-agendamento.js:907`; edição/split em `modal-acao-slot.js` nos trechos `novoCompromisso`, `_novaOcorrenciaSerie`, `_novaSerieSplit` e o par `compromisso`/`_snapshotEdicao`. Esses caminhos são criação e edição, não exclusão, e a decisão de UX para "salvar falhou silenciosamente" neles é diferente da de excluir e permanece como candidato a etapa 6i.
+6. **Seis pontos de chamada de `salvarEventoComGCal` fora do escopo da 6h** — FECHADO na etapa 6i, ver item `9.27`. Os seis eram: criação em `modal-agendamento.js` (handler de `formAgendamento`); e, em `modal-acao-slot.js`, o `novoCompromisso` do handler de `formReagendarAula`, o par `compromisso`/`_snapshotEdicao` do handler de `formEditarCompromisso`, as duas gravações de split desse mesmo handler (`_novaOcorrenciaSerie` e `_novaSerieSplit`) e a gravação de `compromisso` no ramo `!ehSerie` de `window.executarEnvioParaReposicao`. A redação original deste débito não citava `executarEnvioParaReposicao` explicitamente, embora ela estivesse dentro da contagem de seis; o diagnóstico da 6i-a apontou a imprecisão e ela está corrigida aqui.
+
+### 9.27 — Persistência silenciosa em criação, edição, split e envio para reposição — FECHADO (2026-09-01)
+
+Os seis pontos de chamada de `salvarEventoComGCal` que a 6h deixou fora (criação e edição, não exclusão) passaram a checar o retorno da persistência antes de seguir. Decisões de UX do dono, implementadas ponto a ponto:
+
+| Ponto | Onde | Reação a falha de gravação |
+| --- | --- | --- |
+| 1 | `modal-agendamento.js`, handler de `submit` de `formAgendamento` | Reverte (remove a aula criada), avisa por toast e reabre o formulário com os dados preenchidos. |
+| 2 | `modal-acao-slot.js`, handler de `submit` de `formEditarCompromisso`, escopos sem split | Reverte para o snapshot, avisa por toast e reabre o modal de edição com os dados submetidos. |
+| 3 | `modal-acao-slot.js`, handler de `submit` de `formReagendarAula` | Desfaz o `PATCH` que marcou a reposição como `agendada` (volta para `pendente` com `agendamentoReposicaoId: null`), remove o compromisso criado e avisa por toast. A tela de reagendamento nunca chega a fechar nesse caminho, então continua aberta com o dia/horário escolhidos. |
+| 4 | Mesmo handler do ponto 2, ramo `escopoRecorrencia === "occurrence"` | Reverte as duas gravações, avisa e reabre o modal no mesmo escopo. |
+| 5 | Mesmo handler do ponto 2, ramo `escopoRecorrencia === "fromDate"` | Idem ponto 4, no escopo `fromDate`. |
+| 6 | `modal-acao-slot.js`, `window.executarEnvioParaReposicao`, ramo `!ehSerie` | Devolve a aula avulsa à agenda e avisa por toast. Sem reabrir tela. |
+
+**Ordem de execução dos splits corrigida junto.** Nos pontos 4 e 5 as duas gravações rodavam em sequência sem `return` entre elas: se a primeira falhasse, a segunda disparava mesmo assim. Agora a segunda só roda se a primeira tiver sido confirmada.
+
+**Gravação de compensação.** Quando a segunda gravação do split falha, a primeira já persistiu no servidor e desfazê-la só na memória não basta. O estado local é restaurado a partir do snapshot do array `aulas` e uma terceira chamada a `salvarEventoComGCal(compromissoRestaurado, { operacao: "atualizar" })` empurra esse estado restaurado para o servidor. Esse mecanismo não existia antes desta etapa — a 6h só precisava de reversão local — e foi construído aqui.
+
+**Reposição órfã do ponto 6 — RESOLVIDO na etapa 6i-b (2026-09-01).** A versão original deste item registrava como limite conhecido o fato de que, em falha de gravação no ponto 6, a aula voltava para a agenda mas a reposição já criada permanecia pendente no servidor, apontando para uma aula que nunca saiu do lugar. Não havia como desfazê-la: a API de reposições não expunha `DELETE` e o `enum` de `status` não tinha estado de cancelamento.
+
+A etapa 6i-b fechou esse buraco. Por decisão do dono, a reposição órfã é **apagada**, não marcada como cancelada — assim o `enum` de `status` em `backend/src/models/Reposicao.js` continua intocado, e uma reposição que a Josy nunca chegou a ver (a falha acontece no mesmo fluxo, sem tela intermediária) não tem histórico a preservar. O que foi feito:
+
+- `DELETE /api/reposicoes/:id` novo, em `backend/src/routes/reposicaoRoutes.js`, atendido por `excluirReposicao` em `backend/src/controllers/reposicaoController.js`. Segue o mesmo contrato de `excluirAgendamento`: escopado por `ownerEmail` e **idempotente** — id inexistente responde `200` com `{ ok: true, deleted: false }`, não `404`;
+- no `catch` de `window.executarEnvioParaReposicao`, ramo `!ehSerie`, a restauração do array `aulas` passou a ser seguida de um `DELETE` para a reposição criada. A variável `reposicao` foi movida para fora do `try` para que o `catch` a alcance.
+
+**O `DELETE` é best-effort e pode falhar.** Ele fica dentro de um `try/catch` próprio que apenas registra log de erro, sem relançar. O motivo é deliberado: quando esse caminho roda, a Josy já teve a aula devolvida à tela, e travar essa recuperação por causa de uma segunda chamada de rede que pode falhar por conta própria seria pior. Consequência a assumir: **não há garantia de que a reposição órfã sempre será apagada** — se a rede cair entre as duas chamadas, ela sobrevive e precisa de tratamento manual. O toast de erro exibido não promete o contrário.
 
 ### 9.26 — Falha silenciosa de persistência no caminho com Google Calendar conectado — FECHADO (2026-09-01)
 
-A falha silenciosa de persistência no caminho com Google Calendar conectado foi corrigida. `_persistirDadosComBackend` passou a propagar o retorno real de `salvarDados`, e os três handlers de exclusão passaram a checá-lo antes de seguir, revertendo a exclusão local em caso de falha. O relatório completo da correção está em `docs/_reports/2026-09-01-fix-persistencia-silenciosa-gcal.md`.
+A falha silenciosa de persistência no caminho com Google Calendar conectado foi corrigida. `_persistirDadosComBackend` passou a propagar o retorno real de `salvarDados`, e os três handlers de exclusão passaram a checá-lo antes de seguir, revertendo a exclusão local em caso de falha.
 
 A suspeita de **corrida** entre salvar e recarregar nesse caminho foi descartada, não corrigida: `_persistirDadosComBackend` já era sequencial e a recarga interna não dispara busca no servidor.
 
@@ -862,50 +890,6 @@ A suspeita de **corrida** entre salvar e recarregar nesse caminho foi descartada
 O rótulo foi ajustado para descrever o efeito real da exclusão na cadeia, sem dizer que a série tem menos aulas do que realmente apaga. A frase agora conta o passado, que é finito e numérico, e não promete um total para o futuro, que pode ser infinito e não precisa de número. Essa escolha evita a contradição que causou o defeito: o texto passou a dizer que o apaga a série toda é **"As N aulas do passado mais todas as aulas futuras"** quando há futuro, **"Todas as aulas, a partir de hoje"** quando o futuro continua e **"As N aulas desta série, todas no passado"** quando a série já encerrou; em caso de série sem aulas restantes, o texto diz **"Nenhuma aula restante nesta série."**.
 
 A regra de negócio do `total` continua intacta: ele continua contando registros removíveis da cadeia, porque esse valor é a guarda que impele o casco invisível que a etapa 5 corrigiu. Em outras palavras, o rótulo descreve o efeito em aulas, mas `total` continua sendo a contagem de registros que a remoção efetivamente afetará e, por isso, continua protegendo a condição de `if (_resumoExclusao.total === 0)`.
-
-### 9.24 Relatórios desta spec
-
-| Relatório | Itens da §9 | Estado |
-| --- | --- | --- |
-| `docs/_reports/2026-08-25-gcal-fix.md` | diagnóstico geral | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-boot.md` | 9.14 | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-purge.md` | diagnóstico de purge / sincronização | diagnóstico |
-| `docs/_reports/2026-08-25-gcal-watch-renovacao.md` | 9.14 | fechado |
-| `docs/_reports/2026-08-26-doc-sync-gcal-watch.md` | 9.14 | diagnóstico |
-| `docs/_reports/2026-08-26-gcal-watch-log-falha.md` | 9.14 | diagnóstico |
-| `docs/_reports/2026-08-29-diag-auditoria-completa-gcal.md` | diagnóstico geral | diagnóstico |
-| `docs/_reports/2026-08-29-diag-duplicata-edicao-serie-gcal.md` | 9.15 | diagnóstico |
-| `docs/_reports/2026-08-29-fix-dtstart-byday-gcal.md` | 9.1 / alinhamento `DTSTART` | fechado |
-| `docs/_reports/2026-08-29-fix-duplicata-edicao-serie-gcal.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-29-fix-exdate-primeiro-dia-gcal.md` | 9.12 / borda de `EXDATE` | fechado |
-| `docs/_reports/2026-08-29-fix-global-e-mock-teto-gcal.md` | 9.4 / 9.8 | fechado |
-| `docs/_reports/2026-08-29-fix-harness-split-comportamental.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-29-fix-select-teto-e-spec-gcal.md` | 9.4 / 9.15 / spec | fechado |
-| `docs/_reports/2026-08-29-fix-serie-vazia-e-acento-gcal.md` | 9.15 / 9.16 | fechado |
-| `docs/_reports/2026-08-29-fix-teto-pendencia-gcal.md` | 9.4 / controle de teto | fechado |
-| `docs/_reports/2026-08-29-fix-url-split-e-teste-comportamental.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-diag-vinculo-serie-avulsa-e-conflito-fantasma.md` | 9.15 | diagnóstico |
-| `docs/_reports/2026-08-30-fix-avulsa-limpa-campos-recorrencia.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-conflito-serializacao-until.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-split-preserva-excecoes.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-vinculo-serie-familia-correcao.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-vinculo-serie-familia-prova-ignorarids.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-30-fix-vinculo-serie-familia.md` | 9.15 | fechado |
-| `docs/_diags_llm/2026-08-31-diag-split-encadeado-defeitos-5-e-6.md` | 9.15 | diagnóstico |
-| `docs/_reports/2026-08-31-fix-split-encadeado-heranca-e-serie-vazia.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-31-fix-heranca-mae-vazia-split.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-31-fix-heranca-contagem-ocorrencias.md` | 9.15 | fechado |
-| `docs/_reports/2026-08-31-fix-excluir-serie-toda-coerente.md` | 9.17 | fechado |
-| `docs/_reports/2026-08-31-feat-aparo-cadeia-serie.md` | 9.18 | fechado |
-| `docs/_reports/2026-08-31-fix-escopo-aparo-cadeia.md` | 9.18 | fechado |
-| `docs/_reports/2026-09-01-feat-acabamento-modal-exclusao.md` | 9.19 | fechado |
-| `docs/_reports/2026-08-31-fix-restauracao-handlers-exclusao.md` | 9.19 | fechado |
-| `docs/_reports/2026-09-01-fix-envio-reposicao-serie.md` | 9.20 | fechado |
-| `docs/_reports/2026-09-01-refactor-nomes-exclusao-e-promise-cobranca.md` | 9.19 / 9.20 | fechado |
-| `docs/_reports/2026-09-01-fix-corrida-salvar-recarregar-exclusao.md` | 9.21 | fechado |
-| `docs/_reports/2026-09-01-docs-fechamento-etapa-6.md` | 9.22 / 9.23 | fechado |
-| `docs/_reports/2026-09-01-fix-persistencia-silenciosa-gcal.md` | 9.26 | fechado |
-| `docs/_reports/2026-09-01-feat-rotulo-exclusao-serie-toda.md` | 9.25 | fechado |
 
 ## 10. Custo aceito da decisão
 

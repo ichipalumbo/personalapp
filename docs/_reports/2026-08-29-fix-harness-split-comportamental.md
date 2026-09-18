@@ -8,8 +8,7 @@ git rev-parse --abbrev-ref HEAD
 chore/rodada-g-h-docs-e-harness-split
 
 git status --short
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/gcal-sync.test.js
+[... saida podada ...]
 
 Select-String -Path 'backend\test\gcal-duplicata-fix.test.js' -Pattern 'criarHarnessModalAcaoSlot'
 ... ocorrências em linha 172 (harness existente)
@@ -73,17 +72,13 @@ node --test --test-name-pattern='split fromDate'
 Saída:
 
 ```text
-✔ test\financas-competencia.test.js
-✔ test\financas-pure.test.js
-✖ split fromDate na primeira ocorrencia remove a serie vazia e cria a serie nova sem DELETE
-✖ split fromDate no meio da serie preserva a serie original e cria a nova
-✔ test\gcal-sync.test.js
+[... saida podada ...]
 ...
 ℹ tests 9
 ℹ pass 7
 ℹ fail 2
 
-✖ failing tests:
+[... saida podada ...]
 
 AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
 
@@ -106,17 +101,13 @@ node --test --test-name-pattern='split fromDate'
 Saída:
 
 ```text
-✔ test\financas-competencia.test.js
-✔ test\financas-pure.test.js
-✖ split fromDate na primeira ocorrencia remove a serie vazia e cria a serie nova sem DELETE
-✔ split fromDate no meio da serie preserva a serie original e cria a nova
-✔ test\gcal-sync.test.js
+[... saida podada ...]
 ...
 ℹ tests 9
 ℹ pass 8
 ℹ fail 1
 
-✖ failing tests:
+[... saida podada ...]
 
 AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
 
@@ -146,12 +137,7 @@ node --test --test-name-pattern='pt-BR|EXDATE no primeiro dia|ultimo dia|um dia 
 Saída:
 
 ```text
-✔ ...
-✖ montarRecurrence gera EXDATE no primeiro dia em pt-BR
-✔ montarRecurrence ignora EXDATE um dia antes do primeiro dia em pt-BR
-✔ montarRecurrence gera EXDATE no ultimo dia em pt-BR
-✔ montarRecurrence ignora EXDATE um dia depois do ultimo dia em pt-BR
-✖ montarRecurrence usa recorrenciaDataInicio quando a data base diverge em pt-BR
+[... saida podada ...]
 ...
 ℹ tests 12
 ℹ pass 10
@@ -172,7 +158,7 @@ npm test
 > personal-api@1.0.0 test
 > node --test
 
-✔ ...
+[... saida podada ...]
 ℹ tests 122
 ℹ suites 0
 ℹ pass 122
@@ -199,9 +185,7 @@ backend/test/gcal-sync.test.js                     |  77 +++++++------
 3 files changed, 116 insertions(+), 89 deletions(-)
 
 git status --short
- M backend/test/gcal-duplicata-fix.test.js
- M backend/test/gcal-sync.test.js
- M docs/_reports/2026-08-29-fix-exdate-primeiro-dia-gcal.md
+[... saida podada ...]
 ```
 
 ## Branch usada
