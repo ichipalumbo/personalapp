@@ -1,0 +1,17 @@
+# Trava a quebra de linha: LF no repositório e no working tree (Git).
+# Sem essas regras, core.autocrlf (true no Windows) converte ao checkout e
+# devolve ao commit, gerando diffs de quebra de linha em cada arquivo editado.
+* text=auto eol=lf
+
+# Binários: nunca converter (converter corrompe o arquivo).
+*.png binary
+*.ico binary
+*.ttf binary
+*.woff binary
+*.woff2 binary
+
+# Vendor fontawesome: regra do projeto é não editar vendor. "binary" impede
+# conversão (o CSS já está CRLF no git e CRLF no disco, entao renormalize nao
+# o toca). Os .agents/skills/vendor (anti-ui-slop) ja estao LF no git e seguem a
+# regra geral — sem regra especial, renormalize produz o mesmo blob (zero diff).
+/assets/vendor/** binary
