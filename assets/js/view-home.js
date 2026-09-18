@@ -42,7 +42,6 @@ function formatarNomeDiaHome(nomeDiaBase) {
 
 window.renderizarLoadingHome = function () {
   const elAulasHoje = document.getElementById("totalAulasHoje");
-  const elAulasRepor = document.getElementById("totalAulasRepor");
   const elementoSemana = document.getElementById("periodoSemanaHomeLabel");
   const grid = document.getElementById("calendarioSemanalHomeGrid");
 
@@ -50,7 +49,6 @@ window.renderizarLoadingHome = function () {
     elementoSemana.textContent = "Sincronizando agenda...";
   }
   if (elAulasHoje) elAulasHoje.textContent = "...";
-  if (elAulasRepor) elAulasRepor.textContent = "...";
   // Only replace with skeleton if the weekly grid is genuinely empty (no rendered content yet).
   // Skipping when content already exists prevents wiping a valid render, which would cause a
   // visible flicker before the real data renders.
@@ -259,7 +257,6 @@ function _renderizarHome(opcoes) {
   if (typeof window.renderizarHomeSemana === "function") {
     window.renderizarHomeSemana();
   }
-  window.renderizarListaReposicoes();
   window.inicializarMultiSelectPills();
 }
 
@@ -315,7 +312,6 @@ window.atualizarDashboardStats = function () {
     });
     elAulasHoje.textContent = aulasHoje.length;
   }
-  if (elAulasRepor) elAulasRepor.textContent = aulasParaRepor.length;
 };
 
 // ── Renderização da Grade Diária ──────────────────────────────────────────────────────────────
