@@ -263,6 +263,44 @@ function montarCaixinhaConsistenciaAluno(aluno) {
     `;
 }
 
+// Terceira caixinha do card: reposições pendentes com alerta "a vencer" — a regra de prazo vive no módulo compartilhado.
+function montarCaixinhaReposicaoAluno(aluno) {
+    const helpers = window.reposicaoFlowHelpers;
+    if (!helpers || typeof helpers.resumoReposicoesAluno !== 'function') return '';
+
+    const resumo = helpers.resumoReposicoesAluno(
+        typeof aulasParaRepor === 'undefined' ? [] : aulasParaRepor,
+        aluno.id
+    );
+    if (!resumo) return '';
+
+    const dias = resumo.diasProximaValidade;
+    let quando;
+    if (dias === null) quando = 'sem prazo definido';
+    else if (dias < 0) quando = 'com prazo encerrado';
+    else if (dias === 0) quando = 'hoje';
+    else if (dias === 1) quando = 'amanhã';
+    else quando = `em ${dias} dias`;
+
+    const total = resumo.total === 1 ? '1 reposição' : `${resumo.total} reposições`;
+
+    if (resumo.aVencer) {
+        return `
+            <div class="aluno-card-indicador aluno-card-indicador--alerta">
+                <div class="aluno-card-indicador-titulo">⚠️ ${total} a vencer — próxima ${quando}</div>
+                <div class="aluno-card-indicador-detalhe">Reagende antes do fim do prazo.</div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="aluno-card-indicador">
+            <div class="aluno-card-indicador-titulo">${total} pendente${resumo.total === 1 ? '' : 's'}</div>
+            <div class="aluno-card-indicador-detalhe">Próxima validade ${quando}</div>
+        </div>
+    `;
+}
+
 function formatarDataCurtaAluno(dataISO) {
     if (!dataISO) return '--/--';
     const partes = String(dataISO).split('-');
@@ -424,11 +462,11 @@ window.renderizarListaAlunos = function() {
                     ? 'Fecha por mês cheio'
                     : (aluno.diaVencimento ? `Vence dia ${aluno.diaVencimento}` : 'Sem vencimento definido'));
 
-            // Indicadores do card: ciclo financeiro atual e consistência de agenda.
-            // O grid abaixo comporta uma futura caixinha de "aulas a repor" sem refatoração.
+            // Indicadores do card: ciclo financeiro, consistência de agenda e reposições a vencer.
             const caixinhas = [
                 montarCaixinhaFinanceiraAluno(aluno, objetivo),
-                montarCaixinhaConsistenciaAluno(aluno)
+                montarCaixinhaConsistenciaAluno(aluno),
+                montarCaixinhaReposicaoAluno(aluno)
             ].filter(Boolean).join('');
 
             return `

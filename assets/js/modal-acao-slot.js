@@ -1318,6 +1318,31 @@ window.renderizarListaReposicoes = function () {
     container.innerHTML = `<p style="font-size: 0.8rem; color: #666; text-align: center; padding: 10px;">Sem reposições pendentes.</p>`;
     return;
   }
+
+  // Prazo de validade por item — a regra vive em backend/shared/reposicao-flow-helpers.js.
+  const linhaPrazo = (rep) => {
+    if (!rep.validoAte) return "";
+    const helpers = window.reposicaoFlowHelpers;
+    const dias = helpers && typeof helpers.diasAteDataISO === "function"
+      ? helpers.diasAteDataISO(rep.validoAte)
+      : null;
+    const data = typeof window.formatarDataPtBr === "function"
+      ? window.formatarDataPtBr(rep.validoAte)
+      : rep.validoAte;
+    let quando = "";
+    if (dias !== null) {
+      if (dias < 0) quando = "prazo encerrado";
+      else if (dias === 0) quando = "hoje";
+      else if (dias === 1) quando = "amanhã";
+      else quando = `em ${dias} dias`;
+    }
+    const aVencer = dias !== null && dias <= (helpers ? helpers.DIAS_ALERTA_REPOSICAO : 5);
+    const estilo = aVencer
+      ? "color: #ffb74d; font-weight: 700;"
+      : "color: #9a9a9a; font-weight: 400;";
+    return `<div style="font-size: 0.72rem; ${estilo}">${aVencer ? "⚠️ " : ""}Vence até ${data}${quando ? ` (${quando})` : ""}</div>`;
+  };
+
   container.innerHTML = aulasParaRepor
     .map((rep) => {
       const aluno = window.getAluno(rep.alunoId);
@@ -1327,6 +1352,7 @@ window.renderizarListaReposicoes = function () {
                     <div>
                         <strong style="display: block; color: #FFF; font-size: 0.9rem;">${aluno ? aluno.nome : "Aluno"}</strong>
                         <span style="font-size: 0.72rem; color: #FF5252; font-weight: 600;">Cancelada em ${rep.dataCancelamento}</span>
+                        ${linhaPrazo(rep)}
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
