@@ -1,12 +1,12 @@
 // [TAG-TESTS-RECURRENCE-HELPERS] recurrence-helpers.test.js
-// Cobre assets/js/shared/recurrence-helpers.js, o modulo isomorfico consumido
+// Cobre backend/shared/recurrence-helpers.js, o modulo isomorfico consumido
 // pelo frontend (agenda) e pelo backend (financas). Divergencia aqui faz o app
 // cobrar valor diferente do que mostra na agenda.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
-const helpers = require('../assets/js/shared/recurrence-helpers');
+const helpers = require('../backend/shared/recurrence-helpers');
 
 const {
     DEFAULT_DIAS_SEMANA,

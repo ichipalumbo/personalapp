@@ -3,7 +3,7 @@ const Agendamento = require("../models/Agendamento");
 const CicloFinanceiro = require("../models/CicloFinanceiro");
 const Reposicao = require("../models/Reposicao");
 const reposicaoService = require("./reposicaoService");
-const recurrenceHelpers = require("../../../assets/js/shared/recurrence-helpers");
+const recurrenceHelpers = require("../../shared/recurrence-helpers");
 
 const PRAZO_MINIMO_REPOSICAO_DIAS = 7;
 

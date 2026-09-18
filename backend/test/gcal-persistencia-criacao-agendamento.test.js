@@ -138,7 +138,7 @@ function carregarHarnessModalAgendamento({ aulas = [], alunos = [{ id: 'aluno-1'
     vm.runInNewContext(fs.readFileSync(scriptPath, 'utf8'), context, { filename: scriptPath });
   };
 
-  carregar('../../assets/js/shared/reposicao-flow-helpers.js');
+  carregar('../shared/reposicao-flow-helpers.js');
   carregar('../../assets/js/features/modals/scheduling-flow-state.js');
   carregar('../../assets/js/features/modals/scheduling-serializer.js');
   carregar('../../assets/js/modal-agendamento.js');

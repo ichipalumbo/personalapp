@@ -7,7 +7,7 @@ const assert = require('node:assert/strict');
 
 const { carregarScripts } = require('./setup/carregar-frontend');
 
-const RECURRENCE_HELPERS = 'assets/js/shared/recurrence-helpers.js';
+const RECURRENCE_HELPERS = 'backend/shared/recurrence-helpers.js';
 const CALENDARIO_ENGINE = 'assets/js/calendario-engine.js';
 
 function carregarEngine() {

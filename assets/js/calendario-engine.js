@@ -5,7 +5,7 @@
 
 const recurrenceHelpers = window.recurrenceHelpers;
 if (!recurrenceHelpers) {
-    throw new Error('recurrenceHelpers não encontrado. Carregue assets/js/shared/recurrence-helpers.js antes de calendario-engine.js.');
+    throw new Error('recurrenceHelpers não encontrado. Carregue backend/shared/recurrence-helpers.js antes de calendario-engine.js.');
 }
 
 window.parseDataFlex = recurrenceHelpers.parseDataFlex;

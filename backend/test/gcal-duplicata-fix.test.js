@@ -406,7 +406,7 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     apiRootUrl: 'https://api.example.com'
   };
 
-  const recurrenceHelpersPath = path.resolve(__dirname, '../../assets/js/shared/recurrence-helpers.js');
+  const recurrenceHelpersPath = path.resolve(__dirname, '../shared/recurrence-helpers.js');
   const recurrenceHelpersScript = fs.readFileSync(recurrenceHelpersPath, 'utf8');
   vm.runInNewContext(recurrenceHelpersScript, context, { filename: recurrenceHelpersPath });
 

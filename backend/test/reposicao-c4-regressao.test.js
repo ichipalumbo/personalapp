@@ -5,7 +5,7 @@ const Reposicao = require('../src/models/Reposicao');
 const Agendamento = require('../src/models/Agendamento');
 const Aluno = require('../src/models/Aluno');
 const reposicaoController = require('../src/controllers/reposicaoController');
-const reposicaoFlowHelpers = require('../../assets/js/shared/reposicao-flow-helpers');
+const reposicaoFlowHelpers = require('../shared/reposicao-flow-helpers');
 
 function criarRespostaMock() {
   return {
