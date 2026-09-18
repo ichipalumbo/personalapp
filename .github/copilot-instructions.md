@@ -76,14 +76,22 @@ os próprios dados.
 - Esquecer esse filtro vaza dados entre contas. Não há nenhuma outra camada
   protegendo contra isso.
 
-### 4.2 Módulo isomórfico de recorrência
+### 4.2 Módulos compartilhados
 
-`assets/js/shared/recurrence-helpers.js` é consumido pelos **dois lados**:
+Os módulos compartilhados moram em `backend/shared/` e são consumidos pelos
+**dois lados**:
 
-- frontend, via tag `<script>` em `index.html`;
-- backend, via `require('../../../assets/js/shared/recurrence-helpers')` em
-  `financasService.js` — um caminho relativo que atravessa para **fora** de
-  `backend/`.
+- frontend, via tag `<script src="backend/shared/...">` em `index.html`;
+- backend, via `require('../../shared/...')` a partir de `src/services` e
+  `src/controllers` — o require fica **dentro** de `backend/`.
+
+Módulos atuais:
+
+- `recurrence-helpers.js` — motor de recorrência (agenda + financeiro).
+- `calculo-ciclo.js` — cálculo puro de ciclo vigente e prazo de reposição
+  (fonte única do financeiro). Depende de `recurrence-helpers.js`.
+- `reposicao-flow-helpers.js` — mensagens de persistência de reposição e a
+  regra de alerta "a vencer" (telas de reposição + card de aluno).
 
 Regras:
 
@@ -91,10 +99,17 @@ Regras:
   recorrência de formas diferentes, o app cobra um valor diferente do que
   mostra. É o motivo declarado da decisão (seção 2.4 da spec).
 - **O módulo não pode depender de `window`, `document` ou API de browser** —
-  ele roda no Node.
-- O caminho atravessado é uma dívida técnica conhecida (12.1 da spec / item 0.2
-  do roadmap). Funciona hoje por causa da configuração dos projetos Vercel.
-  Não "conserte" isso de passagem — é mudança que exige validar os dois deploys.
+  ele roda no Node. O padrão UMD (`module.exports` + global) é o que permite os
+  dois lados.
+- A fronteira antiga (`backend/ → assets/js/shared/`) foi eliminada no item 0.2
+  do roadmap: os módulos se mudaram para `backend/shared/`, então o backend não
+  sai mais do próprio diretório — o ponto que dependia de configuração não
+  versionada dos projetos Vercel não existe mais.
+- O frontend agora alcança `backend/shared/` por tag `<script src="backend/shared/...">`.
+  Isso funciona porque o projeto Vercel da webpage tem _Root Directory_ na raiz do
+  repositório e o `.vercelignore` não exclui `backend/`. Toda mudança de estrutura
+  de pastas que toque esse caminho continua exigindo validar os dois deploys antes
+  de considerar fechada.
 
 ### 4.3 Implementação única de cálculo de regra de negócio
 
@@ -103,7 +118,7 @@ ser reimplementado no frontend.**
 
 - Se o frontend precisar do resultado, deve consumir da resposta da API.
 - Se o cálculo precisar existir nos dois lados, deve morar em módulo compartilhado
-  único (hoje em `assets/js/shared/`) e ser consumido por ambos.
+  único (hoje em `backend/shared/`) e ser consumido por ambos.
 - É proibido manter cópias divergentes da mesma regra em arquivos diferentes.
 
 Motivo concreto: no fluxo de reposições, uma cópia local da regra de prazo
@@ -111,7 +126,7 @@ divergiu da implementação oficial e o erro só apareceu em produção.
 
 Regras para módulo compartilhado:
 
-- Arquivos em `assets/js/shared/` não podem depender de `window`, `document` nem DOM.
+- Arquivos em `backend/shared/` não podem depender de `window`, `document` nem DOM.
 - Todo módulo compartilhado consumido no frontend precisa de tag `<script>` em
   `index.html`, carregada antes dos consumidores diretos.
 

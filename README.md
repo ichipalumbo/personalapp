@@ -97,8 +97,6 @@ personalapp/
 |  |  |  --- [3] Domain Helpers ---
 |  |  |- alunos-helpers.js         <- lookup e select de alunos
 |  |  |- calendario-engine.js      <- motor de recorrencia + grid mensal
-|  |  |- shared/
-|  |  |  |- recurrence-helpers.js   <- helpers isomorficos de recorrencia consumidos no frontend/backend
 |  |  |- agenda-conflitos.js       <- deteccao de conflitos de horario
 |  |  |- cascade-sync-aluno.js     <- sync em cascata ao editar/excluir aluno
 |  |  |- settings-modal.js         <- modal de configuracoes/ajustes da agenda
@@ -167,6 +165,10 @@ personalapp/
 |  |  |  |- agendamentoService.js
 |  |  |  |- financasService.js
 |  |  |  |- gcalSyncService.js
+|  |- shared/                  <- modulos compartilhados entre frontend e backend (sem DOM)
+|  |  |- recurrence-helpers.js  <- motor de recorrencia isomorfico (agenda + financeiro)
+|  |  |- calculo-ciclo.js       <- ciclo vigente + prazo de reposicao (fonte unica do financeiro)
+|  |  |- reposicao-flow-helpers.js <- regra "a vencer" + mensagens de reposicao
 |  |  |- utils/
 |  |  |  |- controllerHelpers.js
 |  |  |  |- emailNormalizer.js

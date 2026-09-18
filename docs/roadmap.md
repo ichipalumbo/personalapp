@@ -30,14 +30,14 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | Grupo | Item                                             | Status | Depende de                                                       |
 | ----- | ------------------------------------------------ | ------ | ---------------------------------------------------------------- |
 | 0     | 0.1 Bug "Ver ciclos anteriores" fecha sozinho    | `[x]`  | —                                                                |
-| 0     | 0.2 Consolidar módulos compartilhados            | `[ ]`  | —                                                                |
+| 0     | 0.2 Consolidar módulos compartilhados            | `[x]`  | —                                                                |
 | 0     | 0.3 Limpar CSS órfão da visão mensal             | `[x]`  | —                                                                |
 | 0     | 0.4 Organização da documentação                  | `[x]`  | —                                                                |
 | 0     | 0.5 Collection `Reposicao` + competência         | `[x]`  | —                                                                |
 | 0     | 0.6 Extrato do ciclo                             | `[x]`  | —                                                                |
 | 0     | 0.7 Prazo de validade + expiração lazy           | `[x]`  | —                                                                |
-| 0     | 0.8 Avisos in-app de reposição a vencer          | `[ ]`  | 0.7 `[x]` — desbloqueado                                         |
-| 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[ ]`  | 0.2                                                              |
+| 0     | 0.8 Avisos in-app de reposição a vencer          | `[x]`  | 0.7 `[x]`                                                        |
+| 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[x]`  | 0.2                                                              |
 | 0     | 0.10 Deduplicação de `calcularPrazoReposicao`    | `[x]`  | —                                                                |
 | 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
 | 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
@@ -104,15 +104,16 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 0.2 Consolidar módulos compartilhados (`assets/js/shared/`) sem travessia `backend/ -> assets/`
+### [x] 0.2 Consolidar módulos compartilhados em `backend/shared/` — **CONCLUÍDO**
 
-- **O que é**: A dívida deixou de ser pontual. Hoje o backend atravessa a fronteira da pasta `backend/` para consumir **dois** módulos em `assets/js/shared/`:
-  - `recurrence-helpers.js` (usado por `backend/src/services/financasService.js`);
-  - `reposicao-flow-helpers.js` (usado em teste de regressão do backend).
-- **Por que importa**: Funciona no setup atual, mas acopla backend à estrutura do frontend e à configuração de deploy dos dois projetos Vercel.
-- **Onde mexer**: Definir um ponto único compartilhado (sem duplicação de lógica) e eliminar imports que sobem para fora de `backend/`. Preservar a ordem de carga no frontend (`index.html`) para qualquer módulo que continue via `<script>`.
-- **Esforço**: Baixo–Médio (depende da estratégia de reorganização dos compartilhados) e exige validar deploy dos dois projetos.
-- **Validação atual**: com o item 3.2 concluído, este item já pode ser validado localmente no backend antes de publicar em produção.
+- **O que foi entregue**: os dois módulos compartilhados saíram de `assets/js/shared/` e agora moram em `backend/shared/`, via `git mv` (histórico preservado). Nenhum `require` do backend sobe mais para fora da pasta `backend/`:
+  - produção: `require("../../shared/recurrence-helpers")` em `financasService.js` e `gcalSyncService.js`;
+  - testes: caminhos atualizados em `gcal-sync.test.js`, `reposicao-c4-regressao.test.js`, `agenda-conflitos.test.js`, `gcal-duplicata-fix.test.js` e `gcal-persistencia-criacao-agendamento.test.js`.
+- **Como o frontend consome**: tag `<script src="backend/shared/...">` no `index.html` (mesma posição relativa de antes). Funciona porque o projeto Vercel da webpage tem _Root Directory_ na raiz do repositório e o `.vercelignore` não exclui `backend/`. `sw.js` não precarrega os módulos, então não há cache a invalidar.
+- **O que acompanhou**: suíte de frontend atualizada (`recurrence-helpers.test.js`, `calendario-engine.test.js`, o par de carga do `index-html-ordem.test.js`) e a mensagem de erro de `calendario-engine.js`. A regra de que "mudança na estrutura exige validar os dois deploys" continua valendo — registrar essa ressalva no deploy correspondente.
+- **Validação**: suítes verdes nos dois lados e carga da ordem do `index.html` conferida; a validação em produção segue no deploy dessa mudança (com `backend/shared/` servido estático pelo projeto da webpage).
+- **Esforço**: Baixo–Médio.
+- **Dependência desbloqueada**: item 0.9.
 
 ---
 
@@ -163,24 +164,27 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 0.8 Avisos in-app de reposição a vencer
+### [x] 0.8 Avisos in-app de reposição a vencer — **ENTREGUE**
 
-- **O que é**: Card do aluno + painel com alerta para reposição prestes a expirar; a regra de expiração fechada do item 0.7 é a base para calcular "vence em breve".
-- **Por que importa**: Dá visibilidade útil sem exigir notificação externa; com o prazo de validade definido, a UX passa a ter uma regra clara para o que vence.
-- **Onde mexer**: `view-alunos.js`, card do aluno, painel de aluno e endpoint de fila de reposição. O layout do card (`.aluno-card-indicadores`, grid `auto-fit`) **já foi preparado para uma terceira caixinha sem refatoração**; a antiga `contarReposicoesPorAluno` **foi removida** e não deve ser ressuscitada.
-- **Estado de implementação**: não implementado; `Reposições` não aparece em `index.html`, e `view-alunos.js` não renderiza o contador. O bloco continua como item de entrega futura.
-- **Dependência**: item 0.7 (prazo de validade + expiração lazy) — **já entregue**, portanto este item está desbloqueado.
-- **Nota de escopo**: primeira rodada de frontend da série. **Atualizado em 2026-09-03**: quando este item foi escrito não havia suíte de frontend e a validação seria só visual. Hoje existe suíte (item 3.5), mas ela **não cobre tela** — a validação de UI deste item continua manual.
+- **O que foi entregue**: os dois avisos prometidos aqui, usando `validoAte` que o boot já traz em memória (`storage.js`):
+  - **Card do aluno** (`view-alunos.js`): terceira caixinha `montarCaixinhaReposicaoAluno` no grid `auto-fit` — conta as pendentes do aluno e mostra o prazo da próxima validade, com a classe `aluno-card-indicador--alerta` (laranja) quando falta ≤ 5 dias. Fica oculta quando não há pendência com prazo.
+  - **Painel de pendentes** (`modal-acao-slot.js`, `renderizarListaReposicoes`): cada item ganhou a linha "Vence até <data> (<quando>)", destacada e com ⚠️ quando falta ≤ 5 dias.
+- **Regra única**: o limite de 5 dias (`DIAS_ALERTA_REPOSICAO`), o cálculo de dias (`diasAteDataISO`) e o resumo por aluno (`resumoReposicoesAluno`) moram em `backend/shared/reposicao-flow-helpers.js`, consumido pelas duas telas — sem cópias divergentes (regra 4.3).
+- **Decisão de produto registrada**: "a vencer" = faltam **5 dias** ou menos da validade; alerta também cobre prazo já vencido (status ainda `pendente`). Definição do dono, em 2026-09-18.
+- **Cobertura**: `tests-frontend/reposicao-flow.test.js` (8 testes) cobre o módulo compartilhado, **provado por mutação** (limite 5→4 faz a suíte falhar). Telas seguem sem cobertura automatizada — a validação de UI continua manual.
+- **O que não mudou**: nenhuma API; `contarReposicoesPorAluno` continua fora de uso; o botão Reagendar do painel se mantém como está.
 - **Esforço**: Baixo–Médio.
 
 ---
 
-### [ ] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado
+### [x] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado — **ENTREGUE**
 
-- **O que é**: Tornar o cálculo de prazo reutilizável sem duplicação entre backend e frontend.
-- **Por que importa**: Já houve divergência real quando a regra foi reimplementada no cliente. A única fonte de cálculo precisa ser compartilhada.
-- **Dependência**: item 0.2 (consolidação de compartilhados e remoção da travessia `backend/ -> assets/`).
-- **Onde mexer**: módulo compartilhado de domínio (sem dependência de `window`/DOM), backend consumindo diretamente e frontend apenas exibindo resultado da API quando aplicável.
+- **O que foi entregue**: o cálculo de prazo de reposição e as regras puras de ciclo que ele consome saíram do `financasService.js` para o módulo compartilhado `backend/shared/calculo-ciclo.js` (UMD, sem `window`/DOM, padrão dos demais compartilhados do item 0.2):
+  - `calcularPrazoReposicao`, `calcularCicloVigente`, a constante `PRAZO_MINIMO_REPOSICAO_DIAS` (piso de 7 dias) e os helpers de data que o conjunto usa (`normalizarDateOnly`, `toISODateOnly`, `inicioDoMes`, `fimDoMes`, `diaSeguinte`, `ajustarDiaParaMesValido`, `dataEmJanela`).
+- **Sem duplicação**: `financasService.js` agora importa o conjunto do módulo e reexporta `calcularPrazoReposicao` e `calcularCicloVigente` para os testes e o controller (`reposicaoController.js`) sem tocar — a identidade por referência foi conferida (o service reexporta a mesma função). Não há segunda declaração viva em `backend/`.
+- **Como foi garantido**: extração verificada byte a byte contra a versão original — as 9 funções vieram idênticas (uma transcrição errada do cálculo do ano seguinte em dezembro foi pega pelo diff e corrigida antes de rodar a suíte). Suíte do backend verde nos dois momentos (linha de base 218 → pós-mudança 218, 0 falhas).
+- **Prova de mutação**: corromper o piso no módulo (7→8 dias) faz `reposicao-prazo.test.js` falhar no caso "exatamente 7 dias não aplica piso" — a suíte executa o código no local novo, não um re-export morto.
+- **Dependência**: item 0.2 — resolvido na mesma rodada (o módulo foi criado dentro de `backend/shared/`).
 - **Esforço**: Médio.
 
 ---
@@ -369,10 +373,11 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [x] 3.5 Suíte de testes de frontend
 
-- **O que foi entregue**: primeira suíte automatizada do frontend, em `tests-frontend/`, com **37 testes, 0 falhas**. Roda com `node --test`, o mesmo runner do backend, e tem `package.json` próprio — as duas suítes são independentes e têm números separados.
+- **O que foi entregue**: primeira suíte automatizada do frontend, em `tests-frontend/`. Roda com `node --test`, o mesmo runner do backend, e tem `package.json` próprio — as duas suítes são independentes e têm números separados. **Atualizado em 2026-09-18**: a suíte tem **45 testes, 0 falhas** (37 originais + 8 do item 0.8).
 - **Por que a pasta é isolada**: o projeto Vercel `personal-app-webpage` tem _Root Directory_ na raiz do repositório. Um `package.json` na raiz mudaria o que a Vercel detecta no build do frontend estático. A pasta separada, mais um `.vercelignore` que a exclui, mantém o deploy intocado.
 - **O que é coberto**:
-  - `assets/js/shared/recurrence-helpers.js` (24 testes) — `parseDataFlex` nos três formatos aceitos, recorrência diária/semanal/mensal/anual, escopo `monthOfDate`, exceções e as duas condições de fim (`untilDate` e `occurrences`). É o módulo isomórfico da seção 2.4 da spec de Finanças: divergência aqui faz o app cobrar valor diferente do que a agenda mostra.
+  - `backend/shared/recurrence-helpers.js` (24 testes) — `parseDataFlex` nos três formatos aceitos, recorrência diária/semanal/mensal/anual, escopo `monthOfDate`, exceções e as duas condições de fim (`untilDate` e `occurrences`). É o módulo isomórfico da seção 2.4 da spec de Finanças: divergência aqui faz o app cobrar valor diferente do que a agenda mostra.
+  - `backend/shared/reposicao-flow-helpers.js` (8 testes) — a regra de alerta "a vencer" (limite de 5 dias, dias até a validade e resumo por aluno) entregue no item 0.8.
   - `assets/js/calendario-engine.js` (8 testes) — guard de ordem de carga, fidelidade dos repasses para `recurrenceHelpers` (por identidade de função, não por `typeof`) e fallback do `diasSemanaMap`.
   - **Ordem das tags `<script>` do `index.html`** (5 testes) — ver abaixo.
 - **Guard de ordem do `index.html`**: sem bundler, a ordem das tags **é** a resolução de dependências. O teste valida que todo `src` local existe no disco, que nenhum é declarado duas vezes, que as dependências de tempo de carga vêm antes dos dependentes, e que carregar o par na ordem inversa realmente lança.
