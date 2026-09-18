@@ -401,12 +401,16 @@ window.renderizarListaAlunos = function() {
         const filtroObjetivo = obterFiltroObjetivoAlunos();
 
         // Dirty-check: skip the DOM write if the student list is unchanged.
+        // Inclui aulasParaRepor para a caixinha de reposições reagir no re-render
+        // (sem re-render a badge de "a vencer" só aparecia quando o fetch financeiro
+        // assíncrono voltava e invalidava a chave — o "delay" reportado).
         const _chaveAtual = (function () {
             try {
                 return JSON.stringify(alunos)
                     + '|' + filtroStatus + '|' + filtroObjetivo
                     + '|' + JSON.stringify(_resumoFinanceiroPorAluno)
-                    + '|' + JSON.stringify(_consistenciaAgendaPorAluno);
+                    + '|' + JSON.stringify(_consistenciaAgendaPorAluno)
+                    + '|' + JSON.stringify(typeof aulasParaRepor === 'undefined' ? [] : aulasParaRepor);
             } catch (_) { return null; }
         })();
         if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderAlunos) return;
