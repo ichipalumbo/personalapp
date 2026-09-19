@@ -23,25 +23,24 @@ Foram removidos os seguintes elementos:
 ### 2.3) Lógica de Ação (`assets/js/modal-acao-slot.js`)
 
 - Removidas as funções `window.togglePainelReposicoes` e `window.renderizarListaReposicoes`, que controlavam a visibilidade e o conteúdo do painel removido.
-- **Saneamento de código**: Durante a remoção, foram identificados e corrigidos diversos erros de sintaxe e referências quebradas (`ReferenceError`) introduzidos por deleções em massa.
-  - Substituição de chamadas inexistentes para `obterCompromissoSelecionado()` e `obterCompromissoPorId()` por buscas seguras via `aulas.find()`.
-  - Correção de parênteses órfãos e blocos `try/catch` incompletos.
-  - Normalização da variável `_submissaoEdicaoEmAndamento` para `window._submissaoEdicaoEmAndamento` para evitar problemas de escopo global.
+- **Incidente durante a remoção**: a deleção em massa apagou por engano um bloco de ~250 linhas de funções auxiliares sem nenhuma relação com o painel (`obterCompromissoSelecionado`, `enviarParaReposicao`, `capturarValoresFormularioEdicao`, `reabrirModalEdicaoComValores`, `avisarFalhaPersistencia`, `deveEnviarPatchReposicao`, `obterMensagemFalhaPersistencia`, `obterNomesDiasSemanaModalAcao`) e a função inteira `executarExclusaoAulaAvulsa`. O sintoma só apareceu depois, em uso manual (`ReferenceError` ao abrir o modal de ação sobre slot) — **ver seção 4** e o relatório dedicado à correção.
 
 ## 3) Validação e Regressão
 
 ### 3.1) Testes Automatizados
 
-Foram executadas as suítes de testes do backend e frontend:
-- **Backend**: Passou em todas as validações de regra de negócio (incluindo financeiro e reposições).
-- **Frontend**: Após as correções de sintaxe em `modal-acao-slot.js` e `view-home.js`, a estabilidade do sistema foi restaurada.
+Nesta rodada, os testes de backend focados em finanças/reposições passaram normalmente. A suíte `backend/test/gcal-duplicata-fix.test.js`, que exercita `modal-acao-slot.js` via harness de VM, **não foi rodada de ponta a ponta antes do commit inicial desta remoção** — essa lacuna de validação é o que permitiu a corrupção da seção 2.3 passar despercebida. A investigação e correção completa está documentada em [`2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`](2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md).
 
 ### 3.2) Preservação de Funcionalidades
 
-Foi confirmado que a remoção do painel **não afetou**:
+Após a correção registrada no relatório citado acima, foi confirmado que a remoção do painel, isoladamente, **não afeta**:
 - O cálculo de reposições.
 - A exibição de badges de reposição nos cards de alunos.
 - O fluxo de "Mandar para Reposição" no modal de ação sobre slot.
 - A sincronização com o Google Calendar.
 
 ## 4) Conclusão
+
+A remoção do markup e da lógica de UI do painel foi bem-sucedida, mas o processo de edição em massa causou uma regressão grave e não intencional em `modal-acao-slot.js`, só detectada posteriormente através de teste manual na aplicação (erro de console ao abrir um compromisso). A causa raiz, o processo de diagnóstico e a correção estão detalhados em [`2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`](2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md).
+
+**Lição registrada**: ao remover um bloco de código de um arquivo grande via edição em massa, rodar a suíte de testes que carrega esse arquivo (mesmo que via harness/VM, não só linting) é obrigatório antes de considerar a remoção concluída — a ausência de erro de sintaxe não garante ausência de referências quebradas.

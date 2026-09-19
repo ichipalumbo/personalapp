@@ -201,3 +201,17 @@ na prática — mas o código que as gerou pode não ter mudado.
   não falharam no harness real. O impedimento não estava na correção, estava na prova.
 - **Dublê observacional não é correção.** Um espião de `getConflitosNoDia` prova que o
   `ignorarIds` chegou, não que o motor de conflito está certo.
+- **Remoção de bloco em arquivo grande via edição em massa arrastou ~250 linhas não
+  relacionadas sem quebrar a sintaxe.** Em 2026-09-18, a remoção do painel de reposições
+  pendentes (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`) apagou por engano um
+  bloco de funções auxiliares de `assets/js/modal-acao-slot.js` (`obterCompromissoSelecionado`,
+  `enviarParaReposicao`, `capturarValoresFormularioEdicao`, `reabrirModalEdicaoComValores`,
+  `avisarFalhaPersistencia`, entre outras) e uma função inteira (`executarExclusaoAulaAvulsa`),
+  sem gerar nenhum erro de sintaxe. O defeito só apareceu em uso manual, como `ReferenceError`
+  ao abrir o modal — a suíte `backend/test/gcal-duplicata-fix.test.js`, que carrega o arquivo
+  via harness de `vm`, teria pego na hora, mas não foi rodada de ponta a ponta logo após o
+  commit da remoção. Causa raiz e correção completa em
+  `docs/_reports/2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`. **Regra a aplicar**:
+  depois de qualquer remoção de bloco de código (não só edição pontual), rodar a suíte que
+  carrega o arquivo afetado antes de prosseguir para a próxima tarefa — ausência de erro de
+  sintaxe não é prova de que nada quebrou.

@@ -26,7 +26,7 @@ Adicionado o teste `obterOuCriarCicloVigente cria o ciclo vigente mesmo com cicl
 ### 3.2 Números medidos
 
 - `financas-pure.test.js` + `financas-competencia.test.js` + `reposicao-api.test.js` + `reposicao-prazo.test.js` + `reposicao-c4-regressao.test.js` + `reposicao-extrato-prazo.test.js` + `agenda-conflitos.test.js`: **60/60 passando** após o fix.
-- Suíte completa do backend (`npm test`): **170/218 passando, 48 falhando** — todas as 48 falhas pertencem exclusivamente a `test/gcal-duplicata-fix.test.js` (`ReferenceError: capturarValoresFormularioEdicao is not defined` e correlatos em `assets/js/modal-acao-slot.js`), pré-existentes de uma sessão anterior de remoção de UI, **não relacionadas** a esta alteração. Nenhum teste de finanças, reposição ou conflito de agenda está entre as falhas.
+- Suíte completa do backend (`npm test`): **170/218 passando, 48 falhando** — todas as 48 falhas pertencem exclusivamente a `test/gcal-duplicata-fix.test.js` (`ReferenceError: capturarValoresFormularioEdicao is not defined` e correlatos em `assets/js/modal-acao-slot.js`), não relacionadas a esta alteração. **Atualização**: a causa raiz dessas 48 falhas foi investigada e corrigida em rodada posterior no mesmo dia — ver [`2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`](2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md). Após aquela correção, a suíte completa do backend passa **219/219**.
 - Suíte de frontend (`tests-frontend/`): não executada nesta rodada — a alteração é restrita ao backend e não toca em nenhum arquivo consumido por essa suíte.
 
 ## 4) Fora de escopo (registrado para o roadmap)
