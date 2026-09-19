@@ -433,6 +433,16 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 
 ---
 
+### 6.3 Edição de ciclos históricos não pagos
+
+- O histórico deixa de ser somente leitura para ciclos sem `dataPagamento`, independentemente do status calculado (`atrasado` ou `em_aberto`). Ambos podem receber as ações "Marcar como pago" e "Editar ajuste".
+- Ciclo com `dataPagamento` continua permanentemente congelado: não exibir ações mutáveis no histórico e rejeitar ajuste com HTTP 409, conforme 5.8. Estorno ou reabertura continuam fora de escopo.
+- Ao marcar um ciclo histórico como pago, a data do pagamento inicia preenchida com a data atual, mas a professora pode alterá-la manualmente para registrar a data real do recebimento. Não restringir a data ao período original do ciclo.
+- O ajuste de ciclo histórico encurtado por mudança de configuração segue a regra normal de ajuste manual (5.5), sem confirmação adicional. O período exibido é a janela efetiva do ciclo.
+- A UI reutiliza os modais e as rotas de escrita existentes por `cicloId`. Após sucesso do PATCH, recarrega e re-renderiza somente o histórico aberto daquele aluno; não depende da listagem de ciclos vigentes para refletir a alteração.
+
+---
+
 ## 7. Decisões e Casos de Borda (Resolvidos — não reabrir sem confirmação)
 
 | #   | Caso                                                           | Decisão                                                                                                                                                                                                    |
@@ -463,6 +473,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 | 24  | A listagem de Finanças devolve o histórico?                    | Não. Somente o ciclo vigente. O histórico é carregado sob demanda ao expandir o card (6.2).                                                                                                                |
 | 25  | O histórico entra no cache de localStorage?                    | Não. Apenas cache em memória durante a sessão da tela (6.2.2).                                                                                                                                             |
 | 26  | A rota de consistência de agenda é um problema de performance? | Não. É **comportamento aceito** (10.1): custo fixo de 2 consultas, não escala por aluno. Não tratar como dívida técnica.                                                                                   |
+| 27  | Histórico pode ser pago ou ajustado?                          | Sim, enquanto não houver `dataPagamento`, inclusive nos status `atrasado` e `em_aberto`. A data inicia hoje, mas é editável para registrar o recebimento real; ciclo pago continua congelado.              |
 
 ---
 
@@ -474,7 +485,6 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 - Notificações/lembretes automáticos de vencimento.
 - Estorno ou reabertura de ciclo já pago.
 - Aplicar reajuste de preço retroativamente ao ciclo corrente (5.9, item 4).
-- Edição retroativa de ciclos antigos além do ajuste do ciclo vigente (histórico é somente leitura).
 - Paginação ou filtro do histórico de ciclos (6.2.1).
 - Edição/registro em modo totalmente offline. O cache cobre apenas leitura (6.1).
 - **Visão de "aulas a repor" na tela de Alunos** — ver item 1.8 do roadmap. O card do aluno já acomoda a caixinha (seção 11), mas a feature **não** faz parte desta spec. Não reaproveitar `contarReposicoesPorAluno` (removido).
