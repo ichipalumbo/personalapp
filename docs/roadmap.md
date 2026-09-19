@@ -39,6 +39,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 0     | 0.8 Avisos in-app de reposição a vencer          | `[x]`  | 0.7 `[x]`                                                        |
 | 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[x]`  | 0.2                                                              |
 | 0     | 0.10 Deduplicação de `calcularPrazoReposicao`    | `[x]`  | —                                                                |
+| 0     | 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica cobrança | `[ ]`  | —                                                                |
 | 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
 | 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
 | 1     | 1.3 Observações por aula ou por aluno            | `[ ]`  | —                                                                |
@@ -48,6 +49,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
 | 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[x]`  | —                                                                |
+| 1     | 1.10 Tela dedicada de reposições                 | `[ ]`  | —                                                                |
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
@@ -198,6 +200,18 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
+### [ ] 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica a cobrança
+
+- **Já aconteceu em produção** — não é risco teórico. Requer confirmar se há registros `Reposicao` duplicados hoje no banco que precisem de correção manual, além do fix de código.
+- **Comportamento correto, para não confundir com o item errado**: uma aula pode ser enviada para reposição e reenviada quantas vezes for preciso enquanto ainda estiver dentro do prazo de validade — isso é fluxo normal, não bug. O botão "Enviar para reposição" **não deve** ser ocultado nem desabilitado de forma geral.
+- **O que é o bug de verdade**: ao reagendar uma reposição (`formReagendarAula`), o compromisso criado recebe `isReposicao: true` e `reposicaoId` apontando para o registro original (`assets/js/modal-acao-slot.js`). Se essa aula for enviada para reposição de novo e a prof escolher **"Cobrar neste ciclo"** no modal de escolha, `enviarParaReposicao` cria um **segundo registro `Reposicao` independente**, sem vínculo com o primeiro. Se o registro **original** já estava com `cobravel: true` (ou seja, já contribuiu para o cálculo de algum ciclo), agora dois registros cobráveis representam a mesma aula de origem — ambos podem entrar na parcela (B) de `calcularAulasContadasDoCiclo`, dobrando a cobrança. Quando o original é `cobravel: false` (ainda não foi cobrado), reenviar não duplica nada — é o caso comum e deve continuar sem nenhum aviso.
+- **Correção escolhida**: em vez de criar um registro novo do zero, o modal de escolha "Cobrar neste ciclo / Cobrar na reposição" passa a **reabrir o mesmo registro `Reposicao` de origem** quando a aula reenviada tiver `reposicaoId` — volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, e registra o evento no array `historico` do próprio documento. Decisão explícita do dono do repo: isso é preferível a criar-registro-novo-com-aviso porque **mantém o histórico de quantas vezes aquela reposição já foi remarcada em um único documento**, em vez de espalhar em vários registros desconectados.
+- **O que muda no fluxo de escolha cobrável/não cobrável (seção 9.3 da spec)**: quando o registro de origem já é `cobravel: true`, a escolha "Cobrar neste ciclo" não deve ser oferecida de novo (a aula já está contabilizada); a UI deve refletir isso — a decidir exatamente a redação/comportamento do modal nesse caso ao implementar.
+- **Onde mexer**: `assets/js/modal-acao-slot.js` (`enviarParaReposicao`, `executarEnvioParaReposicao` — detectar `compromisso.reposicaoId` e chamar reabertura em vez de criação), backend `reposicaoController.js`/`reposicaoService.js` (rota/lógica de reabertura do registro existente, com push em `historico`), e a regra 5.3 e a seção 9.3 de `docs/specs/reposicoes-e-competencia.md` precisam documentar esse caso de borda.
+- **Esforço**: Médio (mexe em modelo de dados de reposição — histórico de reaberturas — e no contrato da API, não só na UI).
+
+---
+
 ### ✅ Não é débito: custo da rota de consistência de agenda
 
 `GET /api/alunos/consistencia-agenda` faz 2 consultas de custo **fixo** (alunos + agendamentos) e resolve o resto em memória — não escala por aluno. Chegou a ser levantada como possível dívida, mas foi **reclassificada como comportamento aceito** (seção 10.1 da spec). Não otimizar preventivamente. Se um dia a aba Alunos ficar lenta, o ponto a investigar é o volume de dados trafegado (filtrar `tipo`/`frequencia` já na consulta, ou unificar com a rota de Finanças), não a lógica do indicador.
@@ -289,6 +303,21 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Ciclo encurtado**: segue o ajuste manual normal, sem confirmação adicional; o período exibido já representa a janela efetiva.
 - **Cobertura**: testes de serviço para pagamento/ajuste histórico, escopo por `ownerEmail` e bloqueio de ciclo pago; teste de frontend do histórico não pago/pago, com prova por mutação. Suítes finais: backend 222/222 e frontend 47/47.
 - **Referência**: [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md), seção 6.3.
+
+---
+
+### [ ] 1.10 Tela dedicada de reposições
+
+- **O que é**: uma aba nova no menu principal (ao lado de Home/Finanças/Alunos), em duas camadas:
+  1. **Lista de cards por aluno** (mesmo padrão visual dos cards de `view-alunos.js`), cada um resumindo a situação de reposições daquele aluno — sem coluna de datas soltas na tela inicial.
+  2. **Drill-down por aluno**: clicar no card abre um painel/tela separada só com o histórico daquele aluno (pendentes + agendada/reagendada + expirada + cancelada), com botão de voltar para a lista de cards. Não é acordeão inline — é navegação para outra visão, como o fluxo de editar aluno.
+- **Por que importa**: o "Painel de Pendentes" que existia na Home foi removido em 2026-09-18 (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`) sem substituto equivalente. Hoje reposições pendentes só aparecem via badge no card do aluno (`view-alunos.js`) e como linhas do extrato do ciclo em Finanças — não há mais, em nenhuma tela, uma lista navegável de reposições com ação de reagendar a partir dela.
+- **Reagendamento das pendentes ("abertas")**: dentro do drill-down, cada reposição `pendente` tem ação de reagendar, reaproveitando `window.iniciarReagendamentoReposicao` (`assets/js/modal-acao-slot.js`) — hoje órfã, sem nenhum chamador desde a remoção do painel.
+- **Ajuste necessário no modal reaproveitado**: `modalReagendarAula` não recebe uma data — recebe um **dia da semana**, e no submit calcula "a próxima ocorrência desse dia a partir de `window.dataSelecionada`" (o dia selecionado no calendário da Home). Fora do contexto da Home, essa referência não faz sentido e o cálculo de data ficaria errado sem erro visível. Decisão: **não criar modal novo** — corrigir a base do cálculo para cair em "hoje" quando o modal for aberto fora da Home, mantendo um único modal de reagendar no app (regra 4.3 das instruções do repo).
+- **Escopo mínimo (V1)**: cards com filtro por aluno; sem filtro de data ou de "a vencer" nesta primeira entrega (podem ser adicionados depois, reaproveitando `resumoReposicoesAluno`/`diasAteDataISO` de `backend/shared/reposicao-flow-helpers.js`).
+- **Onde mexer**: `index.html` (novo item de menu + nova `<main>` de tela), `assets/js/` (view nova da tela, lista de cards + drill-down), `assets/js/modal-acao-slot.js` (reconectar `iniciarReagendamentoReposicao` e corrigir a base do cálculo de data), API de listagem de reposições já existente em `backend/src/controllers/reposicaoController.js`.
+- **Referência**: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seções 9.4 e 12.
+- **Esforço**: Médio.
 
 ---
 

@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: implementação mergeada na main e validada em produção; backend e frontend em produção · **Versão**: 6 · **Atualizado**: 2026-08-26
+> **Status**: implementação mergeada na main e validada em produção; backend e frontend em produção · **Versão**: 7 · **Atualizado**: 2026-09-18
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -483,13 +483,24 @@ Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o 
 - Texto fixo: `Não pode ser alterado depois.`
 - Quando houver prazo (6.2), acrescentar: `Prazo para reposição: até dd/mm.`
 
-### 9.4 Painel de reposições
+### 9.4 Painel de reposições — REMOVIDO (2026-09-18)
 
-- A lista da Home renderiza apenas reposições com `status: 'pendente'`.
-- Cada item mostra aluno e data original (rotulada como "Cancelada em ..."), com ação de
-  reagendar.
-- `cobravel`, `validoAte`, destaque de vencimento e seção de expiradas ainda não aparecem
-  no painel atual.
+O painel da Home descrito nesta seção (lista de reposições `pendente` com ação de
+reagendar) foi **removido** em 2026-09-18 (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`),
+sem substituto equivalente. A justificativa registrada no relatório da remoção foi a de
+que "a gestão de reposições ocorre predominantemente na aba específica de Reposições" —
+mas essa aba **não existe** no código (`index.html` só tem `tela-home`, `tela-financas` e
+`tela-alunos`). Essa frase do relatório está incorreta e não deve ser usada como referência.
+
+**Estado atual, sem o painel**: reposições pendentes só ficam visíveis via badge no card
+do aluno (`montarCaixinhaReposicaoAluno`, `assets/js/view-alunos.js`) e via linhas do
+extrato do ciclo em Finanças (seção 8). Não há mais, em nenhuma tela, uma lista navegável
+de reposições pendentes com ação de reagendar a partir dela.
+
+`window.iniciarReagendamentoReposicao` (`assets/js/modal-acao-slot.js`) continua no código,
+mas ficou **sem nenhum chamador** — era acionado só pelo painel removido. Ele não é chamado
+por `montarCaixinhaReposicaoAluno` nem por nenhuma outra tela hoje. Registrado aqui como
+achado desta correção, não corrigido nesta rodada (fora do escopo de acerto da spec).
 
 ### 9.5 Aviso no card do aluno — PENDENTE
 
@@ -605,7 +616,9 @@ como pendência de fechamento da spec.
 - **Notificação push / WhatsApp** ("sua reposição vence em 3 dias"). Exige disparo sem
   ninguém abrir o app — Web Push com VAPID ou WhatsApp API, mais scheduler. É o item 2.2
   do roadmap. Esta spec entrega apenas **aviso in-app**.
-- **Tela dedicada de reposições**, com histórico e filtros. O painel atual continua.
+- **Tela dedicada de reposições**, com histórico e filtros. Não existe hoje — o painel
+  que existia na Home foi removido em 2026-09-18 sem substituto (ver 9.4). Item de
+  entrega futura, ainda não incluído no roadmap.
 - **Status de presença / no-show** (item 1.5 do roadmap). Quando existir, a escolha
   cobrável/não cobrável poderá ser derivada de _quem cancelou_ em vez de perguntada.
 - **Cron / job de expiração.** Expiração é lazy (7).
