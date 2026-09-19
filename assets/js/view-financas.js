@@ -356,6 +356,12 @@
                 const status = ciclo.status === 'pago' ? 'Pago' : (ciclo.status === 'atrasado' ? 'Atrasado' : 'Em aberto');
                 const valor = formatarMoeda(ciclo.valorTotalCiclo);
                 const extratoKey = String(ciclo && ciclo._id ? ciclo._id : `${ciclo.cicloInicio || ''}-${ciclo.cicloFim || ''}`);
+                                const acoesHistorico = ciclo.dataPagamento ? '' : `
+                                        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+                                            <button type="button" class="btn btn-primary" data-financas-pagar="${ciclo.alunoId}" data-ciclo-id="${ciclo._id || ''}">Marcar como pago</button>
+                                            <button type="button" class="btn btn-secondary" data-financas-ajuste="${ciclo.alunoId}" data-ciclo-id="${ciclo._id || ''}">Editar ajuste</button>
+                                        </div>
+                                `;
                 return `
                   <div style="border:1px solid #262626;border-radius:10px;padding:10px 12px;background:#0f0f0f;">
                     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
@@ -365,6 +371,7 @@
                     <div style="font-size:0.75rem;color:#9a9a9a;margin-top:6px;">
                       ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
                     </div>
+                                        ${acoesHistorico}
                     ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-historico-${extratoKey}`, rotulo: 'Ver extrato do ciclo' })}
                   </div>
                 `;
@@ -452,6 +459,19 @@
         }
 
         renderizarConteudoHistorico(alunoId);
+    }
+
+    function obterCicloParaAcao(alunoId, cicloId) {
+        const card = STATE.cards.find((item) => item && item.alunoId === alunoId);
+        if (!card) return null;
+
+        if (card.cicloAtual && card.cicloAtual._id === cicloId) {
+            return { card, ciclo: card.cicloAtual, historico: false };
+        }
+
+        const estadoHistorico = obterEstadoHistorico(alunoId);
+        const cicloHistorico = estadoHistorico.dados.find((item) => item && item._id === cicloId);
+        return cicloHistorico ? { card, ciclo: cicloHistorico, historico: true } : null;
     }
 
     function renderizarCard(card) {
@@ -611,36 +631,36 @@
     }
 
     function abrirModalPagamento(cardId, cicloId) {
-        const card = STATE.cards.find((item) => item && item.alunoId === cardId);
-        if (!card || !card.cicloAtual) return;
+        const alvo = obterCicloParaAcao(cardId, cicloId);
+        if (!alvo || alvo.ciclo.dataPagamento) return;
 
         ensureModais();
-        STATE.cardAtivo = { tipo: 'pagamento', cardId: cardId, cicloId: cicloId || card.cicloAtual._id };
+        STATE.cardAtivo = { tipo: 'pagamento', cardId, cicloId: alvo.ciclo._id, historico: alvo.historico };
 
         const modal = document.getElementById('modalFinancasPagamento');
         const resumo = document.getElementById('financasPagamentoResumo');
         const dataInput = document.getElementById('financasDataPagamento');
         const formaInput = document.getElementById('financasFormaPagamento');
-        if (resumo) resumo.textContent = `${card.aluno.nome} • ${formatarDataBR(card.cicloAtual.cicloInicio)} → ${formatarDataBR(card.cicloAtual.cicloFim)}`;
+        if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
         if (dataInput) dataInput.value = new Date().toISOString().slice(0, 10);
         if (formaInput) formaInput.value = '';
         if (modal) modal.style.display = 'flex';
     }
 
     function abrirModalAjuste(cardId, cicloId) {
-        const card = STATE.cards.find((item) => item && item.alunoId === cardId);
-        if (!card || !card.cicloAtual) return;
+        const alvo = obterCicloParaAcao(cardId, cicloId);
+        if (!alvo || alvo.ciclo.dataPagamento) return;
 
         ensureModais();
-        STATE.cardAtivo = { tipo: 'ajuste', cardId: cardId, cicloId: cicloId || card.cicloAtual._id };
+        STATE.cardAtivo = { tipo: 'ajuste', cardId, cicloId: alvo.ciclo._id, historico: alvo.historico };
 
         const modal = document.getElementById('modalFinancasAjuste');
         const resumo = document.getElementById('financasAjusteResumo');
         const extrasInput = document.getElementById('financasAulasExtras');
         const observacaoInput = document.getElementById('financasObservacaoAjuste');
-        if (resumo) resumo.textContent = `${card.aluno.nome} • ${formatarDataBR(card.cicloAtual.cicloInicio)} → ${formatarDataBR(card.cicloAtual.cicloFim)}`;
-        if (extrasInput) extrasInput.value = String(card.cicloAtual.aulasManuaisExtras || 0);
-        if (observacaoInput) observacaoInput.value = card.cicloAtual.observacaoAjuste || '';
+        if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
+        if (extrasInput) extrasInput.value = String(alvo.ciclo.aulasManuaisExtras || 0);
+        if (observacaoInput) observacaoInput.value = alvo.ciclo.observacaoAjuste || '';
         if (modal) modal.style.display = 'flex';
     }
 
@@ -674,8 +694,13 @@
             if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
             if (!resposta.ok) throw new Error(`Falha ao salvar pagamento (${resposta.status})`);
 
+            const cardAtivo = STATE.cardAtivo;
             fecharModal('pagamento');
-            await carregarFinancas({ forcarRemoto: true, silencioso: true });
+            if (cardAtivo.historico) {
+                await carregarHistoricoAluno(cardAtivo.cardId, { forcar: true });
+            } else {
+                await carregarFinancas({ forcarRemoto: true, silencioso: true });
+            }
             if (typeof global.mostrarToast === 'function') {
                 global.mostrarToast('Pagamento confirmado com sucesso!', 'success');
             }
@@ -714,8 +739,13 @@
             if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
             if (!resposta.ok) throw new Error(`Falha ao salvar ajuste (${resposta.status})`);
 
+            const cardAtivo = STATE.cardAtivo;
             fecharModal('ajuste');
-            await carregarFinancas({ forcarRemoto: true, silencioso: true });
+            if (cardAtivo.historico) {
+                await carregarHistoricoAluno(cardAtivo.cardId, { forcar: true });
+            } else {
+                await carregarFinancas({ forcarRemoto: true, silencioso: true });
+            }
             if (typeof global.mostrarToast === 'function') {
                 global.mostrarToast('Ajuste salvo com sucesso!', 'success');
             }
@@ -824,6 +854,18 @@
 
         const formPagamento = document.getElementById('formFinancasPagamento');
         const formAjuste = document.getElementById('formFinancasAjuste');
+        const dataPagamento = document.getElementById('financasDataPagamento');
+        if (dataPagamento && !dataPagamento.dataset.calendarioAtivo) {
+            dataPagamento.dataset.calendarioAtivo = 'true';
+            dataPagamento.addEventListener('click', function () {
+                if (typeof dataPagamento.showPicker !== 'function') return;
+                try {
+                    dataPagamento.showPicker();
+                } catch (_) {
+                    // O seletor nativo padrão permanece disponível quando showPicker não puder abrir.
+                }
+            });
+        }
         if (formPagamento) {
             formPagamento.addEventListener('submit', salvarPagamento);
         }

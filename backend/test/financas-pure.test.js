@@ -3,6 +3,9 @@ const assert = require('node:assert/strict');
 
 const financasService = require('../src/services/financasService');
 const CicloFinanceiro = require('../src/models/CicloFinanceiro');
+const Aluno = require('../src/models/Aluno');
+const Agendamento = require('../src/models/Agendamento');
+const Reposicao = require('../src/models/Reposicao');
 const {
   calcularCicloVigente,
   calcularValorTotalCiclo,
@@ -10,6 +13,8 @@ const {
   filtrarHistoricoExcluindoCicloAtual,
   encerrarCicloSobrepostoSeNecessario,
   obterOuCriarCicloVigente,
+  marcarCicloComoPago,
+  atualizarAjusteCiclo,
 } = financasService;
 
 test('calcularCicloVigente ajusta dia 31 em mês curto', () => {
@@ -160,5 +165,121 @@ test('obterOuCriarCicloVigente cria o ciclo vigente mesmo com ciclo atrasado ant
     CicloFinanceiro.find = findOriginal;
     CicloFinanceiro.findOne = findOneOriginal;
     CicloFinanceiro.create = createOriginal;
+  }
+});
+
+test('marcarCicloComoPago aceita data real para ciclo histórico atrasado do mesmo owner', async () => {
+  const findOneOriginal = CicloFinanceiro.findOne;
+  const alunoFindOneOriginal = Aluno.findOne;
+  const agendamentoFindOriginal = Agendamento.find;
+  const reposicaoFindOriginal = Reposicao.find;
+  const filtros = [];
+  const ciclo = {
+    _id: 'ciclo-historico-1',
+    alunoId: 'aluno-1',
+    cicloInicio: '2026-06-01',
+    cicloFim: '2026-06-30',
+    aulasContadas: 4,
+    aulasManuaisExtras: 0,
+    metodoCobranca: 'por_aula',
+    precoAulaSnapshot: 100,
+    status: 'atrasado',
+    dataPagamento: null,
+    save: async function () { return this; },
+    toObject() { return { ...this }; },
+  };
+
+  try {
+    CicloFinanceiro.findOne = async (filtro) => {
+      filtros.push(filtro);
+      return ciclo;
+    };
+    Aluno.findOne = async () => ({ id: 'aluno-1', metodoCobranca: 'por_aula', preco: 100 });
+    Agendamento.find = async () => [];
+    Reposicao.find = async () => [];
+
+    const resultado = await marcarCicloComoPago('pro@example.com', 'ciclo-historico-1', {
+      dataPagamento: '2026-09-18',
+      formaPagamento: 'Pix',
+    });
+
+    assert.deepEqual(filtros, [{ _id: 'ciclo-historico-1', ownerEmail: 'pro@example.com' }]);
+    assert.equal(resultado.dataPagamento, '2026-09-18');
+    assert.equal(resultado.formaPagamento, 'Pix');
+    assert.equal(resultado.status, 'pago');
+  } finally {
+    CicloFinanceiro.findOne = findOneOriginal;
+    Aluno.findOne = alunoFindOneOriginal;
+    Agendamento.find = agendamentoFindOriginal;
+    Reposicao.find = reposicaoFindOriginal;
+  }
+});
+
+test('atualizarAjusteCiclo ajusta ciclo histórico não pago do mesmo owner', async () => {
+  const findOneOriginal = CicloFinanceiro.findOne;
+  const alunoFindOneOriginal = Aluno.findOne;
+  const filtros = [];
+  const ciclo = {
+    _id: 'ciclo-historico-2',
+    alunoId: 'aluno-1',
+    cicloInicio: '2026-06-01',
+    cicloFim: '2026-06-30',
+    aulasContadas: 4,
+    aulasManuaisExtras: 0,
+    observacaoAjuste: '',
+    metodoCobranca: 'por_aula',
+    precoAulaSnapshot: 100,
+    valorTotalCiclo: 400,
+    status: 'atrasado',
+    dataPagamento: null,
+    save: async function () { return this; },
+    toObject() { return { ...this }; },
+  };
+
+  try {
+    CicloFinanceiro.findOne = async (filtro) => {
+      filtros.push(filtro);
+      return ciclo;
+    };
+    Aluno.findOne = async () => ({ id: 'aluno-1', metodoCobranca: 'por_aula', preco: 100 });
+
+    const resultado = await atualizarAjusteCiclo('pro@example.com', 'ciclo-historico-2', {
+      aulasManuaisExtras: '-1',
+      observacaoAjuste: 'Desconto combinado',
+    }, new Date('2026-09-18T12:00:00'));
+
+    assert.deepEqual(filtros, [{ _id: 'ciclo-historico-2', ownerEmail: 'pro@example.com' }]);
+    assert.equal(resultado.aulasManuaisExtras, -1);
+    assert.equal(resultado.observacaoAjuste, 'Desconto combinado');
+    assert.equal(resultado.valorTotalCiclo, 300);
+    assert.equal(resultado.status, 'atrasado');
+  } finally {
+    CicloFinanceiro.findOne = findOneOriginal;
+    Aluno.findOne = alunoFindOneOriginal;
+  }
+});
+
+test('atualizarAjusteCiclo rejeita ciclo histórico já pago', async () => {
+  const findOneOriginal = CicloFinanceiro.findOne;
+  const alunoFindOneOriginal = Aluno.findOne;
+  const ciclo = {
+    _id: 'ciclo-historico-pago',
+    alunoId: 'aluno-1',
+    dataPagamento: '2026-07-05',
+  };
+
+  try {
+    CicloFinanceiro.findOne = async () => ciclo;
+    Aluno.findOne = async () => {
+      throw new Error('Não deve carregar aluno quando o ciclo já está pago.');
+    };
+
+    await assert.rejects(
+      atualizarAjusteCiclo('pro@example.com', 'ciclo-historico-pago', { aulasManuaisExtras: '1' }),
+      (erro) => erro && erro.statusCode === 409,
+    );
+  } finally {
+    CicloFinanceiro.findOne = findOneOriginal;
+    Aluno.findOne = alunoFindOneOriginal;
   }
 });
