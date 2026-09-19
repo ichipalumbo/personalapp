@@ -678,9 +678,9 @@ async function obterOuCriarCicloVigente(
       cicloAberto.status = statusAtual;
       cicloAberto.atualizadoEm = new Date();
       await cicloAberto.save();
-    } else {
-      return null;
     }
+    // Sem sobreposição (ciclo atrasado antigo, por exemplo): nada a fazer neste ciclo aberto,
+    // segue para o próximo — não deve impedir a criação/leitura do ciclo vigente.
   }
 
   const query = {

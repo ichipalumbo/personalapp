@@ -1,13 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+const financasService = require('../src/services/financasService');
+const CicloFinanceiro = require('../src/models/CicloFinanceiro');
 const {
   calcularCicloVigente,
   calcularValorTotalCiclo,
   calcularTotalAulasCobradas,
   filtrarHistoricoExcluindoCicloAtual,
   encerrarCicloSobrepostoSeNecessario,
-} = require('../src/services/financasService');
+  obterOuCriarCicloVigente,
+} = financasService;
 
 test('calcularCicloVigente ajusta dia 31 em mês curto', () => {
   const aluno = {
@@ -106,4 +109,56 @@ test('encerrarCicloSobrepostoSeNecessario fecha o ciclo anterior antes do iníci
 
   assert.equal(resultado.cicloFim, '2026-07-31');
   assert.equal(resultado.status, 'atrasado');
+});
+
+test('obterOuCriarCicloVigente cria o ciclo vigente mesmo com ciclo atrasado antigo sem sobreposição', async () => {
+  const findOriginal = CicloFinanceiro.find;
+  const findOneOriginal = CicloFinanceiro.findOne;
+  const createOriginal = CicloFinanceiro.create;
+
+  try {
+    // Ciclo de junho, atrasado, não pago — não se sobrepõe ao ciclo vigente de setembro.
+    const cicloAtrasado = {
+      cicloInicio: '2026-05-16',
+      cicloFim: '2026-06-15',
+      status: 'atrasado',
+      dataPagamento: null,
+      save: async function () { return this; },
+    };
+
+    CicloFinanceiro.find = () => ({
+      sort: async () => [cicloAtrasado],
+    });
+    CicloFinanceiro.findOne = async () => null;
+    CicloFinanceiro.create = async (payload) => ({
+      ...payload,
+      toObject() { return { ...payload }; },
+    });
+
+    const aluno = {
+      id: 'aluno-1',
+      objetivo: 'Personal Trainer',
+      fechamentoMesCheio: false,
+      diaVencimento: 15,
+      metodoCobranca: 'por_aula',
+      preco: 100,
+      criadoEm: '2026-01-01T00:00:00',
+    };
+
+    const documento = await obterOuCriarCicloVigente(
+      'pro@example.com',
+      aluno,
+      [],
+      [],
+      new Date('2026-09-01T12:00:00'),
+    );
+
+    assert.notEqual(documento, null);
+    assert.equal(documento.cicloInicio, '2026-08-16');
+    assert.equal(documento.cicloFim, '2026-09-15');
+  } finally {
+    CicloFinanceiro.find = findOriginal;
+    CicloFinanceiro.findOne = findOneOriginal;
+    CicloFinanceiro.create = createOriginal;
+  }
 });
