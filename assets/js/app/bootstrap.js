@@ -144,11 +144,23 @@
         }
 
         const AUTO_REFRESH_THROTTLE_MS = 30000;
+        // Alt+Tab e troca rápida de app no celular escondem e mostram a aba em segundos;
+        // só vale a pena buscar dados novos do servidor se o usuário ficou fora por um tempo real.
+        const OCULTO_MINIMO_PARA_REFRESH_MS = 90000;
         let ultimoAutoRefreshAt = 0;
+        let ficouOcultoEm = null;
         let autoRefreshEmAndamento = false;
 
         document.addEventListener('visibilitychange', async function () {
             if (document.hidden) {
+                ficouOcultoEm = Date.now();
+                return;
+            }
+
+            const tempoOcultoMs = ficouOcultoEm ? Date.now() - ficouOcultoEm : 0;
+            ficouOcultoEm = null;
+
+            if (tempoOcultoMs < OCULTO_MINIMO_PARA_REFRESH_MS) {
                 return;
             }
 
