@@ -3,7 +3,7 @@
 // Depende de: state.js (aulas, aulasParaRepor, agendaConfig, HORARIOS), storage.js (carregarDados, salvarDados, atualizarLimitesGrade),
 //             utils-datetime.js (getDiaTextoSelecionado), alunos-helpers.js (window.getAluno), calendario-engine.js (checarCompromissoNaData),
 //             widget-bloqueio.js (ehBloqueioDiaInteiroCompromisso),
-//             modal-agendamento.js (abrirEscolhaTipoModal), modal-acao-slot.js (abrirModalAcaoSlot, renderizarListaReposicoes, inicializarMultiSelectPills)
+//             modal-agendamento.js (abrirEscolhaTipoModal), modal-acao-slot.js (abrirModalAcaoSlot, inicializarMultiSelectPills)
 // Expõe: window.dataSelecionada, window.dataAlvoAcaoStr, window.horarioSelecionadoSlot,
 //         window.reagendamentoDirectCardId, window.__sincronizacaoInicialConcluida,
 //         window.__homeCarregando, window.renderizarLoadingHome,
@@ -303,7 +303,6 @@ window.atualizarDataAtual = function (dataId, diaId) {
 
 window.atualizarDashboardStats = function () {
   const elAulasHoje = document.getElementById("totalAulasHoje");
-  const elAulasRepor = document.getElementById("totalAulasRepor");
 
   if (elAulasHoje && typeof aulas !== "undefined") {
     const aulasHoje = aulas.filter((a) => {
