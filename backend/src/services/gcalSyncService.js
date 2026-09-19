@@ -7,7 +7,7 @@ const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
 const { decryptRefreshToken } = require('../utils/gcalCrypto');
 const { normalizeEmail } = require('../utils/emailNormalizer');
-const recurrenceHelpers = require('../../../assets/js/shared/recurrence-helpers');
+const recurrenceHelpers = require('../../shared/recurrence-helpers');
 
 const GCAL_BASE_URL = 'https://www.googleapis.com/calendar/v3';
 const APP_ORIGIN = 'corepersonal';

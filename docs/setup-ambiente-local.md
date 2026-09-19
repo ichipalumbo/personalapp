@@ -208,8 +208,9 @@ Ambas usam `node --test`, o runner nativo do Node. Não há Jest, Vitest nem wat
 
 | Arquivo | Cobre |
 |---|---|
-| `tests-frontend/recurrence-helpers.test.js` | `assets/js/shared/recurrence-helpers.js` — o módulo isomórfico consumido pela agenda e pelo financeiro |
+| `tests-frontend/recurrence-helpers.test.js` | `backend/shared/recurrence-helpers.js` — o módulo isomórfico consumido pela agenda e pelo financeiro |
 | `tests-frontend/calendario-engine.test.js` | `assets/js/calendario-engine.js` — guard de ordem de carga, repasses e fallback do mapa de dias |
+| `tests-frontend/reposicao-flow.test.js` | `backend/shared/reposicao-flow-helpers.js` — a regra de alerta "a vencer" (limite de dias e resumo por aluno) |
 | `tests-frontend/index-html-ordem.test.js` | A ordem das tags `<script>` em `index.html` |
 
 **Não cobre tela.** `view-*.js`, os modais e `agenda-conflitos.js` continuam sem cobertura
@@ -256,7 +257,7 @@ Hoje são duas, ambas protegidas por `throw` explícito no próprio código:
 | Precisa carregar antes | Dependente | Global lido |
 |---|---|---|
 | `assets/js/config/api-config.js` | `assets/js/storage.js` | `window.APP_API_CONFIG` |
-| `assets/js/shared/recurrence-helpers.js` | `assets/js/calendario-engine.js` | `window.recurrenceHelpers` |
+| `backend/shared/recurrence-helpers.js` | `assets/js/calendario-engine.js` | `window.recurrenceHelpers` |
 
 Os cabeçalhos `// Depende de:` dos arquivos declaram bem mais que isso, mas a maioria é
 dependência de runtime e **não** governa ordem de carga — `agenda-conflitos.js`, por exemplo,

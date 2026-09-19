@@ -18,7 +18,7 @@ const {
 // nao em runtime. Ambos falham com throw explicito se a ordem inverter.
 const DEPENDENCIAS_DE_CARGA = [
     { antes: 'assets/js/config/api-config.js', depois: 'assets/js/storage.js' },
-    { antes: 'assets/js/shared/recurrence-helpers.js', depois: 'assets/js/calendario-engine.js' }
+    { antes: 'backend/shared/recurrence-helpers.js', depois: 'assets/js/calendario-engine.js' }
 ];
 
 test('index.html declara pelo menos os scripts locais conhecidos', () => {
@@ -54,7 +54,7 @@ test('dependencias de tempo de carga aparecem antes de seus dependentes', () => 
 test('a ordem declarada em index.html realmente carrega calendario-engine', () => {
     const locais = lerScriptsLocaisDoIndexHtml();
     const naOrdemDoHtml = locais.filter((src) => (
-        src === 'assets/js/shared/recurrence-helpers.js' || src === 'assets/js/calendario-engine.js'
+        src === 'backend/shared/recurrence-helpers.js' || src === 'assets/js/calendario-engine.js'
     ));
 
     const ambiente = carregarScripts(naOrdemDoHtml);

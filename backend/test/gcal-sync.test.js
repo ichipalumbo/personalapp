@@ -23,7 +23,7 @@ const {
 } = require('../src/services/gcalSyncService');
 const { montarPayloadGCal } = require('../src/controllers/agendamentoController');
 const { encryptRefreshToken } = require('../src/utils/gcalCrypto');
-const recurrenceHelpers = require('../../assets/js/shared/recurrence-helpers');
+const recurrenceHelpers = require('../shared/recurrence-helpers');
 
 test('getHorarioPadraoFim usa +60 minutos em horário normal', () => {
   assert.equal(getHorarioPadraoFim({ horarioInicio: '09:30' }), '10:30');

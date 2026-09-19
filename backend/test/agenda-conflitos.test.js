@@ -44,7 +44,7 @@ function carregarAgendaConflitos() {
     context.log = context.console;
 
     const scripts = [
-        'assets/js/shared/recurrence-helpers.js',
+        'backend/shared/recurrence-helpers.js',
         'assets/js/calendario-engine.js',
         'assets/js/agenda-conflitos.js'
     ];

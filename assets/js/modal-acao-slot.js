@@ -10,14 +10,11 @@
 //         window.atualizarAvisoConflitoEdicao, window.getLabelEscopoRecorrencia,
 //         window.getResumoEscopoRecorrencia, window.atualizarResumoEscopoRecorrencia,
 //         window.configurarEscopoRecorrenciaEdicao, window.abrirReagendarAulaModalSlot,
-//         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal,
-//         window.togglePainelReposicoes, window.renderizarListaReposicoes
+//         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal
 
 // Exposto em window para acesso cross-módulo (widget-stepper-duracao usa para edicao)
 window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
 
-// Dirty-check key for renderizarListaReposicoes — null forces a render on the next call.
-let _ultimaChaveRenderReposicoes = null;
 let _submissaoEdicaoEmAndamento = false;
 
 function obterBotaoSubmitEdicao() {
@@ -1284,60 +1281,6 @@ window.fecharReagendarAulaModal = function () {
     modal.style.display = "none";
   }
   window.reagendamentoDirectCardId = null;
-};
-
-// ── Painel de Reposições Pendentes ────────────────────────────────────────────────────────────
-
-window.togglePainelReposicoes = function () {
-  const painel = document.getElementById("painelReposicoesPendentes");
-  if (painel.style.display === "none") {
-    painel.style.display = "block";
-    window.renderizarListaReposicoes();
-  } else {
-    painel.style.display = "none";
-  }
-};
-
-window.renderizarListaReposicoes = function () {
-  const container = document.getElementById("listaReposicoesPendentes");
-  if (!container) return;
-
-  // Dirty-check: skip the DOM write if the list is unchanged.
-  const _chaveAtual = (function () {
-    try {
-      return JSON.stringify(aulasParaRepor);
-    } catch (_) {
-      return null;
-    }
-  })();
-  if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderReposicoes)
-    return;
-  _ultimaChaveRenderReposicoes = _chaveAtual;
-
-  if (!aulasParaRepor || aulasParaRepor.length === 0) {
-    container.innerHTML = `<p style="font-size: 0.8rem; color: #666; text-align: center; padding: 10px;">Sem reposições pendentes.</p>`;
-    return;
-  }
-  container.innerHTML = aulasParaRepor
-    .map((rep) => {
-      const aluno = window.getAluno(rep.alunoId);
-      return `
-            <div class="aluno-card" style="border-left-color: #FF5252; display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; background: #222;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <strong style="display: block; color: #FFF; font-size: 0.9rem;">${aluno ? aluno.nome : "Aluno"}</strong>
-                        <span style="font-size: 0.72rem; color: #FF5252; font-weight: 600;">Cancelada em ${rep.dataCancelamento}</span>
-                    </div>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr; gap: 8px;">
-                    <button class="btn btn-primary btn-sm" onclick="iniciarReagendamentoReposicao('${rep.id}')" style="background: #FFD700; color: #0D0D0D; font-size: 0.7rem; border: none; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">
-                        <i class="fa-solid fa-calendar-check"></i> Reagendar
-                    </button>
-                </div>
-            </div>
-        `;
-    })
-    .join("");
 };
 
 window.executarExclusaoInstancia = async function () {
