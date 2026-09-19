@@ -854,6 +854,18 @@
 
         const formPagamento = document.getElementById('formFinancasPagamento');
         const formAjuste = document.getElementById('formFinancasAjuste');
+        const dataPagamento = document.getElementById('financasDataPagamento');
+        if (dataPagamento && !dataPagamento.dataset.calendarioAtivo) {
+            dataPagamento.dataset.calendarioAtivo = 'true';
+            dataPagamento.addEventListener('click', function () {
+                if (typeof dataPagamento.showPicker !== 'function') return;
+                try {
+                    dataPagamento.showPicker();
+                } catch (_) {
+                    // O seletor nativo padrão permanece disponível quando showPicker não puder abrir.
+                }
+            });
+        }
         if (formPagamento) {
             formPagamento.addEventListener('submit', salvarPagamento);
         }
