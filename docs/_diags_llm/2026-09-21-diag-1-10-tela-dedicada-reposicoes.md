@@ -1,319 +1,190 @@
-# Diagnóstico — item 1.10: tela dedicada de reposições
+# Diagnóstico — item 1.10: histórico de reposições no card do aluno
 
-> Origem: item 1.10 de `docs/roadmap.md`, investigado em 2026-09-21.
-> Escopo desta rodada: diagnóstico, avaliação de esforço e plano de execução.
-> **Nenhum código foi alterado.**
-> Branch: `main` (decisão do dono — continuar na branch atual).
+> Origem: item 1.10 de `docs/roadmap.md`.
+> Atualizado em 2026-09-21 após a decisão de produto de substituir a tela dedicada por gestão contextual no card de Alunos.
+> Escopo desta rodada: verificação de código, avaliação de esforço e plano de implementação. **Nenhum código de produção foi alterado.**
 >
-> Contexto de produto: a PT já gerencia reposições no fluxo operacional; a tela
-> dedicada será a primeira entrega para concentrar essa gestão depois que o
-> painel da Home foi removido.
+> Fonte de verdade: `docs/specs/reposicoes-e-competencia.md`, seção 9.4. Este diagnóstico substitui a proposta anterior de aba, router, lista global e drill-down em tela própria.
 
 ---
 
-## 1) Conclusão executiva
+## 1. Conclusão executiva
 
-O item é viável com esforço **médio**, mas a maior parte do trabalho está no
-frontend. O backend já oferece a entidade persistida, listagem por aluno/status/
-período, expiração lazy, reagendamento por PATCH e reabertura da mesma reposição.
-O que falta é transformar esses contratos em uma experiência navegável:
+O item permanece viável com esforço **médio**, mas fica mais concentrado e menos invasivo: não exige nova aba, rota, `view-section` ou `view-reposicoes.js`. A entrega entra na tela `Alunos`, onde a PT já encontra o aluno, por meio de um botão de Reposições sempre visível que abre o histórico daquele aluno em modal.
 
-1. nova aba `Reposições` no menu;
-2. lista inicial de cards agrupados por aluno;
-3. drill-down separado com o histórico completo daquele aluno;
-4. ação de reagendar cada reposição pendente;
-5. recarga e atualização coerentes após a ação;
-6. cobertura de testes para router, agrupamento, estados e integração do modal.
+O backend já possui leitura completa por aluno, expiração lazy e transição de `pendente` para `agendada`. O principal trabalho é frontend:
 
-Estimativa relativa:
+1. tornar o indicador de reposições um botão permanente e independente do clique de editar aluno;
+2. manter uma fonte completa de histórico sem alterar o contrato de `aulasParaRepor`;
+3. criar o modal de histórico e seus estados;
+4. reconectar o reagendamento sem manter dois modais ativos;
+5. corrigir a data-base fora da Home e atualizar a UI somente após confirmação;
+6. cobrir as novas interações e os cenários de erro.
 
 | Frente | Esforço |
 | --- | --- |
-| Estrutura da nova view, navegação e responsividade | Médio |
-| Lista de cards por aluno e drill-down | Médio |
-| Reuso/correção do fluxo de reagendamento fora da Home | Médio |
-| Ajuste do estado carregado e atualização após escrita | Baixo a médio |
-| Testes frontend e regressões de backend | Médio |
+| Botão permanente e resumo no card existente | Baixo a médio |
+| Modal de histórico, acessibilidade e responsividade | Médio |
+| Cache completo separado e sincronização pós-ação | Médio |
+| Integração de reagendamento e contexto de retorno | Médio |
+| Testes frontend e regressões de fluxo | Médio |
 | **Total** | **Médio** |
 
-Não há necessidade aparente de nova collection, migration ou rota backend para
-a V1.
+Não há necessidade de nova collection, migration, rota ou alteração de regra financeira na V1.
 
 ---
 
-## 2) Estado atual confirmado
+## 2. Estado atual confirmado
 
-### 2.1 O dado já existe no backend
+### 2.1 Backend e contratos existentes
 
-`backend/src/models/Reposicao.js` já persiste:
+`backend/src/models/Reposicao.js` já persiste `ownerEmail`, `alunoId`, `alunoNome`, data/horário original, `cobravel`, `validoAte`, vínculo de agendamento, `historico` e os status `pendente`, `agendada`, `realizada` e `expirada`.
 
-- `ownerEmail` e `alunoId`;
-- data e horário originais;
-- `cobravel`;
-- `status` (`pendente`, `agendada`, `realizada`, `expirada`);
-- `agendamentoOriginalId`;
-- `agendamentoReposicaoId`;
-- `validoAte`;
-- `historico`.
+`GET /api/reposicoes` já filtra por `ownerEmail`, aceita `alunoId`, `status`, `dataMin` e `dataMax`, ordena por data/horário original e aplica expiração lazy antes de responder. Portanto:
 
-Há índice por `ownerEmail + alunoId + status`, adequado para a listagem da
-nova tela.
+- o modal pode consultar `GET /api/reposicoes?alunoId={id}` sem rota nova;
+- o resumo de todos os cards pode vir de uma única leitura completa;
+- `cancelada` não é um status visual da V1, pois não existe no enum persistido.
 
-### 2.2 A API já cobre a leitura necessária
+O PATCH atual registra `agendamentoReposicaoId` e muda a reposição para `agendada`; para reposição não cobrável, `cicloCobrancaResolvido` é derivado pelo servidor. O frontend não deve recalcular ou enviar prazo, competência ou cobrança.
 
-`GET /api/reposicoes` já:
+### 2.2 Card de Alunos já tem o ponto de extensão
 
-- filtra obrigatoriamente por `ownerEmail`;
-- aceita `alunoId`, `status`, `dataMin` e `dataMax`;
-- ordena por data e horário original;
-- aplica expiração lazy antes de responder.
+`assets/js/view-alunos.js` já monta `montarCaixinhaReposicaoAluno(aluno)` e a inclui em `.aluno-card-indicadores`, junto dos indicadores Financeiro e Consistência. Hoje, porém, ela:
 
-`GET /api/reposicoes/:id` permite carregar uma reposição individual quando
-necessário. Portanto, a V1 pode começar consumindo a API existente.
+- só aparece quando `resumoReposicoesAluno` encontra pendências com prazo;
+- usa apenas `aulasParaRepor`;
+- renderiza um `div` informativo, sem ação;
+- fica dentro de um `.aluno-card` cujo clique abre `prepararEdicaoAluno(id)`.
 
-### 2.3 O reagendamento já tem persistência e contrato
+O card também contém o toggle Ativo/Inativo, que já usa `event.stopPropagation()`. O novo botão deve seguir o mesmo isolamento: se não interromper a propagação, um clique em Reposições abrirá simultaneamente o histórico e a edição do aluno.
 
-O backend já aceita a transição de `pendente` para `agendada` via PATCH,
-registrando `agendamentoReposicaoId` e calculando no servidor o
-`cicloCobrancaResolvido` da reposição não cobrável.
+### 2.3 A fonte global atual é deliberadamente incompleta
 
-O fluxo de reabertura também já existe:
+Em `assets/js/storage.js`, `carregarDados()` chama `GET /reposicoes`, mas filtra a resposta para `status === 'pendente'`, mapeia os registros e preenche `aulasParaRepor`. Esse array alimenta o modal de reagendamento e o aviso atual; ampliar seu conteúdo quebraria esse contrato.
 
-- `POST /api/reposicoes/:id/reabrir`;
-- volta para `status: pendente`;
-- zera `agendamentoReposicaoId`;
-- registra `reaberta_por_reenvio` no histórico.
+Também foi confirmado que `mapearReposicaoParaUI` descarta campos de histórico que o novo modal pode precisar. Logo, o novo cache precisa manter os objetos completos devolvidos pela API, separado de `aulasParaRepor`.
 
-Isso reduz o risco de a nova tela criar uma segunda regra financeira ou uma
-segunda forma de reabrir reposições.
+### 2.4 Modal e fluxo de reagendamento existem, mas dependem da Home
 
-### 2.4 O frontend hoje não tem a tela
+`window.iniciarReagendamentoReposicao(id)` em `assets/js/modal-acao-slot.js` já localiza a pendência em `aulasParaRepor`, bloqueia aluno inativo e abre `modalReagendarAula` com o aluno travado.
 
-O `index.html` contém apenas as telas `tela-home`, `tela-financas` e
-`tela-alunos`. O router registra somente esses três inicializadores. Não há:
+O submit do formulário calcula a próxima data com `window.dataSelecionada || new Date()`, mas o índice do dia atual é obtido de `window.dataSelecionada` ou cai em domingo (`0`). Fora da Home, isso pode combinar a data de hoje com o índice de domingo e produzir uma próxima ocorrência incorreta.
 
-- item de menu `Reposições`;
-- `view-reposicoes.js`;
-- container para a nova tela;
-- inicializador registrado no router;
-- estado de drill-down;
-- lista navegável de todas as reposições.
+O fluxo atual também fecha o modal antes de terminar a confirmação e não expõe um contrato de retorno ao chamador. Para o histórico reabrir após sucesso, erro ou cancelamento, a implementação precisa de sinal/contexto explícito; não pode interpretar simplesmente o fechamento do modal como sucesso.
 
-Há texto no modal de envio dizendo que a escolha da nova data ocorre na aba
-Reposições, mas essa aba ainda não existe. A implementação deve fechar essa
-inconsistência.
+### 2.5 Estilo, markup e testes reutilizáveis
 
-### 2.5 O estado global atualmente descarta os históricos
-
-`storage.js` busca `GET /reposicoes`, mas filtra a resposta para manter somente
-registros com `status === 'pendente'` antes de preencher `aulasParaRepor`.
-
-Esse estado serve aos indicadores atuais do card de aluno, mas não é suficiente
-para a nova tela, que precisa exibir pendentes, agendadas/reagendadas,
-realizadas, expiradas e canceladas conforme o contrato do roadmap. A nova view
-deve usar uma fonte que preserve a lista completa; não deve ampliar
-`aulasParaRepor` silenciosamente e quebrar o comportamento existente.
-
-### 2.6 Existe reaproveitamento visual no card de aluno
-
-`view-alunos.js` já possui:
-
-- renderização de cards em grade;
-- indicadores financeiros e de consistência;
-- indicador de reposições pendentes e alerta de prazo;
-- invalidation/dirty-check para re-renderização.
-
-Esse padrão pode orientar a aparência dos cards da nova lista, mas o card de
-Reposições precisa representar a situação agregada do aluno, não apenas o
-alerta de pendências.
+- `index.html` já carrega `reposicao-flow-helpers.js`, `modal-acao-slot.js` e `view-alunos.js` nesta ordem; não será necessário criar nova view nem registro no router.
+- `assets/css/style.css` já possui `.aluno-card-indicadores`, `.aluno-card-indicador`, estados de alerta e a base `.modal-overlay`/`.modal` para estender.
+- `tests-frontend/reposicao-flow.test.js` cobre o helper de prazo; os testes atuais confirmam `DIAS_ALERTA_REPOSICAO = 5`.
+- `tests-frontend/index-html-ordem.test.js` só impõe dependências de carga existentes; o modal novo no HTML não exige tag de script adicional se a lógica permanecer em `view-alunos.js`.
+- Os testes backend de API e prazo já cobrem criação, PATCH, expiração e reabertura. Não há mudança de contrato de backend prevista.
 
 ---
 
-## 3) Lacunas funcionais que a implementação precisa resolver
+## 3. Decisões de implementação já fechadas
 
-### 3.1 Lista inicial agrupada por aluno
-
-A primeira visão deve agrupar os registros por `alunoId`, usando o aluno
-correspondente para exibir o nome e informações consistentes. Cada card deve
-resumir, no mínimo:
-
-- quantidade de reposições pendentes;
-- quantidade agendada/reagendada;
-- quantidade expirada;
-- quantidade realizada;
-- indicação de prazo próximo ou encerrado quando houver pendente;
-- ação de abrir o histórico do aluno.
-
-O card não deve listar datas soltas na visão inicial, conforme a decisão do
-roadmap.
-
-Alunos sem nenhuma reposição não devem aparecer nessa tela. Alunos inativos
-com histórico devem continuar visíveis, pois a tela é de histórico e gestão,
-não uma lista de alunos ativos.
-
-### 3.2 Drill-down separado, não acordeão
-
-O clique no card deve trocar para uma visão/painel de detalhe do aluno, com:
-
-- nome do aluno;
-- botão de voltar para a lista;
-- todas as reposições do aluno;
-- agrupamento ou ordenação por status e data;
-- data original, horário, status e validade;
-- informação de cobrança (`cobravel`) sem recalcular regra no frontend;
-- histórico de eventos quando essa informação for útil para rastreabilidade.
-
-Esse detalhe deve ser uma navegação de visão, como o fluxo de edição de aluno,
-e não um acordeão inline.
-
-### 3.3 Reagendamento a partir da nova tela
-
-Cada reposição `pendente` deve oferecer a ação de reagendar. O caminho
-recomendado é reaproveitar `window.iniciarReagendamentoReposicao`, que ficou
-sem chamadores depois da remoção do painel da Home.
-
-Há um acoplamento importante: o modal atual recebe um dia da semana e calcula a
-próxima ocorrência a partir de `window.dataSelecionada`, contexto que pertence
-à Home. Fora da Home, isso pode produzir uma data incorreta sem erro visível.
-
-A implementação deve corrigir a base de cálculo para usar a data de hoje
-quando o modal for aberto fora da Home, preservando um único modal de
-reagendamento no aplicativo. Não deve ser criado um segundo modal paralelo.
-
-Depois do reagendamento, a tela deve:
-
-1. aguardar resposta HTTP de sucesso;
-2. atualizar a reposição para `agendada`;
-3. refletir o novo agendamento;
-4. voltar ao detalhe do aluno sem perder o contexto;
-5. manter a lista inicial coerente ao retornar.
-
-Em caso de falha, a UI não pode confirmar a operação com cache local.
+| Tema | Decisão |
+| --- | --- |
+| Superfície de gestão | Botão permanente no card de Alunos; não há aba, rota nem tela dedicada na V1. |
+| Preservação do card | Clique livre continua editando aluno; toggle continua independente; Reposições é `<button>` com propagação interrompida. |
+| Histórico | Modal próprio `modalHistoricoReposicoes`, não acordeão e não segunda tela. |
+| Fonte do histórico | Cache separado de registros completos + leitura específica `GET /reposicoes?alunoId=...`; `aulasParaRepor` segue apenas com pendências. |
+| Status exibidos | `pendente`, `agendada`, `realizada`, `expirada`; grupos vazios omitidos; sem `cancelada`. |
+| Ordem no modal | Grupos: Pendentes, Agendadas, Realizadas, Expiradas; dentro do grupo, data original mais recente primeiro. |
+| Reagendamento | Reutiliza `window.iniciarReagendamentoReposicao`; o histórico fecha antes do modal existente abrir. |
+| Data fora da Home | A próxima ocorrência parte de hoje e do seu `getDay()` quando não existir contexto válido da Home. |
+| Retorno pós-ação | Contexto explícito de retorno e evento/callback apenas após sucesso remoto; erro/cancelamento reabre o mesmo histórico sem sucesso falso. |
+| Janela de atenção | **7 dias**, conforme seção 6.5 e 9.4 da spec consolidada; atualizar o helper e seu teste, hoje em 5 dias. |
+| Histórico técnico | `historico` não vira timeline completa na V1. |
 
 ---
 
-## 4) Plano de execução recomendado
+## 4. Plano de execução recomendado
 
-### Etapa 0 — fechar o contrato da V1 antes de codar
+### Etapa 0 — portão de base
 
-Confirmar com o dono, se necessário:
+1. Rodar as suítes frontend e backend e registrar as contagens medidas.
+2. Confirmar que a lista completa da API contém os quatro status e que `aulasParaRepor` continua filtrada em pendências.
+3. Conferir o ponto exato do cálculo da data no submit de `formReagendarAula` e a chamada atual a `window.inicializarHome()` após sucesso.
+4. Não iniciar alteração de backend: qualquer lacuna descoberta deve ser demonstrada antes de expandir o escopo.
 
-1. se `realizada` deve ser exibida com esse rótulo ou como `concluída`;
-2. se o histórico de eventos deve aparecer já na V1 ou apenas os dados
-   resumidos da reposição;
-3. se a ação de reagendar deve abrir o fluxo atual por dia da semana ou se a
-   expectativa de produto é escolher uma data diretamente.
+### Etapa 1 — estado local completo e resumo do card
 
-A recomendação técnica é manter o fluxo atual por dia da semana na V1, pois
-evita duplicação de regra e mantém o escopo médio previsto. Uma escolha de data
-direta seria uma decisão de produto e aumentaria a superfície da mudança.
+1. Em `view-alunos.js`, criar estado local para cache completo, carregando e erro de reposições, por exemplo:
 
-### Etapa 1 — modelo de estado e carregamento
+   ```text
+   reposicoesHistorico: Reposicao[]
+   carregandoReposicoesHistorico: boolean
+   erroReposicoesHistorico: string | null
+   alunoIdHistoricoAberto: string | null
+   reposicaoEmAcaoId: string | null
+   origemFocoHistorico: HTMLElement | null
+   ```
 
-1. Definir um estado local da view, separado de `aulasParaRepor`, com:
-   - lista completa de reposições;
-   - aluno selecionado;
-   - modo lista/detalhe;
-   - estado de carregamento, erro e ação em andamento.
-2. Reaproveitar `GET /api/reposicoes` ou criar um carregador específico no
-   frontend que preserve todos os status.
-3. Garantir que a chamada continue escopada pelo backend e que falha de rede
-   seja exibida, não convertida silenciosamente em lista vazia.
-4. Definir uma estratégia de recarga após reagendamento: atualizar a view a
-   partir da resposta e, em seguida, sincronizar remotamente para confirmar o
-   estado completo.
+2. Durante `carregarDadosComplementaresAlunos()`, consultar uma vez `GET /reposicoes`, guardar a resposta completa e invalidar o dirty-check de Alunos. Uma falha precisa continuar distinguível de uma resposta vazia.
+3. Substituir a caixinha atual por um botão sempre presente, mantendo a mesma célula de indicadores e os dados existentes do card.
+4. Derivar do cache as contagens e a mensagem mais urgente por aluno. Não listar datas individuais no card.
+5. Ajustar `DIAS_ALERTA_REPOSICAO` de 5 para 7 e adequar os testes do helper à decisão da spec. Não duplicar cálculo de dias no card.
 
-### Etapa 2 — shell da tela e router
+### Etapa 2 — markup e estilos do modal
 
-1. Adicionar o link de navegação `Reposições` ao `index.html`.
-2. Adicionar a nova `main` ou o container da tela.
-3. Criar `assets/js/view-reposicoes.js`.
-4. Registrar `tela-reposicoes` em `assets/js/app/router.js`.
-5. Carregar o script na seção de Page Views do `index.html`, depois das
-   dependências que ele usa e antes do bootstrap/app.
-6. Manter a ordem das tags compatível com os testes de
-   `DEPENDENCIAS_DE_CARGA`.
+1. Adicionar em `index.html` o `modalHistoricoReposicoes`, após os modais correlatos e antes do toast, com título, subtítulo, região de resumo, área de conteúdo e botões de fechar.
+2. Acrescentar em `style.css` as classes do botão de Reposições, seus estados neutro/atenção/erro, grupos, linhas e skeletons, compondo os estilos existentes de card e modal.
+3. No desktop, limitar o modal a 680px e 80vh; no mobile, usar largura útil e rolagem interna. Não permitir que o conteúdo atravesse overlay ou rodapé.
+4. Implementar foco inicial no título, Escape, contenção de foco enquanto aberto e retorno ao botão que o abriu.
 
-### Etapa 3 — lista de cards por aluno
+### Etapa 3 — controlador do histórico
 
-1. Agrupar reposições por `alunoId`.
-2. Resolver nome e dados do aluno usando as estruturas já carregadas.
-3. Ordenar os cards de forma determinística, priorizando pendências e depois
-   nome do aluno, ou registrar outra ordem aprovada.
-4. Renderizar estados de vazio, carregando e erro.
-5. Reaproveitar classes/padrões visuais de `view-alunos.js`, sem copiar a
-   regra de prazo; usar `reposicao-flow-helpers.js` para os cálculos de alerta.
-6. Tornar o card inteiro acessível e com indicação clara de que abre detalhes.
+1. Expor funções de abertura, fechamento, recarga e renderização em `view-alunos.js` somente quando isso for necessário à integração de modal; manter o estado encapsulado.
+2. Ao abrir, guardar o elemento de origem e garantir uma leitura de `GET /reposicoes?alunoId=...`. Pode mostrar o cache primeiro, mas a resposta específica é a confirmação de estado.
+3. Renderizar carregando, vazio, erro com `Tentar novamente`, aluno inativo e ação em andamento.
+4. Agrupar os quatro status na ordem decidida. Cada linha mostra status textual, aula original, validade quando houver, urgência nas pendentes, dado de cobrança e, para agendada, nova data/hora apenas se o vínculo resolver entre os agendamentos já carregados.
+5. Não renderizar IDs, valor, cálculo de competência, controle de status, exclusão, cancelamento ou timeline completa do array `historico`.
 
-### Etapa 4 — drill-down do aluno
+### Etapa 4 — integração segura do reagendamento
 
-1. Guardar o `alunoId` selecionado.
-2. Renderizar cabeçalho, botão de voltar e resumo.
-3. Renderizar todos os status previstos pela V1.
-4. Ordenar por status/data de forma que pendentes sejam fáceis de encontrar.
-5. Exibir validade e alerta apenas quando aplicável, usando o helper
-   compartilhado.
-6. Exibir estado vazio específico para aluno sem registros após uma recarga.
+1. Ao clicar em `Reagendar`, validar que a reposição ainda é pendente, que o aluno está ativo e que existe em `aulasParaRepor`. Se o estado estiver desatualizado, recarregar antes de abrir o fluxo ou informar que a pendência mudou; nunca criar um PATCH paralelo.
+2. Guardar um contexto de retorno do histórico antes de fechá-lo. Esse contexto deve conter aluno, reposição e elemento de foco, não dados financeiros recalculados.
+3. Corrigir o fallback da data-base no submit: quando `window.dataSelecionada` não for uma `Date` válida do contexto Home, usar uma única data `hoje` tanto para o índice do dia quanto para a data-base.
+4. Depois que agenda, `salvarDados(true)`, PATCH e, quando aplicável, GCal forem confirmados, emitir um evento/callback explícito de sucesso. O controlador do histórico recarrega cache, reabre o modal do mesmo aluno e anuncia a atualização.
+5. Em erro ou cancelamento, restaurar o histórico sem remover a pendência nem anunciar sucesso. O fechamento normal do modal de reagendamento não é prova de sucesso.
+6. Preservar o rollback e a reabertura existentes; não chamar `POST /reposicoes` nem alterar `cobravel`, `validoAte` ou `cicloCobrancaResolvido` pela nova interface.
 
-### Etapa 5 — reconectar o reagendamento
+### Etapa 5 — testes e validação manual
 
-1. Expor ou reutilizar o chamador de `iniciarReagendamentoReposicao` na nova
-   view.
-2. Corrigir o fallback de data do modal fora da Home.
-3. Garantir que a reposição seja vinculada ao novo agendamento somente após o
-   fluxo de persistência esperado.
-4. Re-renderizar o detalhe após sucesso.
-5. Preservar os tratamentos existentes de reabertura e rollback; não criar uma
-   nova chamada direta a `POST /reposicoes` para uma reposição já existente.
+Criar testes de comportamento, usando o arquivo real e sem sobrescrever seus handlers, para:
 
-### Etapa 6 — testes e validação manual
+- botão de Reposições sempre renderizado, inclusive com zero registros;
+- clique/teclado no botão não chamarem edição do aluno; clique na área livre continuar chamando;
+- resumo e prioridade de urgência, incluindo a fronteira de 7 dias;
+- carregando, vazio, erro e atualização preservando conteúdo anterior;
+- agrupamento e ordenação dos quatro status;
+- aluno inativo sem ação de reagendar;
+- abertura/fechamento do modal e retorno de foco;
+- query específica por aluno preservando todos os status;
+- fallback correto de data fora da Home;
+- sucesso confirmado atualizando cache/badge e reabrindo o mesmo histórico;
+- erro e cancelamento mantendo pendência e contexto;
+- ausência de modal empilhado.
 
-1. Atualizar o teste de ordem do `index.html` para a nova tag e dependências.
-2. Criar testes frontend para:
-   - registro do router;
-   - agrupamento por aluno;
-   - contagem por status;
-   - vazio, carregando e erro;
-   - entrada/saída do drill-down;
-   - fallback de data fora da Home;
-   - ação de reagendamento após sucesso e após erro.
-3. Adicionar ou ampliar testes backend apenas se surgir mudança de contrato.
-4. Rodar a suíte frontend e a suíte backend antes e depois da implementação,
-   reportando os números medidos.
-5. Fazer validação manual no desktop e em viewport estreita:
-   - lista com vários alunos;
-   - aluno somente com pendente;
-   - aluno com histórico misto;
-   - prazo vencido;
-   - reagendamento bem-sucedido;
-   - falha de rede;
-   - retorno do detalhe para a lista.
+Rodar as suítes frontend e backend após a implementação e fazer validação manual em desktop e 430px: aluno sem registros, pendência sem prazo, vence em 7 dias, vence hoje, prazo encerrado, histórico misto, aluno inativo, sucesso, erro remoto e cancelamento.
 
 ---
 
-## 5) Arquivos prováveis de impacto
+## 5. Arquivos prováveis de impacto
 
-### Alterações esperadas
-
-- `index.html`
-  - novo item de menu;
-  - container da tela;
-  - tag do novo script.
-- `assets/js/app/router.js`
-  - registro de `tela-reposicoes`.
-- `assets/js/view-reposicoes.js`
-  - novo estado, carregamento, lista e drill-down.
-- `assets/js/modal-acao-slot.js`
-  - reconexão do chamador e fallback de data fora da Home.
-- `assets/js/storage.js`
-  - somente se for necessário expor uma coleção completa ou um carregador
-    reutilizável; não alterar `aulasParaRepor` sem preservar o contrato atual.
-- `assets/css/style.css`
-  - somente classes novas que não possam ser compostas pelos padrões atuais.
-- `tests-frontend/index-html-ordem.test.js`
-  - ordem da nova tag e dependências.
-- novos testes em `tests-frontend/`
-  - view, agrupamento, estados e reagendamento.
+| Arquivo | Mudança prevista |
+| --- | --- |
+| `assets/js/view-alunos.js` | Cache completo local, botão permanente, resumo, controlador e renderização do modal. |
+| `index.html` | Markup de `modalHistoricoReposicoes`; sem item de menu, nova main ou nova tag de view. |
+| `assets/css/style.css` | Estados do botão, layout das linhas/grupos, skeleton e responsividade do modal. |
+| `assets/js/modal-acao-slot.js` | Fallback de data fora da Home e contrato explícito de retorno do reagendamento. |
+| `backend/shared/reposicao-flow-helpers.js` | Janela de alerta de 5 para 7 dias, conforme a spec. |
+| `tests-frontend/reposicao-flow.test.js` | Limite de alerta atualizado para 7 dias. |
+| novos testes em `tests-frontend/` | Card/modal, eventos, estados e integração com reagendamento. |
+| `assets/js/storage.js` | Opcional: somente se o cache completo for centralizado ali; não alterar `aulasParaRepor`. |
 
 ### Arquivos que não precisam mudar na V1
 
@@ -321,113 +192,35 @@ direta seria uma decisão de produto e aumentaria a superfície da mudança.
 - `backend/src/controllers/reposicaoController.js`;
 - `backend/src/routes/reposicaoRoutes.js`;
 - `backend/src/services/reposicaoService.js`;
-- `backend/shared/reposicao-flow-helpers.js`.
-
-Esses arquivos já sustentam a leitura e a persistência necessárias. Alterá-los
-sem uma lacuna concreta aumentaria o risco em uma área ligada ao financeiro.
+- `assets/js/app/router.js`;
+- `assets/js/view-home.js`.
 
 ---
 
-## 6) Riscos e cuidados
+## 6. Riscos e cuidados
 
-### 6.1 Fonte de dados incompleta
-
-O risco técnico mais provável é reutilizar `aulasParaRepor`, que contém apenas
-pendentes, e entregar uma tela que parece funcionar, mas não mostra o
-histórico. A lista completa deve ter uma fonte explicitamente definida.
-
-### 6.2 Data errada no modal fora da Home
-
-Esse é o risco funcional mais importante da integração. O modal atual depende
-de estado global da Home. O teste precisa falhar se a nova view voltar a usar
-uma `dataSelecionada` inexistente ou desatualizada.
-
-### 6.3 Duplicação de regra de negócio
-
-Não recalcular no frontend:
-
-- prazo de validade;
-- competência financeira;
-- ciclo cobrado;
-- valor da reposição.
-
-Esses dados devem vir da API ou dos módulos compartilhados existentes.
-
-### 6.4 Reagendamento parcial
-
-O fluxo altera agenda e reposição em etapas relacionadas. A tela deve aguardar
-as respostas e usar os mesmos helpers de persistência/rollback já presentes,
-sem exibir sucesso baseado apenas em mutação local.
-
-### 6.5 Escopo visual
-
-Adicionar uma quarta aba reduz o espaço disponível no cabeçalho, especialmente
-em telas estreitas. A navegação precisa ser validada em até 430px, onde já há
-regras específicas para os links do header.
-
-### 6.6 Dados históricos e status
-
-O schema atual não possui `cancelada` no enum de status; a spec do roadmap usa
-“cancelada” como categoria histórica, mas o código atual trabalha com
-`expirada` e exclusão do registro. Antes de implementar uma categoria visual
-“cancelada”, deve-se confirmar se ela significa um status persistido ou apenas
-um evento no histórico. Não criar um novo status por inferência.
+1. **Propagação do clique:** o card inteiro já é clicável. O botão sem `stopPropagation()` quebra a edição por abrir duas superfícies.
+2. **Fonte de dados incompleta:** usar somente `aulasParaRepor` produziria histórico falso, pois ela contém apenas pendências. Mantê-la completa quebraria o modal existente de reagendamento.
+3. **Falha confundida com vazio:** o `catch` atual de `storage.js` transforma falha de `/reposicoes` em `[]`; o cache do novo indicador precisa guardar estado de erro separado.
+4. **Data errada fora da Home:** índice de domingo como fallback, combinado com data de hoje, é incoerente. Data e índice precisam derivar da mesma data-base.
+5. **Sucesso antecipado:** fechar o modal ou alterar memória não confirma persistência. O retorno ao histórico ocorre apenas depois do fluxo remoto confirmado.
+6. **Modal empilhado:** não manter histórico e reagendamento ativos ao mesmo tempo; usar contexto de retorno explícito.
+7. **Duplicação de regra:** prazo, cobrança, competência e expiração permanecem no backend/helpers. A view só apresenta dados e usa o helper compartilhado para urgência.
+8. **Inativo e registro removido:** aluno inativo mantém histórico, mas não pode reagendar. Quando o aluno não existir no estado local, o modal deve usar `alunoNome` e fallback `Aluno removido` para leitura, sem criar ação.
+9. **Responsividade:** o quarto indicador pode empilhar no card; validar 430px para não comprimir Financeiro/Consistência ou tornar o botão pequeno demais.
 
 ---
 
-## 7) Fora de escopo recomendado para a V1
+## 7. Critérios de saída da implementação
 
-- filtro por data;
-- filtro por “a vencer”;
-- busca textual por aluno;
-- alteração manual de status;
-- exclusão/cancelamento de reposição pela nova tela;
-- criação de uma segunda forma de reagendamento por data direta;
-- mudança de regra financeira ou de competência;
-- alteração do modelo de dados;
-- sincronização adicional com Google Calendar além do fluxo já utilizado pelo
-  reagendamento.
-
-Esses itens podem ser avaliados depois que a lista e o drill-down estiverem
-estáveis.
-
----
-
-## 8) Critérios de aceite
-
-1. A aba `Reposições` aparece no menu e é inicializada pelo router.
-2. A visão inicial mostra um card por aluno com reposições, sem datas soltas.
-3. O card resume corretamente os status existentes na resposta da API.
-4. Clicar no card abre uma visão separada do aluno.
-5. O drill-down mostra pendentes, agendadas/reagendadas, realizadas e expiradas
-   quando existirem.
-6. O botão de voltar retorna à lista sem perder os dados carregados.
-7. Uma reposição pendente pode ser reagendada a partir do drill-down.
-8. O cálculo de data do modal funciona fora do contexto da Home.
-9. Após sucesso, a reposição deixa de aparecer como pendente sem recarregar a
-   página inteira manualmente.
-10. Após erro, a UI não confirma sucesso nem perde o registro.
-11. A lista continua isolada por `ownerEmail` via API.
-12. A tela não duplica regras de prazo ou cobrança.
-13. A suíte frontend cobre a nova tag, router e estados principais.
-14. A suíte backend permanece verde; nenhuma mudança de backend é feita sem
-   teste correspondente.
-
----
-
-## 9) Decisão recomendada para a execução
-
-Implementar a V1 em uma rodada dedicada de frontend, em ordem:
-
-1. fonte completa de reposições e estado da view;
-2. shell/router;
-3. lista por aluno;
-4. drill-down;
-5. reagendamento e fallback de data;
-6. testes e validação manual.
-
-O backend não deve ser expandido nesta primeira rodada. Se, durante a
-implementação, a necessidade de “cancelada” exigir novo estado persistido, essa
-decisão deve ser interrompida e confirmada antes de alterar schema, controller
-ou financeiro.
-
+1. Não existe nova aba, rota, router ou `view-reposicoes.js`.
+2. Todo card de aluno contém um único botão Reposições, inclusive sem registros.
+3. O clique de edição e o toggle atuais não regressam.
+4. O modal mostra todos os registros daquele aluno, agrupados nos quatro status persistidos.
+5. O card e o modal usam estado carregando, vazio e erro distintos.
+6. `aulasParaRepor` continua contendo somente pendências.
+7. A janela de alerta é de sete dias e está coberta por teste.
+8. Apenas pendência de aluno ativo oferece Reagendar.
+9. Fora da Home, a próxima data é calculada corretamente a partir de hoje.
+10. Não há modal empilhado; sucesso, erro e cancelamento retornam ao mesmo contexto sem sucesso falso.
+11. Frontend e backend passam nas suítes após a mudança; nenhum contrato de backend foi modificado sem teste correspondente.

@@ -49,7 +49,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
 | 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[x]`  | —                                                                |
-| 1     | 1.10 Tela dedicada de reposições                 | `[ ]`  | —                                                                |
+| 1     | 1.10 Histórico de reposições no card do aluno    | `[ ]`  | gestão contextual; sem aba dedicada na V1                         |
 | 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[ ]`  | —                                                                |
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
@@ -310,17 +310,16 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 1.10 Tela dedicada de reposições
+### [ ] 1.10 Histórico de reposições no card do aluno
 
-- **O que é**: uma aba nova no menu principal (ao lado de Home/Finanças/Alunos), em duas camadas:
-  1. **Lista de cards por aluno** (mesmo padrão visual dos cards de `view-alunos.js`), cada um resumindo a situação de reposições daquele aluno — sem coluna de datas soltas na tela inicial.
-  2. **Drill-down por aluno**: clicar no card abre um painel/tela separada só com o histórico daquele aluno (pendentes + agendada/reagendada + expirada + cancelada), com botão de voltar para a lista de cards. Não é acordeão inline — é navegação para outra visão, como o fluxo de editar aluno.
-- **Por que importa**: o "Painel de Pendentes" que existia na Home foi removido em 2026-09-18 (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`) sem substituto equivalente. Hoje reposições pendentes só aparecem via badge no card do aluno (`view-alunos.js`) e como linhas do extrato do ciclo em Finanças — não há mais, em nenhuma tela, uma lista navegável de reposições com ação de reagendar a partir dela.
-- **Reagendamento das pendentes ("abertas")**: dentro do drill-down, cada reposição `pendente` tem ação de reagendar, reaproveitando `window.iniciarReagendamentoReposicao` (`assets/js/modal-acao-slot.js`) — hoje órfã, sem nenhum chamador desde a remoção do painel.
-- **Ajuste necessário no modal reaproveitado**: `modalReagendarAula` não recebe uma data — recebe um **dia da semana**, e no submit calcula "a próxima ocorrência desse dia a partir de `window.dataSelecionada`" (o dia selecionado no calendário da Home). Fora do contexto da Home, essa referência não faz sentido e o cálculo de data ficaria errado sem erro visível. Decisão: **não criar modal novo** — corrigir a base do cálculo para cair em "hoje" quando o modal for aberto fora da Home, mantendo um único modal de reagendar no app (regra 4.3 das instruções do repo).
-- **Escopo mínimo (V1)**: cards com filtro por aluno; sem filtro de data ou de "a vencer" nesta primeira entrega (podem ser adicionados depois, reaproveitando `resumoReposicoesAluno`/`diasAteDataISO` de `backend/shared/reposicao-flow-helpers.js`).
-- **Onde mexer**: `index.html` (novo item de menu + nova `<main>` de tela), `assets/js/` (view nova da tela, lista de cards + drill-down), `assets/js/modal-acao-slot.js` (reconectar `iniciarReagendamentoReposicao` e corrigir a base do cálculo de data), API de listagem de reposições já existente em `backend/src/controllers/reposicaoController.js`.
-- **Referência**: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seções 9.4 e 12.
+- **O que é**: um botão permanente `Reposições` em todos os cards de `view-alunos.js`, inclusive quando o aluno não tem registros. Ele mostra o resumo de pendências/urgência e abre um modal com o histórico completo daquele aluno, agrupado em pendentes, agendadas, realizadas e expiradas.
+- **Por que importa**: o Painel de Pendentes da Home foi removido em 2026-09-18 (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`) e a PT ficou sem um caminho navegável para agir sobre pendências. A gestão volta no contexto em que ela já encontra o aluno, sem criar uma quarta aba.
+- **Convivência com o card atual**: o botão é um controle semântico próprio e interrompe a propagação do clique. Clicar na área livre continua abrindo a edição do aluno; o toggle Ativo/Inativo continua independente. Financeiro e Consistência não mudam.
+- **Reagendamento das pendentes**: no modal, cada `pendente` de aluno ativo oferece `Reagendar`, reaproveitando `window.iniciarReagendamentoReposicao` (`assets/js/modal-acao-slot.js`). O histórico fecha antes de abrir o modal existente, evitando empilhar modais; após sucesso, atualiza a badge e reabre o mesmo histórico.
+- **Ajuste necessário no modal reaproveitado**: fora da Home, `modalReagendarAula` calcula a próxima ocorrência a partir de hoje, e não de `window.dataSelecionada` ausente ou antiga. Não criar segundo modal de reagendamento.
+- **Dados e escopo V1**: o modal consulta todos os status via `GET /api/reposicoes?alunoId=...`; `aulasParaRepor` continua exclusivamente com pendências. Um cache separado da lista completa alimenta os resumos dos cards. Não inclui visão global, busca, filtro por período/status/a vencer, criação, cancelamento ou mudança de regra financeira.
+- **Onde mexer**: `assets/js/view-alunos.js`, `index.html` (modal de histórico), `assets/css/style.css`, `assets/js/modal-acao-slot.js` e, se necessário para o cache separado, `assets/js/storage.js`. A API atual já atende a leitura; não há mudança de backend prevista.
+- **Referência**: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seção 9.4.
 - **Esforço**: Médio.
 
 ---
