@@ -204,6 +204,48 @@ test('PATCH com agendamentoReposicaoId inexistente responde 400', async () => {
   }
 });
 
+test('POST /reabrir reutiliza a reposicao, preserva prazo e registra historico', async () => {
+  const findOneAndUpdateOriginal = Reposicao.findOneAndUpdate;
+
+  try {
+    let chamada;
+    Reposicao.findOneAndUpdate = async (filtro, atualizacao) => {
+      chamada = { filtro, atualizacao };
+      return {
+        id: 'repo-reaberta',
+        status: 'pendente',
+        agendamentoReposicaoId: null,
+        validoAte: '2026-08-31',
+        historico: atualizacao.$push.historico ? [atualizacao.$push.historico] : [],
+      };
+    };
+
+    const req = {
+      params: { id: 'repo-reaberta' },
+      body: { agendamentoId: 'ag-novo' },
+      auth: { ownerEmail: 'pro@example.com' },
+    };
+    const res = criarRespostaMock();
+
+    await reposicaoController.reabrirReposicao(req, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.payload.id, 'repo-reaberta');
+    assert.equal(res.payload.status, 'pendente');
+    assert.equal(res.payload.agendamentoReposicaoId, null);
+    assert.equal(res.payload.validoAte, '2026-08-31');
+    assert.equal(res.payload.historico[0].evento, 'reaberta_por_reenvio');
+    assert.equal(res.payload.historico[0].agendamentoId, 'ag-novo');
+    assert.deepEqual(chamada.filtro, { ownerEmail: 'pro@example.com', id: 'repo-reaberta' });
+    assert.deepEqual(chamada.atualizacao.$set, {
+      status: 'pendente',
+      agendamentoReposicaoId: null,
+    });
+  } finally {
+    Reposicao.findOneAndUpdate = findOneAndUpdateOriginal;
+  }
+});
+
 test('calcularAulasContadasDoCiclo não conta agendamento com reposicaoId', () => {
   const aluno = { id: 'aluno-1', metodoCobranca: 'por_aula', preco: 100 };
   const cicloInicio = new Date(2026, 6, 1);

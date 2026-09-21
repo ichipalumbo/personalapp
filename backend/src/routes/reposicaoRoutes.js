@@ -4,6 +4,7 @@ const {
   obterReposicao,
   criarReposicao,
   atualizarReposicao,
+  reabrirReposicao,
   excluirReposicao,
   adicionarHistoricoReposicao
 } = require('../controllers/reposicaoController');
@@ -11,6 +12,7 @@ const {
 const router = express.Router();
 
 router.post('/:id/historico', adicionarHistoricoReposicao);
+router.post('/:id/reabrir', reabrirReposicao);
 
 router.route('/')
   .get(listarReposicoes)

@@ -39,7 +39,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 0     | 0.8 Avisos in-app de reposição a vencer          | `[x]`  | 0.7 `[x]`                                                        |
 | 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[x]`  | 0.2                                                              |
 | 0     | 0.10 Deduplicação de `calcularPrazoReposicao`    | `[x]`  | —                                                                |
-| 0     | 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica cobrança | `[ ]`  | —                                                                |
+| 0     | 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica cobrança | `[x]`  | —                                                                |
 | 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
 | 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
 | 1     | 1.3 Observações por aula ou por aluno            | `[ ]`  | —                                                                |
@@ -201,17 +201,18 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica a cobrança
+### [x] 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica a cobrança
 
 - **Já aconteceu em produção** — não é risco teórico. Requer confirmar se há registros `Reposicao` duplicados hoje no banco que precisem de correção manual, além do fix de código.
-- **Levantamento e correção manual no Mongo são do dono do repositório, não do agente.** O ambiente do agente não tem acesso ao Mongo de produção. A consulta de leitura para achar cadeias duplicadas e a eventual correção de dado (ver diagnóstico) precisam ser executadas pelo dono antes ou em paralelo à implementação do fix de código — o agente prepara a consulta/script, mas não a roda contra produção.
+- **Dados existentes**: o dono confirmou a existência de duplicatas em produção e fará a correção manual separadamente, com dry-run, backup e ajuste financeiro quando aplicável. Essa operação não foi executada pelo agente nem faz parte desta alteração de código.
 - **Diagnóstico completo e plano de correção**: [`_diags_llm/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](_diags_llm/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
 - **Comportamento correto, para não confundir com o item errado**: uma aula pode ser enviada para reposição e reenviada quantas vezes for preciso enquanto ainda estiver dentro do prazo de validade — isso é fluxo normal, não bug. O botão "Enviar para reposição" **não deve** ser ocultado nem desabilitado de forma geral.
 - **O que é o bug de verdade**: ao reagendar uma reposição (`formReagendarAula`), o compromisso criado recebe `isReposicao: true` e `reposicaoId` apontando para o registro original (`assets/js/modal-acao-slot.js`). Se essa aula for enviada para reposição de novo e a prof escolher **"Cobrar neste ciclo"** no modal de escolha, `enviarParaReposicao` cria um **segundo registro `Reposicao` independente**, sem vínculo com o primeiro. Se o registro **original** já estava com `cobravel: true` (ou seja, já contribuiu para o cálculo de algum ciclo), agora dois registros cobráveis representam a mesma aula de origem — ambos podem entrar na parcela (B) de `calcularAulasContadasDoCiclo`, dobrando a cobrança. Quando o original é `cobravel: false` (ainda não foi cobrado), reenviar não duplica nada — é o caso comum e deve continuar sem nenhum aviso.
 - **Correção escolhida**: em vez de criar um registro novo do zero, o modal de escolha "Cobrar neste ciclo / Cobrar na reposição" passa a **reabrir o mesmo registro `Reposicao` de origem** quando a aula reenviada tiver `reposicaoId` — volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, e registra o evento no array `historico` do próprio documento. Decisão explícita do dono do repo: isso é preferível a criar-registro-novo-com-aviso porque **mantém o histórico de quantas vezes aquela reposição já foi remarcada em um único documento**, em vez de espalhar em vários registros desconectados.
-- **O que muda no fluxo de escolha cobrável/não cobrável (seção 9.3 da spec)**: quando o registro de origem já é `cobravel: true`, a escolha "Cobrar neste ciclo" não deve ser oferecida de novo (a aula já está contabilizada); a UI deve refletir isso — a decidir exatamente a redação/comportamento do modal nesse caso ao implementar.
-- **Onde mexer**: `assets/js/modal-acao-slot.js` (`enviarParaReposicao`, `executarEnvioParaReposicao` — detectar `compromisso.reposicaoId` e chamar reabertura em vez de criação), backend `reposicaoController.js`/`reposicaoService.js` (rota/lógica de reabertura do registro existente, com push em `historico`), e a regra 5.3 e a seção 9.3 de `docs/specs/reposicoes-e-competencia.md` precisam documentar esse caso de borda.
-- **Esforço**: Médio (mexe em modelo de dados de reposição — histórico de reaberturas — e no contrato da API, não só na UI).
+- **Implementação concluída**: `POST /api/reposicoes/:id/reabrir` reabre o documento original, volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, registra `reaberta_por_reenvio` e preserva a decisão de cobrança, `validoAte` e `cicloCobrancaResolvido`.
+- **Modal**: compromissos com `reposicaoId` consultam a reposição original e usam uma única ação de reabertura; a opção "Cobrar neste ciclo" fica oculta para evitar nova cobrança.
+- **Testes**: suíte backend completa em 224/224; regressões específicas cobrem a operação atômica, preservação do prazo e ausência de novo documento. A suíte frontend continua com a dependência pré-existente `jsdom` ausente no ambiente.
+- **Referências**: [`2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md`](_reports/2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md) e seção 5.3/6.4/9.3 da spec de reposições.
 
 ---
 

@@ -3971,6 +3971,60 @@ test('envio para reposição em avulsa remove a aula', async () => {
   assert.equal(salvarChamadas, 1, 'a persistência da avulsa deve ser chamada');
 });
 
+test('reenvio de aula vinculada reabre a reposição original sem criar outra', async () => {
+  const compromisso = {
+    id: 'A-reenvio',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    frequencia: 'uma_vez',
+    data: '31/08/2026',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    reposicaoId: 'repo-original',
+  };
+  const { context } = criarHarnessModalAcaoSlot({
+    aulas: [compromisso],
+    compromisso,
+    dataAlvoStr: '31/08/2026',
+  });
+  context.window.idCompromissoSelecionado = compromisso.id;
+  context.window.dataAlvoAcaoStr = '31/08/2026';
+  context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) =>
+    callback(false);
+  context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
+  context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
+  context.window.salvarDados = async () => ({ ok: true });
+  context.window.fecharModalAcaoSlot = () => {};
+
+  const chamadas = [];
+  context.window.apiFetchBackend = async (url, opcoes = {}) => {
+    chamadas.push({ url, opcoes });
+    if (url.endsWith('/reposicoes/repo-original')) {
+      return {
+        ok: true,
+        json: async () => ({ id: 'repo-original', cobravel: true }),
+      };
+    }
+    return {
+      ok: true,
+      json: async () => ({
+        id: 'repo-original',
+        status: 'pendente',
+        agendamentoReposicaoId: null,
+        validoAte: '2026-08-31',
+      }),
+    };
+  };
+
+  await context.window.executarEnvioParaReposicao();
+
+  assert.equal(chamadas.length, 2);
+  assert.match(chamadas[0].url, /\/reposicoes\/repo-original$/);
+  assert.equal(chamadas[1].url.endsWith('/reposicoes/repo-original/reabrir'), true);
+  assert.equal(chamadas[1].opcoes.method, 'POST');
+  assert.equal(context.aulas.length, 0);
+});
+
 test('os dois botões despacham para a mesma função', async () => {
   const serie = {
     id: 'S0',
@@ -4463,5 +4517,4 @@ test('Ponto 6 — DELETE que falha não impede a aula de voltar nem o toast de e
   assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6', 'avulsa-p6-vizinha'], 'a aula volta mesmo assim');
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
 });
-
 
