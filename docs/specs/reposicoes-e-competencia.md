@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: implementação do fluxo de reabertura concluída; correção de dados duplicados em produção pendente de operação manual do dono · **Versão**: 8 · **Atualizado**: 2026-09-21
+> **Status**: implementação do fluxo de reabertura concluída; interface contextual de histórico no card do aluno especificada e pendente de implementação; correção de dados duplicados em produção pendente de operação manual do dono · **Versão**: 9 · **Atualizado**: 2026-09-21
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -36,6 +36,7 @@ ordem de persistência, sincronização com Google Calendar e limitações conhe
   ciclo explique onde.
 - Dar visibilidade da composição do ciclo ("extrato") em vez de só um total.
 - Preparar (sem ativar tudo) prazo de validade da reposição.
+- Permitir consultar e reagendar reposições no contexto do aluno, sem criar uma nova aba.
 
 ---
 
@@ -87,7 +88,7 @@ Isso precisa estar claro na UI (ver 9).
 ### 4.1 Nova collection: `Reposicao`
 
 Decisão: **collection separada**, não campo no `Agendamento`. Motivo: a fila tem vida
-própria no modelo de negócio (prazo de validade, avisos, e futuramente tela dedicada),
+própria no modelo de negócio (prazo de validade, avisos e histórico por aluno),
 e ocorrências de séries recorrentes não têm documento próprio para carregar o campo.
 
 | Campo                    | Tipo                           | Papel                                                                                |
@@ -497,35 +498,149 @@ Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o 
 - Texto fixo: `Não pode ser alterado depois.`
 - Quando houver prazo (6.2), acrescentar: `Prazo para reposição: até dd/mm.`
 
-### 9.4 Painel de reposições — REMOVIDO (2026-09-18)
+### 9.4 Histórico de reposições no card do aluno — PENDENTE
 
-O painel da Home descrito nesta seção (lista de reposições `pendente` com ação de
-reagendar) foi **removido** em 2026-09-18 (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`),
-sem substituto equivalente. A justificativa registrada no relatório da remoção foi a de
-que "a gestão de reposições ocorre predominantemente na aba específica de Reposições" —
-mas essa aba **não existe** no código (`index.html` só tem `tela-home`, `tela-financas` e
-`tela-alunos`). Essa frase do relatório está incorreta e não deve ser usada como referência.
+O painel de pendências da Home foi removido em 2026-09-18. A frase histórica de que a gestão
+ocorria em uma aba específica de Reposições está incorreta: essa aba não existe e **não será
+criada nesta V1**. A gestão passa a acontecer no contexto do aluno, na tela `Alunos`.
 
-**Estado atual, sem o painel**: reposições pendentes só ficam visíveis via badge no card
-do aluno (`montarCaixinhaReposicaoAluno`, `assets/js/view-alunos.js`) e via linhas do
-extrato do ciclo em Finanças (seção 8). Não há mais, em nenhuma tela, uma lista navegável
-de reposições pendentes com ação de reagendar a partir dela.
+Cada card terá um bloco permanente e acionável de Reposições. Ele abre um modal com o
+histórico daquele aluno e permite reagendar uma pendência. Não existe uma visão global de
+todos os alunos nesta V1; se ela for necessária no futuro, será um relatório/filtro separado,
+sem substituir este acesso contextual.
 
-`window.iniciarReagendamentoReposicao` (`assets/js/modal-acao-slot.js`) continua no código,
-mas ficou **sem nenhum chamador** — era acionado só pelo painel removido. Ele não é chamado
-por `montarCaixinhaReposicaoAluno` nem por nenhuma outra tela hoje. Registrado aqui como
-achado desta correção, não corrigido nesta rodada (fora do escopo de acerto da spec).
+#### 9.4.1 Preservação do card e interação
 
-### 9.5 Aviso no card do aluno — PENDENTE
+O card conserva o comportamento atual: clicar na área livre abre a edição do aluno; o toggle
+Ativo/Inativo segue independente. Reposições é uma terceira área interativa, e não pode
+disparar a edição junto com o histórico.
 
-**Ainda não implementado.** A busca por `Reposições` em `index.html` não retorna nada, e
-`view-alunos.js` não renderiza esse contador. O card do aluno tem o grid preparado para a
-caixinha, mas o conteúdo e o rótulo não estão ativos em runtime.
+- Deve ser um `<button type="button">` semântico, nunca um `div` clicável.
+- O clique e os eventos de teclado chamam `event.stopPropagation()`.
+- O botão não é aninhado em outro botão.
+- O `onclick="prepararEdicaoAluno(...)"` do card e a interrupção de propagação do toggle
+  existente permanecem intactos.
+- Enter e Espaço abrem o modal; o alvo tem pelo menos 44px; hover e foco visível elevam o
+  contraste da borda e revelam o chevron.
 
-> **Reposições** — N pendentes · 1 vence em X dias
+#### 9.4.2 Desenho do indicador permanente
 
-Esse bloco continua como item de entrega futura. Não é comportamento implementado e não deve
-ser tratado como concluído pela spec.
+O indicador usa uma célula da grade `.aluno-card-indicadores`, ao lado de Financeiro e
+Consistência. Os indicadores existentes não mudam de ordem, texto ou regra.
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ Marina Alves                                      [ Ativo ]  │
+│ PERSONAL TRAINER · Contrato: 2x/sem                          │
+│─────────────────────────────────────────────────────────────│
+│ 📍 Condomínio Aurora                                        │
+│ $  Por aula: R$ 120,00                                      │
+│ ▣  Vence dia 10                                             │
+│                                                             │
+│ ┌ Financeiro ──────┐ ┌ Consistência ─┐ ┌ Reposições ──────┐ │
+│ │ Próx. ciclo ...  │ │ 2/2 aulas     │ │ ↻ Reposições  ›  │ │
+│ └──────────────────┘ └───────────────┘ │ 2 pendentes      │ │
+│                                         │ 1 vence em 3 dias│ │
+│                                         └──────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+```
+
+O botão aparece para **todo** aluno, inclusive sem registros, para manter o layout estável
+e o recurso descobrível. Ele contém o ícone `fa-arrows-rotate`, o título `Reposições`, um
+chevron decorativo e o nome acessível `Ver histórico de reposições de {nome do aluno}`.
+
+| Situação | Linha principal | Linha secundária | Tratamento visual |
+| --- | --- | --- | --- |
+| Sem registros | `Nenhuma reposição` | `Ver histórico` | neutro, borda cinza discreta |
+| Sem pendência, com histórico | `Histórico disponível` | `1 agendada · 2 realizadas` | dourado discreto |
+| Pendências sem prazo | `2 pendentes` | `Sem prazo definido` | dourado discreto |
+| Próxima validade fora da atenção | `2 pendentes` | `Próxima validade em 12 dias` | dourado discreto |
+| Vence em 1–7 dias | `2 pendentes` | `1 vence em 3 dias` | laranja e ícone de alerta |
+| Vence hoje | `1 pendente` | `Vence hoje` | laranja reforçado |
+| Prazo encerrado | `1 pendente` | `1 com prazo encerrado` | vermelho/laranja; texto explícito |
+| Aluno inativo | mesmas contagens | histórico ou urgência aplicável | modal sem ação de reagendar |
+
+Usar pluralização correta e mostrar somente a urgência mais grave: prazo encerrado > vence
+hoje > vence em X dias > próxima validade normal > sem prazo. Cores nunca são o único sinal.
+
+Enquanto o cache estiver carregando, o bloco mostra `Reposições` e `Atualizando…`, sem mudar
+de altura. Em falha, mostra `Não foi possível atualizar`, mas permanece acionável para que o
+modal tente a leitura própria.
+
+#### 9.4.3 Modal de histórico
+
+Criar `modalHistoricoReposicoes`, separado do atual `modalReagendarAula`. Em desktop ele tem
+largura de 680px e altura máxima de 80vh; em celular ocupa a largura útil e rola internamente.
+
+```text
+┌───────────────────────────────────────────────────────┐
+│ Reposições                                      [×]   │
+│ Marina Alves · 2 pendentes · 1 agendada               │
+│───────────────────────────────────────────────────────│
+│ PENDENTES (2)                                         │
+│ ┌───────────────────────────────────────────────────┐ │
+│ │ [Pendente] Aula original: 18/09/2026 às 07:00     │ │
+│ │ Válida até 30/09/2026 · Não cobrável              │ │
+│ │ ⚠ Vence em 3 dias                    [Reagendar]  │ │
+│ └───────────────────────────────────────────────────┘ │
+│ AGENDADAS (1) · REALIZADAS (3) · EXPIRADAS (1)        │
+│                                      [Fechar]         │
+└───────────────────────────────────────────────────────┘
+```
+
+- Cabeçalho: título `Reposições`, nome do aluno, selo `Inativo` quando aplicável e resumo
+  das contagens não nulas. Fechar pelo `×`, pelo botão de rodapé ou Escape devolve foco ao
+  botão de Reposições que abriu o modal.
+- Grupos, omitindo os vazios, nesta ordem: `Pendentes`, `Agendadas`, `Realizadas`,
+  `Expiradas`. Dentro de cada grupo: data original mais recente primeiro e horário como
+  desempate.
+- Cada linha mostra selo textual de status, `Aula original: dd/mm/aaaa às HH:mm` (ou
+  `Horário não informado`), validade quando existir, urgência nas pendentes e `Cobrável` ou
+  `Não cobrável`. Não mostrar valor ou recalcular competência.
+- Em `agendada`, mostrar nova data/hora se `agendamentoReposicaoId` puder ser resolvido entre
+  os agendamentos carregados; caso contrário, `Agendamento vinculado`.
+- `historico` não vira linha do tempo na V1. Pode gerar uma frase curta apenas para evento
+  conhecido e útil, sem expor IDs.
+- Não há ações de apagar, cancelar, editar status ou modificar cobrança.
+
+| Estado | Comportamento |
+| --- | --- |
+| Carregando | Esqueleto de três linhas e anúncio `Carregando histórico de reposições`; nunca mostrar vazio. |
+| Vazio | `Nenhuma reposição registrada para este aluno.` e `As reposições são criadas a partir da agenda.` |
+| Erro | Mensagem clara e `Tentar novamente`; preservar conteúdo anterior quando houver. |
+| Ação em andamento | Somente a linha acionada mostra `Reagendando…` e fica desabilitada. |
+| Aluno inativo | Histórico visível; pendência mostra `Aluno inativo: reagendamento indisponível.` e não oferece ação. |
+
+#### 9.4.4 Dados, reagendamento e atualização
+
+`aulasParaRepor` continua sendo uma projeção **somente de pendências** e não pode ser
+ampliada com histórico. O modal lê `GET /api/reposicoes?alunoId={id}` por
+`window.apiFetchBackend`, preservando todos os status. O backend permanece a autoridade para
+isolamento por `ownerEmail`, expiração lazy, prazo e cobrança.
+
+Para preencher todos os cards sem consulta por aluno, manter um cache separado da lista
+completa, por exemplo `window.reposicoesHistorico`, a partir de uma única consulta
+`GET /api/reposicoes` durante o carregamento complementar de Alunos. Esse cache não substitui
+nem muta `aulasParaRepor`. Abrir o modal sempre garante uma consulta específica, portanto a
+ausência do cache nunca significa ausência de registros.
+
+Somente uma linha `pendente`, de aluno ativo e sem ação em andamento, oferece `Reagendar`.
+`window.iniciarReagendamentoReposicao` continua como a única entrada de negócio: o modal de
+histórico não faz PATCH direto, não cria novo documento e não replica rollback, persistência
+ou sincronização Google Calendar.
+
+Para não empilhar modais:
+
+1. `Reagendar` guarda `alunoId` e `reposicaoId` como contexto de retorno e fecha o histórico.
+2. Abre o atual `modalReagendarAula` para a reposição escolhida.
+3. Fora da Home, a próxima ocorrência é calculada a partir de hoje, nunca de
+   `window.dataSelecionada` ausente ou antiga.
+4. Após persistência da agenda e PATCH confirmados, o fluxo emite `reposicao:reagendada` com
+   o aluno, recarrega os dados e reabre o histórico do mesmo aluno, focando a linha atualizada.
+5. Após erro ou cancelamento, reabre o histórico com a pendência preservada e reabilitada.
+
+Sucesso não pode ser exibido antes da confirmação remota; falha não pode remover a pendência
+do cache.
 
 ---
 
@@ -542,7 +657,9 @@ ser tratado como concluído pela spec.
 | `assets/js/storage.js`                           | carregar/gravar reposições via API                                                                   |
 | `assets/js/view-financas.js`                     | renderização do extrato                                                                              |
 | `assets/js/view-home.js`                         | contador da fila vindo da API                                                                        |
-| `index.html`                                     | rótulos dos botões + modal de escolha                                                                |
+| `assets/js/view-alunos.js`                       | botão permanente de Reposições, cache/resumo e controle do histórico                                |
+| `assets/css/style.css`                           | estados do indicador e linhas do modal, reaproveitando os padrões de card                            |
+| `index.html`                                     | rótulos dos botões + modal de escolha + modal de histórico                                           |
 
 **Áreas sensíveis tocadas** (confirmar antes de mexer): motor de recorrência não muda,
 mas o fluxo de exceção da série sim; sync com Google Calendar acontece no envio avulso e
@@ -576,6 +693,7 @@ no reagendamento via modal, mas não no envio para reposição de instância rec
 | 20  | Reagendar cria nova reposição?  | **Não.** Reagendar consome pendente via PATCH; POST só no envio para fila |
 | 21  | Prazo é calculado no frontend?  | **Não.** Frontend apenas exibe `validoAte` retornado pela API |
 | 22  | Dedupe de pendente no POST      | `409` e nenhum segundo documento quando o id pendente já existe |
+| 23  | Onde a PT gerencia reposições?  | **No card do aluno**, por modal de histórico; não há aba dedicada na V1 |
 
 ### 11.1 Contrato de persistência antes do PATCH (C4.1a-fix)
 
@@ -630,9 +748,9 @@ como pendência de fechamento da spec.
 - **Notificação push / WhatsApp** ("sua reposição vence em 3 dias"). Exige disparo sem
   ninguém abrir o app — Web Push com VAPID ou WhatsApp API, mais scheduler. É o item 2.2
   do roadmap. Esta spec entrega apenas **aviso in-app**.
-- **Tela dedicada de reposições**, com histórico e filtros. Não existe hoje — o painel
-  que existia na Home foi removido em 2026-09-18 sem substituto (ver 9.4). Item de
-  entrega futura, ainda não incluído no roadmap.
+- **Visão global de reposições**, com busca e filtros por período/status/a vencer. A gestão
+  contextual no card do aluno é entregue pela seção 9.4; uma visão global, se necessária,
+  será relatório/filtro separado.
 - **Status de presença / no-show** (item 1.5 do roadmap). Quando existir, a escolha
   cobrável/não cobrável poderá ser derivada de _quem cancelou_ em vez de perguntada.
 - **Cron / job de expiração.** Expiração é lazy (7).
