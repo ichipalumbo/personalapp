@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-09-03
+> **Status**: Documento vivo · **Atualizado**: 2026-09-21
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -50,6 +50,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
 | 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[x]`  | —                                                                |
 | 1     | 1.10 Tela dedicada de reposições                 | `[ ]`  | —                                                                |
+| 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[ ]`  | —                                                                |
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
@@ -203,6 +204,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ### [ ] 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica a cobrança
 
 - **Já aconteceu em produção** — não é risco teórico. Requer confirmar se há registros `Reposicao` duplicados hoje no banco que precisem de correção manual, além do fix de código.
+- **Levantamento e correção manual no Mongo são do dono do repositório, não do agente.** O ambiente do agente não tem acesso ao Mongo de produção. A consulta de leitura para achar cadeias duplicadas e a eventual correção de dado (ver diagnóstico) precisam ser executadas pelo dono antes ou em paralelo à implementação do fix de código — o agente prepara a consulta/script, mas não a roda contra produção.
+- **Diagnóstico completo e plano de correção**: [`_diags_llm/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](_diags_llm/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
 - **Comportamento correto, para não confundir com o item errado**: uma aula pode ser enviada para reposição e reenviada quantas vezes for preciso enquanto ainda estiver dentro do prazo de validade — isso é fluxo normal, não bug. O botão "Enviar para reposição" **não deve** ser ocultado nem desabilitado de forma geral.
 - **O que é o bug de verdade**: ao reagendar uma reposição (`formReagendarAula`), o compromisso criado recebe `isReposicao: true` e `reposicaoId` apontando para o registro original (`assets/js/modal-acao-slot.js`). Se essa aula for enviada para reposição de novo e a prof escolher **"Cobrar neste ciclo"** no modal de escolha, `enviarParaReposicao` cria um **segundo registro `Reposicao` independente**, sem vínculo com o primeiro. Se o registro **original** já estava com `cobravel: true` (ou seja, já contribuiu para o cálculo de algum ciclo), agora dois registros cobráveis representam a mesma aula de origem — ambos podem entrar na parcela (B) de `calcularAulasContadasDoCiclo`, dobrando a cobrança. Quando o original é `cobravel: false` (ainda não foi cobrado), reenviar não duplica nada — é o caso comum e deve continuar sem nenhum aviso.
 - **Correção escolhida**: em vez de criar um registro novo do zero, o modal de escolha "Cobrar neste ciclo / Cobrar na reposição" passa a **reabrir o mesmo registro `Reposicao` de origem** quando a aula reenviada tiver `reposicaoId` — volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, e registra o evento no array `historico` do próprio documento. Decisão explícita do dono do repo: isso é preferível a criar-registro-novo-com-aviso porque **mantém o histórico de quantas vezes aquela reposição já foi remarcada em um único documento**, em vez de espalhar em vários registros desconectados.
@@ -318,6 +321,15 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Onde mexer**: `index.html` (novo item de menu + nova `<main>` de tela), `assets/js/` (view nova da tela, lista de cards + drill-down), `assets/js/modal-acao-slot.js` (reconectar `iniciarReagendamentoReposicao` e corrigir a base do cálculo de data), API de listagem de reposições já existente em `backend/src/controllers/reposicaoController.js`.
 - **Referência**: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seções 9.4 e 12.
 - **Esforço**: Médio.
+
+---
+
+### [ ] 1.11 Botão "Atualizar" na tela de Finanças
+
+- **O que é**: botão no cabeçalho de `assets/js/view-financas.js`, ao lado do rótulo de cache, que dispara `carregarFinancas({ forcarRemoto: true })` — a mesma função já usada após salvar pagamento/ajuste — ignorando o cache local e buscando o estado atual direto do backend.
+- **Escopo deliberadamente restrito**: apenas bypass de cache de leitura (`GET /api/financas`). **Não** é um botão de recálculo/criação manual de ciclo — a decisão #23 da spec (seção 7) já rejeita esse caso, porque o recálculo do ciclo vigente já é automático a cada leitura. Este item não reabre aquela decisão.
+- **Onde mexer**: `assets/js/view-financas.js` (`renderizarCabecalho`, `bindHandlers`, `atualizarCabecalhoCache`). Sem mudança de backend.
+- **Esforço**: Muito baixo.
 
 ---
 
