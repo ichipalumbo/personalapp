@@ -244,6 +244,46 @@ async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
   return reposicaoFinal;
 }
 
+async function obterReposicaoParaReabertura(reposicaoId) {
+  if (!reposicaoId || typeof window.apiFetchBackend !== "function") {
+    throw new Error("Reposição de origem não identificada.");
+  }
+
+  const resposta = await window.apiFetchBackend(
+    `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(reposicaoId)}`,
+  );
+  if (!resposta.ok) {
+    throw new Error("Não foi possível carregar a reposição de origem.");
+  }
+
+  const reposicao = await resposta.json().catch(() => null);
+  if (!reposicao || reposicao.id !== reposicaoId) {
+    throw new Error("A reposição de origem não foi encontrada.");
+  }
+  return reposicao;
+}
+
+async function reabrirReposicao(reposicaoId, agendamentoId) {
+  const resposta = await window.apiFetchBackend(
+    `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(reposicaoId)}/reabrir`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ agendamentoId: agendamentoId || null }),
+    },
+  );
+  if (!resposta.ok) {
+    let mensagem = "Não foi possível reabrir a reposição.";
+    try {
+      const erroJson = await resposta.json();
+      mensagem = erroJson && erroJson.error ? erroJson.error : mensagem;
+    } catch (_) {}
+    throw new Error(mensagem);
+  }
+
+  return (await resposta.json().catch(() => null)) || { id: reposicaoId };
+}
+
 function obterNomesDiasSemanaModalAcao() {
   return typeof window.getNomesDiasSemana === "function"
     ? window.getNomesDiasSemana()
@@ -1047,7 +1087,11 @@ window.fecharModalAcaoSlot = function () {
 
 let resolveEscolhaCobrancaReposicao = null;
 
-window.abrirModalEscolhaCobrancaReposicao = function (compromisso, callback) {
+window.abrirModalEscolhaCobrancaReposicao = function (
+  compromisso,
+  callback,
+  opcoes = {},
+) {
   return new Promise((resolve) => {
     const finalizar = () => {
       if (typeof resolve === "function") {
@@ -1082,6 +1126,24 @@ window.abrirModalEscolhaCobrancaReposicao = function (compromisso, callback) {
     document.getElementById("reposicaoEscolhaDataHorario").textContent = dataHora;
 
     const opcaoButtons = modal.querySelectorAll("[data-reposicao-cobravel]");
+    const ehReabertura = opcoes && opcoes.ehReabertura === true;
+    const botaoCobravel = Array.from(opcaoButtons).find(
+      (botao) => botao.dataset.reposicaoCobravel === "true",
+    );
+    const botaoNaoCobravel = Array.from(opcaoButtons).find(
+      (botao) => botao.dataset.reposicaoCobravel === "false",
+    );
+    const avisoNaoCobravel = botaoNaoCobravel && botaoNaoCobravel.nextElementSibling;
+    if (botaoCobravel) {
+      botaoCobravel.style.display = ehReabertura ? "none" : "";
+    }
+    if (ehReabertura && botaoNaoCobravel) {
+      const rotulo = botaoNaoCobravel.querySelector("span");
+      if (rotulo) rotulo.textContent = "Reabrir reposição existente";
+      if (avisoNaoCobravel) {
+        avisoNaoCobravel.textContent = "Mantém a escolha de cobrança original.";
+      }
+    }
     opcaoButtons.forEach((botao) => {
       botao.onclick = async () => {
         const cobravel = botao.dataset.reposicaoCobravel === "true";
@@ -2543,6 +2605,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const dataAlvoISO = window.normalizarDataParaISO(dataAlvo);
     const dataAlvoStr =
       window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString("pt-BR");
+    const ehReabertura = Boolean(compromisso.reposicaoId);
+    if (ehReabertura) {
+      await obterReposicaoParaReabertura(compromisso.reposicaoId);
+    }
     const ehSerie = compromisso.frequencia !== "uma_vez";
     const _snapshot = ehSerie
       ? { ...compromisso, excecoes: [...(compromisso.excecoes || [])] }
@@ -2561,11 +2627,13 @@ document.addEventListener("DOMContentLoaded", () => {
         // Fora do `try` para que o `catch` alcance a reposição já criada e possa apagá-la.
         let reposicao = null;
         try {
-          reposicao = await enviarParaReposicao(
-            compromisso,
-            ehSerie ? dataAlvoStr : dataAlvoISO,
-            cobravel,
-          );
+          reposicao = ehReabertura
+            ? await reabrirReposicao(compromisso.reposicaoId, compromisso.id)
+            : await enviarParaReposicao(
+                compromisso,
+                ehSerie ? dataAlvoStr : dataAlvoISO,
+                cobravel,
+              );
           if (!reposicao || !reposicao.id) {
             throw new Error("Reposição não foi criada no servidor.");
           }
@@ -2626,6 +2694,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 operacao: "excluir",
                 snapshotAnterior: compromisso,
               },
+              { ehReabertura },
             );
             if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
               throw new Error(

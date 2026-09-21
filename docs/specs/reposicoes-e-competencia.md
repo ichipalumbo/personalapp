@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: implementação mergeada na main e validada em produção; backend e frontend em produção · **Versão**: 7 · **Atualizado**: 2026-09-18
+> **Status**: implementação do fluxo de reabertura concluída; correção de dados duplicados em produção pendente de operação manual do dono · **Versão**: 8 · **Atualizado**: 2026-09-21
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -208,6 +208,13 @@ Consequência: ao marcar uma reposição, o agendamento criado recebe `reposicao
 registro recebe `agendamentoReposicaoId`. O vínculo é **bidirecional** e deve ser gravado
 na mesma operação.
 
+Quando um agendamento que já possui `reposicaoId` for enviado novamente para reposição,
+o fluxo deve reabrir o registro apontado, em vez de criar outro documento. A reabertura
+volta o status para `pendente`, zera `agendamentoReposicaoId` e acrescenta um evento em
+`historico`; o registro mantém `cobravel`, `dataOriginal`, `dataEnvio`, `validoAte` e
+`cicloCobrancaResolvido`. Essa regra vale tanto para reposições cobráveis quanto para
+não cobráveis, preservando o histórico em um único documento.
+
 ### 5.4 Reposição não cobrável que cai em ciclo já pago
 
 Se uma reposição `cobravel === false` for marcada para uma data dentro de um ciclo que
@@ -278,6 +285,9 @@ reposição quantas vezes for não altera o prazo — não porque haja uma regra
 mas porque não há nada a recalcular.
 
 Enquanto o prazo não venceu, a reposição pode ser remarcada livremente.
+
+Ao reabrir uma reposição por reenvio, `validoAte` é herdado sem recálculo. A nova
+tentativa de envio não renova nem estende o prazo original.
 
 Da mesma forma, `cobravel` **nunca é reperguntado**: a decisão tomada no primeiro envio
 vale para toda a corrente. Isso elimina qualquer chance de a mesma aula ser cobrada duas
@@ -475,6 +485,10 @@ Duas linhas, e não uma: nome comprido em tela de 320px trunca justamente o nome
 | `Cobrar na reposição` | `Se o prazo expirar, não é cobrada.`          |
 
 Sem opção pré-selecionada. As duas são legítimas.
+
+Se a aula reenviada já tiver `reposicaoId`, o modal não oferece novamente a escolha de
+cobrança: a reabertura preserva a decisão original de `cobravel` e exibe uma única ação
+`Reabrir reposição existente`, com o aviso `Mantém a escolha de cobrança original.`.
 
 Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o _se_ — o desfecho quando a reposição não acontece, que é a diferença real entre as duas escolhas. Não encurtar os disclaimers a ponto de perder essa informação.
 

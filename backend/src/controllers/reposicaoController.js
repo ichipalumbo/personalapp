@@ -332,6 +332,43 @@ async function atualizarReposicao(req, res) {
   }
 }
 
+async function reabrirReposicao(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const { id } = req.params;
+    const agendamentoId = req.body && req.body.agendamentoId;
+
+    if (agendamentoId !== undefined && agendamentoId !== null && typeof agendamentoId !== 'string') {
+      return res.status(400).json({ error: 'agendamentoId deve ser texto quando informado.' });
+    }
+
+    const historico = {
+      evento: 'reaberta_por_reenvio',
+      data: new Date().toISOString(),
+      agendamentoId: agendamentoId || null
+    };
+    const reposicao = await Reposicao.findOneAndUpdate(
+      { ownerEmail, id },
+      {
+        $set: {
+          status: 'pendente',
+          agendamentoReposicaoId: null
+        },
+        $push: { historico }
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!reposicao) {
+      return res.status(404).json({ error: `Reposição com id '${id}' não encontrada.` });
+    }
+
+    return res.json(reposicao);
+  } catch (err) {
+    return responderErroReposicao(res, err, 'reabrir reposição');
+  }
+}
+
 // Idempotente: id inexistente responde 200 com `deleted: false`, porque o rollback do frontend
 // pode chegar depois de a reposição já ter sumido por outro caminho.
 async function excluirReposicao(req, res) {
@@ -403,6 +440,7 @@ module.exports = {
   obterReposicao,
   criarReposicao,
   atualizarReposicao,
+  reabrirReposicao,
   excluirReposicao,
   adicionarHistoricoReposicao
 };
