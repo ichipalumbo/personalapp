@@ -392,6 +392,15 @@
                   placeholder="(11) 99999-9999"
                 />
               </div>
+              <div class="form-grupo-spa">
+                <label for="alunoObservacoes">Observações (Opcional)</label>
+                <textarea
+                  id="alunoObservacoes"
+                  rows="3"
+                  maxlength="1000"
+                  placeholder="Ex: atenção ao joelho esquerdo; combinar novo horário"
+                ></textarea>
+              </div>
               <div class="modal-alunos-acoes">
                 <button
                   type="button"
@@ -418,6 +427,76 @@
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+        <div
+          class="modal-overlay"
+          id="modalHistoricoReposicoes"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tituloHistoricoReposicoes"
+          aria-describedby="resumoHistoricoReposicoes"
+          style="display: none"
+        >
+          <div class="modal modal-historico-reposicoes">
+            <div class="modal-historico-reposicoes-cabecalho">
+              <div>
+                <h3 id="tituloHistoricoReposicoes">
+                  <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                  Reposições
+                </h3>
+                <p id="resumoHistoricoReposicoes" class="modal-historico-reposicoes-resumo"></p>
+              </div>
+              <button
+                type="button"
+                class="modal-fechar-icone"
+                id="btnFecharHistoricoReposicoes"
+                aria-label="Fechar histórico de reposições"
+                title="Fechar"
+              >
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div
+              id="conteudoHistoricoReposicoes"
+              class="modal-historico-reposicoes-conteudo"
+              aria-live="polite"
+            ></div>
+            <div class="modal-historico-reposicoes-rodape">
+              <button type="button" class="btn btn-secondary" id="btnRodapeHistoricoReposicoes">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="modal-overlay modal-overlay-secondary"
+          id="modalEdicaoCobrancaReposicao"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tituloEdicaoCobrancaReposicao"
+          style="display: none"
+        >
+          <div class="modal modal-edicao-cobranca-reposicao">
+            <h3 id="tituloEdicaoCobrancaReposicao">
+              <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+              Editar cobrança
+            </h3>
+            <p id="descricaoEdicaoCobrancaReposicao" class="modal-historico-reposicoes-resumo"></p>
+            <div class="form-grupo-spa">
+              <label for="seletorCobrancaReposicao">Quando cobrar esta reposição?</label>
+              <select id="seletorCobrancaReposicao">
+                <option value="true">Cobrar no ciclo da aula original</option>
+                <option value="false">Cobrar no ciclo da reposição</option>
+              </select>
+            </div>
+            <p class="edicao-cobranca-reposicao-aviso">
+              A alteração vale para toda a reposição. Ciclos já pagos não podem ser alterados.
+            </p>
+            <div class="modal-edicao-cobranca-reposicao-acoes">
+              <button type="button" class="btn btn-secondary" id="btnCancelarEdicaoCobrancaReposicao">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="btnSalvarEdicaoCobrancaReposicao">Salvar alteração</button>
+            </div>
           </div>
         </div>
       </main>
@@ -564,16 +643,8 @@
             <input type="hidden" id="reagendarAlunoIdLocked" />
           </div>
           <div class="form-grupo-spa" style="margin-bottom: 14px">
-            <label for="reagendarDia">Dia da Semana *</label>
-            <select id="reagendarDia" required>
-              <option value="Segunda">Segunda-feira</option>
-              <option value="Terça">Terça-feira</option>
-              <option value="Quarta">Quarta-feira</option>
-              <option value="Quinta">Quinta-feira</option>
-              <option value="Sexta">Sexta-feira</option>
-              <option value="Sábado">Sábado</option>
-              <option value="Domingo">Domingo</option>
-            </select>
+            <label for="reagendarData">Data da reposição *</label>
+            <input type="date" id="reagendarData" required />
           </div>
           <div
             style="

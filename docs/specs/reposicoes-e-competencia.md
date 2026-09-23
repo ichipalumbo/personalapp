@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: implementação do fluxo de reabertura concluída; correção de dados duplicados em produção concluída pelo dono em 2026-09-23; interface contextual de histórico no card do aluno (seção 9.4) planejada, sem implementação iniciada · **Versão**: 10 · **Atualizado**: 2026-09-23
+> **Status**: histórico contextual e edição protegida da cobrança implementados; correção de dados duplicados em produção concluída pelo dono em 2026-09-23 · **Versão**: 12 · **Atualizado**: 2026-09-23
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -54,9 +54,9 @@ ordem de persistência, sincronização com Google Calendar e limitações conhe
 
 ### 3.2 A escolha no momento do envio para reposição
 
-Ao enviar uma aula para reposição, a PT escolhe **uma única vez** entre dois caminhos.
-A escolha é **irreversível** e é herdada por toda a corrente de reagendamentos daquela
-aula (ver 6.4).
+Ao enviar uma aula para reposição, a PT escolhe entre dois caminhos. A escolha é herdada
+por toda a corrente de reagendamentos daquela aula (ver 6.4), mas pode ser editada no
+histórico enquanto o ciclo responsável pela cobrança ainda não estiver pago.
 
 | Escolha          | Ciclo de origem                                                    | Ciclo em que a reposição acontece                                                 |
 | ---------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
@@ -99,7 +99,7 @@ e ocorrências de séries recorrentes não têm documento próprio para carregar
 | `alunoNome`              | String                         | desnormalizado, para exibição                                                        |
 | `dataOriginal`           | String **ISO** (`YYYY-MM-DD`)  | **competência** — define o ciclo de origem                                           |
 | `horarioOriginal`        | String `HH:MM`                 | informativo, para a fila e o extrato                                                 |
-| `cobravel`               | Boolean                        | escolha feita no envio (3.2). Imutável                                               |
+| `cobravel`               | Boolean                        | decisão vigente da cobrança; editável enquanto o ciclo responsável não estiver pago |
 | `cicloCobrancaResolvido` | `{ inicio, fim }` ISO ou null  | em qual janela foi efetivamente cobrada                                              |
 | `status`                 | String enum                    | `pendente` / `agendada` / `realizada` / `expirada`                                   |
 | `agendamentoOriginalId`  | String                         | de onde veio                                                                         |
@@ -290,9 +290,9 @@ Enquanto o prazo não venceu, a reposição pode ser remarcada livremente.
 Ao reabrir uma reposição por reenvio, `validoAte` é herdado sem recálculo. A nova
 tentativa de envio não renova nem estende o prazo original.
 
-Da mesma forma, `cobravel` **nunca é reperguntado**: a decisão tomada no primeiro envio
-vale para toda a corrente. Isso elimina qualquer chance de a mesma aula ser cobrada duas
-vezes por escolhas inconsistentes.
+Da mesma forma, `cobravel` vale para toda a corrente. Ele pode ser alterado pelo histórico
+enquanto o ciclo responsável ainda estiver aberto; depois que a cobrança daquele ciclo for
+paga, a edição retorna `409` e não altera o registro. Isso preserva o congelamento financeiro.
 
 ### 6.5 Constante única
 
@@ -469,8 +469,7 @@ Os dois handlers passam a apenas chamá-la, cada um cuidando só da sua parte es
 Segundo passo, após o clique em "Enviar para reposição". Modal pequeno, contendo:
 
 - A data e o horário da aula em questão.
-- **Duas opções explícitas, sem default pré-selecionado** — as duas são legítimas e a
-  escolha é irreversível.
+- **Duas opções explícitas, sem default pré-selecionado** — as duas são legítimas.
 - Um disclaimer curto por opção, explicando a consequência.
 - O prazo mostrado no modal de escolha vem do campo retornado pela API (`validoAte`).
 
@@ -479,7 +478,7 @@ Segundo passo, após o clique em "Enviar para reposição". Modal pequeno, conte
 - Título: `Cobrar esta aula?`
 - Subtítulo em duas linhas: nome do aluno na primeira, data e horário na segunda, no formato `Terça, 10/03 · 08:00`.
 
-O nome do aluno é obrigatório: o modal pode cobrir a informação na tela abaixo dele, e a escolha é irreversível — precisa ficar explícito de quem é a aula.
+O nome do aluno é obrigatório: o modal pode cobrir a informação na tela abaixo dele, e a escolha precisa ficar explícita.
 
 Duas linhas, e não uma: nome comprido em tela de 320px trunca justamente o nome.
 
@@ -606,7 +605,8 @@ largura de 680px e altura máxima de 80vh; em celular ocupa a largura útil e ro
   os agendamentos carregados; caso contrário, `Agendamento vinculado`.
 - `historico` não vira linha do tempo na V1. Pode gerar uma frase curta apenas para evento
   conhecido e útil, sem expor IDs.
-- Não há ações de apagar, cancelar, editar status ou modificar cobrança.
+- Não há ações de apagar, cancelar ou editar status. A cobrança pode ser modificada pelo
+  controle próprio enquanto o ciclo responsável ainda estiver aberto.
 
 | Estado | Comportamento |
 | --- | --- |
@@ -678,7 +678,7 @@ no reagendamento via modal, mas não no envio para reposição de instância rec
 | --- | ------------------------------- | ------------------------------------------------------------ |
 | 1   | Ocorrência ou competência?      | **Competência** (Modelo B)                                   |
 | 2   | Aula no limbo é cobrada?        | Depende da escolha no envio (3.2)                            |
-| 3   | A escolha pode mudar depois?    | **Não.** Feita uma vez, herdada pela corrente                |
+| 3   | A escolha pode mudar depois?    | **Sim**, enquanto o ciclo responsável não estiver pago; vale para a corrente |
 | 4   | Fila persistida como quê?       | **Collection separada** `Reposicao`                          |
 | 5   | Como evitar contagem dupla?     | Vínculo bidirecional; vinculado nunca entra na parcela (A)   |
 | 6   | Reposição nunca reposta?        | Fica `pendente` até expirar (se tiver prazo)                 |

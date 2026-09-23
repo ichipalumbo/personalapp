@@ -123,9 +123,31 @@ Ações:
 6. Manter rollback existente e não criar POST paralelo nem alterar cobrança/prazo.
 7. Provar que falha de persistência não envia PATCH, inclusive no chamador real quando houver harness suficiente.
 
+8. O formulário de reagendamento usa `reagendarData` (`input type="date"`) como fonte de verdade; o campo `dia` do compromisso é derivado da data apenas para manter compatibilidade com o modelo atual.
+
 Critério de saída: nenhum modal empilhado; pendência não desaparece antes da confirmação; a data fora da Home é correta.
 
 Commit sugerido: `feat(reposicoes): integra reagendamento ao historico`
+
+### Etapa 4.1 — edição da cobrança da reposição
+
+Esta etapa foi adicionada após a validação visual do modal. A PT poderá editar a reposição
+inteira/corrente entre `Cobrar neste ciclo` e `Cobrar no próximo ciclo`, mas a mudança será
+bloqueada quando a reposição já tiver contribuído para um ciclo pago/congelado. Em ciclo ainda
+aberto, o backend deve ser a autoridade para recalcular a competência, sem o frontend enviar
+`cicloCobrancaResolvido`.
+
+Antes de implementar:
+
+1. Atualizar a spec de reposições, que hoje declara a decisão de cobrança irreversível.
+2. Definir no backend como identificar com segurança a contribuição a ciclo pago e retornar
+	`409` sem alteração quando a edição estiver bloqueada.
+3. Criar rota/contrato de edição atômica do campo de cobrança, preservando histórico da decisão.
+4. Exibir a ação no modal de histórico somente quando a API confirmar que a edição é permitida.
+5. Cobrir mudança nos dois sentidos, bloqueio de ciclo pago, isolamento por `ownerEmail`,
+	recálculo de ciclo aberto e ausência de duplicação financeira.
+
+Commit sugerido: `feat(reposicoes): permite editar competencia de cobranca`
 
 ### Etapa 5 — item 1.3: observações por aluno
 
@@ -184,6 +206,91 @@ Testar em desktop e 430px:
 - Alteração de backend ou migração de dados.
 - Correção manual adicional no banco.
 
-## 6. Estado ao registrar este plano
+## 6. Execução das etapas 0 e 1
 
-As alterações de implementação feitas durante a análise foram revertidas. Permanecem somente atualizações documentais: o registro da correção manual do item 0.11 e o alinhamento da spec para a janela de 7 dias. A implementação das etapas acima ainda não foi executada.
+### Etapa 0
+
+- Branch criada: `feat/reposicoes-helpers`, a partir de `origin/main`, sem upstream.
+- Árvore limpa antes da implementação.
+- Baseline medido: frontend `47/47`; backend `224/224`.
+
+### Etapa 1
+
+- `DIAS_ALERTA_REPOSICAO` alinhado para 7 dias.
+- Adicionados helpers puros para resumo permanente do card e agrupamento/ordenação do histórico.
+- Testes adicionados para estados neutro, histórico, sem prazo, alerta, vencimento e prazo encerrado.
+- Prova de mutação executada: alterar o limite de 7 para 8 produziu `2` falhas em `15` testes focados; a mutação foi revertida.
+- Resultado final: frontend `54/54`; backend `224/224`.
+- Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
+
+### Etapa 2
+
+- Cache completo de reposições adicionado em `view-alunos.js`, separado de `aulasParaRepor`.
+- Estados distintos de carregamento e erro adicionados; falha da consulta não é tratada como lista vazia.
+- O card de todo aluno agora renderiza um botão permanente de Reposições.
+- Clique e foco têm tratamento visual; a propagação é interrompida para não abrir a edição do aluno.
+- O botão já está preparado para chamar `window.abrirHistoricoReposicoes`; o modal e seu controlador ficam para a etapa 3.
+- Validação: `node --check` passou; frontend `54/54`; backend `224/224`; `git diff --check` passou.
+- Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
+
+### Etapa 3
+
+- Modal `modalHistoricoReposicoes` adicionado ao `index.html`, sem nova aba, rota ou view.
+- Controlador adicionado em `view-alunos.js` com consulta específica por aluno, atualização do cache, estados carregando/vazio/erro e preservação do conteúdo anterior em falha.
+- Histórico agrupado em Pendentes, Agendadas, Realizadas e Expiradas, com ordenação por data/hora original.
+- Linhas mostram status, aula original, validade, cobrança, urgência e agendamento vinculado quando resolvível.
+- Fechamento por `×`, botão de rodapé e Escape; foco retorna ao botão de origem e Tab fica contido no modal.
+- Estilos responsivos adicionados: largura máxima de 680px, altura limitada, rolagem interna, skeleton e viewport estreito.
+- O botão Reagendar aparece apenas para pendência de aluno ativo presente em `aulasParaRepor`; o retorno ao histórico após a ação continua reservado para a etapa 4.
+- Validação: teste de ordem do HTML `5/5`; frontend `54/54`; backend `224/224`; `node --check` e diagnósticos sem erros; `git diff --check` passou.
+- Validação manual pendente: abrir o modal em desktop e 430px, conferir alinhamento, rolagem, foco, Escape, estados de carregamento/erro e ausência de sobreposição.
+- Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
+
+### Ajuste pós-validação visual — data do reagendamento
+
+- O seletor `Dia da Semana` do modal `Agendar Reposição` foi substituído por `Data da reposição` (`input type="date"`).
+- A data escolhida é usada diretamente no novo agendamento; o nome do dia continua sendo derivado apenas para compatibilidade do campo `dia`.
+- Os dois caminhos de abertura do modal foram atualizados, e o harness backend passou a preencher `reagendarData`.
+- Validação após o ajuste: frontend `54/54`; backend `224/224`; diagnósticos sem erros.
+
+### Decisão para a próxima etapa — edição da cobrança
+
+- A edição valerá para a reposição inteira/corrente, não apenas para uma ocorrência.
+- Será permitida enquanto a reposição não tiver contribuído para ciclo pago/congelado.
+- Ciclo pago/congelado bloqueará a alteração.
+- A próxima etapa precisa atualizar a spec, criar contrato/rota atômica no backend, registrar histórico da decisão e cobrir recálculo de ciclo aberto, bloqueio de ciclo pago e isolamento por `ownerEmail`.
+- Essa regra ainda não foi implementada.
+
+### Etapa 4.1 — edição protegida da cobrança
+
+- O PATCH existente de `Reposicao` agora aceita alteração booleana de `cobravel`.
+- A alteração vale para toda a corrente da reposição e registra `cobranca_alterada` no histórico, com decisão anterior e nova.
+- O backend calcula o ciclo responsável: ciclo da aula original para `cobravel: true`; ciclo resolvido para `false`.
+- Se esse ciclo tiver `dataPagamento`, a API responde `409` e não executa atualização.
+- Ao mudar para `true`, `cicloCobrancaResolvido` é removido; ao mudar para `false` em reposição já agendada, o ciclo é resolvido novamente pelo servidor.
+- O modal de histórico ganhou a ação `Editar cobrança`, um modal de escolha e atualização remota do cache.
+- O frontend não envia `cicloCobrancaResolvido` e exibe o erro autorizado pela API.
+- Cobertura adicionada: ciclo aberto permite a troca e registra histórico; ciclo pago bloqueia sem chamar atualização.
+- Validação: backend `226/226`; frontend `54/54`; diagnósticos sem erros; `git diff --check` passou.
+- Validação manual pendente: trocar nos dois sentidos, conferir atualização do histórico, testar `409` após ciclo pago e validar o modal em 430px.
+
+### Etapa 5 — observações por aluno
+
+- Campo `observacoes` adicionado ao formulário de cadastro/edição, opcional e limitado a 1000 caracteres.
+- O valor é carregado na edição e persistido no objeto do aluno ao salvar.
+- Cards exibem a observação somente quando preenchida, com escape de HTML e preservação de quebras de linha.
+- Validação focada: `3/3`; frontend completo `57/57`; backend `226/226`; diagnósticos sem erros; `git diff --check` passou.
+- Validação visual do histórico de reposições e do reagendamento aprovada pelo dono em 2026-09-23.
+
+### Etapa 4 — integração do reagendamento
+
+- O botão Reagendar do histórico agora guarda aluno, reposição e elemento de origem antes de abrir o modal existente.
+- Sucesso remoto, erro e cancelamento têm caminhos distintos; o histórico é reaberto no mesmo aluno após cada retorno.
+- O fluxo da Home continua sem retorno ao histórico quando não existe contexto de origem.
+- A integração preserva a confirmação de persistência antes do PATCH e mantém o fluxo de GCal existente.
+- Validação: `node --check` nos dois arquivos; frontend `54/54`; backend `224/224`; diagnósticos sem erros.
+- Validação manual pendente: sucesso, cancelamento e erro remoto devem reabrir o mesmo histórico sem modal empilhado.
+
+## 7. Estado ao registrar este plano
+
+As etapas 0 e 1 foram executadas nesta branch. Permanecem pendentes as etapas 2 a 5 do plano; o item 1.10 ainda não está concluído porque o card, o modal e a integração de reagendamento serão implementados nas etapas seguintes.

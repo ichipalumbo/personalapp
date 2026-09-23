@@ -1,6 +1,7 @@
 const Reposicao = require('../models/Reposicao');
 const Agendamento = require('../models/Agendamento');
 const Aluno = require('../models/Aluno');
+const CicloFinanceiro = require('../models/CicloFinanceiro');
 const reposicaoService = require('../services/reposicaoService');
 const financasService = require('../services/financasService');
 const { limparPayload, responderErro } = require('../utils/controllerHelpers');
@@ -83,6 +84,29 @@ function normalizarHistorico(historico, nomeCampo) {
   });
 
   return { historico: historicoNormalizado };
+}
+
+async function cicloDaCobrancaAtual(ownerEmail, reposicao) {
+  if (reposicao.cobravel === true) {
+    const aluno = await Aluno.findOne({ ownerEmail, id: reposicao.alunoId });
+    if (!aluno) return null;
+    return financasService.calcularCicloVigente(aluno, reposicao.dataOriginal);
+  }
+
+  if (!reposicao.cicloCobrancaResolvido) return null;
+  return reposicao.cicloCobrancaResolvido;
+}
+
+async function validarEdicaoCobranca(ownerEmail, reposicao) {
+  const ciclo = await cicloDaCobrancaAtual(ownerEmail, reposicao);
+  if (!ciclo) return null;
+
+  const documento = await CicloFinanceiro.findOne({
+    ownerEmail,
+    alunoId: reposicao.alunoId,
+    cicloInicio: ciclo.cicloInicioISO || ciclo.inicio
+  });
+  return documento && documento.dataPagamento ? ciclo : null;
 }
 
 async function listarReposicoes(req, res) {
@@ -256,8 +280,9 @@ async function atualizarReposicao(req, res) {
       return res.status(400).json({ error: 'O id do corpo deve ser igual ao id da rota.' });
     }
 
-    if (Object.prototype.hasOwnProperty.call(payloadBruto, 'cobravel')) {
-      return res.status(400).json({ error: 'cobravel é imutável após a criação da reposição.' });
+    const desejaEditarCobranca = Object.prototype.hasOwnProperty.call(payloadBruto, 'cobravel');
+    if (desejaEditarCobranca && typeof payloadBruto.cobravel !== 'boolean') {
+      return res.status(400).json({ error: 'cobravel deve ser booleano.' });
     }
 
     if (Object.prototype.hasOwnProperty.call(payloadBruto, 'dataOriginal')) {
@@ -295,6 +320,47 @@ async function atualizarReposicao(req, res) {
       return res.status(404).json({ error: `Reposição com id '${id}' não encontrada.` });
     }
 
+    if (desejaEditarCobranca && payloadBruto.cobravel !== reposicaoExistente.cobravel) {
+      const cicloPago = await validarEdicaoCobranca(ownerEmail, reposicaoExistente);
+      if (cicloPago) {
+        return res.status(409).json({
+          error: 'A cobrança desta reposição está em um ciclo pago e não pode ser alterada.'
+        });
+      }
+
+      payload.cobravel = payloadBruto.cobravel;
+      payload.historico = undefined;
+      payload.$push = {
+        historico: {
+          evento: 'cobranca_alterada',
+          data: new Date().toISOString(),
+          cobravelAnterior: Boolean(reposicaoExistente.cobravel),
+          cobravelNovo: payloadBruto.cobravel
+        }
+      };
+
+      if (payloadBruto.cobravel === true) {
+        payload.$unset = { cicloCobrancaResolvido: 1 };
+      } else if (reposicaoExistente.agendamentoReposicaoId) {
+        const agendamento = await Agendamento.findOne({
+          ownerEmail,
+          id: reposicaoExistente.agendamentoReposicaoId
+        });
+        if (!agendamento) {
+          return res.status(400).json({ error: 'Agendamento da reposição não encontrado.' });
+        }
+        const aluno = await Aluno.findOne({ ownerEmail, id: reposicaoExistente.alunoId });
+        if (!aluno) {
+          return res.status(400).json({ error: 'Aluno da reposição não encontrado.' });
+        }
+        payload.cicloCobrancaResolvido = await financasService.resolverCicloCobranca(
+          ownerEmail,
+          aluno,
+          agendamento.data
+        );
+      }
+    }
+
     // 5.4: reposição não cobrável ganha cicloCobrancaResolvido na marcação (agendamentoReposicaoId),
     // calculado no servidor a partir da data do agendamento. Congelado após a primeira gravação.
     if (
@@ -316,9 +382,20 @@ async function atualizarReposicao(req, res) {
       payload.cicloCobrancaResolvido = cicloCobranca;
     }
 
+    const atualizacao = { $set: { ...payload, ownerEmail, id } };
+    if (payload.$unset) {
+      atualizacao.$unset = payload.$unset;
+      delete atualizacao.$set.$unset;
+    }
+    if (payload.$push) {
+      atualizacao.$push = payload.$push;
+      delete atualizacao.$set.$push;
+    }
+    delete atualizacao.$set.historico;
+
     const reposicao = await Reposicao.findOneAndUpdate(
       { ownerEmail, id },
-      { $set: { ...payload, ownerEmail, id } },
+      atualizacao,
       { new: true, runValidators: true }
     );
 

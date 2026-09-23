@@ -42,14 +42,14 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 0     | 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica cobrança | `[x]`  | —                                                                |
 | 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
 | 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
-| 1     | 1.3 Observações por aula ou por aluno            | `[ ]`  | —                                                                |
+| 1     | 1.3 Observações por aula ou por aluno            | `[x]`  | —                                                                |
 | 1     | 1.4 Contato rápido via WhatsApp                  | `[ ]`  | —                                                                |
 | 1     | 1.5 Status de no-show / cancelamento             | `[ ]`  | pré-requisito da regra 5.8 (spec Finanças); recomendado após 3.1 |
 | 1     | 1.6 Lembrete de aniversário do aluno             | `[ ]`  | —                                                                |
 | 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
 | 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[x]`  | —                                                                |
-| 1     | 1.10 Histórico de reposições no card do aluno    | `[ ]`  | gestão contextual; sem aba dedicada na V1                         |
+| 1     | 1.10 Histórico de reposições no card do aluno    | `[x]`  | gestão contextual; sem aba dedicada na V1                         |
 | 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[ ]`  | —                                                                |
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
@@ -244,13 +244,14 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 1.3 Campo de observações/anotações por aula ou por aluno
+### [x] 1.3 Campo de observações/anotações por aula ou por aluno — **ENTREGUE**
 
-- **O que é**: Um campo de texto livre para anotar coisas como "reclamou de dor no joelho", "combinar novo horário", "trouxe atestado".
+- **O que foi entregue**: textarea opcional no cadastro/edição do aluno, persistência no campo `observacoes` e exibição segura no card quando preenchida. Conteúdo livre é escapado antes de entrar no HTML.
 - **Por que importa**: Hoje não existe nenhum campo de anotação livre nem no modelo `Aluno.js` nem no `Agendamento.js` (que usam `{ strict: false }`, mas nenhuma tela expõe esse campo).
 - **Onde mexer**: Adicionar campo `observacoes` no formulário de `view-alunos.js` e/ou `modal-acao-slot.js` (edição de agendamento). O `{ strict: false }` do schema já aceita esse campo sem migração — mas atenção: por isso mesmo, um typo no nome do campo grava silenciosamente e não gera erro.
 - **Nota**: não confundir com `observacaoAjuste` do `CicloFinanceiro`, que é específico do ajuste manual de um ciclo.
-- **Esforço**: Baixo (é essencialmente 1 textarea + 1 exibição na ficha do aluno/aula).
+- **Validação**: testes frontend cobrem exibição escapada, carregamento na edição e persistência ao salvar.
+- **Esforço**: Baixo.
 
 ---
 
@@ -310,7 +311,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 1.10 Histórico de reposições no card do aluno
+### [x] 1.10 Histórico de reposições no card do aluno — **ENTREGUE**
 
 - **O que é**: um botão permanente `Reposições` em todos os cards de `view-alunos.js`, inclusive quando o aluno não tem registros. Ele mostra o resumo de pendências/urgência e abre um modal com o histórico completo daquele aluno, agrupado em pendentes, agendadas, realizadas e expiradas.
 - **Por que importa**: o Painel de Pendentes da Home foi removido em 2026-09-18 (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`) e a PT ficou sem um caminho navegável para agir sobre pendências. A gestão volta no contexto em que ela já encontra o aluno, sem criar uma quarta aba.
@@ -321,6 +322,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Onde mexer**: `assets/js/view-alunos.js`, `index.html` (modal de histórico), `assets/css/style.css`, `assets/js/modal-acao-slot.js` e, se necessário para o cache separado, `assets/js/storage.js`. A API atual já atende a leitura; não há mudança de backend prevista.
 - **Referência**: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seção 9.4.
 - **Esforço**: Médio.
+- **Validação final**: validação visual do modal e do fluxo de reagendamento aprovada pelo dono em 2026-09-23; suítes frontend e backend verdes.
 
 ---
 
