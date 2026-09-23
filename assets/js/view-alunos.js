@@ -227,6 +227,7 @@ let _historicoReposicoesModal = {
     carregando: false,
     erro: null
 };
+let _edicaoCobrancaReposicao = null;
 
 function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
     if (objetivo === 'Consultoria Online') return '';
@@ -390,10 +391,11 @@ function renderizarLinhaHistoricoReposicao(reposicao, helpers) {
     let acao = '';
 
     if (reposicao.status === 'pendente' && ativo && pendenciaDisponivel) {
-        acao = `<button type="button" class="btn btn-secondary historico-reposicao-acao" onclick="window.iniciarReagendamentoReposicaoDoHistorico('${escaparHtmlHistorico(reposicao.id)}');">Reagendar</button>`;
+        acao += `<button type="button" class="btn btn-secondary historico-reposicao-acao" onclick="window.iniciarReagendamentoReposicaoDoHistorico('${escaparHtmlHistorico(reposicao.id)}');">Reagendar</button>`;
     } else if (reposicao.status === 'pendente' && !ativo) {
-        acao = '<span class="historico-reposicao-aviso">Aluno inativo: reagendamento indisponível.</span>';
+        acao += '<span class="historico-reposicao-aviso">Aluno inativo: reagendamento indisponível.</span>';
     }
+    acao += `<button type="button" class="btn btn-secondary historico-reposicao-acao" onclick="window.abrirEdicaoCobrancaReposicao('${escaparHtmlHistorico(reposicao.id)}', ${reposicao.cobravel === true});">Editar cobrança</button>`;
 
     return `
         <article class="historico-reposicao-linha">
@@ -539,6 +541,68 @@ window.fecharHistoricoReposicoes = function() {
     const origem = _historicoReposicoesModal.origem;
     _historicoReposicoesModal = { alunoId: null, dados: null, origem: null, carregando: false, erro: null };
     if (origem && typeof origem.focus === 'function') origem.focus();
+};
+
+window.abrirEdicaoCobrancaReposicao = function(reposicaoId, cobravel) {
+    const modal = document.getElementById('modalEdicaoCobrancaReposicao');
+    const seletor = document.getElementById('seletorCobrancaReposicao');
+    const descricao = document.getElementById('descricaoEdicaoCobrancaReposicao');
+    if (!modal || !seletor) return;
+    _edicaoCobrancaReposicao = { reposicaoId, cobravel: Boolean(cobravel) };
+    seletor.value = String(Boolean(cobravel));
+    if (descricao) descricao.textContent = 'Escolha quando a reposição deve entrar na cobrança.';
+    modal.style.display = 'flex';
+    seletor.focus();
+};
+
+window.fecharEdicaoCobrancaReposicao = function() {
+    const modal = document.getElementById('modalEdicaoCobrancaReposicao');
+    if (modal) modal.style.display = 'none';
+    _edicaoCobrancaReposicao = null;
+};
+
+window.salvarEdicaoCobrancaReposicao = async function() {
+    const contexto = _edicaoCobrancaReposicao;
+    const seletor = document.getElementById('seletorCobrancaReposicao');
+    if (!contexto || !seletor) return;
+    const novoCobravel = seletor.value === 'true';
+    if (novoCobravel === contexto.cobravel) {
+        window.fecharEdicaoCobrancaReposicao();
+        return;
+    }
+
+    const base = window.APP_API_CONFIG && window.APP_API_CONFIG.apiBaseUrl;
+    if (typeof window.apiFetchBackend !== 'function' || !base) return;
+    const botao = document.getElementById('btnSalvarEdicaoCobrancaReposicao');
+    if (botao) botao.disabled = true;
+    try {
+        const resposta = await window.apiFetchBackend(
+            `${base}/reposicoes/${encodeURIComponent(contexto.reposicaoId)}`,
+            {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ cobravel: novoCobravel })
+            }
+        );
+        if (!resposta.ok) {
+            const erro = await resposta.json().catch(() => ({}));
+            throw new Error(erro.error || 'Não foi possível alterar a cobrança.');
+        }
+        const atualizado = await resposta.json();
+        if (Array.isArray(_reposicoesHistorico)) {
+            const indice = _reposicoesHistorico.findIndex((item) => item && item.id === contexto.reposicaoId);
+            if (indice !== -1) _reposicoesHistorico[indice] = atualizado;
+        }
+        window.fecharEdicaoCobrancaReposicao();
+        window.invalidarChaveRenderAlunos();
+        window.renderizarListaAlunos();
+        renderizarHistoricoReposicoes();
+        if (typeof window.mostrarToast === 'function') window.mostrarToast('Cobrança da reposição atualizada.');
+    } catch (erro) {
+        if (typeof window.mostrarToast === 'function') window.mostrarToast(erro.message, 'error');
+    } finally {
+        if (botao) botao.disabled = false;
+    }
 };
 
 function controlarTecladoHistoricoReposicoes(event) {
@@ -854,6 +918,8 @@ window.alternarStatusAluno = function(id, ativoForcado) {
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnFecharHistoricoReposicoes')?.addEventListener('click', window.fecharHistoricoReposicoes);
     document.getElementById('btnRodapeHistoricoReposicoes')?.addEventListener('click', window.fecharHistoricoReposicoes);
+    document.getElementById('btnCancelarEdicaoCobrancaReposicao')?.addEventListener('click', window.fecharEdicaoCobrancaReposicao);
+    document.getElementById('btnSalvarEdicaoCobrancaReposicao')?.addEventListener('click', window.salvarEdicaoCobrancaReposicao);
     document.addEventListener('keydown', controlarTecladoHistoricoReposicoes);
 
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');

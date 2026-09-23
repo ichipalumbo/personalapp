@@ -2415,6 +2415,32 @@ body {
   margin-top: 14px;
   padding-top: 14px;
 }
+.modal-edicao-cobranca-reposicao {
+  max-width: 440px;
+}
+.modal-edicao-cobranca-reposicao h3 {
+  margin-top: 0;
+}
+.modal-edicao-cobranca-reposicao h3 i {
+  color: #64b5f6;
+  margin-right: 8px;
+}
+.edicao-cobranca-reposicao-aviso {
+  background: rgba(255, 215, 0, 0.06);
+  border-left: 3px solid #ffd700;
+  color: #aaa;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin: 0 0 18px;
+  padding: 8px 10px;
+}
+.modal-edicao-cobranca-reposicao-acoes {
+  border-top: 1px solid #2a2a2a;
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 14px;
+}
 .sr-only {
   height: 1px;
   margin: -1px;

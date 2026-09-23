@@ -76,7 +76,9 @@ const ReposicaoSchema = new mongoose.Schema({
         required: true,
         set: (value) => normalizedOrOriginal(value, normalizarTimestampISO)
       },
-      agendamentoId: { type: String, default: null }
+      agendamentoId: { type: String, default: null },
+      cobravelAnterior: { type: Boolean, default: null },
+      cobravelNovo: { type: Boolean, default: null }
     }],
     default: []
   }

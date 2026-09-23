@@ -460,6 +460,36 @@
             </div>
           </div>
         </div>
+        <div
+          class="modal-overlay modal-overlay-secondary"
+          id="modalEdicaoCobrancaReposicao"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tituloEdicaoCobrancaReposicao"
+          style="display: none"
+        >
+          <div class="modal modal-edicao-cobranca-reposicao">
+            <h3 id="tituloEdicaoCobrancaReposicao">
+              <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+              Editar cobrança
+            </h3>
+            <p id="descricaoEdicaoCobrancaReposicao" class="modal-historico-reposicoes-resumo"></p>
+            <div class="form-grupo-spa">
+              <label for="seletorCobrancaReposicao">Quando cobrar esta reposição?</label>
+              <select id="seletorCobrancaReposicao">
+                <option value="true">Cobrar no ciclo da aula original</option>
+                <option value="false">Cobrar no ciclo da reposição</option>
+              </select>
+            </div>
+            <p class="edicao-cobranca-reposicao-aviso">
+              A alteração vale para toda a reposição. Ciclos já pagos não podem ser alterados.
+            </p>
+            <div class="modal-edicao-cobranca-reposicao-acoes">
+              <button type="button" class="btn btn-secondary" id="btnCancelarEdicaoCobrancaReposicao">Cancelar</button>
+              <button type="button" class="btn btn-primary" id="btnSalvarEdicaoCobrancaReposicao">Salvar alteração</button>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
     <!-- [TAG-HTML-MODAIS] - Modais Compartilhados -->

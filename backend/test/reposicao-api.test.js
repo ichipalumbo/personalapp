@@ -5,6 +5,7 @@ const reposicaoController = require('../src/controllers/reposicaoController');
 const Reposicao = require('../src/models/Reposicao');
 const Aluno = require('../src/models/Aluno');
 const Agendamento = require('../src/models/Agendamento');
+const CicloFinanceiro = require('../src/models/CicloFinanceiro');
 const financasService = require('../src/services/financasService');
 const { calcularAulasContadasDoCiclo } = financasService;
 
@@ -171,6 +172,89 @@ test('PATCH move reposicao para agendada e grava agendamentoReposicaoId', async 
     Reposicao.findOneAndUpdate = findOneAndUpdateOriginal;
     Agendamento.findOne = agendamentoFindOneOriginal;
     financasService.resolverCicloCobranca = resolverCicloOriginal;
+  }
+});
+
+test('PATCH permite alterar cobravel em ciclo aberto e registra historico', async () => {
+  const findOneOriginal = Reposicao.findOne;
+  const findOneAndUpdateOriginal = Reposicao.findOneAndUpdate;
+  const cicloFindOneOriginal = CicloFinanceiro.findOne;
+  const calcularCicloOriginal = financasService.calcularCicloVigente;
+  let atualizacao;
+
+  try {
+    Reposicao.findOne = async () => ({
+      ownerEmail: 'pro@example.com',
+      id: 'repo-edicao-aberta',
+      alunoId: 'aluno-1',
+      dataOriginal: '2026-07-10',
+      cobravel: true,
+      cicloCobrancaResolvido: null,
+    });
+    CicloFinanceiro.findOne = async () => ({ dataPagamento: null });
+    financasService.calcularCicloVigente = () => ({
+      cicloInicioISO: '2026-07-01',
+      cicloFimISO: '2026-07-31',
+    });
+    Reposicao.findOneAndUpdate = async (filtro, update) => {
+      atualizacao = { filtro, update };
+      return { ...filtro, ...update.$set, toObject() { return this; } };
+    };
+
+    const res = criarRespostaMock();
+    await reposicaoController.atualizarReposicao({
+      params: { id: 'repo-edicao-aberta' },
+      body: { cobravel: false },
+      auth: { ownerEmail: 'pro@example.com' },
+    }, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(atualizacao.update.$set.cobravel, false);
+    assert.equal(atualizacao.update.$push.historico.evento, 'cobranca_alterada');
+    assert.equal(atualizacao.update.$push.historico.cobravelAnterior, true);
+    assert.equal(atualizacao.update.$push.historico.cobravelNovo, false);
+  } finally {
+    Reposicao.findOne = findOneOriginal;
+    Reposicao.findOneAndUpdate = findOneAndUpdateOriginal;
+    CicloFinanceiro.findOne = cicloFindOneOriginal;
+    financasService.calcularCicloVigente = calcularCicloOriginal;
+  }
+});
+
+test('PATCH bloqueia alterar cobravel quando o ciclo atual está pago', async () => {
+  const findOneOriginal = Reposicao.findOne;
+  const cicloFindOneOriginal = CicloFinanceiro.findOne;
+  const calcularCicloOriginal = financasService.calcularCicloVigente;
+  let atualizou = false;
+
+  try {
+    Reposicao.findOne = async () => ({
+      ownerEmail: 'pro@example.com',
+      id: 'repo-edicao-paga',
+      alunoId: 'aluno-1',
+      dataOriginal: '2026-07-10',
+      cobravel: true,
+    });
+    CicloFinanceiro.findOne = async () => ({ dataPagamento: '2026-07-31T12:00:00.000Z' });
+    financasService.calcularCicloVigente = () => ({
+      cicloInicioISO: '2026-07-01',
+      cicloFimISO: '2026-07-31',
+    });
+    Reposicao.findOneAndUpdate = async () => { atualizou = true; return null; };
+
+    const res = criarRespostaMock();
+    await reposicaoController.atualizarReposicao({
+      params: { id: 'repo-edicao-paga' },
+      body: { cobravel: false },
+      auth: { ownerEmail: 'pro@example.com' },
+    }, res);
+
+    assert.equal(res.statusCode, 409);
+    assert.equal(atualizou, false);
+  } finally {
+    Reposicao.findOne = findOneOriginal;
+    CicloFinanceiro.findOne = cicloFindOneOriginal;
+    financasService.calcularCicloVigente = calcularCicloOriginal;
   }
 });
 
