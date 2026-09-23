@@ -3989,8 +3989,11 @@ test('reenvio de aula vinculada reabre a reposição original sem criar outra', 
   });
   context.window.idCompromissoSelecionado = compromisso.id;
   context.window.dataAlvoAcaoStr = '31/08/2026';
-  context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) =>
-    callback(false);
+  let opcoesCobranca;
+  context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback, opcoes) => {
+    opcoesCobranca = opcoes;
+    return callback(false);
+  };
   context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
   context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
   context.window.salvarDados = async () => ({ ok: true });
@@ -4022,6 +4025,7 @@ test('reenvio de aula vinculada reabre a reposição original sem criar outra', 
   assert.match(chamadas[0].url, /\/reposicoes\/repo-original$/);
   assert.equal(chamadas[1].url.endsWith('/reposicoes/repo-original/reabrir'), true);
   assert.equal(chamadas[1].opcoes.method, 'POST');
+  assert.equal(opcoesCobranca.ehReabertura, true);
   assert.equal(context.aulas.length, 0);
 });
 
