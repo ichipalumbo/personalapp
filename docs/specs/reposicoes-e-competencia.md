@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: histórico contextual implementado; edição protegida da cobrança em implementação; correção de dados duplicados em produção concluída pelo dono em 2026-09-23 · **Versão**: 11 · **Atualizado**: 2026-09-23
+> **Status**: histórico contextual e edição protegida da cobrança implementados; correção de dados duplicados em produção concluída pelo dono em 2026-09-23 · **Versão**: 12 · **Atualizado**: 2026-09-23
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz

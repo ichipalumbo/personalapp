@@ -777,6 +777,24 @@ body {
   color: #aaa;
   margin-top: 3px;
 }
+.aluno-card-observacoes {
+  align-items: flex-start;
+  background: rgba(100, 181, 246, 0.08);
+  border-left: 3px solid rgba(100, 181, 246, 0.55);
+  color: #c4d9e8;
+  display: flex;
+  font-size: 0.74rem;
+  gap: 7px;
+  line-height: 1.4;
+  padding: 7px 9px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.aluno-card-observacoes i {
+  color: #64b5f6;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
 
 #btnFlutuanteAdicionar {
   position: fixed;

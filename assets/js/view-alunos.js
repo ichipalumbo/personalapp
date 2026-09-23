@@ -317,6 +317,15 @@ function formatarDataCurtaAluno(dataISO) {
     return `${partes[2]}/${partes[1]}`;
 }
 
+function escaparTextoAluno(valor) {
+    return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 function escaparHtmlHistorico(valor) {
     return String(valor ?? '')
         .replace(/&/g, '&amp;')
@@ -798,6 +807,7 @@ window.renderizarListaAlunos = function() {
                 : (aluno.fechamentoMesCheio
                     ? 'Fecha por mês cheio'
                     : (aluno.diaVencimento ? `Vence dia ${aluno.diaVencimento}` : 'Sem vencimento definido'));
+                    const observacoes = String(aluno.observacoes || '').trim();
 
             // Indicadores do card: ciclo financeiro, consistência de agenda e reposições a vencer.
             const caixinhas = [
@@ -832,6 +842,8 @@ window.renderizarListaAlunos = function() {
                         <div><i class="fa-solid fa-calendar-days" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${fechamentoLabel}</div>
                     </div>
 
+                    ${observacoes ? `<div class="aluno-card-observacoes"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i><span>${escaparTextoAluno(observacoes)}</span></div>` : ''}
+
                     ${caixinhas ? `<div class="aluno-card-indicadores">${caixinhas}</div>` : ''}
                 </div>
             `;
@@ -847,6 +859,7 @@ window.prepararEdicaoAluno = function(id) {
     const elLocal = document.getElementById('alunoLocal');
     const elPreco = document.getElementById('alunoPreco');
     const elTelefone = document.getElementById('alunoTelefone');
+    const elObservacoes = document.getElementById('alunoObservacoes');
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
     const elFrequencia = document.getElementById('alunoFrequenciaSemanal');
 
@@ -855,6 +868,7 @@ window.prepararEdicaoAluno = function(id) {
     if (elLocal) elLocal.value = aluno.local || '';
     if (elPreco) elPreco.value = aluno.preco || '';
     if (elTelefone) elTelefone.value = aluno.telefone || '';
+    if (elObservacoes) elObservacoes.value = aluno.observacoes || '';
     if (elObjetivoSwitch) elObjetivoSwitch.checked = normalizarObjetivoAluno(aluno.objetivo) === 'Consultoria Online';
     if (elFrequencia) elFrequencia.value = aluno.frequenciaSemanal || '2';
     const elFechamentoMesCheio = document.getElementById('alunoFechamentoMesCheio');
@@ -962,6 +976,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const local = document.getElementById('alunoLocal').value.trim();
             const preco = ehConsultoriaOnline ? 0 : (normalizarNumeroFinanceiro(document.getElementById('alunoPreco').value) || 0);
             const telefone = document.getElementById('alunoTelefone').value.trim();
+            const observacoes = document.getElementById('alunoObservacoes').value.trim();
             const objetivo = obterObjetivoAlunoDoSwitch();
             const corObjetivo = montarCorObjetivoTangerina();
             const frequenciaSemanal = ehConsultoriaOnline
@@ -1019,6 +1034,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alunos[index].local = local;
                     alunos[index].preco = preco;
                     alunos[index].telefone = telefone;
+                    alunos[index].observacoes = observacoes;
                     alunos[index].objetivo = objetivo;
                     alunos[index].corObjetivo = corObjetivo;
                     alunos[index].frequenciaSemanal = frequenciaSemanal;
@@ -1054,6 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     local: local,
                     preco: preco,
                     telefone: telefone,
+                    observacoes: observacoes,
                     objetivo: objetivo,
                     corObjetivo: corObjetivo,
                     frequenciaSemanal: frequenciaSemanal,

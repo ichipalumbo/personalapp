@@ -274,6 +274,14 @@ Testar em desktop e 430px:
 - Validação: backend `226/226`; frontend `54/54`; diagnósticos sem erros; `git diff --check` passou.
 - Validação manual pendente: trocar nos dois sentidos, conferir atualização do histórico, testar `409` após ciclo pago e validar o modal em 430px.
 
+### Etapa 5 — observações por aluno
+
+- Campo `observacoes` adicionado ao formulário de cadastro/edição, opcional e limitado a 1000 caracteres.
+- O valor é carregado na edição e persistido no objeto do aluno ao salvar.
+- Cards exibem a observação somente quando preenchida, com escape de HTML e preservação de quebras de linha.
+- Validação focada: `3/3`; frontend completo `57/57`; backend `226/226`; diagnósticos sem erros; `git diff --check` passou.
+- Validação visual do histórico de reposições e do reagendamento aprovada pelo dono em 2026-09-23.
+
 ### Etapa 4 — integração do reagendamento
 
 - O botão Reagendar do histórico agora guarda aluno, reposição e elemento de origem antes de abrir o modal existente.
