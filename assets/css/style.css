@@ -2248,6 +2248,186 @@ body {
   color: #ffd700;
   font-size: 1.2rem;
 }
+.modal-historico-reposicoes {
+  display: flex;
+  flex-direction: column;
+  width: 92%;
+  max-width: 680px;
+  max-height: 80vh;
+  overflow: hidden;
+}
+.modal-historico-reposicoes-cabecalho {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  border-bottom: 1px solid #2a2a2a;
+  padding-bottom: 14px;
+}
+.modal-historico-reposicoes-cabecalho h3 {
+  margin: 0 0 5px;
+}
+.modal-historico-reposicoes-cabecalho h3 i {
+  color: #64b5f6;
+  margin-right: 8px;
+}
+.modal-historico-reposicoes-resumo {
+  color: #aaa;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin: 0;
+}
+.modal-fechar-icone {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #aaa;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 1rem;
+  height: 36px;
+  justify-content: center;
+  margin-left: auto;
+  width: 36px;
+}
+.modal-fechar-icone:hover,
+.modal-fechar-icone:focus-visible {
+  border-color: #ffd700;
+  color: #ffd700;
+  outline: none;
+}
+.modal-historico-reposicoes-conteudo {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 4px 4px 0;
+}
+.historico-reposicoes-carregando {
+  display: grid;
+  gap: 10px;
+}
+.historico-reposicoes-skeleton {
+  animation: historicoReposicoesPulso 1.2s ease-in-out infinite alternate;
+  background: #2a2a2a;
+  border-radius: 8px;
+  display: block;
+  height: 78px;
+}
+@keyframes historicoReposicoesPulso {
+  from { opacity: 0.45; }
+  to { opacity: 0.9; }
+}
+.historico-reposicoes-grupo + .historico-reposicoes-grupo {
+  margin-top: 18px;
+}
+.historico-reposicoes-grupo h4 {
+  color: #ffd700;
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px;
+  text-transform: uppercase;
+}
+.historico-reposicao-lista {
+  display: grid;
+  gap: 8px;
+}
+.historico-reposicao-linha {
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+.historico-reposicao-linha-cabecalho,
+.historico-reposicao-detalhes,
+.historico-reposicao-linha-acao {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.historico-reposicao-linha-cabecalho {
+  justify-content: space-between;
+}
+.historico-reposicao-status {
+  color: #e0e0e0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.historico-reposicao-status--pendente { color: #ffb74d; }
+.historico-reposicao-status--agendada { color: #64b5f6; }
+.historico-reposicao-status--realizada { color: #81c784; }
+.historico-reposicao-status--expirada { color: #ef9a9a; }
+.historico-reposicao-cobranca,
+.historico-reposicao-detalhes,
+.historico-reposicao-aviso {
+  color: #aaa;
+  font-size: 0.72rem;
+}
+.historico-reposicao-data {
+  color: #f0f0f0;
+  font-size: 0.84rem;
+  font-weight: 600;
+  margin: 8px 0 6px;
+}
+.historico-reposicao-detalhes strong {
+  color: #ffb74d;
+  font-size: 0.72rem;
+}
+.historico-reposicao-linha-acao {
+  border-top: 1px solid #252525;
+  justify-content: flex-end;
+  margin-top: 10px;
+  padding-top: 9px;
+}
+.historico-reposicao-acao {
+  min-height: 36px;
+}
+.historico-reposicoes-vazio,
+.historico-reposicoes-erro {
+  align-items: center;
+  color: #aaa;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+  min-height: 180px;
+  text-align: center;
+}
+.historico-reposicoes-vazio strong,
+.historico-reposicoes-erro span {
+  color: #e0e0e0;
+  font-size: 0.86rem;
+}
+.historico-reposicoes-erro {
+  border: 1px solid rgba(239, 154, 154, 0.35);
+  border-radius: 8px;
+  margin-bottom: 12px;
+  min-height: 0;
+  padding: 12px;
+}
+.modal-historico-reposicoes-rodape {
+  border-top: 1px solid #2a2a2a;
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+.sr-only {
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+@media (max-width: 600px) {
+  .modal-historico-reposicoes {
+    max-height: 86vh;
+    width: calc(100% - 24px);
+  }
+}
 .toast {
   position: fixed;
   bottom: 20px;

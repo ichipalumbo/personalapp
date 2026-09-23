@@ -220,6 +220,13 @@ let _resumoFinanceiroPorAluno = {};
 let _consistenciaAgendaPorAluno = {};
 let _reposicoesHistorico = null;
 let _reposicoesHistoricoErro = false;
+let _historicoReposicoesModal = {
+    alunoId: null,
+    dados: null,
+    origem: null,
+    carregando: false,
+    erro: null
+};
 
 function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
     if (objetivo === 'Consultoria Online') return '';
@@ -307,6 +314,232 @@ function formatarDataCurtaAluno(dataISO) {
     const partes = String(dataISO).split('-');
     if (partes.length !== 3) return String(dataISO);
     return `${partes[2]}/${partes[1]}`;
+}
+
+function escaparHtmlHistorico(valor) {
+    return String(valor ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function formatarDataHistorico(dataISO) {
+    if (!dataISO) return 'Data não informada';
+    if (typeof window.formatarDataPtBr === 'function') return window.formatarDataPtBr(dataISO);
+    return String(dataISO).split('-').reverse().join('/');
+}
+
+function obterNomeAlunoHistorico(alunoId, reposicoes) {
+    const aluno = obterAlunoPorIdView(alunoId);
+    if (aluno && aluno.nome) return aluno.nome;
+    const registro = (Array.isArray(reposicoes) ? reposicoes : []).find((item) => item && item.alunoNome);
+    return registro && registro.alunoNome ? registro.alunoNome : 'Aluno removido';
+}
+
+function alunoHistoricoEstaAtivo(alunoId) {
+    const aluno = obterAlunoPorIdView(alunoId);
+    if (!aluno) return false;
+    return typeof window.alunoEstaAtivo !== 'function' || window.alunoEstaAtivo(aluno);
+}
+
+function obterAgendamentoReposicaoHistorico(reposicao) {
+    if (!reposicao || !reposicao.agendamentoReposicaoId) return null;
+    const listaAulas = typeof aulas !== 'undefined' && Array.isArray(aulas)
+        ? aulas
+        : (Array.isArray(window.aulas) ? window.aulas : []);
+    return listaAulas.find((aula) => aula && aula.id === reposicao.agendamentoReposicaoId) || null;
+}
+
+function obterTextoUrgenciaReposicao(reposicao, helpers) {
+    if (!reposicao || reposicao.status !== 'pendente' || !reposicao.validoAte) return '';
+    const dias = helpers.diasAteDataISO(reposicao.validoAte);
+    if (dias === null) return '';
+    if (dias < 0) return 'Prazo encerrado';
+    if (dias === 0) return 'Vence hoje';
+    return `Vence em ${dias} ${dias === 1 ? 'dia' : 'dias'}`;
+}
+
+function renderizarLinhaHistoricoReposicao(reposicao, helpers) {
+    const statusLabels = {
+        pendente: 'Pendente',
+        agendada: 'Agendada',
+        realizada: 'Realizada',
+        expirada: 'Expirada'
+    };
+    const status = statusLabels[reposicao.status] || reposicao.status;
+    const dataOriginal = reposicao.dataOriginal
+        ? `Aula original: ${formatarDataHistorico(reposicao.dataOriginal)}${reposicao.horarioOriginal ? ` às ${reposicao.horarioOriginal}` : ''}`
+        : 'Aula original: Horário não informado';
+    const validade = reposicao.validoAte
+        ? `Válida até ${formatarDataHistorico(reposicao.validoAte)}`
+        : '';
+    const cobranca = reposicao.cobravel ? 'Cobrável' : 'Não cobrável';
+    const urgencia = obterTextoUrgenciaReposicao(reposicao, helpers);
+    const agendamento = reposicao.status === 'agendada'
+        ? obterAgendamentoReposicaoHistorico(reposicao)
+        : null;
+    const novaData = agendamento
+        ? `Nova data: ${formatarDataHistorico(agendamento.data)}${agendamento.horarioInicio ? ` às ${agendamento.horarioInicio}` : ''}`
+        : (reposicao.status === 'agendada' ? 'Agendamento vinculado' : '');
+    const ativo = alunoHistoricoEstaAtivo(reposicao.alunoId);
+    const pendenciaDisponivel = typeof window.aulasParaRepor !== 'undefined'
+        && Array.isArray(window.aulasParaRepor)
+        && window.aulasParaRepor.some((item) => item && item.id === reposicao.id);
+    let acao = '';
+
+    if (reposicao.status === 'pendente' && ativo && pendenciaDisponivel) {
+        acao = `<button type="button" class="btn btn-secondary historico-reposicao-acao" onclick="window.fecharHistoricoReposicoes(); window.iniciarReagendamentoReposicao('${escaparHtmlHistorico(reposicao.id)}');">Reagendar</button>`;
+    } else if (reposicao.status === 'pendente' && !ativo) {
+        acao = '<span class="historico-reposicao-aviso">Aluno inativo: reagendamento indisponível.</span>';
+    }
+
+    return `
+        <article class="historico-reposicao-linha">
+            <div class="historico-reposicao-linha-cabecalho">
+                <span class="historico-reposicao-status historico-reposicao-status--${escaparHtmlHistorico(reposicao.status)}">${escaparHtmlHistorico(status)}</span>
+                <span class="historico-reposicao-cobranca">${cobranca}</span>
+            </div>
+            <div class="historico-reposicao-data">${escaparHtmlHistorico(dataOriginal)}</div>
+            <div class="historico-reposicao-detalhes">
+                ${validade ? `<span>${escaparHtmlHistorico(validade)}</span>` : ''}
+                ${novaData ? `<span>${escaparHtmlHistorico(novaData)}</span>` : ''}
+                ${urgencia ? `<strong>${escaparHtmlHistorico(urgencia)}</strong>` : ''}
+            </div>
+            ${acao ? `<div class="historico-reposicao-linha-acao">${acao}</div>` : ''}
+        </article>
+    `;
+}
+
+function renderizarHistoricoReposicoes() {
+    const modal = document.getElementById('modalHistoricoReposicoes');
+    const conteudo = document.getElementById('conteudoHistoricoReposicoes');
+    const resumoEl = document.getElementById('resumoHistoricoReposicoes');
+    if (!modal || !conteudo || !_historicoReposicoesModal.alunoId) return;
+
+    const helpers = window.reposicaoFlowHelpers;
+    const dados = Array.isArray(_historicoReposicoesModal.dados) ? _historicoReposicoesModal.dados : [];
+    const nome = obterNomeAlunoHistorico(_historicoReposicoesModal.alunoId, dados);
+    const resumo = helpers && typeof helpers.resumoHistoricoReposicoesAluno === 'function'
+        ? helpers.resumoHistoricoReposicoesAluno(dados, _historicoReposicoesModal.alunoId)
+        : null;
+    const contagens = resumo ? Object.entries(resumo.contagens)
+        .filter(([, quantidade]) => quantidade > 0)
+        .map(([status, quantidade]) => `${quantidade} ${status}`)
+        .join(' · ') : '';
+    if (resumoEl) resumoEl.textContent = `${nome} · ${contagens || 'nenhuma reposição'}`;
+    modal.setAttribute('aria-busy', _historicoReposicoesModal.carregando ? 'true' : 'false');
+
+    if (_historicoReposicoesModal.carregando && dados.length === 0) {
+        conteudo.innerHTML = `
+            <div class="historico-reposicoes-carregando" role="status">
+                <span class="historico-reposicoes-skeleton"></span>
+                <span class="historico-reposicoes-skeleton"></span>
+                <span class="historico-reposicoes-skeleton"></span>
+                <span class="sr-only">Carregando histórico de reposições</span>
+            </div>
+        `;
+        return;
+    }
+
+    const erro = _historicoReposicoesModal.erro
+        ? `<div class="historico-reposicoes-erro" role="alert"><span>Não foi possível carregar o histórico.</span><button type="button" class="btn btn-secondary" onclick="window.recarregarHistoricoReposicoes()">Tentar novamente</button></div>`
+        : '';
+    if (dados.length === 0) {
+        conteudo.innerHTML = `${erro}<div class="historico-reposicoes-vazio"><strong>Nenhuma reposição registrada para este aluno.</strong><span>As reposições são criadas a partir da agenda.</span></div>`;
+        return;
+    }
+
+    const grupos = helpers && typeof helpers.agruparHistoricoReposicoes === 'function'
+        ? helpers.agruparHistoricoReposicoes(dados, _historicoReposicoesModal.alunoId)
+        : [];
+    const titulos = { pendente: 'Pendentes', agendada: 'Agendadas', realizada: 'Realizadas', expirada: 'Expiradas' };
+    conteudo.innerHTML = erro + grupos.map((grupo) => `
+        <section class="historico-reposicao-grupo" aria-labelledby="historico-grupo-${grupo.status}">
+            <h4 id="historico-grupo-${grupo.status}">${titulos[grupo.status]} (${grupo.itens.length})</h4>
+            <div class="historico-reposicao-lista">${grupo.itens.map((reposicao) => renderizarLinhaHistoricoReposicao(reposicao, helpers)).join('')}</div>
+        </section>
+    `).join('');
+}
+
+async function carregarHistoricoReposicoesAluno(alunoId) {
+    const base = window.APP_API_CONFIG && window.APP_API_CONFIG.apiBaseUrl;
+    if (typeof window.apiFetchBackend !== 'function' || !base) throw new Error('API indisponível.');
+    const resposta = await window.apiFetchBackend(`${base}/reposicoes?alunoId=${encodeURIComponent(alunoId)}`);
+    if (!resposta.ok) throw new Error('Falha ao carregar reposições.');
+    const dados = await resposta.json();
+    const lista = Array.isArray(dados) ? dados : [];
+    const anteriores = Array.isArray(_reposicoesHistorico)
+        ? _reposicoesHistorico.filter((reposicao) => reposicao && reposicao.alunoId !== alunoId)
+        : [];
+    _reposicoesHistorico = [...anteriores, ...lista];
+    _reposicoesHistoricoErro = false;
+    window.invalidarChaveRenderAlunos();
+    window.renderizarListaAlunos();
+    return lista;
+}
+
+window.abrirHistoricoReposicoes = async function(alunoId, origem) {
+    const modal = document.getElementById('modalHistoricoReposicoes');
+    if (!modal) return;
+    _historicoReposicoesModal = {
+        alunoId,
+        dados: null,
+        origem: origem || document.activeElement,
+        carregando: true,
+        erro: null
+    };
+    modal.style.display = 'flex';
+    renderizarHistoricoReposicoes();
+    document.getElementById('btnFecharHistoricoReposicoes')?.focus();
+    try {
+        _historicoReposicoesModal.dados = await carregarHistoricoReposicoesAluno(alunoId);
+    } catch (_) {
+        _historicoReposicoesModal.dados = Array.isArray(_reposicoesHistorico)
+            ? _reposicoesHistorico.filter((reposicao) => reposicao && reposicao.alunoId === alunoId)
+            : [];
+        _historicoReposicoesModal.erro = true;
+    } finally {
+        _historicoReposicoesModal.carregando = false;
+        renderizarHistoricoReposicoes();
+    }
+};
+
+window.recarregarHistoricoReposicoes = function() {
+    if (_historicoReposicoesModal.alunoId) {
+        window.abrirHistoricoReposicoes(_historicoReposicoesModal.alunoId, _historicoReposicoesModal.origem);
+    }
+};
+
+window.fecharHistoricoReposicoes = function() {
+    const modal = document.getElementById('modalHistoricoReposicoes');
+    if (modal) modal.style.display = 'none';
+    const origem = _historicoReposicoesModal.origem;
+    _historicoReposicoesModal = { alunoId: null, dados: null, origem: null, carregando: false, erro: null };
+    if (origem && typeof origem.focus === 'function') origem.focus();
+};
+
+function controlarTecladoHistoricoReposicoes(event) {
+    const modal = document.getElementById('modalHistoricoReposicoes');
+    if (!modal || modal.style.display === 'none') return;
+    if (event.key === 'Escape') {
+        event.preventDefault();
+        window.fecharHistoricoReposicoes();
+        return;
+    }
+    if (event.key !== 'Tab') return;
+    const focaveis = [...modal.querySelectorAll('button:not([disabled]), [href], input, select, textarea')];
+    if (focaveis.length === 0) return;
+    const primeiro = focaveis[0];
+    const ultimo = focaveis[focaveis.length - 1];
+    if (event.shiftKey && document.activeElement === primeiro) {
+        event.preventDefault();
+        ultimo.focus();
+    } else if (!event.shiftKey && document.activeElement === ultimo) {
+        event.preventDefault();
+        primeiro.focus();
+    }
 }
 
 async function carregarDadosComplementaresAlunos() {
@@ -598,6 +831,10 @@ window.alternarStatusAluno = function(id, ativoForcado) {
     }
 };
 document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('btnFecharHistoricoReposicoes')?.addEventListener('click', window.fecharHistoricoReposicoes);
+    document.getElementById('btnRodapeHistoricoReposicoes')?.addEventListener('click', window.fecharHistoricoReposicoes);
+    document.addEventListener('keydown', controlarTecladoHistoricoReposicoes);
+
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
     if (elObjetivoSwitch) {
         elObjetivoSwitch.addEventListener('change', aplicarRegrasObjetivoNoFormulario);

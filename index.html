@@ -420,6 +420,46 @@
             </form>
           </div>
         </div>
+        <div
+          class="modal-overlay"
+          id="modalHistoricoReposicoes"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tituloHistoricoReposicoes"
+          aria-describedby="resumoHistoricoReposicoes"
+          style="display: none"
+        >
+          <div class="modal modal-historico-reposicoes">
+            <div class="modal-historico-reposicoes-cabecalho">
+              <div>
+                <h3 id="tituloHistoricoReposicoes">
+                  <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                  Reposições
+                </h3>
+                <p id="resumoHistoricoReposicoes" class="modal-historico-reposicoes-resumo"></p>
+              </div>
+              <button
+                type="button"
+                class="modal-fechar-icone"
+                id="btnFecharHistoricoReposicoes"
+                aria-label="Fechar histórico de reposições"
+                title="Fechar"
+              >
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div
+              id="conteudoHistoricoReposicoes"
+              class="modal-historico-reposicoes-conteudo"
+              aria-live="polite"
+            ></div>
+            <div class="modal-historico-reposicoes-rodape">
+              <button type="button" class="btn btn-secondary" id="btnRodapeHistoricoReposicoes">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
     <!-- [TAG-HTML-MODAIS] - Modais Compartilhados -->

@@ -211,6 +211,19 @@ Testar em desktop e 430px:
 - Validação: `node --check` passou; frontend `54/54`; backend `224/224`; `git diff --check` passou.
 - Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
 
+### Etapa 3
+
+- Modal `modalHistoricoReposicoes` adicionado ao `index.html`, sem nova aba, rota ou view.
+- Controlador adicionado em `view-alunos.js` com consulta específica por aluno, atualização do cache, estados carregando/vazio/erro e preservação do conteúdo anterior em falha.
+- Histórico agrupado em Pendentes, Agendadas, Realizadas e Expiradas, com ordenação por data/hora original.
+- Linhas mostram status, aula original, validade, cobrança, urgência e agendamento vinculado quando resolvível.
+- Fechamento por `×`, botão de rodapé e Escape; foco retorna ao botão de origem e Tab fica contido no modal.
+- Estilos responsivos adicionados: largura máxima de 680px, altura limitada, rolagem interna, skeleton e viewport estreito.
+- O botão Reagendar aparece apenas para pendência de aluno ativo presente em `aulasParaRepor`; o retorno ao histórico após a ação continua reservado para a etapa 4.
+- Validação: teste de ordem do HTML `5/5`; frontend `54/54`; backend `224/224`; `node --check` e diagnósticos sem erros; `git diff --check` passou.
+- Validação manual pendente: abrir o modal em desktop e 430px, conferir alinhamento, rolagem, foco, Escape, estados de carregamento/erro e ausência de sobreposição.
+- Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
+
 ## 7. Estado ao registrar este plano
 
 As etapas 0 e 1 foram executadas nesta branch. Permanecem pendentes as etapas 2 a 5 do plano; o item 1.10 ainda não está concluído porque o card, o modal e a integração de reagendamento serão implementados nas etapas seguintes.
