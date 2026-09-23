@@ -123,9 +123,31 @@ Ações:
 6. Manter rollback existente e não criar POST paralelo nem alterar cobrança/prazo.
 7. Provar que falha de persistência não envia PATCH, inclusive no chamador real quando houver harness suficiente.
 
+8. O formulário de reagendamento usa `reagendarData` (`input type="date"`) como fonte de verdade; o campo `dia` do compromisso é derivado da data apenas para manter compatibilidade com o modelo atual.
+
 Critério de saída: nenhum modal empilhado; pendência não desaparece antes da confirmação; a data fora da Home é correta.
 
 Commit sugerido: `feat(reposicoes): integra reagendamento ao historico`
+
+### Etapa 4.1 — edição da cobrança da reposição
+
+Esta etapa foi adicionada após a validação visual do modal. A PT poderá editar a reposição
+inteira/corrente entre `Cobrar neste ciclo` e `Cobrar no próximo ciclo`, mas a mudança será
+bloqueada quando a reposição já tiver contribuído para um ciclo pago/congelado. Em ciclo ainda
+aberto, o backend deve ser a autoridade para recalcular a competência, sem o frontend enviar
+`cicloCobrancaResolvido`.
+
+Antes de implementar:
+
+1. Atualizar a spec de reposições, que hoje declara a decisão de cobrança irreversível.
+2. Definir no backend como identificar com segurança a contribuição a ciclo pago e retornar
+	`409` sem alteração quando a edição estiver bloqueada.
+3. Criar rota/contrato de edição atômica do campo de cobrança, preservando histórico da decisão.
+4. Exibir a ação no modal de histórico somente quando a API confirmar que a edição é permitida.
+5. Cobrir mudança nos dois sentidos, bloqueio de ciclo pago, isolamento por `ownerEmail`,
+	recálculo de ciclo aberto e ausência de duplicação financeira.
+
+Commit sugerido: `feat(reposicoes): permite editar competencia de cobranca`
 
 ### Etapa 5 — item 1.3: observações por aluno
 
@@ -223,6 +245,21 @@ Testar em desktop e 430px:
 - Validação: teste de ordem do HTML `5/5`; frontend `54/54`; backend `224/224`; `node --check` e diagnósticos sem erros; `git diff --check` passou.
 - Validação manual pendente: abrir o modal em desktop e 430px, conferir alinhamento, rolagem, foco, Escape, estados de carregamento/erro e ausência de sobreposição.
 - Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
+
+### Ajuste pós-validação visual — data do reagendamento
+
+- O seletor `Dia da Semana` do modal `Agendar Reposição` foi substituído por `Data da reposição` (`input type="date"`).
+- A data escolhida é usada diretamente no novo agendamento; o nome do dia continua sendo derivado apenas para compatibilidade do campo `dia`.
+- Os dois caminhos de abertura do modal foram atualizados, e o harness backend passou a preencher `reagendarData`.
+- Validação após o ajuste: frontend `54/54`; backend `224/224`; diagnósticos sem erros.
+
+### Decisão para a próxima etapa — edição da cobrança
+
+- A edição valerá para a reposição inteira/corrente, não apenas para uma ocorrência.
+- Será permitida enquanto a reposição não tiver contribuído para ciclo pago/congelado.
+- Ciclo pago/congelado bloqueará a alteração.
+- A próxima etapa precisa atualizar a spec, criar contrato/rota atômica no backend, registrar histórico da decisão e cobrir recálculo de ciclo aberto, bloqueio de ciclo pago e isolamento por `ownerEmail`.
+- Essa regra ainda não foi implementada.
 
 ## 7. Estado ao registrar este plano
 

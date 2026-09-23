@@ -1276,7 +1276,10 @@ window.abrirReagendarAulaModalSlot = function (dia, hora) {
           .join("");
     }
   }
-  document.getElementById("reagendarDia").value = dia;
+  const dataInicial = window.formatarDataLocalParaISODate
+    ? window.formatarDataLocalParaISODate(window.dataSelecionada || new Date())
+    : "";
+  document.getElementById("reagendarData").value = dataInicial;
 
   const selectInicio = document.getElementById("reagendarHoraInicio");
   const optionsHtml = HORARIOS.map(
@@ -1285,10 +1288,8 @@ window.abrirReagendarAulaModalSlot = function (dia, hora) {
   selectInicio.innerHTML = optionsHtml;
   selectInicio.value = hora;
 
-  const nomeDiaReagendamento =
-    dia === "Sábado" || dia === "Domingo" ? dia : `${dia}-feira`;
   document.getElementById("infoReagendamentoSlot").textContent =
-    `Agendar reposição às ${hora} de ${nomeDiaReagendamento}`;
+    `Agendar reposição às ${hora}`;
 
   modal.style.display = "flex";
 };
@@ -1321,8 +1322,10 @@ window.iniciarReagendamentoReposicao = function (id) {
     ? aluno.nome
     : "Aluno";
   document.getElementById("reagendarAlunoIdLocked").value = rep.alunoId;
-  const diaTexto = window.getDiaTextoSelecionado();
-  document.getElementById("reagendarDia").value = diaTexto;
+  const dataInicial = window.formatarDataLocalParaISODate
+    ? window.formatarDataLocalParaISODate(window.dataSelecionada || new Date())
+    : "";
+  document.getElementById("reagendarData").value = dataInicial;
 
   const selectInicio = document.getElementById("reagendarHoraInicio");
   const optionsHtml = HORARIOS.map(
@@ -1837,7 +1840,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      const nomeDiaSelecionado = document.getElementById("reagendarDia").value;
+      const dataSelecionadaISO = document.getElementById("reagendarData").value;
       const hInicio = document.getElementById("reagendarHoraInicio").value;
       const duracao = document.getElementById("reagendarDuracao").value;
       const hFim = window.somarMinutos(hInicio, duracao);
@@ -1851,9 +1854,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      const diaAtualIndex = window.dataSelecionada
-        ? window.dataSelecionada.getDay()
-        : 0;
+      if (!dataSelecionadaISO) {
+        alert("Selecione a data da reposição.");
+        return;
+      }
       const nomesDias = window.getNomesDiasSemana
         ? window.getNomesDiasSemana()
         : [
@@ -1865,11 +1869,12 @@ document.addEventListener("DOMContentLoaded", () => {
             "Sexta",
             "Sábado",
           ];
-      const diaSelecionadoIndex = nomesDias.indexOf(nomeDiaSelecionado);
-      const dataBase = new Date(window.dataSelecionada || new Date());
-      const deslocamento = (diaSelecionadoIndex - diaAtualIndex + 7) % 7;
-      dataBase.setDate(dataBase.getDate() + deslocamento);
-      const dataSelecionadaISO = window.formatarDataLocalParaISODate(dataBase);
+      const dataLocal = new Date(`${dataSelecionadaISO}T12:00:00`);
+      if (Number.isNaN(dataLocal.getTime())) {
+        alert("Selecione uma data válida para a reposição.");
+        return;
+      }
+      const nomeDiaSelecionado = nomesDias[dataLocal.getDay()];
 
       let novoCompromisso = {
         id: `ag-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,

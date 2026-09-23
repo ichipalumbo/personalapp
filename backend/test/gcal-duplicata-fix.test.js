@@ -196,7 +196,7 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   const formEditar = criarElemento('formEditarCompromisso');
   elementos.formEditarCompromisso = formEditar;
   elementos.formReagendarAula = criarElemento('formReagendarAula');
-  elementos.reagendarDia = criarElemento('reagendarDia', { value: 'Segunda' });
+  elementos.reagendarData = criarElemento('reagendarData', { value: '2026-09-07' });
   elementos.reagendarHoraInicio = criarElemento('reagendarHoraInicio', { value: '09:00' });
   elementos.reagendarDuracao = criarElemento('reagendarDuracao', { value: '60' });
   elementos.reagendarAluno = criarElemento('reagendarAluno');
@@ -2657,7 +2657,7 @@ test('reagendar reposicao cria avulsa sem campos de recorrencia herdados', async
   const { context } = criarHarnessModalAcaoSlot({ aulas: [], compromisso: null, dataAlvoStr: '31/08/2026' });
   context.window.aulasParaRepor = [rep];
   context.window.reagendamentoDirectCardId = rep.id;
-  context.document.getElementById('reagendarDia').value = 'Segunda';
+  context.document.getElementById('reagendarData').value = '2026-09-07';
   context.document.getElementById('reagendarHoraInicio').value = '09:00';
   context.document.getElementById('reagendarDuracao').value = '60';
   context.window.apiFetchBackend = async () => ({ ok: true, json: async () => ({}) });
@@ -4359,7 +4359,7 @@ function prepararReagendamentoReposicao({ gcalResultado }) {
 
   context.window.aulasParaRepor = [rep];
   context.window.reagendamentoDirectCardId = rep.id;
-  context.document.getElementById('reagendarDia').value = 'Segunda';
+  context.document.getElementById('reagendarData').value = '2026-09-07';
   context.document.getElementById('reagendarHoraInicio').value = '09:00';
   context.document.getElementById('reagendarDuracao').value = '60';
   context.window.gcal = { isSignedIn: () => true };
