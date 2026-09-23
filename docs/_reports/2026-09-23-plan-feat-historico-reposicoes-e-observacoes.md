@@ -261,6 +261,15 @@ Testar em desktop e 430px:
 - A próxima etapa precisa atualizar a spec, criar contrato/rota atômica no backend, registrar histórico da decisão e cobrir recálculo de ciclo aberto, bloqueio de ciclo pago e isolamento por `ownerEmail`.
 - Essa regra ainda não foi implementada.
 
+### Etapa 4 — integração do reagendamento
+
+- O botão Reagendar do histórico agora guarda aluno, reposição e elemento de origem antes de abrir o modal existente.
+- Sucesso remoto, erro e cancelamento têm caminhos distintos; o histórico é reaberto no mesmo aluno após cada retorno.
+- O fluxo da Home continua sem retorno ao histórico quando não existe contexto de origem.
+- A integração preserva a confirmação de persistência antes do PATCH e mantém o fluxo de GCal existente.
+- Validação: `node --check` nos dois arquivos; frontend `54/54`; backend `224/224`; diagnósticos sem erros.
+- Validação manual pendente: sucesso, cancelamento e erro remoto devem reabrir o mesmo histórico sem modal empilhado.
+
 ## 7. Estado ao registrar este plano
 
 As etapas 0 e 1 foram executadas nesta branch. Permanecem pendentes as etapas 2 a 5 do plano; o item 1.10 ainda não está concluído porque o card, o modal e a integração de reagendamento serão implementados nas etapas seguintes.

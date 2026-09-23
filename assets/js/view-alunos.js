@@ -390,7 +390,7 @@ function renderizarLinhaHistoricoReposicao(reposicao, helpers) {
     let acao = '';
 
     if (reposicao.status === 'pendente' && ativo && pendenciaDisponivel) {
-        acao = `<button type="button" class="btn btn-secondary historico-reposicao-acao" onclick="window.fecharHistoricoReposicoes(); window.iniciarReagendamentoReposicao('${escaparHtmlHistorico(reposicao.id)}');">Reagendar</button>`;
+        acao = `<button type="button" class="btn btn-secondary historico-reposicao-acao" onclick="window.iniciarReagendamentoReposicaoDoHistorico('${escaparHtmlHistorico(reposicao.id)}');">Reagendar</button>`;
     } else if (reposicao.status === 'pendente' && !ativo) {
         acao = '<span class="historico-reposicao-aviso">Aluno inativo: reagendamento indisponível.</span>';
     }
@@ -509,6 +509,27 @@ window.abrirHistoricoReposicoes = async function(alunoId, origem) {
 window.recarregarHistoricoReposicoes = function() {
     if (_historicoReposicoesModal.alunoId) {
         window.abrirHistoricoReposicoes(_historicoReposicoesModal.alunoId, _historicoReposicoesModal.origem);
+    }
+};
+
+window.iniciarReagendamentoReposicaoDoHistorico = function(reposicaoId) {
+    if (!_historicoReposicoesModal.alunoId) return;
+    window._retornoHistoricoReposicoes = {
+        alunoId: _historicoReposicoesModal.alunoId,
+        reposicaoId: reposicaoId,
+        origem: _historicoReposicoesModal.origem
+    };
+    window.fecharHistoricoReposicoes();
+    window.iniciarReagendamentoReposicao(reposicaoId);
+};
+
+window.finalizarRetornoHistoricoReposicoes = async function(resultado) {
+    const retorno = window._retornoHistoricoReposicoes;
+    window._retornoHistoricoReposicoes = null;
+    if (!retorno) return;
+    await window.abrirHistoricoReposicoes(retorno.alunoId, retorno.origem);
+    if (resultado && resultado.status === 'sucesso' && typeof window.mostrarToast === 'function') {
+        window.mostrarToast('Histórico de reposições atualizado.');
     }
 };
 

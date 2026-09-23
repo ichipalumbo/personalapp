@@ -1309,6 +1309,7 @@ window.iniciarReagendamentoReposicao = function (id) {
     return;
   }
   window.reagendamentoDirectCardId = id;
+  window._reagendamentoFluxoConcluido = false;
 
   const modal = document.getElementById("modalReagendarAula");
   if (!modal) return;
@@ -1345,6 +1346,13 @@ window.fecharReagendarAulaModal = function () {
   if (modal) {
     modal.style.display = "none";
   }
+  if (
+    !window._reagendamentoFluxoConcluido &&
+    typeof window.finalizarRetornoHistoricoReposicoes === "function"
+  ) {
+    window.finalizarRetornoHistoricoReposicoes({ status: "cancelado" });
+  }
+  window._reagendamentoFluxoConcluido = false;
   window.reagendamentoDirectCardId = null;
 };
 
@@ -1950,6 +1958,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         aulasParaRepor = aulasParaRepor.filter((r) => r.id !== repObj.id);
+        window._reagendamentoFluxoConcluido = true;
         window.fecharReagendarAulaModal();
         if (typeof window.enriquecerAgendamentoComDadosFrescos === "function") {
           window.enriquecerAgendamentoComDadosFrescos(novoCompromisso);
@@ -1972,7 +1981,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (typeof mostrarToast === "function") {
           mostrarToast(`✅ Reposição reagendada com sucesso!${mensagemPrazo}`);
         }
+        if (typeof window.finalizarRetornoHistoricoReposicoes === "function") {
+          await window.finalizarRetornoHistoricoReposicoes({ status: "sucesso" });
+        }
       } catch (erro) {
+        window._reagendamentoFluxoConcluido = true;
+        window.fecharReagendarAulaModal();
+        if (typeof window.finalizarRetornoHistoricoReposicoes === "function") {
+          await window.finalizarRetornoHistoricoReposicoes({ status: "erro" });
+        }
         if (typeof mostrarToast === "function") {
           mostrarToast(
             erro && erro.message
