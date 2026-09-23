@@ -261,6 +261,19 @@ Testar em desktop e 430px:
 - A próxima etapa precisa atualizar a spec, criar contrato/rota atômica no backend, registrar histórico da decisão e cobrir recálculo de ciclo aberto, bloqueio de ciclo pago e isolamento por `ownerEmail`.
 - Essa regra ainda não foi implementada.
 
+### Etapa 4.1 — edição protegida da cobrança
+
+- O PATCH existente de `Reposicao` agora aceita alteração booleana de `cobravel`.
+- A alteração vale para toda a corrente da reposição e registra `cobranca_alterada` no histórico, com decisão anterior e nova.
+- O backend calcula o ciclo responsável: ciclo da aula original para `cobravel: true`; ciclo resolvido para `false`.
+- Se esse ciclo tiver `dataPagamento`, a API responde `409` e não executa atualização.
+- Ao mudar para `true`, `cicloCobrancaResolvido` é removido; ao mudar para `false` em reposição já agendada, o ciclo é resolvido novamente pelo servidor.
+- O modal de histórico ganhou a ação `Editar cobrança`, um modal de escolha e atualização remota do cache.
+- O frontend não envia `cicloCobrancaResolvido` e exibe o erro autorizado pela API.
+- Cobertura adicionada: ciclo aberto permite a troca e registra histórico; ciclo pago bloqueia sem chamar atualização.
+- Validação: backend `226/226`; frontend `54/54`; diagnósticos sem erros; `git diff --check` passou.
+- Validação manual pendente: trocar nos dois sentidos, conferir atualização do histórico, testar `409` após ciclo pago e validar o modal em 430px.
+
 ### Etapa 4 — integração do reagendamento
 
 - O botão Reagendar do histórico agora guarda aluno, reposição e elemento de origem antes de abrir o modal existente.
