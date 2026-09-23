@@ -218,6 +218,8 @@ function obterFrequenciaContratoAluno(aluno) {
 // Dados complementares vindos do backend (Finanças e consistência de agenda), indexados por alunoId.
 let _resumoFinanceiroPorAluno = {};
 let _consistenciaAgendaPorAluno = {};
+let _reposicoesHistorico = null;
+let _reposicoesHistoricoErro = false;
 
 function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
     if (objetivo === 'Consultoria Online') return '';
@@ -263,41 +265,40 @@ function montarCaixinhaConsistenciaAluno(aluno) {
     `;
 }
 
-// Terceira caixinha do card: reposições pendentes com alerta "a vencer" — a regra de prazo vive no módulo compartilhado.
+// Terceira caixinha do card: acesso permanente ao histórico de reposições.
 function montarCaixinhaReposicaoAluno(aluno) {
     const helpers = window.reposicaoFlowHelpers;
-    if (!helpers || typeof helpers.resumoReposicoesAluno !== 'function') return '';
+    if (!helpers || typeof helpers.resumoHistoricoReposicoesAluno !== 'function') return '';
 
-    const resumo = helpers.resumoReposicoesAluno(
-        typeof aulasParaRepor === 'undefined' ? [] : aulasParaRepor,
-        aluno.id
-    );
-    if (!resumo) return '';
-
-    const dias = resumo.diasProximaValidade;
-    let quando;
-    if (dias === null) quando = 'sem prazo definido';
-    else if (dias < 0) quando = 'com prazo encerrado';
-    else if (dias === 0) quando = 'hoje';
-    else if (dias === 1) quando = 'amanhã';
-    else quando = `em ${dias} dias`;
-
-    const total = resumo.total === 1 ? '1 reposição' : `${resumo.total} reposições`;
-
-    if (resumo.aVencer) {
+    const abrirHistorico = `event.stopPropagation(); if (typeof window.abrirHistoricoReposicoes === 'function') window.abrirHistoricoReposicoes('${aluno.id}', this);`;
+    if (_reposicoesHistorico === null) {
         return `
-            <div class="aluno-card-indicador aluno-card-indicador--alerta">
-                <div class="aluno-card-indicador-titulo">⚠️ ${total} a vencer — próxima ${quando}</div>
-                <div class="aluno-card-indicador-detalhe">Reagende antes do fim do prazo.</div>
-            </div>
+            <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes" onclick="${abrirHistorico}" aria-label="Ver histórico de reposições de ${aluno.nome}">
+                <div class="aluno-card-indicador-titulo"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Reposições</div>
+                <div class="aluno-card-indicador-detalhe">Atualizando…</div>
+            </button>
         `;
     }
 
+    if (_reposicoesHistoricoErro) {
+        return `
+            <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes aluno-card-indicador--alerta" onclick="${abrirHistorico}" aria-label="Ver histórico de reposições de ${aluno.nome}">
+                <div class="aluno-card-indicador-titulo"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Reposições</div>
+                <div class="aluno-card-indicador-detalhe">Não foi possível atualizar</div>
+            </button>
+        `;
+    }
+
+    const resumo = helpers.resumoHistoricoReposicoesAluno(_reposicoesHistorico, aluno.id);
+    const classeAlerta = resumo.severidade === 'alerta' || resumo.severidade === 'critico'
+        ? ' aluno-card-indicador--alerta'
+        : '';
+
     return `
-        <div class="aluno-card-indicador">
-            <div class="aluno-card-indicador-titulo">${total} pendente${resumo.total === 1 ? '' : 's'}</div>
-            <div class="aluno-card-indicador-detalhe">Próxima validade ${quando}</div>
-        </div>
+        <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes${classeAlerta}" onclick="${abrirHistorico}" aria-label="Ver histórico de reposições de ${aluno.nome}">
+            <div class="aluno-card-indicador-titulo"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> ${resumo.linhaPrincipal}</div>
+            <div class="aluno-card-indicador-detalhe">${resumo.linhaSecundaria} <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></div>
+        </button>
     `;
 }
 
@@ -316,6 +317,18 @@ async function carregarDadosComplementaresAlunos() {
     }
 
     if (typeof window.apiFetchBackend === 'function') {
+        try {
+            const base = window.APP_API_CONFIG.apiBaseUrl;
+            const resposta = await window.apiFetchBackend(`${base}/reposicoes`);
+            if (!resposta.ok) throw new Error('Falha ao carregar reposições.');
+            const dados = await resposta.json();
+            _reposicoesHistorico = Array.isArray(dados) ? dados : [];
+            _reposicoesHistoricoErro = false;
+        } catch (_) {
+            _reposicoesHistorico = [];
+            _reposicoesHistoricoErro = true;
+        }
+
         try {
             const base = window.APP_API_CONFIG.apiBaseUrl;
             const resposta = await window.apiFetchBackend(`${base}/alunos/consistencia-agenda`);
@@ -410,6 +423,8 @@ window.renderizarListaAlunos = function() {
                     + '|' + filtroStatus + '|' + filtroObjetivo
                     + '|' + JSON.stringify(_resumoFinanceiroPorAluno)
                     + '|' + JSON.stringify(_consistenciaAgendaPorAluno)
+                    + '|' + JSON.stringify(_reposicoesHistorico)
+                    + '|' + _reposicoesHistoricoErro
                     + '|' + JSON.stringify(typeof aulasParaRepor === 'undefined' ? [] : aulasParaRepor);
             } catch (_) { return null; }
         })();

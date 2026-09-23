@@ -746,6 +746,20 @@ body {
   border-radius: 6px;
   padding: 8px 10px;
 }
+.aluno-card-indicador--reposicoes {
+  width: 100%;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.aluno-card-indicador--reposicoes:hover,
+.aluno-card-indicador--reposicoes:focus-visible {
+  background: rgba(255, 215, 0, 0.14);
+  border-color: rgba(255, 215, 0, 0.55);
+  outline: none;
+}
 .aluno-card-indicador--alerta {
   background: rgba(255, 152, 0, 0.12);
   border-color: rgba(255, 152, 0, 0.28);

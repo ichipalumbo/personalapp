@@ -201,6 +201,16 @@ Testar em desktop e 430px:
 - Resultado final: frontend `54/54`; backend `224/224`.
 - Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
 
+### Etapa 2
+
+- Cache completo de reposições adicionado em `view-alunos.js`, separado de `aulasParaRepor`.
+- Estados distintos de carregamento e erro adicionados; falha da consulta não é tratada como lista vazia.
+- O card de todo aluno agora renderiza um botão permanente de Reposições.
+- Clique e foco têm tratamento visual; a propagação é interrompida para não abrir a edição do aluno.
+- O botão já está preparado para chamar `window.abrirHistoricoReposicoes`; o modal e seu controlador ficam para a etapa 3.
+- Validação: `node --check` passou; frontend `54/54`; backend `224/224`; `git diff --check` passou.
+- Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
+
 ## 7. Estado ao registrar este plano
 
 As etapas 0 e 1 foram executadas nesta branch. Permanecem pendentes as etapas 2 a 5 do plano; o item 1.10 ainda não está concluído porque o card, o modal e a integração de reagendamento serão implementados nas etapas seguintes.
