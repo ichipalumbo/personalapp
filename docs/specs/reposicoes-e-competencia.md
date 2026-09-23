@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: implementação do fluxo de reabertura concluída; interface contextual de histórico no card do aluno especificada e pendente de implementação; correção de dados duplicados em produção pendente de operação manual do dono · **Versão**: 9 · **Atualizado**: 2026-09-21
+> **Status**: implementação do fluxo de reabertura concluída; correção de dados duplicados em produção concluída pelo dono em 2026-09-23; interface contextual de histórico no card do aluno (seção 9.4) planejada, sem implementação iniciada · **Versão**: 10 · **Atualizado**: 2026-09-23
 >
 > **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
@@ -297,7 +297,12 @@ vezes por escolhas inconsistentes.
 ### 6.5 Constante única
 
 `PRAZO_MINIMO_REPOSICAO_DIAS = 7`. O mesmo número é usado como janela de "vencendo em
-breve" nos avisos de UI (9.5). Não criar duas constantes.
+breve" nos avisos de UI (9.4). Não criar duas constantes.
+
+**Histórico da decisão**: o item 0.8 do roadmap entregou o alerta com janela de **5 dias**
+(decisão do dono em 2026-09-18), divergindo desta seção. Em 2026-09-23 o dono decidiu
+alinhar o código à spec: `DIAS_ALERTA_REPOSICAO` passou de 5 para 7, e o alerta volta a
+reusar o mesmo número do piso de prazo.
 
 No extrato, a reposição pendente exibe o prazo na própria linha
 (`aguardando reagendamento; válida até DD/MM`). Registros anteriores a esta versão, e
