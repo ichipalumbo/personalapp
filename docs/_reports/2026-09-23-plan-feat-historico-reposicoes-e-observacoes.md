@@ -184,6 +184,23 @@ Testar em desktop e 430px:
 - Alteração de backend ou migração de dados.
 - Correção manual adicional no banco.
 
-## 6. Estado ao registrar este plano
+## 6. Execução das etapas 0 e 1
 
-As alterações de implementação feitas durante a análise foram revertidas. Permanecem somente atualizações documentais: o registro da correção manual do item 0.11 e o alinhamento da spec para a janela de 7 dias. A implementação das etapas acima ainda não foi executada.
+### Etapa 0
+
+- Branch criada: `feat/reposicoes-helpers`, a partir de `origin/main`, sem upstream.
+- Árvore limpa antes da implementação.
+- Baseline medido: frontend `47/47`; backend `224/224`.
+
+### Etapa 1
+
+- `DIAS_ALERTA_REPOSICAO` alinhado para 7 dias.
+- Adicionados helpers puros para resumo permanente do card e agrupamento/ordenação do histórico.
+- Testes adicionados para estados neutro, histórico, sem prazo, alerta, vencimento e prazo encerrado.
+- Prova de mutação executada: alterar o limite de 7 para 8 produziu `2` falhas em `15` testes focados; a mutação foi revertida.
+- Resultado final: frontend `54/54`; backend `224/224`.
+- Commit ainda não criado; a regra do repositório exige solicitação explícita para commits.
+
+## 7. Estado ao registrar este plano
+
+As etapas 0 e 1 foram executadas nesta branch. Permanecem pendentes as etapas 2 a 5 do plano; o item 1.10 ainda não está concluído porque o card, o modal e a integração de reagendamento serão implementados nas etapas seguintes.

@@ -28,7 +28,7 @@
     }
 
     // Dias antes do fim da validade em que a reposição entra em alerta "a vencer".
-    const DIAS_ALERTA_REPOSICAO = 5;
+    const DIAS_ALERTA_REPOSICAO = 7;
 
     function dataLocalDeISO(dataISO) {
         if (!dataISO || typeof dataISO !== 'string') return null;
@@ -70,11 +70,117 @@
         };
     }
 
+    const STATUS_REPOSICAO = ['pendente', 'agendada', 'realizada', 'expirada'];
+
+    function pluralizar(quantidade, singular, plural) {
+        return `${quantidade} ${quantidade === 1 ? singular : plural}`;
+    }
+
+    function obterReposicoesDoAluno(reposicoes, alunoId) {
+        return (Array.isArray(reposicoes) ? reposicoes : []).filter(
+            (reposicao) => reposicao
+                && reposicao.alunoId === alunoId
+                && STATUS_REPOSICAO.includes(reposicao.status)
+        );
+    }
+
+    function resumoHistoricoReposicoesAluno(reposicoes, alunoId) {
+        const doAluno = obterReposicoesDoAluno(reposicoes, alunoId);
+        const contagens = { pendente: 0, agendada: 0, realizada: 0, expirada: 0 };
+        doAluno.forEach((reposicao) => { contagens[reposicao.status] += 1; });
+
+        const base = {
+            total: doAluno.length,
+            contagens,
+            diasProximaValidade: null
+        };
+
+        if (doAluno.length === 0) {
+            return {
+                ...base,
+                severidade: 'neutro',
+                linhaPrincipal: 'Nenhuma reposição',
+                linhaSecundaria: 'Ver histórico'
+            };
+        }
+
+        if (contagens.pendente === 0) {
+            const partes = [];
+            if (contagens.agendada) partes.push(pluralizar(contagens.agendada, 'agendada', 'agendadas'));
+            if (contagens.realizada) partes.push(pluralizar(contagens.realizada, 'realizada', 'realizadas'));
+            if (contagens.expirada) partes.push(pluralizar(contagens.expirada, 'expirada', 'expiradas'));
+            return {
+                ...base,
+                severidade: 'info',
+                linhaPrincipal: 'Histórico disponível',
+                linhaSecundaria: partes.join(' · ')
+            };
+        }
+
+        const prazos = doAluno
+            .filter((reposicao) => reposicao.status === 'pendente' && reposicao.validoAte)
+            .map((reposicao) => diasAteDataISO(reposicao.validoAte))
+            .filter((dias) => dias !== null);
+        const linhaPrincipal = pluralizar(contagens.pendente, 'pendente', 'pendentes');
+
+        if (prazos.length === 0) {
+            return { ...base, severidade: 'info', linhaPrincipal, linhaSecundaria: 'Sem prazo definido' };
+        }
+
+        const diasMinimo = Math.min(...prazos);
+        const resumo = { ...base, diasProximaValidade: diasMinimo, linhaPrincipal };
+
+        if (diasMinimo < 0) {
+            const encerrados = prazos.filter((dias) => dias < 0).length;
+            return { ...resumo, severidade: 'critico', linhaSecundaria: `${encerrados} com prazo encerrado` };
+        }
+        if (diasMinimo === 0) {
+            const vencendoHoje = prazos.filter((dias) => dias === 0).length;
+            return {
+                ...resumo,
+                severidade: 'alerta',
+                linhaSecundaria: vencendoHoje === 1 ? 'Vence hoje' : `${vencendoHoje} vencem hoje`
+            };
+        }
+        if (diasMinimo <= DIAS_ALERTA_REPOSICAO) {
+            const naJanela = prazos.filter((dias) => dias > 0 && dias <= DIAS_ALERTA_REPOSICAO).length;
+            return {
+                ...resumo,
+                severidade: 'alerta',
+                linhaSecundaria: `${naJanela} vence${naJanela === 1 ? '' : 'm'} em ${pluralizar(diasMinimo, 'dia', 'dias')}`
+            };
+        }
+
+        return {
+            ...resumo,
+            severidade: 'info',
+            linhaSecundaria: `Próxima validade em ${pluralizar(diasMinimo, 'dia', 'dias')}`
+        };
+    }
+
+    function agruparHistoricoReposicoes(reposicoes, alunoId) {
+        const doAluno = obterReposicoesDoAluno(reposicoes, alunoId);
+        return STATUS_REPOSICAO.reduce((grupos, status) => {
+            const itens = doAluno
+                .filter((reposicao) => reposicao.status === status)
+                .sort((a, b) => {
+                    const chaveA = `${a.dataOriginal || ''}T${a.horarioOriginal || ''}`;
+                    const chaveB = `${b.dataOriginal || ''}T${b.horarioOriginal || ''}`;
+                    return chaveB.localeCompare(chaveA);
+                });
+            if (itens.length > 0) grupos.push({ status, itens });
+            return grupos;
+        }, []);
+    }
+
     return {
         deveEnviarPatch,
         obterMensagemFalhaPersistencia,
         DIAS_ALERTA_REPOSICAO,
+        STATUS_REPOSICAO,
         diasAteDataISO,
-        resumoReposicoesAluno
+        resumoReposicoesAluno,
+        resumoHistoricoReposicoesAluno,
+        agruparHistoricoReposicoes
     };
 });
