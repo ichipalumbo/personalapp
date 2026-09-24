@@ -1087,7 +1087,6 @@ window.abrirModalAcaoSlot = function (id) {
     });
     return;
   }
-  modal.style.display = "flex";
 };
 
 window.fecharModalAcaoSlot = function () {

@@ -682,7 +682,6 @@
             });
             return;
         }
-        modal.style.display = 'flex';
     }
 
     function fecharModal(tipo) {

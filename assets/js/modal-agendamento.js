@@ -241,8 +241,6 @@ window.abrirEscolhaTipoModal = function(dia, hora) {
             });
             return;
         }
-
-        modal.style.display = 'flex';
     }
 };
 
@@ -354,7 +352,6 @@ window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
             });
             return;
         }
-        modal.style.display = 'flex';
     }
 };
 
