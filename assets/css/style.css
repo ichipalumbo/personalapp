@@ -855,8 +855,18 @@ body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
+
+.form-aluno::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .modal-alunos-header {
   display: flex;
   align-items: center;
