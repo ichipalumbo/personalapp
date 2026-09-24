@@ -1403,6 +1403,14 @@ body {
   padding-right: 2px;
   padding-bottom: 12px;
   box-sizing: border-box;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-recorrencia-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .modal-recorrencia-body > :last-child {
