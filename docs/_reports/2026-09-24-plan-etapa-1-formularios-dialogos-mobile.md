@@ -1,10 +1,21 @@
 # Plano detalhado — Etapa 1 da auditoria mobile: formulários e diálogos
 
 > **Data**: 2026-09-24  
-> **Status**: avaliação e planejamento; nenhuma implementação executada  
-> **Branch avaliada**: `docs/diag-auditoria-ui-mobile`  
+> **Status**: implementação iniciada; primeira correção focada em progresso  
+> **Branch de trabalho**: `fix/mobile-formularios-dialogos`  
 > **Origem**: seção 6, “Etapa 1 — formulários e diálogos mobile”, de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`  
-> **Escopo desta rodada**: inventariar o estado atual, decompor a etapa, definir critérios e registrar dúvidas. Não alterar HTML, CSS, JavaScript, regras de negócio ou testes.
+> **Escopo desta rodada**: executar a primeira correção pequena e rastreável do bloqueio do cadastro de aluno em mobile, mantendo regras de negócio intactas.
+
+### Progresso por commit
+
+- **Commit 1 (em andamento / concluído nesta rodada):** correção mínima do modal de cadastro/edição de aluno em mobile.
+  - Ajuste de semântica de diálogo (`role="dialog"`, `aria-modal`, `aria-labelledby`).
+  - Foco inicial no primeiro campo do formulário ao abrir.
+  - Aumento de altura/rolagem interna do corpo do modal em telas pequenas.
+  - Teste de regressão cobrindo o contrato de diálogo e foco inicial.
+  - Validação: suíte de frontend com o teste específico passou.
+
+---
 
 ---
 

@@ -689,14 +689,25 @@ window.inicializarPaginaCadastro = async function(opcoes = {}) {
 window.inicializarAlunos = async function() {
     await window.inicializarPaginaCadastro();
 };
+function focarPrimeiroCampoModalAluno() {
+    const nomeInput = document.getElementById('alunoNome');
+    if (!nomeInput || nomeInput.disabled) return;
+    if (document.activeElement !== nomeInput) nomeInput.focus();
+}
+
 window.togglePainelCadastro = function(mostrar) {
     const modal = document.getElementById('modalFormAluno');
     if (!modal) return;
 
     if (mostrar) {
-        modal.style.display = 'flex'; // Exibe o overlay centralizado
+        modal.style.display = 'flex';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+        modal.setAttribute('aria-labelledby', 'tituloFormAluno');
+        focarPrimeiroCampoModalAluno();
     } else {
-        modal.style.display = 'none'; // Esconde o modal
+        modal.style.display = 'none';
+        modal.setAttribute('aria-modal', 'false');
         const form = document.getElementById('formNovoAluno');
         if (form) form.reset();
 
@@ -964,6 +975,15 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnExcluirAlunoModal) {
         btnExcluirAlunoModal.addEventListener('click', window.excluirAlunoViaModal);
     }
+
+    document.addEventListener('keydown', (event) => {
+        const modal = document.getElementById('modalFormAluno');
+        if (!modal || modal.style.display === 'none') return;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            window.togglePainelCadastro(false);
+        }
+    });
 
     const formAluno = document.getElementById('formNovoAluno');
     if (formAluno) {

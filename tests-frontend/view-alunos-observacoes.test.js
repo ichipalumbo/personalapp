@@ -77,3 +77,18 @@ test('salvar edicao persiste observacao no aluno', (t) => {
 
     assert.equal(aluno.observacoes, 'Atualizada\ncom cuidado');
 });
+
+test('modal de aluno abre como dialog com foco inicial do campo principal', (t) => {
+    const { dom, window } = criarTela([{ id: 'aluno-4', nome: 'Diana', local: 'Studio', objetivo: 'Personal Trainer', frequenciaSemanal: 2, status: 'ativo', preco: 90, diaVencimento: 12, metodoCobranca: 'por_aula' }]);
+    t.after(() => dom.window.close());
+
+    const modal = window.document.getElementById('modalFormAluno');
+    const nomeInput = window.document.getElementById('alunoNome');
+
+    window.togglePainelCadastro(true);
+
+    assert.equal(modal.getAttribute('role'), 'dialog');
+    assert.equal(modal.getAttribute('aria-modal'), 'true');
+    assert.equal(modal.getAttribute('aria-labelledby'), 'tituloFormAluno');
+    assert.equal(window.document.activeElement, nomeInput);
+});
