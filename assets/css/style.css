@@ -2541,10 +2541,13 @@ body {
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.3s ease;
+  /* Oculto: não capturar toques para não bloquear o FAB e elementos sob a faixa */
+  pointer-events: none;
 }
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: auto;
 }
 .toast.error {
   background: #e53935;
