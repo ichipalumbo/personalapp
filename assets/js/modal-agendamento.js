@@ -256,6 +256,15 @@ window.fecharEscolhaTipoModal = function() {
 
 // ── Modal: Agendamento Único ───────────────────────────────────────────────────────────────────
 
+window.fecharAgendamentoModal = function () {
+    const modal = document.getElementById('modalAgendamento');
+    if (modal && window.DialogController && typeof window.DialogController.close === 'function') {
+        window.DialogController.close(modal);
+        return;
+    }
+    if (modal) modal.style.display = 'none';
+};
+
 window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
     slotSelecionadoHora = hora;
     slotSelecionadoDiaTexto = dia;
@@ -308,7 +317,13 @@ window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
 
     window.selecionarTipoAgendamento(tipoSelecionado);
     atualizarResumoRecorrenciaAgendamentoPrincipal();
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        if (window.DialogController && typeof window.DialogController.open === 'function') {
+            window.DialogController.open(modal, { trigger: document.activeElement || null });
+            return;
+        }
+        modal.style.display = 'flex';
+    }
 };
 
 window.selecionarTipoAgendamento = function(tipo) {
@@ -710,18 +725,26 @@ window.abrirModalRecorrencia = function(dia, hora) {
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('tabindex', '-1');
     bloquearModalPrincipalParaRecorrencia();
-    modal.style.display = 'flex';
-    ativarTrapFocoModalRecorrencia();
+    if (window.DialogController && typeof window.DialogController.open === 'function') {
+        window.DialogController.open(modal, { trigger: ultimoFocoAntesModalRecorrencia || null });
+    } else {
+        modal.style.display = 'flex';
+        ativarTrapFocoModalRecorrencia();
+    }
 };
 
 window.fecharModalRecorrencia = function() {
     const modal = document.getElementById('modalRecorrencia');
     if (!modal) return;
 
-    modal.style.display = 'none';
-    modal.classList.remove('modal-overlay-secondary');
-    desbloquearModalPrincipalParaRecorrencia();
-    desativarTrapFocoModalRecorrencia();
+    if (window.DialogController && typeof window.DialogController.close === 'function') {
+        window.DialogController.close(modal);
+    } else {
+        modal.style.display = 'none';
+        modal.classList.remove('modal-overlay-secondary');
+        desbloquearModalPrincipalParaRecorrencia();
+        desativarTrapFocoModalRecorrencia();
+    }
     rascunhoRecorrenciaTemporario = null;
 
     if (ultimoFocoAntesModalRecorrencia && typeof ultimoFocoAntesModalRecorrencia.focus === 'function') {

@@ -136,3 +136,63 @@ test('modal de reagendamento abre com dialog controller e foco inicial', (t) => 
     assert.equal(modal.getAttribute('aria-modal'), 'true');
     assert.equal(window.document.activeElement, select);
 });
+
+test('modal de agendamento abre com dialog controller e foco inicial', (t) => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <button id="trigger">Abrir</button>
+        <div id="modalAgendamento" style="display:none" aria-labelledby="agendaTituloModal">
+            <h3 id="agendaTituloModal">Novo Agendamento</h3>
+            <form id="formAgendamento">
+                <select id="agendaAluno" data-dialog-focus="true">
+                    <option value="">Selecione um aluno...</option>
+                </select>
+                <input id="agendaDescricao" value="" />
+            </form>
+        </div>
+    </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+
+    const { window } = dom;
+    const modal = window.document.getElementById('modalAgendamento');
+    const trigger = window.document.getElementById('trigger');
+    const select = window.document.getElementById('agendaAluno');
+
+    vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
+
+    trigger.focus();
+    window.DialogController.open(modal, { trigger });
+
+    assert.equal(modal.style.display, 'flex');
+    assert.equal(modal.getAttribute('role'), 'dialog');
+    assert.equal(modal.getAttribute('aria-modal'), 'true');
+    assert.equal(window.document.activeElement, select);
+});
+
+test('modal de recorrencia abre com dialog controller e foco inicial', (t) => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <button id="trigger">Abrir</button>
+        <div id="modalRecorrencia" style="display:none" aria-labelledby="tituloModalRecorrencia">
+            <h3 id="tituloModalRecorrencia">Configurar Repetição</h3>
+            <form id="formRecorrencia">
+                <input id="recorrenciaDataInicio" data-dialog-focus="true" value="2026-09-24" />
+                <select id="recorrenciaPadrao"><option value="semanal">Semanal</option></select>
+            </form>
+        </div>
+    </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+
+    const { window } = dom;
+    const modal = window.document.getElementById('modalRecorrencia');
+    const trigger = window.document.getElementById('trigger');
+    const input = window.document.getElementById('recorrenciaDataInicio');
+
+    vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
+
+    trigger.focus();
+    window.DialogController.open(modal, { trigger });
+
+    assert.equal(modal.style.display, 'flex');
+    assert.equal(modal.getAttribute('role'), 'dialog');
+    assert.equal(modal.getAttribute('aria-modal'), 'true');
+    assert.equal(window.document.activeElement, input);
+});
