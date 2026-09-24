@@ -17,8 +17,18 @@ function criarElemento(id) {
     disabled: false,
     dataset: {},
     listeners: {},
+    atributos: {},
     style: { display: '', color: '', visibility: '' },
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
+    setAttribute(nome, valor) {
+      this.atributos[nome] = String(valor);
+    },
+    getAttribute(nome) {
+      return Object.prototype.hasOwnProperty.call(this.atributos, nome) ? this.atributos[nome] : null;
+    },
+    removeAttribute(nome) {
+      delete this.atributos[nome];
+    },
     addEventListener(evento, fn) {
       this.listeners[evento] = fn;
     },
@@ -217,6 +227,118 @@ test('fechar agendamento pelo botão remove o modal do DialogController', () => 
 
   assert.deepEqual(fechamentos, ['modalAgendamento']);
   assert.equal(modal.style.display, 'none');
+});
+
+test('fechar recorrência pelo DialogController desbloqueia o modal de agendamento', () => {
+  const { context, document } = carregarHarnessModalAgendamento();
+  const criarClassList = () => {
+    const classes = new Set();
+    return {
+      add: (nome) => classes.add(nome),
+      remove: (nome) => classes.delete(nome),
+      toggle() {},
+      contains: (nome) => classes.has(nome),
+    };
+  };
+  const principal = document.getElementById('modalAgendamento');
+  const recorrencia = document.getElementById('modalRecorrencia');
+  principal.classList = criarClassList();
+  recorrencia.classList = criarClassList();
+  context.window.formatarDataPtBrLegivel = (valor) => String(valor || '');
+
+  context.window.DialogController = {
+    open(alvo) {
+      alvo.style.display = 'flex';
+    },
+    close(alvo) {
+      alvo.style.display = 'none';
+    },
+  };
+
+  context.window.abrirAgendamentoModal('Segunda', '09:00', 'aula');
+  context.window.abrirModalRecorrencia('Segunda', '09:00');
+  assert.equal(principal.classList.contains('modal-underlay-blocked'), true);
+
+  context.window.fecharModalRecorrencia();
+
+  assert.equal(principal.classList.contains('modal-underlay-blocked'), false);
+  assert.equal(principal.getAttribute('aria-hidden'), null);
+  assert.equal(recorrencia.classList.contains('modal-overlay-secondary'), false);
+});
+
+test('cancelar agendamento sem alteração fecha sem pedir confirmação', () => {
+  const { context, document } = carregarHarnessModalAgendamento();
+  const confirmacoes = [];
+  context.window.confirm = (mensagem) => {
+    confirmacoes.push(mensagem);
+    return false;
+  };
+  context.window.DialogController = {
+    open(alvo) {
+      alvo.style.display = 'flex';
+    },
+    close(alvo) {
+      alvo.style.display = 'none';
+    },
+  };
+
+  context.window.abrirAgendamentoModal('Segunda', '09:00', 'aula');
+  document.getElementById('btnFecharModal').listeners.click();
+
+  assert.equal(confirmacoes.length, 0);
+  assert.equal(document.getElementById('modalAgendamento').style.display, 'none');
+});
+
+test('cancelar agendamento alterado pede confirmação e respeita a resposta', () => {
+  const { context, document } = carregarHarnessModalAgendamento();
+  let resposta = false;
+  const confirmacoes = [];
+  context.window.confirm = (mensagem) => {
+    confirmacoes.push(mensagem);
+    return resposta;
+  };
+  context.window.DialogController = {
+    open(alvo) {
+      alvo.style.display = 'flex';
+    },
+    close(alvo) {
+      alvo.style.display = 'none';
+    },
+  };
+  const modal = document.getElementById('modalAgendamento');
+
+  context.window.abrirAgendamentoModal('Segunda', '09:00', 'aula');
+  document.getElementById('agendaAluno').value = 'aluno-1';
+
+  document.getElementById('btnFecharModal').listeners.click();
+  assert.equal(confirmacoes.length, 1);
+  assert.equal(modal.style.display, 'flex', 'recusar a confirmação mantém o formulário aberto');
+
+  resposta = true;
+  document.getElementById('btnFecharModal').listeners.click();
+  assert.equal(confirmacoes.length, 2);
+  assert.equal(modal.style.display, 'none');
+});
+
+test('clique no fundo da recorrência não fecha o modal', () => {
+  const { context, document } = carregarHarnessModalAgendamento();
+  const recorrencia = document.getElementById('modalRecorrencia');
+  context.window.formatarDataPtBrLegivel = (valor) => String(valor || '');
+  context.window.DialogController = {
+    open(alvo) {
+      alvo.style.display = 'flex';
+    },
+    close(alvo) {
+      alvo.style.display = 'none';
+    },
+  };
+
+  context.window.abrirAgendamentoModal('Segunda', '09:00', 'aula');
+  context.window.abrirModalRecorrencia('Segunda', '09:00');
+  const cliqueFundo = recorrencia.listeners.mousedown;
+  if (typeof cliqueFundo === 'function') cliqueFundo({ target: recorrencia });
+
+  assert.equal(recorrencia.style.display, 'flex');
 });
 
 test('Ponto 1 — falha na gravação remove a aula, avisa e reabre o formulário preenchido', async () => {

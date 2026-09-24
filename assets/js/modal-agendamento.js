@@ -235,7 +235,10 @@ window.abrirEscolhaTipoModal = function(dia, hora) {
         }
 
         if (window.DialogController && typeof window.DialogController.open === 'function') {
-            window.DialogController.open(modal, { trigger: document.activeElement || null });
+            window.DialogController.open(modal, {
+                trigger: document.activeElement || null,
+                onRequestClose: window.fecharEscolhaTipoModal
+            });
             return;
         }
 
@@ -264,6 +267,31 @@ window.fecharAgendamentoModal = function () {
     }
     if (modal) modal.style.display = 'none';
 };
+
+function cancelarAgendamentoModal() {
+    const alterado = assinaturaAberturaAgendamento !== null
+        && assinaturaFormularioAgendamento() !== assinaturaAberturaAgendamento;
+    if (alterado && !window.confirm('Descartar as alterações deste agendamento?')) return;
+    window.fecharAgendamentoModal();
+    window.reposicaoIdEmReagendamento = null;
+}
+
+let assinaturaAberturaAgendamento = null;
+
+function assinaturaFormularioAgendamento() {
+    const valores = capturarValoresFormularioAgendamento();
+    const recorrencia = rascunhoFluxoAgendamento && rascunhoFluxoAgendamento.recurrence;
+    return JSON.stringify({
+        tipo: valores.tipo,
+        alunoId: valores.alunoId,
+        descricao: valores.descricao,
+        horarioInicio: valores.horarioInicio,
+        duracao: valores.duracao,
+        diaInteiro: valores.diaInteiro,
+        data: document.getElementById('agendaDataSelecionadaInput')?.value || '',
+        recorrencia: recorrencia ? recorrencia.summaryText || '' : ''
+    });
+}
 
 window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
     slotSelecionadoHora = hora;
@@ -317,9 +345,13 @@ window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
 
     window.selecionarTipoAgendamento(tipoSelecionado);
     atualizarResumoRecorrenciaAgendamentoPrincipal();
+    assinaturaAberturaAgendamento = assinaturaFormularioAgendamento();
     if (modal) {
         if (window.DialogController && typeof window.DialogController.open === 'function') {
-            window.DialogController.open(modal, { trigger: document.activeElement || null });
+            window.DialogController.open(modal, {
+                trigger: document.activeElement || null,
+                onRequestClose: cancelarAgendamentoModal
+            });
             return;
         }
         modal.style.display = 'flex';
@@ -726,7 +758,10 @@ window.abrirModalRecorrencia = function(dia, hora) {
     modal.setAttribute('tabindex', '-1');
     bloquearModalPrincipalParaRecorrencia();
     if (window.DialogController && typeof window.DialogController.open === 'function') {
-        window.DialogController.open(modal, { trigger: ultimoFocoAntesModalRecorrencia || null });
+        window.DialogController.open(modal, {
+            trigger: ultimoFocoAntesModalRecorrencia || null,
+            onRequestClose: window.fecharModalRecorrencia
+        });
     } else {
         modal.style.display = 'flex';
         ativarTrapFocoModalRecorrencia();
@@ -741,10 +776,10 @@ window.fecharModalRecorrencia = function() {
         window.DialogController.close(modal);
     } else {
         modal.style.display = 'none';
-        modal.classList.remove('modal-overlay-secondary');
-        desbloquearModalPrincipalParaRecorrencia();
-        desativarTrapFocoModalRecorrencia();
     }
+    modal.classList.remove('modal-overlay-secondary');
+    desbloquearModalPrincipalParaRecorrencia();
+    desativarTrapFocoModalRecorrencia();
     rascunhoRecorrenciaTemporario = null;
 
     if (ultimoFocoAntesModalRecorrencia && typeof ultimoFocoAntesModalRecorrencia.focus === 'function') {
@@ -1096,23 +1131,11 @@ document.addEventListener('DOMContentLoaded', () => {
         capturarFormularioPrincipalNoRascunho();
     });
 
-    const overlayRecorrencia = document.getElementById('modalRecorrencia');
-    if (overlayRecorrencia) {
-        overlayRecorrencia.addEventListener('mousedown', (event) => {
-            if (event.target === overlayRecorrencia) {
-                window.fecharModalRecorrencia();
-            }
-        });
-    }
-
     window.inicializarMultiSelectPills();
     window.atualizarEstadoFimRecorrencia();
     window.atualizarTextoPreviewRecorrencia();
 
     if (document.getElementById('btnFecharModal')) {
-        document.getElementById('btnFecharModal').addEventListener('click', () => {
-            window.fecharAgendamentoModal();
-            window.reposicaoIdEmReagendamento = null; 
-        });
+        document.getElementById('btnFecharModal').addEventListener('click', cancelarAgendamentoModal);
     }
 });

@@ -279,9 +279,10 @@ function montarCaixinhaReposicaoAluno(aluno) {
     if (!helpers || typeof helpers.resumoHistoricoReposicoesAluno !== 'function') return '';
 
     const abrirHistorico = `event.stopPropagation(); if (typeof window.abrirHistoricoReposicoes === 'function') window.abrirHistoricoReposicoes('${aluno.id}', this);`;
+    const atributosHistorico = `onclick="${abrirHistorico}" data-historico-aluno="${aluno.id}"`;
     if (_reposicoesHistorico === null) {
         return `
-            <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes" onclick="${abrirHistorico}" aria-label="Ver histórico de reposições de ${aluno.nome}">
+            <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes" ${atributosHistorico} aria-label="Ver histórico de reposições de ${aluno.nome}">
                 <div class="aluno-card-indicador-titulo"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Reposições</div>
                 <div class="aluno-card-indicador-detalhe">Atualizando…</div>
             </button>
@@ -290,7 +291,7 @@ function montarCaixinhaReposicaoAluno(aluno) {
 
     if (_reposicoesHistoricoErro) {
         return `
-            <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes aluno-card-indicador--alerta" onclick="${abrirHistorico}" aria-label="Ver histórico de reposições de ${aluno.nome}">
+            <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes aluno-card-indicador--alerta" ${atributosHistorico} aria-label="Ver histórico de reposições de ${aluno.nome}">
                 <div class="aluno-card-indicador-titulo"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Reposições</div>
                 <div class="aluno-card-indicador-detalhe">Não foi possível atualizar</div>
             </button>
@@ -303,7 +304,7 @@ function montarCaixinhaReposicaoAluno(aluno) {
         : '';
 
     return `
-        <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes${classeAlerta}" onclick="${abrirHistorico}" aria-label="Ver histórico de reposições de ${aluno.nome}">
+        <button type="button" class="aluno-card-indicador aluno-card-indicador--reposicoes${classeAlerta}" ${atributosHistorico} aria-label="Ver histórico de reposições de ${aluno.nome}">
             <div class="aluno-card-indicador-titulo"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> ${resumo.linhaPrincipal}</div>
             <div class="aluno-card-indicador-detalhe">${resumo.linhaSecundaria} <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></div>
         </button>
@@ -501,7 +502,14 @@ window.abrirHistoricoReposicoes = async function(alunoId, origem) {
         carregando: true,
         erro: null
     };
-    modal.style.display = 'flex';
+    if (window.DialogController && typeof window.DialogController.open === 'function') {
+        window.DialogController.open(modal, {
+            trigger: _historicoReposicoesModal.origem || null,
+            onRequestClose: window.fecharHistoricoReposicoes
+        });
+    } else {
+        modal.style.display = 'flex';
+    }
     renderizarHistoricoReposicoes();
     document.getElementById('btnFecharHistoricoReposicoes')?.focus();
     try {
@@ -546,10 +554,19 @@ window.finalizarRetornoHistoricoReposicoes = async function(resultado) {
 
 window.fecharHistoricoReposicoes = function() {
     const modal = document.getElementById('modalHistoricoReposicoes');
-    if (modal) modal.style.display = 'none';
+    if (modal && dialogEstaNaPilha(modal)) {
+        window.DialogController.close(modal);
+    } else if (modal) {
+        modal.style.display = 'none';
+    }
     const origem = _historicoReposicoesModal.origem;
+    const alunoIdHistorico = _historicoReposicoesModal.alunoId;
     _historicoReposicoesModal = { alunoId: null, dados: null, origem: null, carregando: false, erro: null };
-    if (origem && typeof origem.focus === 'function') origem.focus();
+    // A lista de alunos é re-renderizada durante o carregamento e pode substituir o botão de origem.
+    const destino = origem && origem.isConnected
+        ? origem
+        : (alunoIdHistorico ? document.querySelector(`[data-historico-aluno="${window.CSS && CSS.escape ? CSS.escape(alunoIdHistorico) : alunoIdHistorico}"]`) : null);
+    if (destino && typeof destino.focus === 'function') destino.focus();
 };
 
 window.abrirEdicaoCobrancaReposicao = function(reposicaoId, cobravel) {
@@ -560,13 +577,24 @@ window.abrirEdicaoCobrancaReposicao = function(reposicaoId, cobravel) {
     _edicaoCobrancaReposicao = { reposicaoId, cobravel: Boolean(cobravel) };
     seletor.value = String(Boolean(cobravel));
     if (descricao) descricao.textContent = 'Escolha quando a reposição deve entrar na cobrança.';
-    modal.style.display = 'flex';
+    if (window.DialogController && typeof window.DialogController.open === 'function') {
+        window.DialogController.open(modal, {
+            trigger: document.activeElement || null,
+            onRequestClose: window.fecharEdicaoCobrancaReposicao
+        });
+    } else {
+        modal.style.display = 'flex';
+    }
     seletor.focus();
 };
 
 window.fecharEdicaoCobrancaReposicao = function() {
     const modal = document.getElementById('modalEdicaoCobrancaReposicao');
-    if (modal) modal.style.display = 'none';
+    if (modal && dialogEstaNaPilha(modal)) {
+        window.DialogController.close(modal);
+    } else if (modal) {
+        modal.style.display = 'none';
+    }
     _edicaoCobrancaReposicao = null;
 };
 
@@ -613,28 +641,6 @@ window.salvarEdicaoCobrancaReposicao = async function() {
         if (botao) botao.disabled = false;
     }
 };
-
-function controlarTecladoHistoricoReposicoes(event) {
-    const modal = document.getElementById('modalHistoricoReposicoes');
-    if (!modal || modal.style.display === 'none') return;
-    if (event.key === 'Escape') {
-        event.preventDefault();
-        window.fecharHistoricoReposicoes();
-        return;
-    }
-    if (event.key !== 'Tab') return;
-    const focaveis = [...modal.querySelectorAll('button:not([disabled]), [href], input, select, textarea')];
-    if (focaveis.length === 0) return;
-    const primeiro = focaveis[0];
-    const ultimo = focaveis[focaveis.length - 1];
-    if (event.shiftKey && document.activeElement === primeiro) {
-        event.preventDefault();
-        ultimo.focus();
-    } else if (!event.shiftKey && document.activeElement === ultimo) {
-        event.preventDefault();
-        primeiro.focus();
-    }
-}
 
 async function carregarDadosComplementaresAlunos() {
     if (typeof window.garantirDadosFinancas === 'function') {
@@ -695,19 +701,55 @@ function focarPrimeiroCampoModalAluno() {
     if (document.activeElement !== nomeInput) nomeInput.focus();
 }
 
+let assinaturaAberturaCadastroAluno = null;
+
+function assinaturaFormularioAluno() {
+    const form = document.getElementById('formNovoAluno');
+    if (!form) return '';
+    return JSON.stringify(Array.from(form.elements).map((el) => (
+        el.type === 'checkbox' || el.type === 'radio' ? el.checked : el.value
+    )));
+}
+
+function dialogEstaNaPilha(modal) {
+    return Boolean(window.DialogController
+        && typeof window.DialogController.getStack === 'function'
+        && window.DialogController.getStack().includes(modal));
+}
+
+window.cancelarCadastroAluno = function() {
+    const alterado = assinaturaAberturaCadastroAluno !== null
+        && assinaturaFormularioAluno() !== assinaturaAberturaCadastroAluno;
+    if (alterado && !window.confirm('Descartar as alterações deste aluno?')) return;
+    window.togglePainelCadastro(false);
+};
+
 window.togglePainelCadastro = function(mostrar) {
     const modal = document.getElementById('modalFormAluno');
     if (!modal) return;
 
     if (mostrar) {
-        modal.style.display = 'flex';
         modal.setAttribute('role', 'dialog');
-        modal.setAttribute('aria-modal', 'true');
         modal.setAttribute('aria-labelledby', 'tituloFormAluno');
+        assinaturaAberturaCadastroAluno = assinaturaFormularioAluno();
+        if (window.DialogController && typeof window.DialogController.open === 'function') {
+            window.DialogController.open(modal, {
+                trigger: document.activeElement || null,
+                onRequestClose: window.cancelarCadastroAluno
+            });
+        } else {
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-modal', 'true');
+        }
         focarPrimeiroCampoModalAluno();
     } else {
-        modal.style.display = 'none';
-        modal.setAttribute('aria-modal', 'false');
+        assinaturaAberturaCadastroAluno = null;
+        if (dialogEstaNaPilha(modal)) {
+            window.DialogController.close(modal);
+        } else {
+            modal.style.display = 'none';
+            modal.setAttribute('aria-modal', 'false');
+        }
         const form = document.getElementById('formNovoAluno');
         if (form) form.reset();
 
@@ -945,7 +987,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('btnRodapeHistoricoReposicoes')?.addEventListener('click', window.fecharHistoricoReposicoes);
     document.getElementById('btnCancelarEdicaoCobrancaReposicao')?.addEventListener('click', window.fecharEdicaoCobrancaReposicao);
     document.getElementById('btnSalvarEdicaoCobrancaReposicao')?.addEventListener('click', window.salvarEdicaoCobrancaReposicao);
-    document.addEventListener('keydown', controlarTecladoHistoricoReposicoes);
 
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
     if (elObjetivoSwitch) {
@@ -975,15 +1016,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnExcluirAlunoModal) {
         btnExcluirAlunoModal.addEventListener('click', window.excluirAlunoViaModal);
     }
-
-    document.addEventListener('keydown', (event) => {
-        const modal = document.getElementById('modalFormAluno');
-        if (!modal || modal.style.display === 'none') return;
-        if (event.key === 'Escape') {
-            event.preventDefault();
-            window.togglePainelCadastro(false);
-        }
-    });
 
     const formAluno = document.getElementById('formNovoAluno');
     if (formAluno) {

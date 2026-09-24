@@ -8,23 +8,22 @@
         keydownBound: false
     };
 
+    function isRenderedWithin(element, dialog) {
+        let node = element;
+        while (node && node !== dialog) {
+            if (node.hasAttribute && node.hasAttribute('hidden')) return false;
+            const style = window.getComputedStyle ? window.getComputedStyle(node) : null;
+            if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+            node = node.parentElement;
+        }
+        return true;
+    }
+
     function getFocusableElements(dialog) {
         if (!dialog) return [];
-        const all = [...dialog.querySelectorAll(
-            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), details, summary'
-        )].filter((element) => {
-            const style = window.getComputedStyle ? window.getComputedStyle(element) : null;
-            if (style && style.display === 'none') return false;
-            if (style && style.visibility === 'hidden') return false;
-            return !element.hasAttribute('hidden');
-        });
-
-        const prioritized = all.filter((element) => {
-            const tag = element.tagName && element.tagName.toLowerCase();
-            return tag === 'input' || tag === 'select' || tag === 'textarea';
-        });
-
-        return prioritized.length > 0 ? prioritized.concat(all.filter((element) => !prioritized.includes(element))) : all;
+        return [...dialog.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"]):not([disabled]), summary'
+        )].filter((element) => isRenderedWithin(element, dialog));
     }
 
     function normalizeDialog(dialog) {
@@ -58,6 +57,7 @@
             dialog.inert = isBlocked;
         }
         dialog.setAttribute('aria-hidden', isBlocked ? 'true' : 'false');
+        dialog.setAttribute('aria-modal', isBlocked ? 'false' : 'true');
         dialog.dataset.dialogUnderlay = isBlocked ? 'true' : 'false';
     }
 
@@ -93,12 +93,21 @@
         return state.stack.length > 0 ? state.stack[state.stack.length - 1].dialog : null;
     }
 
+    function getCurrentTopEntry() {
+        return state.stack.length > 0 ? state.stack[state.stack.length - 1] : null;
+    }
+
     function handleKeydown(event) {
         const top = getCurrentTopDialog();
         if (!top || top.style.display === 'none') return;
 
         if (event.key === 'Escape') {
             event.preventDefault();
+            const entry = getCurrentTopEntry();
+            if (entry && typeof entry.onRequestClose === 'function') {
+                entry.onRequestClose();
+                return;
+            }
             window.DialogController.close(top);
             return;
         }
@@ -157,7 +166,7 @@
             state.stack.splice(existingIndex, 1);
         }
 
-        state.stack.push({ dialog: target, trigger });
+        state.stack.push({ dialog: target, trigger, onRequestClose: options.onRequestClose || null });
         bindKeydown();
         updateBodyScrollLock();
         setDialogOpen(target, true);

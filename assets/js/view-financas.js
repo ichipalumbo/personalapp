@@ -79,9 +79,12 @@
             pagamentoModal.className = 'modal-overlay';
             pagamentoModal.id = 'modalFinancasPagamento';
             pagamentoModal.style.display = 'none';
+            pagamentoModal.setAttribute('role', 'dialog');
+            pagamentoModal.setAttribute('aria-labelledby', 'financasPagamentoTitulo');
+            pagamentoModal.setAttribute('aria-describedby', 'financasPagamentoResumo');
             pagamentoModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
-                <h3><i class="fa-solid fa-circle-check" style="color:#ffd700;margin-right:8px"></i>Marcar como pago</h3>
+                <h3 id="financasPagamentoTitulo"><i class="fa-solid fa-circle-check" style="color:#ffd700;margin-right:8px"></i>Marcar como pago</h3>
                 <p id="financasPagamentoResumo" style="font-size:0.78rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
                 <form id="formFinancasPagamento">
                   <div class="form-grupo-spa">
@@ -106,9 +109,12 @@
             ajusteModal.className = 'modal-overlay';
             ajusteModal.id = 'modalFinancasAjuste';
             ajusteModal.style.display = 'none';
+            ajusteModal.setAttribute('role', 'dialog');
+            ajusteModal.setAttribute('aria-labelledby', 'financasAjusteTitulo');
+            ajusteModal.setAttribute('aria-describedby', 'financasAjusteResumo');
             ajusteModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
-                <h3><i class="fa-solid fa-sliders" style="color:#ffd700;margin-right:8px"></i>Ajuste manual</h3>
+                <h3 id="financasAjusteTitulo"><i class="fa-solid fa-sliders" style="color:#ffd700;margin-right:8px"></i>Ajuste manual</h3>
                 <p id="financasAjusteResumo" style="font-size:0.78rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
                 <form id="formFinancasAjuste">
                   <div class="form-grupo-spa">
@@ -644,7 +650,7 @@
         if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
         if (dataInput) dataInput.value = new Date().toISOString().slice(0, 10);
         if (formaInput) formaInput.value = '';
-        if (modal) modal.style.display = 'flex';
+        abrirDialogFinancas(modal, 'pagamento');
     }
 
     function abrirModalAjuste(cardId, cicloId) {
@@ -661,12 +667,33 @@
         if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
         if (extrasInput) extrasInput.value = String(alvo.ciclo.aulasManuaisExtras || 0);
         if (observacaoInput) observacaoInput.value = alvo.ciclo.observacaoAjuste || '';
-        if (modal) modal.style.display = 'flex';
+        abrirDialogFinancas(modal, 'ajuste');
+    }
+
+    function abrirDialogFinancas(modal, tipo) {
+        if (!modal) return;
+        if (global.DialogController && typeof global.DialogController.open === 'function') {
+            global.DialogController.open(modal, {
+                trigger: document.activeElement || null,
+                // Fechar durante o PATCH zeraria STATE.cardAtivo e quebraria a confirmação do salvamento.
+                onRequestClose: function () {
+                    if (!STATE.salvando) fecharModal(tipo);
+                }
+            });
+            return;
+        }
+        modal.style.display = 'flex';
     }
 
     function fecharModal(tipo) {
         const modal = document.getElementById(tipo === 'pagamento' ? 'modalFinancasPagamento' : 'modalFinancasAjuste');
-        if (modal) modal.style.display = 'none';
+        const naPilha = modal && global.DialogController && typeof global.DialogController.getStack === 'function'
+            && global.DialogController.getStack().includes(modal);
+        if (naPilha) {
+            global.DialogController.close(modal);
+        } else if (modal) {
+            modal.style.display = 'none';
+        }
         STATE.cardAtivo = null;
     }
 

@@ -47,6 +47,60 @@ test('dialog-controller abre modal com foco inicial e usa stack do topo', (t) =>
     assert.doesNotThrow(() => window.document.dispatchEvent(eventEscape));
 });
 
+test('focaveis ignoram campos dentro de bloco oculto e seguem a ordem do DOM', (t) => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <div id="dialog" style="display:none">
+            <button id="fechar">Fechar</button>
+            <div style="display:none"><input id="oculto" /></div>
+            <input id="visivel" />
+            <button id="salvar">Salvar</button>
+        </div>
+    </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+    const { window } = dom;
+    vm.runInContext(fs.readFileSync(CAMINHO_DIALOG_CONTROLLER, 'utf8'), dom.getInternalVMContext(), { filename: CAMINHO_DIALOG_CONTROLLER });
+
+    const dialog = window.document.getElementById('dialog');
+    window.DialogController.open(dialog);
+
+    const ids = window.DialogController.getFocusableElements(dialog).map((el) => el.id).join(',');
+    assert.equal(ids, 'fechar,visivel,salvar');
+    assert.equal(window.document.activeElement.id, 'visivel', 'foco inicial continua no primeiro campo');
+
+    window.document.getElementById('salvar').focus();
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    assert.equal(window.document.activeElement.id, 'fechar', 'Tab no \u00faltimo volta ao primeiro na ordem do DOM');
+});
+
+test('Escape delega ao onRequestClose do dialog no topo', (t) => {
+    const { dom, window } = criarAmbiente();
+    t.after(() => dom.window.close());
+
+    const dialog = window.document.getElementById('dialog');
+    const chamadas = [];
+    window.DialogController.open(dialog, { onRequestClose: () => chamadas.push('fechar') });
+
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    assert.deepEqual(chamadas, ['fechar']);
+    assert.equal(dialog.style.display, 'flex');
+});
+
+test('Escape sem onRequestClose fecha o dialog e libera o scroll', (t) => {
+    const { dom, window } = criarAmbiente();
+    t.after(() => dom.window.close());
+
+    const dialog = window.document.getElementById('dialog');
+    window.DialogController.open(dialog);
+    assert.equal(window.document.body.style.overflow, 'hidden');
+
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    assert.equal(dialog.style.display, 'none');
+    assert.equal(window.DialogController.getStack().length, 0);
+    assert.equal(window.document.body.style.overflow, '');
+});
+
 test('modal de configuracao da agenda abre com dialog controller e foco inicial', (t) => {
     const dom = new JSDOM(`<!doctype html><html><body>
         <button id="btnAgenda">Abrir</button>
@@ -207,13 +261,51 @@ test('modais de escolha curtas usam contrato de dialog e foco inicial', (t) => {
     const modalCobranca = window.document.getElementById('modalEscolhaCobrancaReposicao');
     assert.ok(modalCobranca);
     assert.equal(modalCobranca.getAttribute('role'), 'dialog');
-    assert.equal(modalCobranca.getAttribute('aria-modal'), 'true');
     assert.ok(modalCobranca.querySelector('#tituloModalEscolhaCobrancaReposicao'));
     assert.equal(modalCobranca.querySelector('#btnCobrarNesteCiclo').getAttribute('data-dialog-focus'), 'true');
 
     const modalExclusao = window.document.getElementById('modalEscolhaExclusao');
     assert.ok(modalExclusao);
     assert.equal(modalExclusao.getAttribute('role'), 'dialog');
-    assert.equal(modalExclusao.getAttribute('aria-modal'), 'true');
     assert.ok(modalExclusao.querySelector('#tituloModalEscolhaExclusao'));
+});
+
+test('todo modal-overlay do index.html declara dialog com titulo e sem aria-modal estatico', (t) => {
+    const html = fs.readFileSync(path.resolve(__dirname, '..', 'index.html'), 'utf8');
+    const dom = new JSDOM(html, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+
+    const doc = dom.window.document;
+    const overlays = [...doc.querySelectorAll('.modal-overlay')];
+    assert.ok(overlays.length >= 12);
+    const problemas = overlays.flatMap((overlay) => {
+        const erros = [];
+        if (overlay.getAttribute('role') !== 'dialog') erros.push(`${overlay.id}: sem role=dialog`);
+        const titulo = overlay.getAttribute('aria-labelledby');
+        if (!titulo || !doc.getElementById(titulo)) erros.push(`${overlay.id}: aria-labelledby ausente ou inv\u00e1lido`);
+        if (overlay.getAttribute('aria-modal') === 'true') erros.push(`${overlay.id}: aria-modal="true" com o di\u00e1logo oculto`);
+        return erros;
+    });
+    assert.deepEqual(problemas, []);
+});
+
+test('underlay perde aria-modal enquanto outro dialog esta no topo', (t) => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <div id="baixo" style="display:none"><button>A</button></div>
+        <div id="topo" style="display:none"><button>B</button></div>
+    </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+    const { window } = dom;
+    vm.runInContext(fs.readFileSync(CAMINHO_DIALOG_CONTROLLER, 'utf8'), dom.getInternalVMContext(), { filename: CAMINHO_DIALOG_CONTROLLER });
+
+    const baixo = window.document.getElementById('baixo');
+    const topo = window.document.getElementById('topo');
+    window.DialogController.open(baixo);
+    window.DialogController.open(topo);
+    assert.equal(baixo.getAttribute('aria-modal'), 'false');
+    assert.equal(topo.getAttribute('aria-modal'), 'true');
+
+    window.DialogController.close(topo);
+    assert.equal(baixo.getAttribute('aria-modal'), 'true');
+    assert.equal(window.document.body.style.overflow, 'hidden', 'scroll segue bloqueado enquanto houver dialog aberto');
 });

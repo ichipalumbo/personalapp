@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const { JSDOM } = require('jsdom');
 
 const CAMINHO_VIEW_FINANCAS = path.resolve(__dirname, '..', 'assets', 'js', 'view-financas.js');
+const CAMINHO_DIALOG_CONTROLLER = path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js');
 
 function criarResposta(status, corpo) {
     return {
@@ -36,7 +37,7 @@ function criarCardComHistorico(historico) {
     }];
 }
 
-async function carregarTela(historico) {
+async function carregarTela(historico, opcoes = {}) {
     const dom = new JSDOM('<!doctype html><html><body><div class="container"><main id="tela-alunos"></main></div></body></html>', {
         runScripts: 'outside-only',
         url: 'http://localhost'
@@ -49,12 +50,16 @@ async function carregarTela(historico) {
     window.salvarCacheFinancas = () => {};
     window.formatarMoeda = (valor) => `R$ ${Number(valor).toFixed(2)}`;
     window.mostrarToast = () => {};
-    window.apiFetchBackend = async (url) => {
+    window.apiFetchBackend = async (url, init) => {
+        if (opcoes.respostaPatch && init && init.method === 'PATCH') return opcoes.respostaPatch();
         if (url.endsWith('/financas')) return criarResposta(200, cards);
         if (url.endsWith('/financas/aluno-1/historico')) return criarResposta(200, historico);
         throw new Error(`URL inesperada: ${url}`);
     };
 
+    if (opcoes.comDialogController) {
+        vm.runInContext(fs.readFileSync(CAMINHO_DIALOG_CONTROLLER, 'utf8'), dom.getInternalVMContext(), { filename: CAMINHO_DIALOG_CONTROLLER });
+    }
     const codigo = fs.readFileSync(CAMINHO_VIEW_FINANCAS, 'utf8');
     vm.runInContext(codigo, dom.getInternalVMContext(), { filename: CAMINHO_VIEW_FINANCAS });
     await window.inicializarFinancas({ forcarRemoto: true });
@@ -112,4 +117,57 @@ test('histórico pago não exibe ações mutáveis', async (t) => {
     t.after(() => dom.window.close());
 
     assert.equal(window.document.querySelector('[data-ciclo-id="ciclo-historico-pago"]'), null);
+});
+
+const CICLO_HISTORICO_ABERTO = {
+    _id: 'ciclo-historico-aberto',
+    alunoId: 'aluno-1',
+    cicloInicio: '2026-08-01',
+    cicloFim: '2026-08-31',
+    aulasContadas: 3,
+    aulasManuaisExtras: 0,
+    valorTotalCiclo: 300,
+    metodoCobranca: 'por_aula',
+    status: 'atrasado',
+    dataPagamento: null,
+    extrato: []
+};
+
+test('modal de pagamento é dialog no DialogController e Escape devolve o foco ao botão', async (t) => {
+    const { dom, window } = await carregarTela([{ ...CICLO_HISTORICO_ABERTO }], { comDialogController: true });
+    t.after(() => dom.window.close());
+
+    const doc = window.document;
+    const pagar = doc.querySelector('[data-financas-pagar="aluno-1"][data-ciclo-id="ciclo-historico-aberto"]');
+    pagar.focus();
+    pagar.click();
+
+    const modal = doc.getElementById('modalFinancasPagamento');
+    assert.equal(modal.getAttribute('role'), 'dialog');
+    assert.equal(modal.getAttribute('aria-modal'), 'true');
+    assert.match(doc.getElementById(modal.getAttribute('aria-labelledby')).textContent, /Marcar como pago/);
+    assert.equal(window.DialogController.getStack().map((el) => el.id).join(','), 'modalFinancasPagamento');
+    assert.equal(doc.activeElement, doc.getElementById('financasDataPagamento'));
+
+    doc.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    assert.equal(modal.style.display, 'none');
+    assert.equal(window.DialogController.getStack().length, 0);
+    assert.equal(doc.activeElement, pagar);
+});
+
+test('falha HTTP ao salvar pagamento mantém o modal aberto na pilha', async (t) => {
+    const { dom, window } = await carregarTela([{ ...CICLO_HISTORICO_ABERTO }], {
+        comDialogController: true,
+        respostaPatch: () => criarResposta(500, {})
+    });
+    t.after(() => dom.window.close());
+
+    const doc = window.document;
+    doc.querySelector('[data-financas-pagar="aluno-1"][data-ciclo-id="ciclo-historico-aberto"]').click();
+    doc.getElementById('formFinancasPagamento').dispatchEvent(new window.Event('submit', { cancelable: true }));
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(doc.getElementById('modalFinancasPagamento').style.display, 'flex');
+    assert.equal(window.DialogController.getStack().map((el) => el.id).join(','), 'modalFinancasPagamento');
 });

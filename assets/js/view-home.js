@@ -801,7 +801,10 @@ window.abrirModalConfigAgenda = function () {
   selectFim.value = agendaConfig.horaFim;
 
   if (window.DialogController && typeof window.DialogController.open === "function") {
-    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      onRequestClose: window.fecharModalConfigAgenda,
+    });
     return;
   }
 

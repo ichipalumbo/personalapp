@@ -2311,6 +2311,15 @@ body {
   color: #ffd700;
   font-size: 1.2rem;
 }
+.modal-agendamento {
+  max-width: 440px;
+}
+.modal.modal-recorrencia-secundario {
+  max-width: 420px;
+}
+.modal-settings {
+  max-width: 500px;
+}
 .modal-historico-reposicoes {
   display: flex;
   flex-direction: column;
@@ -2912,6 +2921,41 @@ body {
   .form-aluno {
     max-height: calc(100dvh - 110px);
     padding-right: 2px;
+  }
+
+  #modalAgendamento,
+  #modalRecorrencia,
+  #appSettingsModal {
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .modal-agendamento,
+  .modal.modal-recorrencia-secundario,
+  .modal-settings {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  .modal-agendamento::-webkit-scrollbar,
+  .modal-recorrencia-secundario::-webkit-scrollbar,
+  .modal-settings::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Rodapé no fim da rolagem (decisão 10.4): o corpo deixa de rolar sozinho. */
+  .modal-recorrencia-secundario form,
+  .modal-recorrencia-body {
+    flex: none;
+    overflow: visible;
   }
 
   .container {

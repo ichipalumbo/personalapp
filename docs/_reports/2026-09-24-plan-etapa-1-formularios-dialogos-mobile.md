@@ -33,13 +33,57 @@
   - Validação no navegador: após cancelar, stack vazia e `body.style.overflow` restaurado.
   - Validação automatizada: frontend 65/65; backend 227/227.
 
+- **Ajuste 2 (concluído, aguardando commit do dono):** centralização dos modais no mobile.
+  - A regra `@media (max-width: 430px)` que alinhava overlays ao rodapé estava em `.modal-overlay` (todos os modais); foi restrita a `#modalFormAluno`.
+  - Validação no navegador (390 × 844): `#modalConfigAgenda` volta a ficar centralizado; aluno mantém layout em tela cheia.
+
+- **Ajuste 3 (concluído, aguardando commit do dono):** limpeza do underlay ao fechar a recorrência.
+  - `fecharModalRecorrencia()` passa a remover `.modal-overlay-secondary`, `.modal-underlay-blocked` e `aria-hidden` também no caminho do `DialogController`.
+  - Teste novo provado por mutação (falhou antes, passou depois).
+
+- **Ajuste 4 (concluído, aguardando commit do dono):** Escape respeita o fechamento de cada fluxo.
+  - `DialogController.open()` aceita `onRequestClose`; Escape delega a ele quando informado e mantém o fechamento padrão caso contrário.
+  - Todos os modais migrados passam o próprio wrapper (Cancelar/Voltar): escolha de tipo, agendamento, recorrência, reagendamento (2 entradas), cobrança, exclusão e grade.
+  - Corrige: `Promise` da cobrança pendente, recorrência sem limpeza e reagendamento sem retorno ao histórico ao usar Escape.
+  - Dois testes novos no controlador; o de delegação provado por mutação.
+  - Validação no navegador: Escape na recorrência → volta ao agendamento desbloqueado e com foco no disparador; Escape no agendamento → stack vazia e scroll liberado; Escape na cobrança → `Promise` resolvida.
+  - Validação automatizada: frontend 67/67; backend 228/228.
+
+- **Ajuste 5 (concluído, aguardando commit do dono):** clique fora não fecha a recorrência (decisão 10.3).
+  - Removido o listener de `mousedown` no fundo de `#modalRecorrencia`.
+  - Teste novo provado por mutação.
+
+- **Ajuste 6 (concluído, aguardando commit do dono):** agendamento e recorrência em tela cheia no mobile (decisões 10.1 e 10.4).
+  - `max-width` inline movido para CSS (`.modal-agendamento`, `.modal.modal-recorrencia-secundario`); desktop inalterado (440px e 420px).
+  - Em `≤ 430px`: largura e altura totais (`100dvh` com fallback `100vh`), rolagem única do diálogo e botões no fim da rolagem, sem barra visível.
+  - Validação no navegador: 320 × 568, 390 × 844 e 428 × 926 em tela cheia, sem overflow horizontal, "Salvar" alcançável; desktop 1280 × 800 centralizado com larguras originais.
+  - Validação automatizada: frontend 67/67; backend 229/229.
+
+- **Ajuste 7 (concluído, aguardando commit do dono):** confirmação de descarte no agendamento (decisão 10.2).
+  - Assinatura do formulário (tipo, aluno, descrição, horário, duração, dia inteiro, data e resumo da recorrência) gravada na abertura.
+  - Cancelar e Escape perguntam "Descartar as alterações deste agendamento?" apenas se houve mudança; recusar mantém o formulário aberto. Submit não pergunta.
+  - Dois testes novos; o de formulário alterado provado por mutação.
+
+- **Ajuste 8 (concluído, aguardando commit do dono):** modal de aluno no `DialogController` + descarte (subetapa 4 e decisão 10.2).
+  - `togglePainelCadastro` abre/fecha pelo controlador (foco, trap de Tab, stack, scroll lock, retorno de foco ao card/FAB).
+  - Listener local de Escape removido; Escape e Cancelar passam por `cancelarCadastroAluno()`, que confirma apenas se houve alteração.
+  - Dois testes novos provados por mutação.
+  - Validação no navegador (tela Alunos): foco em "Nome", Escape devolve foco ao card, scroll liberado.
+
+- **Ajuste 9 (concluído, aguardando commit do dono):** histórico de reposições e edição de cobrança no `DialogController` (subetapa 5).
+  - Pilha real histórico → edição: histórico fica inerte; Escape fecha só a edição e devolve foco ao botão "Editar"; segundo Escape fecha o histórico.
+  - Handler local de teclado (Escape/Tab) removido — coberto pelo controlador.
+  - Retorno de foco ao botão "Ver histórico" mesmo após o re-render da lista (`data-historico-aluno`).
+  - Persistência inalterada: edição de cobrança só fecha após resposta HTTP de sucesso.
+  - Teste novo de pilha provado por mutação; validação no navegador com dados do mock.
+  - Validação automatizada: frontend 70/70; backend 231/231.
+
 ---
 
 ### Próximo passo em execução
 
-- **Correções de ciclo de vida / ajuste seguinte:** corrigir a limpeza do underlay ao fechar o modal de recorrência pelo controlador.
-- **Ação imediata:** garantir que `.modal-underlay-blocked`, `aria-hidden` e a classe secundária sejam removidos em todos os caminhos de fechamento.
-- **Critério de saída:** fechar recorrência restaura interação e foco no agendamento sem alterar rascunho ou regra de recorrência.
+- **Correções de ciclo de vida:** concluídas para os modais já migrados (ajustes 1, 3 e 4).
+- **Bloqueio atual:** as próximas migrações (`#modalAcaoSlot`, finanças, histórico/edição de cobrança, aluno e área do usuário) dependem das decisões da seção 10 — principalmente política de Escape/backdrop, descarte de alterações e quais formulários viram tela cheia.
 
 ---
 
@@ -602,6 +646,19 @@ Ao tocar `modal-acao-slot.js` ou `modal-agendamento.js`, repetir também os test
 ---
 
 ## 10. Decisões necessárias antes da implementação ampla
+
+### 10.0 Decisões do dono (2026-09-24)
+
+| Tema | Decisão |
+| --- | --- |
+| Tela cheia no mobile (10.1) | Aluno, criar agendamento, configurar recorrência e área do usuário. Os demais seguem centralizados. |
+| Cancelar com alterações (10.2) | Confirmação apenas em aluno e agendamento, quando houver alteração; demais descartam direto. |
+| Clique fora / backdrop (10.3) | Nunca fecha nenhum diálogo. |
+| Rodapé com teclado (10.4 e 10.8) | Botões no fim da rolagem, sem rodapé fixo. |
+| Escape | Fecha todos os diálogos, pelo mesmo caminho de Cancelar/Voltar. |
+| Critério de aceite (10.7) | DevTools (emulação). |
+| Confirmações nativas (10.6) | Fora de escopo (recomendação do plano mantida). |
+| X/voltar e navegação com diálogo aberto (10.5 e 10.9) | Sem mudança nesta etapa. |
 
 As perguntas abaixo não devem ser respondidas por inferência durante o código.
 

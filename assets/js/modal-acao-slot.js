@@ -1077,12 +1077,31 @@ window.abrirModalAcaoSlot = function (id) {
       compromisso.descricao || "";
   }
 
-  if (modal) modal.style.display = "flex";
   aplicarModoSomenteLeituraAlunoInativo(compromisso);
+  if (!modal) return;
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      // view-calendario.js substitui window.fecharModalAcaoSlot; resolver na hora preserva o wrapper.
+      onRequestClose: () => window.fecharModalAcaoSlot(),
+    });
+    return;
+  }
+  modal.style.display = "flex";
 };
 
 window.fecharModalAcaoSlot = function () {
-  document.getElementById("modalAcaoSlot").style.display = "none";
+  const modal = document.getElementById("modalAcaoSlot");
+  if (!modal) return;
+  const naPilha =
+    window.DialogController &&
+    typeof window.DialogController.getStack === "function" &&
+    window.DialogController.getStack().includes(modal);
+  if (naPilha) {
+    window.DialogController.close(modal);
+    return;
+  }
+  modal.style.display = "none";
 };
 
 let resolveEscolhaCobrancaReposicao = null;
@@ -1163,7 +1182,10 @@ window.abrirModalEscolhaCobrancaReposicao = function (
     });
 
     if (window.DialogController && typeof window.DialogController.open === "function") {
-      window.DialogController.open(modal, { trigger: document.activeElement || null });
+      window.DialogController.open(modal, {
+        trigger: document.activeElement || null,
+        onRequestClose: window.fecharModalEscolhaCobrancaReposicao,
+      });
       return;
     }
     modal.style.display = "flex";
@@ -1304,7 +1326,10 @@ window.abrirReagendarAulaModalSlot = function (dia, hora) {
     `Agendar reposição às ${hora}`;
 
   if (window.DialogController && typeof window.DialogController.open === "function") {
-    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      onRequestClose: window.fecharReagendarAulaModal,
+    });
     return;
   }
 
@@ -1356,7 +1381,10 @@ window.iniciarReagendamentoReposicao = function (id) {
     `Agendamento direto • Fila de espera`;
 
   if (window.DialogController && typeof window.DialogController.open === "function") {
-    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      onRequestClose: window.fecharReagendarAulaModal,
+    });
     return;
   }
 
@@ -1794,7 +1822,10 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
   });
 
   if (window.DialogController && typeof window.DialogController.open === "function") {
-    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      onRequestClose: window.fecharModalEscolhaExclusao,
+    });
     return;
   }
   modal.style.display = "flex";

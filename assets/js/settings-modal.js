@@ -121,7 +121,14 @@
 
         modal.style.display = 'flex';
         backdrop.style.display = 'block';
-        document.body.style.overflow = 'hidden';
+        if (global.DialogController && typeof global.DialogController.open === 'function') {
+            global.DialogController.open(modal, {
+                trigger: document.activeElement || null,
+                onRequestClose: closeUserAreaModal
+            });
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
 
         // Check and update Google Calendar connection status when modal opens
         if (typeof global.googleIdentity === 'object' && typeof global.googleIdentity.checkCalendarConnectionStatus === 'function') {
@@ -174,8 +181,14 @@
             return;
         }
 
-        modal.style.display = 'none';
         backdrop.style.display = 'none';
+        const naPilha = global.DialogController && typeof global.DialogController.getStack === 'function'
+            && global.DialogController.getStack().includes(modal);
+        if (naPilha) {
+            global.DialogController.close(modal);
+            return;
+        }
+        modal.style.display = 'none';
         document.body.style.overflow = '';
     }
 
@@ -238,14 +251,6 @@
         const btnCloseSettings = document.getElementById('btnCloseSettings');
         if (btnCloseSettings) {
             btnCloseSettings.addEventListener('click', function () {
-                closeUserAreaModal();
-            });
-        }
-
-        // Wire Backdrop Click (Close Modal)
-        const backdrop = document.getElementById('appSettingsBackdrop');
-        if (backdrop) {
-            backdrop.addEventListener('click', function () {
                 closeUserAreaModal();
             });
         }
