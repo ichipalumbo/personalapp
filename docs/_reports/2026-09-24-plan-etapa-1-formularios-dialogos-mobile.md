@@ -15,13 +15,24 @@
   - Teste de regressão cobrindo o contrato de diálogo e foco inicial.
   - Validação: suíte de frontend com o teste específico passou.
 
-- **Commit 2 (em andamento / concluído nesta rodada):** piloto do controlador em diálogo de escolha de tipo da agenda.
+- **Commit 2 (concluído):** piloto do controlador em diálogo de escolha de tipo da agenda.
   - Adição de semântica de diálogo e foco inicial no primeiro botão do modal.
   - Abertura e fechamento via `DialogController` para preservar retorno de foco e stack.
   - Teste de regressão cobrindo o caso de escolha de tipo.
   - Validação: suíte frontend relevante passou.
 
+- **Commit 3 (concluído nesta rodada):** correção do scroll lateral no modal de recorrência.
+  - Ajuste do layout do container e do corpo rolável para remover a barra horizontal sem quebrar o scroll vertical interno.
+  - Mantém o contrato atual do diálogo e do underlay bloqueado.
+  - Validação: inspeção ativa do modal e suíte frontend relevante continua com 18 testes passados / 0 falhas.
+
 ---
+
+### Próximo passo em execução
+
+- **Subetapa 3 / lote seguinte:** consolidar o piloto de diálogos não sensíveis e seguir para os formulários curtos e de maior risco em ordem de baixo risco para cima.
+- **Ação imediata:** validar o padrão já aplicado em `#modalConfigAgenda` e `#modalEscolhaTipo`, então migrar o próximo bloco de superfície com risco moderado, mantendo a mesma política de foco, stack e rolagem.
+- **Critério de saída:** completar a próxima rodada sem tocar regras de persistência, lançando apenas ajustes em acessibilidade e layout de modal.
 
 ---
 

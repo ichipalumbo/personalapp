@@ -196,3 +196,24 @@ test('modal de recorrencia abre com dialog controller e foco inicial', (t) => {
     assert.equal(modal.getAttribute('aria-modal'), 'true');
     assert.equal(window.document.activeElement, input);
 });
+
+test('modais de escolha curtas usam contrato de dialog e foco inicial', (t) => {
+    const html = fs.readFileSync(path.resolve(__dirname, '..', 'index.html'), 'utf8');
+    const dom = new JSDOM(html, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+
+    const { window } = dom;
+
+    const modalCobranca = window.document.getElementById('modalEscolhaCobrancaReposicao');
+    assert.ok(modalCobranca);
+    assert.equal(modalCobranca.getAttribute('role'), 'dialog');
+    assert.equal(modalCobranca.getAttribute('aria-modal'), 'true');
+    assert.ok(modalCobranca.querySelector('#tituloModalEscolhaCobrancaReposicao'));
+    assert.equal(modalCobranca.querySelector('#btnCobrarNesteCiclo').getAttribute('data-dialog-focus'), 'true');
+
+    const modalExclusao = window.document.getElementById('modalEscolhaExclusao');
+    assert.ok(modalExclusao);
+    assert.equal(modalExclusao.getAttribute('role'), 'dialog');
+    assert.equal(modalExclusao.getAttribute('aria-modal'), 'true');
+    assert.ok(modalExclusao.querySelector('#tituloModalEscolhaExclusao'));
+});

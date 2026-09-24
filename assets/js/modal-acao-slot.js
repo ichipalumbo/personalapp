@@ -1147,7 +1147,11 @@ window.abrirModalEscolhaCobrancaReposicao = function (
     opcaoButtons.forEach((botao) => {
       botao.onclick = async () => {
         const cobravel = botao.dataset.reposicaoCobravel === "true";
-        modal.style.display = "none";
+        if (window.DialogController && typeof window.DialogController.close === "function") {
+          window.DialogController.close(modal);
+        } else {
+          modal.style.display = "none";
+        }
         try {
           if (typeof callback === "function") {
             await callback(cobravel);
@@ -1158,13 +1162,21 @@ window.abrirModalEscolhaCobrancaReposicao = function (
       };
     });
 
+    if (window.DialogController && typeof window.DialogController.open === "function") {
+      window.DialogController.open(modal, { trigger: document.activeElement || null });
+      return;
+    }
     modal.style.display = "flex";
   });
 };
 
 window.fecharModalEscolhaCobrancaReposicao = function () {
   const modal = document.getElementById("modalEscolhaCobrancaReposicao");
-  if (modal) modal.style.display = "none";
+  if (modal && window.DialogController && typeof window.DialogController.close === "function") {
+    window.DialogController.close(modal);
+  } else if (modal) {
+    modal.style.display = "none";
+  }
   if (typeof resolveEscolhaCobrancaReposicao === "function") {
     const resolver = resolveEscolhaCobrancaReposicao;
     resolveEscolhaCobrancaReposicao = null;
@@ -1731,10 +1743,13 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
   }
 
   container.innerHTML = "";
-  (Array.isArray(opcoes) ? opcoes : []).forEach((opcao) => {
+  (Array.isArray(opcoes) ? opcoes : []).forEach((opcao, index) => {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "btn btn-primary modal-escolha-opcao";
+    if (index === 0) {
+      item.setAttribute("data-dialog-focus", "true");
+    }
     const iconeClasse =
       opcao.acao === "instancia"
         ? "modal-escolha-icone-exclusao-leve"
@@ -1778,12 +1793,20 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
     container.appendChild(item);
   });
 
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    return;
+  }
   modal.style.display = "flex";
 };
 
 window.fecharModalEscolhaExclusao = function () {
   const modal = document.getElementById("modalEscolhaExclusao");
-  if (modal) modal.style.display = "none";
+  if (modal && window.DialogController && typeof window.DialogController.close === "function") {
+    window.DialogController.close(modal);
+  } else if (modal) {
+    modal.style.display = "none";
+  }
 };
 
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
