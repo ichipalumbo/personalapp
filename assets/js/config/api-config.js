@@ -11,7 +11,10 @@
     const hostname = global.location && typeof global.location.hostname === 'string'
         ? global.location.hostname
         : '';
-    const ambienteLocal = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1';
+    const ambienteLocal = hostname === 'localhost'
+        || hostname === '127.0.0.1'
+        || hostname === '127.0.0.2'
+        || hostname === '::1';
     const config = Object.freeze({
         apiRootUrl: ambienteLocal ? LOCAL_API_ROOT_URL : PRODUCAO_API_ROOT_URL,
         apiBaseUrl: ambienteLocal ? LOCAL_API_BASE_URL : PRODUCAO_API_BASE_URL,
