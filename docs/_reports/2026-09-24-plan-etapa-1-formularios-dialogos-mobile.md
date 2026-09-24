@@ -26,13 +26,20 @@
   - Mantém o contrato atual do diálogo e do underlay bloqueado.
   - Validação: inspeção ativa do modal e suíte frontend relevante continua com 18 testes passados / 0 falhas.
 
+- **Próximo commit — ajuste 1 (concluído, aguardando commit do dono):** correção do ciclo de fechamento do modal de agendamento.
+  - Botão Cancelar e fechamento após submit passam por `fecharAgendamentoModal()` em vez de ocultar diretamente o elemento.
+  - O `DialogController` remove o modal da stack e libera o scroll do documento.
+  - Teste novo provado por mutação: falhou antes da correção e passou depois.
+  - Validação no navegador: após cancelar, stack vazia e `body.style.overflow` restaurado.
+  - Validação automatizada: frontend 65/65; backend 227/227.
+
 ---
 
 ### Próximo passo em execução
 
-- **Subetapa 3 / lote seguinte:** consolidar o piloto de diálogos não sensíveis e seguir para os formulários curtos e de maior risco em ordem de baixo risco para cima.
-- **Ação imediata:** validar o padrão já aplicado em `#modalConfigAgenda` e `#modalEscolhaTipo`, então migrar o próximo bloco de superfície com risco moderado, mantendo a mesma política de foco, stack e rolagem.
-- **Critério de saída:** completar a próxima rodada sem tocar regras de persistência, lançando apenas ajustes em acessibilidade e layout de modal.
+- **Correções de ciclo de vida / ajuste seguinte:** corrigir a limpeza do underlay ao fechar o modal de recorrência pelo controlador.
+- **Ação imediata:** garantir que `.modal-underlay-blocked`, `aria-hidden` e a classe secundária sejam removidos em todos os caminhos de fechamento.
+- **Critério de saída:** fechar recorrência restaura interação e foco no agendamento sem alterar rascunho ou regra de recorrência.
 
 ---
 

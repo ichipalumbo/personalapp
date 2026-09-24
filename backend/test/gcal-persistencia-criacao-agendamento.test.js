@@ -197,6 +197,28 @@ test('Ponto 1 — criação de aula com gravação bem-sucedida mantém a aula e
   assert.equal(context.document.getElementById('modalAgendamento').style.display, 'none');
 });
 
+test('fechar agendamento pelo botão remove o modal do DialogController', () => {
+  const { context, document } = carregarHarnessModalAgendamento();
+  const fechamentos = [];
+  const modal = document.getElementById('modalAgendamento');
+
+  context.window.DialogController = {
+    open(alvo) {
+      alvo.style.display = 'flex';
+    },
+    close(alvo) {
+      fechamentos.push(alvo.id);
+      alvo.style.display = 'none';
+    },
+  };
+
+  context.window.abrirAgendamentoModal('Segunda', '09:00', 'aula');
+  document.getElementById('btnFecharModal').listeners.click();
+
+  assert.deepEqual(fechamentos, ['modalAgendamento']);
+  assert.equal(modal.style.display, 'none');
+});
+
 test('Ponto 1 — falha na gravação remove a aula, avisa e reabre o formulário preenchido', async () => {
   const { document, aulas, toasts, reaberturas } = prepararCriacaoDeAula({
     resultadoPersistencia: { ok: false, motivo: 'falha_remota' },

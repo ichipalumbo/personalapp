@@ -2894,7 +2894,7 @@ body {
 }
 
 @media (max-width: 430px) {
-  .modal-overlay {
+  #modalFormAluno {
     justify-content: stretch;
     align-items: flex-end;
     padding: 0;

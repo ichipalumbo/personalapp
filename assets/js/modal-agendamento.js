@@ -950,7 +950,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             // Fecha o modal imediatamente; o overlay bloqueará re-interação durante o salvamento
-            document.getElementById('modalAgendamento').style.display = 'none';
+            window.fecharAgendamentoModal();
 
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 // Optimistic UI in salvarEventoComGCal renders the new event immediately.
@@ -1111,7 +1111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (document.getElementById('btnFecharModal')) {
         document.getElementById('btnFecharModal').addEventListener('click', () => {
-            document.getElementById('modalAgendamento').style.display = 'none';
+            window.fecharAgendamentoModal();
             window.reposicaoIdEmReagendamento = null; 
         });
     }
