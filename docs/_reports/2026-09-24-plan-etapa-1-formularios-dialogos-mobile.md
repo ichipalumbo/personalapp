@@ -15,7 +15,7 @@ A Etapa 1 foi concluída com a migração de todas as superfícies para o `Dialo
 - **Descarte de alterações (decisão 10.2)**: `assinaturaFormulario` em agendamento e aluno; perguntar apenas quando o formulário está sujo.
 - **Semântica WAI-ARIA**: `role="dialog"` e `aria-labelledby` estáticos no `index.html`; `aria-modal="true"` gerenciado dinamicamente pelo controlador (apenas no topo da pilha).
 - **Empilhamento real validado**: recorrência sobre agendamento; edição de cobrança sobre histórico de reposições; retorno de foco preservado no re-render (via `data-historico-aluno`).
-- **Limpeza de leak**: nenhuma manipulação manual de `style.display` restou nos caminhos de abertura dos diálogos (o controlador é a fonte única de visibilidade).
+- **Limpeza de leak**: nos caminhos de abertura dos diálogos, a visibilidade vem do controlador; o único `style.display = 'flex'` restante nos opens é o fallback legado de `abrirDialogFinancas`, exigido pelo teste do histórico que simula a tela sem controlador carregado.
 - **Validação automatizada**: frontend 77/77; backend 232/232 (números medidos nesta rodada).
 - **Validação runtime**: abertura, empilhamento, Escape e retorno de foco confirmados no navegador.
 
@@ -23,84 +23,83 @@ Decisões da seção 10 aplicadas: 10.1 (tela completa), 10.2 (descarte), 10.3 (
 
 Abertamente fora de escopo, mantidos como estão: diálogos nativos (`alert`/`confirm`), overlay `#overlay-sinc` e `#toast`.
 
-### Progresso por commit
+### Progresso por commit — validação contra o git (2026-09-24)
 
-- **Commit 1 (concluído):** correção mínima do modal de cadastro/edição de aluno em mobile.
+> Os 12 commits da branch `fix/mobile-formularios-dialogos` foram conferidos um a um contra
+> `git log` + `git show --stat`. Todos os itens abaixo estavam marcados como "aguardando
+> commit do dono"; **todos já foram commitados** e os hashes e arquivos estão listados.
+> O working tree ainda tem **2 alterações não commitadas** (registradas no fim desta seção).
+
+- **Commit 1 (concluído, `6826b4a`):** correção mínima do modal de cadastro/edição de aluno em mobile.
   - Ajuste de semântica de diálogo (`role="dialog"`, `aria-modal`, `aria-labelledby`).
   - Foco inicial no primeiro campo do formulário ao abrir.
   - Aumento de altura/rolagem interna do corpo do modal em telas pequenas.
   - Teste de regressão cobrindo o contrato de diálogo e foco inicial.
-  - Validação: suíte de frontend com o teste específico passou.
+  - **Validação dos arquivos (`git show --stat`):** `style.css` (+30), `view-alunos.js`, `index.html`, `view-alunos-observacoes.test.js`.
 
-- **Commit 2 (concluído):** piloto do controlador em diálogo de escolha de tipo da agenda.
+- **Commit 2 (concluído, `7a18ca6`):** ocultação de scrollbar em formulários mobile (CSS puro).
+  - Preparação visual para a tela cheia; nenhum comportamento de diálogo envolvido.
+  - **Validação dos arquivos:** `style.css` (+10).
+
+- **Commit 3 (concluído, `bdb9db4`):** fundação do `DialogController` (Subetapa 2).
+  - `assets/js/features/modals/dialog-controller.js` (206 linhas) + tag `<script>` em `index.html`.
+  - `dialog-controller.test.js` (48 linhas): primeiro lote dos contratos de teste; `style.css` (+11).
+
+- **Commit 4 (concluído, `03a8587`):** piloto `#modalConfigAgenda` (Subetapa 3a).
+  - **Validação dos arquivos:** `view-home.js`, `index.html` (semântica), `dialog-controller.test.js` (+29).
+
+- **Commit 5 (concluído, `180b0cc`):** piloto `#modalEscolhaTipo` (Subetapa 3b).
   - Adição de semântica de diálogo e foco inicial no primeiro botão do modal.
   - Abertura e fechamento via `DialogController` para preservar retorno de foco e stack.
   - Teste de regressão cobrindo o caso de escolha de tipo.
-  - Validação: suíte frontend relevante passou.
+  - **Validação dos arquivos:** `modal-agendamento.js` (+10), `index.html` (+13), `dialog-controller.test.js` (+28).
 
-- **Commit 3 (concluído nesta rodada):** correção do scroll lateral no modal de recorrência.
+- **Commit 6 (concluído, `ef3b6c3`):** migração de `#modalReagendarAula` (reagendamento de slot).
+  - **Validação dos arquivos:** `modal-acao-slot.js` (+14), `index.html` (semântica do overlay), `dialog-controller.test.js` (+33).
+
+- **Commit 7 (concluído, `dfceb50`):** migração de `#modalAgendamento` + acento (accents) de foco/acessibilidade.
+  - **Validação dos arquivos:** `modal-agendamento.js` (+37), `style.css`, `index.html` (+24 de semântica), `dialog-controller.test.js` (+60).
+
+- **Ajuste 1 (concluído, `5f9aa48`):** correção do scroll lateral no modal de recorrência.
   - Ajuste do layout do container e do corpo rolável para remover a barra horizontal sem quebrar o scroll vertical interno.
   - Mantém o contrato atual do diálogo e do underlay bloqueado.
+  - **Validação dos arquivos:** `style.css` (+8).
   - Validação: inspeção ativa do modal e suíte frontend relevante continua com 18 testes passados / 0 falhas.
 
-- **Próximo commit — ajuste 1 (concluído, aguardando commit do dono):** correção do ciclo de fechamento do modal de agendamento.
+- **Ajuste 2 (concluído, `b1d03bd`):** correção do ciclo de fechamento do modal de agendamento.
   - Botão Cancelar e fechamento após submit passam por `fecharAgendamentoModal()` em vez de ocultar diretamente o elemento.
   - O `DialogController` remove o modal da stack e libera o scroll do documento.
+  - **Validação dos arquivos:** `modal-agendamento.js` (+4/-2), `style.css`, `backend/test/gcal-persistencia-criacao-agendamento.test.js` (+22).
   - Teste novo provado por mutação: falhou antes da correção e passou depois.
   - Validação no navegador: após cancelar, stack vazia e `body.style.overflow` restaurado.
   - Validação automatizada: frontend 65/65; backend 227/227.
 
-- **Ajuste 2 (concluído, aguardando commit do dono):** centralização dos modais no mobile.
-  - A regra `@media (max-width: 430px)` que alinhava overlays ao rodapé estava em `.modal-overlay` (todos os modais); foi restrita a `#modalFormAluno`.
-  - Validação no navegador (390 × 844): `#modalConfigAgenda` volta a ficar centralizado; aluno mantém layout em tela cheia.
+- **Ajuste 3 (concluído, `e1f1c34`):** migração dos diálogos de cobrança de reposição e escolha de exclusão.
+  - `#modalEscolhaCobrancaReposicao` e `#modalEscolhaExclusao` passam pro controlador (stack, foco, `onRequestClose`).
+  - **Validação dos arquivos:** `modal-acao-slot.js` (+31), `index.html` (+24), `dialog-controller.test.js` (+21).
 
-- **Ajuste 3 (concluído, aguardando commit do dono):** limpeza do underlay ao fechar a recorrência.
-  - `fecharModalRecorrencia()` passa a remover `.modal-overlay-secondary`, `.modal-underlay-blocked` e `aria-hidden` também no caminho do `DialogController`.
-  - Teste novo provado por mutação (falhou antes, passou depois).
+- **Ajustes 4 a 9 (concluídos, `3e14ab6`):** migração em lote dos modais restantes + tela cheia + delegação de Escape.
+  O dono agrupou os ajustes 4-9 num único commit, mais enxuto e coerente:
 
-- **Ajuste 4 (concluído, aguardando commit do dono):** Escape respeita o fechamento de cada fluxo.
-  - `DialogController.open()` aceita `onRequestClose`; Escape delega a ele quando informado e mantém o fechamento padrão caso contrário.
-  - Todos os modais migrados passam o próprio wrapper (Cancelar/Voltar): escolha de tipo, agendamento, recorrência, reagendamento (2 entradas), cobrança, exclusão e grade.
-  - Corrige: `Promise` da cobrança pendente, recorrência sem limpeza e reagendamento sem retorno ao histórico ao usar Escape.
-  - Dois testes novos no controlador; o de delegação provado por mutação.
-  - Validação no navegador: Escape na recorrência → volta ao agendamento desbloqueado e com foco no disparador; Escape no agendamento → stack vazia e scroll liberado; Escape na cobrança → `Promise` resolvida.
-  - Validação automatizada: frontend 67/67; backend 228/228.
+  - **Ajuste 4 — Escape delegação:** `DialogController.open()` aceita `onRequestClose`; Escape delega a ele quando informado. Dois testes novos no controlador (o de delegação provado por mutação).
+  - **Ajuste 5 — backdrop close na recorrência:** decisão 10.3; o listener de `mousedown` não fecha o diálogo.
+  - **Ajuste 6 — mobile fullscreen:** decision 10.1 e 10.4; `100dvh` com fallback `100vh`; `max-width` inline movido para CSS (`.modal-agendamento`, `.modal-recorrencia-secundario`).
+  - **Ajuste 7 — descarte em agendamento:** decisão 10.2; `assinaturaFormulario` gravada na abertura; perguntar só se mudou.
+  - **Ajuste 8 — descarte em aluno:** decisão 10.2; `cancelarCadastroAluno()` via controlador.
+  - **Ajuste 9 — histórico/cobrança:** subetapa 5; pilha real empilhando histórico sobre edição, foco preservado no re-render.
 
-- **Ajuste 5 (concluído, aguardando commit do dono):** clique fora não fecha a recorrência (decisão 10.3).
-  - Removido o listener de `mousedown` no fundo de `#modalRecorrencia`.
-  - Teste novo provado por mutação.
+  **Validação dos arquivos (`git show --stat`):** `dialog-controller.js` (+41), `modal-agendamento.js` (+61), `modal-acao-slot.js` (+43), `view-alunos.js` (+120), `view-financas.js` (+37), `settings-modal.js` (+25), `style.css` (+44), `index.html` (+38), `dialog-controller.test.js` (+96), `settings-modal-dialog.test.js` (novo, +62), `view-alunos-observacoes.test.js` (+94), `view-financas-historico.test.js` (+62), `backend/test/gcal-persistencia-criacao-agendamento.test.js` (+122), `backend/test/gcal-duplicata-fix.test.js` (+38).
 
-- **Ajuste 6 (concluído, aguardando commit do dono):** agendamento e recorrência em tela cheia no mobile (decisões 10.1 e 10.4).
-  - `max-width` inline movido para CSS (`.modal-agendamento`, `.modal.modal-recorrencia-secundario`); desktop inalterado (440px e 420px).
-  - Em `≤ 430px`: largura e altura totais (`100dvh` com fallback `100vh`), rolagem única do diálogo e botões no fim da rolagem, sem barra visível.
-  - Validação no navegador: 320 × 568, 390 × 844 e 428 × 926 em tela cheia, sem overflow horizontal, "Salvar" alcançável; desktop 1280 × 800 centralizado com larguras originais.
-  - Validação automatizada: frontend 67/67; backend 229/229.
-
-- **Ajuste 7 (concluído, aguardando commit do dono):** confirmação de descarte no agendamento (decisão 10.2).
-  - Assinatura do formulário (tipo, aluno, descrição, horário, duração, dia inteiro, data e resumo da recorrência) gravada na abertura.
-  - Cancelar e Escape perguntam "Descartar as alterações deste agendamento?" apenas se houve mudança; recusar mantém o formulário aberto. Submit não pergunta.
-  - Dois testes novos; o de formulário alterado provado por mutação.
-
-- **Ajuste 8 (concluído, aguardando commit do dono):** modal de aluno no `DialogController` + descarte (subetapa 4 e decisão 10.2).
-  - `togglePainelCadastro` abre/fecha pelo controlador (foco, trap de Tab, stack, scroll lock, retorno de foco ao card/FAB).
-  - Listener local de Escape removido; Escape e Cancelar passam por `cancelarCadastroAluno()`, que confirma apenas se houve alteração.
-  - Dois testes novos provados por mutação.
-  - Validação no navegador (tela Alunos): foco em "Nome", Escape devolve foco ao card, scroll liberado.
-
-- **Ajuste 9 (concluído, aguardando commit do dono):** histórico de reposições e edição de cobrança no `DialogController` (subetapa 5).
-  - Pilha real histórico → edição: histórico fica inerte; Escape fecha só a edição e devolve foco ao botão "Editar"; segundo Escape fecha o histórico.
-  - Handler local de teclado (Escape/Tab) removido — coberto pelo controlador.
-  - Retorno de foco ao botão "Ver histórico" mesmo após o re-render da lista (`data-historico-aluno`).
-  - Persistência inalterada: edição de cobrança só fecha após resposta HTTP de sucesso.
-  - Teste novo de pilha provado por mutação; validação no navegador com dados do mock.
-  - Validação automatizada: frontend 70/70; backend 231/231.
+- **Ajuste 10 (concluído, `47eb33a`):** limpeza de leaks — remover `style.display = 'flex'` nos fallbacks dos modais migrados (o `DialogController` é a fonte única de visibilidade).
+  **Validação dos arquivos:** `modal-acao-slot.js` (-1), `modal-agendamento.js` (-3), `view-financas.js` (-1).
+  - **Nota de recheck da mesma rodada (2026-09-24):** o ajuste 10 removeu o fallback do `abrirDialogFinancas`, mas um teste do `view-financas-historico.test.js` valida o cenário **sem** controlador. A linha foi restaurada **e agora está no working tree não commitado** (ver "Pendência de commit" abaixo). O teste estava em 76/77 antes da correção; está em 77/77 agora.
 
 ---
 
-### Próximo passo em execução
+### Pendência de commit (no working tree em 2026-09-24)
 
-- **Correções de ciclo de vida:** concluídas para os modais já migrados (ajustes 1, 3 e 4).
-- **Bloqueio atual:** as próximas migrações (`#modalAcaoSlot`, finanças, histórico/edição de cobrança, aluno e área do usuário) dependem das decisões da seção 10 — principalmente política de Escape/backdrop, descarte de alterações e quais formulários viram tela cheia.
+- `assets/js/view-financas.js` — restauração do fallback `modal.style.display = 'flex'` em `abrirDialogFinancas` + comentário. Sem ele, o teste `histórico não pago exibe ações e abre pagamento` falha.
+- `docs/_reports/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md` — reescrita da seção de progresso + status CONCLUÍDA.
 
 ---
 
