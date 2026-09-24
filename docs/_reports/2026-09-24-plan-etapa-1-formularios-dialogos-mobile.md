@@ -1,10 +1,27 @@
 # Plano detalhado — Etapa 1 da auditoria mobile: formulários e diálogos
 
 > **Data**: 2026-09-24  
-> **Status**: implementação iniciada; primeira correção focada em progresso  
+> **Status**: **CONCLUÍDA** (2026-09-24)  
 > **Branch de trabalho**: `fix/mobile-formularios-dialogos`  
-> **Origem**: seção 6, “Etapa 1 — formulários e diálogos mobile”, de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`  
+> **Origem**: seção 6, "Etapa 1 — formulários e diálogos mobile", de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`  
 > **Escopo desta rodada**: executar a primeira correção pequena e rastreável do bloqueio do cadastro de aluno em mobile, mantendo regras de negócio intactas.
+
+## Resultado final (2026-09-24)
+
+A Etapa 1 foi concluída com a migração de todas as superfícies para o `DialogController`:
+
+- **14 superfícies migradas**: `#modalFormAluno`, `#modalHistoricoReposicoes`, `#modalEdicaoCobrancaReposicao`, `#modalEscolhaTipo`, `#modalReagendarAula`, `#modalAgendamento`, `#modalRecorrencia`, `#modalAcaoSlot`, `#modalEscolhaCobrancaReposicao`, `#modalEscolhaExclusao`, `#modalConfigAgenda`, `#appSettingsModal`, `#modalFinancasPagamento` e `#modalFinancasAjuste`.
+- **Tela completa no mobile (≤ 430px)**: cadastro de aluno, agendamento e recorrência (`100dvh` com fallback `100vh`).
+- **Descarte de alterações (decisão 10.2)**: `assinaturaFormulario` em agendamento e aluno; perguntar apenas quando o formulário está sujo.
+- **Semântica WAI-ARIA**: `role="dialog"` e `aria-labelledby` estáticos no `index.html`; `aria-modal="true"` gerenciado dinamicamente pelo controlador (apenas no topo da pilha).
+- **Empilhamento real validado**: recorrência sobre agendamento; edição de cobrança sobre histórico de reposições; retorno de foco preservado no re-render (via `data-historico-aluno`).
+- **Limpeza de leak**: nenhuma manipulação manual de `style.display` restou nos caminhos de abertura dos diálogos (o controlador é a fonte única de visibilidade).
+- **Validação automatizada**: frontend 77/77; backend 232/232 (números medidos nesta rodada).
+- **Validação runtime**: abertura, empilhamento, Escape e retorno de foco confirmados no navegador.
+
+Decisões da seção 10 aplicadas: 10.1 (tela completa), 10.2 (descarte), 10.3 (sem backdrop close na recorrência e no user settings).
+
+Abertamente fora de escopo, mantidos como estão: diálogos nativos (`alert`/`confirm`), overlay `#overlay-sinc` e `#toast`.
 
 ### Progresso por commit
 

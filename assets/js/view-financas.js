@@ -682,6 +682,9 @@
             });
             return;
         }
+        // Fallback legado: abre diretamente quando o DialogController não foi carregado.
+        // Mantido porque a suíte valida o fluxo sem controlador (view-financas-historico.test.js).
+        modal.style.display = 'flex';
     }
 
     function fecharModal(tipo) {
