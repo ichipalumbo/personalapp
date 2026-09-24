@@ -103,3 +103,36 @@ test('modal de escolha de tipo abre com dialog controller e foco inicial', (t) =
     assert.equal(modal.getAttribute('aria-modal'), 'true');
     assert.equal(window.document.activeElement, button);
 });
+
+test('modal de reagendamento abre com dialog controller e foco inicial', (t) => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <button id="trigger">Abrir</button>
+        <div id="modalReagendarAula" style="display:none" aria-labelledby="tituloModalReagendarAula">
+            <h3 id="tituloModalReagendarAula">Agendar Reposição</h3>
+            <p id="infoReagendamentoSlot">Agendar reposição às 08:00</p>
+            <form>
+                <select id="reagendarAluno" data-dialog-focus="true">
+                    <option value="">Selecione um aluno...</option>
+                </select>
+                <input id="reagendarData" value="2026-09-24" />
+                <select id="reagendarHoraInicio"><option value="08:00">08:00</option></select>
+            </form>
+        </div>
+    </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+
+    const { window } = dom;
+    const modal = window.document.getElementById('modalReagendarAula');
+    const trigger = window.document.getElementById('trigger');
+    const select = window.document.getElementById('reagendarAluno');
+
+    vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
+
+    trigger.focus();
+    window.DialogController.open(modal, { trigger });
+
+    assert.equal(modal.style.display, 'flex');
+    assert.equal(modal.getAttribute('role'), 'dialog');
+    assert.equal(modal.getAttribute('aria-modal'), 'true');
+    assert.equal(window.document.activeElement, select);
+});

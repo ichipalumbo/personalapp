@@ -1291,6 +1291,11 @@ window.abrirReagendarAulaModalSlot = function (dia, hora) {
   document.getElementById("infoReagendamentoSlot").textContent =
     `Agendar reposição às ${hora}`;
 
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    return;
+  }
+
   modal.style.display = "flex";
 };
 
@@ -1338,12 +1343,19 @@ window.iniciarReagendamentoReposicao = function (id) {
   document.getElementById("infoReagendamentoSlot").textContent =
     `Agendamento direto • Fila de espera`;
 
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    return;
+  }
+
   modal.style.display = "flex";
 };
 
 window.fecharReagendarAulaModal = function () {
   const modal = document.getElementById("modalReagendarAula");
-  if (modal) {
+  if (modal && window.DialogController && typeof window.DialogController.close === "function") {
+    window.DialogController.close(modal);
+  } else if (modal) {
     modal.style.display = "none";
   }
   if (

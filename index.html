@@ -611,9 +611,16 @@
         </div>
       </div>
     </div>
-    <div class="modal-overlay" id="modalReagendarAula" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalReagendarAula"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloModalReagendarAula"
+      style="display: none"
+    >
       <div class="modal" style="max-width: 440px">
-        <h3>
+        <h3 id="tituloModalReagendarAula">
           <i
             class="fa-solid fa-arrows-rotate"
             style="color: #64b5f6; margin-right: 8px"
@@ -632,7 +639,7 @@
         <form id="formReagendarAula">
           <div class="form-grupo-spa" id="containerSeletorReagendarAluno">
             <label for="reagendarAluno">Aluno na fila de reposição *</label>
-            <select id="reagendarAluno">
+            <select id="reagendarAluno" data-dialog-focus="true">
               <option value="">Selecione um aluno...</option>
             </select>
           </div>
