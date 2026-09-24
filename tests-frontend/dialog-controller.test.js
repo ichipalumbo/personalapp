@@ -75,3 +75,31 @@ test('modal de configuracao da agenda abre com dialog controller e foco inicial'
     assert.equal(window.document.activeElement, input);
     assert.equal(modal.getAttribute('role'), 'dialog');
 });
+
+test('modal de escolha de tipo abre com dialog controller e foco inicial', (t) => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <button id="trigger">Abrir</button>
+        <div id="modalEscolhaTipo" style="display:none" aria-labelledby="tituloModalEscolhaTipo">
+            <h3 id="tituloModalEscolhaTipo">Escolha o tipo de agendamento</h3>
+            <p id="infoEscolhaSlot">Agendar às 08:00</p>
+            <button id="btnEscolhaAula" data-dialog-focus="true" type="button">Agendar Aula</button>
+            <button id="btnEscolhaBloqueio" type="button">Agendar Bloqueio</button>
+        </div>
+    </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+
+    const { window } = dom;
+    const modal = window.document.getElementById('modalEscolhaTipo');
+    const trigger = window.document.getElementById('trigger');
+    const button = window.document.getElementById('btnEscolhaAula');
+
+    vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
+
+    trigger.focus();
+    window.DialogController.open(modal, { trigger });
+
+    assert.equal(modal.style.display, 'flex');
+    assert.equal(modal.getAttribute('role'), 'dialog');
+    assert.equal(modal.getAttribute('aria-modal'), 'true');
+    assert.equal(window.document.activeElement, button);
+});

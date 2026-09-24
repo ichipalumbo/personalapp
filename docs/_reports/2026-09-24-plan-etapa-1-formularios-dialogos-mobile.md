@@ -8,12 +8,18 @@
 
 ### Progresso por commit
 
-- **Commit 1 (em andamento / concluído nesta rodada):** correção mínima do modal de cadastro/edição de aluno em mobile.
+- **Commit 1 (concluído):** correção mínima do modal de cadastro/edição de aluno em mobile.
   - Ajuste de semântica de diálogo (`role="dialog"`, `aria-modal`, `aria-labelledby`).
   - Foco inicial no primeiro campo do formulário ao abrir.
   - Aumento de altura/rolagem interna do corpo do modal em telas pequenas.
   - Teste de regressão cobrindo o contrato de diálogo e foco inicial.
   - Validação: suíte de frontend com o teste específico passou.
+
+- **Commit 2 (em andamento / concluído nesta rodada):** piloto do controlador em diálogo de escolha de tipo da agenda.
+  - Adição de semântica de diálogo e foco inicial no primeiro botão do modal.
+  - Abertura e fechamento via `DialogController` para preservar retorno de foco e stack.
+  - Teste de regressão cobrindo o caso de escolha de tipo.
+  - Validação: suíte frontend relevante passou.
 
 ---
 

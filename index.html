@@ -509,9 +509,17 @@
       </main>
     </div>
     <!-- [TAG-HTML-MODAIS] - Modais Compartilhados -->
-    <div class="modal-overlay" id="modalEscolhaTipo" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalEscolhaTipo"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="tituloModalEscolhaTipo"
+      aria-describedby="infoEscolhaSlot"
+      style="display: none"
+    >
       <div class="modal" style="max-width: 400px; text-align: center">
-        <h3>
+        <h3 id="tituloModalEscolhaTipo">
           <i
             class="fa-solid fa-circle-question"
             style="color: #ffd700; margin-right: 8px"
@@ -532,6 +540,7 @@
             type="button"
             id="btnEscolhaAula"
             class="btn btn-primary modal-escolha-opcao"
+            data-dialog-focus="true"
           >
             <span class="modal-escolha-icone modal-escolha-icone-aula"
               ><i class="fa-solid fa-calendar-day"></i

@@ -233,12 +233,22 @@ window.abrirEscolhaTipoModal = function(dia, hora) {
                 ? `Agendar às ${hora} de ${nomeDiaEscolha} • ${dataSelecionadaTexto}`
                 : `Agendar às ${hora} de ${nomeDiaEscolha}`;
         }
+
+        if (window.DialogController && typeof window.DialogController.open === 'function') {
+            window.DialogController.open(modal, { trigger: document.activeElement || null });
+            return;
+        }
+
         modal.style.display = 'flex';
     }
 };
 
 window.fecharEscolhaTipoModal = function() {
     const modal = document.getElementById('modalEscolhaTipo');
+    if (modal && window.DialogController && typeof window.DialogController.close === 'function') {
+        window.DialogController.close(modal);
+        return;
+    }
     if (modal) {
         modal.style.display = 'none';
     }
