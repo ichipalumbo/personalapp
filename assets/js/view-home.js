@@ -782,6 +782,15 @@ window.invalidarChaveRenderAgenda = function () {
   _ultimaChaveRenderAgenda = Object.create(null);
 };
 
+window.fecharModalConfigAgenda = function () {
+  const modal = document.getElementById("modalConfigAgenda");
+  if (modal && window.DialogController && typeof window.DialogController.close === "function") {
+    window.DialogController.close(modal);
+    return;
+  }
+  if (modal) modal.style.display = "none";
+};
+
 window.abrirModalConfigAgenda = function () {
   const selectInicio = document.getElementById("configHoraInicio");
   const selectFim = document.getElementById("configHoraFim");
@@ -790,6 +799,12 @@ window.abrirModalConfigAgenda = function () {
 
   selectInicio.value = agendaConfig.horaInicio;
   selectFim.value = agendaConfig.horaFim;
+
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, { trigger: document.activeElement || null });
+    return;
+  }
+
   modal.style.display = "flex";
 };
 
@@ -798,7 +813,7 @@ window.abrirModalConfigAgenda = function () {
 document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("btnFecharConfig")) {
     document.getElementById("btnFecharConfig").addEventListener("click", () => {
-      document.getElementById("modalConfigAgenda").style.display = "none";
+      window.fecharModalConfigAgenda();
     });
   }
 
@@ -824,7 +839,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
         if (typeof salvarDados === "function") salvarDados();
-        document.getElementById("modalConfigAgenda").style.display = "none";
+        window.fecharModalConfigAgenda();
         window.inicializarHome();
       });
   }

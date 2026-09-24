@@ -46,3 +46,32 @@ test('dialog-controller abre modal com foco inicial e usa stack do topo', (t) =>
     const eventEscape = new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
     assert.doesNotThrow(() => window.document.dispatchEvent(eventEscape));
 });
+
+test('modal de configuracao da agenda abre com dialog controller e foco inicial', (t) => {
+    const dom = new JSDOM(`<!doctype html><html><body>
+        <button id="btnAgenda">Abrir</button>
+        <div id="modalConfigAgenda" style="display:none">
+            <h3 id="tituloModalConfigAgenda">Configurar Grade Horária</h3>
+            <form id="formConfigAgenda">
+                <input id="configHoraInicio" value="8" data-dialog-focus="true" />
+                <input id="configHoraFim" value="18" />
+                <button id="btnFecharConfig" type="button">Cancelar</button>
+            </form>
+        </div>
+    </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
+    t.after(() => dom.window.close());
+
+    const { window } = dom;
+    const modal = window.document.getElementById('modalConfigAgenda');
+    const trigger = window.document.getElementById('btnAgenda');
+    const input = window.document.getElementById('configHoraInicio');
+
+    vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
+
+    window.DialogController.open(modal, { trigger });
+
+    assert.equal(modal.style.display, 'flex');
+    assert.equal(modal.getAttribute('aria-modal'), 'true');
+    assert.equal(window.document.activeElement, input);
+    assert.equal(modal.getAttribute('role'), 'dialog');
+});
