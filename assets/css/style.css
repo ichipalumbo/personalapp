@@ -867,6 +867,17 @@ body {
   display: none;
 }
 
+.modal-alunos-corpo {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-alunos-corpo::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .modal-alunos-header {
   display: flex;
   align-items: center;
