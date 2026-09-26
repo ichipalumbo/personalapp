@@ -478,11 +478,9 @@ function ativarTrapFocoModalRecorrencia() {
 
     document.addEventListener('keydown', trapFocoRecorrenciaAtivo, true);
 
-    const focusables = getRecurrenceFocusableElements();
-    if (focusables.length > 0) {
-        focusables[0].focus();
-    } else {
-        document.getElementById('modalRecorrencia')?.focus();
+    const modal = document.getElementById('modalRecorrencia');
+    if (modal && typeof modal.focus === 'function') {
+        modal.focus({ preventScroll: true });
     }
 }
 

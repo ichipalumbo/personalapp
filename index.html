@@ -536,7 +536,6 @@
             type="button"
             id="btnEscolhaAula"
             class="btn btn-primary modal-escolha-opcao"
-            data-dialog-focus="true"
           >
             <span class="modal-escolha-icone modal-escolha-icone-aula"
               ><i class="fa-solid fa-calendar-day"></i
@@ -634,7 +633,7 @@
         <form id="formReagendarAula">
           <div class="form-grupo-spa" id="containerSeletorReagendarAluno">
             <label for="reagendarAluno">Aluno na fila de reposição *</label>
-            <select id="reagendarAluno" data-dialog-focus="true">
+            <select id="reagendarAluno">
               <option value="">Selecione um aluno...</option>
             </select>
           </div>
@@ -792,7 +791,7 @@
 
           <div id="camposTipoAula" class="form-grupo-spa">
             <label for="agendaAluno">Aluno *</label>
-            <select id="agendaAluno" data-dialog-focus="true">
+            <select id="agendaAluno">
               <option value="">Selecione um aluno...</option>
             </select>
           </div>
@@ -976,7 +975,7 @@
             <div class="recorrencia-secao-titulo">1. Início</div>
             <div class="form-grupo-spa" style="margin-bottom: 14px">
               <label for="recorrenciaDataInicio">Início da recorrência *</label>
-              <input type="date" id="recorrenciaDataInicio" data-dialog-focus="true" required />
+              <input type="date" id="recorrenciaDataInicio" required />
               <small style="display: block; color: #888; font-size: 0.75rem"
                 >A série começa nesta data. Vem da data selecionada no
                 calendário e pode ser alterada aqui.</small
@@ -1482,7 +1481,7 @@
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
-          <button type="button" class="btn btn-primary" data-reposicao-cobravel="true" id="btnCobrarNesteCiclo" data-dialog-focus="true">
+          <button type="button" class="btn btn-primary" data-reposicao-cobravel="true" id="btnCobrarNesteCiclo">
             <span> Cobrar neste ciclo </span>
           </button>
           <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Cobrada mesmo se a reposição não acontecer.</small>
@@ -1546,7 +1545,6 @@
             <input
               type="number"
               id="configHoraInicio"
-              data-dialog-focus="true"
               min="0"
               max="23"
               step="1"

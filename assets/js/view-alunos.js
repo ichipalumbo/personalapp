@@ -509,9 +509,10 @@ window.abrirHistoricoReposicoes = async function(alunoId, origem) {
         });
     } else {
         modal.style.display = 'flex';
+        modal.setAttribute('tabindex', '-1');
+        modal.focus({ preventScroll: true });
     }
     renderizarHistoricoReposicoes();
-    document.getElementById('btnFecharHistoricoReposicoes')?.focus();
     try {
         _historicoReposicoesModal.dados = await carregarHistoricoReposicoesAluno(alunoId);
     } catch (_) {
@@ -584,8 +585,9 @@ window.abrirEdicaoCobrancaReposicao = function(reposicaoId, cobravel) {
         });
     } else {
         modal.style.display = 'flex';
+        modal.setAttribute('tabindex', '-1');
+        modal.focus({ preventScroll: true });
     }
-    seletor.focus();
 };
 
 window.fecharEdicaoCobrancaReposicao = function() {
@@ -695,12 +697,6 @@ window.inicializarPaginaCadastro = async function(opcoes = {}) {
 window.inicializarAlunos = async function() {
     await window.inicializarPaginaCadastro();
 };
-function focarPrimeiroCampoModalAluno() {
-    const nomeInput = document.getElementById('alunoNome');
-    if (!nomeInput || nomeInput.disabled) return;
-    if (document.activeElement !== nomeInput) nomeInput.focus();
-}
-
 let assinaturaAberturaCadastroAluno = null;
 
 function assinaturaFormularioAluno() {
@@ -740,8 +736,9 @@ window.togglePainelCadastro = function(mostrar) {
         } else {
             modal.style.display = 'flex';
             modal.setAttribute('aria-modal', 'true');
+            modal.setAttribute('tabindex', '-1');
+            modal.focus({ preventScroll: true });
         }
-        focarPrimeiroCampoModalAluno();
     } else {
         assinaturaAberturaCadastroAluno = null;
         if (dialogEstaNaPilha(modal)) {

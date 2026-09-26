@@ -147,7 +147,7 @@ test('modal de pagamento é dialog no DialogController e Escape devolve o foco a
     assert.equal(modal.getAttribute('aria-modal'), 'true');
     assert.match(doc.getElementById(modal.getAttribute('aria-labelledby')).textContent, /Marcar como pago/);
     assert.equal(window.DialogController.getStack().map((el) => el.id).join(','), 'modalFinancasPagamento');
-    assert.equal(doc.activeElement, doc.getElementById('financasDataPagamento'));
+    assert.equal(doc.activeElement, modal, 'abertura não ativa o seletor de data');
 
     doc.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 

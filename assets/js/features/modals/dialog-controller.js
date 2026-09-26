@@ -1,5 +1,5 @@
 // [TAG-DIALOG-CONTROLLER] dialog-controller.js
-// Responsabilidade: controlador base para diálogos, com foco inicial, trap de Tab,
+// Responsabilidade: controlador base para diálogos, com foco no contexto, trap de Tab,
 // empilhamento e restauração do foco. Sem regra de negócio.
 
 (function () {
@@ -31,6 +31,9 @@
         if (!dialog.hasAttribute('role')) {
             dialog.setAttribute('role', 'dialog');
         }
+        if (!dialog.hasAttribute('tabindex')) {
+            dialog.setAttribute('tabindex', '-1');
+        }
         if (!dialog.getAttribute('aria-labelledby')) {
             const titleNode = dialog.querySelector('[data-dialog-title], h1, h2, h3, h4');
             if (titleNode && titleNode.id) {
@@ -61,32 +64,14 @@
         dialog.dataset.dialogUnderlay = isBlocked ? 'true' : 'false';
     }
 
-    function focusFirstInteractive(dialog) {
-        const candidates = getFocusableElements(dialog);
-        const preferred = dialog.querySelector('[data-dialog-focus]') || candidates[0];
-        if (preferred && typeof preferred.focus === 'function') {
-            const isField = ['input', 'select', 'textarea'].includes((preferred.tagName || '').toLowerCase());
-            if (!isField && candidates.some((candidate) => {
-                const tag = (candidate.tagName || '').toLowerCase();
-                return ['input', 'select', 'textarea'].includes(tag);
-            })) {
-                const fieldCandidate = candidates.find((candidate) => {
-                    const tag = (candidate.tagName || '').toLowerCase();
-                    return ['input', 'select', 'textarea'].includes(tag);
-                });
-                if (fieldCandidate && typeof fieldCandidate.focus === 'function') {
-                    fieldCandidate.focus();
-                    return true;
-                }
-            }
-            preferred.focus();
-            return true;
-        }
-        if (typeof dialog.focus === 'function') {
+    function focusDialogContext(dialog) {
+        if (!dialog || typeof dialog.focus !== 'function') return false;
+        try {
+            dialog.focus({ preventScroll: true });
+        } catch (_) {
             dialog.focus();
-            return true;
         }
-        return false;
+        return true;
     }
 
     function getCurrentTopDialog() {
@@ -123,6 +108,12 @@
         const first = slot[0];
         const last = slot[slot.length - 1];
         const active = document.activeElement;
+
+        if (active === top || !top.contains(active)) {
+            event.preventDefault();
+            (event.shiftKey ? last : first).focus();
+            return;
+        }
 
         if (event.shiftKey && active === first) {
             event.preventDefault();
@@ -170,7 +161,7 @@
         bindKeydown();
         updateBodyScrollLock();
         setDialogOpen(target, true);
-        focusFirstInteractive(target);
+        focusDialogContext(target);
 
         return {
             dialog: target,
@@ -210,6 +201,6 @@
         close,
         getStack: () => state.stack.map((entry) => entry.dialog),
         getFocusableElements,
-        focusFirstInteractive
+        focusDialogContext
     });
 })();

@@ -1770,13 +1770,10 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
   }
 
   container.innerHTML = "";
-  (Array.isArray(opcoes) ? opcoes : []).forEach((opcao, index) => {
+  (Array.isArray(opcoes) ? opcoes : []).forEach((opcao) => {
     const item = document.createElement("button");
     item.type = "button";
     item.className = "btn btn-primary modal-escolha-opcao";
-    if (index === 0) {
-      item.setAttribute("data-dialog-focus", "true");
-    }
     const iconeClasse =
       opcao.acao === "instancia"
         ? "modal-escolha-icone-exclusao-leve"

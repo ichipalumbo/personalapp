@@ -22,14 +22,12 @@ function criarAmbiente() {
     return { dom, window };
 }
 
-test('dialog-controller abre modal com foco inicial e usa stack do topo', (t) => {
+test('dialog-controller abre modal com foco no contexto sem ativar campo', (t) => {
     const { dom, window } = criarAmbiente();
     t.after(() => dom.window.close());
 
     const dialog = window.document.getElementById('dialog');
     const trigger = window.document.getElementById('trigger');
-    const input = window.document.getElementById('campo1');
-
     const controller = window.DialogController;
     assert.ok(controller && typeof controller.open === 'function');
 
@@ -38,16 +36,23 @@ test('dialog-controller abre modal com foco inicial e usa stack do topo', (t) =>
 
     assert.equal(dialog.style.display, 'flex');
     assert.equal(dialog.getAttribute('aria-modal'), 'true');
-    assert.equal(window.document.activeElement, input);
+    assert.equal(dialog.getAttribute('tabindex'), '-1');
+    assert.equal(window.document.activeElement, dialog);
 
     const event = new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true });
     assert.doesNotThrow(() => window.document.dispatchEvent(event));
+    assert.equal(window.document.activeElement.id, 'close', 'Tab no contexto entra no primeiro controle');
+
+    dialog.focus();
+    const eventShiftTab = new window.KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true });
+    window.document.dispatchEvent(eventShiftTab);
+    assert.equal(window.document.activeElement.id, 'action', 'Shift+Tab no contexto entra no último controle');
 
     const eventEscape = new window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true });
     assert.doesNotThrow(() => window.document.dispatchEvent(eventEscape));
 });
 
-test('focaveis ignoram campos dentro de bloco oculto e seguem a ordem do DOM', (t) => {
+test('focaveis ignoram campos ocultos sem receber foco automático', (t) => {
     const dom = new JSDOM(`<!doctype html><html><body>
         <div id="dialog" style="display:none">
             <button id="fechar">Fechar</button>
@@ -65,7 +70,10 @@ test('focaveis ignoram campos dentro de bloco oculto e seguem a ordem do DOM', (
 
     const ids = window.DialogController.getFocusableElements(dialog).map((el) => el.id).join(',');
     assert.equal(ids, 'fechar,visivel,salvar');
-    assert.equal(window.document.activeElement.id, 'visivel', 'foco inicial continua no primeiro campo');
+    assert.equal(window.document.activeElement, dialog, 'o contexto recebe foco sem ativar campo');
+
+    window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
+    assert.equal(window.document.activeElement.id, 'fechar', 'Tab entra no primeiro controle pela ordem do DOM');
 
     window.document.getElementById('salvar').focus();
     window.document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab', bubbles: true }));
@@ -101,13 +109,13 @@ test('Escape sem onRequestClose fecha o dialog e libera o scroll', (t) => {
     assert.equal(window.document.body.style.overflow, '');
 });
 
-test('modal de configuracao da agenda abre com dialog controller e foco inicial', (t) => {
+test('modal de configuracao da agenda abre sem focar o campo numérico', (t) => {
     const dom = new JSDOM(`<!doctype html><html><body>
         <button id="btnAgenda">Abrir</button>
         <div id="modalConfigAgenda" style="display:none">
             <h3 id="tituloModalConfigAgenda">Configurar Grade Horária</h3>
             <form id="formConfigAgenda">
-                <input id="configHoraInicio" value="8" data-dialog-focus="true" />
+                <input id="configHoraInicio" value="8" />
                 <input id="configHoraFim" value="18" />
                 <button id="btnFecharConfig" type="button">Cancelar</button>
             </form>
@@ -118,25 +126,23 @@ test('modal de configuracao da agenda abre com dialog controller e foco inicial'
     const { window } = dom;
     const modal = window.document.getElementById('modalConfigAgenda');
     const trigger = window.document.getElementById('btnAgenda');
-    const input = window.document.getElementById('configHoraInicio');
-
     vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
 
     window.DialogController.open(modal, { trigger });
 
     assert.equal(modal.style.display, 'flex');
     assert.equal(modal.getAttribute('aria-modal'), 'true');
-    assert.equal(window.document.activeElement, input);
+    assert.equal(window.document.activeElement, modal);
     assert.equal(modal.getAttribute('role'), 'dialog');
 });
 
-test('modal de escolha de tipo abre com dialog controller e foco inicial', (t) => {
+test('modal de escolha de tipo abre com foco no contexto', (t) => {
     const dom = new JSDOM(`<!doctype html><html><body>
         <button id="trigger">Abrir</button>
         <div id="modalEscolhaTipo" style="display:none" aria-labelledby="tituloModalEscolhaTipo">
             <h3 id="tituloModalEscolhaTipo">Escolha o tipo de agendamento</h3>
             <p id="infoEscolhaSlot">Agendar às 08:00</p>
-            <button id="btnEscolhaAula" data-dialog-focus="true" type="button">Agendar Aula</button>
+            <button id="btnEscolhaAula" type="button">Agendar Aula</button>
             <button id="btnEscolhaBloqueio" type="button">Agendar Bloqueio</button>
         </div>
     </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
@@ -145,8 +151,6 @@ test('modal de escolha de tipo abre com dialog controller e foco inicial', (t) =
     const { window } = dom;
     const modal = window.document.getElementById('modalEscolhaTipo');
     const trigger = window.document.getElementById('trigger');
-    const button = window.document.getElementById('btnEscolhaAula');
-
     vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
 
     trigger.focus();
@@ -155,17 +159,17 @@ test('modal de escolha de tipo abre com dialog controller e foco inicial', (t) =
     assert.equal(modal.style.display, 'flex');
     assert.equal(modal.getAttribute('role'), 'dialog');
     assert.equal(modal.getAttribute('aria-modal'), 'true');
-    assert.equal(window.document.activeElement, button);
+    assert.equal(window.document.activeElement, modal);
 });
 
-test('modal de reagendamento abre com dialog controller e foco inicial', (t) => {
+test('modal de reagendamento abre sem ativar o seletor', (t) => {
     const dom = new JSDOM(`<!doctype html><html><body>
         <button id="trigger">Abrir</button>
         <div id="modalReagendarAula" style="display:none" aria-labelledby="tituloModalReagendarAula">
             <h3 id="tituloModalReagendarAula">Agendar Reposição</h3>
             <p id="infoReagendamentoSlot">Agendar reposição às 08:00</p>
             <form>
-                <select id="reagendarAluno" data-dialog-focus="true">
+                <select id="reagendarAluno">
                     <option value="">Selecione um aluno...</option>
                 </select>
                 <input id="reagendarData" value="2026-09-24" />
@@ -178,8 +182,6 @@ test('modal de reagendamento abre com dialog controller e foco inicial', (t) => 
     const { window } = dom;
     const modal = window.document.getElementById('modalReagendarAula');
     const trigger = window.document.getElementById('trigger');
-    const select = window.document.getElementById('reagendarAluno');
-
     vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
 
     trigger.focus();
@@ -188,16 +190,16 @@ test('modal de reagendamento abre com dialog controller e foco inicial', (t) => 
     assert.equal(modal.style.display, 'flex');
     assert.equal(modal.getAttribute('role'), 'dialog');
     assert.equal(modal.getAttribute('aria-modal'), 'true');
-    assert.equal(window.document.activeElement, select);
+    assert.equal(window.document.activeElement, modal);
 });
 
-test('modal de agendamento abre com dialog controller e foco inicial', (t) => {
+test('modal de agendamento abre sem ativar o seletor', (t) => {
     const dom = new JSDOM(`<!doctype html><html><body>
         <button id="trigger">Abrir</button>
         <div id="modalAgendamento" style="display:none" aria-labelledby="agendaTituloModal">
             <h3 id="agendaTituloModal">Novo Agendamento</h3>
             <form id="formAgendamento">
-                <select id="agendaAluno" data-dialog-focus="true">
+                <select id="agendaAluno">
                     <option value="">Selecione um aluno...</option>
                 </select>
                 <input id="agendaDescricao" value="" />
@@ -209,8 +211,6 @@ test('modal de agendamento abre com dialog controller e foco inicial', (t) => {
     const { window } = dom;
     const modal = window.document.getElementById('modalAgendamento');
     const trigger = window.document.getElementById('trigger');
-    const select = window.document.getElementById('agendaAluno');
-
     vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
 
     trigger.focus();
@@ -219,16 +219,16 @@ test('modal de agendamento abre com dialog controller e foco inicial', (t) => {
     assert.equal(modal.style.display, 'flex');
     assert.equal(modal.getAttribute('role'), 'dialog');
     assert.equal(modal.getAttribute('aria-modal'), 'true');
-    assert.equal(window.document.activeElement, select);
+    assert.equal(window.document.activeElement, modal);
 });
 
-test('modal de recorrencia abre com dialog controller e foco inicial', (t) => {
+test('modal de recorrencia abre sem ativar o seletor de data', (t) => {
     const dom = new JSDOM(`<!doctype html><html><body>
         <button id="trigger">Abrir</button>
         <div id="modalRecorrencia" style="display:none" aria-labelledby="tituloModalRecorrencia">
             <h3 id="tituloModalRecorrencia">Configurar Repetição</h3>
             <form id="formRecorrencia">
-                <input id="recorrenciaDataInicio" data-dialog-focus="true" value="2026-09-24" />
+                <input id="recorrenciaDataInicio" value="2026-09-24" />
                 <select id="recorrenciaPadrao"><option value="semanal">Semanal</option></select>
             </form>
         </div>
@@ -238,8 +238,6 @@ test('modal de recorrencia abre com dialog controller e foco inicial', (t) => {
     const { window } = dom;
     const modal = window.document.getElementById('modalRecorrencia');
     const trigger = window.document.getElementById('trigger');
-    const input = window.document.getElementById('recorrenciaDataInicio');
-
     vm.runInContext(fs.readFileSync(path.resolve(__dirname, '..', 'assets', 'js', 'features', 'modals', 'dialog-controller.js'), 'utf8'), dom.getInternalVMContext(), { filename: 'dialog-controller.js' });
 
     trigger.focus();
@@ -248,10 +246,10 @@ test('modal de recorrencia abre com dialog controller e foco inicial', (t) => {
     assert.equal(modal.style.display, 'flex');
     assert.equal(modal.getAttribute('role'), 'dialog');
     assert.equal(modal.getAttribute('aria-modal'), 'true');
-    assert.equal(window.document.activeElement, input);
+    assert.equal(window.document.activeElement, modal);
 });
 
-test('modais de escolha curtas usam contrato de dialog e foco inicial', (t) => {
+test('modais de escolha curtas não declaram preferência de foco', (t) => {
     const html = fs.readFileSync(path.resolve(__dirname, '..', 'index.html'), 'utf8');
     const dom = new JSDOM(html, { url: 'http://localhost', runScripts: 'outside-only' });
     t.after(() => dom.window.close());
@@ -262,7 +260,7 @@ test('modais de escolha curtas usam contrato de dialog e foco inicial', (t) => {
     assert.ok(modalCobranca);
     assert.equal(modalCobranca.getAttribute('role'), 'dialog');
     assert.ok(modalCobranca.querySelector('#tituloModalEscolhaCobrancaReposicao'));
-    assert.equal(modalCobranca.querySelector('#btnCobrarNesteCiclo').getAttribute('data-dialog-focus'), 'true');
+    assert.equal(modalCobranca.querySelector('[data-dialog-focus]'), null);
 
     const modalExclusao = window.document.getElementById('modalEscolhaExclusao');
     assert.ok(modalExclusao);

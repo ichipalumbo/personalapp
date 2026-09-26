@@ -23,6 +23,36 @@ Decisões da seção 10 aplicadas: 10.1 (tela completa), 10.2 (descarte), 10.3 (
 
 Abertamente fora de escopo, mantidos como estão: diálogos nativos (`alert`/`confirm`), overlay `#overlay-sinc` e `#toast`.
 
+### Revisão da política de foco inicial (2026-09-26)
+
+O dono reportou que, em mobile, o teclado virtual surgia automaticamente ao abrir
+qualquer modal com campo de texto — experiência indesejável, pois o teclado é
+exibido sempre que um campo recebe foco. Decisões confirmadas: remover o
+foco automático em **todas** as telas (não só mobile) e levar o foco para o
+**próprio contêiner do diálogo** (sem campo ativo), nunca `document.body` ou
+`document.documentElement`.
+
+- `DialogController`: `focusFirstInteractive` virou `focusDialogContext` — foca o
+  contêiner com `{ preventScroll: true }`; `normalizeDialog` garante
+  `tabindex="-1"`; o trap de foco estendeu-se para que `Tab`/`Shift+Tab` a partir
+  do contêiner (ou de um elemento fora do diálogo) entrem no primeiro/último
+  controle.
+- Removidos os focos de campo dos abridores que persistiram do fallback legado:
+  `view-alunos.js` (nome do aluno, seletor de edição de cobrança, botão de
+  fechar do histórico) e `modal-agendamento.js` (fallback do trap de recorrência);
+  os fallbacks legados agora focam o contêiner.
+- Removidos do `index.html` os atributos `data-dialog-focus` que forçavam
+  preferência de campo (escolha de tipo, reagendar, agendamento, recorrência,
+  cobrança, config de grade) e o `data-dialog-focus` dinâmico da primeira opção
+  de exclusão em `modal-acao-slot.js`.
+- Comportamento validado: abrir não ativa nenhum campo; `Tab` entra no primeiro
+  controle; `Shift+Tab` a partir do primeiro volta ao último; `Escape` fecha só o
+  topo devolvendo o foco ao diálogo de baixo; empilhamento intacto — em
+  320×568 e 390×844, sem scroll lateral.
+- Números medidos nesta rodada: frontend 77/77 antes e 77/77 depois;
+  `dialog-controller.test.js` 12/12 (mutação que re-introduz o foco no primeiro
+  campo falha 6 testes, confirmada a reversão).
+
 ### Progresso por commit — validação contra o git (2026-09-24)
 
 > Os 12 commits da branch `fix/mobile-formularios-dialogos` foram conferidos um a um contra
