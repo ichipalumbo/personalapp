@@ -216,7 +216,7 @@ rodar em paralelo/antes da Fase 0.1 se for conveniente, já que são áreas de c
 1. **Primeiro objetivo (herdado da Fase 0.3)**: remover Sincronizar Dados do fluxo superior
    primário e consolidar período/setas/Hoje em uma única barra.
 2. Avaliar e decidir (não inferir) se haverá barra de navegação inferior fixa (Home, Finanças,
-   Alunos) substituindo a barra superior atual — decisão de produto, ver seção 7, pergunta 1.
+   Alunos) substituindo a barra superior atual — decisão de produto, ver seção 6, pergunta 1.
 3. Aplicar safe areas de forma sistemática (barra inferior, FAB, toast como um sistema único).
 4. Posicionar o botão flutuante acima da barra inferior, se ela for aprovada.
 5. Preservar estado ativo semanticamente com `aria-current`.
@@ -224,7 +224,7 @@ rodar em paralelo/antes da Fase 0.1 se for conveniente, já que são áreas de c
 **Critério de conclusão**: agenda e conteúdo principal ganham área vertical sem perder acesso às
 três telas principais.
 
-**Decisão de produto obrigatória antes de iniciar**: pergunta 1 da seção 7 — a barra inferior
+**Decisão de produto obrigatória antes de iniciar**: pergunta 1 da seção 6 — a barra inferior
 substitui integralmente a navegação superior ou coexistirá em alguma tela?
 
 ---
@@ -252,7 +252,8 @@ em dados extremos; preservar nome, horário e status no primeiro nível.
 **Critério de conclusão**: dois a quatro eventos simultâneos permanecem distinguíveis e acionáveis
 em 320px.
 
-**Decisão de produto obrigatória antes de iniciar**: pergunta 4 da seção 7.
+**Decisão de produto obrigatória antes de iniciar**: pergunta 3 da seção 6 — qual comportamento
+deve ser adotado para eventos simultâneos na agenda diária?
 
 ---
 
@@ -305,7 +306,7 @@ apresentada como concluída antes da resposta da API.
 5. Botões icon-only dependentes só de `title` sem nome acessível robusto — reaproveitar padrão
    `aria-label` já definido na Etapa 2.
 6. Links de navegação com `href="#"` sem representar a tela ativa no histórico — decisão de
-   produto (ver seção 7, pergunta 6) antes de implementar.
+   produto (ver seção 6, pergunta 5) antes de implementar.
 
 **Nota de sequenciamento interno**: os itens 4 e 5 do 4.17 são apenas "aplicar o padrão da
 Etapa 2 nos lugares que ela não cobriu" — não é trabalho novo de design, é auditoria de cobertura.
@@ -395,10 +396,17 @@ Checklist mínimo por ajuste:
 
 ---
 
-## 9) Anexo — template de cartão de tarefa para execução assistida por modelo on-premises
+## 9) Anexo — template de cartão incremental para execução assistida por modelo on-premises
 
 Ao converter qualquer etapa/subetapa deste documento em execução, use o formato abaixo por
-tarefa (1 cartão ≈ 1 commit), preenchido por um passo de extração separado do passo de execução:
+tarefa, preenchido por um passo de extração separado do passo de execução.
+
+**Granularidade esperada**: cada etapa deve ser decomposta em uma sequência de cartões pequenos,
+até que a soma deles complete todo o seu escopo. Cada cartão deve representar uma única correção
+coerente, revisável e validável de forma independente — pequena o suficiente para normalmente
+resultar em um único commit. A relação não é uma obrigação mecânica: o cartão guia o incremento,
+e o commit correspondente é criado pelo dono do repositório conforme a política de branch. Não
+agrupar vários achados independentes no mesmo cartão apenas por pertencerem à mesma etapa.
 
 ```markdown
 # Tarefa: <nome curto>
@@ -432,5 +440,8 @@ tarefa (1 cartão ≈ 1 commit), preenchido por um passo de extração separado 
 <tipo>(<escopo>): <mensagem>
 ```
 
-**Regra de uso**: o modelo que gera os cartões só recebe a etapa/achado relevante deste
-documento, nunca o documento inteiro. O modelo que executa só recebe o cartão da vez.
+**Regra de uso**: primeiro, gerar todos os cartões incrementais necessários para cobrir a etapa,
+mantendo explícita a ordem entre eles quando houver dependência. O modelo que gera os cartões só
+recebe a etapa/achado relevante deste documento, nunca o documento inteiro. O modelo que executa
+só recebe o cartão da vez. Uma etapa só é concluída quando todos os seus cartões e a validação
+integrada final tiverem sido concluídos.
