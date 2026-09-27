@@ -278,6 +278,7 @@ acrescente o par em `DEPENDENCIAS_DE_CARGA` no arquivo de teste.
 | **A tarja LOCAL não aparece** | O hostname não é `localhost`/`127.0.0.1`/`::1` — o frontend está apontando para a API de produção. |
 | **`❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada`** | `MONGODB_URI` vazia ou ausente no `.env`. |
 | **Alteração no `.env` não fez efeito** | O `.env` é lido no boot. Reinicie o backend. |
+| **Comando de terminal "rodando" sem dar retorno** (a ferramenta reporta "moved to background") | `node -e "..."` com aspas aninhadas: o PowerShell quebra o parse e o shell fica em espera (prompt de continuação `>>` repetindo a linha). O comando **não encerrou** — não é um comando demorado. Conferir `>>` no output, matar o terminal e rodar de novo sem JS em linha (criar script `.tmp.js` e remover, ou usar busca do workspace em vez de script). |
 
 ---
 

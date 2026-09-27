@@ -316,3 +316,26 @@ apontando para `refs/heads/main`, deve reportar antes de qualquer escrita — ve
 Sync com Google Calendar e escrita no Mongo de produção envolvem **estado remoto que
 `git revert` não desfaz**. A trilha de commits precisa ser inteiramente do dono, para que
 exista um ponto de retorno confiável quando o estado externo divergir do código.
+
+---
+
+## 12. Terminal PowerShell — comando de tiro único
+
+O agente opera o terminal em PowerShell 5.1. Regras para não esperar um comando
+que não vai voltar:
+
+- **Nunca embutir JS em `node -e "..."`.** Aspas duplas aninhadas fazem o parser
+  do PowerShell quebrar e o shell entra em estado de espera (prompt de
+  continuação `>>` repetindo a linha do comando). Sintoma: o terminal parece
+  "rodando" sem dar retorno, e o gerenciador o move para background.
+  Solução: criar script `.tmp.js`, executar, remover (mesmo padrão do servidor
+  estático temporário) — ou evitar script: para saber algo sobre um arquivo
+  (que botões carregam ícone, onde uma rota existe), usar a busca do workspace
+  no lugar de script.
+- **Comando de tiro único (`git`, `node`, busca) responde em segundos.** Se um
+  terminal "em execução" ficar 30s+ sem output, ou o gerenciador reportar
+  "moved to background" num comando que deveria responder, **não esperar nem
+  fazer polling**: primeiro ler o output do terminal. Prompt `>>` com o
+  comando repetido = aspas não fechadas, o comando não encerrou. Matar o
+  terminal e rodar de novo com comando mais simples. "Moved to background" é
+  sintoma de terminal pendurado, não de comando demorado.
