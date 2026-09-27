@@ -185,6 +185,39 @@ sem commit de código (se o inventário confirmar que já está adequado).
 | Cartão | Status | Commit do dono | Contagem antes → depois |
 | --- | --- | --- | --- |
 | 0 (este relatório) | ✅ criado 2026-09-27 | — | — |
-| A (card Aluno) | ⏳ pendente | — | — |
+| A (card Aluno) | ✅ concluído 2026-09-27 | (aguardando commit do dono) | frontend 77/77 → 77/77 |
 | B (card Finanças) | ⏳ pendente | — | — |
 | C (card agenda) | ⏳ pendente | — | — |
+
+### Registro do Cartão A (2026-09-27)
+
+- **Decisão pendente fechada**: rótulo do `<summary>` = **"Ver detalhes"** (via
+  `vscode_askQuestions`).
+- **Arquivos alterados**: `assets/js/view-alunos.js` (template do card em
+  `renderizarListaAlunos` — local, cobrança, vencimento e observações movidos para dentro de um
+  `<details class="aluno-card-detalhes">`); `assets/css/style.css` (`margin-top: 8px` adicionado
+  a `.aluno-card-observacoes`, que antes herdava o espaçamento do container pai removido).
+- **Bug encontrado e corrigido durante a validação runtime**: o clique no `<summary>` propagava
+  para o `onclick="prepararEdicaoAluno(...)"` do card pai, abrindo o modal de edição ao mesmo
+  tempo que expandia o `<details>`. Corrigido com `onclick="event.stopPropagation();"` no
+  `<details>`, mesmo padrão já usado no toggle de status do card.
+- **Validação runtime** (mock `alunosEmAtraso`, 433×762 via clique real + 320×568 via CDP com
+  DPR 2.81 + touch): card fechado mostra só nome/objetivo/contrato/status/caixinhas; clique em
+  "Ver detalhes" expande sem abrir o modal de edição; `scrollWidth === clientWidth === 320`
+  (zero overflow); caixinhas de indicador inalteradas.
+- Suíte `tests-frontend/`: 77/77 antes → 77/77 depois.
+
+**Adendo (mesma sessão, 2026-09-27)**: durante a revisão desta tela, o dono identificou uma
+redundância adicional não coberta pelos achados originais da auditoria — a caixinha
+"Ciclo atual: R$ X · status" (`montarCaixinhaFinanceiraAluno`) duplicava informação já presente
+no card do aluno na tela de Finanças (valor, status, período), que o Cartão B desta mesma etapa
+mantém como foco central. Decisão do dono: resolver junto no Cartão A.
+- `assets/js/view-alunos.js`: `montarCaixinhaFinanceiraAluno` manteve só o alerta
+  "⚠️ Configurar cobrança" (quando o vencimento não está definido); o bloco de resumo de
+  valor/status/período do ciclo foi removido. Função `formatarDataCurtaAluno` removida por
+  ficar sem uso após a mudança (só existia para formatar o período dessa caixinha).
+- Validação runtime (mock `default`, 320×568 via CDP): a caixinha de alerta "Configurar
+  cobrança" continua aparecendo (caso "Carlos Mendes"); os demais alunos ficam só com a
+  caixinha de Reposições (e a de consistência de agenda, quando aplicável); zero overflow
+  (`scrollWidth === clientWidth === 320`).
+- Suíte `tests-frontend/`: 77/77 antes → 77/77 depois (medido de novo após o adendo).

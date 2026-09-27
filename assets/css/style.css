@@ -832,6 +832,7 @@ body {
   font-size: 0.75rem;
   gap: 7px;
   line-height: 1.4;
+  margin-top: 8px;
   padding: 7px 9px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
