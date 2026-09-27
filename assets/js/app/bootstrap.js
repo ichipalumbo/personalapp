@@ -22,10 +22,20 @@
         document.documentElement.style.setProperty('--home-topbar-height', `${height}px`);
     }
 
+    // Etapa 3 (Cartão F): mede o real do CSS (env() + 56px) para consumidores do token.
+    function atualizarAlturaBarraInferior() {
+        const bar = document.querySelector('.nav-inferior');
+        if (!bar) {
+            return;
+        }
+        document.documentElement.style.setProperty('--bottombar-height', `${bar.offsetHeight}px`);
+    }
+
     function atualizarMedidasLayout() {
         atualizarAlturaHeader();
         atualizarAlturaTabsCalendario();
         atualizarAlturaTopbarHome();
+        atualizarAlturaBarraInferior();
     }
 
     async function refreshActiveView(router) {

@@ -161,8 +161,10 @@ No console do browser, com o frontend aberto em `localhost:5500`:
 [auth] Sessão Google ativa para: <sua conta>
 ```
 
-Há também uma tarja **LOCAL** fixa no canto inferior direito, criada pelo `api-config.js`
-quando o ambiente é local. Se a tarja não aparecer, você está falando com produção.
+A confirmação de ambiente local é esse log acima: `ambiente: 'local'` com a
+`apiBaseUrl` de `localhost:5000`. Se o log der `producao`, você está falando com a
+API de produção. (Até a Rodada 3 da Etapa 3 era uma tarja **LOCAL** no canto da
+tela; a partir daí a verificação é só pelo console.)
 
 E estes dois `404` são o comportamento **correto**:
 
@@ -283,9 +285,55 @@ contraste, regressão visual), usar:
 Como simular no DevTools: F12 → device toolbar → dispositivo custom →
 largura `433`, altura `762`, zoom `100%`, device scale factor `2.81`.
 
-Playwright (agentes): `page.setViewportSize({ width: 433, height: 762 })` —
-viewport é sempre em px CSS; o DPR é propriedade de render físico e não faz
-parte da configuração do viewport.
+**Playwright (agentes) — `setViewportSize` sozinho NÃO garante DPR nem modo mobile.**
+`page.setViewportSize({ width: 433, height: 762 })` define só o viewport em
+px CSS. Sem mais nada, a página continua em **modo desktop**: mouse (não
+touch), `devicePixelRatio` herdado do lançamento do browser (medido: chegou
+a ficar em `2`, não `2.81`, mesmo com o viewport certo), `matchMedia
+'(pointer: coarse)'` e `'(hover: none)'` **falsos**, `ontouchstart` ausente,
+User-Agent de desktop. Qualquer código do app (CSS ou JS) que decida algo
+por esses sinais mede errado se só o viewport for setado.
+
+Para emular mobile de forma completa (viewport + DPR + touch + UA + mídia
+de ponteiro), forçar via CDP:
+
+```js
+const cdp = await page.context().newCDPSession(page);
+await cdp.send('Emulation.setDeviceMetricsOverride', {
+  width: 433,
+  height: 762,
+  deviceScaleFactor: 2.81,
+  mobile: true
+});
+await cdp.send('Emulation.setTouchEmulationEnabled', {
+  enabled: true,
+  maxTouchPoints: 5
+});
+await cdp.send('Emulation.setUserAgentOverride', {
+  userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+  platform: 'Android'
+});
+await cdp.send('Emulation.setEmitTouchEventsForMouse', {
+  enabled: true,
+  configuration: 'mobile'
+});
+await page.reload({ waitUntil: 'load' }); // alguns sinais só se refletem em matchMedia após reload
+```
+
+Confirmar sempre antes de medir/capturar — não presumir pelo `setViewportSize`:
+
+```js
+await page.evaluate(() => ({
+  dpr: window.devicePixelRatio,
+  w: window.innerWidth, h: window.innerHeight,
+  ontouch: 'ontouchstart' in window,
+  coarse: matchMedia('(pointer: coarse)').matches,
+  hoverNone: matchMedia('(hover: none)').matches
+}));
+```
+
+Esperado: `dpr: 2.81`, `w: 433`, `h: 762`, `ontouch: true`, `coarse: true`,
+`hoverNone: true`. Se qualquer um vier diferente, a emulação não foi aplicada.
 
 **Ressalvas:**
 
@@ -305,7 +353,7 @@ parte da configuração do viewport.
 |---|---|
 | **Todas as rotas protegidas respondem 500** com `"Google auth is not configured on the server."` | `GOOGLE_CLIENT_ID` vazio no `.env`. O `requireAuth` falha **antes** de validar o token e antes de tocar o banco — o sintoma parece falha de banco, mas não é. |
 | **Login falha com `origin_mismatch`** | Acessou por `127.0.0.1:5500` em vez de `localhost:5500`, ou a origem não está no Google Cloud Console. |
-| **A tarja LOCAL não aparece** | O hostname não é `localhost`/`127.0.0.1`/`::1` — o frontend está apontando para a API de produção. |
+| **O log `[api-config] Ambiente detectado` não dá `local`** | O hostname não é `localhost`/`127.0.0.1`/`::1` — o frontend está apontando para a API de produção. |
 | **`❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada`** | `MONGODB_URI` vazia ou ausente no `.env`. |
 | **Alteração no `.env` não fez efeito** | O `.env` é lido no boot. Reinicie o backend. |
 
