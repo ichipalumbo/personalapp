@@ -684,6 +684,11 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* Rodada 5 (2026-09-27): espaçamento ícone↔texto nos botões .btn que
+     carregam os dois (ex.: "Sincronizar Dados" e "Configurar Grade Horária"
+     da Área do usuário). Segue a convenção gap: 8px de .btn-gcal-connect.
+     Sem efeito em .btn somente-ícone (flex com um único item). */
+  gap: 8px;
 }
 .btn-primary {
   background: #ffd700;
