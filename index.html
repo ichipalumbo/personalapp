@@ -121,6 +121,7 @@
                       id="btnSemanaHomeAnterior"
                       class="btn btn-secondary btn-sm"
                       title="Semana Anterior"
+                      aria-label="Semana Anterior"
                     >
                       <i class="fa-solid fa-chevron-left"></i>
                     </button>
@@ -133,6 +134,7 @@
                       id="btnSemanaHomeProxima"
                       class="btn btn-secondary btn-sm"
                       title="Próxima Semana"
+                      aria-label="Próxima Semana"
                     >
                       <i class="fa-solid fa-chevron-right"></i>
                     </button>
@@ -165,7 +167,7 @@
                       background: #1e2a18;
                       color: #b7f2b1;
                       border: 1px solid #35592f;
-                      font-size: 0.78rem;
+                      font-size: 0.875rem;
                       padding: 5px 12px;
                       border-radius: 8px;
                       display: inline-flex;
@@ -251,7 +253,12 @@
           <div class="alunos-grid" id="listaAlunos"></div>
         </section>
 
-        <button id="btnFlutuanteAdicionar" onclick="abrirCadastroParaNovo()">
+        <button
+          id="btnFlutuanteAdicionar"
+          title="Novo aluno"
+          aria-label="Novo aluno"
+          onclick="abrirCadastroParaNovo()"
+        >
           <i class="fa-solid fa-plus"></i>
         </button>
 
@@ -414,6 +421,7 @@
                   id="btnExcluirAlunoModal"
                   style="margin-right: auto; display: none"
                   title="Excluir Aluno"
+                  aria-label="Excluir Aluno"
                 >
                   <i class="fa-solid fa-trash"></i>
                 </button>
@@ -525,7 +533,7 @@
         <p
           id="infoEscolhaSlot"
           style="
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             color: #aaa;
             margin-bottom: 20px;
             font-weight: 500;
@@ -624,7 +632,7 @@
         <p
           id="infoReagendamentoSlot"
           style="
-            font-size: 0.8rem;
+            font-size: 0.875rem;
             color: #64b5f6;
             margin-bottom: 15px;
             font-weight: 600;
@@ -652,7 +660,7 @@
                 border: 1px solid #333;
                 border-radius: 8px;
                 font-weight: 700;
-                font-size: 0.95rem;
+                font-size: 1rem;
               "
             >
               Nome do Aluno
@@ -737,7 +745,7 @@
         <p
           id="agendaSubtituloModal"
           style="
-            font-size: 0.78rem;
+            font-size: 0.875rem;
             color: #a8a8a8;
             margin-bottom: 14px;
             font-weight: 500;
@@ -961,7 +969,7 @@
         <p
           id="recorrenciaModalSubtitulo"
           style="
-            font-size: 0.78rem;
+            font-size: 0.875rem;
             color: #a8a8a8;
             margin-bottom: 14px;
             font-weight: 500;
@@ -1026,7 +1034,7 @@
                       display: flex;
                       align-items: center;
                       color: #fff;
-                      font-size: 0.9rem;
+                      font-size: 1rem;
                       font-weight: 700;
                       background: #0d0d0d;
                       padding-left: 12px;
@@ -1197,7 +1205,7 @@
           <span
             id="badgeTipoCompromisso"
             class="modal-badge"
-            style="font-size: 0.7rem"
+            style="font-size: 0.75rem"
           ></span>
         </div>
 
@@ -1246,7 +1254,7 @@
           <p
             id="editInfoDia"
             style="
-              font-size: 0.8rem;
+              font-size: 0.875rem;
               color: #fff;
               margin-bottom: 15px;
               font-weight: 600;
@@ -1288,7 +1296,7 @@
                 display: block;
                 margin-top: 6px;
                 color: #bdbdbd;
-                font-size: 0.78rem;
+                font-size: 0.875rem;
               "
               >Vai atualizar esta aula e as próximas da série.</small
             >
@@ -1298,7 +1306,7 @@
                 display: block;
                 margin-top: 6px;
                 color: #ffd700;
-                font-size: 0.76rem;
+                font-size: 0.875rem;
                 font-weight: 700;
               "
             ></small>
@@ -1309,7 +1317,7 @@
               display: none;
               margin: -4px 0 12px;
               color: #ff8a80;
-              font-size: 0.78rem;
+              font-size: 0.875rem;
               font-weight: 700;
             "
             >Aluno inativo — compromisso disponível somente para visualização.</small
@@ -1445,6 +1453,7 @@
                 class="btn btn-danger"
                 id="btnExcluirSlot"
                 title="Excluir"
+                aria-label="Excluir"
                 style="margin-right: auto"
               >
                 <i class="fa-solid fa-trash"></i>
@@ -1473,10 +1482,10 @@
     >
       <div class="modal" style="max-width: 420px">
         <h3 id="tituloModalEscolhaCobrancaReposicao" style="margin-top: 0; margin-bottom: 8px;">Cobrar esta aula?</h3>
-        <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: #fff; font-size: 0.92rem;"></p>
-        <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.84rem;"></p>
+        <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: #fff; font-size: 0.875rem;"></p>
+        <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.875rem;"></p>
 
-        <p style="margin: 0 0 12px; color: #d9d9d9; font-size: 0.78rem; line-height: 1.5;">
+        <p style="margin: 0 0 12px; color: #d9d9d9; font-size: 0.875rem; line-height: 1.5;">
           A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, na aba Reposições.
         </p>
 
@@ -1492,7 +1501,7 @@
           <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Se o prazo expirar, não é cobrada.</small>
         </div>
 
-        <div style="border-top: 1px solid #222; padding-top: 12px; color: #d9d9d9; font-size: 0.76rem; text-align: center; line-height: 1.5;">
+        <div style="border-top: 1px solid #222; padding-top: 12px; color: #d9d9d9; font-size: 0.875rem; text-align: center; line-height: 1.5;">
           <div>Não pode ser alterado depois.</div>
         </div>
 
@@ -1531,7 +1540,7 @@
     >
       <div class="modal" style="max-width: 380px">
         <h3 id="tituloModalConfigAgenda">Configurar Grade Horária</h3>
-        <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px">
+        <p style="font-size: 0.875rem; color: #888; margin-bottom: 15px">
           Defina os limites de exibição de horas de trabalho da sua agenda
           diária.
         </p>

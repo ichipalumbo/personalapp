@@ -99,19 +99,19 @@ function garantirHomeTabs() {
     <div class="home-weekly-nav-row">
       <div class="nav-calendario nav-calendario--home nav-calendario--week-home">
         <div class="nav-calendario-main">
-          <button id="btnHomeDiaAnterior" class="btn btn-secondary btn-sm" title="Dia Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+          <button id="btnHomeDiaAnterior" class="btn btn-secondary btn-sm" title="Dia Anterior" aria-label="Dia Anterior"><i class="fa-solid fa-chevron-left"></i></button>
           <span id="dataAtualHome" class="home-weekly-periodo">Carregando...</span>
-          <button id="btnHomeDiaProximo" class="btn btn-secondary btn-sm" title="Próximo Dia"><i class="fa-solid fa-chevron-right"></i></button>
+          <button id="btnHomeDiaProximo" class="btn btn-secondary btn-sm" title="Próximo Dia" aria-label="Próximo Dia"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
         <button id="btnHomeDiaHoje" class="btn btn-secondary btn-sm btn-calendario-hoje">Hoje</button>
       </div>
     </div>
     <div class="home-weekly-nav-row" style="justify-content:flex-end;margin-top:6px">
       <div style="display:flex;gap:8px">
-        <button id="btnHomeDiaNovaAgenda" class="btn-config-icon" title="Novo Agendamento">
+        <button id="btnHomeDiaNovaAgenda" class="btn-config-icon" title="Novo Agendamento" aria-label="Novo Agendamento">
           <i class="fa-solid fa-calendar-plus" style="color:#ffd700"></i>
         </button>
-        <button id="btnHomeDiaConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
+        <button id="btnHomeDiaConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária" aria-label="Configurar Grade Horária">
           <i class="fa-solid fa-gear fa-spin-hover" style="color:#ffd700"></i>
         </button>
       </div>
@@ -338,7 +338,9 @@ window.renderizarAgendaDia = function (gridId) {
 
   const inicio = agendaConfig.horaInicio;
   const fim = agendaConfig.horaFim;
-  const hourHeight = 84; // 84px por hora (confortável e espaçoso, 42px por meia hora)
+  // Etapa 2 (Cartão B, 2026-09-26): slot de 30min alvo frequente → 48px → 96px/hora.
+  // Mantém a proporção da grade (linhas, labels e cards de evento escalam juntos).
+  const hourHeight = 96; // 96px por hora (confortável e espaçoso, 48px por meia hora)
 
   // Filtrar compromissos do dia selecionado
   const compromissosDoDia = aulas.filter((a) =>

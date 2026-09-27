@@ -269,6 +269,36 @@ acrescente o par em `DEPENDENCIAS_DE_CARGA` no arquivo de teste.
 
 ---
 
+## 9. Viewport de referência para validação do mobile
+
+O app é de uso pessoal, e o celular do dono é o **alvo de aceite** da UI
+mobile. Ao medir/validar tela no mobile (tipografia, alvos de toque,
+contraste, regressão visual), usar:
+
+| Propriedade | Valor |
+|---|---|
+| Viewport em CSS | **433 × 762 px** |
+| DPR (`devicePixelRatio`) | **2.81** (≈ 1216 × 2141 px físicos) |
+
+Como simular no DevTools: F12 → device toolbar → dispositivo custom →
+largura `433`, altura `762`, zoom `100%`, device scale factor `2.81`.
+
+Playwright (agentes): `page.setViewportSize({ width: 433, height: 762 })` —
+viewport é sempre em px CSS; o DPR é propriedade de render físico e não faz
+parte da configuração do viewport.
+
+**Ressalvas:**
+
+- **433px fica acima do breakpoint `@media (max-width: 430px)`** do
+  `assets/css/style.css`. Neste viewport, os modais abrem **centralizados**,
+  não em tela cheia pela base. O piso de 16px dos campos de formulário **não**
+  depende daquele breakpoint (é global).
+- 320×568 e 390×844 (usados nas validações dos Cartões A/B da Etapa 2)
+  continuam válidos como **stress test**: são menores que a referência e
+  capturam estouro que o 433px esconderia.
+
+---
+
 ## Armadilhas conhecidas
 
 | Sintoma | Causa real |
