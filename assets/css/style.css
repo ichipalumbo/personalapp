@@ -2355,6 +2355,27 @@ body {
 }
 .modal-settings {
   max-width: 500px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Mesmo comportamento de rolagem do modal-alunos-corpo (pedido do dono, 2026-09-27):
+   corpo cresce até o limite e rola por dentro, sem esticar o modal. */
+.modal-settings .modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-settings .modal-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 .modal-historico-reposicoes {
   display: flex;
@@ -2984,15 +3005,20 @@ body {
   }
 
   #modalAgendamento,
-  #modalRecorrencia,
-  #appSettingsModal {
+  #modalRecorrencia {
     align-items: stretch;
     justify-content: stretch;
   }
 
+  /* Área do usuário: mesmo bottom-sheet do modal de aluno (pedido do dono, 2026-09-27). */
+  #appSettingsModal {
+    justify-content: stretch;
+    align-items: flex-end;
+    padding: 0;
+  }
+
   .modal-agendamento,
-  .modal.modal-recorrencia-secundario,
-  .modal-settings {
+  .modal.modal-recorrencia-secundario {
     width: 100%;
     max-width: 100%;
     height: 100vh;
@@ -3005,9 +3031,35 @@ body {
     scrollbar-width: none;
   }
 
+  .modal-settings {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 18px 18px 0 0;
+    padding: 16px 12px 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .modal-settings .modal-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .modal-settings .modal-body::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+  }
+
   .modal-agendamento::-webkit-scrollbar,
-  .modal-recorrencia-secundario::-webkit-scrollbar,
-  .modal-settings::-webkit-scrollbar {
+  .modal-recorrencia-secundario::-webkit-scrollbar {
     display: none;
   }
 

@@ -285,9 +285,25 @@ contraste, regressão visual), usar:
 Como simular no DevTools: F12 → device toolbar → dispositivo custom →
 largura `433`, altura `762`, zoom `100%`, device scale factor `2.81`.
 
-Playwright (agentes): `page.setViewportSize({ width: 433, height: 762 })` —
-viewport é sempre em px CSS; o DPR é propriedade de render físico e não faz
-parte da configuração do viewport.
+**Playwright (agentes) — `setViewportSize` sozinho NÃO garante o DPR.**
+`page.setViewportSize({ width: 433, height: 762 })` define só o viewport em
+px CSS; o `devicePixelRatio` da página fica com o valor herdado do
+lançamento do browser (medido: uma página já aberta ficou em DPR `2`, não
+`2.81`, mesmo com o viewport correto). Para garantir os dois juntos, forçar
+via CDP:
+
+```js
+const cdp = await page.context().newCDPSession(page);
+await cdp.send('Emulation.setDeviceMetricsOverride', {
+  width: 433,
+  height: 762,
+  deviceScaleFactor: 2.81,
+  mobile: true
+});
+```
+
+Confirmar sempre com `page.evaluate(() => window.devicePixelRatio)` antes de
+medir/capturar — não presumir pelo `setViewportSize`.
 
 **Ressalvas:**
 
