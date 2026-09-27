@@ -4,7 +4,6 @@
 (function (global) {
     const STATE = {
         cards: [],
-        filtro: 'todos',
         carregando: false,
         salvando: false,
         erro: null,
@@ -85,7 +84,7 @@
             pagamentoModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
                 <h3 id="financasPagamentoTitulo"><i class="fa-solid fa-circle-check" style="color:#ffd700;margin-right:8px"></i>Marcar como pago</h3>
-                <p id="financasPagamentoResumo" style="font-size:0.78rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
+                <p id="financasPagamentoResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
                 <form id="formFinancasPagamento">
                   <div class="form-grupo-spa">
                     <label for="financasDataPagamento">Data do pagamento *</label>
@@ -115,7 +114,7 @@
             ajusteModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
                 <h3 id="financasAjusteTitulo"><i class="fa-solid fa-sliders" style="color:#ffd700;margin-right:8px"></i>Ajuste manual</h3>
-                <p id="financasAjusteResumo" style="font-size:0.78rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
+                <p id="financasAjusteResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
                 <form id="formFinancasAjuste">
                   <div class="form-grupo-spa">
                     <label for="financasAulasExtras">Ajuste de aulas (pode ser negativo)</label>
@@ -145,25 +144,12 @@
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
               <div>
                 <h2 style="margin:0;color:#ffd700;font-size:1.25rem;font-weight:800;">💰 Finanças</h2>
-                <p style="margin:4px 0 0;color:#9a9a9a;font-size:0.78rem;">Ciclo vigente por aluno, com leitura cacheada e escrita confirmada pelo backend.</p>
+                <p style="margin:4px 0 0;color:#9a9a9a;font-size:0.875rem;">Ciclo vigente por aluno, com leitura cacheada e escrita confirmada pelo backend.</p>
               </div>
               <div style="text-align:right;">
-                <div id="financasCacheLabel" style="font-size:0.72rem;color:#8e8e8e;">${cacheLabel}</div>
-                <div id="financasSyncState" style="font-size:0.72rem;color:#8e8e8e;margin-top:4px;"></div>
+                <div id="financasCacheLabel" style="font-size:0.75rem;color:#8e8e8e;">${cacheLabel}</div>
+                <div id="financasSyncState" style="font-size:0.75rem;color:#8e8e8e;margin-top:4px;"></div>
               </div>
-            </div>
-            <div class="tab-tipo-agendamento" style="display:flex;gap:6px;margin-top:14px;background:#0d0d0d;padding:4px;border-radius:8px;border:1px solid #2a2a2a;">
-              ${['todos', 'atrasado', 'em_aberto', 'pago', 'pendente'].map((status) => {
-                const labels = {
-                    todos: 'Todos',
-                    atrasado: 'Atrasado',
-                    em_aberto: 'Em aberto',
-                    pago: 'Pago',
-                    pendente: 'Pendente'
-                };
-                const ativo = STATE.filtro === status ? 'active' : '';
-                return `<button type="button" class="tab-btn ${ativo}" data-financas-filtro="${status}">${labels[status]}</button>`;
-              }).join('')}
             </div>
           </section>
           <section id="financasConteudo"></section>
@@ -199,12 +185,7 @@
 
     function filtrarCards(cards) {
         const lista = Array.isArray(cards) ? cards.slice() : [];
-        return lista.filter((card) => {
-            const status = obterStatusCard(card);
-            if (STATE.filtro === 'todos') return true;
-            if (STATE.filtro === 'pendente') return !!card.configuracaoPendente;
-            return status === STATE.filtro;
-        }).sort((a, b) => {
+        return lista.sort((a, b) => {
             const ordA = statusOrder(obterStatusCard(a), a && a.configuracaoPendente);
             const ordB = statusOrder(obterStatusCard(b), b && b.configuracaoPendente);
             return ordA - ordB;
@@ -217,7 +198,7 @@
         conteudo.innerHTML = `
           <div class="agenda-panel" style="text-align:center;color:#8e8e8e;">
             <i class="fa-solid fa-wallet" style="font-size:2rem;margin-bottom:10px;display:block;color:#ffd700;"></i>
-            <p style="margin:0;font-size:0.92rem;">${mensagem}</p>
+            <p style="margin:0;font-size:1rem;">${mensagem}</p>
           </div>
         `;
     }
@@ -249,10 +230,10 @@
         const valorTotal = Number(linha && linha.valorTotal) || 0;
         const valorExibicao = formatarMoeda(valorTotal);
         const quantidadeHtml = Number.isFinite(quantidade) && quantidade !== 0
-            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.68rem;">Qtd.: ${quantidade}</div>`
+            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.75rem;">Qtd.: ${quantidade}</div>`
             : '';
         const notaHtml = nota
-            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.68rem;">Nota: ${nota}</div>`
+            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.75rem;">Nota: ${nota}</div>`
             : '';
 
         let rotuloTipo = 'Lançamento';
@@ -299,12 +280,12 @@
           <div style="padding:8px 10px;border:1px solid #242424;border-radius:8px;background:#0d0d0d;">
             <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
               <div style="min-width:0;flex:1;">
-                <div style="color:#f0f0f0;font-size:0.76rem;font-weight:700;">${rotuloTipo}</div>
-                <div style="margin-top:4px;color:#e8e8e8;font-size:0.76rem;word-break:break-word;">${descricao}</div>
+                <div style="color:#f0f0f0;font-size:0.875rem;font-weight:700;">${rotuloTipo}</div>
+                    <div style="margin-top:4px;color:#e8e8e8;font-size:0.875rem;word-break:break-word;">${descricao}</div>
                 ${quantidadeHtml}
                 ${notaHtml}
               </div>
-              <div style="color:#ffd700;font-weight:800;font-size:0.76rem;white-space:nowrap;">${valorExibicao}</div>
+              <div style="color:#ffd700;font-weight:800;font-size:1rem;white-space:nowrap;">${valorExibicao}</div>
             </div>
           </div>
         `;
@@ -312,16 +293,16 @@
 
     function renderizarConteudoExtrato(ciclo) {
         if (!ciclo) {
-            return '<div style="color:#8e8e8e;font-size:0.78rem;">Extrato indisponível.</div>';
+            return '<div style="color:#8e8e8e;font-size:0.875rem;">Extrato indisponível.</div>';
         }
 
         if (ciclo.extrato == null) {
-            return '<div style="color:#8e8e8e;font-size:0.78rem;">Extrato não registrado para este ciclo.</div>';
+            return '<div style="color:#8e8e8e;font-size:0.875rem;">Extrato não registrado para este ciclo.</div>';
         }
 
         const linhas = Array.isArray(ciclo.extrato) ? ciclo.extrato : [];
         if (linhas.length === 0) {
-            return '<div style="color:#8e8e8e;font-size:0.78rem;">Não há lançamentos.</div>';
+            return '<div style="color:#8e8e8e;font-size:0.875rem;">Não há lançamentos.</div>';
         }
 
         const totalLabel = ciclo.metodoCobranca === 'valor_fixo'
@@ -331,7 +312,7 @@
         return `
           <div style="display:flex;flex-direction:column;gap:8px;">
             ${linhas.map((linha) => renderizarLinhaExtrato(linha, ciclo)).join('')}
-            <div style="padding-top:8px;border-top:1px solid #262626;color:#ffd700;font-size:0.78rem;font-weight:800;">${escaparHtml(totalLabel)}</div>
+            <div style="padding-top:8px;border-top:1px solid #262626;color:#ffd700;font-size:0.875rem;font-weight:800;">${escaparHtml(totalLabel)}</div>
           </div>
         `;
     }
@@ -344,7 +325,7 @@
 
         return `
           <details data-financas-extrato-details="${escaparHtml(identificador)}" style="border-top:1px solid #262626;padding-top:10px;" ${aberto}>
-            <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.82rem;">${escaparHtml(rotulo)}</summary>
+            <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.875rem;">${escaparHtml(rotulo)}</summary>
             <div style="margin-top:10px;">${renderizarConteudoExtrato(ciclo)}</div>
           </details>
         `;
@@ -353,7 +334,7 @@
     function renderizarListaHistorico(historico) {
         const lista = Array.isArray(historico) ? historico : [];
         if (lista.length === 0) {
-            return '<p style="margin:0;color:#8e8e8e;font-size:0.78rem;">Sem ciclos anteriores.</p>';
+            return '<p style="margin:0;color:#8e8e8e;font-size:0.875rem;">Sem ciclos anteriores.</p>';
         }
 
         return `
@@ -371,8 +352,8 @@
                 return `
                   <div style="border:1px solid #262626;border-radius:10px;padding:10px 12px;background:#0f0f0f;">
                     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
-                      <strong style="color:#fff;font-size:0.84rem;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</strong>
-                      <span style="color:${ciclo.status === 'pago' ? '#81c784' : (ciclo.status === 'atrasado' ? '#ff8a80' : '#ffd700')};font-size:0.72rem;font-weight:700;">${status}</span>
+                      <strong style="color:#fff;font-size:0.875rem;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</strong>
+                      <span style="color:${ciclo.status === 'pago' ? '#81c784' : (ciclo.status === 'atrasado' ? '#ff8a80' : '#ffd700')};font-size:0.75rem;font-weight:700;">${status}</span>
                     </div>
                     <div style="font-size:0.75rem;color:#9a9a9a;margin-top:6px;">
                       ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
@@ -397,12 +378,12 @@
         const estado = obterEstadoHistorico(alunoId);
 
         if (estado.status === 'carregando') {
-            return '<p style="margin:0;color:#8e8e8e;font-size:0.78rem;">Carregando ciclos anteriores...</p>';
+            return '<p style="margin:0;color:#8e8e8e;font-size:0.875rem;">Carregando ciclos anteriores...</p>';
         }
         if (estado.status === 'erro') {
             return `
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
-                <p style="margin:0;color:#ff8a80;font-size:0.78rem;">${estado.erro || 'Não foi possível carregar o histórico.'}</p>
+                <p style="margin:0;color:#ff8a80;font-size:0.875rem;">${estado.erro || 'Não foi possível carregar o histórico.'}</p>
                 <button type="button" class="btn btn-secondary" data-financas-historico-retry="${alunoId}">Tentar novamente</button>
               </div>
             `;
@@ -496,40 +477,40 @@
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
               <div style="min-width:0;">
                 <strong style="display:block;color:#fff;font-size:1.02rem;word-break:break-word;">${escaparHtml(aluno.nome || 'Aluno')}</strong>
-                <div style="margin-top:4px;font-size:0.72rem;color:#b8b8b8;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <div style="margin-top:4px;font-size:0.75rem;color:#b8b8b8;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
                   <span>${statusLabel}</span>
                   ${card.configuracaoPendente ? '' : `<span>• ${resumoCiclo(card)}</span>`}
                 </div>
               </div>
-              <span style="font-size:0.72rem;font-weight:800;color:${card.configuracaoPendente ? '#ff8a80' : (status === 'pago' ? '#81c784' : (status === 'atrasado' ? '#ff8a80' : '#ffd700'))};text-transform:uppercase;letter-spacing:0.4px;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
+              <span style="font-size:0.75rem;font-weight:800;color:${card.configuracaoPendente ? '#ff8a80' : (status === 'pago' ? '#81c784' : (status === 'atrasado' ? '#ff8a80' : '#ffd700'))};text-transform:uppercase;letter-spacing:0.4px;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
             </div>
 
             ${card.configuracaoPendente ? `
               <div style="padding:12px;border:1px dashed rgba(255,215,0,0.28);border-radius:10px;background:rgba(255,215,0,0.04);color:#ddd;">
-                <p style="margin:0 0 8px;font-size:0.88rem;">Configure o dia de vencimento para calcular a cobrança.</p>
+                <p style="margin:0 0 8px;font-size:1rem;">Configure o dia de vencimento para calcular a cobrança.</p>
                 <button type="button" class="btn btn-primary" data-financas-configurar="${aluno.id}" style="width:100%;">Configurar agora</button>
               </div>
             ` : `
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo atual</div>
-                  <div style="margin-top:6px;font-size:0.82rem;color:#fff;font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
-                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">${status === 'atrasado' ? 'Venceu' : 'Vigente'}</div>
+                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo atual</div>
+                  <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
+                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'atrasado' ? 'Venceu' : 'Vigente'}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
-                  <div style="margin-top:6px;font-size:0.82rem;color:#fff;font-weight:700;">${metodo}</div>
-                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">${status === 'pago' ? 'Pagamento confirmado' : 'Pagamento manual'}</div>
+                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
+                  <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${metodo}</div>
+                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'pago' ? 'Pagamento confirmado' : 'Pagamento manual'}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
-                  <div style="margin-top:6px;font-size:0.82rem;color:#fff;font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
-                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
+                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
+                  <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
+                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.64rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
-                  <div style="margin-top:6px;font-size:0.92rem;color:#ffd700;font-weight:800;">${total}</div>
-                  <div style="margin-top:4px;font-size:0.72rem;color:#a8a8a8;">${status === 'pago' ? 'Pago' : 'A receber'}</div>
+                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
+                  <div style="margin-top:6px;font-size:1rem;color:#ffd700;font-weight:800;">${total}</div>
+                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'pago' ? 'Pago' : 'A receber'}</div>
                 </div>
               </div>
 
@@ -541,7 +522,7 @@
               ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-atual-${aluno.id || card.alunoId}`, rotulo: 'Ver extrato do ciclo' })}
 
               <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;" ${STATE.historicoAberto[aluno.id] ? 'open' : ''}>
-                <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.82rem;">Ver ciclos anteriores</summary>
+                <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.875rem;">Ver ciclos anteriores</summary>
                 <div id="financas-historico-conteudo-${aluno.id}" style="margin-top:10px;">${montarHtmlHistorico(aluno.id)}</div>
               </details>
             `}
@@ -555,7 +536,7 @@
 
         const cards = filtrarCards(STATE.cards);
         if (cards.length === 0) {
-            renderizarVazio('Nenhum aluno corresponde ao filtro atual.');
+            renderizarVazio('Nenhum aluno para exibir.');
             return;
         }
 
@@ -793,15 +774,6 @@
         if (STATE.handlersBound) return;
         const root = obterRoot();
         root.addEventListener('click', function (event) {
-            const filtroBtn = event.target.closest('[data-financas-filtro]');
-            if (filtroBtn) {
-                STATE.filtro = filtroBtn.getAttribute('data-financas-filtro') || 'todos';
-                root.querySelectorAll('[data-financas-filtro]').forEach((btn) => btn.classList.remove('active'));
-                filtroBtn.classList.add('active');
-                renderizarCards();
-                return;
-            }
-
             const pagarBtn = event.target.closest('[data-financas-pagar]');
             if (pagarBtn) {
                 abrirModalPagamento(pagarBtn.getAttribute('data-financas-pagar'), pagarBtn.getAttribute('data-ciclo-id'));

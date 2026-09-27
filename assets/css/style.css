@@ -93,7 +93,8 @@ body {
 .home-app-resumo p {
   margin: 0;
   color: #a8a8a8;
-  font-size: 0.78rem;
+  /* Escala tipografica Etapa 2 (16/14/12): texto secundario 14px */
+  font-size: 0.875rem;
   line-height: 1.4;
 }
 
@@ -198,7 +199,7 @@ body {
   color: #d8e8ff;
   border-radius: 999px;
   padding: 8px 12px;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -247,7 +248,7 @@ body {
   color: #ffcbc8;
   border-radius: 999px;
   padding: 7px 11px;
-  font-size: 0.74rem;
+  font-size: 0.875rem;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -376,7 +377,7 @@ body {
 }
 
 .settings-description {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: #a0a0a0;
   margin: 0 0 4px 0;
   line-height: 1.5;
@@ -422,13 +423,13 @@ body {
 
 .user-profile-copy strong {
   color: #f7f1cc;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   line-height: 1.2;
 }
 
 .user-profile-copy span {
   color: #b3bcc6;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -446,7 +447,7 @@ body {
   color: #4285f4;
   border-radius: 8px;
   padding: 11px 16px;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -501,7 +502,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: #34a853;
   flex: 1;
@@ -513,14 +514,14 @@ body {
 
 .gcal-status-meta {
   color: #84d89b;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   line-height: 1.25;
   word-break: break-word;
 }
 
 .gcal-status-feedback {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: #9cb0c6;
 }
 
@@ -539,7 +540,7 @@ body {
   color: #ff5252;
   border-radius: 6px;
   padding: 7px 12px;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -586,7 +587,8 @@ body {
   display: none;
   align-items: center;
   gap: 6px;
-  font-size: 0.7rem;
+  /* Piso de legibilidade 12px (Etapa 2, achado 4.4) */
+  font-size: 0.75rem;
   font-weight: 700;
   color: #9eb0c3;
   border: 1px solid #2f3d4c;
@@ -616,7 +618,7 @@ body {
   text-align: center;
   padding: 8px 6px;
   border-radius: 5px;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 600;
   display: flex;
   flex-direction: row;
@@ -653,7 +655,7 @@ body {
   border-radius: 8px;
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   transition: all 0.2s ease;
   text-align: center;
   display: inline-flex;
@@ -696,7 +698,7 @@ body {
   border: 1px solid #2d2d2d;
   border-radius: 8px;
   padding: 0;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
   text-align: center;
@@ -765,7 +767,7 @@ body {
   border-color: rgba(255, 152, 0, 0.28);
 }
 .aluno-card-indicador-titulo {
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   color: #ffd700;
   font-weight: 700;
 }
@@ -773,7 +775,7 @@ body {
   color: #ffb74d;
 }
 .aluno-card-indicador-detalhe {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   color: #aaa;
   margin-top: 3px;
 }
@@ -783,7 +785,7 @@ body {
   border-left: 3px solid rgba(100, 181, 246, 0.55);
   color: #c4d9e8;
   display: flex;
-  font-size: 0.74rem;
+  font-size: 0.75rem;
   gap: 7px;
   line-height: 1.4;
   padding: 7px 9px;
@@ -895,12 +897,13 @@ body {
   margin-bottom: 16px;
 }
 .form-grupo-spa label {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: #a0a0a0;
   font-weight: 500;
 }
 .form-grupo-spa input,
-.form-grupo-spa select {
+.form-grupo-spa select,
+.form-grupo-spa textarea {
   width: 100%;
   height: 60%;
   padding: 10px;
@@ -908,12 +911,14 @@ body {
   border-radius: 8px;
   background: #0d0d0d;
   color: #e0e0e0;
-  font-size: 0.95rem;
+  /* Etapa 2 (4.4): campos >=16px em todos os tamanhos (evita zoom auto no iOS) */
+  font-size: 1rem;
   outline: none;
   transition: border-color 0.2s ease;
 }
 .form-grupo-spa input:focus,
-.form-grupo-spa select:focus {
+.form-grupo-spa select:focus,
+.form-grupo-spa textarea:focus {
   border-color: #ffd700;
 }
 .form-grupo-spa.form-grupo-spa--desabilitado {
@@ -923,7 +928,8 @@ body {
   color: #707070;
 }
 .form-grupo-spa input:disabled,
-.form-grupo-spa select:disabled {
+.form-grupo-spa select:disabled,
+.form-grupo-spa textarea:disabled {
   background: #111;
   color: #787878;
   border-color: #2a2a2a;
@@ -962,7 +968,7 @@ body {
 }
 .duracao-stepper-value {
   text-align: center;
-  font-size: 0.86rem;
+  font-size: 0.875rem;
   font-weight: 800;
   color: #eaeaea;
   letter-spacing: 0.2px;
@@ -1000,14 +1006,14 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.2px;
 }
 .full-day-toggle-pill {
   min-width: 46px;
   text-align: center;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
   color: #8c8c8c;
   padding: 4px 8px;
@@ -1053,7 +1059,8 @@ body {
   input:not(:checked)
   + .full-day-toggle-ui
   .full-day-toggle-pill {
-  font-size: 0;
+  /* Etapa 2 (4.4): piso 12px para o texto ON/OFF */
+  font-size: 0.75rem;
 }
 .status-toggle {
   display: inline-flex;
@@ -1090,7 +1097,7 @@ body {
   transition: all 0.2s ease;
 }
 .status-toggle-label {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #bdbdbd;
 }
@@ -1139,7 +1146,7 @@ body {
   transform: translateX(14px);
 }
 .status-toggle.status-toggle--card .status-toggle-label {
-  font-size: 0.66rem;
+  font-size: 0.75rem;
 }
 .modal-alunos-acoes {
   display: flex;
@@ -1210,7 +1217,7 @@ body {
 .home-weekly-periodo {
   font-weight: 800;
   color: #ffd700;
-  font-size: 0.95rem;
+  font-size: 1rem;
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -1238,7 +1245,7 @@ body {
   border-radius: 10px;
 }
 .home-kpi-value {
-  font-size: 1.2rem !important;
+  font-size: 1.2rem;
   line-height: 1.05;
   margin-bottom: 1px !important;
 }
@@ -1247,7 +1254,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  font-size: 0.68rem !important;
+  /* Etapa 2 (4.4): piso de legibilidade 12px; !important de font-size removido */
+  font-size: 0.75rem;
   line-height: 1.15;
   text-wrap: balance;
 }
@@ -1298,7 +1306,7 @@ body {
   color: #cfcfcf;
   border-radius: 10px;
   padding: 10px 8px;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1312,7 +1320,7 @@ body {
 
 .recorrencia-secao-titulo {
   margin: 6px 0 10px;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: #ffd700;
   font-weight: 800;
   text-transform: uppercase;
@@ -1331,7 +1339,7 @@ body {
   cursor: pointer;
   color: #e0e0e0;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: 0.875rem;
   list-style: none;
 }
 
@@ -1494,7 +1502,7 @@ body {
 }
 
 .time-grid-hour-label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: #888;
   font-weight: 600;
   text-align: right;
@@ -1559,7 +1567,7 @@ body {
 }
 
 .time-grid-bg-slot-text {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: #ffd700;
   opacity: 0;
   transition: opacity 0.15s ease;
@@ -1657,7 +1665,7 @@ body {
   align-items: center;
   gap: 5px;
   color: #d7d7d7;
-  font-size: 0.69rem;
+  font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
   margin-left: auto;
@@ -1681,7 +1689,7 @@ body {
 .agenda-dia-aula-nome {
   font-weight: 700;
   color: #ffffff;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1710,7 +1718,7 @@ body {
 }
 
 .agenda-dia-aula-local {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: #999;
   display: flex;
   align-items: center;
@@ -1722,7 +1730,7 @@ body {
 
 .agenda-dia-aula-detalhes {
   color: #ffb878;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   align-self: flex-start;
   background: rgba(255, 184, 120, 0.12);
   border: 1px solid rgba(255, 184, 120, 0.45);
@@ -1739,7 +1747,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 700;
@@ -1792,7 +1800,7 @@ body {
 #agendaGridHome .agenda-card-dayview .agenda-dia-aula-nome {
   min-width: 0;
   max-width: 100%;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   line-height: 1.2;
 }
 
@@ -1826,7 +1834,7 @@ body {
   flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   line-height: 1.2;
 }
 
@@ -1856,13 +1864,13 @@ body {
 }
 
 #agendaGridHome .agenda-card-dayview .agenda-dia-aula-detalhes {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   max-width: 100%;
 }
 
 #agendaGridHome .agenda-card-dayview .badge-tag-tipo,
 #agendaGridHome .agenda-card-dayview .badge-tag-tipo--reposicao {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   line-height: 1.2;
 }
 
@@ -2031,7 +2039,7 @@ body {
   }
 
   #agendaGridHome .agenda-card-dayview .agenda-dia-aula-local {
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-title-group .agenda-card-optional {
@@ -2244,7 +2252,7 @@ body {
   border-radius: 999px;
   background: rgba(255, 215, 0, 0.16);
   color: #ffd700;
-  font-size: 0.66rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
 }
@@ -2289,8 +2297,8 @@ body {
   flex-shrink: 0;
 }
 
-.semana-dia-empty-slot-text {
-  font-size: 0.8rem;
+.sewana-dia-empty-slot-text {
+  font-size: 0.875rem;
   text-align: left;
 }
 
@@ -2344,7 +2352,7 @@ body {
 }
 .modal-historico-reposicoes-resumo {
   color: #aaa;
-  font-size: 0.78rem;
+  font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
 }
@@ -2395,7 +2403,7 @@ body {
 }
 .historico-reposicoes-grupo h4 {
   color: #ffd700;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   letter-spacing: 0.04em;
   margin: 0 0 8px;
   text-transform: uppercase;
@@ -2423,7 +2431,7 @@ body {
 }
 .historico-reposicao-status {
   color: #e0e0e0;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -2436,17 +2444,17 @@ body {
 .historico-reposicao-detalhes,
 .historico-reposicao-aviso {
   color: #aaa;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 .historico-reposicao-data {
   color: #f0f0f0;
-  font-size: 0.84rem;
+  font-size: 0.875rem;
   font-weight: 600;
   margin: 8px 0 6px;
 }
 .historico-reposicao-detalhes strong {
   color: #ffb74d;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
 }
 .historico-reposicao-linha-acao {
   border-top: 1px solid #252525;
@@ -2471,7 +2479,7 @@ body {
 .historico-reposicoes-vazio strong,
 .historico-reposicoes-erro span {
   color: #e0e0e0;
-  font-size: 0.86rem;
+  font-size: 0.875rem;
 }
 .historico-reposicoes-erro {
   border: 1px solid rgba(239, 154, 154, 0.35);
@@ -2536,7 +2544,7 @@ body {
   color: #fff;
   padding: 12px;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   z-index: 2000;
   opacity: 0;
   transform: translateY(20px);
@@ -2597,7 +2605,7 @@ body {
 }
 .overlay-sinc-msg {
   color: #e0e0e0;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   margin: 0;
   text-align: center;
 }
@@ -2637,7 +2645,7 @@ body {
 }
 .indicador-sync-bg-msg {
   color: #bdbdbd;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   white-space: nowrap;
 }
 
@@ -2663,7 +2671,7 @@ body {
 }
 .card-stat .stat-label {
   color: #aaa;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 .tab-tipo-agendamento .tab-btn {
   flex: 1;
@@ -2671,7 +2679,8 @@ body {
   border: none;
   color: #888;
   padding: 8px;
-  font-size: 0.8rem;
+  /* Etapa 2 (4.4): controle compacto da camada de badge (12px) — 14px estoura a caixa em 320px */
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   border-radius: 6px;
@@ -2686,7 +2695,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 800;
   padding: 5px 12px;
   border-radius: 20px;
@@ -2771,7 +2780,7 @@ body {
 .modal-escolha-contexto {
   margin: 6px 0 0;
   color: #888;
-  font-size: 0.76rem;
+  font-size: 0.75rem;
   line-height: 1.4;
 }
 .modal-escolha-footer {
@@ -2784,12 +2793,12 @@ body {
 }
 .modal-escolha-texto strong {
   display: block;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   color: #fff;
   font-weight: 700;
 }
 .modal-escolha-texto span {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: #888;
   font-weight: 400;
   display: block;
@@ -2827,12 +2836,12 @@ body {
   min-width: 0;
 }
 .modal-recorrencia-trigger-texto span {
-  font-size: 0.92rem;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #f1f1f1;
 }
 .modal-recorrencia-trigger-texto small {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: #8f8f8f;
   line-height: 1.35;
 }
@@ -2844,7 +2853,7 @@ body {
   margin-bottom: 15px;
 }
 .agenda-modal-info-horario {
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   color: #ffd700;
   margin-top: 10px;
   margin-bottom: 0;
@@ -2856,7 +2865,7 @@ body {
   gap: 6px;
 }
 .agenda-modal-data-input-wrapper label {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   color: #a8a8a8;
   font-weight: 600;
 }
@@ -2867,7 +2876,8 @@ body {
   border: 1px solid #333;
   border-radius: 8px;
   padding: 10px 12px;
-  font-size: 0.88rem;
+  /* Etapa 2 (4.4): campo >=16px (consistente com .form-grupo-spa) */
+  font-size: 1rem;
 }
 .agenda-modal-data-input-wrapper input[type="date"]:focus {
   border-color: #ffd700;
@@ -2993,7 +3003,7 @@ body {
   .btn-google-custom {
     width: auto;
     padding: 7px 10px;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     gap: 6px;
   }
 
@@ -3002,7 +3012,7 @@ body {
   }
 
   .header-nav .nav-link {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     padding: 8px 4px;
     gap: 5px;
   }
@@ -3021,7 +3031,7 @@ body {
     flex: 0 0 auto;
     justify-content: center;
     padding: 5px 12px;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     white-space: nowrap;
   }
 
@@ -3075,11 +3085,11 @@ body {
   }
 
   .home-kpi-value {
-    font-size: 1.08rem !important;
+    font-size: 1.08rem;
   }
 
   .home-kpi-label {
-    font-size: 0.62rem !important;
+    font-size: 0.75rem;
     gap: 4px;
   }
 

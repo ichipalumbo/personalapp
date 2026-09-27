@@ -689,8 +689,8 @@ window.atualizarResumoRecorrenciaCadastro = function() {
 
     container.innerHTML = `
         <strong style="display:block; margin-bottom:4px; color:#FFD700;">Resumo da repetição</strong>
-        <span style="display:block; font-size:0.78rem; color:#DDD;">${montarResumoRecorrencia({ ...recorrencia, enabled: true })}</span>
-        <span style="display:block; font-size:0.78rem; color:#BBB; margin-top:2px;">Início: ${inicioFmt}</span>
+        <span style="display:block; font-size:0.875rem; color:#DDD;">${montarResumoRecorrencia({ ...recorrencia, enabled: true })}</span>
+        <span style="display:block; font-size:0.875rem; color:#BBB; margin-top:2px;">Início: ${inicioFmt}</span>
     `;
 };
 
