@@ -180,9 +180,10 @@ Etapa 2: "Corrigir contrastes prioritários identificados no diagnóstico". (Ace
 
 | Cartão | Status | Commit do dono | Contagem antes → depois |
 | --- | --- | --- | --- |
-| A (tipografia) | ✅ implementado 2026-09-26 — aguardando commit do dono | — | frontend 77/0 → 77/0 |
-
-**Registro do Cartão A (2026-09-26):**
+| A (tipografia) | ✅ commit `386b00c` (donor, 2026-09-26) | `386b00c` | frontend 77/0 → 77/0 |
+| B (toque) | ✅ implementado 2026-09-26 — aguardando commit do dono | — | frontend 77/0 → 77/0 (medido) |
+| C (foco/disabled/aria) | ⏳ | — | — |
+| D (contraste) | ⏳ | — | — |
 - Escala aplicada: 16px (corpo) / 14px (secundário) / 12px (piso de badges e meta) / campos 16px. Títulos, ícones, números (KPI) e o clamp da marca mantidos.
 - `assets/css/style.css`: 89 declarações de `font-size` remapeadas; 4 `!important` de `font-size` removidos (KPIs, base e @430); `.form-grupo-spa` ganha `textarea` (input+select+textarea a 1rem); input `type="date"` do modal de agendamento a 1rem; reset `font-size:0` da pílula dia-inteiro virou 12px (decisão donal 2026-09-26 — o texto ON/OFF fica visível).
 - `index.html`: 13 inlines remapeados (os 3 já a 12px ficaram).
@@ -190,6 +191,13 @@ Etapa 2: "Corrigir contrastes prioritários identificados no diagnóstico". (Ace
 - Validação Playwright em 320×568 e 390×844 (mock `?mockScenario=default`): **zero** texto visível legível < 12px em Home/Alunos/Finanças (exceções declaradas: tarja `#appEnvBadge` — injeção de `api-config.js` em host local, `aria-hidden`; checkboxes invisíveis dos toggles, padrão de acessibilidade com controle custom); **todos os campos** `input/select/textarea` visíveis = 16px (incluindo o `type="date"` do modal em ≤430px); **zero** `!important` de `font-size` restante (CSSOM + estilos inline).
 - Amostra documentada do critério "zero <12px": `getComputedStyle` de todos os elementos com texto próprio visível nas 3 telas, em ambos os viewports (verificação de 2026-09-26).
 - **Correção pós-conferência do dono (2026-09-26)**: a fila de filtros de status da Finanças (Todos/Atrasado/Em aberto/Pago/Pendente) estourava da caixa — o mapeamento para 14px piorou um estouro **pré-existente** (já estourava 14px em 390 com 12.8px, o valor original). Medição comparativa: 14px → +34px; 12px → +1px em 390; 84px em 320 (os 5 rótulos não cabem em linha, em nenhum tamanho legível). **Decisão do dono: remover o filtro completamente** ("pode remover esse filtro completamente"). Removido de `view-financas.js`: estado `STATE.filtro`, markup dos 5 botões, o `.filter()` de `filtrarCards()` (a ordenação por status fica) e o handler `data-financas-filtro`. A tabela de cards continua exibindo todos os alunos, na mesma ordem. Validado: zero estouro horizontal em 320px (scrollWidth 305), zero erro JS, tabs estáticas de agenda (Semana/Dia, Aula/Deslocamento/Bloquear) intactas. `tab-btn` ficou a 12px (camada de badge, usada agora só pelas tabs de agenda).
-| B (toque) | ⏳ | — | — |
-| C (foco/disabled/aria) | ⏳ | — | — |
-| D (contraste) | ⏳ | — | — |
+
+**Registro do Cartão B (2026-09-26) — escopo: grupos 1 e 2 (decisão donal — "por enquanto só grupo 1 e 2"):**
+- Inventário de runtime (320×568 e 390×844, mock `?mockScenario=default`): varredura de `button, a, [role=button], input, select, [onclick]` + elementos com `cursor:pointer` não nativos (cards clicáveis, slots). Alvos <44px classificados em 3 grupos: **1** ações/ciclo da Finanças, **2** grade de horários + ícones do dia, **3** cabeçalho/toolbar.
+- **Grupo 3 ficou de fora por decisão do dono** (forçar 44px no topbar esticaria o header, que o cartão B pede para evitar). Permanece <44px e vira candidato a rodada futura: `.nav-link` (107–120×32–35), `.tab-btn` (150–168×30), setas de semana/dia (34×26), "Hoje" (52×26), `#custom-google-login` (147×28), `#btnSyncBanco` (167×28), `.semana-dia-header` (333–392×34), `.btn-dia-pill` (42px).
+- **Correções aplicadas (2 arquivos):**
+  - `assets/css/style.css` — (a) `#tela-financas article .btn { min-height: 48px }`: ações frequentes do card (Marcar como pago / Editar ajuste / Configurar agora / Tentar novamente, incluindo as do histórico) 38/36px → 48px; escopo limitado ao `#tela-financas` (modais via `<body>`, cabeçalho e `.btn-sm` global intocados). (b) `#tela-financas article summary { min-height: 44px; padding: 12px 0 }`: toggles "Ver extrato do ciclo" / "Ver ciclos anteriores" 19px → 44px. (c) `.btn-config-icon` ganha `min-height: 44px`: botões "Novo agendamento"/"Configurar grade do dia" 42×42 → 42×44 (largura 42px fica como restrição visual declarada — eixo menor atingiu o piso).
+  - `assets/js/view-home.js` — `hourHeight` 84 → **96**: o slot vago de 30min ("Agendar HH:MM") vai de 42 → **48px** (ação frequente no critério do cartão). O valor única-fonte escala toda a grade junto (linhas, labels, cards) — validado que o card de evento continua com topo exatamente sobre a linha da hora (diff 0px). Busca em todos os JS confirmou que é a única grade de dia do app.
+- **Validação runtime (320×568 e 390×844):** slots 48px uniformes (28), ícones do dia 44px, botões de Finanças 48px (7/7), summaries 44px (6/6), zero overflow horizontal; regressão de clique no slot vago → diálogo "O que você deseja criar?" abre com o horário correto. Zero erro JS de app (os `ERR_CONNECTION_REFUSED` de `localhost:5000` são esperado no mock, sem backend local).
+- Suite `tests-frontend`: **77 pass / 0 fail** medido após o cartão (idêntica ao baseline de abertura).
+- **Encontrado, não alterado:** `_static-server.tmp.js` foi commitado junto com o Cartão A em `386b00c` — o `.gitignore` não casa com `*.tmp.js`. Deixado como o dono commitou; a remoção fica a critério dele.

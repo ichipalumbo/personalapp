@@ -338,7 +338,9 @@ window.renderizarAgendaDia = function (gridId) {
 
   const inicio = agendaConfig.horaInicio;
   const fim = agendaConfig.horaFim;
-  const hourHeight = 84; // 84px por hora (confortável e espaçoso, 42px por meia hora)
+  // Etapa 2 (Cartão B, 2026-09-26): slot de 30min alvo frequente → 48px → 96px/hora.
+  // Mantém a proporção da grade (linhas, labels e cards de evento escalam juntos).
+  const hourHeight = 96; // 96px por hora (confortável e espaçoso, 48px por meia hora)
 
   // Filtrar compromissos do dia selecionado
   const compromissosDoDia = aulas.filter((a) =>

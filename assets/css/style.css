@@ -679,6 +679,20 @@ body {
   padding: 6px 12px;
   font-size: 0.75rem;
 }
+/* Etapa 2 (Cartão B, 2026-09-26): alvo de toque — ações do card de Finanças
+   (Marcar como pago / Editar ajuste / Configurar agora / Tentar novamente):
+   48px (classe frequente no critério de aceite do cartão).
+   Escopo limitado ao #tela-financas: modais (overlays em <body>), cabeçalho e
+   .btn-sm global não são afetados. */
+#tela-financas article .btn {
+  min-height: 48px;
+}
+#tela-financas article summary {
+  min-height: 44px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  box-sizing: border-box;
+}
 #containerDiasSemanaRecorrencia > div {
   display: grid !important;
   grid-template-columns: repeat(7, 1fr) !important;
@@ -1274,6 +1288,8 @@ body {
   border-radius: 10px;
   width: 42px;
   height: 42px;
+  /* Etapa 2 (Cartão B, 2026-09-26): piso de toque 44px (botões do dia: novo agendamento/config grade) */
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
