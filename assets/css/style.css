@@ -1721,6 +1721,10 @@ body {
   font-weight: 700;
   white-space: nowrap;
   margin-left: auto;
+  /* Refinamento 5 (2026-09-27): a hora nunca encolhe nem quebra linha no
+     card da semana — quando não cabe, o nome é quem cede (base de 56px para
+     o horário em .agenda-dia-aula-nome abaixo). */
+  flex: 0 0 auto;
 }
 .agenda-semana-card-time--completed {
   color: #81c784;
@@ -1738,19 +1742,41 @@ body {
   filter: brightness(1.1);
 }
 
+/* Refinamento 5 (2026-09-27): nome é um BLOCO (não flex) contendo ícone +
+   texto — sem o <span> interno o text-overflow:ellipsis não renderiza as
+   reticências (flexbox ignora o clip do texto). Ícone via ::before do i;
+   o texto em <span class="agenda-dia-aula-nome-texto"> corta com "…" */
 .agenda-dia-aula-nome {
   font-weight: 700;
   color: #ffffff;
   font-size: 0.875rem;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: block;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+.agenda-dia-aula-nome i {
+  margin-right: 6px;
+}
+
 .agenda-semana-card-title-group .agenda-dia-aula-nome {
-  min-width: 0;
+  /* Refinamento 5 (2026-09-27): padrão FIXO de corte do nome na SEMANA —
+     "flex: 1 1 56px" + "min-width: 80px" => o nome preenche o sobro da linha:
+     largura = top − horário (flex:0 0 auto) − gap. Determinístico: a hora
+     NUNCA encolhe nem desce (nowrap em #calendarioSemanalHomeGrid abaixo) e
+     o nome corta com "…" quando não cabe. */
+  min-width: 80px;
+  max-width: 100%;
+  flex: 1 1 56px;
+}
+
+/* Refinamento 5 (2026-09-27): o WRAP do top quebrava a hora para 2ª linha
+   ANTES de encolher o nome (em container wrap o flex não encolhe — quebra).
+   Com nowrap o plano de corte do nome executa e a hora permanece na linha
+   do título. Escopo: só o grid da semana da home (o dia já é nowrap). */
+#calendarioSemanalHomeGrid .agenda-semana-card-top {
+  flex-wrap: nowrap;
 }
 
 /* Descricao de bloqueio interno deve quebrar dinamicamente em telas menores. */
@@ -1844,37 +1870,89 @@ body {
 }
 
 /* Auto-ajuste visual somente na visão Calendário > Dia */
-#agendaGridHome .agenda-card-dayview .agenda-semana-card-title-group {
+#agendaGridHomeHome .agenda-card-dayview .agenda-semana-card-title-group {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-dia-aula-nome {
+#agendaGridHomeHome .agenda-card-dayview .agenda-dia-aula-nome {
+  /* Dia: padrão FIXO (Refinamento 5, 2026-09-27) — o nome cede exatamente o
+     espaço do chip (20px) + respiro (8px) em TODOS os cards do dia, com ou
+     sem chip, para a âncora absoluta top/right 8px nunca encostar no texto.
+     Corta com "…" (span interno garante o clip do texto fora do ícone). */
   min-width: 0;
-  max-width: 100%;
+  max-width: calc(100% - 28px);
   font-size: 0.875rem;
   line-height: 1.2;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-semana-card-time {
+#agendaGridHomeHome .agenda-card-dayview .agenda-semana-card-time {
   display: none;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-card-inline-status {
+/* Cartão D (refinamento 2026-09-27): chip de status de AULA sempre lateral à
+   DIREITA do card — no modo DIA no canto SUPERIOR direito (âncora absoluta,
+   distância FIXA da borda, imune ao padding por densidade), na SEMANA no
+   canto INFERIOR direito (meta do rodapé, in-flow com margin-left:auto).
+   Padrão unificado por preferência do dono. Caixa fixa 20x20px com cor por
+   tipo (fonte de cor: BADGE_STYLES em agenda-card-template.js). */
+.agenda-card-inline-status {
   display: none;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: auto;
 }
 
-#agendaGridHome .agenda-card-dayview .card-content-wrapper {
+/* Dia: chip ÂNCORA ABSOLUTA no canto superior direito — 8px fixos da borda
+   do card (padding box) em qualquer densidade; antes o chip flutuava dentro
+   do padding e o delta tight/normal (2-4 px) aparecia como desalinhamento. */
+#agendaGridHomeHome .agenda-card-dayview .agenda-card-inline-status {
+  display: inline-flex;
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+/* Refinamento 5: a regra :has() anterior foi trocada pelo max-width fixo
+   (calc(100% - 28px)) em .agenda-dia-aula-nome no bloco de dia acima —
+   dispensa :has() (Chromium 105+) e dá o MESMO corte em cards sem chip,
+   alinhando as colunas de texto. O nome completo segue acessível via
+   card/modal. */
+
+/* Semana: chip no canto inferior direito (rodapé do card). */
+.agenda-semana-card-meta .agenda-card-inline-status {
+  display: inline-flex;
+}
+.agenda-card-inline-status .badge-tag-tipo {
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  min-height: 20px;
+  padding: 0;
+  border-radius: 6px;
+  justify-content: center;
+}
+
+#agendaGridHomeHome .agenda-card-dayview .card-content-wrapper {
   gap: 5px;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-semana-card-top {
+#agendaGridHomeHome .agenda-card-dayview .agenda-semana-card-top {
   flex-wrap: nowrap;
   align-items: center;
   gap: 0;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-semana-card-bottom {
+/* Cartão D (refinamento 2026-09-27): o chip de status fica sempre na mesma
+   linha do título (âncora única). Em nome muito largo o wrap do title-group
+   empurrava o chip para a 2ª linha do topo, desalinhando-o dos demais cards;
+   com nowrap o nome cede espaço (ellipsis) e o chip permanece no topo do card.
+   Só o modo Dia: a visão Semana mantém o wrap do título (hora ainda visível). */
+#agendaGridHomeHome .agenda-card-dayview .agenda-semana-card-title-group {
+  flex-wrap: nowrap;
+}
+
+#agendaGridHomeHome .agenda-card-dayview .agenda-semana-card-bottom {
   flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
@@ -1882,7 +1960,7 @@ body {
   margin-top: 2px;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-dia-aula-local {
+#agendaGridHomeHome .agenda-card-dayview .agenda-dia-aula-local {
   flex: 1 1 auto;
   min-width: 0;
   max-width: 100%;
@@ -1891,7 +1969,7 @@ body {
 }
 
 /* Normaliza a linha de título dos bloqueios para manter o mesmo ritmo vertical */
-#agendaGridHome .agenda-card-dayview .agenda-dia-bloqueio-descricao {
+#agendaGridHomeHome .agenda-card-dayview .agenda-dia-bloqueio-descricao {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1899,14 +1977,14 @@ body {
   align-items: center;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-dia-bloqueio-descricao-text {
+#agendaGridHomeHome .agenda-card-dayview .agenda-dia-bloqueio-descricao-text {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: inherit;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-semana-card-meta {
+#agendaGridHomeHome .agenda-card-dayview .agenda-semana-card-meta {
   flex: 0 0 auto;
   margin-left: auto;
   min-width: 0;
@@ -1915,57 +1993,57 @@ body {
   gap: 5px;
 }
 
-#agendaGridHome .agenda-card-dayview .agenda-dia-aula-detalhes {
+#agendaGridHomeHome .agenda-card-dayview .agenda-dia-aula-detalhes {
   font-size: 0.75rem;
   max-width: 100%;
 }
 
-#agendaGridHome .agenda-card-dayview .badge-tag-tipo,
-#agendaGridHome .agenda-card-dayview .badge-tag-tipo--reposicao {
+#agendaGridHomeHome .agenda-card-dayview .badge-tag-tipo,
+#agendaGridHomeHome .agenda-card-dayview .badge-tag-tipo--reposicao {
   font-size: 0.75rem;
   line-height: 1.2;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-compact {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-compact {
   padding: 7px 9px;
   gap: 3px;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .card-content-wrapper {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-compact .card-content-wrapper {
   gap: 4px;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-top,
-#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-bottom {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-top,
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-bottom {
   flex-wrap: nowrap;
   align-items: center;
   gap: 5px;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-meta {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-compact .agenda-semana-card-meta {
   flex-wrap: nowrap;
   gap: 5px;
   min-width: 0;
   max-width: 62%;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-tight {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-tight {
   padding: 6px 8px;
   gap: 2px;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .card-content-wrapper {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-tight .card-content-wrapper {
   gap: 3px;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-top,
-#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-bottom {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-top,
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-bottom {
   flex-wrap: nowrap;
   align-items: center;
   gap: 4px;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-meta {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-tight .agenda-semana-card-meta {
   margin-left: auto;
   flex-wrap: nowrap;
   gap: 4px;
@@ -1973,67 +2051,49 @@ body {
   max-width: 66%;
 }
 
-#agendaGridHome .agenda-card-dayview.agenda-card-density-tight .agenda-dia-aula-detalhes {
+#agendaGridHomeHome .agenda-card-dayview.agenda-card-density-tight .agenda-dia-aula-detalhes {
   max-width: 100%;
 }
 
-/* 30min + titulo curto: badge de status vai para a linha do titulo */
-#agendaGridHome
-  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
-  .agenda-card-inline-status {
-  display: inline-flex;
-  margin-left: auto;
-  flex: 0 0 auto;
-}
-
-#agendaGridHome
-  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
-  .agenda-semana-card-title-group {
-  width: 100%;
-  min-width: 0;
-}
-
-#agendaGridHome
-  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode
-  .agenda-semana-card-title-group
-  .agenda-dia-aula-nome {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-#agendaGridHome
-  .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-deslocamento
+/* Cartão D (refinamento 2026-09-27): o chip de status tem âncora única na
+   linha do título (regra base .agenda-card-inline-status sempre visível), então
+   o antigo "modo" que só o exibia em card tight+inline-status-mode foi removido.
+   O nome continua regido pelas regras base (flex + min-width:0 + overflow
+   hidden) e cede espaço ao chip por min-width, sem regra extra. */
+/* DESLOCAMENTO: evitar repeticao subtitulo + badge */
+#agendaGridHomeHome
+  .agenda-card-dayview.agenda-card-density-tight.slot-deslocamento
   .agenda-dia-aula-local {
   display: none;
 }
 
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-deslocamento
   .agenda-semana-card-bottom {
   display: none;
 }
 
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-bloqueado
   .agenda-dia-aula-local {
   display: none;
 }
 
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.agenda-card-density-tight.agenda-card-inline-status-mode.slot-bloqueado
   .agenda-semana-card-bottom {
   display: none;
 }
 
 /* Modo estrito para cards curtos (30 min): reduzir redundancia por tipo */
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.agenda-card-density-tight
   .agenda-semana-card-meta
   .agenda-card-optional {
   display: none;
 }
 
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.agenda-card-density-tight
   .agenda-semana-card-meta
   .agenda-card-status-badge {
@@ -2041,90 +2101,90 @@ body {
 }
 
 /* AULA: manter local + 1 badge de status; remover objetivo para limpar a linha */
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.agenda-card-density-tight:not(.slot-deslocamento):not(.slot-bloqueado)
   .agenda-dia-aula-detalhes {
   display: none;
 }
 
 /* DESLOCAMENTO: evitar repeticao subtitulo + badge */
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight
   .agenda-dia-aula-local {
   display: none;
 }
 
-#agendaGridHome .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight {
+#agendaGridHomeHome .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight {
   padding-bottom: 8px;
 }
 
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight
   .agenda-semana-card-bottom {
   margin-top: 3px;
   min-height: 14px;
 }
 
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.slot-deslocamento.agenda-card-density-tight
   .agenda-semana-card-meta {
   padding-bottom: 1px;
 }
 
 /* BLOQUEIO INTERNO: manter texto "Bloqueado" e remover badge "Bloqueio" */
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.slot-bloqueado.agenda-card-density-tight:not(.card-bloqueio-externo)
   .agenda-semana-card-meta {
   display: none;
 }
 
 /* BLOQUEIO EXTERNO GOOGLE: manter badge "Google Agenda" e remover "Bloqueado" */
-#agendaGridHome
+#agendaGridHomeHome
   .agenda-card-dayview.slot-bloqueado.card-bloqueio-externo.agenda-card-density-tight
   .agenda-dia-aula-local {
   display: none;
 }
 
 @media (max-width: 767px) {
-  #agendaGridHome .agenda-card-dayview .agenda-semana-card-meta {
+  #agendaGridHomeHome .agenda-card-dayview .agenda-semana-card-meta {
     max-width: 52%;
   }
 
-  #agendaGridHome .agenda-card-dayview .agenda-dia-aula-local {
+  #agendaGridHomeHome .agenda-card-dayview .agenda-dia-aula-local {
     font-size: 0.75rem;
   }
 
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-title-group .agenda-card-optional {
-    display: none !important;
-  }
+  /* Cartão D (refinamento): o chip de status é informação essencial do dia —
+     continua visível na linha do título em overflow mobile; só o horário
+     (agenda-semana-card-time) some por ser opcional nesse cenário. */
 
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow {
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow {
     padding: 6px 8px;
   }
 
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-top,
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-bottom {
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-top,
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-bottom {
     flex-wrap: nowrap;
     gap: 4px;
   }
 
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta .agenda-card-optional {
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta .agenda-card-optional {
     display: none !important;
   }
 
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta .agenda-card-optional:first-child {
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta .agenda-card-optional:first-child {
     display: inline-flex !important;
   }
 
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta {
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-semana-card-meta {
     margin-left: auto;
     max-width: 54%;
     min-width: 0;
     overflow: hidden;
   }
 
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-dia-aula-detalhes,
-  #agendaGridHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-dia-aula-local {
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-dia-aula-detalhes,
+  #agendaGridHomeHome .agenda-card-dayview.agenda-card-mobile-overflow .agenda-dia-aula-local {
     max-width: 100%;
   }
 }
