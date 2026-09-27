@@ -57,7 +57,7 @@ Legenda de status usada em todo o documento:
 | 4.7 | Gerenciamento de diálogo inconsistente | Diagnóstico §4.7 | Etapa 1 | ✅ |
 | 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ⏳ |
 | 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ⏳ |
-| 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | 🟡 *parcialmente atendida sem ser a Etapa 4: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono — ver report da Etapa 2). O adaptamento de filtros de Alunos segue na Etapa 4* |
+| 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/_reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
 | 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
 | 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ⏳ |
 | 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
@@ -294,16 +294,21 @@ secundária → seção "Dados" do modal).
 
 ---
 
-### Etapa 4 — Filtros e densidade de cards ⏳ PENDENTE
+### Etapa 4 — Densidade de cards ⏳ PENDENTE (escopo reduzido)
 
-**Achados endereçados**: 4.10, 4.11.
+**Achados endereçados**: 4.11 (4.10 já resolvido — ver tabela mestra e nota abaixo).
 
-**Escopo**: adaptar filtros de Alunos e Finanças; aplicar divulgação progressiva; remover
+**Nota (2026-09-27)**: o achado 4.10 ("filtros apertados") saiu do escopo desta etapa. Os
+filtros de Finças e de Alunos foram **removidos por completo** em duas rodadas isoladas
+(Etapa 2, Cartão A, e hotfix de 2026-09-27), por decisão direta do dono, em vez de adaptados.
+O que resta nesta etapa é só 4.11 (cards com informação excessiva).
+
+**Escopo**: aplicar divulgação progressiva nos cards de Alunos/Finças/agenda; remover
 redundâncias antes de truncar ou reduzir fonte (evitar reabrir o problema que a Etapa 2 acabou
 de corrigir).
 
-**Critério de conclusão**: filtros e cards continuam compreensíveis em 320–430px sem controles
-comprimidos.
+**Critério de conclusão**: cards continuam compreensíveis em 320–430px sem informação
+redundante ou excessiva no primeiro nível.
 
 ---
 
