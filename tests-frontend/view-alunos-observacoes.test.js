@@ -12,8 +12,6 @@ const CAMINHO_DIALOG_CONTROLLER = path.resolve(__dirname, '..', 'assets', 'js', 
 function criarTela(alunos, opcoes = {}) {
     const dom = new JSDOM(`<!doctype html><html><body>
         <div id="listaAlunos"></div>
-        <select id="filtroAlunosStatus"><option value="todos">Todos</option></select>
-        <select id="filtroAlunosObjetivo"><option value="todos">Todos</option></select>
         <form id="formNovoAluno"><input id="alunoIdEdicao"><input id="alunoNome"><input id="alunoLocal"><input id="alunoPreco"><input id="alunoTelefone"><textarea id="alunoObservacoes"></textarea><input id="alunoFrequenciaSemanal"><input id="alunoFechamentoMesCheio" type="checkbox"><input id="alunoDiaVencimento"><select id="alunoMetodoCobranca"><option value="por_aula">Por aula</option></select><input id="alunoValorFixoCiclo"><input id="alunoObjetivoSwitch" type="checkbox"><input id="alunoStatusSwitch" type="checkbox"></form>
         <div id="modalFormAluno"></div><input id="btnExcluirAlunoModal">
         <div id="modalHistoricoReposicoes" style="display:none"><button id="btnFecharHistoricoReposicoes">Fechar</button><p id="resumoHistoricoReposicoes"></p><div id="conteudoHistoricoReposicoes"></div><button id="btnRodapeHistoricoReposicoes">Fechar</button></div>

@@ -72,15 +72,6 @@ function obterStatusAlunoDoSwitch() {
     return statusSwitchEstaAtivo() ? 'ativo' : 'inativo';
 }
 
-function obterFiltroStatusAlunos() {
-    const select = document.getElementById('filtroAlunosStatus');
-    return select ? (select.value || 'todos') : 'todos';
-}
-
-function obterFiltroObjetivoAlunos() {
-    const select = document.getElementById('filtroAlunosObjetivo');
-    return select ? (select.value || 'todos') : 'todos';
-}
 
 function objetivoSwitchEstaAtivo() {
     const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
@@ -787,9 +778,6 @@ window.renderizarListaAlunos = function() {
     if (!listaContainer) return;
 
     if (typeof alunos !== 'undefined') {
-        const filtroStatus = obterFiltroStatusAlunos();
-        const filtroObjetivo = obterFiltroObjetivoAlunos();
-
         // Dirty-check: skip the DOM write if the student list is unchanged.
         // Inclui aulasParaRepor para a caixinha de reposições reagir no re-render
         // (sem re-render a badge de "a vencer" só aparecia quando o fetch financeiro
@@ -797,7 +785,6 @@ window.renderizarListaAlunos = function() {
         const _chaveAtual = (function () {
             try {
                 return JSON.stringify(alunos)
-                    + '|' + filtroStatus + '|' + filtroObjetivo
                     + '|' + JSON.stringify(_resumoFinanceiroPorAluno)
                     + '|' + JSON.stringify(_consistenciaAgendaPorAluno)
                     + '|' + JSON.stringify(_reposicoesHistorico)
@@ -817,25 +804,8 @@ window.renderizarListaAlunos = function() {
             `;
             return;
         }
-        const alunosFiltrados = alunos.filter((aluno) => {
-            const statusAluno = normalizarStatusAlunoLocal(aluno.status);
-            const objetivoAluno = normalizarObjetivoAluno(aluno.objetivo);
-            const passaStatus = filtroStatus === 'todos' || filtroStatus === statusAluno;
-            const passaObjetivo = filtroObjetivo === 'todos' || filtroObjetivo === objetivoAluno;
-            return passaStatus && passaObjetivo;
-        });
 
-        if (alunosFiltrados.length === 0) {
-            listaContainer.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: #8A8A8A;">
-                    <i class="fa-solid fa-filter-circle-xmark" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
-                    <p style="font-size: 1rem;">Nenhum aluno encontrado com os filtros selecionados.</p>
-                </div>
-            `;
-            return;
-        }
-
-        listaContainer.innerHTML = alunosFiltrados.map(aluno => {
+        listaContainer.innerHTML = alunos.map(aluno => {
             const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
             const freqAcordada = obterFrequenciaContratoAluno(aluno);
             const local = aluno.local || 'Não definido';
@@ -1003,11 +973,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     atualizarStatusSwitchFormulario(true);
     aplicarRegrasObjetivoNoFormulario();
-
-    const filtroStatus = document.getElementById('filtroAlunosStatus');
-    const filtroObjetivo = document.getElementById('filtroAlunosObjetivo');
-    if (filtroStatus) filtroStatus.addEventListener('change', () => window.renderizarListaAlunos());
-    if (filtroObjetivo) filtroObjetivo.addEventListener('change', () => window.renderizarListaAlunos());
 
     const btnExcluirAlunoModal = document.getElementById('btnExcluirAlunoModal');
     if (btnExcluirAlunoModal) {
