@@ -255,7 +255,13 @@
           <i class="fa-solid fa-plus"></i>
         </button>
 
-        <div class="modal-overlay" id="modalFormAluno" style="display: none">
+        <div
+          class="modal-overlay"
+          id="modalFormAluno"
+          role="dialog"
+          aria-labelledby="tituloFormAluno"
+          style="display: none"
+        >
           <div class="modal-alunos-corpo">
             <div class="modal-alunos-header">
               <h3 id="tituloFormAluno">Cadastrar Novo Aluno</h3>
@@ -414,7 +420,7 @@
                 <button
                   type="button"
                   class="btn btn-secondary"
-                  onclick="togglePainelCadastro(false)"
+                  onclick="cancelarCadastroAluno()"
                 >
                   Cancelar
                 </button>
@@ -433,7 +439,6 @@
           class="modal-overlay"
           id="modalHistoricoReposicoes"
           role="dialog"
-          aria-modal="true"
           aria-labelledby="tituloHistoricoReposicoes"
           aria-describedby="resumoHistoricoReposicoes"
           style="display: none"
@@ -473,7 +478,6 @@
           class="modal-overlay modal-overlay-secondary"
           id="modalEdicaoCobrancaReposicao"
           role="dialog"
-          aria-modal="true"
           aria-labelledby="tituloEdicaoCobrancaReposicao"
           style="display: none"
         >
@@ -502,9 +506,16 @@
       </main>
     </div>
     <!-- [TAG-HTML-MODAIS] - Modais Compartilhados -->
-    <div class="modal-overlay" id="modalEscolhaTipo" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalEscolhaTipo"
+      role="dialog"
+      aria-labelledby="tituloModalEscolhaTipo"
+      aria-describedby="infoEscolhaSlot"
+      style="display: none"
+    >
       <div class="modal" style="max-width: 400px; text-align: center">
-        <h3>
+        <h3 id="tituloModalEscolhaTipo">
           <i
             class="fa-solid fa-circle-question"
             style="color: #ffd700; margin-right: 8px"
@@ -595,9 +606,15 @@
         </div>
       </div>
     </div>
-    <div class="modal-overlay" id="modalReagendarAula" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalReagendarAula"
+      role="dialog"
+      aria-labelledby="tituloModalReagendarAula"
+      style="display: none"
+    >
       <div class="modal" style="max-width: 440px">
-        <h3>
+        <h3 id="tituloModalReagendarAula">
           <i
             class="fa-solid fa-arrows-rotate"
             style="color: #64b5f6; margin-right: 8px"
@@ -702,8 +719,14 @@
         </form>
       </div>
     </div>
-    <div class="modal-overlay" id="modalAgendamento" style="display: none">
-      <div class="modal" style="max-width: 440px">
+    <div
+      class="modal-overlay"
+      id="modalAgendamento"
+      role="dialog"
+      aria-labelledby="agendaTituloModal"
+      style="display: none"
+    >
+      <div class="modal modal-agendamento">
         <h3 id="agendaTituloModal">
           <i
             class="fa-solid fa-calendar-day"
@@ -920,9 +943,15 @@
         </form>
       </div>
     </div>
-    <div class="modal-overlay" id="modalRecorrencia" style="display: none">
-      <div class="modal modal-recorrencia-secundario" style="max-width: 420px">
-        <h3>
+    <div
+      class="modal-overlay"
+      id="modalRecorrencia"
+      role="dialog"
+      aria-labelledby="tituloModalRecorrencia"
+      style="display: none"
+    >
+      <div class="modal modal-recorrencia-secundario">
+        <h3 id="tituloModalRecorrencia">
           <i
             class="fa-solid fa-infinity"
             style="color: #ffd700; margin-right: 8px"
@@ -1134,7 +1163,13 @@
         </form>
       </div>
     </div>
-    <div class="modal-overlay" id="modalAcaoSlot" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalAcaoSlot"
+      role="dialog"
+      aria-labelledby="editModalTitle"
+      style="display: none"
+    >
       <div class="modal" style="max-width: 440px">
         <div
           style="
@@ -1429,9 +1464,15 @@
         </form>
       </div>
     </div>
-    <div class="modal-overlay" id="modalEscolhaCobrancaReposicao" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalEscolhaCobrancaReposicao"
+      role="dialog"
+      aria-labelledby="tituloModalEscolhaCobrancaReposicao"
+      style="display: none"
+    >
       <div class="modal" style="max-width: 420px">
-        <h3 style="margin-top: 0; margin-bottom: 8px;">Cobrar esta aula?</h3>
+        <h3 id="tituloModalEscolhaCobrancaReposicao" style="margin-top: 0; margin-bottom: 8px;">Cobrar esta aula?</h3>
         <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: #fff; font-size: 0.92rem;"></p>
         <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.84rem;"></p>
 
@@ -1445,7 +1486,7 @@
           </button>
           <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Cobrada mesmo se a reposição não acontecer.</small>
 
-          <button type="button" class="btn" data-reposicao-cobravel="false" id="btnCobrarNaReposicao" style="background: #1f1f1f; color: #fff; border: 1px solid #3a3a3a;">
+          <button type="button" class="btn" data-reposicao-cobravel="false" id="btnCobrarNaReposicao">
             <span> Cobrar na reposição </span>
           </button>
           <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Se o prazo expirar, não é cobrada.</small>
@@ -1460,7 +1501,13 @@
         </div>
       </div>
     </div>
-    <div class="modal-overlay" id="modalEscolhaExclusao" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalEscolhaExclusao"
+      role="dialog"
+      aria-labelledby="tituloModalEscolhaExclusao"
+      style="display: none"
+    >
       <div class="modal modal-exclusao">
         <div class="modal-exclusao-cabecalho">
           <div>
@@ -1475,9 +1522,15 @@
         </div>
       </div>
     </div>
-    <div class="modal-overlay" id="modalConfigAgenda" style="display: none">
+    <div
+      class="modal-overlay"
+      id="modalConfigAgenda"
+      role="dialog"
+      aria-labelledby="tituloModalConfigAgenda"
+      style="display: none"
+    >
       <div class="modal" style="max-width: 380px">
-        <h3>Configurar Grade Horária</h3>
+        <h3 id="tituloModalConfigAgenda">Configurar Grade Horária</h3>
         <p style="font-size: 0.8rem; color: #888; margin-bottom: 15px">
           Defina os limites de exibição de horas de trabalho da sua agenda
           diária.
@@ -1560,6 +1613,7 @@
     <!-- [5] Modais de Agendamento -->
     <script src="assets/js/features/modals/scheduling-flow-state.js"></script>
     <script src="assets/js/features/modals/scheduling-serializer.js"></script>
+    <script src="assets/js/features/modals/dialog-controller.js"></script>
     <script src="assets/js/modal-agendamento.js"></script>
     <script src="assets/js/modal-acao-slot.js"></script>
     <!-- [6] Page Views -->
@@ -1581,6 +1635,9 @@
       onload="_onGISLoad()"
       onerror="_onGISError()"
     ></script>
+    <!-- [UI-MOCK] Ativado somente quando a URL possui ?mockScenario=... -->
+    <script src="mocks/ui-runtime/scenarios.js"></script>
+    <script src="mocks/ui-runtime/mock-runtime.js"></script>
     <!-- [7] App Shell -->
     <script src="assets/js/app/service-worker.js"></script>
     <script src="assets/js/app/router.js"></script>
@@ -1589,11 +1646,17 @@
     <script src="assets/js/app.js"></script>
 
     <!-- [TAG-HTML-SETTINGS-MODAL] - Modal de Configurações da Aplicação -->
-    <div class="modal-overlay" id="appSettingsModal" style="display: none">
-      <div class="modal" style="max-width: 500px">
+    <div
+      class="modal-overlay"
+      id="appSettingsModal"
+      role="dialog"
+      aria-labelledby="tituloAppSettings"
+      style="display: none"
+    >
+      <div class="modal modal-settings">
         <h2 class="modal-title" style="display: flex; justify-content: space-between; align-items: center;">
-          <span>Área do usuário</span>
-          <button id="btnCloseSettings" class="btn-modal-close" type="button" title="Fechar">
+          <span id="tituloAppSettings">Área do usuário</span>
+          <button id="btnCloseSettings" class="btn-modal-close" type="button" title="Fechar" aria-label="Fechar">
             <i class="fa-solid fa-times"></i>
           </button>
         </h2>

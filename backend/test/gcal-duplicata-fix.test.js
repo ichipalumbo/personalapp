@@ -1415,6 +1415,44 @@ test('cenario completo da duplicata: falha no PUT da serie marca pendencia e o s
   assert.equal(novaOcorrenciaLocal.googleCalendarEventId, 'evt-occ-1');
 });
 
+test('modal de gerenciar compromisso abre e fecha pelo DialogController', () => {
+  const compromisso = {
+    id: 'aula-dialog-1',
+    tipo: 'aula',
+    alunoId: 'aluno-1',
+    data: '30/08/2026',
+    dia: 'Segunda',
+    horarioInicio: '09:00',
+    horarioFim: '10:00',
+    frequencia: 'uma_vez',
+    excecoes: []
+  };
+  const { context } = criarHarnessModalAcaoSlot({ aulas: [compromisso], compromisso });
+  const chamadas = [];
+  let opcoesAbertura = null;
+  context.window.DialogController = {
+    open(alvo, opcoes) {
+      chamadas.push(`open:${alvo.id}`);
+      opcoesAbertura = opcoes;
+      alvo.style.display = 'flex';
+    },
+    close(alvo) {
+      chamadas.push(`close:${alvo.id}`);
+      alvo.style.display = 'none';
+    },
+    getStack: () => chamadas.filter((c) => c.startsWith('open:')).length > chamadas.filter((c) => c.startsWith('close:')).length
+      ? [context.document.getElementById('modalAcaoSlot')]
+      : [],
+  };
+
+  context.window.abrirModalAcaoSlot(compromisso.id);
+  assert.deepEqual(chamadas, ['open:modalAcaoSlot']);
+  assert.equal(typeof opcoesAbertura.onRequestClose, 'function');
+
+  opcoesAbertura.onRequestClose();
+  assert.deepEqual(chamadas, ['open:modalAcaoSlot', 'close:modalAcaoSlot']);
+});
+
 test('split fromDate na primeira ocorrencia remove a serie vazia e cria a serie nova sem DELETE', async () => {
   const dataInicio = '30/08/2026';
   const compromisso = {

@@ -233,18 +233,63 @@ window.abrirEscolhaTipoModal = function(dia, hora) {
                 ? `Agendar às ${hora} de ${nomeDiaEscolha} • ${dataSelecionadaTexto}`
                 : `Agendar às ${hora} de ${nomeDiaEscolha}`;
         }
-        modal.style.display = 'flex';
+
+        if (window.DialogController && typeof window.DialogController.open === 'function') {
+            window.DialogController.open(modal, {
+                trigger: document.activeElement || null,
+                onRequestClose: window.fecharEscolhaTipoModal
+            });
+            return;
+        }
     }
 };
 
 window.fecharEscolhaTipoModal = function() {
     const modal = document.getElementById('modalEscolhaTipo');
+    if (modal && window.DialogController && typeof window.DialogController.close === 'function') {
+        window.DialogController.close(modal);
+        return;
+    }
     if (modal) {
         modal.style.display = 'none';
     }
 };
 
 // ── Modal: Agendamento Único ───────────────────────────────────────────────────────────────────
+
+window.fecharAgendamentoModal = function () {
+    const modal = document.getElementById('modalAgendamento');
+    if (modal && window.DialogController && typeof window.DialogController.close === 'function') {
+        window.DialogController.close(modal);
+        return;
+    }
+    if (modal) modal.style.display = 'none';
+};
+
+function cancelarAgendamentoModal() {
+    const alterado = assinaturaAberturaAgendamento !== null
+        && assinaturaFormularioAgendamento() !== assinaturaAberturaAgendamento;
+    if (alterado && !window.confirm('Descartar as alterações deste agendamento?')) return;
+    window.fecharAgendamentoModal();
+    window.reposicaoIdEmReagendamento = null;
+}
+
+let assinaturaAberturaAgendamento = null;
+
+function assinaturaFormularioAgendamento() {
+    const valores = capturarValoresFormularioAgendamento();
+    const recorrencia = rascunhoFluxoAgendamento && rascunhoFluxoAgendamento.recurrence;
+    return JSON.stringify({
+        tipo: valores.tipo,
+        alunoId: valores.alunoId,
+        descricao: valores.descricao,
+        horarioInicio: valores.horarioInicio,
+        duracao: valores.duracao,
+        diaInteiro: valores.diaInteiro,
+        data: document.getElementById('agendaDataSelecionadaInput')?.value || '',
+        recorrencia: recorrencia ? recorrencia.summaryText || '' : ''
+    });
+}
 
 window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
     slotSelecionadoHora = hora;
@@ -298,7 +343,16 @@ window.abrirAgendamentoModal = function(dia, hora, tipoInicial = 'aula') {
 
     window.selecionarTipoAgendamento(tipoSelecionado);
     atualizarResumoRecorrenciaAgendamentoPrincipal();
-    if (modal) modal.style.display = 'flex';
+    assinaturaAberturaAgendamento = assinaturaFormularioAgendamento();
+    if (modal) {
+        if (window.DialogController && typeof window.DialogController.open === 'function') {
+            window.DialogController.open(modal, {
+                trigger: document.activeElement || null,
+                onRequestClose: cancelarAgendamentoModal
+            });
+            return;
+        }
+    }
 };
 
 window.selecionarTipoAgendamento = function(tipo) {
@@ -424,11 +478,9 @@ function ativarTrapFocoModalRecorrencia() {
 
     document.addEventListener('keydown', trapFocoRecorrenciaAtivo, true);
 
-    const focusables = getRecurrenceFocusableElements();
-    if (focusables.length > 0) {
-        focusables[0].focus();
-    } else {
-        document.getElementById('modalRecorrencia')?.focus();
+    const modal = document.getElementById('modalRecorrencia');
+    if (modal && typeof modal.focus === 'function') {
+        modal.focus({ preventScroll: true });
     }
 }
 
@@ -700,15 +752,26 @@ window.abrirModalRecorrencia = function(dia, hora) {
     modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('tabindex', '-1');
     bloquearModalPrincipalParaRecorrencia();
-    modal.style.display = 'flex';
-    ativarTrapFocoModalRecorrencia();
+    if (window.DialogController && typeof window.DialogController.open === 'function') {
+        window.DialogController.open(modal, {
+            trigger: ultimoFocoAntesModalRecorrencia || null,
+            onRequestClose: window.fecharModalRecorrencia
+        });
+    } else {
+        modal.style.display = 'flex';
+        ativarTrapFocoModalRecorrencia();
+    }
 };
 
 window.fecharModalRecorrencia = function() {
     const modal = document.getElementById('modalRecorrencia');
     if (!modal) return;
 
-    modal.style.display = 'none';
+    if (window.DialogController && typeof window.DialogController.close === 'function') {
+        window.DialogController.close(modal);
+    } else {
+        modal.style.display = 'none';
+    }
     modal.classList.remove('modal-overlay-secondary');
     desbloquearModalPrincipalParaRecorrencia();
     desativarTrapFocoModalRecorrencia();
@@ -917,7 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             // Fecha o modal imediatamente; o overlay bloqueará re-interação durante o salvamento
-            document.getElementById('modalAgendamento').style.display = 'none';
+            window.fecharAgendamentoModal();
 
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 // Optimistic UI in salvarEventoComGCal renders the new event immediately.
@@ -1063,23 +1126,11 @@ document.addEventListener('DOMContentLoaded', () => {
         capturarFormularioPrincipalNoRascunho();
     });
 
-    const overlayRecorrencia = document.getElementById('modalRecorrencia');
-    if (overlayRecorrencia) {
-        overlayRecorrencia.addEventListener('mousedown', (event) => {
-            if (event.target === overlayRecorrencia) {
-                window.fecharModalRecorrencia();
-            }
-        });
-    }
-
     window.inicializarMultiSelectPills();
     window.atualizarEstadoFimRecorrencia();
     window.atualizarTextoPreviewRecorrencia();
 
     if (document.getElementById('btnFecharModal')) {
-        document.getElementById('btnFecharModal').addEventListener('click', () => {
-            document.getElementById('modalAgendamento').style.display = 'none';
-            window.reposicaoIdEmReagendamento = null; 
-        });
+        document.getElementById('btnFecharModal').addEventListener('click', cancelarAgendamentoModal);
     }
 });

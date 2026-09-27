@@ -836,8 +836,12 @@ body {
   padding: 24px;
   width: 92%;
   max-width: 440px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
   border: 1px solid #2a2a2a;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
 }
 .modal-alunos-corpo h3 {
   font-size: 1.3rem;
@@ -847,6 +851,33 @@ body {
   font-weight: 700;
   letter-spacing: 0.5px;
 }
+.form-aluno {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.form-aluno::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.modal-alunos-corpo {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-alunos-corpo::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .modal-alunos-header {
   display: flex;
   align-items: center;
@@ -1344,11 +1375,12 @@ body {
 .modal-recorrencia-secundario {
   display: flex;
   flex-direction: column;
-  width: 90%;
-  max-width: 500px;
+  width: min(90vw, 500px);
+  max-width: 100%;
   max-height: 90vh;
   margin: 0 auto;
   overflow: hidden;
+  box-sizing: border-box;
 }
 
 .modal-recorrencia-secundario form {
@@ -1356,16 +1388,29 @@ body {
   flex-direction: column;
   flex: 1;
   min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .modal-recorrencia-body {
   flex: 1;
   min-height: 0;
   width: 100%;
+  max-width: 100%;
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 2px;
   padding-bottom: 12px;
+  box-sizing: border-box;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.modal-recorrencia-body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .modal-recorrencia-body > :last-child {
@@ -2266,6 +2311,15 @@ body {
   color: #ffd700;
   font-size: 1.2rem;
 }
+.modal-agendamento {
+  max-width: 440px;
+}
+.modal.modal-recorrencia-secundario {
+  max-width: 420px;
+}
+.modal-settings {
+  max-width: 500px;
+}
 .modal-historico-reposicoes {
   display: flex;
   flex-direction: column;
@@ -2487,10 +2541,15 @@ body {
   opacity: 0;
   transform: translateY(20px);
   transition: all 0.3s ease;
+  /* Oculto: não capturar toques para não bloquear o FAB e elementos sob a faixa */
+  pointer-events: none;
 }
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+  /* Visível: fica acima do FAB — o FAB ocupa a faixa de 30 a 90px da base (Fase 0.1). */
+  bottom: 100px;
+  pointer-events: auto;
 }
 .toast.error {
   background: #e53935;
@@ -2849,6 +2908,61 @@ body {
 }
 
 @media (max-width: 430px) {
+  #modalFormAluno {
+    justify-content: stretch;
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-alunos-corpo {
+    width: 100%;
+    max-width: 100%;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 18px 18px 0 0;
+    padding: 16px 12px 8px;
+  }
+
+  .form-aluno {
+    max-height: calc(100dvh - 110px);
+    padding-right: 2px;
+  }
+
+  #modalAgendamento,
+  #modalRecorrencia,
+  #appSettingsModal {
+    align-items: stretch;
+    justify-content: stretch;
+  }
+
+  .modal-agendamento,
+  .modal.modal-recorrencia-secundario,
+  .modal-settings {
+    width: 100%;
+    max-width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+
+  .modal-agendamento::-webkit-scrollbar,
+  .modal-recorrencia-secundario::-webkit-scrollbar,
+  .modal-settings::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Rodapé no fim da rolagem (decisão 10.4): o corpo deixa de rolar sozinho. */
+  .modal-recorrencia-secundario form,
+  .modal-recorrencia-body {
+    flex: none;
+    overflow: visible;
+  }
+
   .container {
     padding: 10px;
   }

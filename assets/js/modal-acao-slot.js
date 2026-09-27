@@ -1077,12 +1077,30 @@ window.abrirModalAcaoSlot = function (id) {
       compromisso.descricao || "";
   }
 
-  if (modal) modal.style.display = "flex";
   aplicarModoSomenteLeituraAlunoInativo(compromisso);
+  if (!modal) return;
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      // view-calendario.js substitui window.fecharModalAcaoSlot; resolver na hora preserva o wrapper.
+      onRequestClose: () => window.fecharModalAcaoSlot(),
+    });
+    return;
+  }
 };
 
 window.fecharModalAcaoSlot = function () {
-  document.getElementById("modalAcaoSlot").style.display = "none";
+  const modal = document.getElementById("modalAcaoSlot");
+  if (!modal) return;
+  const naPilha =
+    window.DialogController &&
+    typeof window.DialogController.getStack === "function" &&
+    window.DialogController.getStack().includes(modal);
+  if (naPilha) {
+    window.DialogController.close(modal);
+    return;
+  }
+  modal.style.display = "none";
 };
 
 let resolveEscolhaCobrancaReposicao = null;
@@ -1147,7 +1165,11 @@ window.abrirModalEscolhaCobrancaReposicao = function (
     opcaoButtons.forEach((botao) => {
       botao.onclick = async () => {
         const cobravel = botao.dataset.reposicaoCobravel === "true";
-        modal.style.display = "none";
+        if (window.DialogController && typeof window.DialogController.close === "function") {
+          window.DialogController.close(modal);
+        } else {
+          modal.style.display = "none";
+        }
         try {
           if (typeof callback === "function") {
             await callback(cobravel);
@@ -1158,13 +1180,24 @@ window.abrirModalEscolhaCobrancaReposicao = function (
       };
     });
 
+    if (window.DialogController && typeof window.DialogController.open === "function") {
+      window.DialogController.open(modal, {
+        trigger: document.activeElement || null,
+        onRequestClose: window.fecharModalEscolhaCobrancaReposicao,
+      });
+      return;
+    }
     modal.style.display = "flex";
   });
 };
 
 window.fecharModalEscolhaCobrancaReposicao = function () {
   const modal = document.getElementById("modalEscolhaCobrancaReposicao");
-  if (modal) modal.style.display = "none";
+  if (modal && window.DialogController && typeof window.DialogController.close === "function") {
+    window.DialogController.close(modal);
+  } else if (modal) {
+    modal.style.display = "none";
+  }
   if (typeof resolveEscolhaCobrancaReposicao === "function") {
     const resolver = resolveEscolhaCobrancaReposicao;
     resolveEscolhaCobrancaReposicao = null;
@@ -1291,6 +1324,14 @@ window.abrirReagendarAulaModalSlot = function (dia, hora) {
   document.getElementById("infoReagendamentoSlot").textContent =
     `Agendar reposição às ${hora}`;
 
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      onRequestClose: window.fecharReagendarAulaModal,
+    });
+    return;
+  }
+
   modal.style.display = "flex";
 };
 
@@ -1338,12 +1379,22 @@ window.iniciarReagendamentoReposicao = function (id) {
   document.getElementById("infoReagendamentoSlot").textContent =
     `Agendamento direto • Fila de espera`;
 
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      onRequestClose: window.fecharReagendarAulaModal,
+    });
+    return;
+  }
+
   modal.style.display = "flex";
 };
 
 window.fecharReagendarAulaModal = function () {
   const modal = document.getElementById("modalReagendarAula");
-  if (modal) {
+  if (modal && window.DialogController && typeof window.DialogController.close === "function") {
+    window.DialogController.close(modal);
+  } else if (modal) {
     modal.style.display = "none";
   }
   if (
@@ -1766,12 +1817,23 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
     container.appendChild(item);
   });
 
+  if (window.DialogController && typeof window.DialogController.open === "function") {
+    window.DialogController.open(modal, {
+      trigger: document.activeElement || null,
+      onRequestClose: window.fecharModalEscolhaExclusao,
+    });
+    return;
+  }
   modal.style.display = "flex";
 };
 
 window.fecharModalEscolhaExclusao = function () {
   const modal = document.getElementById("modalEscolhaExclusao");
-  if (modal) modal.style.display = "none";
+  if (modal && window.DialogController && typeof window.DialogController.close === "function") {
+    window.DialogController.close(modal);
+  } else if (modal) {
+    modal.style.display = "none";
+  }
 };
 
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────
