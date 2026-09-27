@@ -2547,6 +2547,8 @@ body {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
+  /* Visível: fica acima do FAB — o FAB ocupa a faixa de 30 a 90px da base (Fase 0.1). */
+  bottom: 100px;
   pointer-events: auto;
 }
 .toast.error {

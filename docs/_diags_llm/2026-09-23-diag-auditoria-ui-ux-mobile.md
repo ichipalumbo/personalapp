@@ -39,7 +39,7 @@ Legenda de status usada em todo o documento:
 
 | # | Item | Origem | Etapa dona | Status |
 | --- | --- | --- | --- | --- |
-| 0.1 | Toast invisível bloqueia toque no FAB | Achado material 2 (revisão `anti-ui-slop`) | **Fase 0** (hotfix isolado, recomendado **imediato**) | ⚠️ ⏳ *órfão — ver seção 3.1* |
+| 0.1 | Toast invisível bloqueia toque no FAB | Achado material 2 (revisão `anti-ui-slop`) | **Fase 0** (hotfix isolado, recomendado **imediato**) | ✅ *corrigido (`f55d78e` + `bottom` de `.toast.show`) — ver seção 3.1* |
 | 0.2 | Cadastro de aluno sem saída em 320×568 | Achado material 1 = 4.1 | Fase 0 → absorvido pela **Etapa 1** | ✅ |
 | 0.3 | Topo da Home consome mais da metade da viewport | Achado material 3 = 4.2 | Fase 0 → absorvido pela **Etapa 3** | ⏳ |
 | 4.1 | Formulário extenso sem saída operacional | Diagnóstico §4.1 | Etapa 1 | ✅ |
@@ -69,9 +69,9 @@ fila de prioridade da revisão `anti-ui-slop` **mesclada** com as etapas estrutu
 
 1. ~~**Fase 0.2** — cadastro bloqueado em 320×568~~ → ✅ concluída (absorvida pela Etapa 1, que
    também resolveu 4.7 de forma mais ampla que o pedido original).
-2. **Fase 0.1 — toast bloqueando toque** → ⚠️ **ainda pendente e é o próximo hotfix recomendado**,
-   por ser pequeno, isolado, e ter sido classificado como bug funcional (não estético) desde a
-   primeira revisão. Ver seção 3.1 para o escopo exato.
+2. ~~**Fase 0.1 — toast bloqueando toque**~~ → ✅ **concluída** (ver seção 3.1): a correção de
+   `pointer-events` está no `f55d78e` desde 2026-09-24, e o `bottom` de `.toast.show` (toast
+   visível não cobrindo o FAB) entrou junto na branch `fix/mobile-formularios-dialogos`.
 3. **Etapa 2 — fundação de legibilidade e toque** → próxima etapa estrutural, independente da
    Fase 0.1/0.3.
 4. **Etapa 3 — navegação e topo operacional** → absorve a Fase 0.3 (altura da Home) como seu
@@ -90,7 +90,7 @@ resolve essa lacuna tornando a Fase 0.1 explícita e prioritária.
 
 ## 3) Fase 0 — hotfixes pontuais (fora da estrutura de diálogo)
 
-### 3.1 ⚠️ Fase 0.1 — Toast invisível bloqueia o FAB de adicionar aluno *(pendente, prioridade imediata)*
+### 3.1 ✅ Fase 0.1 — Toast invisível bloqueia o FAB de adicionar aluno *(concluída — registro no fim da seção)*
 
 **Evidência (já validada na auditoria original)**
 
@@ -115,7 +115,14 @@ esperar as decisões de Etapa 6. Pode e deve ser feito como correção isolada d
 **Nota para a Etapa 6**: quando a Etapa 6 tratar o achado 4.9 (acessibilidade/contraste do toast,
 `role="status"`/`role="alert"`, `aria-live`), ela deve **assumir que o bug de `pointer-events`
 já foi corrigido aqui** — não deve refazer esse hotfix.
-
+**Registro de conclusão (2026-09-26)**:
+- Estado oculto: `pointer-events: none` no `.toast` e `auto` no `.toast.show`, no `f55d78e`
+  (2026-09-24). Validado em runtime em 320×568: com o toast oculto, toque na faixa cobrindo
+  o FAB alcança `#btnFlutuanteAdicionar`.
+- O critério de aceite "o toast visível não se sobrepõe ao FAB nem à futura safe area inferior"
+  exigiu um complemento: `bottom: 100px` no `.toast.show` (o FAB ocupa a faixa de 30 a 90px da
+  base). Validado em 320×568 e 390×844: sem sobreposição entre toast visível e FAB.
+- Restante da fila: apenas acessibilidade/contraste do achado 4.9, na Etapa 6.
 ### 3.2 ✅ Fase 0.2 — Cadastro de aluno bloqueado em 320×568 *(concluída)*
 
 Absorvida integralmente pela Etapa 1 (ver seção 5). O que era pensado como "correção mínima"
@@ -169,7 +176,7 @@ como escopo. Isso evita duas rodadas de mudança na mesma região do layout em m
 - Pilha de diálogos real, com empilhamento e retorno de foco validados.
 - Validação automatizada: frontend 77/77; backend 232/232.
 - Fora de escopo mantido conscientemente: diálogos nativos (`alert`/`confirm`), `#overlay-sinc`
-  e `#toast` (este último é a Fase 0.1, ainda pendente).
+  e a acessibilidade do `#toast` (a Fase 0.1 do toast está concluída — ver seção 3.1).
 
 **Decisões que ficam disponíveis como padrão para as próximas etapas** (seção 10.0 do plano
 original — reaproveitar, não redecidir):
