@@ -121,6 +121,7 @@
                       id="btnSemanaHomeAnterior"
                       class="btn btn-secondary btn-sm"
                       title="Semana Anterior"
+                      aria-label="Semana Anterior"
                     >
                       <i class="fa-solid fa-chevron-left"></i>
                     </button>
@@ -133,6 +134,7 @@
                       id="btnSemanaHomeProxima"
                       class="btn btn-secondary btn-sm"
                       title="Próxima Semana"
+                      aria-label="Próxima Semana"
                     >
                       <i class="fa-solid fa-chevron-right"></i>
                     </button>
@@ -251,7 +253,12 @@
           <div class="alunos-grid" id="listaAlunos"></div>
         </section>
 
-        <button id="btnFlutuanteAdicionar" onclick="abrirCadastroParaNovo()">
+        <button
+          id="btnFlutuanteAdicionar"
+          title="Novo aluno"
+          aria-label="Novo aluno"
+          onclick="abrirCadastroParaNovo()"
+        >
           <i class="fa-solid fa-plus"></i>
         </button>
 
@@ -414,6 +421,7 @@
                   id="btnExcluirAlunoModal"
                   style="margin-right: auto; display: none"
                   title="Excluir Aluno"
+                  aria-label="Excluir Aluno"
                 >
                   <i class="fa-solid fa-trash"></i>
                 </button>
@@ -1445,6 +1453,7 @@
                 class="btn btn-danger"
                 id="btnExcluirSlot"
                 title="Excluir"
+                aria-label="Excluir"
                 style="margin-right: auto"
               >
                 <i class="fa-solid fa-trash"></i>

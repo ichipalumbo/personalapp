@@ -65,6 +65,33 @@
   box-sizing: border-box;
 }
 
+/* Etapa 2 (Cartão C, 2026-09-26): anel de foco de teclado (Tab/shift+Tab) padronizado.
+   :where() = especificidade 0 → vira o padrão de todo controle nativo interativo e
+   qualquer regra de elemento continua valendo por cima como override intencional
+   (marcadas em Etapa 2 no arquivo). Tom: dourado do tema (decisão do dono). */
+:where(button, a, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid #ffd700;
+  outline-offset: 2px;
+}
+
+/* Etapa 2 (Cartão C, 2026-09-26): estado disabled padronizado.
+   Botões (todas as telas): regra única — opacidade 0.6 (seletores dos botões gcal eram
+   duplicados e caíram), cursor not-allowed (decisão do dono) e pointer-events: none.
+   Campos nativos: sem opacidade própria (o wrapper .form-grupo-spa--desabilitado já
+   aplica 0.55 no grupo todo); só ganham cursor + pointer-events no estado. */
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: #0d0d0d;
@@ -223,6 +250,7 @@ body {
   transform: translateY(1px);
 }
 
+/* Etapa 2 (Cartão C): override intencional — tom azul do Google, fora do dourado global */
 .btn-google-custom:focus-visible {
   outline: 2px solid #8ab4f8;
   outline-offset: 2px;
@@ -268,6 +296,7 @@ body {
   transform: translateY(1px);
 }
 
+/* Etapa 2 (Cartão C): override intencional — tom vermelho-safira do logout, fora do dourado global */
 .btn-google-signout:focus-visible {
   outline: 2px solid #ff8b84;
   outline-offset: 2px;
@@ -297,6 +326,7 @@ body {
   transform: translateY(1px);
 }
 
+/* Etapa 2 (Cartão C): override intencional — tom azul do Google, fora do dourado global */
 .btn-user-area-trigger:focus-visible {
   outline: 2px solid #8ab4f8;
   outline-offset: 2px;
@@ -468,10 +498,7 @@ body {
   transform: translateY(1px);
 }
 
-.btn-gcal-connect:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* Etapa 2 (Cartão C): o :disabled é o bloco único global de [TAG-STYLE-BASE] */
 
 /* Google Calendar Connected State */
 .gcal-status-connected {
@@ -557,10 +584,7 @@ body {
   transform: translateY(1px);
 }
 
-.btn-gcal-disconnect:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+/* Etapa 2 (Cartão C): o :disabled é o bloco único global de [TAG-STYLE-BASE] */
 
 .header-session-avatar {
   width: 30px;
@@ -770,6 +794,8 @@ body {
   text-align: left;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
+/* Etapa 2 (Cartão C): override intencional — o foco aparece pelo reforço do próprio
+   anel do indicador (bordas), não por outline; por isso o outline: none */
 .aluno-card-indicador--reposicoes:hover,
 .aluno-card-indicador--reposicoes:focus-visible {
   background: rgba(255, 215, 0, 0.14);
@@ -941,13 +967,14 @@ body {
 .form-grupo-spa.form-grupo-spa--desabilitado label {
   color: #707070;
 }
+/* Etapa 2 (Cartão C): opacidade/cursor/pointer-events vêm da regra única:disabled;
+   o que fica aqui é só a identidade visual dos campos deste formulário */
 .form-grupo-spa input:disabled,
 .form-grupo-spa select:disabled,
 .form-grupo-spa textarea:disabled {
   background: #111;
   color: #787878;
   border-color: #2a2a2a;
-  cursor: not-allowed;
 }
 .duracao-stepper {
   display: grid;
@@ -996,6 +1023,8 @@ body {
   cursor: pointer;
   margin: 0;
 }
+/* Etapa 2 (Cartão C): input visual-hidden — o anel de foco visível vem da regra
+   :focus-visible + .full-day-toggle-ui abaixo (o dourado global não seria visível aqui) */
 .full-day-toggle input {
   position: absolute;
   opacity: 0;
@@ -1038,6 +1067,8 @@ body {
 .full-day-toggle:hover .full-day-toggle-ui {
   border-color: #555;
 }
+/* Etapa 2 (Cartão C): override intencional — o anel de foco desenha no UI visual,
+   não na input escondida (o dourado global não seria visível nela) */
 .full-day-toggle input:focus-visible + .full-day-toggle-ui {
   border-color: #ffd700;
   box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.15);
@@ -1118,6 +1149,8 @@ body {
 .status-toggle:hover .status-toggle-track {
   border-color: #555;
 }
+/* Etapa 2 (Cartão C): override intencional — anel de foco desenhado na trilha visual, */
+/* não na input posicionada fora (o dourado global não seria visível nela) */
 .status-toggle input:focus-visible + .status-toggle-track {
   box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
   border-color: #ffd700;
@@ -2387,6 +2420,8 @@ body {
   margin-left: auto;
   width: 36px;
 }
+/* Etapa 2 (Cartão C): override intencional — o foco aparece pelo reforço da borda
+   dourada, não por outline; por isso o outline: none */
 .modal-fechar-icone:hover,
 .modal-fechar-icone:focus-visible {
   border-color: #ffd700;
