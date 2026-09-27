@@ -220,6 +220,8 @@ let _historicoReposicoesModal = {
 };
 let _edicaoCobrancaReposicao = null;
 
+// Caixinha só de alerta: resumo de valor/status do ciclo saiu por ser redundante
+// com o card do aluno na tela de Finanças (Etapa 4, Cartão A).
 function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
     if (objetivo === 'Consultoria Online') return '';
 
@@ -237,19 +239,7 @@ function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
         `;
     }
 
-    const ciclo = resumo && resumo.cicloAtual;
-    if (!ciclo) return '';
-
-    const statusLabels = { pago: 'pago', atrasado: 'atrasado', em_aberto: 'em aberto' };
-    const statusTexto = statusLabels[ciclo.status] || 'em aberto';
-    const periodo = `${formatarDataCurtaAluno(ciclo.cicloInicio)} → ${formatarDataCurtaAluno(ciclo.cicloFim)}`;
-
-    return `
-        <div class="aluno-card-indicador">
-            <div class="aluno-card-indicador-titulo">Ciclo atual: ${formatarMoedaFinanceira(ciclo.valorTotalCiclo)} · ${statusTexto}</div>
-            <div class="aluno-card-indicador-detalhe">${periodo}</div>
-        </div>
-    `;
+    return '';
 }
 
 function montarCaixinhaConsistenciaAluno(aluno) {
@@ -300,13 +290,6 @@ function montarCaixinhaReposicaoAluno(aluno) {
             <div class="aluno-card-indicador-detalhe">${resumo.linhaSecundaria} <i class="fa-solid fa-chevron-right" aria-hidden="true"></i></div>
         </button>
     `;
-}
-
-function formatarDataCurtaAluno(dataISO) {
-    if (!dataISO) return '--/--';
-    const partes = String(dataISO).split('-');
-    if (partes.length !== 3) return String(dataISO);
-    return `${partes[2]}/${partes[1]}`;
 }
 
 function escaparTextoAluno(valor) {
@@ -856,13 +839,16 @@ window.renderizarListaAlunos = function() {
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.875rem; color: #B0B0B0; border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
-                        <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
-                        <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${metodoCobranca}: ${cobrancaDetalhe}</div>
-                        <div><i class="fa-solid fa-calendar-days" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${fechamentoLabel}</div>
-                    </div>
+                    <details class="aluno-card-detalhes" onclick="event.stopPropagation();" style="border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
+                        <summary style="cursor: pointer; color: #FFD700; font-weight: 700; font-size: 0.875rem;">Ver detalhes</summary>
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.875rem; color: #B0B0B0; margin-top: 8px;">
+                            <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
+                            <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${metodoCobranca}: ${cobrancaDetalhe}</div>
+                            <div><i class="fa-solid fa-calendar-days" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${fechamentoLabel}</div>
+                        </div>
 
-                    ${observacoes ? `<div class="aluno-card-observacoes"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i><span>${escaparTextoAluno(observacoes)}</span></div>` : ''}
+                        ${observacoes ? `<div class="aluno-card-observacoes"><i class="fa-solid fa-note-sticky" aria-hidden="true"></i><span>${escaparTextoAluno(observacoes)}</span></div>` : ''}
+                    </details>
 
                     ${caixinhas ? `<div class="aluno-card-indicadores">${caixinhas}</div>` : ''}
                 </div>

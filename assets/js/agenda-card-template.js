@@ -6,13 +6,17 @@
 (function() {
     const AULA_COR_FALLBACK = '#6B7280';
 
-    const BADGE_STYLES = {
-        recorrente: 'background: rgba(255, 215, 0, 0.15); color: #FFD700; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
-        unico: 'background: rgba(129, 199, 132, 0.15); color: #81C784; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
-        deslocamento: 'background: rgba(81, 183, 73, 0.15); color: #51b749; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
-        bloqueio: 'background: rgba(220, 33, 39, 0.15); color: #ff5c54; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;', // Etapa 2 (Cartão D): 3.85:1 → 4.5:1 sobre o card de bloqueio
-        googleAgenda: 'background: rgba(66, 133, 244, 0.15); color: #4285F4; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;'
-    };
+    // Chips de status de AULA (Etapa 4, Cartão D — refinamento 2026-09-27):
+// caixas fixas de 20x20px definidas no CSS (.agenda-card-inline-status
+// .badge-tag-tipo); aqui só a cor por tipo. Visual clean: FUNDOS translúcidos
+// sem borda (decisão do dono — "só o fundo, sem a borda"), como o Cartão D
+// original. Reposição usa a classe .badge-tag-tipo--reposicao (dourada
+// tracejada, design pré-existente). Deslocamento/Bloqueio/Google não têm chip:
+// o ícone do tipo já abre o título do card (carro/cadeado/G) — "só em AULA".
+const BADGE_STYLES = {
+    recorrente: 'background: rgba(255, 215, 0, 0.18); color: #FFD700; font-weight: 700;',
+    unico: 'background: rgba(129, 199, 132, 0.18); color: #81C784; font-weight: 700;'
+};
 
     function normalizarHex(valorHex) {
         if (typeof valorHex !== 'string') {
@@ -119,13 +123,10 @@
         return valor ? ` ${nome}="${valor}"` : '';
     }
 
-    function distribuirBadgeStatusPorModo(badgeHtml, exibirInline) {
-        return {
-            inline: exibirInline ? badgeHtml : '',
-            meta: exibirInline ? '' : badgeHtml,
-        };
-    }
-
+    // Cartão D (refinamento): chip de status tem âncora única — sempre na
+    // linha do título, na posição do wrapper. Antes o chip alternava entre a
+    // linha do título e a meta inferior conforme densidade ("modo inline"),
+    // o que desalinhava os ícones entre cards de tamanhos diferentes.
     function montarSlotBadgeInline(badgeHtml) {
         return badgeHtml ? `<span class="agenda-card-inline-status">${badgeHtml}</span>` : '';
     }
@@ -161,7 +162,6 @@
             ? opcoes.visualDensity
             : 'normal';
         const visualHideOptionalMobile = visualContext === 'calendar-day' && opcoes.visualHideOptionalMobile === true;
-        const visualInlineStatusBadge = visualContext === 'calendar-day' && opcoes.visualInlineStatusBadge === true;
 
         if (visualContext === 'calendar-day') {
             classes.push('agenda-card-dayview');
@@ -170,9 +170,6 @@
             }
             if (visualHideOptionalMobile) {
                 classes.push('agenda-card-mobile-overflow');
-            }
-            if (visualInlineStatusBadge) {
-                classes.push('agenda-card-inline-status-mode');
             }
         }
 
@@ -204,35 +201,41 @@
             classes.push(`objetivo-${normalizarObjetivo(objetivo)}`);
 
             if (comp.reagendada || comp.isReposicao) {
-                tagStatusHtml = `<span class="badge-tag-tipo badge-tag-tipo--reposicao agenda-card-optional agenda-card-status-badge"><i class="fa-solid fa-arrows-rotate"></i> Reposição</span>`;
+                // Cartão D (Etapa 4, 2026-09-27): badges viram só-ícone com
+                // title/aria-label preservando o texto (decisão do dono, D-1).
+                tagStatusHtml = `<span class="badge-tag-tipo badge-tag-tipo--reposicao agenda-card-optional agenda-card-status-badge" role="img" aria-label="Reposição" title="Reposição"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i></span>`;
             } else if (comp.frequencia === 'semanal') {
-                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.recorrente}"><i class="fa-solid fa-infinity"></i> Recorrente</span>`;
+                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" role="img" aria-label="Recorrente" title="Recorrente" style="${BADGE_STYLES.recorrente}"><i class="fa-solid fa-infinity" aria-hidden="true"></i></span>`;
             } else {
-                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.unico}"><i class="fa-solid fa-thumbtack"></i> Único</span>`;
+                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" role="img" aria-label="Único" title="Único" style="${BADGE_STYLES.unico}"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i></span>`;
             }
-            const badgeStatusModo = distribuirBadgeStatusPorModo(tagStatusHtml, visualInlineStatusBadge);
-            const tagStatusInlineHtml = badgeStatusModo.inline;
-            const tagStatusMetaHtml = badgeStatusModo.meta;
-            tagVisualHtml = tagStatusMetaHtml;
+            tagVisualHtml = '';
             if (alunoInativo) {
-                tagVisualHtml += `<span class="badge-tag-tipo agenda-card-optional" style="background: rgba(255, 138, 128, 0.15); color: #FF8A80; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash"></i> Aluno inativo</span>`;
+                tagVisualHtml += `<span class="badge-tag-tipo agenda-card-optional" role="img" aria-label="Aluno inativo" title="Aluno inativo" style="background: rgba(255, 138, 128, 0.15); color: #FF8A80; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></span>`;
             }
+            // Semana (sem visualContext): o chip de aula fica no rodapé (meta,
+            // canto inferior direito por margin-left:auto da
+            // .agenda-card-inline-status) — no Dia o mesmo wrapper fica
+            // oculto aqui e visível só na linha do título (regra do
+            // #agendaGridHomeHome). O wrapper garante o mesmo visual 20x20.
+            const tagStatusRodapeHtml = visualContext ? '' : montarSlotBadgeInline(tagStatusHtml);
 
             return `
                 <div class="${classes.join(' ')}"${montarAtributo('style', styleCardAula)}${montarAtributo('onclick', opcoes.onclick)}>
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
                             <div class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i> ${nomeSeguro}</span>
-                                ${montarSlotBadgeInline(tagStatusInlineHtml)}
+                                <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i><span class="agenda-dia-aula-nome-texto">${nomeSeguro}</span></span>
+                                ${montarSlotBadgeInline(tagStatusHtml)}
                             </div>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${localSeguro}</span>
                             <div class="agenda-semana-card-meta">
-                                <span class="agenda-dia-aula-detalhes">${objetivoSeguro}</span>
+                                ${objetivo === 'Consultoria Online' ? `<span class="agenda-dia-aula-detalhes">${objetivoSeguro}</span>` : ''}
                                 ${tagVisualHtml}
+                                ${tagStatusRodapeHtml}
                             </div>
                         </div>
                     </div>
@@ -242,10 +245,8 @@
 
         if (tipo === 'deslocamento') {
             classes.push('slot-deslocamento');
-            const tagStatusDeslocamento = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.deslocamento}"><i class="fa-solid fa-car-side"></i> Trânsito</span>`;
-            const badgeStatusDeslocamento = distribuirBadgeStatusPorModo(tagStatusDeslocamento, visualInlineStatusBadge);
-            const tagStatusDeslocamentoInline = badgeStatusDeslocamento.inline;
-            const tagStatusDeslocamentoMeta = badgeStatusDeslocamento.meta;
+            // Cartão D (refinamento): sem chip — o carro + a cor do card já
+            // identificam o tipo; a descrição de destino é o conteúdo útil.
             const descricaoDeslocamento = escapeHtml(comp.descricao || 'Trânsito');
 
             return `
@@ -253,16 +254,12 @@
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
                             <div class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome" style="color: #51b749;"><i class="fa-solid fa-car-side"></i> Deslocamento</span>
-                                ${montarSlotBadgeInline(tagStatusDeslocamentoInline)}
+                                <span class="agenda-dia-aula-nome" style="color: #51b749;"><i class="fa-solid fa-car-side"></i><span class="agenda-dia-aula-nome-texto">Deslocamento</span></span>
                             </div>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${descricaoDeslocamento}</span>
-                            <div class="agenda-semana-card-meta">
-                                ${tagStatusDeslocamentoMeta}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -273,11 +270,8 @@
             // [TAG-GCAL-CARD-EXTERNO] Eventos externos do Google Calendar: card somente leitura, sem onclick
             if (comp.source === 'google_external') {
                 classes.push('slot-bloqueado', 'card-bloqueio-externo');
-                const tagStatusGoogle = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.googleAgenda}"><i class="fa-brands fa-google"></i> Google Agenda</span>`;
-                const badgeStatusGoogle = distribuirBadgeStatusPorModo(tagStatusGoogle, visualInlineStatusBadge);
-                const tagStatusGoogleInline = badgeStatusGoogle.inline;
-                const tagStatusGoogleMeta = badgeStatusGoogle.meta;
-
+                // Cartão D (refinamento): sem chip — o "G" azul no título +
+                // a cor do card já identificam a origem Google.
                 const descricaoExterna = String(comp.descricao || 'Evento externo');
                 const descricaoExternaSafe = escapeHtml(descricaoExterna);
                 const tituloExterno = descricaoExternaSafe;
@@ -286,16 +280,12 @@
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
                             <div class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-brands fa-google" style="color: #4285F4;"></i> ${descricaoExternaSafe}</span>
-                                ${montarSlotBadgeInline(tagStatusGoogleInline)}
+                                <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-brands fa-google" style="color: #4285F4;"></i><span class="agenda-dia-aula-nome-texto">${descricaoExternaSafe}</span></span>
                             </div>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #ff5c54;">Bloqueado</span>
-                            <div class="agenda-semana-card-meta">
-                                ${tagStatusGoogleMeta}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -303,10 +293,6 @@
             }
 
             classes.push('slot-bloqueado');
-            const tagStatusBloqueio = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" style="${BADGE_STYLES.bloqueio}"><i class="fa-solid fa-lock"></i> ${bloqueioDiaInteiro ? 'Dia inteiro' : 'Bloqueio'}</span>`;
-            const badgeStatusBloqueio = distribuirBadgeStatusPorModo(tagStatusBloqueio, visualInlineStatusBadge);
-            const tagStatusBloqueioInline = badgeStatusBloqueio.inline;
-            const tagStatusBloqueioMeta = badgeStatusBloqueio.meta;
             const descricaoBloqueioInterno = escapeHtml(comp.descricao || 'Compromisso');
 
             return `
@@ -315,15 +301,11 @@
                         <div class="agenda-semana-card-top">
                             <div class="agenda-semana-card-title-group">
                                 <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: #DDD;"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
-                                ${montarSlotBadgeInline(tagStatusBloqueioInline)}
                             </div>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #ff5c54;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
-                            <div class="agenda-semana-card-meta">
-                                ${tagStatusBloqueioMeta}
-                            </div>
                         </div>
                     </div>
                 </div>

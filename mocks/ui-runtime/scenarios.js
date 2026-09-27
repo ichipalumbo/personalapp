@@ -239,6 +239,64 @@ window.__UI_MOCK_SCENARIOS = {
     ],
     homeSummary: { proximoCompromisso: '2026-09-24 06:00', totalAtivos: 3, totalPendentes: 1, totalSemana: 7 }
   },
+  // ───────────────────────────────────────────────────────────────────────────
+  // CENÁRIO DEMONSTRATIVO — Cartão C da Etapa 4 (densidade de cards), 2026-09-27
+  // Desenha o "antes/depois" do fix dos seletores #agendaGridHomeHome:
+  // na mesma linha de horário, um card de 30min TIGHT ao lado de um de 60min
+  // NORMAL — a diferença visível SÓ existe porque o CSS de densidade voltou a
+  // casar com o id real da grade de Dia.
+  // Legenda (Home → aba "Dia": o app pousa no dia atual, domingo 27/09/2026):
+  //   08:30 "Aurora Helena de Camargo Monzani" (33 chars) + local longo,
+  //         30min → TIGHT: padding 6px 8px, hora oculta, linha do objetivo
+  //         removida — só nome + local cabem nos 48px.
+  //   09:00 "Bruna Rocha" (nome curto) + local curto, 60min → NORMAL:
+  //         padding base (9px 12px 10px 10px) — o contraste com o card
+  //         de cima é o que o fix devolveu.
+  //   10:00 "Deslocamento" + descrição longa, 30min → TIGHT (variação de
+  //         tipo: badge inline no título, descrição de localização oculta).
+  //   12:00 "Reunião de equipe" (bloqueio Google Agenda), 90min → NORMAL
+  //         (controle: card alto e largo segue com layout cheio).
+  //   14:00 "Bruna Rocha" AULA RECORRENTE (semanal de domingo, início
+  //         2026-09-20), 60min → NORMAL: chip dourado ∞ ao lado do
+  //         📌 verde da aula única das 09:00 — a comparação de cor do
+  //         Cartão D (refinamento 2026-09-27).
+  // Os textos longos (33/25 chars) e as durações de 30min são o gatilho da
+  // heurística de densidade (REGRAS_VISUAIS_CARD_DIA em view-home.js).
+  // Obs.: os itens são `uma_vez` de data 2026-09-27 (data atual na abertura do
+  // cenário) — abrem com o selo de concluída à medida que o dia avança, como
+  // no dia real. Em outra data a grade fica vazia; navegue com os botões de
+  // dia anterior/próximo para voltar ao 27/09.
+  // ───────────────────────────────────────────────────────────────────────────
+  densidadeAgenda: {
+    name: 'densidadeAgenda',
+    label: 'Densidade de cards — demonstração do Cartão C',
+    ownerEmail: 'mock@local.test',
+    profile: { name: 'Mock User', email: 'mock@local.test', picture: '' },
+    configuracao: { horaInicio: '07:00', horaFim: '22:00', diasTrabalho: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab'], limiteAlunosAtivos: 10 },
+    alunos: [
+      { id: 'd1', nome: 'Aurora Helena de Camargo Monzani', email: 'aurora.monzani@example.com', telefone: '(11) 90555-0001', local: 'Estúdio Central — Sala 02 A', objetivo: 'Recuperação', status: 'ativo', diaVencimento: 12, fechamentoMesCheio: false, metodoCobranca: 'por_aula', preco: 60, frequenciaSemanal: 1, valorFixoCiclo: 0, observacoes: 'Exemplo para demonstrar a densidade tight em card de 30min com nome e local longos.', corObjetivo: { nome: 'Cinza-azulado', hex: '#34c2eb' } },
+      { id: 'd2', nome: 'Bruna Rocha', email: 'bruna.rocha@example.com', telefone: '(11) 90555-0002', local: 'Estúdio Central', objetivo: 'Força', status: 'ativo', diaVencimento: 15, fechamentoMesCheio: false, metodoCobranca: 'por_aula', preco: 60, frequenciaSemanal: 2, valorFixoCiclo: 0, observacoes: 'Contraste: card 60min com nome curto fica em densidade normal.', corObjetivo: { nome: 'Laranja', hex: '#ffb74d' } }
+    ],
+    agendamentos: [
+      { id: 'dg1', alunoId: 'd1', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '08:30', horarioFim: '09:00', descricao: 'Avaliação pós-cirúrgica' },
+      { id: 'dg2', alunoId: 'd1', tipo: 'deslocamento', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '10:00', horarioFim: '10:30', descricao: 'Estúdio Norte — Consultório 2B' },
+      { id: 'dg3', alunoId: 'd2', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '09:00', horarioFim: '10:00', descricao: 'Treino resistido' },
+      { id: 'dg4', alunoId: 'd2', tipo: 'aula', frequencia: 'semanal', tipoRecorrencia: 'semanal', recorrenciaDataInicio: '2026-09-20', diasSemana: ['Domingo'], intervaloRecorrencia: 1, recorrenciaEscopo: 'fromDate', data: '2026-09-20', horarioInicio: '14:00', horarioFim: '15:00', descricao: 'Treino resistido' }
+    ],
+    bloqueiosExternos: [
+      { id: 'gcal_demo', googleCalendarEventId: 'gcal-demo-1234', titulo: 'Reunião de equipe', data: '2026-09-27', horarioInicio: '12:00', horarioFim: '13:30', fullDay: false }
+    ],
+    reposicoes: [],
+    financas: [
+      { alunoId: 'd1', aluno: { id: 'd1', nome: 'Aurora Helena de Camargo Monzani' }, configuracaoPendente: false, cicloAtual: { _id: 'cd1', alunoId: 'd1', cicloInicio: '2026-09-01', cicloFim: '2026-09-30', status: 'pago', metodoCobranca: 'por_aula', aulasContadas: 2, aulasManuaisExtras: 0, valorTotalCiclo: 120, extrato: [] }, historicoDisponivel: true },
+      { alunoId: 'd2', aluno: { id: 'd2', nome: 'Bruna Rocha' }, configuracaoPendente: false, cicloAtual: { _id: 'cd2', alunoId: 'd2', cicloInicio: '2026-09-01', cicloFim: '2026-09-30', status: 'em_aberto', metodoCobranca: 'por_aula', aulasContadas: 1, aulasManuaisExtras: 0, valorTotalCiclo: 60, extrato: [] }, historicoDisponivel: true }
+    ],
+    consistenciaAgenda: [
+      { alunoId: 'd1', aulasSemanaisContrato: 1, aulasFaltamAgendar: 0 },
+      { alunoId: 'd2', aulasSemanaisContrato: 2, aulasFaltamAgendar: 0 }
+    ],
+    homeSummary: { proximoCompromisso: '2026-09-27 08:30', totalAtivos: 2, totalPendentes: 0, totalSemana: 4 }
+  },
   alunosEmAtraso: {
     name: 'alunosEmAtraso',
     label: 'Alunos com atraso e alertas',
