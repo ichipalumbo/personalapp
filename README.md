@@ -359,7 +359,7 @@ Opcao recomendada para desenvolvimento:
 4. A deteccao do ambiente acontece automaticamente por hostname em `assets/js/config/api-config.js`, que passa a ser o unico lugar que define a URL da API no frontend:
    - `localhost`, `127.0.0.1` e `::1` -> `http://localhost:5000/api`
    - qualquer outro hostname -> `https://personal-app-api.vercel.app/api`
-5. Em ambiente local, a interface mostra uma tarja discreta no canto inferior direito com `LOCAL` e a `apiBaseUrl` ativa. Essa tarja aparece somente em host local e nunca em producao.
+5. Em ambiente local, a deteccao e confirmada no console do browser pelo log `[api-config] Ambiente detectado` com `ambiente: 'local'` (nao ha elemento visual para isto - a antiga tarja LOCAL foi removida).
 6. O OAuth do Google precisa aceitar as origens `http://localhost` e `http://localhost:5500` em *Authorized JavaScript origins* do Client ID usado pelo app; se faltar qualquer uma delas, o login falha com `origin_mismatch`.
 7. O service worker (`sw.js`) cacheia `index.html`, `assets/css/style.css` e `assets/js/app.js` (same-origin). Ele nao interfere na API porque ignora requests cross-origin e `/api/`, mas pode servir arquivo antigo depois de editar o frontend. Contorno: DevTools -> Application -> Service Workers -> **Update on reload**.
 8. O backend local precisa estar rodando na porta `5000`; sem isso, as chamadas do frontend falham por conexao recusada.

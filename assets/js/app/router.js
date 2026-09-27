@@ -19,10 +19,20 @@
             if (typeof initializer === 'function') {
                 await initializer();
             }
+            // Etapa 3 (Rodada 2): o FAB dinâmico da Home (#fabNovoHome, criado
+            // por view-home.js) existe SOMENTE com o Home em tela — nas demais
+            // telas ele conflita com o FAB da tela (ex.: "Novo aluno" em
+            // Alunos) e intercepta o toque. Aqui a tela alvo já está com o
+            // display definitivo (setado antes do init), então a verificação
+            // por visibilidade está correta; é idempotente no Home (o próprio
+            // init também a chama, sem efeito colateral).
+            if (typeof global.trocarFABNovoHome === 'function') {
+                global.trocarFABNovoHome();
+            }
         }
 
         async function navigateTo(targetId) {
-            const navLinks = document.querySelectorAll('.header-nav .nav-link');
+            const navLinks = document.querySelectorAll('.nav-inferior .nav-link-inferior');
             const views = document.querySelectorAll('.view-section');
             const activeView = document.getElementById(targetId);
             currentViewId = targetId;
@@ -30,7 +40,12 @@
             navLinks.forEach(link => {
                 const isActive = link.getAttribute('data-target') === targetId;
                 link.classList.toggle('ativo', isActive);
-                link.classList.toggle('inativo', !isActive);
+                // Etapa 3 (Cartão E): estado ativo também semântico para leitores de tela.
+                if (isActive) {
+                    link.setAttribute('aria-current', 'page');
+                } else {
+                    link.removeAttribute('aria-current');
+                }
             });
 
             views.forEach(view => {
@@ -48,7 +63,7 @@
         }
 
         function bindNavigation() {
-            const navLinks = document.querySelectorAll('.header-nav .nav-link');
+            const navLinks = document.querySelectorAll('.nav-inferior .nav-link-inferior');
 
             navLinks.forEach(link => {
                 link.addEventListener('click', async event => {

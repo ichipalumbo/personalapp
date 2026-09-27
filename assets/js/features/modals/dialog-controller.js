@@ -158,6 +158,12 @@
         }
 
         state.stack.push({ dialog: target, trigger, onRequestClose: options.onRequestClose || null });
+        // Etapa 3 (Rodada 2, 2026-09-27): z-index por nível de stack — permite
+        // empilhar dois .modal-overlay (ex.: "Configurar Grade Horária" aberto
+        // A PARTIR de dentro do modal Área do usuário, seção "Dados"). Sem isso
+        // os dois ficariam em z 1000 e o DOM decidiria quem fica em cima (a
+        // ordem no markup, não o topo do stack).
+        target.style.zIndex = String(1000 + state.stack.length);
         bindKeydown();
         updateBodyScrollLock();
         setDialogOpen(target, true);
@@ -181,6 +187,7 @@
         }
 
         setDialogOpen(target, false);
+        target.style.zIndex = '';
 
         const previous = getCurrentTopDialog();
         if (previous) {

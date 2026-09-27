@@ -183,7 +183,7 @@ Etapa 2: "Corrigir contrastes prioritários identificados no diagnóstico". (Ace
 | A (tipografia) | ✅ commit `386b00c` (donor, 2026-09-26) | `386b00c` | frontend 77/0 → 77/0 |
 | B (toque) | ✅ commit `b9a3c07` (dono, 2026-09-27) | `b9a3c07` | frontend 77/0 → 77/0 (medido) |
 | C (foco/disabled/aria) | ✅ commit `81485c5` (dono, 2026-09-27) | `81485c5` | frontend 77/0 → 77/0 (medido) |
-| D (contraste) | ✅ implementado 2026-09-27 — aguardando commit do dono | — | frontend 77/0 → 77/0 (medido) |
+| D (contraste) | ✅ commit `e73f312` (dono, 2026-09-27) | `e73f312` | frontend 77/0 → 77/0 (medido) |
 - Escala aplicada: 16px (corpo) / 14px (secundário) / 12px (piso de badges e meta) / campos 16px. Títulos, ícones, números (KPI) e o clamp da marca mantidos.
 - `assets/css/style.css`: 89 declarações de `font-size` remapeadas; 4 `!important` de `font-size` removidos (KPIs, base e @430); `.form-grupo-spa` ganha `textarea` (input+select+textarea a 1rem); input `type="date"` do modal de agendamento a 1rem; reset `font-size:0` da pílula dia-inteiro virou 12px (decisão donal 2026-09-26 — o texto ON/OFF fica visível).
 - `index.html`: 13 inlines remapeados (os 3 já a 12px ficaram).

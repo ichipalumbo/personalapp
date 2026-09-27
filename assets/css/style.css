@@ -1,5 +1,11 @@
 /* [TAG-STYLE-OBJETIVOS] - Cores dos objetivos de treino (centralizado em CSS Custom Properties) */
+/* Etapa 3 (Cartão F, 2026-09-27): altura da barra inferior = 56px + safe area do sistema
+   (Android/PWA com viewport-fit=cover). Sobrevive ao env() não suportado (0px).
+   O valor medido de runtime é publicado em --bottombar-height (bootstrap.js). */
 :root {
+  --bottombar-height: calc(var(--safe-area-bottom, 0px) + 56px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
   /* Contrato de camadas da visão Calendário > Dia */
@@ -106,23 +112,11 @@ body {
   margin: 0 auto;
   padding: 15px;
 }
+/* Etapa 3 (Rodada 2, 2026-09-27): rodapé .home-app-resumo removido da Home
+     (decisão do dono) — as regras abaixo ficam como referência da origem;
+     reaproveitar se o rodapé voltar a existir. */
 .view-section {
-  padding-bottom: 100px;
-}
-
-.home-app-resumo {
-  margin-top: 20px;
-  padding: 10px 12px;
-  border-top: 1px solid #2a2a2a;
-  text-align: center;
-}
-
-.home-app-resumo p {
-  margin: 0;
-  color: #a8a8a8;
-  /* Escala tipografica Etapa 2 (16/14/12): texto secundario 14px */
-  font-size: 0.875rem;
-  line-height: 1.4;
+  padding-bottom: calc(var(--bottombar-height) + 20px);
 }
 
 /* [TAG-STYLE-HEADER-NAV] - Header fixo e navegacao */
@@ -626,51 +620,56 @@ body {
   width: auto;
 }
 
-.header-nav {
+/* Etapa 3 (Cartão E, 2026-09-27): navegação principal em barra inferior fixa.
+   Substitui a antiga .header-nav (removeda). Identidade mantida: base #1a1a1a,
+   item ativo em gold. */
+.nav-inferior {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   display: flex;
   width: 100%;
-  justify-content: space-between;
+  justify-content: space-around;
   background: #1a1a1a;
+  border-top: 1px solid #2a2a2a;
   padding: 4px;
-  border-radius: 10px;
-  border: 1px solid #2a2a2a;
-  gap: 4px;
+  /* Etapa 3 (Cartão F): safe area inferior do sistema (Android/PWA). */
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
 }
 
-.header-nav .nav-link {
+.nav-inferior .nav-link-inferior {
   flex: 1;
   text-align: center;
   padding: 8px 6px;
-  border-radius: 5px;
+  border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 3px;
+  min-height: 44px;
   transition: all 0.3s ease;
   text-decoration: none;
   min-width: 0;
   white-space: nowrap;
-}
-
-.header-nav .nav-link.ativo {
-  background: #ffd700 !important;
-  color: #0d0d0d !important;
-  /* box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2); */
-}
-
-.header-nav .nav-link.inativo {
   color: #a0a0a0;
   background: transparent;
+}
+
+.nav-inferior .nav-link-inferior.ativo {
+  background: #ffd700 !important;
+  color: #0d0d0d !important;
 }
 
 .nav-icon-anim {
   transition: transform 0.2s ease;
 }
 
-.header-nav .nav-link:active .nav-icon-anim {
+.nav-inferior .nav-link-inferior:active .nav-icon-anim {
   transform: scale(1.15);
 }
 .btn {
@@ -840,7 +839,6 @@ body {
 
 #btnFlutuanteAdicionar {
   position: fixed;
-  bottom: 30px;
   right: 25px;
   width: 60px;
   height: 60px;
@@ -856,6 +854,12 @@ body {
   align-items: center;
   justify-content: center;
   transition: transform 0.2s ease;
+  /* Etapa 3 (Rodada 2, 2026-09-27): FAB da tela Alunos sobe para ACIMA da
+     barra inferior (16px de respiro). O token --bottombar-height ja inclui a
+     safe area (medido em runtime no bootstrap.js) — nao somar env() de novo
+     aqui (na rodada do Cartão F ficava em safe+16, i.e. DENTRO da barra de
+     61px; decisão do dono na Rodada 2: ajustar FAB). */
+  bottom: calc(var(--bottombar-height, 0px) + 16px);
 }
 #btnFlutuanteAdicionar:active {
   transform: scale(0.9);
@@ -1314,35 +1318,10 @@ body {
 .home-kpi-card-danger .home-kpi-label {
   color: #c7a9a9;
 }
-.btn-config-icon {
-  background: #1c1c1c;
-  color: #ffd700;
-  border: 1px solid #2e2e2e;
-  border-radius: 10px;
-  width: 42px;
-  height: 42px;
-  /* Etapa 2 (Cartão B, 2026-09-26): piso de toque 44px (botões do dia: novo agendamento/config grade) */
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-config-icon .fa-gear {
-  transition: transform 0.3s ease;
-}
-
-.btn-config-icon:hover .fa-gear {
-  transform: rotate(45deg);
-}
-
-.btn-config-icon:active {
-  transform: scale(0.92);
-  border-color: #ffd700;
-}
-
+/* Etapa 3 (Rodada 2, 2026-09-27): .btn-config-icon era dos 2 botões icon-only
+   da 2ª linha do modo Dia da Home (#btnHomeDiaNovaAgenda/#btnHomeDiaConfigAgenda),
+   removida nesta rodada; nenhuma outra tela usa a classe (a Configuração de
+   Grade migrou para o modal Área do usuário, como botão de texto .btn). */
 .escopo-recorrencia-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -2606,8 +2585,11 @@ body {
 .toast.show {
   opacity: 1;
   transform: translateY(0);
-  /* Visível: fica acima do FAB — o FAB ocupa a faixa de 30 a 90px da base (Fase 0.1). */
-  bottom: 100px;
+  /* Etapa 3 (Rodada 2, 2026-09-27): acima do FAB agora que ele está em
+     barra+16 (FAB Alunos 60px termina em ~barra+92px da base) → barra+82
+     ainda cobre o caso mais baixo (FAB Home 58px) e deixa 6-16px de respiro;
+     mantém a reserva vertical da Fase 0.1 acima da grade. */
+  bottom: calc(var(--bottombar-height, 0px) + 82px);
   pointer-events: auto;
 }
 .toast.error {
@@ -2937,8 +2919,8 @@ body {
 }
 .btn-weekly-add {
   position: fixed;
-  bottom: 30px;
-  right: 24px;
+  bottom: calc(var(--bottombar-height, 0px) + 16px);
+  right: 25px;
   width: 58px;
   height: 58px;
   border-radius: 50%;
@@ -2956,7 +2938,19 @@ body {
     transform 0.2s ease,
     box-shadow 0.2s ease,
     filter 0.2s ease;
+  /* Etapa 3 (Rodada 2, 2026-09-27): o FAB assume o "Novo agendamento" nos dois
+     modos da Home (Semana e Dia — criado dinamicamente em view-home.js como
+     #fabNovoHome). Ancorado sobre a barra inferior (token ja inclui safe
+     area); o z acima fica no #fabNovoHome (a barra é 100, o FAB precisa
+     ganhar o toque). */
 }
+
+#fabNovoHome {
+  z-index: 100;
+}
+
+/* Rodada 3 da Etapa 3 (2026-09-27): a regra #appEnvBadge (tarja "LOCAL") saiu
+   junto com o elemento, removido de api-config.js a pedido do dono. */
 
 .btn-weekly-add:hover {
   transform: translateY(-2px);
@@ -3062,11 +3056,8 @@ body {
     gap: 0;
   }
 
-  .header-nav .nav-link {
-    font-size: 0.75rem;
-    padding: 8px 4px;
-    gap: 5px;
-  }
+  /* Etapa 3 (Cartão E): o override mobile da antiga .header-nav foi removido —
+     a navegação vive em .nav-inferior (base, sem media query). */
 
   .nav-calendario {
     flex-wrap: wrap;
@@ -3116,16 +3107,8 @@ body {
     margin-left: 12px;
   }
 
-  .home-weekly-nav-row .sync-actions-row {
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    column-gap: 8px;
-    row-gap: 4px;
-  }
-
-  .home-weekly-nav-row .sync-actions-row #btnSyncBanco {
-    flex: 0 0 auto;
-  }
+  /* Etapa 3 (Cartão G): a 2ª linha da topbar (sync-actions-row) saiu de index.html.
+     A regra do #btnSyncBanco vive agora no modal Área do usuário. */
 
   .home-kpi-grid {
     gap: 6px;
@@ -3181,16 +3164,8 @@ body {
     gap: 10px;
   }
 
-  .header-nav {
-    gap: 6px;
-  }
-
-  .header-nav .nav-link {
-    flex-direction: row;
-    padding: 9px 12px;
-    gap: 8px;
-    border-radius: 10px;
-  }
+  /* Etapa 3 (Cartão E): a navegação migrou para .nav-inferior — os overrides
+     desktop da antiga .header-nav foram removidos. */
 
   .alunos-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));

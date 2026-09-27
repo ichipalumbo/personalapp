@@ -4,7 +4,11 @@
     <meta name="google-site-verification" content="qNUuIzS7kX7_fwgDO8IWbTBTwjhYTLlKVBkZzknSNV0" />
     <!-- [TAG-HTML-HEAD] - Metadados, Título e Estilos Externos -->
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Etapa 3 (Cartão F): viewport-fit=cover habilita env(safe-area-inset-bottom) em PWA/Android. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#1e88e5" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -64,19 +68,11 @@
             </div>
           </div>
         </div>
-
-        <nav class="header-nav">
-          <a href="#" class="nav-link ativo" data-target="tela-home">
-            <i class="fa-solid fa-house-chimney nav-icon-anim"></i> Home
-          </a>
-          <a href="#" class="nav-link inativo" data-target="tela-financas">
-            <i class="fa-solid fa-wallet nav-icon-anim"></i> Finanças
-          </a>
-          <a href="#" class="nav-link inativo" data-target="tela-alunos">
-            <i class="fa-solid fa-users nav-icon-anim"></i> Alunos
-          </a>
-        </nav>
       </header>
+
+      <!-- Etapa 3 (Cartão E, 2026-09-27): a navegação principal migrou para a barra
+           inferior fixa (decisão donal — substitui a barra superior; título e login
+           permanecem no topo). A barra fica logo antes do fim do container. -->
 
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section">
@@ -128,6 +124,7 @@
                     <span
                       id="periodoSemanaHomeLabel"
                       class="home-weekly-periodo"
+                      aria-live="polite"
                       >Semana de Trabalho</span
                     >
                     <button
@@ -147,46 +144,9 @@
                   </button>
                 </div>
               </div>
-              <div
-                class="home-weekly-nav-row"
-                style="justify-content: flex-end; margin-top: 6px"
-              >
-                <div
-                  class="sync-actions-row"
-                  style="
-                    display: flex;
-                    flex-direction: row;
-                    align-items: center;
-                    gap: 12px;
-                  "
-                >
-                  <button
-                    id="btnSyncBanco"
-                    class="btn btn-sm"
-                    style="
-                      background: #1e2a18;
-                      color: #b7f2b1;
-                      border: 1px solid #35592f;
-                      font-size: 0.875rem;
-                      padding: 5px 12px;
-                      border-radius: 8px;
-                      display: inline-flex;
-                      align-items: center;
-                      gap: 6px;
-                      cursor: pointer;
-                      transition: all 0.3s ease;
-                    "
-                    onclick="
-                      window.sincronizarBancoDados &&
-                        window.sincronizarBancoDados()
-                    "
-                    title="Forçar sincronização dos dados com o MongoDB"
-                  >
-                    <i class="fa-solid fa-database"></i>
-                    <span id="btnSyncBancoText">Sincronizar Dados</span>
-                  </button>
-                </div>
-              </div>
+              <!-- Etapa 3 (Cartões E/F/G, 2026-09-27): a 2ª linha (Sincronizar Dados)
+                   saiu do topo; o botão agora vive na seção "Dados" do modal Área do
+                   usuário. A topbar da Home consolidou em uma única linha. -->
             </div>
           </div>
         </div>
@@ -196,27 +156,16 @@
             class="calendario-semanal-home-grid"
           ></div>
         </div>
-        <button
-          id="btnNovaAgendaSemanal"
-          class="btn-weekly-add"
-          type="button"
-          title="Novo agendamento"
-          aria-label="Novo agendamento"
-        >
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <footer class="home-app-resumo" aria-label="Resumo do aplicativo">
-          <p>App de Gerenciamento de Personal Trainer</p>
-        </footer>
+        <!-- Etapa 3 (Rodada 2, 2026-09-27): o botão "Novo agendamento" da semana
+             (#btnNovaAgendaSemanal) e o rodapé .home-app-resumo saíram daqui.
+             O novo agendamento é o FAB dinâmico (#fabNovoHome, criado em
+             view-home.js) e o rodapé não tinha mais função com a barra inferior
+             fixa + topbar em uma linha (decisão do dono). -->
       </main>
       <!-- [TAG-HTML-TELA-FINANCAS] - Finanças por ciclo de cobrança -->
       <main id="tela-financas" class="view-section" style="display: none"></main>
       <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
-      <main
-        id="tela-alunos"
-        class="view-section"
-        style="display: none; padding-bottom: 80px"
-      >
+      <main id="tela-alunos" class="view-section" style="display: none">
         <section class="alunos-panel">
           <h3 style="font-size: 1.1rem; color: #e0e0e0; margin-bottom: 15px">
             <i
@@ -512,6 +461,22 @@
           </div>
         </div>
       </main>
+
+      <!-- [TAG-HTML-NAV-INFERIOR] - Etapa 3 (Cartão E): navegação principal em barra inferior fixa -->
+      <nav class="nav-inferior" aria-label="Navegação principal">
+        <a href="#" class="nav-link-inferior ativo" data-target="tela-home" aria-current="page">
+          <i class="fa-solid fa-house-chimney nav-icon-anim" aria-hidden="true"></i>
+          <span>Home</span>
+        </a>
+        <a href="#" class="nav-link-inferior" data-target="tela-financas">
+          <i class="fa-solid fa-wallet nav-icon-anim" aria-hidden="true"></i>
+          <span>Finanças</span>
+        </a>
+        <a href="#" class="nav-link-inferior" data-target="tela-alunos">
+          <i class="fa-solid fa-users nav-icon-anim" aria-hidden="true"></i>
+          <span>Alunos</span>
+        </a>
+      </nav>
     </div>
     <!-- [TAG-HTML-MODAIS] - Modais Compartilhados -->
     <div
@@ -1714,6 +1679,37 @@
                 <span>Desconectar</span>
               </button>
             </div>
+          </div>
+
+          <!-- Etapa 3 (Cartão G, 2026-09-27): "Sincronizar Dados" migrou para cá,
+               saindo do topo da Home (decisão donal). Mesma função/IDs de antes. -->
+          <div class="settings-section">
+            <h3 class="settings-section-title">Dados</h3>
+            <p class="settings-description">Forçar a sincronização dos dados com o MongoDB e configurar os limites de horas da agenda diária.</p>
+            <button
+              id="btnSyncBanco"
+              type="button"
+              class="btn btn-secondary"
+              style="width: 100%; margin-top: 8px"
+              onclick="window.sincronizarBancoDados && window.sincronizarBancoDados()"
+              title="Forçar sincronização dos dados com o MongoDB"
+            >
+              <i class="fa-solid fa-database" aria-hidden="true"></i>
+              <span id="btnSyncBancoText">Sincronizar Dados</span>
+            </button>
+            <!-- Etapa 3 (Rodada 2, 2026-09-27): "Configurar Grade Horária" veio da
+                 2ª linha do modo Dia da Home (decisão do dono). Mesma função e
+                 mesmo comportamento de abertura (window.abrirModalConfigAgenda). -->
+            <button
+              type="button"
+              class="btn btn-secondary"
+              style="width: 100%; margin-top: 8px"
+              onclick="window.abrirModalConfigAgenda && window.abrirModalConfigAgenda()"
+              title="Configurar Grade Horária"
+            >
+              <i class="fa-solid fa-gear" aria-hidden="true"></i>
+              Configurar Grade Horária
+            </button>
           </div>
 
           <div class="settings-section">
