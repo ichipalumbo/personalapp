@@ -147,8 +147,8 @@
                 <p style="margin:4px 0 0;color:#9a9a9a;font-size:0.875rem;">Ciclo vigente por aluno, com leitura cacheada e escrita confirmada pelo backend.</p>
               </div>
               <div style="text-align:right;">
-                <div id="financasCacheLabel" style="font-size:0.75rem;color:#8e8e8e;">${cacheLabel}</div>
-                <div id="financasSyncState" style="font-size:0.75rem;color:#8e8e8e;margin-top:4px;"></div>
+                <div id="financasCacheLabel" style="font-size:0.75rem;color:#909090;">${cacheLabel}</div>
+                <div id="financasSyncState" style="font-size:0.75rem;color:#909090;margin-top:4px;"></div>
               </div>
             </div>
           </section>
@@ -196,7 +196,7 @@
         const conteudo = document.getElementById('financasConteudo');
         if (!conteudo) return;
         conteudo.innerHTML = `
-          <div class="agenda-panel" style="text-align:center;color:#8e8e8e;">
+          <div class="agenda-panel" style="text-align:center;color:#909090;">
             <i class="fa-solid fa-wallet" style="font-size:2rem;margin-bottom:10px;display:block;color:#ffd700;"></i>
             <p style="margin:0;font-size:1rem;">${mensagem}</p>
           </div>
@@ -230,10 +230,10 @@
         const valorTotal = Number(linha && linha.valorTotal) || 0;
         const valorExibicao = formatarMoeda(valorTotal);
         const quantidadeHtml = Number.isFinite(quantidade) && quantidade !== 0
-            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.75rem;">Qtd.: ${quantidade}</div>`
+            ? `<div style="margin-top:4px;color:#909090;font-size:0.75rem;">Qtd.: ${quantidade}</div>`
             : '';
         const notaHtml = nota
-            ? `<div style="margin-top:4px;color:#8e8e8e;font-size:0.75rem;">Nota: ${nota}</div>`
+            ? `<div style="margin-top:4px;color:#909090;font-size:0.75rem;">Nota: ${nota}</div>`
             : '';
 
         let rotuloTipo = 'Lançamento';
@@ -293,16 +293,16 @@
 
     function renderizarConteudoExtrato(ciclo) {
         if (!ciclo) {
-            return '<div style="color:#8e8e8e;font-size:0.875rem;">Extrato indisponível.</div>';
+            return '<div style="color:#909090;font-size:0.875rem;">Extrato indisponível.</div>';
         }
 
         if (ciclo.extrato == null) {
-            return '<div style="color:#8e8e8e;font-size:0.875rem;">Extrato não registrado para este ciclo.</div>';
+            return '<div style="color:#909090;font-size:0.875rem;">Extrato não registrado para este ciclo.</div>';
         }
 
         const linhas = Array.isArray(ciclo.extrato) ? ciclo.extrato : [];
         if (linhas.length === 0) {
-            return '<div style="color:#8e8e8e;font-size:0.875rem;">Não há lançamentos.</div>';
+            return '<div style="color:#909090;font-size:0.875rem;">Não há lançamentos.</div>';
         }
 
         const totalLabel = ciclo.metodoCobranca === 'valor_fixo'
@@ -334,7 +334,7 @@
     function renderizarListaHistorico(historico) {
         const lista = Array.isArray(historico) ? historico : [];
         if (lista.length === 0) {
-            return '<p style="margin:0;color:#8e8e8e;font-size:0.875rem;">Sem ciclos anteriores.</p>';
+            return '<p style="margin:0;color:#909090;font-size:0.875rem;">Sem ciclos anteriores.</p>';
         }
 
         return `
@@ -378,7 +378,8 @@
         const estado = obterEstadoHistorico(alunoId);
 
         if (estado.status === 'carregando') {
-            return '<p style="margin:0;color:#8e8e8e;font-size:0.875rem;">Carregando ciclos anteriores...</p>';
+            // Etapa 2 (Cartão D): #8e8e8e → #909090 (4.5:1 no card #2a2a2a)
+        return '<p style="margin:0;color:#909090;font-size:0.875rem;">Carregando ciclos anteriores...</p>';
         }
         if (estado.status === 'erro') {
             return `
@@ -493,22 +494,22 @@
             ` : `
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo atual</div>
+                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo atual</div>
                   <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
                   <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'atrasado' ? 'Venceu' : 'Vigente'}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
+                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
                   <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${metodo}</div>
                   <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'pago' ? 'Pagamento confirmado' : 'Pagamento manual'}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
+                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
                   <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
                   <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
                 </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#8e8e8e;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
+                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
                   <div style="margin-top:6px;font-size:1rem;color:#ffd700;font-weight:800;">${total}</div>
                   <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'pago' ? 'Pago' : 'A receber'}</div>
                 </div>

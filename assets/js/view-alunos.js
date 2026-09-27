@@ -873,7 +873,7 @@ window.renderizarListaAlunos = function() {
                             <strong style="display: block; color: #FFF; font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
                             <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
                                 <span class="objetivo-${objetivoClass}" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${objetivo}</span>
-                                <span style="color: #444; font-size: 0.75rem;">•</span>
+                                <span style="color: #969696; font-size: 0.75rem;">•</span> <!-- Etapa 2 (Cartão D): 1.47:1 → 4.85:1 sobre o card #2a2a2a -->
                                 <span style="font-size: 0.75rem; color: #AAA; font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
                             </div>
                         </div>

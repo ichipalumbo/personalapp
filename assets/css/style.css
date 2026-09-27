@@ -2789,7 +2789,7 @@ body {
   background: rgba(255, 184, 120, 0.1);
 }
 .modal-escolha-icone-bloqueio {
-  color: #dc2127; /* Tomato — bloqueio */
+  color: #ff5c54; /* Tomato claro — bloqueio (Etapa 2 Cartão D: 4.5:1) */
   background: rgba(220, 33, 39, 0.1);
 }
 .modal-escolha-icone-deslocamento {
@@ -2809,7 +2809,7 @@ body {
   background: rgba(255, 184, 120, 0.1);
 }
 .modal-escolha-icone-exclusao-total {
-  color: #dc2127; /* Tomato — exclusão total */
+  color: #ff5c54; /* Tomato claro — exclusão total (Etapa 2 Cartão D: 4.5:1) */
   background: rgba(220, 33, 39, 0.1);
 }
 .modal-exclusao {

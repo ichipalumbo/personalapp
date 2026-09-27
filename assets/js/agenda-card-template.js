@@ -10,7 +10,7 @@
         recorrente: 'background: rgba(255, 215, 0, 0.15); color: #FFD700; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         unico: 'background: rgba(129, 199, 132, 0.15); color: #81C784; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
         deslocamento: 'background: rgba(81, 183, 73, 0.15); color: #51b749; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
-        bloqueio: 'background: rgba(220, 33, 39, 0.15); color: #dc2127; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;',
+        bloqueio: 'background: rgba(220, 33, 39, 0.15); color: #ff5c54; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;', // Etapa 2 (Cartão D): 3.85:1 → 4.5:1 sobre o card de bloqueio
         googleAgenda: 'background: rgba(66, 133, 244, 0.15); color: #4285F4; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;'
     };
 
@@ -292,7 +292,7 @@
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #dc2127;">Bloqueado</span>
+                            <span class="agenda-dia-aula-local" style="color: #ff5c54;">Bloqueado</span>
                             <div class="agenda-semana-card-meta">
                                 ${tagStatusGoogleMeta}
                             </div>
@@ -320,7 +320,7 @@
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #dc2127;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
+                            <span class="agenda-dia-aula-local" style="color: #ff5c54;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
                             <div class="agenda-semana-card-meta">
                                 ${tagStatusBloqueioMeta}
                             </div>
