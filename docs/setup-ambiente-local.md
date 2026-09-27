@@ -285,12 +285,17 @@ contraste, regressão visual), usar:
 Como simular no DevTools: F12 → device toolbar → dispositivo custom →
 largura `433`, altura `762`, zoom `100%`, device scale factor `2.81`.
 
-**Playwright (agentes) — `setViewportSize` sozinho NÃO garante o DPR.**
+**Playwright (agentes) — `setViewportSize` sozinho NÃO garante DPR nem modo mobile.**
 `page.setViewportSize({ width: 433, height: 762 })` define só o viewport em
-px CSS; o `devicePixelRatio` da página fica com o valor herdado do
-lançamento do browser (medido: uma página já aberta ficou em DPR `2`, não
-`2.81`, mesmo com o viewport correto). Para garantir os dois juntos, forçar
-via CDP:
+px CSS. Sem mais nada, a página continua em **modo desktop**: mouse (não
+touch), `devicePixelRatio` herdado do lançamento do browser (medido: chegou
+a ficar em `2`, não `2.81`, mesmo com o viewport certo), `matchMedia
+'(pointer: coarse)'` e `'(hover: none)'` **falsos**, `ontouchstart` ausente,
+User-Agent de desktop. Qualquer código do app (CSS ou JS) que decida algo
+por esses sinais mede errado se só o viewport for setado.
+
+Para emular mobile de forma completa (viewport + DPR + touch + UA + mídia
+de ponteiro), forçar via CDP:
 
 ```js
 const cdp = await page.context().newCDPSession(page);
@@ -300,10 +305,35 @@ await cdp.send('Emulation.setDeviceMetricsOverride', {
   deviceScaleFactor: 2.81,
   mobile: true
 });
+await cdp.send('Emulation.setTouchEmulationEnabled', {
+  enabled: true,
+  maxTouchPoints: 5
+});
+await cdp.send('Emulation.setUserAgentOverride', {
+  userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+  platform: 'Android'
+});
+await cdp.send('Emulation.setEmitTouchEventsForMouse', {
+  enabled: true,
+  configuration: 'mobile'
+});
+await page.reload({ waitUntil: 'load' }); // alguns sinais só se refletem em matchMedia após reload
 ```
 
-Confirmar sempre com `page.evaluate(() => window.devicePixelRatio)` antes de
-medir/capturar — não presumir pelo `setViewportSize`.
+Confirmar sempre antes de medir/capturar — não presumir pelo `setViewportSize`:
+
+```js
+await page.evaluate(() => ({
+  dpr: window.devicePixelRatio,
+  w: window.innerWidth, h: window.innerHeight,
+  ontouch: 'ontouchstart' in window,
+  coarse: matchMedia('(pointer: coarse)').matches,
+  hoverNone: matchMedia('(hover: none)').matches
+}));
+```
+
+Esperado: `dpr: 2.81`, `w: 433`, `h: 762`, `ontouch: true`, `coarse: true`,
+`hoverNone: true`. Se qualquer um vier diferente, a emulação não foi aplicada.
 
 **Ressalvas:**
 
