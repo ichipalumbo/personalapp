@@ -184,11 +184,17 @@ secundária pedida pela pergunta 4 do diagnóstico.
 
 ## Registro de execução
 
+> **Fechamento (2026-09-27, verificado contra `git log`)**: os três cartões entraram na `main` via
+> **PR #63** (`6910621`) como um único commit do dono — **`7ccb736`** — que cobre E + F + G na
+> ordem em que foram executados. As rodadas 2 e 3 (FAB dinâmico, remoção da 2ª linha do modo Dia,
+> remoção da tarja LOCAL) também estão no `7ccb736`; os ajustes do modal Área do usuário e o gap
+> dos botões `.btn` entraram nas rodadas seguintes como `66593c9` e `3bbf152` (esta branch).
+
 | Cartão | Status | Commit do dono | Contagem antes → depois |
 | --- | --- | --- | --- |
-| E (barra inferior) | ✅ implementado 2026-09-27 — aguardando commit do dono | — | frontend 77/0 → 77/0 (medido) |
-| F (topo da Home + safe areas) | ✅ implementado 2026-09-27 — aguardando commit do dono | — | frontend 77/0 → 77/0 (medido) |
-| G (Sincronizar Dados → modal) | ✅ implementado 2026-09-27 — aguardando commit do dono | — | frontend 77/0 → 77/0 (medido) |
+| E (barra inferior) | ✅ concluído 2026-09-27 — commitado `7ccb736`, mergeado via PR #63 | `7ccb736` | frontend 77/0 → 77/0 (medido) |
+| F (topo da Home + safe areas) | ✅ concluído 2026-09-27 — commitado `7ccb736`, mergeado via PR #63 | `7ccb736` | frontend 77/0 → 77/0 (medido) |
+| G (Sincronizar Dados → modal) | ✅ concluído 2026-09-27 — commitado `7ccb736`, mergeado via PR #63 | `7ccb736` | frontend 77/0 → 77/0 (medido) |
 
 ## Registro da Etapa 3 (executado 2026-09-27, branch `feat/navegacao-e-topo`)
 

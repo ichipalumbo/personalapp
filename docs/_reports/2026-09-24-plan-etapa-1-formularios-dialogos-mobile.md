@@ -55,10 +55,10 @@ foco automático em **todas** as telas (não só mobile) e levar o foco para o
 
 ### Progresso por commit — validação contra o git (2026-09-24)
 
-> Os 12 commits da branch `fix/mobile-formularios-dialogos` foram conferidos um a um contra
-> `git log` + `git show --stat`. Todos os itens abaixo estavam marcados como "aguardando
-> commit do dono"; **todos já foram commitados** e os hashes e arquivos estão listados.
-> O working tree ainda tem **2 alterações não commitadas** (registradas no fim desta seção).
+> Os 12 commits da branch `fix/mobile-formularios-dialogos` (mais o fechamento da pendência,
+> `42a303f`) foram conferidos um a um contra `git log` + `git show --stat`. Todos os itens abaixo
+> estavam marcados como "aguardando commit do dono"; **todos já foram commitados** e os hashes e
+> arquivos estão listados. A pendência de commit (fim da seção) foi **fechada** no `42a303f`.
 
 - **Commit 1 (concluído, `6826b4a`):** correção mínima do modal de cadastro/edição de aluno em mobile.
   - Ajuste de semântica de diálogo (`role="dialog"`, `aria-modal`, `aria-labelledby`).
@@ -126,7 +126,11 @@ foco automático em **todas** as telas (não só mobile) e levar o foco para o
 
 ---
 
-### Pendência de commit (no working tree em 2026-09-24)
+### Pendência de commit (no working tree em 2026-09-24) — FECHADA
+
+> **Fechamento (2026-09-27, verificado contra `git log`)**: as duas alterações abaixo entraram no
+> commit **`42a303f`** — `docs(dialogs): conclude Etapa 1 plan and document fallback for
+> DialogController` — na mesma branch `fix/mobile-formularios-dialogos` (mergeada via PR #61).
 
 - `assets/js/view-financas.js` — restauração do fallback `modal.style.display = 'flex'` em `abrirDialogFinancas` + comentário. Sem ele, o teste `histórico não pago exibe ações e abre pagamento` falha.
 - `docs/_reports/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md` — reescrita da seção de progresso + status CONCLUÍDA.

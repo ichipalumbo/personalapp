@@ -180,7 +180,7 @@ Etapa 2: "Corrigir contrastes prioritários identificados no diagnóstico". (Ace
 
 | Cartão | Status | Commit do dono | Contagem antes → depois |
 | --- | --- | --- | --- |
-| A (tipografia) | ✅ commit `386b00c` (donor, 2026-09-26) | `386b00c` | frontend 77/0 → 77/0 |
+| A (tipografia) | ✅ commit `386b00c` (dono, 2026-09-26) | `386b00c` | frontend 77/0 → 77/0 |
 | B (toque) | ✅ commit `b9a3c07` (dono, 2026-09-27) | `b9a3c07` | frontend 77/0 → 77/0 (medido) |
 | C (foco/disabled/aria) | ✅ commit `81485c5` (dono, 2026-09-27) | `81485c5` | frontend 77/0 → 77/0 (medido) |
 | D (contraste) | ✅ commit `e73f312` (dono, 2026-09-27) | `e73f312` | frontend 77/0 → 77/0 (medido) |
