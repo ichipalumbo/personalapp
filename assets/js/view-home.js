@@ -69,7 +69,6 @@ function garantirHomeTabs() {
 
   const stickyHeader = homeMain.querySelector('.home-sticky-header');
   const weeklyGridPanel = homeMain.querySelector('.agenda-panel-semana');
-  const footer = homeMain.querySelector('.home-app-resumo');
   const existingTabs = homeMain.querySelector('.home-sticky-header .tab-tipo-agendamento');
 
   if (!existingTabs) {
@@ -95,25 +94,20 @@ function garantirHomeTabs() {
   dayNavRow.id = 'homeDayNavRow';
   dayNavRow.className = 'home-weekly-toolbar';
   dayNavRow.style.display = 'none';
+  // Etapa 3 (Rodada 2, 2026-09-27): a 2ª linha de ações (Novo Agendamento /
+  // Configurar Grade Horária) saiu daqui — o novo agendamento virou o FAB
+  // dinâmico (#fabNovoHome) e o botão de grade migrou para a seção "Dados" do
+  // modal Área do usuário (decisão do dono). O modo Dia fica em uma linha só,
+  // como a Semana.
   dayNavRow.innerHTML = `
     <div class="home-weekly-nav-row">
       <div class="nav-calendario nav-calendario--home nav-calendario--week-home">
         <div class="nav-calendario-main">
-          <button id="btnHomeDiaAnterior" class="btn btn-secondary btn-sm" title="Dia Anterior"><i class="fa-solid fa-chevron-left"></i></button>
+          <button id="btnHomeDiaAnterior" class="btn btn-secondary btn-sm" title="Dia Anterior" aria-label="Dia Anterior"><i class="fa-solid fa-chevron-left"></i></button>
           <span id="dataAtualHome" class="home-weekly-periodo">Carregando...</span>
-          <button id="btnHomeDiaProximo" class="btn btn-secondary btn-sm" title="Próximo Dia"><i class="fa-solid fa-chevron-right"></i></button>
+          <button id="btnHomeDiaProximo" class="btn btn-secondary btn-sm" title="Próximo Dia" aria-label="Próximo Dia"><i class="fa-solid fa-chevron-right"></i></button>
         </div>
         <button id="btnHomeDiaHoje" class="btn btn-secondary btn-sm btn-calendario-hoje">Hoje</button>
-      </div>
-    </div>
-    <div class="home-weekly-nav-row" style="justify-content:flex-end;margin-top:6px">
-      <div style="display:flex;gap:8px">
-        <button id="btnHomeDiaNovaAgenda" class="btn-config-icon" title="Novo Agendamento">
-          <i class="fa-solid fa-calendar-plus" style="color:#ffd700"></i>
-        </button>
-        <button id="btnHomeDiaConfigAgenda" class="btn-config-icon" title="Configurar Grade Horária">
-          <i class="fa-solid fa-gear fa-spin-hover" style="color:#ffd700"></i>
-        </button>
       </div>
     </div>
   `;
@@ -155,21 +149,6 @@ function garantirHomeTabs() {
     window.renderizarHomeDia();
     if (typeof window.animarTrocaPeriodo === 'function') window.animarTrocaPeriodo(document.getElementById('agendaGridHomeHome'), 'avanca');
   });
-  bindOnce('#btnHomeDiaConfigAgenda', () => {
-    window.abrirModalConfigAgenda();
-  });
-  bindOnce('#btnHomeDiaNovaAgenda', () => {
-    if (typeof window.abrirNovoAgendamento === 'function') {
-      const horaInicioHome = agendaConfig && typeof agendaConfig.horaInicio === "number"
-        ? agendaConfig.horaInicio
-        : 8;
-      window.abrirNovoAgendamento({
-        dataSelecionada: new Date(window.dataSelecionada),
-        hora: `${String(horaInicioHome).padStart(2, '0')}:00`
-      });
-    }
-  });
-
   const painelDia = document.getElementById('homeDayPanel');
   if (painelDia && typeof window.ativarSwipePeriodo === 'function' && painelDia.dataset.swipeAtivo !== 'true') {
     painelDia.dataset.swipeAtivo = 'true';
@@ -202,8 +181,6 @@ window.alternarModoHome = function (modo) {
   const weekToolbar = document.querySelector('.home-weekly-toolbar');
   const weekGridPanel = document.querySelector('.agenda-panel-semana');
   const dayPanel = document.getElementById('homeDayPanel');
-  const btnNova = document.getElementById('btnNovaAgendaSemanal');
-  const footer = document.querySelector('.home-app-resumo');
 
   if (semBtn) semBtn.classList.toggle('active', window.modoHomeAtivo === 'semana');
   if (diaBtn) diaBtn.classList.toggle('active', window.modoHomeAtivo === 'dia');
@@ -211,9 +188,10 @@ window.alternarModoHome = function (modo) {
   const dayNavRow = document.getElementById('homeDayNavRow');
   if (dayNavRow) dayNavRow.style.display = window.modoHomeAtivo === 'dia' ? '' : 'none';
   if (weekGridPanel) weekGridPanel.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
-  if (btnNova) btnNova.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
-  if (footer) footer.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
   if (dayPanel) dayPanel.style.display = window.modoHomeAtivo === 'dia' ? '' : 'none';
+  // Etapa 3 (Rodada 2): o FAB fica visível nos DOIS modos — a ação muda por
+  // modo (semana abre o escopo da semana; dia abre o dia selecionado).
+  window.trocarFABNovoHome();
 
   if (window.modoHomeAtivo === 'semana') {
     window.renderizarHomeSemana();
@@ -338,7 +316,9 @@ window.renderizarAgendaDia = function (gridId) {
 
   const inicio = agendaConfig.horaInicio;
   const fim = agendaConfig.horaFim;
-  const hourHeight = 84; // 84px por hora (confortável e espaçoso, 42px por meia hora)
+  // Etapa 2 (Cartão B, 2026-09-26): slot de 30min alvo frequente → 48px → 96px/hora.
+  // Mantém a proporção da grade (linhas, labels e cards de evento escalam juntos).
+  const hourHeight = 96; // 96px por hora (confortável e espaçoso, 48px por meia hora)
 
   // Filtrar compromissos do dia selecionado
   const compromissosDoDia = aulas.filter((a) =>
@@ -809,6 +789,83 @@ window.abrirModalConfigAgenda = function () {
   }
 
   modal.style.display = "flex";
+};
+
+// ── FAB dinâmico da Home (Etapa 3, Rodada 2, 2026-09-27) ──────────────────────────────────────
+// O botão "Novo agendamento" da Semana (#btnNovaAgendaSemanal) e a 2ª linha de
+// ações do Dia (#btnHomeDiaNovaAgenda/#btnHomeDiaConfigAgenda) saíram do topo.
+// Este FAB assume "Novo agendamento" nos dois modos: na Semana abre a semana
+// inteira (mesma mecânica do antigo botão, via abrirNovoAgendamentoSemana, que
+// deixa o escopo para o próprio dialog); no Dia abre o dia selecionado na hora
+// inicial da grade. A Configuração de Grade migrou para a seção "Dados" do
+// modal Área do usuário.
+window.trocarFABNovoHome = function () {
+  const homeMain = document.getElementById('tela-home');
+  // O FAB só vive enquanto a Home estiver em tela; as demais telas têm seu
+  // próprio FAB (#btnFlutuanteAdicionar, tela de Alunos).
+  const deveTerEmHome = homeMain && homeMain.style.display !== 'none';
+  let fab = document.getElementById('fabNovoHome');
+  if (!deveTerEmHome) {
+    if (fab) fab.remove();
+    return;
+  }
+  if (!fab) {
+    fab = document.createElement('button');
+    fab.id = 'fabNovoHome';
+    fab.type = 'button';
+    document.body.appendChild(fab);
+  }
+  fab.className = 'btn-weekly-add fab-novo-home';
+  const diaModo = window.modoHomeAtivo === 'dia';
+  const rotulo = diaModo
+    ? 'Novo agendamento para o dia selecionado'
+    : 'Novo agendamento para a semana selecionada';
+  fab.title = rotulo;
+  fab.setAttribute('aria-label', rotulo);
+  fab.innerHTML = '<i class="fa-solid fa-plus" aria-hidden="true"></i>';
+  fab.onclick = () => {
+    if (diaModo) {
+      const horaInicioHome = (typeof agendaConfig !== 'undefined' && agendaConfig && typeof agendaConfig.horaInicio === 'number')
+        ? agendaConfig.horaInicio
+        : 8;
+      if (typeof window.abrirNovoAgendamento === 'function') {
+        window.abrirNovoAgendamento({
+          dataSelecionada: new Date(window.dataSelecionada),
+          hora: `${String(horaInicioHome).padStart(2, '0')}:00`
+        });
+      }
+      return;
+    }
+    // Semana: mesma mecânica do antigo #btnNovaAgendaSemanal (data base =
+    // a data selecionada se estiver dentro da semana, senão a referência da
+    // semana) e horário pela proxima hora cheia.
+    const referenciaSemana = window.semanaReferencia instanceof Date && !Number.isNaN(window.semanaReferencia.getTime())
+      ? new Date(window.semanaReferencia)
+      : new Date();
+    const diaSemanaReferencia = referenciaSemana.getDay();
+    const deslocamentoParaSegunda = diaSemanaReferencia === 0 ? -6 : 1 - diaSemanaReferencia;
+    const inicioSemana = new Date(
+      referenciaSemana.getFullYear(), referenciaSemana.getMonth(),
+      referenciaSemana.getDate() + deslocamentoParaSegunda, 0, 0, 0, 0
+    );
+    const fimSemana = new Date(
+      inicioSemana.getFullYear(), inicioSemana.getMonth(), inicioSemana.getDate() + 6,
+      23, 59, 59, 999
+    );
+    const dataSelecionadaGlobal = window.dataSelecionada instanceof Date && !Number.isNaN(window.dataSelecionada.getTime())
+      ? window.dataSelecionada
+      : null;
+    const dataEstaNaSemanaAtiva = dataSelecionadaGlobal
+      ? dataSelecionadaGlobal >= inicioSemana && dataSelecionadaGlobal <= fimSemana
+      : false;
+    const dataBase = dataEstaNaSemanaAtiva ? dataSelecionadaGlobal : referenciaSemana;
+    if (typeof window.abrirNovoAgendamento === 'function') {
+      window.abrirNovoAgendamento({
+        dataSelecionada: new Date(dataBase.getFullYear(), dataBase.getMonth(), dataBase.getDate(), 0, 0, 0, 0),
+        hora: typeof window.obterProximaHoraCheiaSemana === 'function' ? window.obterProximaHoraCheiaSemana() : undefined
+      });
+    }
+  };
 };
 
 // ── Event Listeners (DOMContentLoaded) ────────────────────────────────────────────────────────

@@ -161,8 +161,10 @@ No console do browser, com o frontend aberto em `localhost:5500`:
 [auth] Sessão Google ativa para: <sua conta>
 ```
 
-Há também uma tarja **LOCAL** fixa no canto inferior direito, criada pelo `api-config.js`
-quando o ambiente é local. Se a tarja não aparecer, você está falando com produção.
+A confirmação de ambiente local é esse log acima: `ambiente: 'local'` com a
+`apiBaseUrl` de `localhost:5000`. Se o log der `producao`, você está falando com a
+API de produção. (Até a Rodada 3 da Etapa 3 era uma tarja **LOCAL** no canto da
+tela; a partir daí a verificação é só pelo console.)
 
 E estes dois `404` são o comportamento **correto**:
 
@@ -269,13 +271,89 @@ acrescente o par em `DEPENDENCIAS_DE_CARGA` no arquivo de teste.
 
 ---
 
+## 9. Viewport de referência para validação do mobile
+
+O app é de uso pessoal, e o celular do dono é o **alvo de aceite** da UI
+mobile. Ao medir/validar tela no mobile (tipografia, alvos de toque,
+contraste, regressão visual), usar:
+
+| Propriedade | Valor |
+|---|---|
+| Viewport em CSS | **433 × 762 px** |
+| DPR (`devicePixelRatio`) | **2.81** (≈ 1216 × 2141 px físicos) |
+
+Como simular no DevTools: F12 → device toolbar → dispositivo custom →
+largura `433`, altura `762`, zoom `100%`, device scale factor `2.81`.
+
+**Playwright (agentes) — `setViewportSize` sozinho NÃO garante DPR nem modo mobile.**
+`page.setViewportSize({ width: 433, height: 762 })` define só o viewport em
+px CSS. Sem mais nada, a página continua em **modo desktop**: mouse (não
+touch), `devicePixelRatio` herdado do lançamento do browser (medido: chegou
+a ficar em `2`, não `2.81`, mesmo com o viewport certo), `matchMedia
+'(pointer: coarse)'` e `'(hover: none)'` **falsos**, `ontouchstart` ausente,
+User-Agent de desktop. Qualquer código do app (CSS ou JS) que decida algo
+por esses sinais mede errado se só o viewport for setado.
+
+Para emular mobile de forma completa (viewport + DPR + touch + UA + mídia
+de ponteiro), forçar via CDP:
+
+```js
+const cdp = await page.context().newCDPSession(page);
+await cdp.send('Emulation.setDeviceMetricsOverride', {
+  width: 433,
+  height: 762,
+  deviceScaleFactor: 2.81,
+  mobile: true
+});
+await cdp.send('Emulation.setTouchEmulationEnabled', {
+  enabled: true,
+  maxTouchPoints: 5
+});
+await cdp.send('Emulation.setUserAgentOverride', {
+  userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+  platform: 'Android'
+});
+await cdp.send('Emulation.setEmitTouchEventsForMouse', {
+  enabled: true,
+  configuration: 'mobile'
+});
+await page.reload({ waitUntil: 'load' }); // alguns sinais só se refletem em matchMedia após reload
+```
+
+Confirmar sempre antes de medir/capturar — não presumir pelo `setViewportSize`:
+
+```js
+await page.evaluate(() => ({
+  dpr: window.devicePixelRatio,
+  w: window.innerWidth, h: window.innerHeight,
+  ontouch: 'ontouchstart' in window,
+  coarse: matchMedia('(pointer: coarse)').matches,
+  hoverNone: matchMedia('(hover: none)').matches
+}));
+```
+
+Esperado: `dpr: 2.81`, `w: 433`, `h: 762`, `ontouch: true`, `coarse: true`,
+`hoverNone: true`. Se qualquer um vier diferente, a emulação não foi aplicada.
+
+**Ressalvas:**
+
+- **433px fica acima do breakpoint `@media (max-width: 430px)`** do
+  `assets/css/style.css`. Neste viewport, os modais abrem **centralizados**,
+  não em tela cheia pela base. O piso de 16px dos campos de formulário **não**
+  depende daquele breakpoint (é global).
+- 320×568 e 390×844 (usados nas validações dos Cartões A/B da Etapa 2)
+  continuam válidos como **stress test**: são menores que a referência e
+  capturam estouro que o 433px esconderia.
+
+---
+
 ## Armadilhas conhecidas
 
 | Sintoma | Causa real |
 |---|---|
 | **Todas as rotas protegidas respondem 500** com `"Google auth is not configured on the server."` | `GOOGLE_CLIENT_ID` vazio no `.env`. O `requireAuth` falha **antes** de validar o token e antes de tocar o banco — o sintoma parece falha de banco, mas não é. |
 | **Login falha com `origin_mismatch`** | Acessou por `127.0.0.1:5500` em vez de `localhost:5500`, ou a origem não está no Google Cloud Console. |
-| **A tarja LOCAL não aparece** | O hostname não é `localhost`/`127.0.0.1`/`::1` — o frontend está apontando para a API de produção. |
+| **O log `[api-config] Ambiente detectado` não dá `local`** | O hostname não é `localhost`/`127.0.0.1`/`::1` — o frontend está apontando para a API de produção. |
 | **`❌ Erro: Nenhuma variável de ambiente de conexão ao MongoDB foi encontrada`** | `MONGODB_URI` vazia ou ausente no `.env`. |
 | **Alteração no `.env` não fez efeito** | O `.env` é lido no boot. Reinicie o backend. |
 | **Comando de terminal "rodando" sem dar retorno** (a ferramenta reporta "moved to background") | `node -e "..."` com aspas aninhadas: o PowerShell quebra o parse e o shell fica em espera (prompt de continuação `>>` repetindo a linha). O comando **não encerrou** — não é um comando demorado. Conferir `>>` no output, matar o terminal e rodar de novo sem JS em linha (criar script `.tmp.js` e remover, ou usar busca do workspace em vez de script). |

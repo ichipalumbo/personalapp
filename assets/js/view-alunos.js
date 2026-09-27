@@ -812,7 +812,7 @@ window.renderizarListaAlunos = function() {
             listaContainer.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: #666;">
                     <i class="fa-solid fa-users-slash" style="font-size: 2.5rem; margin-bottom: 10px; display: block;"></i>
-                    <p style="font-size: 0.95rem;">Nenhum aluno cadastrado no momento.</p>
+                    <p style="font-size: 1rem;">Nenhum aluno cadastrado no momento.</p>
                 </div>
             `;
             return;
@@ -829,7 +829,7 @@ window.renderizarListaAlunos = function() {
             listaContainer.innerHTML = `
                 <div style="grid-column: 1 / -1; text-align: center; padding: 24px; color: #8A8A8A;">
                     <i class="fa-solid fa-filter-circle-xmark" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
-                    <p style="font-size: 0.92rem;">Nenhum aluno encontrado com os filtros selecionados.</p>
+                    <p style="font-size: 1rem;">Nenhum aluno encontrado com os filtros selecionados.</p>
                 </div>
             `;
             return;
@@ -872,9 +872,9 @@ window.renderizarListaAlunos = function() {
                         <div>
                             <strong style="display: block; color: #FFF; font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
                             <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
-                                <span class="objetivo-${objetivoClass}" style="font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${objetivo}</span>
-                                <span style="color: #444; font-size: 0.75rem;">•</span>
-                                <span style="font-size: 0.72rem; color: #AAA; font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
+                                <span class="objetivo-${objetivoClass}" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${objetivo}</span>
+                                <span style="color: #969696; font-size: 0.75rem;">•</span> <!-- Etapa 2 (Cartão D): 1.47:1 → 4.85:1 sobre o card #2a2a2a -->
+                                <span style="font-size: 0.75rem; color: #AAA; font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
                             </div>
                         </div>
                         <div onclick="event.stopPropagation();" style="margin-left: auto; display: flex; justify-content: flex-end; flex-shrink: 0;">
@@ -886,7 +886,7 @@ window.renderizarListaAlunos = function() {
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.78rem; color: #B0B0B0; border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
+                    <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.875rem; color: #B0B0B0; border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
                         <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
                         <div><i class="fa-solid fa-dollar-sign" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${metodoCobranca}: ${cobrancaDetalhe}</div>
                         <div><i class="fa-solid fa-calendar-days" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${fechamentoLabel}</div>

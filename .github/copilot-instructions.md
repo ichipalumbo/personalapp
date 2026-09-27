@@ -247,6 +247,13 @@ que pareçam pequenas:
 
 ## 10. Testes e regressões
 
+- **Viewport de referência do mobile: 433×762, DPR 2.81** — o smartphone real
+  do dono; como o app é de uso pessoal, este é o alvo de aceite da UI
+  mobile. Ao medir/validar tela (tipografia, alvos de toque, contraste,
+  regressão visual), usar esse viewport como referência primária; 320×568 e
+  390×844 continuam válidos como **stress test** (telas menores que a
+  referência). Como simular e a ressalva do breakpoint de 430px: seção 9 de
+  `docs/setup-ambiente-local.md`.
 - **Duas suítes independentes**, ambas com `node --test` e `npm test`, cada uma
   com seu `package.json` e seu próprio número:
   - `backend/` — regras de negócio, finanças, reposições e sync do GCal.
