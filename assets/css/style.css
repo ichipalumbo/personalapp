@@ -1220,6 +1220,24 @@ body {
   border: 1px solid #232323;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
+/* Etapa 4 (2026-09-27): cabeçalho da tela de Finanças sem cantos arredondados,
+   sem sombra e sem fundo destacado — alinhado ao visual da topbar da Home
+   (bordas superiores "retas" coladas na borda superior da tela). */
+.topbar-sem-cantos {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 10;
+  background: rgba(12, 12, 12, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: none;
+  border-bottom: 1px solid #1f1f1f;
+  border-radius: 0;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 18px;
+  box-shadow: none;
+  padding: 12px;
+}
 .home-weekly-topbar {
   position: sticky;
   top: var(--header-height);

@@ -137,14 +137,17 @@
     function renderizarCabecalho() {
         const root = obterRoot();
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
-        const cacheLabel = cache && cache.atualizadoEm ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}` : 'Sem cache local';
+        // Info de sistema no header: só aparece quando relevante (cache real ou sync
+        // em andamento). "Sem cache local" em repouso virou ruído visual (decisão do
+        // dono, Etapa 4, 2026-09-27) — o estado sem cache é o normal fora do app.
+        const cacheLabel = cache && cache.atualizadoEm ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}` : '';
 
         root.innerHTML = `
-          <section class="agenda-panel" style="margin-top: 0;">
+          <section class="agenda-panel topbar-sem-cantos" style="margin-top: 0;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
               <div>
-                <h2 style="margin:0;color:#ffd700;font-size:1.25rem;font-weight:800;">💰 Finanças</h2>
-                <p style="margin:4px 0 0;color:#9a9a9a;font-size:0.875rem;">Ciclo vigente por aluno, com leitura cacheada e escrita confirmada pelo backend.</p>
+                <h2 style="margin:0;color:#ffd700;font-size:1.125rem;font-weight:800;">💰 Finanças</h2>
+                <p style="margin:4px 0 0;color:#9a9a9a;font-size:0.875rem;">Ciclo, valor e status de cobrança por aluno.</p>
               </div>
               <div style="text-align:right;">
                 <div id="financasCacheLabel" style="font-size:0.75rem;color:#909090;">${cacheLabel}</div>
@@ -203,11 +206,11 @@
         `;
     }
 
+    // Só o período: o status já é exibido pelo badge do canto do card (Etapa 4, Cartão B — evita repetir 3x).
     function resumoCiclo(card) {
         if (!card || !card.cicloAtual) return 'Sem ciclo';
         const ciclo = card.cicloAtual;
-        const status = ciclo.status === 'pago' ? '🟢 Pago' : (ciclo.status === 'atrasado' ? '🔴 Atrasado' : '🟡 Em aberto');
-        return `${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)} • ${status}`;
+        return `${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}`;
     }
 
     function totalAulasCobradas(ciclo) {
@@ -291,18 +294,43 @@
         `;
     }
 
+    // Ciclo + Cobranca: mini-grid movido do card principal para o cabecalho do extrato (Etapa 4, Cartao B).
+    function renderizarCicloECobrancaExtrato(ciclo) {
+        const status = (ciclo && ciclo.status) || 'em_aberto';
+        const metodo = ciclo && ciclo.metodoCobranca === 'valor_fixo' ? 'Valor fixo' : 'Por aula';
+        const cicloSubtitulo = status === 'pago' ? 'Pago' : (status === 'atrasado' ? 'Venceu' : 'Vigente');
+        const cobrancaSubtitulo = status === 'pago' ? 'Pagamento confirmado' : 'Pagamento manual';
+
+        return `
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px;">
+            <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
+              <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo</div>
+              <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
+              <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${cicloSubtitulo}</div>
+            </div>
+            <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
+              <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
+              <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${metodo}</div>
+              <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${cobrancaSubtitulo}</div>
+            </div>
+          </div>
+        `;
+    }
+
     function renderizarConteudoExtrato(ciclo) {
         if (!ciclo) {
             return '<div style="color:#909090;font-size:0.875rem;">Extrato indisponível.</div>';
         }
 
+        const cicloECobranca = renderizarCicloECobrancaExtrato(ciclo);
+
         if (ciclo.extrato == null) {
-            return '<div style="color:#909090;font-size:0.875rem;">Extrato não registrado para este ciclo.</div>';
+            return `${cicloECobranca}<div style="color:#909090;font-size:0.875rem;">Extrato não registrado para este ciclo.</div>`;
         }
 
         const linhas = Array.isArray(ciclo.extrato) ? ciclo.extrato : [];
         if (linhas.length === 0) {
-            return '<div style="color:#909090;font-size:0.875rem;">Não há lançamentos.</div>';
+            return `${cicloECobranca}<div style="color:#909090;font-size:0.875rem;">Não há lançamentos.</div>`;
         }
 
         const totalLabel = ciclo.metodoCobranca === 'valor_fixo'
@@ -310,6 +338,7 @@
             : `Total do ciclo ${formatarMoeda(ciclo.valorTotalCiclo)}`;
 
         return `
+          ${cicloECobranca}
           <div style="display:flex;flex-direction:column;gap:8px;">
             ${linhas.map((linha) => renderizarLinhaExtrato(linha, ciclo)).join('')}
             <div style="padding-top:8px;border-top:1px solid #262626;color:#ffd700;font-size:0.875rem;font-weight:800;">${escaparHtml(totalLabel)}</div>
@@ -319,7 +348,7 @@
 
     function renderizarDetalhesExtrato(ciclo, opcoes = {}) {
         const identificador = opcoes.identificador || `extrato-${String(ciclo && ciclo._id ? ciclo._id : (ciclo && ciclo.cicloInicio) || 'ciclo')}`;
-        const rotulo = opcoes.rotulo || 'Ver extrato do ciclo';
+        const rotulo = opcoes.rotulo || 'Ver detalhes do ciclo';
         const estadoPersistido = STATE.extratoAberto[identificador] === true;
         const aberto = opcoes.aberto === true ? 'open' : (opcoes.aberto === false ? '' : (estadoPersistido ? 'open' : ''));
 
@@ -359,7 +388,7 @@
                       ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
                     </div>
                                         ${acoesHistorico}
-                    ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-historico-${extratoKey}`, rotulo: 'Ver extrato do ciclo' })}
+                    ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-historico-${extratoKey}` })}
                   </div>
                 `;
             }).join('')}
@@ -468,7 +497,6 @@
         const status = obterStatusCard(card);
         const statusLabel = card.configuracaoPendente ? '⚠️ Pendente' : (status === 'pago' ? '🟢 Pago' : (status === 'atrasado' ? '🔴 Atrasado' : '🟡 Em aberto'));
         const total = formatarMoeda(ciclo.valorTotalCiclo);
-        const metodo = ciclo.metodoCobranca === 'valor_fixo' ? 'Valor fixo' : 'Por aula';
         const aulasExtras = ciclo.aulasManuaisExtras || 0;
         const aulasContadas = ciclo.aulasContadas || 0;
         const aulasCobradas = totalAulasCobradas(ciclo);
@@ -478,12 +506,9 @@
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
               <div style="min-width:0;">
                 <strong style="display:block;color:#fff;font-size:1.02rem;word-break:break-word;">${escaparHtml(aluno.nome || 'Aluno')}</strong>
-                <div style="margin-top:4px;font-size:0.75rem;color:#b8b8b8;display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                  <span>${statusLabel}</span>
-                  ${card.configuracaoPendente ? '' : `<span>• ${resumoCiclo(card)}</span>`}
-                </div>
+                ${card.configuracaoPendente ? '' : `<div style="margin-top:4px;font-size:0.75rem;color:#b8b8b8;">${resumoCiclo(card)}</div>`}
               </div>
-              <span style="font-size:0.75rem;font-weight:800;color:${card.configuracaoPendente ? '#ff8a80' : (status === 'pago' ? '#81c784' : (status === 'atrasado' ? '#ff8a80' : '#ffd700'))};text-transform:uppercase;letter-spacing:0.4px;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
+              <span style="font-size:0.75rem;font-weight:800;color:${card.configuracaoPendente ? '#ff8a80' : (status === 'pago' ? '#81c784' : (status === 'atrasado' ? '#ff8a80' : '#ffd700'))};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
             </div>
 
             ${card.configuracaoPendente ? `
@@ -493,16 +518,6 @@
               </div>
             ` : `
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-                <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo atual</div>
-                  <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
-                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'atrasado' ? 'Venceu' : 'Vigente'}</div>
-                </div>
-                <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
-                  <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${metodo}</div>
-                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'pago' ? 'Pagamento confirmado' : 'Pagamento manual'}</div>
-                </div>
                 <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
                   <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
                   <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
@@ -520,7 +535,7 @@
                 <button type="button" class="btn btn-secondary" data-financas-ajuste="${aluno.id}" data-ciclo-id="${ciclo._id || ''}" ${status === 'pago' ? 'disabled' : ''}>Editar ajuste</button>
               </div>
 
-              ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-atual-${aluno.id || card.alunoId}`, rotulo: 'Ver extrato do ciclo' })}
+              ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-atual-${aluno.id || card.alunoId}` })}
 
               <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;" ${STATE.historicoAberto[aluno.id] ? 'open' : ''}>
                 <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.875rem;">Ver ciclos anteriores</summary>
@@ -552,7 +567,7 @@
         if (label) {
             label.textContent = cache && cache.atualizadoEm
                 ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}`
-                : 'Sem cache local';
+                : '';
         }
         if (syncState) {
             if (STATE.carregando) {

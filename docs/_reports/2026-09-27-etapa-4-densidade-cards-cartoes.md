@@ -88,15 +88,12 @@ Cobrança (método) para o cabeçalho do extrato já existente.
 ## Referência da decisão
 Decisão donal 2026-09-27. Achado 4.11.
 
-## ⚠️ Decisões pendentes (bloqueiam o início deste cartão)
-1. **Rótulo do `<details>`**: "Ver extrato do ciclo" foi escrito para uma lista só de
-   lançamentos financeiros. Com período + método adicionados, o rótulo pode ficar impreciso
-   (ex.: "Ver ciclo e extrato", "Ver detalhes do ciclo", ou manter o atual). Não decidir
-   unilateralmente — perguntar ao dono antes de implementar.
-2. **Formato de exibição de período + método dentro do extrato**: não foi decidido se entram
-   como uma linha de resumo no topo do `<details>` (ex.: texto simples), como um mini-grid
-   igual ao que existe hoje no card principal, ou de outra forma. Perguntar ao dono com opções
-   concretas antes de implementar — impacta o CSS a escrever.
+## Decisões fechadas (via vscode_askQuestions, 2026-09-27)
+1. **Rótulo do `<details>`**: muda de "Ver extrato do ciclo" para **"Ver detalhes do ciclo"**
+   (aplica-se ao ciclo atual e a cada ciclo do histórico).
+2. **Formato de período + método dentro do extrato**: **mini-grid 2 colunas** (mesmo estilo
+   visual das caixinhas já usadas no grid atual do card — 2 caixinhas: Ciclo e Cobrança),
+   posicionado antes da lista de lançamentos.
 
 ## Arquivos a tocar
 - `assets/js/view-financas.js` (`renderizarCard`, `renderizarDetalhesExtrato`,
@@ -129,6 +126,93 @@ Decisão donal 2026-09-27. Achado 4.11.
 
 ## Commit sugerido
 `feat(financas): reduzir grid do card e mover ciclo/cobranca para o extrato`
+
+### Registro do Cartão B (2026-09-27)
+
+- **Decisões fechadas** (via `vscode_askQuestions`): rótulo do `<details>` = **"Ver detalhes do
+  ciclo"** (era "Ver extrato do ciclo"); formato de período+método = **mini-grid 2 colunas**,
+  mesmo estilo visual das caixinhas do grid principal.
+- **Arquivos alterados**: `assets/js/view-financas.js` — `renderizarCard` reduzido para 2
+  itens sempre visíveis (Aulas, Valor; a variável `metodo`, órfã após a remoção do item
+  Cobrança do grid, também foi removida); nova função `renderizarCicloECobrancaExtrato` gera o
+  mini-grid Ciclo+Cobrança, chamada no início de `renderizarConteudoExtrato` (cobre os 3 casos:
+  extrato indisponível, não registrado, sem lançamentos e com lançamentos); `renderizarDetalhesExtrato`
+  trocou o rótulo padrão para "Ver detalhes do ciclo"; as 2 chamadas que passavam
+  `rotulo: 'Ver extrato do ciclo'` explicitamente (ciclo atual e cada ciclo do histórico) foram
+  simplificadas para usar o padrão novo.
+- **Validação runtime** (mock `default`, 433×762 via clique real + 320×568 via CDP com DPR 2.81
+  + touch): grid fechado mostra só Aulas+Valor nos 3 cards com ciclo calculado; card
+  "Configurar cobrança" (Carlos Mendes) permanece sem grid, inalterado; "Ver detalhes do ciclo"
+  expande e mostra mini-grid Ciclo ("01/09→30/09" + "Venceu") + Cobrança ("Por aula" +
+  "Pagamento manual") antes dos lançamentos e do total; mesmo comportamento confirmado dentro do
+  histórico ("Ver ciclos anteriores" → "Ver detalhes do ciclo" do ciclo de agosto, mostrando
+  "Pago"/"Pagamento confirmado"); zero overflow horizontal em 320px.
+- Suíte `tests-frontend/`: 77/77 antes → 77/77 depois. `view-financas.js` não é consumido pelo
+  backend (confirmado via busca — nenhum teste em `backend/test/` o referencia), então a suíte
+  de backend não precisou ser executada para este cartão.
+
+**Adendo (mesma sessão, 2026-09-27)**: durante a revisão desta tela, o dono identificou que o
+badge de status no canto superior direito do card (ex.: "ATRASADO", "EM ABERTO") quebrava em
+duas linhas quando o nome do status era mais longo — o `<span>` não tinha `white-space:nowrap`.
+Não é um achado dos documentos originais da auditoria; resolvido junto no Cartão B por já
+estar na mesma tela. `assets/js/view-financas.js`: adicionado `white-space:nowrap;flex-shrink:0`
+ao `<span>` do badge em `renderizarCard`. Validação runtime (mock `default`, 433×762 e 320×568
+via CDP): os 4 status ("Atrasado", "Em aberto", "Pago", "Pendente") ficam em uma linha (altura
+16px) nos dois viewports; zero overflow horizontal. Suíte 77/77 antes/depois.
+
+**Segundo adendo ao Cartão B (mesma sessão, 2026-09-27)**: o dono apontou que, com o novo
+grid de 2 colunas, a linha de valor do primeiro card tinha o rótulo "Total" no canto
+esquerdo e o status do plano aparecia em posição idêntica à do badge do cabeçalho,
+duplicando a mesma informação. Duas mudanças, ambas em `assets/js/view-financas.js`:
+1. `renderizarCard`: o bloco do valor total agora é renderizado no canto **direito** do
+   header (classe `flex:column;gap:2px;margin-left:auto;text-align:right`), empilhando
+   na vertical: valor (`R$ 350,00`), método de cobrança ("Mês"/"Semana") e o ✓ de pago
+   quando o plano está pago.
+2. `renderizarCicloAtivo`: removida a linha "Periodo: ..." (o período já aparece na linha
+   do extrato). O retorno agora é apenas a linha principal do `<details>`:
+   "Periodos: 01/09/2026 - 30/09/2026 · 8 aulas".
+
+Com isso o card fica: linha 1 = nome do aluno + status (badge, canto direito); linha 2 =
+"Aulas: 8" (esq.) + "Periodo: ..." (esq.) com o bloco valor/método/✓ (dir.).
+
+Validação runtime (mock `default`, 433×762 DPR 2.81 + 320×568): layout conforme acima nos
+dois viewports, sem status duplicado em dois pontos do card. Zero overflow horizontal.
+Suíte 77/77 antes/depois.
+
+**Adendo visual à tela de Finanças (mesma sessão, 2026-09-27)**: o dono pediu para o
+`<section class="agenda-panel">` do cabeçalho da aba (título "💰 Finanças") ficar com o
+visual da topbar da Home — borda superior reta, sem sombra, e (ajuste pedido na sequência)
+as duas bordas inferiores arredondadas. Nova classe utilitária `.topbar-sem-cantos` em
+`assets/css/style.css` (aplicada via classe adicional no mesmo `<section>`, sem afetar os
+outros usos de `.agenda-panel`: vazio da tela e painel de dia da Home):
+`border-bottom:1px solid #1f1f1f; border-radius:0;
+border-bottom-left-radius:18px; border-bottom-right-radius:18px (raio idêntico ao da
+topbar da Home); box-shadow:none; padding:12px` — e, na sequência, igualado à topbar da
+Home em comportamento: `position:sticky; top:var(--header-height) (altura do header fixo
+medida em runtime pelo bootstrap); z-index:10; background:rgba(12,12,12,0.92);
+backdrop-filter:blur(18px)`.
+
+Ajuste de conteúdo do cabeçalho (decisão do dono, mesma sessão): o rótulo de cache
+`financasCacheLabel` (canto superior direito) deixava de exibir "Sem cache local" em
+repouso — agora só aparece quando existe cache real ("Cache atualizado em ...") ou
+quando o `financasSyncState` carrega "Carregando..."/"Salvando..."/erro. `view-financas.js`:
+fallthrough de `renderizarCabecalho()` e de `atualizarCabecalhoCache()` trocado de
+`'Sem cache local'` para `''`. Com o cabeçalho sticky, um texto fixo de estado neutro ficaria
+colado o tempo todo — tratado como ruído visual. Validação runtime (mock `default`, 433×762
+DPR 2.81): em repouso as duas linhas do canto direito ficam vazias (só título + subtítulo
+visíveis); zero overflow horizontal também em 320×568.
+
+`renderizarCabecalho()` em `assets/js/view-financas.js`: título 1.25rem → 1.125rem para
+reduzir a altura. No fechamento do round, o dono pediu
+para o subtítulo voltar ao tamanho original por coerência visual da auditoria e ser
+reescrito em tom de produto: texto novo `"Ciclo, valor e status de cobrança por aluno."`
+(no lugar de "Ciclo vigente por aluno, com leitura cacheada e escrita confirmada pelo
+backend."), retomando `font-size:0.875rem; margin:4px 0 0` — o original. Validação
+runtime (mock `default`, 433×762 DPR 2.81 e 320×568): computed style confirmado
+(`border-radius: 0px 0px 18px 18px; position:sticky; top:68px`); teste de scroll — com
+`scrollBy(0,300)` a seção colou exatamente em `top:68px` (o `--header-height`), como a
+topbar da Home; subtítulo renderizando 14px, título 18px; zero overflow horizontal em
+ambos os viewports.
 
 ---
 
@@ -185,8 +269,8 @@ sem commit de código (se o inventário confirmar que já está adequado).
 | Cartão | Status | Commit do dono | Contagem antes → depois |
 | --- | --- | --- | --- |
 | 0 (este relatório) | ✅ criado 2026-09-27 | — | — |
-| A (card Aluno) | ✅ concluído 2026-09-27 | (aguardando commit do dono) | frontend 77/77 → 77/77 |
-| B (card Finanças) | ⏳ pendente | — | — |
+| A (card Aluno) | ✅ concluído 2026-09-27 | `84c739f` | frontend 77/77 → 77/77 |
+| B (card Finanças) | ✅ concluído 2026-09-27 | (aguardando commit do dono) | frontend 77/77 → 77/77 |
 | C (card agenda) | ⏳ pendente | — | — |
 
 ### Registro do Cartão A (2026-09-27)
