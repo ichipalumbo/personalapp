@@ -2454,10 +2454,10 @@ body {
   from { opacity: 0.45; }
   to { opacity: 0.9; }
 }
-.historico-reposicoes-grupo + .historico-reposicoes-grupo {
+.historico-reposicao-grupo + .historico-reposicao-grupo {
   margin-top: 18px;
 }
-.historico-reposicoes-grupo h4 {
+.historico-reposicao-grupo h4 {
   color: #ffd700;
   font-size: 0.75rem;
   letter-spacing: 0.04em;

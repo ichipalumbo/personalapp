@@ -362,9 +362,10 @@ apresentada como concluída antes da resposta da API.
 **⚠️ Escopo adicionado nesta reescrita — item 4.17 (6 inconsistências específicas)**:
 1. Mensagem de modo leitura escondida permanentemente pelo CSS mesmo com usuário desconectado
    — corrigir para exibir quando aplicável.
-2. **Bug real de seletor**: JS gera `.historico-reposicao-grupo`, CSS usa
-   `.historico-reposicoes-grupo` — corrigir a divergência de nome (afeta espaçamento/hierarquia
-   já hoje, independente de qualquer etapa de UX).
+2. ✅ **Bug real de seletor** *(corrigido 2026-09-27 — hotfix isolado na `main`, ver
+   `docs/_reports/2026-09-27-hotfix-seletor-historico-reposicoes-grupo.md`)*: JS gera
+   `.historico-reposicao-grupo`, CSS usava `.historico-reposicoes-grupo` — divergência de nome
+   corrigida no CSS (ajustado para singular, consistente com as classes irmãs do bloco).
 3. Textarea financeiro não compartilha integralmente estilo/foco de inputs e selects — padronizar.
 4. Diferenciação global de botões desabilitados — reaproveitar o padrão já definido na Etapa 2 em
    vez de criar um novo.
@@ -375,15 +376,15 @@ apresentada como concluída antes da resposta da API.
 
 **Nota de sequenciamento interno**: os itens 4 e 5 do 4.17 são apenas "aplicar o padrão da
 Etapa 2 nos lugares que ela não cobriu" — não é trabalho novo de design, é auditoria de cobertura.
-O item 2 (bug de seletor CSS/JS) pode ser corrigido a qualquer momento, inclusive antes desta
-etapa, por ser um bug isolado de 1 linha sem dependência de decisão de produto.
+O item 2 (bug de seletor CSS/JS) foi corrigido isoladamente em 2026-09-27, antes desta etapa, por
+ser um bug isolado de 1 linha sem dependência de decisão de produto.
 
 **Progresso já acumulado (2026-09-27, verificado contra `git log`)**: os itens 4.17.4
 (disabled) e 4.17.5 (aria-label icon-only) foram resolvidos de facto pelos cartões C e D da
 Etapa 2 — o padrão é global e os 13 botões inventariados têm `aria-label`; o que resta na Etapa
 7 é auditoria de cobertura (novos botões criados após o inventário), não trabalho novo.
-O bug de seletor 4.17.2 continua em aberto no código (verificado em 2026-09-27: `view-alunos.js`
-gera `.historico-reposicao-grupo`, `style.css` estiliza `.historico-reposicoes-grupo`).
+O item 4.17.2 (bug de seletor) foi corrigido nesta mesma data, como hotfix isolado (ver relatório
+linkado no item 2 acima) — não depende mais da execução da Etapa 7.
 
 **Critério de conclusão**: os fluxos principais são operáveis sem toque e permanecem
 compreensíveis com zoom/texto ampliado; nenhuma das 6 inconsistências do item 4.17 permanece;
