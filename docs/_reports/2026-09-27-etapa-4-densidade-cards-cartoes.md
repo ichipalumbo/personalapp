@@ -726,6 +726,33 @@ semana o horário acaba 'descendo' para uma linha nova. Ambos comportamento na A
 - O `span` interno não tem `aria-hidden` — o texto é o único que importa para
   leitores de tela; o `title` segue no `i`/badge.
 
+### Ajuste complementar — FAB não cobre o último dia da Semana (2026-09-27, pedido do dono)
+
+**Pedido (verbatim)**: "No final da aba semana o FAB fica em cima do ultimo dia da
+semana, no caso 'Domingo' tem como colocarmos um espaço no final que faça com que o
+FAB não fique em cima do texto? ... no nosso mock ele está cobrindo parte das
+informações do card da Bruna"
+
+**Causa (medida)**: o FAB é `position: fixed` (banda y 627–685 do viewport, coluna
+x 350–408) e a página inteira é que rola (todos os containers `overflow: visible`).
+No scroll máximo, a linha do Domingo terminava em y 666 — **39px dentro da faixa do
+FAB** — e o chip 📌 da última Bruna (x 372) ficava sob ele.
+
+**Mudança**: `assets/css/style.css` — `padding-bottom: 48px` em
+`.agenda-panel-semana` (só a aba Semana). O Dia não ganhou espaço: a grade termina
+às 22h sem conteúdo útil no fim, então o padding só aumentaria o scroll.
+
+**Validação (números medidos, 433×762 DPR 2.81, no scroll máximo)**
+- Domingo termina em y 614; topo do FAB em 627 → **sobreposição 0**, respiro 13px.
+- Chip 📌 da última Bruna: **fora da coluna do FAB** (`chipSobFab: false`).
+- Zero overflow horizontal; Dia inalterado. `tests-frontend`: 77/77 antes → 77/77.
+
+**Risco declarado**: 13px de respiro é o mínimo que a altura do FAB (58px) +
+safe area da bottombar deixam com 48px de padding. A correção cobre o conteúdo
+atual e qualquer semana com pouco conteúdo após o último compromisso; se a semana
+crescer mais 2–3 cards, o respiro encolhe de novo (não há como prever o conteúdo
+futuro sem um valor maior, que custaria scroll a toa).
+
 ### Registro do Cartão A (2026-09-27)
 
 - **Decisão pendente fechada**: rótulo do `<summary>` = **"Ver detalhes"** (via

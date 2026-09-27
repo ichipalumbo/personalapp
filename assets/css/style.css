@@ -2294,6 +2294,13 @@ body {
   box-shadow: none;
   padding: 0;
   margin-bottom: 0;
+  /* Ajuste (2026-09-27): o FAB é position:fixed e, no scroll máximo, a última
+     linha da semana (Domingo) passava ~39px por baixo da faixa dele (FAB
+     627-685 vs. fim do conteúdo 666), cobrindo o chip da última aula.
+     48px de respiro no fim do painel empurra o Domingo para cima da faixa do
+     FAB (9px de margem), mantendo o Dia inalterado (grid termina às 22h,
+     sem conteúdo útil no fim). */
+  padding-bottom: 48px;
 }
 
 .semana-dia-box:last-child {
