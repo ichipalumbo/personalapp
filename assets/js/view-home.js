@@ -566,7 +566,144 @@ window.renderizarAgendaDia = function (gridId) {
     return evs;
   };
 
-  const eventosPosicionados = calcularColisoes(eventosFiltrados);
+  // Etapa 5: bloqueios de dia inteiro não entram no grafo de sobreposição:
+  // ocupam o dia inteiro, então sairiam em colunas laterais e ainda
+  // inflariam o maxCols da banda dos eventos reais. Saem da engine e são
+  // renderizados a largura total (mesmo topPos/heightPos de sempre).
+  const eventosGrade = eventosFiltrados.filter(
+    (e) => !window.ehBloqueioDiaInteiroCompromisso(e)
+  );
+  const eventosDiaInteiro = eventosFiltrados.filter((e) =>
+    window.ehBloqueioDiaInteiroCompromisso(e)
+  );
+  const eventosGradePosicionados = calcularColisoes(eventosGrade);
+  // Bloqueios de dia inteiro entram com largura total (maxCols=1) e FORA do
+  // grafo de bandas: seu start clamped ao início da grade coincidiria com o
+  // de qualquer aula de manha e dispararia o fallback de colunas do dia todo.
+  const eventosPosicionados = eventosGradePosicionados.concat(
+    eventosDiaInteiro.map((e) => ({
+      id: e.id,
+      original: e,
+      // Mesma lógica de clamp do motor (00:00-23:59 -> todo o horário útil).
+      start: Math.max(parseHorario(e.horarioInicio), inicioMinutosGrade),
+      end: Math.min(parseHorario(e.horarioFim), fimMinutosGrade),
+      maxCols: 1,
+      col: 0,
+    }))
+  );
+
+  // Etapa 5 (2026-09-27, achado 4.12 — decisão do dono, pergunta 3 da
+  // auditoria): eventos simultâneos deixam o layout em COLUNAS LATERAIS
+  // (colunas de 37–78px em 320px davam 0–3 caracteres de nome) e ganham
+  // CASCATA: cada card da banda ocupa quase a largura total, empilhado com
+  // degrau ESCALONAMENTO_PX por coluna — a linha de cada card fica no
+  // próprio TOPO, e a hora de início (agora visível no topo do card)
+  // ordena a leitura, como no Google Calendar mobile. Geometria em px/%
+  // da content-col => imune a resize (não depende de largura medida em
+  // tempo de render).
+  const ESCALONAMENTO_PX = 12; // degrau por coluna (protótipo aprovado)
+
+  // Largura REAL da coluna de conteúdo da grade: o grid tem padding 12px
+  // dos dois lados, wrapper em grade de 55px, gap de 12px e border de 1px
+  // — "grid.clientWidth - 55" (larguraUtilGradePx) superestima em 37px
+  // (medido: 433px -> grid 359, content-col 267; 320px -> grid 326,
+  // content-col 234).
+  const contentColAnterior = grid.querySelector('.time-grid-content-col');
+  const larguraContentColPx =
+    (contentColAnterior && contentColAnterior.clientWidth > 0)
+      ? contentColAnterior.clientWidth
+      : (grid.clientWidth > 100
+          // Grade visível mas primeira pintura: derivada exata.
+          ? grid.clientWidth - 24 - 55 - 12 - 1
+          // Grade ainda oculta (abertura da home em modo semana): referência
+          // conservadora — só alimenta a heurística de densidade.
+          : 180);
+
+  // Etapa 5: bandas = componentes conectados do grafo de sobreposição
+  // (apenas os eventos de grade — bloqueios de dia inteiro ficam fora, no
+  // grafo acima). O grafo explícito é só para a regra de inícios iguais.
+  const eventosGradePorId = new Map(
+    eventosGradePosicionados.map((ev) => [ev.id, ev])
+  );
+  const mesmaBanda = (a, b) => a.start < b.end && b.start < a.end;
+  const componentes = new Map(); // id -> conjunto de ids
+  eventosGradePosicionados.forEach((ev) => {
+    if (componentes.has(ev.id)) return;
+    const grupo = new Set([ev.id]);
+    const fila = [ev];
+    while (fila.length > 0) {
+      const atual = fila.shift();
+      eventosGradePosicionados.forEach((outro) => {
+        if (!grupo.has(outro.id) && mesmaBanda(atual, outro)) {
+          grupo.add(outro.id);
+          fila.push(outro);
+        }
+      });
+    }
+    grupo.forEach((id) => componentes.set(id, grupo));
+  });
+
+  // Etapa 5: geometria real de cada card. larguraCardPx alimenta a
+  // heurística de densidade com a largura que o card VAI renderizar —
+  // antes a heurística recebia Math.max(120, ...), ou seja, pensava 120px
+  // enquanto o card renderizava 37px (densidade dessincronizada do render).
+  //
+  // A cascata exige inícios ESTRITAMENTE crescentes dentro da banda: com
+  // dois eventos no mesmo início, o card da frente esconderia a linha do
+  // nome do de trás. A decisão por cascata é por BANDA (não por evento):
+  // se QUALQUER par da banda compartilha início, a banda inteira volta ao
+  // layout em colunas — senão teríamos um arranjo misto (uns em cascata,
+  // uns em colunas) dentro da mesma faixa.
+  const bandaTemInicioDuplicado = new Map(); // id -> bool (mesma p/ a banda)
+  componentes.forEach((grp) => {
+    let temDup = false;
+    const vistos = new Set();
+    for (const id of grp) {
+      const st = eventosGradePorId.get(id).start;
+      if (vistos.has(st)) temDup = true;
+      vistos.add(st);
+    }
+    grp.forEach((id) => bandaTemInicioDuplicado.set(id, temDup));
+  });
+
+  eventosPosicionados.forEach((ev) => {
+    // Bloqueios de dia inteiro chegam com maxCols=1 (fora do grafo) e caem
+    // no ramo de largura total abaixo. A cascata só se aplica a bandas com
+    // maxCols>1 e inícios estritamente crescentes.
+    const usaCascataBanda =
+      ev.maxCols > 1 && !bandaTemInicioDuplicado.get(ev.id);
+    if (usaCascataBanda) {
+      const leftPx = ev.col * ESCALONAMENTO_PX;
+      ev.posicionamento = {
+        cascata: true,
+        leftStyle: `${leftPx}px`,
+        widthStyle: `calc(100% - ${leftPx + 2}px)`,
+        zIndex: 10 + ev.col,
+      };
+      ev.larguraCardPx = larguraContentColPx - leftPx - 2;
+    } else if (ev.maxCols > 1) {
+      // Fallback em colunas (banda com inícios iguais): preserva EXATAMENTE
+      // a geometria pré-Etapa 5 (inset 4px), agora sobre a largura REAL da
+      // content-col em vez de larguraUtilGradePx. Card sem banda mantém o
+      // mesmo inset de sempre.
+      const widthPercent = 100 / ev.maxCols;
+      ev.posicionamento = {
+        cascata: false,
+        leftStyle: `${ev.col * widthPercent}%`,
+        widthStyle: `calc(${widthPercent}% - 4px)`,
+        zIndex: 1,
+      };
+      ev.larguraCardPx = (larguraContentColPx * widthPercent) / 100 - 4;
+    } else {
+      ev.posicionamento = {
+        cascata: false,
+        leftStyle: "0",
+        widthStyle: "calc(100% - 4px)",
+        zIndex: 1,
+      };
+      ev.larguraCardPx = larguraContentColPx - 4;
+    }
+  });
 
   // Gerar o HTML
   let htmlHours = "";
@@ -638,29 +775,23 @@ window.renderizarAgendaDia = function (gridId) {
     const topPos = ((ev.start - inicioMinutosGrade) / 60) * hourHeight;
     const heightPos = ((ev.end - ev.start) / 60) * hourHeight;
 
-    // Posicionamento horizontal dinâmico por colisões
-    const widthPercent = 100 / ev.maxCols;
-    const leftPercent = ev.col * widthPercent;
+    // Etapa 5 (2026-09-27): posição já resolvida no pré-processamento acima
+    // (cascata com inícios crescentes; colunas como fallback; 100% sem banda).
     const duracaoMinutos = ev.end - ev.start;
-
-    // Margem de segurança de layout
-    const gapRight = 4;
-    const larguraCardEstimadaPx =
-      Math.max(
-        REGRAS_VISUAIS_CARD_DIA.larguraMinimaCardPx,
-        (larguraUtilGradePx * widthPercent) / 100 - gapRight,
-      );
+    const larguraCardEstimadaPx = ev.larguraCardPx;
 
     const analiseDensidadeVisual = analisarDensidadeVisualCardDia({
       compromisso,
       heightPx: heightPos,
       duracaoMinutos,
-      larguraPercentual: widthPercent,
+      larguraPercentual: (larguraCardEstimadaPx / larguraContentColPx) * 100,
       larguraEstimadaPx: larguraCardEstimadaPx,
     });
 
-    const widthStyle = `calc(${widthPercent}% - ${gapRight}px)`;
-    const leftStyle = `${leftPercent}%`;
+    // pos.cascata já reflete a decisão da banda (cascata só com inícios
+    // estritamente crescentes; fallback de colunas quando há início igual).
+    const pos = ev.posicionamento;
+    const cascata = pos.cascata === true;
 
     htmlEvents += window.criarCardAgendamento(compromisso, {
       dataReferencia: new Date(window.dataSelecionada),
@@ -669,7 +800,8 @@ window.renderizarAgendaDia = function (gridId) {
       visualDensity: analiseDensidadeVisual.densidade,
       visualHideOptionalMobile: analiseDensidadeVisual.reduzirConteudoOpcionalMobile,
       visualInlineStatusBadge: analiseDensidadeVisual.usarBadgeInlineNoTitulo,
-      style: `position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${leftStyle}; width: ${widthStyle};`,
+      visualCascataHoraComprimida: cascata,
+      style: `position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${pos.leftStyle}; width: ${pos.widthStyle}; z-index: ${pos.zIndex};`,
       onclick: `abrirModalAcaoSlot('${compromisso.id}')`,
     });
   });

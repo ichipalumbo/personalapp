@@ -2189,6 +2189,39 @@ body {
   }
 }
 
+/* ───────────────────────────────────────────────────────────────────────────
+   Etapa 5 (2026-09-27, achado 4.12 — eventos simultâneos, decisão do dono)
+   Em bandas com inícios crescentes o card ganha a classe .cascata-hora:
+   a hora (somente INÍCIO, comprimida) fica visível no topo — identificação
+   que faltava entre eventos iguais no nome ("Aurora…" em 3 faixas).
+   A linha de título vira: [nome …] [chip 20px] [hora], tudo nowrap e
+   flex:0 0 auto — a hora nunca desce de linha nem encolhe (mesmo padrão
+   fixo do Refinamento 5; aqui com margem automática à esquerda).
+   Regras com especificidade maior que as do bloco base acima => valem em
+   qualquer densidade.
+   ─────────────────────────────────────────────────────────────────────── */
+/* Piso de 12px do achado 4.4 (escala 16/14/12) — o horário é o elemento de
+   identificação principal da cascata, não pode cair abaixo do piso. */
+#agendaGridHomeHome .agenda-card-dayview.cascata-hora .agenda-semana-card-time {
+  display: inline-flex !important;
+  font-size: 0.75rem;
+  font-weight: 700;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* Nome não reserva mais os 28px do chip âncora absoluta: o chip agora é
+   in-flow na linha do título. */
+#agendaGridHomeHome .agenda-card-dayview.cascata-hora .agenda-dia-aula-nome {
+  max-width: 100%;
+}
+
+/* Chip deixa a âncora absoluta (top/right 8px — onde um card superior da
+   cascata poderia cobri-lo) para a linha do título, ao lado do nome. */
+#agendaGridHomeHome .agenda-card-dayview.cascata-hora .agenda-card-inline-status {
+  position: static;
+}
+
 /* Indicador de Agora (Linha vermelha estilo Outlook) */
 .time-grid-now-indicator {
   pointer-events: none;
