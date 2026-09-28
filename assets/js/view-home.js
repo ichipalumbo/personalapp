@@ -566,7 +566,145 @@ window.renderizarAgendaDia = function (gridId) {
     return evs;
   };
 
-  const eventosPosicionados = calcularColisoes(eventosFiltrados);
+  // Etapa 5: bloqueios de dia inteiro não entram no grafo de sobreposição:
+  // ocupam o dia inteiro, então sairiam em colunas laterais e ainda
+  // inflariam o maxCols da banda dos eventos reais. Saem da engine e são
+  // renderizados a largura total (mesmo topPos/heightPos de sempre).
+  const eventosGrade = eventosFiltrados.filter(
+    (e) => !window.ehBloqueioDiaInteiroCompromisso(e)
+  );
+  const eventosDiaInteiro = eventosFiltrados.filter((e) =>
+    window.ehBloqueioDiaInteiroCompromisso(e)
+  );
+  const eventosGradePosicionados = calcularColisoes(eventosGrade);
+  // Bloqueios de dia inteiro entram com largura total (maxCols=1) e FORA do
+  // grafo de bandas: seu start clamped ao início da grade coincidiria com o
+  // de qualquer aula de manha e dispararia o fallback de colunas do dia todo.
+  const eventosPosicionados = eventosGradePosicionados.concat(
+    eventosDiaInteiro.map((e) => ({
+      id: e.id,
+      original: e,
+      // Mesma lógica de clamp do motor (00:00-23:59 -> todo o horário útil).
+      start: Math.max(parseHorario(e.horarioInicio), inicioMinutosGrade),
+      end: Math.min(parseHorario(e.horarioFim), fimMinutosGrade),
+      maxCols: 1,
+      col: 0,
+    }))
+  );
+
+  // Etapa 5 (2026-09-27, achado 4.12 — formato FINAL, decisão do dono com
+  // o protótipo + print do Outlook): o motor de colunas (calcularColisoes)
+  // segue intacto; muda a DESENHAÇÃO da banda:
+  // - banda com 2 eventos: colunas proporcionais (engine) com card em
+  //   formato Outlook — só o título, sem hora/chip/ícone/rodapé (tudo
+  //   volta no card ao tocar); a hora se lê pela posição na timeline.
+  // - banda com 3+ eventos: linhas empilhadas a largura total
+  //   [hora de início + título + status] em contêiner que cobre o span da
+  //   banda (list mode) — o caso extremo legível até 320px.
+  // Geometria em %/px da content-col => imune a resize (não depende de
+  // largura medida em tempo de render).
+
+  // Largura REAL da coluna de conteúdo da grade: o grid tem padding 12px
+  // dos dois lados, wrapper em grade de 55px, gap de 12px e border de 1px
+  // — "grid.clientWidth - 55" (larguraUtilGradePx) superestima em 37px
+  // (medido: 433px -> grid 359, content-col 267; 320px -> grid 326,
+  // content-col 234).
+  const contentColAnterior = grid.querySelector('.time-grid-content-col');
+  const larguraContentColPx =
+    (contentColAnterior && contentColAnterior.clientWidth > 0)
+      ? contentColAnterior.clientWidth
+      : (grid.clientWidth > 100
+          // Grade visível mas primeira pintura: derivada exata.
+          ? grid.clientWidth - 24 - 55 - 12 - 1
+          // Grade ainda oculta (abertura da home em modo semana): referência
+          // conservadora — só alimenta a heurística de densidade.
+          : 180);
+
+  // Etapa 5: bandas = componentes conectados do grafo de sobreposição
+  // (apenas os eventos de grade — bloqueios de dia inteiro ficam fora, no
+  // grafo acima). O grafo explícito é só para a regra de inícios iguais.
+  const eventosGradePorId = new Map(
+    eventosGradePosicionados.map((ev) => [ev.id, ev])
+  );
+  const mesmaBanda = (a, b) => a.start < b.end && b.start < a.end;
+  const componentes = new Map(); // id -> conjunto de ids
+  eventosGradePosicionados.forEach((ev) => {
+    if (componentes.has(ev.id)) return;
+    const grupo = new Set([ev.id]);
+    const fila = [ev];
+    while (fila.length > 0) {
+      const atual = fila.shift();
+      eventosGradePosicionados.forEach((outro) => {
+        if (!grupo.has(outro.id) && mesmaBanda(atual, outro)) {
+          grupo.add(outro.id);
+          fila.push(outro);
+        }
+      });
+    }
+    grupo.forEach((id) => componentes.set(id, grupo));
+  });
+
+  // Etapa 5: geometria real de cada card. larguraCardPx alimenta a
+  // heurística de densidade com a largura que o card VAI renderizar —
+  // antes a heurística recebia Math.max(120, ...), ou seja, pensava 120px
+  // enquanto o card renderizava 37px (densidade dessincronizada do render).
+  //
+  // Etapa 5: bandas com 3+ membros viram linhas dentro de um contêiner
+  // (`.agenda-banda-grupo`) que cobre o span da banda — o contêiner é
+  // montado na geração do HTML abaixo (precisa do HTML de cada evento).
+  // A ordem das linhas é pelo início; em empate de início, quem termina
+  // primeiro vem antes (tie-break determinístico).
+  // CUIDADO: `componentes` mapeia CADA id para a mesma Set de grupo, então
+  // iterá-la retorna o MESMO grupo uma vez por membro. Usamos um Set de
+  // "já vistos" (por referência da Set) para processar cada banda UMA vez.
+  const membrosPorBanda = new Map(); // id -> nº de membros da banda
+  const gruposBandaLinhas = []; // [ids ordenados] — só bandas com 3+
+  const gruposVistos = new Set();
+  componentes.forEach((grp) => {
+    if (gruposVistos.has(grp)) return;
+    gruposVistos.add(grp);
+    const ids = [...grp];
+    ids.forEach((id) => membrosPorBanda.set(id, ids.length));
+    if (ids.length >= 3) {
+      const ordenados = ids
+        .map((id) => eventosGradePorId.get(id))
+        .sort((a, b) => a.start - b.start || a.end - b.end)
+        .map((ev) => ev.id);
+      gruposBandaLinhas.push(ordenados);
+    }
+  });
+
+  eventosPosicionados.forEach((ev) => {
+    const tamanhoBanda = membrosPorBanda.get(ev.id) || 1;
+    if (tamanhoBanda >= 3) {
+      // Linha de banda: posicionamento resolvido pelo contêiner
+      // (position static via .agenda-banda-linha no CSS); a referência de
+      // largura para a heurística de densidade é a content-col inteira.
+      ev.posicionamento = { linha: true };
+      ev.larguraCardPx = larguraContentColPx;
+    } else if (ev.maxCols > 1) {
+      // Banda de 2: colunas proporcionais do engine, inset original de
+      // 4px (mesma geometria do layout pré-Etapa 5). O card vira formato
+      // Outlook (só título) via classe .formato-outlook no template.
+      const widthPercent = 100 / ev.maxCols;
+      ev.posicionamento = {
+        formatoOutlook: true,
+        leftStyle: `${ev.col * widthPercent}%`,
+        widthStyle: `calc(${widthPercent}% - 4px)`,
+        zIndex: 1,
+      };
+      ev.larguraCardPx = (larguraContentColPx * widthPercent) / 100 - 4;
+    } else {
+      // Sem banda (ou bloqueio de dia inteiro, que chega com maxCols=1
+      // e fica fora do grafo): largura total, inset original de sempre.
+      ev.posicionamento = {
+        leftStyle: "0",
+        widthStyle: "calc(100% - 4px)",
+        zIndex: 1,
+      };
+      ev.larguraCardPx = larguraContentColPx - 4;
+    }
+  });
 
   // Gerar o HTML
   let htmlHours = "";
@@ -628,50 +766,79 @@ window.renderizarAgendaDia = function (gridId) {
         `;
   }
 
-  // 3. Gerar os cards dos eventos posicionados
+  // 3. Gerar os cards dos eventos posicionados. Etapa 5: cards de bandas
+  // com 3+ entram em um contêiner de banda (.agenda-banda-grupo); os
+  // demais mantêm o posicionamento absoluto direto na layer, como sempre.
   let htmlEvents = "";
+  const htmlLinhaPorId = new Map();
   eventosPosicionados.forEach((ev) => {
     const compromisso = ev.original;
     const bloqueioDiaInteiro =
       window.ehBloqueioDiaInteiroCompromisso(compromisso);
 
-    const topPos = ((ev.start - inicioMinutosGrade) / 60) * hourHeight;
-    const heightPos = ((ev.end - ev.start) / 60) * hourHeight;
-
-    // Posicionamento horizontal dinâmico por colisões
-    const widthPercent = 100 / ev.maxCols;
-    const leftPercent = ev.col * widthPercent;
     const duracaoMinutos = ev.end - ev.start;
-
-    // Margem de segurança de layout
-    const gapRight = 4;
-    const larguraCardEstimadaPx =
-      Math.max(
-        REGRAS_VISUAIS_CARD_DIA.larguraMinimaCardPx,
-        (larguraUtilGradePx * widthPercent) / 100 - gapRight,
-      );
+    const larguraCardEstimadaPx = ev.larguraCardPx;
+    const pos = ev.posicionamento;
 
     const analiseDensidadeVisual = analisarDensidadeVisualCardDia({
       compromisso,
-      heightPx: heightPos,
+      heightPx: (duracaoMinutos / 60) * hourHeight,
       duracaoMinutos,
-      larguraPercentual: widthPercent,
+      larguraPercentual: (larguraCardEstimadaPx / larguraContentColPx) * 100,
       larguraEstimadaPx: larguraCardEstimadaPx,
     });
 
-    const widthStyle = `calc(${widthPercent}% - ${gapRight}px)`;
-    const leftStyle = `${leftPercent}%`;
+    if (pos.linha) {
+      // Linha de banda: sem absolutos no card (o contêiner cuida do
+      // posicionamento); o tempo da linha vem do evento, não do contêiner.
+      htmlLinhaPorId.set(
+        ev.id,
+        window.criarCardAgendamento(compromisso, {
+          dataReferencia: new Date(window.dataSelecionada),
+          bloqueioDiaInteiro: bloqueioDiaInteiro,
+          visualContext: "calendar-day",
+          visualDensity: analiseDensidadeVisual.densidade,
+          visualHideOptionalMobile: analiseDensidadeVisual.reduzirConteudoOpcionalMobile,
+          layoutBanda: "linha",
+          horaBandaMinutos: ev.start,
+          style: "",
+          onclick: `abrirModalAcaoSlot('${compromisso.id}')`,
+        })
+      );
+      return;
+    }
 
+    const topPos = ((ev.start - inicioMinutosGrade) / 60) * hourHeight;
+    const heightPos = (duracaoMinutos / 60) * hourHeight;
     htmlEvents += window.criarCardAgendamento(compromisso, {
       dataReferencia: new Date(window.dataSelecionada),
       bloqueioDiaInteiro: bloqueioDiaInteiro,
       visualContext: "calendar-day",
       visualDensity: analiseDensidadeVisual.densidade,
       visualHideOptionalMobile: analiseDensidadeVisual.reduzirConteudoOpcionalMobile,
-      visualInlineStatusBadge: analiseDensidadeVisual.usarBadgeInlineNoTitulo,
-      style: `position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${leftStyle}; width: ${widthStyle};`,
+      // Banda de 2 -> card em formato Outlook (só título); sem banda ->
+      // formato padrão do dia.
+      layoutBanda: pos.formatoOutlook ? "outlook" : undefined,
+      style: `position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${pos.leftStyle}; width: ${pos.widthStyle}; z-index: ${pos.zIndex};`,
       onclick: `abrirModalAcaoSlot('${compromisso.id}')`,
     });
+  });
+
+  // Etapa 5: contêiner das bandas com 3+ — um bloco absoluto que cobre o
+  // span horário da banda (do menor início ao maior fim); dentro, as
+  // linhas empilhadas na ordem de início (calculada no pré-processamento).
+  const eventosPosPorId = new Map(
+    eventosPosicionados.map((ev) => [ev.id, ev])
+  );
+  gruposBandaLinhas.forEach((ordenados) => {
+    const evsBanda = ordenados.map((id) => eventosPosPorId.get(id));
+    const inicioBanda = Math.min(...evsBanda.map((ev) => ev.start));
+    const fimBanda = Math.max(...evsBanda.map((ev) => ev.end));
+    const topPx = ((inicioBanda - inicioMinutosGrade) / 60) * hourHeight;
+    const heightPx = ((fimBanda - inicioBanda) / 60) * hourHeight;
+    htmlEvents += `<div class="agenda-banda-grupo" style="top: ${topPx}px; height: ${heightPx}px;">${ordenados
+      .map((id) => htmlLinhaPorId.get(id))
+      .join("")}</div>`;
   });
 
   // 4. Indicador de Horário Atual

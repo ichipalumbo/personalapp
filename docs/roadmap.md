@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-09-21
+> **Status**: Documento vivo · **Atualizado**: 2026-09-27
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -19,7 +19,9 @@ Cada item traz:
 - **Onde mexer**: arquivos/áreas do código já existentes que servem de ponto de partida.
 - **Esforço estimado**: relativo, não é estimativa de horas fechada.
 
-**Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
+**Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
+
+**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.5** (2026-09-27). O item **5.7** já está `[~]` em andamento (parte resolvida pelos cartões da Etapa 2/3, resto pendente de auditoria final); o **5.6** segue `[ ]` sem início.
 
 ---
 
@@ -40,6 +42,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[x]`  | 0.2                                                              |
 | 0     | 0.10 Deduplicação de `calcularPrazoReposicao`    | `[x]`  | —                                                                |
 | 0     | 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica cobrança | `[x]`  | —                                                                |
+| 0     | 0.12 Cobertura automática do render do Dia       | `[ ]`  | —                                                                |
 | 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
 | 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
 | 1     | 1.3 Observações por aula ou por aluno            | `[x]`  | —                                                                |
@@ -68,6 +71,13 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 4     | 4.7 Precisão financeira avançada                 | `[x]`  | —                                                                |
 | 4     | 4.8 Contrato / assinatura digital                | `[ ]`  | —                                                                |
 | 4     | 4.9 Sessão própria do backend (Opção 1)          | `[ ]`  | —                                                                |
+| 5     | 5.1 Formulários e diálogos mobile (Etapa 1)      | `[x]`  | —                                                                |
+| 5     | 5.2 Legibilidade e área de toque (Etapa 2)       | `[x]`  | 5.1                                                               |
+| 5     | 5.3 Navegação e topo operacional (Etapa 3)       | `[x]`  | —                                                                |
+| 5     | 5.4 Densidade de cards (Etapa 4)                 | `[x]`  | —                                                                |
+| 5     | 5.5 Eventos simultâneos na agenda diária (Etapa 5) | `[x]`  | —                                                             |
+| 5     | 5.6 Erros e toasts (Etapa 6)                     | `[ ]`  | —                                                                |
+| 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[~]`  | 5.1 a 5.6                                                        |
 
 ---
 
@@ -212,6 +222,17 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Implementação concluída**: `POST /api/reposicoes/:id/reabrir` reabre o documento original, volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, registra `reaberta_por_reenvio` e preserva a decisão de cobrança, `validoAte` e `cicloCobrancaResolvido`.
 - **Modal**: compromissos com `reposicaoId` consultam a reposição original e usam uma única ação de reabertura; a opção "Cobrar neste ciclo" fica oculta para evitar nova cobrança.
 - **Testes**: suíte backend completa em 224/224; regressões específicas cobrem a operação atômica, preservação do prazo e ausência de novo documento. A suíte frontend continua com a dependência pré-existente `jsdom` ausente no ambiente.
+
+---
+
+### [ ] 0.12 Cobertura automatizada do render do Dia
+
+- **O que é**: testes automatizados para a camada de render da visão do Dia (`view-home.js` / `agenda-card-template.js`), que hoje segue sem cobrir — a validação é manual em browser, como previsto na seção 10 das instruções do repositório.
+- **Como a lacuna apareceu**: a Etapa 5 (achado 4.12 — eventos simultâneos) mudou o desenhamento das bandas sobrepostas em agosto/setembro de 2026 (colunas para duplas, linhas para 3+, fundo nivelado e grade esticada). Enquanto a suíte de frontend não cobre o render, a nova regra de bandas (banda ≥ 3 vira linhas; o par de início igual fica em colunas; o dedup de componentes da banda) só pode ser validada de forma manual e visual, nos viewports de referência 433/390/320.
+- **Lacunas vizinhas** que cabem no mesmo item, se a cobertura for construída por lá: `agenda-conflitos.js` e os modais (ambos já listados no 3.1/3.5).
+- **Por que importa**: o motor `calcularColisoes` é sensível (área §7 das instruções) e alimenta agenda e financeiro; um bug de layout que não muda geometria do motor pode passar despercebido sem rede de proteção na camada de desenhamento.
+- **Caminho**: o `jsdom` já está instalado em `tests-frontend/` como `devDependency` ociosa, deliberadamente reservado para a cobertura de DOM (ver 3.5). Um teste de render do Dia o aproveitaria, e o setup `tests-frontend/setup/carregar-frontend.js` já resolve o carregamento dos scripts via contexto `vm`.
+- **Esforço**: Baixo–Médio (a infraestrutura de carregamento já existe; falta o primeiro teste de DOM consumindo o jsdom).
 - **Referências**: [`2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md`](_reports/2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md) e seção 5.3/6.4/9.3 da spec de reposições.
 
 ---
@@ -549,6 +570,94 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Onde mexer**: `backend/src/middleware/requireAuth.js` (aceitar dois formatos de token), rota nova de emissão/renovação em `backend/src/routes/`, segredo de assinatura em `backend/src/config/env.js` e `.env.example`, e `assets/js/auth/google-identity.js` no ponto em que a credencial do Google é recebida (`_handleCredentialResponse`) e no logout (`_performSignOut`).
 - **Cuidados**: logout precisa invalidar a sessão no backend, não apenas apagar o cache local; a renovação não pode virar sessão eterna sem reautenticação; e a transição precisa manter o formato antigo funcionando até o frontend estar publicado.
 - **Esforço**: Médio.
+
+---
+
+## 📱 Grupo 5 — Auditoria de UI/UX mobile
+
+> Grupo vivo: cada rodada de UI/UX mobile entra aqui como um item novo, na ordem em que for
+> executada. Fonte de verdade do escopo e do diagnóstico original:
+> [`_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`](_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md)
+> (tabela mestra de rastreabilidade dos achados 4.1–4.17). Cada item abaixo corresponde a uma
+> "Etapa" desse diagnóstico; a numeração de Etapa não muda, só o item de roadmap é novo.
+
+### [x] 5.1 Formulários e diálogos mobile (Etapa 1) — **CONCLUÍDO**
+
+- **O que foi entregue**: `DialogController` novo, com 14 superfícies de modal migradas, tela
+  completa em mobile (≤ 430px) nos formulários de cadastro/agendamento/recorrência, empilhamento
+  real com retorno de foco, e revisão posterior removendo o foco automático em campo de texto
+  (evitava abrir o teclado virtual sem intenção).
+- **Resolve**: achados 4.1 (formulário sem saída operacional) e 4.7 (diálogo inconsistente) do
+  diagnóstico.
+- **Relatório**: [`_reports/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md`](_reports/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md).
+
+---
+
+### [x] 5.2 Legibilidade e área de toque (Etapa 2) — **CONCLUÍDO**
+
+- **O que foi entregue**: escala tipográfica mínima aplicada (zero texto <12px), alvos de toque
+  ampliados para 48px nos grupos 1 (Finanças) e 2 (grade de horários) — grupo 3
+  (cabeçalho/toolbar) ficou <44px por decisão do dono, registrado como candidato a rodada
+  futura —, `:focus-visible` dourado padronizado e `aria-label` em 13/13 botões ícone-only.
+- **Resolve**: achados 4.4 (tipografia pequena), 4.5 (alvos de toque) e a parte inicial de 4.6
+  (foco/teclado básico) do diagnóstico.
+- **Relatório**: [`_reports/2026-09-26-etapa-2-legibilidade-toque-cartoes.md`](_reports/2026-09-26-etapa-2-legibilidade-toque-cartoes.md).
+
+---
+
+### [x] 5.3 Navegação e topo operacional (Etapa 3) — **CONCLUÍDO**
+
+- **O que foi entregue**: header reduzido de 122px para 68px em 433px, navegação superior
+  trocada por barra inferior fixa (3 telas, alvos 134×52px, `aria-current="page"` no item ativo),
+  safe areas via `--bottombar-height` medido em runtime e `viewport-fit=cover`.
+- **Resolve**: achados 4.2 (topo consome altura excessiva), 4.3 (navegação compete com conteúdo),
+  4.14 (safe areas) e parte de 4.16 (ARIA de navegação) do diagnóstico.
+- **Relatório**: [`_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md`](_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md).
+
+---
+
+### [x] 5.4 Densidade de cards (Etapa 4) — **CONCLUÍDO**
+
+- **O que foi entregue**: 4 cartões (A–D) reduzindo informação sempre-visível dos cards de Aluno,
+  Finanças e Agenda, com áreas expansíveis ("Ver detalhes") e badges em modo ícone com
+  texto preservado em `title`/`aria-label`.
+- **Resolve**: achado 4.11 (cards com informação excessiva). O achado 4.10 (filtros apertados) já
+  havia sido resolvido fora da sequência formal (remoção de filtros de Finanças e Alunos).
+- **Relatório**: [`_reports/2026-09-27-etapa-4-densidade-cards-cartoes.md`](_reports/2026-09-27-etapa-4-densidade-cards-cartoes.md).
+
+---
+
+### [x] 5.5 Eventos simultâneos na agenda diária (Etapa 5) — **CONCLUÍDO**
+
+- **O que foi entregue**: formato híbrido estilo Outlook para eventos simultâneos no dia —
+  banda de 2 em colunas proporcionais, banda de 3+ em linhas empilhadas (nome, hora, chip) — e
+  fundo do modo Dia nivelado (sem o cinza de painel) e esticado nas laterais.
+- **Resolve**: achado 4.12 (eventos simultâneos na agenda diária).
+- **Relatório**: [`_reports/2026-09-27-etapa-5-eventos-simultaneos.md`](_reports/2026-09-27-etapa-5-eventos-simultaneos.md).
+
+---
+
+### [ ] 5.6 Erros e toasts (Etapa 6)
+
+- **O que é**: tratar o achado 4.8 (erro global bloqueante sem recuperação) e o achado 4.9
+  (acessibilidade/contraste de toasts — `role="status"`/`role="alert"`, `aria-live`).
+- **Não refazer**: o hotfix de `pointer-events` do `.toast` (Fase 0.1 do diagnóstico) e o
+  reancoramento do `bottom` via `--bottombar-height` (Etapa 3) já estão resolvidos — a Etapa 6
+  assume os dois como base.
+- **Depende de**: nenhum item deste grupo bloqueia, mas ainda não foi iniciado.
+
+---
+
+### [~] 5.7 Consistência e acessibilidade final (Etapa 7) — **EM ANDAMENTO**
+
+- **O que é**: etapa ampliada para cobrir os achados que ficaram órfãos no diagnóstico original
+  — 4.13 (amarelo sobrecarregado semanticamente) e 4.17 (6 inconsistências específicas) —, além
+  de fechar o restante de 4.6 (semantica final de cards/tabs) e 4.16 (ARIA completo de
+  navegação/tabs).
+- **O que já está resolvido de fato**: os itens 4.17.4 e 4.17.5 (padrões `disabled` e
+  `aria-label` globais) já vieram dos cartões C e D da Etapa 2 — o que resta aqui é auditoria de
+  cobertura, não trabalho novo nesses dois pontos.
+- **Esforço restante**: auditar 4.13, 4.15 (movimento reduzido parcial) e o que sobrar de 4.17.
 
 ---
 

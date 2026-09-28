@@ -152,12 +152,32 @@ const BADGE_STYLES = {
                 ? window.ehBloqueioDiaInteiroCompromisso(comp)
                 : false);
         const periodo = resolverPeriodo(comp, opcoes, bloqueioDiaInteiro);
-        const periodoSeguro = escapeHtml(periodo);
         const compromissoConcluido = resolverCompromissoConcluido(comp, opcoes);
         const iconePeriodo = compromissoConcluido ? 'fa-solid fa-check' : 'fa-regular fa-clock';
         const classeTempoConcluido = compromissoConcluido ? ' agenda-semana-card-time--completed' : '';
         const classes = ['agenda-dia-aula', 'agenda-semana-card'];
         const visualContext = opcoes.visualContext === 'calendar-day' ? 'calendar-day' : '';
+        // Etapa 5 (2026-09-27, achado 4.12 — formato final, decisão do dono):
+        // na visão Dia, banda de 2 simultâneos vira formato OUTLOOK
+        // (classe .formato-outlook: só o título no card; a hora se lê pela
+        // posição na timeline); banda de 3+ vira uma LINHA dentro do
+        // contêiner de banda (classe .formato-linha: hora de início +
+        // título + status). Sem banda: formato padrão do dia (o tempo já
+        // fica oculto como antes — timeline faz o trabalho).
+        const layoutBanda =
+            visualContext === 'calendar-day' &&
+            (opcoes.layoutBanda === 'outlook' || opcoes.layoutBanda === 'linha')
+                ? opcoes.layoutBanda
+                : '';
+        // Linha de banda: hora COMPRIMIDA (só início) — a identificação que
+        // faltava entre eventos iguais no nome dentro da mesma banda.
+        // Bloqueio dia inteiro: o texto "Dia inteiro" já é curto e "00:00"
+        // seria informação enganosa — mantém o período cheio.
+        const periodoExibir =
+            layoutBanda === 'linha' && !bloqueioDiaInteiro && Number.isInteger(opcoes.horaBandaMinutos)
+                ? `${String(Math.floor(opcoes.horaBandaMinutos / 60)).padStart(2, '0')}:${String(opcoes.horaBandaMinutos % 60).padStart(2, '0')}`
+                : periodo;
+        const periodoExibirSeguro = escapeHtml(periodoExibir);
         const visualDensity = ['normal', 'compact', 'tight'].includes(opcoes.visualDensity)
             ? opcoes.visualDensity
             : 'normal';
@@ -170,6 +190,9 @@ const BADGE_STYLES = {
             }
             if (visualHideOptionalMobile) {
                 classes.push('agenda-card-mobile-overflow');
+            }
+            if (layoutBanda) {
+                classes.push(layoutBanda === 'outlook' ? 'formato-outlook' : 'formato-linha');
             }
         }
 
@@ -228,7 +251,7 @@ const BADGE_STYLES = {
                                 <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i><span class="agenda-dia-aula-nome-texto">${nomeSeguro}</span></span>
                                 ${montarSlotBadgeInline(tagStatusHtml)}
                             </div>
-                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
+                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${localSeguro}</span>
@@ -256,7 +279,7 @@ const BADGE_STYLES = {
                             <div class="agenda-semana-card-title-group">
                                 <span class="agenda-dia-aula-nome" style="color: #51b749;"><i class="fa-solid fa-car-side"></i><span class="agenda-dia-aula-nome-texto">Deslocamento</span></span>
                             </div>
-                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
+                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${descricaoDeslocamento}</span>
@@ -282,7 +305,7 @@ const BADGE_STYLES = {
                             <div class="agenda-semana-card-title-group">
                                 <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-brands fa-google" style="color: #4285F4;"></i><span class="agenda-dia-aula-nome-texto">${descricaoExternaSafe}</span></span>
                             </div>
-                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
+                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #ff5c54;">Bloqueado</span>
@@ -302,7 +325,7 @@ const BADGE_STYLES = {
                             <div class="agenda-semana-card-title-group">
                                 <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: #DDD;"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
                             </div>
-                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoSeguro}</span>
+                            <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #ff5c54;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>

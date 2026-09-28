@@ -297,6 +297,84 @@ window.__UI_MOCK_SCENARIOS = {
     ],
     homeSummary: { proximoCompromisso: '2026-09-27 08:30', totalAtivos: 2, totalPendentes: 0, totalSemana: 4 }
   },
+  // ───────────────────────────────────────────────────────────────────────────
+  // CENÁRIO DEMONSTRATIVO — Etapa 5 (eventos simultâneos na agenda diária), 2026-09-27
+  // Objetivo: dar 2/3/4 eventos sobrepostos na MESMA data para a Home (aba Dia)
+  // renderizar o motor de colunas (calcularColisoes) em cada nível de
+  // simultaneidade. Como a criação/edição no app bloqueia sobreposição de
+  // aulas entre si (scheduling-serializer → validarConflitos), os eventos
+  // sobrepostos aqui simulam as duas fontes que NÃO passam por esse gate:
+  //   (1) aulas reais entre si — caso hipotético (migrado de outro perfil,
+  //       seed antigo, ou mudança futura de regra de negócio);
+  //   (2) evento externo do Google Calendar em cima de aula (gcalExternal) —
+  //       é o caso REAL: o sync grava BloqueioExterno sem checar conflito
+  //       (gcalSyncService.upsertBloqueio).
+  // Legenda (Home → aba Dia, domingo 27/09/2026, data atual na abertura):
+  //   FAIXA 2 COLUNAS (sobreposição de 60min):
+  //     s2a  08:00-09:00 aula (Aurora Helena de Camargo Monzani, nome 33ch)
+  //     s2b  08:30-09:30 aula (Bruna Rocha)
+  //   FAIXA 3 COLUNAS (todos os 3 se cortam):
+  //     s3a  10:00-11:00 aula (Aurora Helena...)
+  //     s3b  10:15-11:15 bloqueio interno ("Descanso da equipe técnica")
+  //     s3c  10:30-11:30 aula (Bruna Rocha)
+  //   FAIXA 4 COLUNAS (todos os 4 se cortam):
+  //     s4a        12:00-13:00 aula (Aurora Helena...)
+  //     gcal_ext5  12:15-13:15 externo GCal ("Reunião de coordenação")
+  //     s4b        12:30-13:30 aula (Bruna Rocha)
+  //     s4c        12:45-13:45 deslocamento
+  //   INÍCIOS IGUAIS (fallback em colunas, NÃO cascata — valida a regra
+  //     de banda com par no mesmo minuto, que a cascata esconderia):
+  //     s5a  14:00-15:00 aula (Aurora Helena...)
+  //     s5b  14:00-15:00 bloqueio interno ("Ajuste de agenda — recepção")
+  // Nota de modelo: dois eventos que apenas se TOCAM na borda (08:00/08:30)
+  // NÃO são conflito (a regra usa inicio < fim) — por isso a sobreposição
+  // interna foi desenhada com início deslocado de 15-30min.
+  // Os nomes/descrições são os "dados extremos" da auditoria (7.2):
+  // 33 e 12 chars de nome, 27 chars de descrição de deslocamento.
+  // ───────────────────────────────────────────────────────────────────────────
+  agendaSimultaneos: {
+    name: 'agendaSimultaneos',
+    label: 'Eventos simultâneos — demonstração da Etapa 5',
+    ownerEmail: 'mock@local.test',
+    profile: { name: 'Mock User', email: 'mock@local.test', picture: '' },
+    configuracao: { horaInicio: '07:00', horaFim: '15:00', diasTrabalho: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab'], limiteAlunosAtivos: 10 },
+    alunos: [
+      { id: 'e1', nome: 'Aurora Helena de Camargo Monzani', email: 'aurora.monzani@example.com', telefone: '(11) 90555-0011', local: 'Estúdio Central — Sala 02 A', objetivo: 'Recuperação', status: 'ativo', diaVencimento: 12, fechamentoMesCheio: false, metodoCobranca: 'por_aula', preco: 60, frequenciaSemanal: 1, valorFixoCiclo: 0, observacoes: 'Nome de 33 chars, usado nas colunas comprimidas.', corObjetivo: { nome: 'Cinza-azulado', hex: '#34c2eb' } },
+      { id: 'e2', nome: 'Bruna Rocha', email: 'bruna.rocha@example.com', telefone: '(11) 90555-0012', local: 'Estúdio Central', objetivo: 'Força', status: 'ativo', diaVencimento: 15, fechamentoMesCheio: false, metodoCobranca: 'por_aula', preco: 60, frequenciaSemanal: 2, valorFixoCiclo: 0, observacoes: 'Nome curto, contraste dentro da coluna.', corObjetivo: { nome: 'Laranja', hex: '#ffb74d' } }
+    ],
+    agendamentos: [
+      // Par (2 colunas): sobreposição em 08:30-09:00
+      { id: 's2a', alunoId: 'e1', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '08:00', horarioFim: '09:00', descricao: 'Avaliação motora' },
+      { id: 's2b', alunoId: 'e2', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '08:30', horarioFim: '09:30', descricao: 'Treino resistido' },
+      // Tríade (3 colunas): sobreposição de 3 em 10:30-11:00
+      { id: 's3a', alunoId: 'e1', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '10:00', horarioFim: '11:00', descricao: 'Avaliação motora' },
+      { id: 's3b', tipo: 'bloqueio', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '10:15', horarioFim: '11:15', descricao: 'Descanso da equipe técnica' },
+      { id: 's3c', alunoId: 'e2', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '10:30', horarioFim: '11:30', descricao: 'Treino resistido' },
+      // Quadrúpla (4 colunas): sobreposição de 4 em 12:45-13:00 — inclui o externo GCal
+      { id: 's4a', alunoId: 'e1', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '12:00', horarioFim: '13:00', descricao: 'Avaliação motora' },
+      { id: 's4b', alunoId: 'e2', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '12:30', horarioFim: '13:30', descricao: 'Treino resistido' },
+      { id: 's4c', tipo: 'deslocamento', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '12:45', horarioFim: '13:45', descricao: 'Estúdio Norte — Consultório 2B' },
+      // Inícios iguais (14:00/14:00): valida o fallback em colunas — a
+      // cascata esconderia a linha do nome do card de trás quando dois
+      // eventos começam no mesmo minuto (o motor de colunas é o caminho
+      // que se preserva nesse caso).
+      { id: 's5a', alunoId: 'e1', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '14:00', horarioFim: '15:00', descricao: 'Avaliação motora' },
+      { id: 's5b', tipo: 'bloqueio', frequencia: 'uma_vez', data: '2026-09-27', horarioInicio: '14:00', horarioFim: '15:00', descricao: 'Ajuste de agenda — recepção' }
+    ],
+    bloqueiosExternos: [
+      { id: 'gcal_ext5', googleCalendarEventId: 'gcal-ext-5555', titulo: 'Reunião de coordenação', data: '2026-09-27', horarioInicio: '12:15', horarioFim: '13:15', fullDay: false }
+    ],
+    reposicoes: [],
+    financas: [
+      { alunoId: 'e1', aluno: { id: 'e1', nome: 'Aurora Helena de Camargo Monzani' }, configuracaoPendente: false, cicloAtual: { _id: 'ce1', alunoId: 'e1', cicloInicio: '2026-09-01', cicloFim: '2026-09-30', status: 'pago', metodoCobranca: 'por_aula', aulasContadas: 1, aulasManuaisExtras: 0, valorTotalCiclo: 60, extrato: [] }, historicoDisponivel: true },
+      { alunoId: 'e2', aluno: { id: 'e2', nome: 'Bruna Rocha' }, configuracaoPendente: false, cicloAtual: { _id: 'ce2', alunoId: 'e2', cicloInicio: '2026-09-01', cicloFim: '2026-09-30', status: 'em_aberto', metodoCobranca: 'por_aula', aulasContadas: 1, aulasManuaisExtras: 0, valorTotalCiclo: 60, extrato: [] }, historicoDisponivel: true }
+    ],
+    consistenciaAgenda: [
+      { alunoId: 'e1', aulasSemanaisContrato: 1, aulasFaltamAgendar: 0 },
+      { alunoId: 'e2', aulasSemanaisContrato: 2, aulasFaltamAgendar: 1 }
+    ],
+    homeSummary: { proximoCompromisso: '2026-09-27 08:00', totalAtivos: 2, totalPendentes: 0, totalSemana: 8 }
+  },
   alunosEmAtraso: {
     name: 'alunosEmAtraso',
     label: 'Alunos com atraso e alertas',
