@@ -592,16 +592,17 @@ window.renderizarAgendaDia = function (gridId) {
     }))
   );
 
-  // Etapa 5 (2026-09-27, achado 4.12 — decisão do dono, pergunta 3 da
-  // auditoria): eventos simultâneos deixam o layout em COLUNAS LATERAIS
-  // (colunas de 37–78px em 320px davam 0–3 caracteres de nome) e ganham
-  // CASCATA: cada card da banda ocupa quase a largura total, empilhado com
-  // degrau ESCALONAMENTO_PX por coluna — a linha de cada card fica no
-  // próprio TOPO, e a hora de início (agora visível no topo do card)
-  // ordena a leitura, como no Google Calendar mobile. Geometria em px/%
-  // da content-col => imune a resize (não depende de largura medida em
-  // tempo de render).
-  const ESCALONAMENTO_PX = 12; // degrau por coluna (protótipo aprovado)
+  // Etapa 5 (2026-09-27, achado 4.12 — formato FINAL, decisão do dono com
+  // o protótipo + print do Outlook): o motor de colunas (calcularColisoes)
+  // segue intacto; muda a DESENHAÇÃO da banda:
+  // - banda com 2 eventos: colunas proporcionais (engine) com card em
+  //   formato Outlook — só o título, sem hora/chip/ícone/rodapé (tudo
+  //   volta no card ao tocar); a hora se lê pela posição na timeline.
+  // - banda com 3+ eventos: linhas empilhadas a largura total
+  //   [hora de início + título + status] em contêiner que cobre o span da
+  //   banda (list mode) — o caso extremo legível até 320px.
+  // Geometria em %/px da content-col => imune a resize (não depende de
+  // largura medida em tempo de render).
 
   // Largura REAL da coluna de conteúdo da grade: o grid tem padding 12px
   // dos dois lados, wrapper em grade de 55px, gap de 12px e border de 1px
@@ -648,55 +649,55 @@ window.renderizarAgendaDia = function (gridId) {
   // antes a heurística recebia Math.max(120, ...), ou seja, pensava 120px
   // enquanto o card renderizava 37px (densidade dessincronizada do render).
   //
-  // A cascata exige inícios ESTRITAMENTE crescentes dentro da banda: com
-  // dois eventos no mesmo início, o card da frente esconderia a linha do
-  // nome do de trás. A decisão por cascata é por BANDA (não por evento):
-  // se QUALQUER par da banda compartilha início, a banda inteira volta ao
-  // layout em colunas — senão teríamos um arranjo misto (uns em cascata,
-  // uns em colunas) dentro da mesma faixa.
-  const bandaTemInicioDuplicado = new Map(); // id -> bool (mesma p/ a banda)
+  // Etapa 5: bandas com 3+ membros viram linhas dentro de um contêiner
+  // (`.agenda-banda-grupo`) que cobre o span da banda — o contêiner é
+  // montado na geração do HTML abaixo (precisa do HTML de cada evento).
+  // A ordem das linhas é pelo início; em empate de início, quem termina
+  // primeiro vem antes (tie-break determinístico).
+  // CUIDADO: `componentes` mapeia CADA id para a mesma Set de grupo, então
+  // iterá-la retorna o MESMO grupo uma vez por membro. Usamos um Set de
+  // "já vistos" (por referência da Set) para processar cada banda UMA vez.
+  const membrosPorBanda = new Map(); // id -> nº de membros da banda
+  const gruposBandaLinhas = []; // [ids ordenados] — só bandas com 3+
+  const gruposVistos = new Set();
   componentes.forEach((grp) => {
-    let temDup = false;
-    const vistos = new Set();
-    for (const id of grp) {
-      const st = eventosGradePorId.get(id).start;
-      if (vistos.has(st)) temDup = true;
-      vistos.add(st);
+    if (gruposVistos.has(grp)) return;
+    gruposVistos.add(grp);
+    const ids = [...grp];
+    ids.forEach((id) => membrosPorBanda.set(id, ids.length));
+    if (ids.length >= 3) {
+      const ordenados = ids
+        .map((id) => eventosGradePorId.get(id))
+        .sort((a, b) => a.start - b.start || a.end - b.end)
+        .map((ev) => ev.id);
+      gruposBandaLinhas.push(ordenados);
     }
-    grp.forEach((id) => bandaTemInicioDuplicado.set(id, temDup));
   });
 
   eventosPosicionados.forEach((ev) => {
-    // Bloqueios de dia inteiro chegam com maxCols=1 (fora do grafo) e caem
-    // no ramo de largura total abaixo. A cascata só se aplica a bandas com
-    // maxCols>1 e inícios estritamente crescentes.
-    const usaCascataBanda =
-      ev.maxCols > 1 && !bandaTemInicioDuplicado.get(ev.id);
-    if (usaCascataBanda) {
-      const leftPx = ev.col * ESCALONAMENTO_PX;
-      ev.posicionamento = {
-        cascata: true,
-        leftStyle: `${leftPx}px`,
-        widthStyle: `calc(100% - ${leftPx + 2}px)`,
-        zIndex: 10 + ev.col,
-      };
-      ev.larguraCardPx = larguraContentColPx - leftPx - 2;
+    const tamanhoBanda = membrosPorBanda.get(ev.id) || 1;
+    if (tamanhoBanda >= 3) {
+      // Linha de banda: posicionamento resolvido pelo contêiner
+      // (position static via .agenda-banda-linha no CSS); a referência de
+      // largura para a heurística de densidade é a content-col inteira.
+      ev.posicionamento = { linha: true };
+      ev.larguraCardPx = larguraContentColPx;
     } else if (ev.maxCols > 1) {
-      // Fallback em colunas (banda com inícios iguais): preserva EXATAMENTE
-      // a geometria pré-Etapa 5 (inset 4px), agora sobre a largura REAL da
-      // content-col em vez de larguraUtilGradePx. Card sem banda mantém o
-      // mesmo inset de sempre.
+      // Banda de 2: colunas proporcionais do engine, inset original de
+      // 4px (mesma geometria do layout pré-Etapa 5). O card vira formato
+      // Outlook (só título) via classe .formato-outlook no template.
       const widthPercent = 100 / ev.maxCols;
       ev.posicionamento = {
-        cascata: false,
+        formatoOutlook: true,
         leftStyle: `${ev.col * widthPercent}%`,
         widthStyle: `calc(${widthPercent}% - 4px)`,
         zIndex: 1,
       };
       ev.larguraCardPx = (larguraContentColPx * widthPercent) / 100 - 4;
     } else {
+      // Sem banda (ou bloqueio de dia inteiro, que chega com maxCols=1
+      // e fica fora do grafo): largura total, inset original de sempre.
       ev.posicionamento = {
-        cascata: false,
         leftStyle: "0",
         widthStyle: "calc(100% - 4px)",
         zIndex: 1,
@@ -765,45 +766,79 @@ window.renderizarAgendaDia = function (gridId) {
         `;
   }
 
-  // 3. Gerar os cards dos eventos posicionados
+  // 3. Gerar os cards dos eventos posicionados. Etapa 5: cards de bandas
+  // com 3+ entram em um contêiner de banda (.agenda-banda-grupo); os
+  // demais mantêm o posicionamento absoluto direto na layer, como sempre.
   let htmlEvents = "";
+  const htmlLinhaPorId = new Map();
   eventosPosicionados.forEach((ev) => {
     const compromisso = ev.original;
     const bloqueioDiaInteiro =
       window.ehBloqueioDiaInteiroCompromisso(compromisso);
 
-    const topPos = ((ev.start - inicioMinutosGrade) / 60) * hourHeight;
-    const heightPos = ((ev.end - ev.start) / 60) * hourHeight;
-
-    // Etapa 5 (2026-09-27): posição já resolvida no pré-processamento acima
-    // (cascata com inícios crescentes; colunas como fallback; 100% sem banda).
     const duracaoMinutos = ev.end - ev.start;
     const larguraCardEstimadaPx = ev.larguraCardPx;
+    const pos = ev.posicionamento;
 
     const analiseDensidadeVisual = analisarDensidadeVisualCardDia({
       compromisso,
-      heightPx: heightPos,
+      heightPx: (duracaoMinutos / 60) * hourHeight,
       duracaoMinutos,
       larguraPercentual: (larguraCardEstimadaPx / larguraContentColPx) * 100,
       larguraEstimadaPx: larguraCardEstimadaPx,
     });
 
-    // pos.cascata já reflete a decisão da banda (cascata só com inícios
-    // estritamente crescentes; fallback de colunas quando há início igual).
-    const pos = ev.posicionamento;
-    const cascata = pos.cascata === true;
+    if (pos.linha) {
+      // Linha de banda: sem absolutos no card (o contêiner cuida do
+      // posicionamento); o tempo da linha vem do evento, não do contêiner.
+      htmlLinhaPorId.set(
+        ev.id,
+        window.criarCardAgendamento(compromisso, {
+          dataReferencia: new Date(window.dataSelecionada),
+          bloqueioDiaInteiro: bloqueioDiaInteiro,
+          visualContext: "calendar-day",
+          visualDensity: analiseDensidadeVisual.densidade,
+          visualHideOptionalMobile: analiseDensidadeVisual.reduzirConteudoOpcionalMobile,
+          layoutBanda: "linha",
+          horaBandaMinutos: ev.start,
+          style: "",
+          onclick: `abrirModalAcaoSlot('${compromisso.id}')`,
+        })
+      );
+      return;
+    }
 
+    const topPos = ((ev.start - inicioMinutosGrade) / 60) * hourHeight;
+    const heightPos = (duracaoMinutos / 60) * hourHeight;
     htmlEvents += window.criarCardAgendamento(compromisso, {
       dataReferencia: new Date(window.dataSelecionada),
       bloqueioDiaInteiro: bloqueioDiaInteiro,
       visualContext: "calendar-day",
       visualDensity: analiseDensidadeVisual.densidade,
       visualHideOptionalMobile: analiseDensidadeVisual.reduzirConteudoOpcionalMobile,
-      visualInlineStatusBadge: analiseDensidadeVisual.usarBadgeInlineNoTitulo,
-      visualCascataHoraComprimida: cascata,
+      // Banda de 2 -> card em formato Outlook (só título); sem banda ->
+      // formato padrão do dia.
+      layoutBanda: pos.formatoOutlook ? "outlook" : undefined,
       style: `position: absolute; top: ${topPos}px; height: ${heightPos}px; left: ${pos.leftStyle}; width: ${pos.widthStyle}; z-index: ${pos.zIndex};`,
       onclick: `abrirModalAcaoSlot('${compromisso.id}')`,
     });
+  });
+
+  // Etapa 5: contêiner das bandas com 3+ — um bloco absoluto que cobre o
+  // span horário da banda (do menor início ao maior fim); dentro, as
+  // linhas empilhadas na ordem de início (calculada no pré-processamento).
+  const eventosPosPorId = new Map(
+    eventosPosicionados.map((ev) => [ev.id, ev])
+  );
+  gruposBandaLinhas.forEach((ordenados) => {
+    const evsBanda = ordenados.map((id) => eventosPosPorId.get(id));
+    const inicioBanda = Math.min(...evsBanda.map((ev) => ev.start));
+    const fimBanda = Math.max(...evsBanda.map((ev) => ev.end));
+    const topPx = ((inicioBanda - inicioMinutosGrade) / 60) * hourHeight;
+    const heightPx = ((fimBanda - inicioBanda) / 60) * hourHeight;
+    htmlEvents += `<div class="agenda-banda-grupo" style="top: ${topPx}px; height: ${heightPx}px;">${ordenados
+      .map((id) => htmlLinhaPorId.get(id))
+      .join("")}</div>`;
   });
 
   // 4. Indicador de Horário Atual

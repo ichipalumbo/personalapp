@@ -157,17 +157,26 @@ const BADGE_STYLES = {
         const classeTempoConcluido = compromissoConcluido ? ' agenda-semana-card-time--completed' : '';
         const classes = ['agenda-dia-aula', 'agenda-semana-card'];
         const visualContext = opcoes.visualContext === 'calendar-day' ? 'calendar-day' : '';
-        // Etapa 5 (2026-09-27, achado 4.12): em bandas simultâneas com inícios
-        // crescentes, o card é desenhado em CASCATA (view-home.js) e mostra a
-        // hora de INÍCIO comprimida no topo — identificação que faltava entre
-        // alunos com o MESMO nome em faixas diferentes.
-        const cascataHoraComprimida = visualContext === 'calendar-day'
-            && opcoes.visualCascataHoraComprimida === true;
-        // Bloqueio dia inteiro: o texto "Dia inteiro" já é curto e o início
-        // "00:00" seria informação enganosa — mantém o período cheio.
-        const periodoExibir = cascataHoraComprimida && !bloqueioDiaInteiro
-            ? String(comp.horarioInicio || '').slice(0, 5)
-            : periodo;
+        // Etapa 5 (2026-09-27, achado 4.12 — formato final, decisão do dono):
+        // na visão Dia, banda de 2 simultâneos vira formato OUTLOOK
+        // (classe .formato-outlook: só o título no card; a hora se lê pela
+        // posição na timeline); banda de 3+ vira uma LINHA dentro do
+        // contêiner de banda (classe .formato-linha: hora de início +
+        // título + status). Sem banda: formato padrão do dia (o tempo já
+        // fica oculto como antes — timeline faz o trabalho).
+        const layoutBanda =
+            visualContext === 'calendar-day' &&
+            (opcoes.layoutBanda === 'outlook' || opcoes.layoutBanda === 'linha')
+                ? opcoes.layoutBanda
+                : '';
+        // Linha de banda: hora COMPRIMIDA (só início) — a identificação que
+        // faltava entre eventos iguais no nome dentro da mesma banda.
+        // Bloqueio dia inteiro: o texto "Dia inteiro" já é curto e "00:00"
+        // seria informação enganosa — mantém o período cheio.
+        const periodoExibir =
+            layoutBanda === 'linha' && !bloqueioDiaInteiro && Number.isInteger(opcoes.horaBandaMinutos)
+                ? `${String(Math.floor(opcoes.horaBandaMinutos / 60)).padStart(2, '0')}:${String(opcoes.horaBandaMinutos % 60).padStart(2, '0')}`
+                : periodo;
         const periodoExibirSeguro = escapeHtml(periodoExibir);
         const visualDensity = ['normal', 'compact', 'tight'].includes(opcoes.visualDensity)
             ? opcoes.visualDensity
@@ -182,8 +191,8 @@ const BADGE_STYLES = {
             if (visualHideOptionalMobile) {
                 classes.push('agenda-card-mobile-overflow');
             }
-            if (cascataHoraComprimida) {
-                classes.push('cascata-hora');
+            if (layoutBanda) {
+                classes.push(layoutBanda === 'outlook' ? 'formato-outlook' : 'formato-linha');
             }
         }
 

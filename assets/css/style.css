@@ -2190,36 +2190,150 @@ body {
 }
 
 /* ───────────────────────────────────────────────────────────────────────────
-   Etapa 5 (2026-09-27, achado 4.12 — eventos simultâneos, decisão do dono)
-   Em bandas com inícios crescentes o card ganha a classe .cascata-hora:
-   a hora (somente INÍCIO, comprimida) fica visível no topo — identificação
-   que faltava entre eventos iguais no nome ("Aurora…" em 3 faixas).
-   A linha de título vira: [nome …] [chip 20px] [hora], tudo nowrap e
-   flex:0 0 auto — a hora nunca desce de linha nem encolhe (mesmo padrão
-   fixo do Refinamento 5; aqui com margem automática à esquerda).
-   Regras com especificidade maior que as do bloco base acima => valem em
-   qualquer densidade.
+   Etapa 5 (2026-09-27, achado 4.12 — eventos simultâneos, formato FINAL)
+   Decisão do dono com protótipo + print do Outlook:
+   - .formato-outlook (banda com 2): card SÓ com título, sem ícone/chip/
+     hora/rodapé — o mesmo card "flutuando" só com título do Outlook; a
+     hora se lê pela posição do card na timeline. Tudo que some aqui
+     continua acessível no modal (tocar no card).
+   - .formato-linha (banda com 3+): cartão vira uma LINHA dentro do
+     contêiner .agenda-banda-grupo — [hora de início + título + chip] em
+     uma linha, sem altura proporcional à duração. A linha nunca estoura a
+     altura do contêiner (flex col + min-height:0 + overflow hidden).
+   As regras têm especificidade maior que o bloco base do dia acima =>
+   valem em qualquer densidade.
    ─────────────────────────────────────────────────────────────────────── */
-/* Piso de 12px do achado 4.4 (escala 16/14/12) — o horário é o elemento de
-   identificação principal da cascata, não pode cair abaixo do piso. */
-#agendaGridHomeHome .agenda-card-dayview.cascata-hora .agenda-semana-card-time {
+
+/* FORMATO OUTLOOK (banda de 2): só o título no card. */
+/* Rodapé (local/método) fora — o título é o conteúdo útil do Outlook. */
+#agendaGridHomeHome .agenda-card-dayview.formato-outlook .agenda-semana-card-bottom {
+  display: none;
+}
+/* Ícone do tipo fora (formatura/carro/cadeado/G); o título já identifica. */
+#agendaGridHomeHome .agenda-card-dayview.formato-outlook .agenda-dia-aula-nome > i {
+  display: none;
+}
+/* Chip de status fora no card (o card é só título). */
+#agendaGridHomeHome .agenda-card-dayview.formato-outlook .agenda-card-inline-status {
+  display: none !important;
+}
+/* Hora fora — a posição na timeline é a hora (comportamento do Outlook). */
+#agendaGridHomeHome .agenda-card-dayview.formato-outlook .agenda-semana-card-time {
+  display: none !important;
+}
+/* Sem a reserva de 28px do chip âncora absoluta: o nome usa a largura
+   inteira da coluna (o corte "…" passa a usar 100%). */
+#agendaGridHomeHome .agenda-card-dayview.formato-outlook .agenda-dia-aula-nome {
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* FORMATO LINHA (banda com 3+): cartão vira uma linha dentro do contêiner. */
+/* O card deixa de ser absoluto/anterno (o contêiner posiciona) e vira uma
+   flex row compacta: não encolhe verticalmente além da linha, sem rodapé. */
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview {
+  position: static !important;
+  height: auto !important;
+  top: auto !important;
+  left: auto !important;
+  width: 100% !important;
+  flex: 0 1 auto;
+  min-height: 0;
+  margin-bottom: 2px;
+}
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview:only-child {
+  margin-bottom: 0;
+}
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview .agenda-semana-card-bottom {
+  display: none;
+}
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview .card-content-wrapper {
+  height: 100%;
+  gap: 0;
+}
+/* Linha do título vira a linha inteira: [hora] [nome …] [chip]. A hora
+   (início) fica à esquerda como no print do Outlook (coluna "12"); o nome
+   ocupa o sobro e o chip fecha à direita. */
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview .agenda-semana-card-top {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  flex-wrap: nowrap;
+}
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview .agenda-semana-card-time {
   display: inline-flex !important;
+  order: -1;
+  margin-left: 0;
+  flex: 0 0 auto;
   font-size: 0.75rem;
   font-weight: 700;
-  flex: 0 0 auto;
-  margin-left: auto;
+  color: #ffd700;
+  width: 40px;
+  justify-content: flex-start;
 }
-
-/* Nome não reserva mais os 28px do chip âncora absoluta: o chip agora é
-   in-flow na linha do título. */
-#agendaGridHomeHome .agenda-card-dayview.cascata-hora .agenda-dia-aula-nome {
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview .agenda-semana-card-time > i {
+  display: none;
+}
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview .agenda-dia-aula-nome {
   max-width: 100%;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#agendaGridHomeHome .agenda-banda-grupo .agenda-card-dayview .agenda-card-inline-status {
+  position: static !important;
+  margin-left: auto;
+  flex: 0 0 auto;
+}
+/* Contêiner da banda: um bloco que cobre o span horário da banda
+   (position/ top/height dados inline pela view-home) e empilha as linhas. */
+#agendaGridHomeHome .agenda-banda-grupo {
+  position: absolute;
+  left: 0;
+  right: 4px;
+  z-index: 5;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+  border-radius: 6px;
 }
 
-/* Chip deixa a âncora absoluta (top/right 8px — onde um card superior da
-   cascata poderia cobri-lo) para a linha do título, ao lado do nome. */
-#agendaGridHomeHome .agenda-card-dayview.cascata-hora .agenda-card-inline-status {
-  position: static;
+/* ───────────────────────────────────────────────────────────────────────────
+   Etapa 5 — fundo do modo Dia "sem cinza" (decisão do dono): o painel do
+   Dia e a grade perdem o fundo escuro próprio e ficam nivelados ao body do
+   app (#0d0d0d), para a timeline das horas ser o desenho principal. A
+   linha de hora cheia ganha um pouco de contraste (fica mais clara) para
+   continuar bem desenhada; a meia-hora tracejada fica mais discreta ainda.
+   Escopo em #homeDayPanel (a classe .agenda-panel/.agenda-dia-container é
+   compartilhada — Finanças usa .agenda-panel; só o Dia tem #homeDayPanel).
+   ─────────────────────────────────────────────────────────────────────── */
+/* O painel persegue o fundo do corpo (sem borda/sombra) e estica as
+   laterais para o grid ocupar mais a tela: antes era ~33px de recuo por
+   lado (20px de padding do painel + 12px do container + 2 bordas); agora
+   ~8px (6px + 2px). Padrão vertical mantido (20px em cima/embaixo). */
+#homeDayPanel.agenda-panel {
+  background: #0d0d0d;
+  border: none;
+  box-shadow: none;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+#homeDayPanel .agenda-dia-container {
+  background: #0d0d0d;
+  border: none;
+  padding-left: 2px;
+  padding-right: 2px;
+}
+/* Linha de hora cheia: mais clara para ler sobre #0d0d0d. */
+#homeDayPanel .time-grid-line,
+#homeDayPanel .time-grid-line-end {
+  border-top-color: #3a3a3a;
+}
+/* Meia-hora tracejada: mais discreta ainda. */
+#homeDayPanel .time-grid-line-half {
+  border-top-color: #1f1f1f;
 }
 
 /* Indicador de Agora (Linha vermelha estilo Outlook) */

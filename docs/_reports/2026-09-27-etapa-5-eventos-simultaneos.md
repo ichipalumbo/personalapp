@@ -1,9 +1,12 @@
 # Agenda diária — Etapa 5 (eventos simultâneos)
 
 > **Data de abertura**: 2026-09-27
-> **Branch de trabalho**: `feat/etapa-5-eventos-simultaneos` (criada de `origin/main` com `--no-track`)
+> **Branch de trabalho**: `feat/etapa-5-eventos-simultaneos`
 > **Fonte**: achado **4.12** de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`
 > **Status**: implementado e validado — aguardando commit/push do dono
+> **Evolutivo**: esta versão substitui a decisão original "C — cascata"
+> (primeira implementação, validada e depois rejeitada pelo dono para 4+
+> eventos). A rotação de formatos está registrada em "Decisões do dono".
 
 ## Escopo
 
@@ -11,9 +14,9 @@ O achado 4.12: a agenda diária dividia eventos simultâneos em colunas laterais
 (esquerda/meia/direita). A estrutura funcionava, mas com 2–4 eventos sobrepostos
 as colunas ficavam de 37–78px em 320px e o nome do aluno virava "…".
 
-**Critério de conclusão do achado**: dois a quatro eventos simultâneos permanecem
-distinguíveis e acionáveis em 320px, preservando nome, horário e status no
-primeiro nível.
+**Critério de conclusão do achado**: dois a quatro eventos simultâneos
+permanecem distinguíveis e acionáveis em 320px, preservando nome, horário e
+status no primeiro nível.
 
 ## Premissa validada em código (antes de prototipar)
 
@@ -25,20 +28,12 @@ primeiro nível.
   2. **Cascata de reschedule de aluno** (`cascade-sync-aluno.js`) — sem check.
 - O backend não tem nenhuma proteção de conflito.
 
-Conclusão: o sobreposição real na grade vem de **aula × evento GCal externo**
-(o mock reproduz isso com `gcal_ext5`) e/× cascade. A **mudança de regra de
+Conclusão: a sobreposição real na grade vem de **aula × evento GCal externo**
+(o mock reproduz isso com `gcal_ext5`) e/ou cascade. A **mudança de regra de
 negócio** (bloquear ou alertar na ingestão) foi **deliberadamente aditada pelo
 dono** para depois desta etapa.
 
-## Decisão do dono (pergunta 3 da seção 6 — fechada antes da implementação)
-
-Após protótipos medidos (abaixo), o dono escolheu:
-
-> **C — Cascata + horário comprimido** — cada evento de uma banda simultânea
-> ocupa quase a largura total da grade, empilhado com degrau fixo por coluna,
-> e mostra a hora de **início** comprimida no topo do card.
-
-## Diagnóstico medido (estado atual, 320×568 DPR 2.81, mock `agendaSimultaneos`)
+## Diagnóstico medido (estado original, 320×568 DPR 2.81, mock `agendaSimultaneos`)
 
 Colunas do motor `calcularColisoes` (funcionais, retângulos sem colidir), mas:
 
@@ -57,136 +52,198 @@ Defeito raiz secundário encontrado: a heurística de densidade
 Math.max(120, …)`, ou seja, calculava densidade para um card de ≥120px que o
 render desenhava com 37px — heurística dessincronizada do render.
 
-## Protótipos medidos (in-browser, sem alterar arquivos)
+## Decisões do dono (ordem em que foram decididas nesta branch)
 
-**A — cartão mínimo nas colunas** (ícone/local/meta/chip sumem quando a coluna
-<120px; nome ocupa a coluna):
-
-| Viewport | 2 col | 3 col | 4 col |
-| --- | --- | --- | --- |
-| 320px | 7 chars | 3–4 | **2** ✗ |
-| 433px | 8–9 | 8 | 5 |
-
-Barato, mas não passa em 4 colunas/320px e não resolve a identificação de
-nomes repetidos.
-
-**C — cascata** (cards em largura total, degrau 12px/coluna, z-index por
-coluna) **+ horário comprimido** (só "08:00" — o período completo consumia
-~90px e esmagaria o nome a 0 chars, medido):
-
-| Viewport | Cards | Nomes visíveis | Identificação (3 "Aurora") | Overflow |
-| --- | --- | --- | --- | --- |
-| 320px | 126–162px | 4–9 | ✓ pela hora (08:00/10:00/12:00) | 0 |
-| 390px | 196–232px | 11–19 | ✓ | 0 |
-| 433px | 229–265px | 11–22 ("Bruna Rocha" completo) | ✓ | 0 |
-
-Linha do nome de todos os 9 cards: **0% coberta** (alvos táteis ok).
+1. **Rodada 1 — "C — Cascata + hora comprimida"**: implementada, validada
+   (77/77 antes/depois, 3 viewports) e entregue. **Rejeitada pelo dono** para
+   4+ cards: "Não gostei desse formato de quando tem mais de 3 cards" — e o
+   dono pediu referência de como apps de calendário tratam o caso.
+2. **Pesquisa de referência**: Google Calendar (colunas proporcionais,
+   reclamações de "fios finos" com 3+ no mobile), Apple Calendar (colunas +
+   evento longo cobrindo os outros), **Outlook — o dono usa: com o
+   sobreposto ele cria colunas que vão estreitando e reduz só o TÍTULO com
+   "…", sem hora no card; o card "flutua" só com título (print do dono em
+   `Mídia.jpg`, raiz do repositório)**, Fantastical/Timepage (timeline
+   vertical, linhas de largura total), FullCalendar (mesmo algoritmo de
+   colunas da engine).
+3. **Rodada 2 — formato FINAL (híbrido)**, decidido após protótipo in-browser
+   (duas variantes medidas em 320/390/433, zero alteração em arquivo na fase
+   de protótipo):
+   - **banda com 2**: formato OUTLOOK — colunas proporcionais do engine, card
+     com **só o título** (sem hora, sem chip, sem ícone, sem local);
+   - **banda com 3+**: **linhas empilhadas** num contêiner que cobre o span da
+     banda — cada linha = hora de início + título + chip, sem altura
+     proporcional à duração.
+   - Racional do dono: "Dificilmente vamos ter 4 recorrências de uma vez" — o
+     caso comum (2) fica igual ao Outlook; 3+ (raro) fica legível em 320.
+   - Par com **início igual** (mock 14:00) confirmado para **ficar** no mock;
+     nele cai no ramo de 2 colunas.
+4. **Fundo do Dia** (mesma rodada): (a) **retirar o cinza** do fundo
+   ("tomar cuidado para não ter contraste o suficiente para deixar a timeline
+   de horas bem desenhada"); (b) **esticar o grid nas laterais** — "o fundo
+   das horas poderia ocupar mais a tela… aproveitar para fazer o grid todo
+   ocupar um pouco mais das laterais".
 
 ## Implementação (o que entrou)
 
-Arquivos (278+/21−, medida com `git diff --stat` no fim):
+O motor `calcularColisoes` (`view-home.js`) segue **intacto** — o mesmo
+algoritmo de colunas/lane que já produzia `col` e `maxCols` para o fallback
+de início igual agora é a fonte do posicionamento de **toda** banda
+sobreposta.
 
-- **`assets/js/view-home.js`** (área sensível §7 — `view-home.js` é o render
-  da grade diária; o motor `calcularColisoes` foi **preservado intacto**, só
-  o desenhamento mudou):
-  - **Bloqueios de dia inteiro saem do grafo de sobreposição**: antes,
-    `calcularColisoes` os recebia junto, e o start clamped (00:00 → abertura da
-    grade) coincidia com o de qualquer aula de manhã — o dia inteiro vira
-    “banda” e infla o `maxCols` de todos os eventos do dia. Agora são
-    filtrados (mesma lógica de clamp do motor) e entram com `maxCols=1` →
-    largura total, mesma posição vertical de sempre.
-  - Componentes conectados do grafo de sobreposição (apenas eventos de
-    grade) definem a **banda**; a decisão de cascata é **por banda**, não por
-    evento: qualquer par de inícios iguais na banda derruba a cascata inteira
-    (senão teríamos cartões em cascata e em colunas na mesma faixa — o card da
-    frente esconderia o título do de trás).
-  - Pré-processa cada evento em `ev.posicionamento`:
-    - `maxCols > 1` + inícios **estritamente crescentes** na banda →
-      **cascata** (`left = col × 12px`, `width = calc(100% − col×12 − 2px)`,
-      `z-index = 10 + col`);
-    - banda com **inícios iguais** → fallback em colunas — geometria
-      **idêntica** à pré-Etapa 5 (o inset era `gapRight = 4px`, não 6px);
-    - sem banda (inclui dia inteiro) → 100% menos 4px (como antes).
-  - `ev.larguraCardPx` agora usa a **largura real** da
-    `.time-grid-content-col` (medida no render anterior; primeir pintura: fórmula
-    exata derivada `grid.clientWidth − 24 − 55 − 12 − 1`; grade oculta:
-    180 conservador) em vez de `Math.max(120, …)` — correção da heurística
-    dessincronizada.
-  - Passa `visualCascataHoraComprimida: boolean` ao template.
-- **`assets/js/agenda-card-template.js`**:
-  - Classe `cascata-hora` no card quando a flag está ativa.
-  - Período exibido no topo: início comprimido (`08:00`) em cascata;
-    período completo em todo o resto (bloco "dia inteiro" mantém o texto
-    "Dia inteiro", nunca "00:00").
-- **`assets/css/style.css`** (bloco final do grid do dia, vencendo por
-  especificidade):
-  - `.cascata-hora .agenda-semana-card-time` visível no dia, `flex: 0 0 auto`
-    (nunca encolhe/desce — mesmo padrão do Refinamento 5), `font-size: 0.75rem`
-    (12px — piso do achado 4.4).
-  - `.cascata-hora .agenda-dia-aula-nome`: `max-width: 100%` (nome não reserva
-    mais os 28px do chip absoluto).
-  - `.cascata-hora .agenda-card-inline-status`: **`position: static`** — o chip
-    sai do canto superior absoluto (onde um card acima da cascata podia
-    cobri-lo) para a linha do título, in-flow.
-- **`mocks/ui-runtime/scenarios.js`**: cenário `agendaSimultaneos` — aluna de
-  33 chars em 3 faixas sobrepostas + bloqueio interno + evento GCal externo +
-  deslocamento, em janelas de 2, 3 e 4 colunas com inícios escalonados de
-  15–30 min, **e um par com inícios iguais (14:00/14:00, aula + bloqueio)
-  para validar o fallback em colunas**.
+### `assets/js/view-home.js` (área sensível §7 — render da grade diária)
 
-## Validação medida (post-implementação, mock `agendaSimultaneos`)
+- **Bloqueios de dia inteiro fora do grafo de sobreposição** (preservado da
+  rodada 1): o start clamped (00:00 → abertura da grade) coincidiria com o de
+  qualquer aula da manhã e viraria "banda" do dia todo inflando o `maxCols`
+  de todos. Entram com `maxCols=1` → largura total, mesma posição vertical.
+- **Bandas = componentes conectados** do grafo (só eventos de grade). Cada
+  grupo é processado **uma vez** — o mapa `componentes` mapeia CADA id para a
+  MESMA Set de grupo, então a iteração retorna o grupo uma vez por membro; a
+  deduplicação por `Set` de "grupos já vistos" é obrigatória (sem ela, cada
+  banda de N membros gera N contêineres — bug pego em validação: 7 bandas/29
+  cards no lugar de 2/11).
+- Pré-processamento `ev.posicionamento`:
+  - **banda com 3+** → `pos.linha: true`; o card sai do absoluto e vai para o
+    contêiner `.agenda-banda-grupo` (top/height inline cobrindo do menor
+    início ao maior fim da banda). Ordem das linhas = início, com **tie-break
+    de fim** (determinístico em inícios iguais). `larguraCardPx` p/
+    heurística = content-col inteira.
+  - **banda com 2** → colunas proporcionais do engine (`left = col × width%`,
+    `width = calc(width% − 4px)`) com `pos.formatoOutlook: true`. Geometria
+    **idêntica** à pré-Etapa 5 (inset 4px verificado via `git show HEAD`).
+  - **sem banda / dia inteiro** → `left: 0`, `calc(100% − 4px)`, sem classe.
+- `ev.larguraCardPx` com a **largura real** da `.time-grid-content-col`
+  (medição do render anterior; primeira pintura: fórmula derivada exata;
+  grade oculta: 180px conservador) — a correção da heurística dessincronizada
+  da rodada 1 se manteve.
+- Geração do HTML: cards fora de banda seguem absolutos como sempre; cards de
+  banda 3+ são acumulados numa `Map` por id e montados dentro de um
+  `.agenda-banda-grupo` por banda (após o loop de cards).
+- `opcoes` para o template: `layoutBanda: 'outlook' | 'linha' |
+  undefined` + `horaBandaMinutos` (só linha). `visualCascataHoraComprimida`
+  **removido** (nada mais o consome).
 
-Cascata (9 cards, inícios escalonados):
+### `assets/js/agenda-card-template.js`
 
-| Viewport | Nomes visíveis | Horas | Overflow |
+- `cascata-hora` / `visualCascataHoraComprimida` **removidos**.
+- Novo `layoutBanda` (só em `calendar-day`):
+  - `'outlook'` → classe **`.formato-outlook`** (o `periodo` continua sendo
+    calculado normalmente — o que esconde a hora é CSS; semana/modal
+    intactos);
+  - `'linha'` → classe **`.formato-linha`** + `periodoExibir` = hora de
+    **início comprimida** de `opcoes.horaBandaMinutos` (ex.: "10:00");
+    bloqueio dia inteiro mantém o período cheio ("Dia inteiro", nunca
+    "00:00").
+- Os 4 ramos de `tipo` (aula / deslocamento / bloqueio interno / GCal
+  externo) seguem emitindo os mesmos elementos; o CSS dos dois formatos é o
+  que reorganiza a linha do top. GCal externo / deslocamento / bloqueio
+  interno **não têm chip** (regra pré-existente do Cartão D) — a linha mostra
+  o que cada tipo já tinha.
+
+### `assets/css/style.css`
+
+- Bloco `.cascata-hora` **removido** (3 regras substituídas).
+- **`.formato-outlook`**: `display:none` no rodapé, no ícone do título, no
+  chip e na hora; `max-width:100%` no nome (deixa a reserva de 28px do chip
+  absoluto). Especificidade maior que o bloco base do dia → vale em qualquer
+  densidade.
+- **`.agenda-banda-grupo`**: contêiner absoluto (top/height inline), `flex
+  column`, `gap:2px`, `overflow:hidden`, `z-index:5` — a banda fica
+  limitada ao próprio span; linha que não caiba é cortada, sem esticar a
+  timeline.
+- **`.formato-linha`** (dentro do contêiner): o card vira `position:static` e
+  o `top` vira uma linha: **[hora] [título …] [chip]** — hora à ESQUERDA
+  (`order:-1`, dourado `#ffd700`, `width:40px`, ícone relógio oculto — a
+  coluna "12" do print Outlook), título `flex:1 1 auto; max-width:100%`
+  (sem a reserva de 28px) com ellipsis, chip `position:static;
+  margin-left:auto` (sai da âncora absoluta do canto, onde um card acima
+  poderia cobrir). `min-height:0` + `overflow:hidden` no card e no
+  contêiner = a linha nunca estoura a banda.
+- **Fundo do Dia nivelado + esticado** (escopo em `#homeDayPanel` —
+  `.agenda-panel` é **compartilhada com Finanças**; `.agenda-dia-container`
+  é exclusiva do dia): painel e container `background:#0d0d0d` (= body),
+  sem borda/sombra, e **laterais esticadas**: painel 20→6px e container
+  12→2px por lado (recuo total por lado de ~33px para ~8px; vertical 20px
+  mantido). Efeito medido: `.time-grid-content-col` **268→320px em 433** e
+  **164→217px em 320** (sem overflow horizontal). Linha de hora cheia
+  `#222` → **`#3a3a3a`** (lê sobre o fundo nivelado); meia-hora tracejada
+  `#141414` → `#1f1f1f` (discreta).
+
+### `mocks/ui-runtime/scenarios.js` — **sem alteração nesta rodada**
+
+Cenário `agendaSimultaneos` (Domingo 2026-09-27) continua com: banda de 2
+(08:00/08:30), banda de 3 (10:00/10:15/10:30), banda de 4 (12:00/12:15 GCal
+externo/12:30/12:45 deslocamento) e o **par 14:00/14:00** (aula + bloqueio
+"Ajuste de agenda — recepção", inícios iguais).
+
+## Validação medida (post-implementação da rodada 2, mock `agendaSimultaneos`)
+
+Nomes visíveis (chars de 32 — "Aurora Helena de Camargo Monzani"):
+
+| Faixa | 320×568 (stress) | 390×844 | 433×762 (referência) |
 | --- | --- | --- | --- |
-| **320×568 (aceite)** | 4–11 | todas visíveis (08:00…12:45) | 0px |
-| 390×844 | 11–21 | ✓ | 0px |
-| 433×762 (referência) | 11–22 (Bruna Rocha completo) | ✓ | 0px |
+| **2** (colunas Outlook) | 10 | 15 | **17** |
+| **3** (linhas) | 15 | 24 | **28** |
+| **4** (linhas) | 15–17 | 23–26 | **28–31** (Aurora 28/32) |
+| overflow (linha maior que contêiner) | 0 | 0 | 0 |
+| scroll horizontal | não | não | não |
 
-Fallback de colunas (par de inícios iguais 14:00/14:00, **medido**):
+Para comparar: o estado ORIGINAL (pré-Etapa 5) dava **0–3 chars** em 3–4
+colunas em 320; a cascata da rodada 1 dava 4–11. O híbrido final dá **15–17
+em 3–4 e 10 em 2** em 320, e quase o nome completo na referência.
 
-| Viewport | Largura do card | Layout | Nomes visíveis | Período | Overflow |
-| --- | --- | --- | --- | --- | --- |
-| **320×568 (aceite)** | 78px | colunas lado a lado (left 112/194, z 1, sem `cascata-hora`) | 3–4 | completo (“14:00 - 15:00”) | 0px |
-| 433×762 (referência) | 130px | idem | 11–12 | completo | 0px |
+Outras validações medidas/executadas:
 
-- Font-size do horário comprimido: **12px** dentro da escala do achado 4.4
-  (16/14/12; nada legível abaixo de 12px).
-- Chips de status: 6/6 cards de aula com chip **visível** (posição in-flow
-  na linha do título).
-- Linhas de nome dos 9 cards da cascata: sem cobertura por card irmão; alvos
-  mínimos 96px de altura.
-- Suíte frontend `node --test`: **77/77 antes e 77/77 depois** da rodada
-  (zero regressão — nada de `view-*.js` é coberto por teste; validação de
-  tela manual, conforme instruções §10).
+- **Par 14:00** (início igual): 2 colunas lado a lado (130px em 433 antes do
+  esticar; 155px depois — recalc. 50% − 4px da content-col), hora/chip
+  ocultos, `onclick` preservado.
+- **Acionabilidade dentro do contêiner de banda**: executar o handler
+  `abrirModalAcaoSlot` de um card `formato-linha` e de um
+  `formato-outlook` abre o `modalAcaoSlot` (executado no browser, sem
+  depender de coordenadas de clique).
+- **Dia inteiro** (não presente no mock): mesmo ramo da rodada 1 (já
+  validado in-browser na época) — `maxCols=1` fora do grafo, largura total;
+  o texto "Dia inteiro" vem de `resolverPeriodo`, independente do
+  `periodoExibir` da linha.
+- **Grid esticado** (medido): painel `padding: 20px 6px`, container
+  `padding: 14px 2px`; content-col **320px (433) / 217px (320)**.
+- **Suíte frontend `node --test`**: **77/77 antes e 77/77 depois** da rodada
+  2 (zero regressão; o render do dia não tem cobertura — validação de tela
+  manual, conforme §10).
 
-## Casos de borda tratados
+## Casos de borda / decisões registradas
 
-- **Inícios iguais na banda** → fallback em colunas (a cascata escondia o
-  título do card de trás) — **validado in-browser** com o par 14:00/14:00 do
-  mock (acima); a decisão é **por banda**, então o arranjo não fica misto.
-- **Bloqueio dia inteiro** (`00:00–23:59`) → fica **fora** do grafo de
-  sobreposição (não infla o `maxCols` do dia), renderiza a largura total, e o
-  template mantém “Dia inteiro” (nunca “00:00”).
-- **Resize** → a geometria é em px/% sobre a content-col (sem medida em
-  runtime do card), então o reflow não quebra o layout.
+- **Inícios iguais**: em banda de 2 → 2 colunas; em banda de 3+ → linhas
+  ordenadas por `start` com **tie-break de `end`** (ordem estável).
+- **Linhas não cabem no span da banda** (ex.: 7 eventos de 30 min):
+  `overflow:hidden` corta — a timeline não estica. Trade-off assumido do
+  list mode: altura do card não representa mais a duração no sobreposto
+  (a duração volta no card/modal ao tocar).
+- **`REGRAS_VISUAIS_CARD_DIA.larguraMinimaCardPx: 120`** continua no código,
+  mas a heurística recebe a largura real (constância da rodada 1).
+- **`_static-server.tmp.js`** (servidor estático temporário, rastreado) —
+  decisão do dono sobre git; não alterado nesta rodada.
 
 ## Encontrado, mas NÃO alterado (fora de escopo)
 
 - **Regra de negócio: bloquear/alertar sobreposição na ingestão** (GCal
-  `upsertBloqueio` e cascade sem check). Aditada pelo dono para depois da
-  Etapa 5. Enquanto não existe, o app pode exibir sobreposição — que é
-  exatamente o que a cascata agora renderiza de forma legível.
-- **`REGRAS_VISUAIS_CARD_DIA.larguraMinimaCardPx: 120`** continua no código,
-  mas a heurística agora recebe a largura real; a constante só ancora o
-  `Math.max` interno da capacidade de título.
-- **`_static-server.tmp.js`** (servidor estático temporário, rastreado) —
-  decisão do dono sobre git (continua fora deste commit).
+  `upsertBloqueio` e cascade sem check) — aditada pelo dono para depois da
+  Etapa 5.
+- **`Mídia.jpg`** (print do Outlook do dono) na raiz do repositório como
+  **untracked** — decidir se entra no versionamento (sugestão: remover, ou
+  mover para `docs/_reports/assets/` se for manter de referência).
+- **Modo SEMANA** (`.agenda-panel-semana`) e **Finanças** (`.agenda-panel`
+  compartilhada): o esticar das laterais e o nivelar do fundo são **escopo
+  só do Dia** (`#homeDayPanel`). Se fizer sentido alinhar a semana, é outra
+  rodada.
 
 ## Commit sugerido
 
-`feat(agenda): eventos simultaneos em cascata com hora de inicio (etapa 5, 4.12)`
+`feat(agenda): eventos simultaneos em colunas/linhas estilo outlook + fundo
+do dia nivelado e esticado (etapa 5, 4.12)`
 
 Branch: `feat/etapa-5-eventos-simultaneos` — push `-u origin
-feat/etapa-5-eventos-simultaneos` e PR por conta do dono.
+feat/etapa-5-eventos-simultaneos` e PR por conta do dono. **A branch já
+contém os commits da rodada 1 (cascata)** feitos pelo dono antes desta
+sessão; este commit cobre só as alterações da rodada 2 por cima.
