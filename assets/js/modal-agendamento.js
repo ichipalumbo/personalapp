@@ -809,7 +809,7 @@ function obterMensagemFalhaPersistenciaAgendamento(resultadoPersistencia) {
     if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia === 'function') {
         return window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia(resultadoPersistencia);
     }
-    return 'Não foi possível confirmar a persistência dos dados.';
+    return 'Não foi possível salvar o agendamento. Tente novamente.';
 }
 
 function capturarValoresFormularioAgendamento() {
@@ -998,7 +998,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
                 window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('✅ Horário agendado com sucesso!');
+                if (typeof mostrarToast === 'function') mostrarToast('Horário agendado com sucesso!');
             }
         });
     }

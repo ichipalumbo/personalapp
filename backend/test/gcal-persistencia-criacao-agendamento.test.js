@@ -349,7 +349,7 @@ test('Ponto 1 — falha na gravação remove a aula, avisa e reabre o formulári
   await document.getElementById('formAgendamento').listeners.submit({ preventDefault() {} });
 
   assert.equal(aulas.length, 0, 'a aula criada precisa sair do array');
-  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('falha')));
+  assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).toLowerCase().includes('não foi possível salvar')));
   assert.equal(reaberturas.length, 1, 'o formulário precisa reabrir');
   assert.deepEqual(reaberturas[0], { dia: 'Segunda', hora: '09:00', tipo: 'aula' });
   assert.equal(document.getElementById('agendaAluno').value, 'aluno-1', 'o aluno escolhido precisa voltar preenchido');

@@ -10,6 +10,11 @@
 > mergeada na `main` via PR #63), verificados contra `git log`. O conteúdo de escopo dos achados
 > e das etapas não mudou — apenas status, progresso e decisões fechadas.
 >
+> **Atualização de status (2026-09-29)**: Etapa 6 implementada na branch
+> `feat/etapa-6-toast-unificado` (ainda não commitada/mergeada) — ver seção 5, Etapa 6, e
+> `docs/_reports/2026-09-29-etapa-6-toast-unificado.md`. Status marcado como 🟡 (parcial) até o
+> dono concluir a validação em produção com login Google real.
+>
 > **Objetivo desta reescrita**: eliminar a duplicidade entre os "achados 4.1–4.17" (levantamento
 > amplo) e os "achados materiais" da revisão `anti-ui-slop` (fila de prioridade), mapear cada
 > achado a exatamente uma etapa dona, e endereçar os itens que estavam **órfãos** (sem etapa
@@ -55,8 +60,8 @@ Legenda de status usada em todo o documento:
 | 4.5 | Alvos de toque abaixo do recomendado | Diagnóstico §4.5 | Etapa 2 | 🟡 *ETAPA 2 CONCLUÍDA no escopo decidido: grupos 1 (Finanças → 48px) e 2 (grade de horários → 48px) corrigidos em `b9a3c07`; grupos 3 (cabeçalho/toolbar) deixados <44px por decisão do dono, registrados no report da Etapa 2 como candidatos a rodada futura* |
 | 4.6 | Cards/slots sem interação equivalente por teclado | Diagnóstico §4.6 | Etapa 2 (foco/teclado básico) + Etapa 7 (semântica final) | 🟡 *partida Etapa 2 concluída (Cartão C, `81485c5`): `:focus-visible` global dourado padronizado, 13/13 botões icon-only com `aria-label`. Semântica final de cards/tabs segue na Etapa 7 — ver seção 5* |
 | 4.7 | Gerenciamento de diálogo inconsistente | Diagnóstico §4.7 | Etapa 1 | ✅ |
-| 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ⏳ |
-| 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ⏳ |
+| 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | 🟡 *implementado 2026-09-29 (branch `feat/etapa-6-toast-unificado`): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto — falta validar em produção com login Google real (ver seção 5, Etapa 6)* |
+| 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6* |
 | 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/_reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
 | 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
 | 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ⏳ |
@@ -327,23 +332,50 @@ deve ser adotado para eventos simultâneos na agenda diária?
 
 ---
 
-### Etapa 6 — Estados assíncronos e recuperação ⏳ PENDENTE
+### Etapa 6 — Estados assíncronos e recuperação 🟡 IMPLEMENTADO (2026-09-29), validação em produção pendente
 
 **Achados endereçados**: 4.8, 4.9.
 
-**Pré-condição**: assume que a **Fase 0.1 (bug de `pointer-events` do toast) já está corrigida**.
-Esta etapa trata apenas da camada de acessibilidade/contraste/semântica sobre o toast, não do
-bug funcional.
+**Pré-condição**: assume que a **Fase 0.1 (bug de `pointer-events` do toast) já está corrigida**
+— confirmado, base preservada nesta etapa.
 
-**Escopo**:
+**Escopo original**:
 - Corrigir overlay de erro bloqueante → preferir banner persistente e não bloqueante.
 - Informar quando dados em cache estão sendo exibidos e quando foram atualizados.
 - Oferecer retry junto ao erro.
 - `role="status"` para sucesso e `role="alert"` para erro no toast; `aria-live` consistente.
 - Padronizar skeletons e indicação de progresso de salvamento.
 
-**Critério de conclusão**: toda falha possui caminho de recuperação e nenhuma escrita é
-apresentada como concluída antes da resposta da API.
+**Escopo ampliado na execução (decisão do dono, 2026-09-29)**: em vez de só corrigir os dois
+achados isoladamente, os três mecanismos de feedback assíncrono do app (`#toast`,
+`#overlay-sinc` bloqueante, `#indicador-sync-bg` silencioso) foram **unificados em um único
+componente** com 4 estados visuais (`success`/`warning` auto-somem, `progress` fica até
+resolver, `error` fica até ação com botão "Tentar de novo") — padrão Material Design 3
+snackbar + diretrizes de erro da Nielsen Norman Group. Detalhe completo, arquivos alterados e
+resultado da validação em
+[`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md).
+
+**O que ficou resolvido**:
+- Overlay bloqueante eliminado — nenhum estado trava mais `pointer-events` do `body`.
+- `onRetry`, que existia morto em 4 pontos de chamada (`storage.js`,
+  `cascade-sync-aluno.js`), agora está conectado ao botão real da UI.
+- `role`/`aria-live` dinâmicos por estado (`status`/`polite` para progresso e sucesso,
+  `alert`/`assertive` para erro).
+- O sync automático do Google Calendar no boot (`iniciarSyncGoogleCalendarAutomatica`), que
+  antes não acionava nenhum feedback, foi religado ao contexto `syncCalendario` do componente
+  unificado.
+
+**Pendente antes de marcar como concluído**: o dono está validando o comportamento em produção
+(deploy Vercel) com login Google real — a preocupação específica é se o toast do sync do
+calendário aparece de forma ruidosa ao abrir o app (o mock de UI local bloqueia rede e não
+permitiu observar esse fluxo fim-a-fim). Skeletons de carregamento e indicação explícita de
+"dados em cache" (2 itens do escopo original) **não foram implementados nesta rodada** —
+ficaram fora por não terem sido pedidos na decisão de escopo desta execução; avaliar se entram
+em rodada futura ou se o critério de conclusão original é revisado.
+
+**Critério de conclusão original**: toda falha possui caminho de recuperação e nenhuma escrita é
+apresentada como concluída antes da resposta da API. Retry e recuperação de erro: atendido.
+Skeletons/indicação de cache: não implementados nesta rodada (ver parágrafo acima).
 
 ---
 
@@ -383,6 +415,18 @@ apresentada como concluída antes da resposta da API.
 Etapa 2 nos lugares que ela não cobriu" — não é trabalho novo de design, é auditoria de cobertura.
 O item 2 (bug de seletor CSS/JS) foi corrigido isoladamente em 2026-09-27, antes desta etapa, por
 ser um bug isolado de 1 linha sem dependência de decisão de produto.
+
+**⚠️ Item sugerido na execução da Etapa 6 (2026-09-29) — 7.1, consistência de nomenclatura de
+retry**: a passada de textos do toast (post-validação em produção, ver
+[`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md))
+encontrou dois nomes diferentes para a mesma ação de "tentar de novo" em pontos distintos do
+app: o botão do **toast unificado** usa *"Tentar de novo"* (`utils-kpi.js`) e o botão do erro do
+**histórico de reposições** (tela de alunos) já existia com *"Tentar novamente"*
+(`view-alunos.js`, ao lado de "Não foi possível carregar o histórico."). Nenhum dos dois era o
+texto em aprovação nessa rodada, por isso nenhum foi alterado. Sugestão: na Etapa 7, padronizar
+a palavra em um único texto em todo o app (ou, se mantiver duas, documentar a regra de quando
+cada uma se aplica — ex.: "tela" vs. "ação"). Escopo mínimo: grep por `Tentar` nas mensagens de
+UI e alinhar.
 
 **Progresso já acumulado (2026-09-27, verificado contra `git log`)**: os itens 4.17.4
 (disabled) e 4.17.5 (aria-label icon-only) foram resolvidos de facto pelos cartões C e D da

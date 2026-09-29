@@ -374,7 +374,7 @@
 
                 // Show success toast
                 if (typeof global.mostrarToast === 'function') {
-                    global.mostrarToast('✅ Google Agenda conectada com sucesso!', 'success');
+                    global.mostrarToast('Google Agenda conectada com sucesso!', 'success');
                 }
             }
         } catch (error) {
@@ -387,7 +387,7 @@
                 message: errorMsg
             });
             if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast('❌ ' + errorMsg, 'error');
+                global.mostrarToast(errorMsg, 'error');
             }
         } finally {
             btnConnect.disabled = false;
@@ -451,7 +451,7 @@
 
                 // Show success toast
                 if (typeof global.mostrarToast === 'function') {
-                    global.mostrarToast('✅ Google Agenda desconectada com sucesso!', 'success');
+                    global.mostrarToast('Google Agenda desconectada com sucesso!', 'success');
                 }
             }
         } catch (error) {
@@ -464,7 +464,7 @@
                 message: errorMsg
             });
             if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast('❌ ' + errorMsg, 'error');
+                global.mostrarToast(errorMsg, 'error');
             }
         } finally {
             btnDisconnect.disabled = false;

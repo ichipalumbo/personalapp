@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-09-27
+> **Status**: Documento vivo · **Atualizado**: 2026-09-29
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -21,7 +21,7 @@ Cada item traz:
 
 **Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
 
-**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.5** (2026-09-27). O item **5.7** já está `[~]` em andamento (parte resolvida pelos cartões da Etapa 2/3, resto pendente de auditoria final); o **5.6** segue `[ ]` sem início.
+**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.5** (2026-09-27). O item **5.6** está `[~]` em andamento (implementado em 2026-09-29 na branch `feat/etapa-6-toast-unificado`, validação em produção pendente). O item **5.7** também está `[~]` em andamento (parte resolvida pelos cartões da Etapa 2/3, resto pendente de auditoria final).
 
 ---
 
@@ -76,7 +76,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 5     | 5.3 Navegação e topo operacional (Etapa 3)       | `[x]`  | —                                                                |
 | 5     | 5.4 Densidade de cards (Etapa 4)                 | `[x]`  | —                                                                |
 | 5     | 5.5 Eventos simultâneos na agenda diária (Etapa 5) | `[x]`  | —                                                             |
-| 5     | 5.6 Erros e toasts (Etapa 6)                     | `[ ]`  | —                                                                |
+| 5     | 5.6 Erros e toasts (Etapa 6)                     | `[~]`  | —                                                                |
 | 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[~]`  | 5.1 a 5.6                                                        |
 
 ---
@@ -637,14 +637,31 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [ ] 5.6 Erros e toasts (Etapa 6)
+### [~] 5.6 Erros e toasts (Etapa 6) — **EM ANDAMENTO** (implementado, validação em produção pendente)
 
 - **O que é**: tratar o achado 4.8 (erro global bloqueante sem recuperação) e o achado 4.9
   (acessibilidade/contraste de toasts — `role="status"`/`role="alert"`, `aria-live`).
 - **Não refazer**: o hotfix de `pointer-events` do `.toast` (Fase 0.1 do diagnóstico) e o
-  reancoramento do `bottom` via `--bottombar-height` (Etapa 3) já estão resolvidos — a Etapa 6
-  assume os dois como base.
-- **Depende de**: nenhum item deste grupo bloqueia, mas ainda não foi iniciado.
+  reancoramento do `bottom` via `--bottombar-height` (Etapa 3) já estavam resolvidos e foram
+  preservados como base.
+- **O que foi entregue (2026-09-29, branch `feat/etapa-6-toast-unificado`)**: escopo ampliado por
+  decisão do dono — os 3 mecanismos de feedback assíncrono do app (`#toast`, `#overlay-sinc`
+  bloqueante, `#indicador-sync-bg` silencioso) foram unificados em um único componente com 4
+  estados (`success`/`warning` auto-somem, `progress` fica até resolver sem bloquear a tela,
+  `error` fica até ação com botão "Tentar de novo"). O `onRetry` que existia morto em 4 pontos
+  de chamada agora está conectado à UI; `role`/`aria-live` dinâmicos por estado; o sync
+  automático do Google Calendar no boot foi religado ao componente (antes não acionava nenhum
+  feedback). Suíte frontend 77/77 antes e depois. Após a validação em produção aprovada, a
+  mesma rodada incluiu a passada de textos dos ~61 toasts do app para linguagem de usuário
+  final (removidos emojis e mensagens de debug; falhas passaram a "Não foi possível ...") em
+  8 arquivos + 1 asserção de teste — suítes 77/77 e 232/232 antes e depois. Detalhe completo
+  em
+  [`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md).
+- **Pendente para fechar o item**: validação em produção (deploy Vercel) com login Google real —
+  confirmar se o toast do sync do calendário no boot é ruidoso ou não. Skeletons de carregamento
+  e indicação explícita de "dados em cache" (parte do escopo original do diagnóstico) não
+  entraram nesta rodada.
+- **Depende de**: nenhum item deste grupo bloqueia.
 
 ---
 
@@ -657,7 +674,12 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **O que já está resolvido de fato**: os itens 4.17.4 e 4.17.5 (padrões `disabled` e
   `aria-label` globais) já vieram dos cartões C e D da Etapa 2 — o que resta aqui é auditoria de
   cobertura, não trabalho novo nesses dois pontos.
-- **Esforço restante**: auditar 4.13, 4.15 (movimento reduzido parcial) e o que sobrar de 4.17.
+- **Item sugerido na execução da Etapa 6 (2026-09-29) — 7.1**: consistência da nomenclatura de
+  retry — o toast unificado usa "Tentar de novo", o erro do histórico de reposições usa
+  "Tentar novamente". Padronizar (ou documentar a regra da escolha) quando a Etapa 7 rodar; ver
+  seção Etapa 7 do diagnóstico.
+- **Esforço restante**: auditar 4.13, 4.15 (movimento reduzido parcial), o que sobrar de 4.17 e
+  o item sugerido 7.1.
 
 ---
 

@@ -22,9 +22,9 @@
             return 'Sessão expirada. Faça login com Google para continuar.';
         }
         if (motivo === 'falha_remota') {
-            return 'Falha ao salvar alterações antes de concluir a reposição.';
+            return 'Não foi possível salvar as alterações antes de concluir a reposição.';
         }
-        return 'Não foi possível confirmar a persistência dos dados.';
+        return 'Não foi possível confirmar se os dados foram salvos. Tente novamente.';
     }
 
     // Dias antes do fim da validade em que a reposição entra em alerta "a vencer".

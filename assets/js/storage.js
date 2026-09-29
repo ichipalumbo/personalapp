@@ -88,10 +88,10 @@ function _mostrarOverlaySleepMode() {
     }
 }
 
-function _mostrarOverlayErroComRetry(mensagem) {
+function _mostrarOverlayErroComRetry(mensagem, onRetry) {
     const texto = mensagem || 'Falha na API. Tente "Sincronizar Dados" novamente em alguns segundos.';
     if (typeof mostrarOverlayErroConexao === 'function') {
-        mostrarOverlayErroConexao(texto);
+        mostrarOverlayErroConexao(texto, { onRetry });
         return;
     }
     if (typeof mostrarToast === 'function') {
@@ -150,16 +150,16 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
 
     const mensagens = {
         carregando: {
-            lenta: 'Carregando dados... isso pode levar alguns segundos.',
-            erro: 'Falha na API ao carregar dados. Tente "Sincronizar Dados" novamente em alguns segundos.'
+            lenta: 'Carregando...',
+            erro: 'Não foi possível carregar seus dados agora.'
         },
         syncDados: {
-            lenta: 'Sincronizando dados... isso pode levar alguns segundos.',
-            erro: 'Falha na API ao sincronizar dados. Tente "Sincronizar Dados" novamente em alguns segundos.'
+            lenta: 'Salvando...',
+            erro: 'Não foi possível salvar agora.'
         },
         syncCalendario: {
-            lenta: 'Atualizando calendário... isso pode levar alguns segundos.',
-            erro: 'Falha na API ao atualizar calendário. Tente "Sincronizar Dados" novamente em alguns segundos.'
+            lenta: 'Atualizando sua Google Agenda...',
+            erro: 'Não foi possível atualizar a Google Agenda agora.'
         }
     };
 
@@ -203,7 +203,7 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
             }
         }
         if (deveExibirFalha) {
-            _mostrarOverlayErroComRetry(mensagensContexto.erro);
+            _mostrarOverlayErroComRetry(mensagensContexto.erro, opcoes.onRetry);
         }
         _setEstadoBotaoSyncBanco('pronto');
         throw error;
@@ -994,7 +994,7 @@ async function carregarDados(opcoes = {}) {
         }
         
         if (!silenciosoUI && typeof mostrarToast === 'function') {
-            mostrarToast("Trabalhando offline. Dados salvos no navegador.", "warning");
+            mostrarToast("Sem conexão. Seus dados foram salvos neste aparelho.", "warning");
         }
         if (deveForcarRender) {
             forçarRenderizacaoInterface();
@@ -1178,7 +1178,7 @@ window.sincronizarBancoDados = async function (opcoes = {}) {
         await atualizarViewAtualAposSync();
 
         if (typeof mostrarToast === 'function') {
-            mostrarToast('Dados sincronizados com sucesso no MongoDB!', 'success');
+            mostrarToast('Dados sincronizados com sucesso!', 'success');
         }
     } catch (error) {
         window.log.error('[storage]', 'Erro na sincronização manual do banco:', error);

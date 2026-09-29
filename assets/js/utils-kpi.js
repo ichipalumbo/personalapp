@@ -1,111 +1,116 @@
 // [TAG-UTILS-KPI] utils-kpi.js
-// Responsabilidade: Notificação toast e overlays/indicadores de sincronização
+// Responsabilidade: componente único de feedback assíncrono (toast) e seus estados
 // Expõe: mostrarToast, mostrarOverlaySinc, mostrarOverlaySleepMode, mostrarOverlayErroConexao,
 //        ocultarOverlayConexao, ocultarOverlaySinc, mostrarIndicadorSyncBackground,
 //        ocultarIndicadorSyncBackground
+//
+// Etapa 6 (2026-09-29): os 3 mecanismos que existiam (toast, overlay-sinc bloqueante,
+// indicador-sync-bg silencioso) foram unificados num único elemento #toast com 4 estados
+// visuais (success/warning auto-somem; progress e error ficam até resolver/o usuário agir).
+// As 7 funções antigas continuam com a mesma assinatura — por dentro, delegam para o núcleo
+// _exibirToast, para não exigir nenhuma mudança nos ~60 pontos de chamada existentes.
 
-// [TAG-JS-TOAST] - Função de exibição de toast
-function mostrarToast(msg, tipo = 'success') {
-    const toast = document.getElementById('toast');
+let _toastAutoHideTimer = null;
+let _toastOnRetryAtivo = null;
+
+function _elementoToast() {
+    return document.getElementById('toast');
+}
+
+// [TAG-JS-TOAST] - Núcleo único de exibição do toast, com suporte a estado persistente e retry.
+function _exibirToast(mensagem, estado, opcoes = {}) {
+    const toast = _elementoToast();
     if (!toast) return;
-    toast.textContent = msg;
+
+    clearTimeout(_toastAutoHideTimer);
+    _toastOnRetryAtivo = typeof opcoes.onRetry === 'function' ? opcoes.onRetry : null;
+
+    toast.innerHTML = '';
     toast.className = 'toast';
-    if (tipo === 'error') toast.classList.add('error');
-    if (tipo === 'warning') toast.classList.add('warning');
-    setTimeout(() => toast.classList.add('show'), 10);
-    setTimeout(() => toast.classList.remove('show'), 3000);
-}
 
-// [TAG-JS-OVERLAY-SINC] - Overlay bloqueante para operações de sincronização críticas
-
-function _garantirOverlaySinc() {
-    let overlay = document.getElementById('overlay-sinc');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.id = 'overlay-sinc';
-        overlay.className = 'overlay-sinc';
-        overlay.innerHTML =
-            '<div class="overlay-sinc-conteudo">' +
-            '<div class="overlay-sinc-spinner"></div>' +
-            '<p class="overlay-sinc-msg"></p>' +
-            '</div>';
-        document.body.appendChild(overlay);
+    if (estado === 'progress') {
+        const spinner = document.createElement('span');
+        spinner.className = 'toast-spinner';
+        toast.appendChild(spinner);
+        toast.classList.add('progress');
     }
-    return overlay;
+
+    const textoEl = document.createElement('span');
+    textoEl.className = 'toast-msg';
+    textoEl.textContent = mensagem;
+    toast.appendChild(textoEl);
+
+    if (estado === 'error') {
+        toast.classList.add('error');
+        if (_toastOnRetryAtivo) {
+            const btnRetry = document.createElement('button');
+            btnRetry.type = 'button';
+            btnRetry.className = 'toast-retry';
+            btnRetry.textContent = 'Tentar de novo';
+            btnRetry.onclick = function () {
+                const retry = _toastOnRetryAtivo;
+                if (typeof retry === 'function') retry();
+            };
+            toast.appendChild(btnRetry);
+        }
+    } else if (estado === 'warning') {
+        toast.classList.add('warning');
+    }
+
+    toast.setAttribute('role', estado === 'error' ? 'alert' : 'status');
+    toast.setAttribute('aria-live', estado === 'error' ? 'assertive' : 'polite');
+
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    if (estado !== 'progress' && estado !== 'error') {
+        _toastAutoHideTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
 }
 
-function mostrarOverlaySinc(mensagem) {
-    const overlay = _garantirOverlaySinc();
-    const spinner = overlay.querySelector('.overlay-sinc-spinner');
+function _ocultarToast() {
+    const toast = _elementoToast();
+    if (!toast) return;
+    clearTimeout(_toastAutoHideTimer);
+    _toastOnRetryAtivo = null;
+    toast.classList.remove('show');
+}
 
-    if (spinner) spinner.style.display = 'block';
-    overlay.classList.remove('overlay-sinc-erro');
-    overlay.querySelector('.overlay-sinc-msg').textContent = mensagem || 'Salvando...';
-    overlay.classList.add('ativo');
-    document.body.style.pointerEvents = 'none';
+function mostrarToast(msg, tipo = 'success') {
+    _exibirToast(msg, tipo === 'error' ? 'error' : (tipo === 'warning' ? 'warning' : 'success'));
+}
+
+// [TAG-JS-OVERLAY-SINC] - Wrappers legados: mesma assinatura, delegam para o toast único.
+function mostrarOverlaySinc(mensagem, opcoes) {
+    _exibirToast(mensagem || 'Salvando...', 'progress', opcoes);
 }
 
 function mostrarOverlaySleepMode(mensagem) {
     mostrarOverlaySinc(mensagem || 'Sincronizando... isso pode levar alguns segundos.');
 }
 
-function mostrarOverlayErroConexao(mensagem) {
-    const overlay = _garantirOverlaySinc();
-    const spinner = overlay.querySelector('.overlay-sinc-spinner');
-
-    if (spinner) spinner.style.display = 'none';
-
-    overlay.classList.add('overlay-sinc-erro');
-    overlay.querySelector('.overlay-sinc-msg').textContent = mensagem || 'Falha ao conectar. Banco de dados inativo.';
-    overlay.classList.add('ativo');
-    document.body.style.pointerEvents = '';
+function mostrarOverlayErroConexao(mensagem, opcoes) {
+    _exibirToast(mensagem || 'Falha ao conectar. Banco de dados inativo.', 'error', opcoes);
 }
 
 function ocultarOverlayConexao() {
-    const overlay = document.getElementById('overlay-sinc');
-    if (!overlay) return;
-
-    const spinner = overlay.querySelector('.overlay-sinc-spinner');
-    if (spinner) spinner.style.display = 'block';
-
-    overlay.classList.remove('overlay-sinc-erro');
-    overlay.classList.remove('ativo');
-    document.body.style.pointerEvents = '';
+    _ocultarToast();
 }
 
 function ocultarOverlaySinc(resultado) {
     ocultarOverlayConexao();
     if (resultado === 'partial') {
-        mostrarToast('⚠️ Salvo no banco. Falha na Google Agenda — o evento pode não aparecer no calendário.', 'warning');
+        mostrarToast('Aula salva. O Google Agenda pode levar um tempo para atualizar.', 'warning');
     } else if (resultado === 'error') {
-        mostrarToast('❌ Falha ao salvar. Tente novamente.', 'error');
+        mostrarToast('Não foi possível salvar. Tente novamente.', 'error');
     }
 }
 
-// [TAG-JS-INDICADOR-SYNC-BG] — Indicador não-bloqueante para sincronizações em background.
-// Exibe um pequeno badge no canto inferior-direito sem bloquear a interação do usuário.
-let _indicadorBgHideTimer = null;
-
+// [TAG-JS-INDICADOR-SYNC-BG] — Etapa 6: passou a usar o mesmo toast (estado "progress"),
+// em vez do badge silencioso separado.
 function mostrarIndicadorSyncBackground(mensagem) {
-    clearTimeout(_indicadorBgHideTimer);
-    let badge = document.getElementById('indicador-sync-bg');
-    if (!badge) {
-        badge = document.createElement('div');
-        badge.id = 'indicador-sync-bg';
-        badge.className = 'indicador-sync-bg';
-        badge.innerHTML =
-            '<span class="indicador-sync-bg-spinner"></span>' +
-            '<span class="indicador-sync-bg-msg"></span>';
-        document.body.appendChild(badge);
-    }
-    badge.querySelector('.indicador-sync-bg-msg').textContent = mensagem || 'Sincronizando calendário...';
-    badge.classList.add('ativo');
+    _exibirToast(mensagem || 'Sincronizando calendário...', 'progress');
 }
 
 function ocultarIndicadorSyncBackground() {
-    clearTimeout(_indicadorBgHideTimer);
-    _indicadorBgHideTimer = setTimeout(function () {
-        const badge = document.getElementById('indicador-sync-bg');
-        if (badge) badge.classList.remove('ativo');
-    }, 600);
+    _ocultarToast();
 }

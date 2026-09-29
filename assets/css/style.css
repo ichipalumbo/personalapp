@@ -2823,11 +2823,18 @@ body {
     width: calc(100% - 24px);
   }
 }
+/* [TAG-STYLE-TOAST-UNIFICADO] - Etapa 6 (2026-09-29): componente único de feedback assíncrono
+   (substitui overlay-sinc bloqueante + indicador-sync-bg silencioso). Estados: success/warning
+   (auto-some), progress (spinner, fica até resolver) e error (fica até ação, com botão retry). */
 .toast {
   position: fixed;
   bottom: 20px;
   right: 20px;
   left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   text-align: center;
   background: #4caf50;
   color: #fff;
@@ -2857,88 +2864,46 @@ body {
 .toast.warning {
   background: #ff9800;
 }
-
-/* [TAG-STYLE-OVERLAY-SINC] - Overlay bloqueante para opera\u00e7\u00f5es de sincroniza\u00e7\u00e3o */
-.overlay-sinc {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  z-index: 3000;
-  align-items: center;
-  justify-content: center;
-}
-.overlay-sinc.ativo {
-  display: flex;
-}
-.overlay-sinc-conteudo {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 32px 40px;
+.toast.progress {
   background: #1a1a1a;
-  border-radius: 12px;
+  color: #e0e0e0;
   border: 1px solid #333;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
-.overlay-sinc-spinner {
-  width: 36px;
-  height: 36px;
-  border: 3px solid #2a2a2a;
-  border-top-color: #4caf50;
+.toast-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
   border-radius: 50%;
   animation: girar-sinc 0.8s linear infinite;
+  flex-shrink: 0;
+}
+.toast.progress .toast-spinner {
+  border-color: #2a2a2a;
+  border-top-color: #4caf50;
 }
 @keyframes girar-sinc {
   to {
     transform: rotate(360deg);
   }
 }
-.overlay-sinc-msg {
-  color: #e0e0e0;
-  font-size: 0.875rem;
-  margin: 0;
-  text-align: center;
+.toast-msg {
+  flex: 1 1 auto;
+  min-width: 0;
 }
-.overlay-sinc-erro .overlay-sinc-conteudo {
-  border-color: rgba(229, 57, 53, 0.55);
+.toast-retry {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
 }
-.overlay-sinc-erro .overlay-sinc-msg {
-  color: #ffd4d2;
-}
-/* [TAG-CSS-INDICADOR-SYNC-BG] — Non-blocking background sync indicator (pill badge) */
-.indicador-sync-bg {
-  display: none;
-  position: fixed;
-  bottom: 24px;
-  right: 20px;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
-  background: rgba(26, 26, 26, 0.92);
-  border: 1px solid #333;
-  border-radius: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
-  z-index: 1500;
-  pointer-events: none;
-}
-.indicador-sync-bg.ativo {
-  display: flex;
-}
-.indicador-sync-bg-spinner {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #2a2a2a;
-  border-top-color: #4caf50;
-  border-radius: 50%;
-  animation: girar-sinc 0.8s linear infinite;
-  flex-shrink: 0;
-}
-.indicador-sync-bg-msg {
-  color: #bdbdbd;
-  font-size: 0.75rem;
-  white-space: nowrap;
+.toast-retry:active {
+  background: rgba(255, 255, 255, 0.28);
 }
 
 /* [TAG-STYLE-FILTRO-ALUNO-CALENDARIO] - Filter dropdown styling */

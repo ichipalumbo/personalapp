@@ -110,7 +110,7 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
             agendamentosAfetados: agendamentosFuturos.length
         });
         if (typeof mostrarToast === 'function') {
-            mostrarToast('✅ ' + agendamentosFuturos.length + ' agendamento(s) atualizado(s) com os novos dados do aluno!', 'success');
+            mostrarToast(agendamentosFuturos.length + ' agendamento(s) atualizado(s) com os novos dados do aluno.', 'success');
         }
 
     } catch (err) {
@@ -123,7 +123,7 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
         }
         window.log.error('[cascade]', 'Erro ao sincronizar agendamentos do aluno', err);
         if (typeof mostrarToast === 'function') {
-            mostrarToast('⚠️ Erro ao atualizar agendamentos. Verifique o console.', 'warning');
+            mostrarToast('Não foi possível atualizar os agendamentos deste aluno. Tente novamente.', 'warning');
         }
     }
 }

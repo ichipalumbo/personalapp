@@ -17,7 +17,7 @@
             return await global.googleIdentity.ensureCalendarConnection(opts);
         } catch (error) {
             if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast('Não foi possível conectar a Google Agenda. ' + (error.message || ''), 'warning');
+                global.mostrarToast('Não foi possível conectar à Google Agenda agora.', 'warning');
             }
             return { connected: false, error: error.message || 'connection-failed' };
         }
@@ -139,6 +139,13 @@
     };
 
     global.iniciarSyncGoogleCalendarAutomatica = async function () {
+        // Etapa 6 (2026-09-29): religado ao toast unificado via contexto 'syncCalendario' —
+        // antes rodava direto, sem passar por nenhum feedback de progresso/sucesso na UI.
+        if (typeof global.executarOperacaoRemotaComFeedback === 'function') {
+            return global.executarOperacaoRemotaComFeedback(function () {
+                return _ensureCalendarConnection({ interactive: false, force: false });
+            }, { contexto: 'syncCalendario', exibirFalha: false });
+        }
         return _ensureCalendarConnection({ interactive: false, force: false });
     };
 
