@@ -88,10 +88,10 @@ function _mostrarOverlaySleepMode() {
     }
 }
 
-function _mostrarOverlayErroComRetry(mensagem) {
+function _mostrarOverlayErroComRetry(mensagem, onRetry) {
     const texto = mensagem || 'Falha na API. Tente "Sincronizar Dados" novamente em alguns segundos.';
     if (typeof mostrarOverlayErroConexao === 'function') {
-        mostrarOverlayErroConexao(texto);
+        mostrarOverlayErroConexao(texto, { onRetry });
         return;
     }
     if (typeof mostrarToast === 'function') {
@@ -203,7 +203,7 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
             }
         }
         if (deveExibirFalha) {
-            _mostrarOverlayErroComRetry(mensagensContexto.erro);
+            _mostrarOverlayErroComRetry(mensagensContexto.erro, opcoes.onRetry);
         }
         _setEstadoBotaoSyncBanco('pronto');
         throw error;
