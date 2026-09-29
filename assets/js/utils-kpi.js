@@ -99,9 +99,9 @@ function ocultarOverlayConexao() {
 function ocultarOverlaySinc(resultado) {
     ocultarOverlayConexao();
     if (resultado === 'partial') {
-        mostrarToast('⚠️ Salvo no banco. Falha na Google Agenda — o evento pode não aparecer no calendário.', 'warning');
+        mostrarToast('Aula salva. O Google Agenda pode levar um tempo para atualizar.', 'warning');
     } else if (resultado === 'error') {
-        mostrarToast('❌ Falha ao salvar. Tente novamente.', 'error');
+        mostrarToast('Não foi possível salvar. Tente novamente.', 'error');
     }
 }
 

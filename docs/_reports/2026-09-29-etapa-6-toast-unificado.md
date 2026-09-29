@@ -199,3 +199,73 @@ isso só se confirma em uso real.
   antes desta etapa e continua funcionando pela mesma via corrigida (`executarOperacaoRemotaComFeedback`
   → `mostrarOverlayErroConexao`) — não precisou de nenhuma mudança adicional nesse arquivo.
 - Etapa 7 do diagnóstico (4.6 final, 4.13, 4.15, 4.16, 4.17) permanece intocada, como planejado.
+
+---
+
+## Passada de textos dos toasts (2026-09-29, decisão do dono)
+
+Após a validação em produção aprovada pelo dono, ele solicitou uma revisão de **todos os
+textos de toast** do app: vários ainda estavam em tom de mensagem de debug (ex.: "Falha ao...",
+"Verifique o console", emojis ✅/❌, `error.message` cru, pontuação de sucesso inconsistente).
+Foi produzida uma tabela de ~61 itens numerados (texto atual → texto proposto, uma linha por
+local de `mostrarToast`), aprovada item a item pelo dono. Regras acordadas na aprovação:
+
+- Sucesso: frase sem emoji, terminando em `!`.
+- Falha: tom de usuário final ("Não foi possível ..."), com "Tente novamente." quando há ação
+  possível do usuário; falha com retry automático server-side (ex.: sync do Google Calendar)
+  **não** promete retry manual.
+- `error.message` de `catch` genérico: quando a tabela não definiu texto fixo, o pass-through
+  foi **mantido** (apenas os fallbacks definidos na tabela mudaram).
+
+### Arquivos alterados e o que mudou
+
+- `assets/js/utils-kpi.js` — 2 mensagens do núcleo (sucesso de persistência parcial e erro
+  genérico de salvar), já em linguagem de usuário final.
+- `assets/js/storage.js` — mapa de `mensagens` dos contextos (`carregando`/`syncDados`/
+  `syncCalendario`), "Trabalhando offline..." → "Sem conexão. Seus dados foram salvos neste
+  aparelho.", "Dados sincronizados com sucesso no MongoDB!" → "Dados sincronizados com
+  sucesso!".
+- `assets/js/google-calendar.js` — erro do sync automático no boot: removida a concatenação de
+  `error.message` cru (virou "Não foi possível conectar à Google Agenda agora.").
+- `assets/js/cascade-sync-aluno.js` — mensagens de sucesso e falha do sync em cascata (removido
+  o "Verifique o console").
+- `assets/js/settings-modal.js` — removidos ✅ e ❌ das 4 mensagens de conectar/desconectar
+  Google Agenda.
+- `assets/js/modal-agendamento.js` — fallback de falha de persistência e mensagem de sucesso de
+  agendamento (sem ✅).
+- `assets/js/modal-acao-slot.js` — 12 textos: exclusão de aula/série (dia único, série,
+  "a partir de"), reagendamento de reposição, exclusões aplicadas, remoção de ✅ em 4
+  mensagens de sucesso e fallbacks de falha.
+- `assets/js/view-alunos.js` — 4 textos: falha de atualização de cobrança (antes
+  `erro.message` — agora texto fixo, por decisão donal), "Aluno inativado com sucesso." → com
+  `!` (padrão do par), remoção de ✅ em "Aluno atualizado" e "Aluno cadastrado".
+- `backend/shared/reposicao-flow-helpers.js` (módulo compartilhado) — as 2 mensagens de `obterMensagemFalhaPersistencia`
+  reescritas para o usuário final.
+- `backend/test/gcal-persistencia-criacao-agendamento.test.js` — 1 asserção adaptada:
+  verificava a substring `'falha'` no toast de erro, que apenas casava com o texto antigo
+  ("Falha ao salvar alterações..."). Passou a verificar a intenção real (toast de erro de
+  falha de salvamento) contra a mensagem nova. **Provado por mutação**: revertendo a mensagem
+  no helper para o texto antigo, o teste falha (1/8 no arquivo); restaurada a correção,
+  suíte verde.
+
+### Arquivos encontrados, não alterados
+
+- `assets/js/view-financas.js` — todos os seus itens (~5) aprovados como **manter como estão**;
+  nenhuma edição neste arquivo.
+- `assets/js/google-identity.js` — repassa o texto dado pelo chamador; as mensagens que passam
+  por ele foram atualizadas nos próprios chamadores (acima).
+
+### Suítes (medidas nesta rodada, `node --test`)
+
+- Baseline antes da passada: frontend 77/77, backend 232/232.
+- Depois da passada: **frontend 77/77, backend 232/232**.
+- Nenhum dos outros testes faz asserção sobre texto de toast (busca confirmada em
+  `backend/test/**` e `tests-frontend/**`); a única asserção afetada foi a listada acima.
+
+### Sugestão registrada para futuro (palavra "tentar")
+
+Encontrada na revisão: duas nomenclaturas diferentes para a ação de retry em pontos distintos
+do app — o botão do toast unificado usa **"Tentar de novo"** e o botão do erro do histórico de
+reposições (tela de alunos) já existia com **"Tentar novamente"**. Não foi alterado nesta
+passada (fora do conjunto de toasts aprovado); foi registrada como item de consistência na
+Etapa 7 — ver seção "Etapa 7" do diagnóstico (item sugerido 7.1) e item 5.7 do roadmap.

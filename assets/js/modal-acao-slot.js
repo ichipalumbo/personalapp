@@ -1449,8 +1449,8 @@ window.executarExclusaoInstancia = async function () {
     });
 
     const toastMensagem = dataAlvoStr
-      ? `✅ Aula de ${dataAlvoStr} excluída. A série continua nos outros dias.`
-      : "✅ Aula excluída. A série continua nos outros dias.";
+      ? `Aula de ${dataAlvoStr} excluída. A série continua nos outros dias.`
+      : "Aula excluída. A série continua nos outros dias.";
 
     window.fecharModalAcaoSlot();
 
@@ -1485,7 +1485,7 @@ window.executarExclusaoInstancia = async function () {
     const mensagemErro =
       erro && erro.message
         ? erro.message
-        : "Falha ao excluir a aula selecionada.";
+        : "Não foi possível excluir esta aula. Tente novamente.";
     if (typeof mostrarToast === "function") {
       mostrarToast(mensagemErro, "error");
     } else {
@@ -1586,13 +1586,13 @@ window.executarExclusaoSerie = async function () {
       await window.inicializarHome({ sincronizar: true });
     }
     if (typeof mostrarToast === "function")
-      mostrarToast("✅ Série excluída — todas as ocorrências.");
+      mostrarToast("Série excluída — todas as ocorrências.");
   } catch (erro) {
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
         ? erro.message
-        : "Falha ao excluir a série selecionada.";
+        : "Não foi possível excluir esta série. Tente novamente.";
     if (typeof mostrarToast === "function") {
       mostrarToast(mensagemErro, "error");
     } else {
@@ -1632,8 +1632,8 @@ window.executarExclusaoAulaAvulsa = async function () {
   try {
     if (_idxDeletar !== -1) aulas.splice(_idxDeletar, 1);
     const toastMensagem = dataParaTexto
-      ? `✅ Aula de ${dataParaTexto} excluída.`
-      : "✅ Aula excluída.";
+      ? `Aula de ${dataParaTexto} excluída.`
+      : "Aula excluída.";
     window.fecharModalAcaoSlot();
 
     if (
@@ -1668,7 +1668,7 @@ window.executarExclusaoAulaAvulsa = async function () {
     const mensagemErro =
       erro && erro.message
         ? erro.message
-        : "Falha ao excluir a aula selecionada.";
+        : "Não foi possível excluir esta aula. Tente novamente.";
     if (typeof mostrarToast === "function") {
       mostrarToast(mensagemErro, "error");
     } else {
@@ -1718,14 +1718,14 @@ window.executarExclusaoSerieAPartirDe = async function () {
       await window.inicializarHome({ sincronizar: true });
     }
     if (typeof mostrarToast === "function") {
-      mostrarToast("✅ Exclusão aplicada a partir de " + dataAlvo + ".");
+      mostrarToast("Exclusão aplicada a partir de " + dataAlvo + ".");
     }
   } catch (erro) {
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
         ? erro.message
-        : "Falha ao excluir a série a partir da data selecionada.";
+        : "Não foi possível aplicar a exclusão a partir dessa data. Tente novamente.";
     if (typeof mostrarToast === "function") {
       mostrarToast(mensagemErro, "error");
     } else {
@@ -2041,7 +2041,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
         } catch (_) {}
         if (typeof mostrarToast === "function") {
-          mostrarToast(`✅ Reposição reagendada com sucesso!${mensagemPrazo}`);
+          mostrarToast(`Reposição reagendada com sucesso!${mensagemPrazo}`);
         }
         if (typeof window.finalizarRetornoHistoricoReposicoes === "function") {
           await window.finalizarRetornoHistoricoReposicoes({ status: "sucesso" });
@@ -2056,7 +2056,7 @@ document.addEventListener("DOMContentLoaded", () => {
           mostrarToast(
             erro && erro.message
               ? erro.message
-              : "Falha ao reagendar reposição.",
+              : "Não foi possível reagendar a reposição. Tente novamente.",
             "error",
           );
         } else {
@@ -2650,7 +2650,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await window.inicializarHome();
           }
           if (typeof mostrarToast === "function")
-            mostrarToast("✅ Alterações salvas com sucesso!");
+            mostrarToast("Alterações salvas com sucesso!");
         }
       } finally {
         _submissaoEdicaoEmAndamento = false;
@@ -2762,7 +2762,7 @@ document.addEventListener("DOMContentLoaded", () => {
               mensagemPrazo = ` Prazo: até ${window.formatarDataPtBr ? window.formatarDataPtBr(reposicao.validoAte) : reposicao.validoAte}.`;
             }
             if (typeof mostrarToast === "function") {
-              mostrarToast(`✅ Aula enviada para reposição.${mensagemPrazo}`);
+              mostrarToast(`Aula enviada para reposição.${mensagemPrazo}`);
             }
             return reposicao;
           }
@@ -2807,7 +2807,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await window.inicializarHome();
           }
           if (typeof mostrarToast === "function") {
-            mostrarToast("✅ Aula enviada para reposição.", "success");
+            mostrarToast("Aula enviada para reposição.", "success");
           }
           return reposicao;
         } catch (erro) {

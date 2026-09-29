@@ -17,7 +17,7 @@
             return await global.googleIdentity.ensureCalendarConnection(opts);
         } catch (error) {
             if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast('Não foi possível conectar a Google Agenda. ' + (error.message || ''), 'warning');
+                global.mostrarToast('Não foi possível conectar à Google Agenda agora.', 'warning');
             }
             return { connected: false, error: error.message || 'connection-failed' };
         }

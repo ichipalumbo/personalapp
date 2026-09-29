@@ -612,7 +612,7 @@ window.salvarEdicaoCobrancaReposicao = async function() {
         renderizarHistoricoReposicoes();
         if (typeof window.mostrarToast === 'function') window.mostrarToast('Cobrança da reposição atualizada.');
     } catch (erro) {
-        if (typeof window.mostrarToast === 'function') window.mostrarToast(erro.message, 'error');
+        if (typeof window.mostrarToast === 'function') window.mostrarToast('Não foi possível atualizar a cobrança. Tente novamente.', 'error');
     } finally {
         if (botao) botao.disabled = false;
     }
@@ -932,7 +932,7 @@ window.alternarStatusAluno = function(id, ativoForcado) {
     window.renderizarListaAlunos();
     if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
     if (typeof mostrarToast === 'function') {
-        mostrarToast(proximoStatus === 'inativo' ? 'Aluno inativado com sucesso.' : 'Aluno ativado com sucesso!');
+        mostrarToast(proximoStatus === 'inativo' ? 'Aluno inativado com sucesso!' : 'Aluno ativado com sucesso!');
     }
 };
 document.addEventListener('DOMContentLoaded', () => {
@@ -1061,7 +1061,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         nome: nome,
                         metodoCobranca: metodoCobranca || 'por_aula'
                     });
-                    if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno atualizado com sucesso!');
+                    if (typeof mostrarToast === 'function') mostrarToast('Aluno atualizado com sucesso!');
                 }
             } else {
                 const novoAluno = {
@@ -1086,7 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     nome: novoAluno.nome,
                     metodoCobranca: novoAluno.metodoCobranca || 'por_aula'
                 });
-                if (typeof mostrarToast === 'function') mostrarToast('✅ Aluno cadastrado com sucesso!');
+                if (typeof mostrarToast === 'function') mostrarToast('Aluno cadastrado com sucesso!');
             }
             if (typeof salvarDados === 'function') salvarDados();
             window.togglePainelCadastro(false); // Fecha o modal
