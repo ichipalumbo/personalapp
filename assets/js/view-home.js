@@ -52,12 +52,15 @@ window.renderizarLoadingHome = function () {
   // Only replace with skeleton if the weekly grid is genuinely empty (no rendered content yet).
   // Skipping when content already exists prevents wiping a valid render, which would cause a
   // visible flicker before the real data renders.
+  // 5.8 (Parte A): skeleton padronizado (.skeleton) + aria-busy no container da Home.
   if (grid && grid.children.length === 0) {
+    const telaHome = document.getElementById("tela-home");
+    if (telaHome) telaHome.setAttribute("aria-busy", "true");
     grid.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 12px; opacity: 0.55; pointer-events: none;">
-                <div style="height: 112px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid #2a2a2a;"></div>
-                <div style="height: 112px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid #2a2a2a;"></div>
-                <div style="height: 112px; border-radius: 12px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid #2a2a2a;"></div>
+            <div style="display: flex; flex-direction: column; gap: 12px; pointer-events: none;">
+                <div class="skeleton" style="height: 112px;"></div>
+                <div class="skeleton" style="height: 112px;"></div>
+                <div class="skeleton" style="height: 112px;"></div>
             </div>
         `;
   }
@@ -226,6 +229,8 @@ async function _sincronizarDadosHome(opcoes) {
   } finally {
     if (deveMostrarLoading) {
       window.__homeCarregando = false;
+      const telaHome = document.getElementById("tela-home");
+      if (telaHome) telaHome.setAttribute("aria-busy", "false");
     }
   }
 }

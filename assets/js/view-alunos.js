@@ -418,11 +418,13 @@ function renderizarHistoricoReposicoes() {
     modal.setAttribute('aria-busy', _historicoReposicoesModal.carregando ? 'true' : 'false');
 
     if (_historicoReposicoesModal.carregando && dados.length === 0) {
+        // 5.8 (Parte A): skeleton padronizado (.skeleton); altura 78px é a
+        // silhueta original do modal (antes vinha da classe .historico-reposicoes-skeleton).
         conteudo.innerHTML = `
             <div class="historico-reposicoes-carregando" role="status">
-                <span class="historico-reposicoes-skeleton"></span>
-                <span class="historico-reposicoes-skeleton"></span>
-                <span class="historico-reposicoes-skeleton"></span>
+                <span class="skeleton" style="height: 78px;"></span>
+                <span class="skeleton" style="height: 78px;"></span>
+                <span class="skeleton" style="height: 78px;"></span>
                 <span class="sr-only">Carregando histórico de reposições</span>
             </div>
         `;

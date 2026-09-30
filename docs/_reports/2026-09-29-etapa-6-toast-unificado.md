@@ -7,7 +7,7 @@
 > **Item de roadmap**: `docs/roadmap.md`, item 5.6 (Grupo 5 — auditoria de UI/UX mobile)
 > **Status**: ✅ CONCLUÍDO — execução 2026-09-29, passada de textos na mesma rodada, validação
 > em produção aprovada pelo dono, mergeado na `main` via PR #66 (2026-09-30). Adição da tela de
-> finanças registrada abaixo, em PR separada (`feat/financas-toast-carregamento`).
+> finanças registrada abaixo — mergeada via PR #67 (2026-09-30).
 
 ## Escopo desta etapa
 
@@ -275,10 +275,11 @@ Etapa 7 — ver seção "Etapa 7" do diagnóstico (item sugerido 7.1) e item 5.7
 
 ---
 
-## Adição — tela de finanças no toast unificado (2026-09-30, branch `feat/financas-toast-carregamento`)
+## Adição — tela de finanças no toast unificado (2026-09-30, mergeada via PR #67)
 
-> Branch criada de `origin/main` (que já continha o merge da Etapa 6 — PR #66, fechada antes).
-> Mudança em PR separada; commits/push do dono, como sempre.
+> Branch `feat/financas-toast-carregamento` criada de `origin/main` (que já continha o merge da
+> Etapa 6 — PR #66, fechada antes); PR separada, commits/push do dono, como sempre. PR #67
+> mergeada na `main` em 2026-09-30.
 
 **Por que**: a única tela com loading local (skeleton) que não participava do mecanismo
 unificado era a de finanças — sem cache e em rede lenta, ela parecia travada com um texto
