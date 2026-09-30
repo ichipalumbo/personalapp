@@ -63,6 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[ ]`  | desenho pronto; 2.2 consolida depois                             |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -222,7 +223,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **Já aconteceu em produção** — não é risco teórico. Exigia fix de código **e** correção dos registros `Reposicao` duplicados já gravados no banco.
 - **Dados existentes**: correção manual **concluída pelo dono em 2026-09-23**, separadamente do fix de código. Essa operação não foi executada pelo agente. Com ela, o item fica integralmente fechado — código e dados.
-- **Diagnóstico completo e plano de correção**: [`_diags_llm/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](_diags_llm/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
+- **Diagnóstico completo e plano de correção**: [`diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
 - **Comportamento correto, para não confundir com o item errado**: uma aula pode ser enviada para reposição e reenviada quantas vezes for preciso enquanto ainda estiver dentro do prazo de validade — isso é fluxo normal, não bug. O botão "Enviar para reposição" **não deve** ser ocultado nem desabilitado de forma geral.
 - **O que é o bug de verdade**: ao reagendar uma reposição (`formReagendarAula`), o compromisso criado recebe `isReposicao: true` e `reposicaoId` apontando para o registro original (`assets/js/modal-acao-slot.js`). Se essa aula for enviada para reposição de novo e a prof escolher **"Cobrar neste ciclo"** no modal de escolha, `enviarParaReposicao` cria um **segundo registro `Reposicao` independente**, sem vínculo com o primeiro. Se o registro **original** já estava com `cobravel: true` (ou seja, já contribuiu para o cálculo de algum ciclo), agora dois registros cobráveis representam a mesma aula de origem — ambos podem entrar na parcela (B) de `calcularAulasContadasDoCiclo`, dobrando a cobrança. Quando o original é `cobravel: false` (ainda não foi cobrado), reenviar não duplica nada — é o caso comum e deve continuar sem nenhum aviso.
 - **Correção escolhida**: em vez de criar um registro novo do zero, o modal de escolha "Cobrar neste ciclo / Cobrar na reposição" passa a **reabrir o mesmo registro `Reposicao` de origem** quando a aula reenviada tiver `reposicaoId` — volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, e registra o evento no array `historico` do próprio documento. Decisão explícita do dono do repo: isso é preferível a criar-registro-novo-com-aviso porque **mantém o histórico de quantas vezes aquela reposição já foi remarcada em um único documento**, em vez de espalhar em vários registros desconectados.
@@ -240,7 +241,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: o motor `calcularColisoes` é sensível (área §7 das instruções) e alimenta agenda e financeiro; um bug de layout que não muda geometria do motor pode passar despercebido sem rede de proteção na camada de desenhamento.
 - **Caminho**: o `jsdom` já está instalado em `tests-frontend/` como `devDependency` ociosa, deliberadamente reservado para a cobertura de DOM (ver 3.5). Um teste de render do Dia o aproveitaria, e o setup `tests-frontend/setup/carregar-frontend.js` já resolve o carregamento dos scripts via contexto `vm`.
 - **Esforço**: Baixo–Médio (a infraestrutura de carregamento já existe; falta o primeiro teste de DOM consumindo o jsdom).
-- **Referências**: [`2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md`](_reports/2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md) e seção 5.3/6.4/9.3 da spec de reposições.
+- **Referências**: [`2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md`](reports/2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md) e seção 5.3/6.4/9.3 da spec de reposições.
 
 ---
 
@@ -342,7 +343,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ### [x] 1.10 Histórico de reposições no card do aluno — **ENTREGUE**
 
 - **O que é**: um botão permanente `Reposições` em todos os cards de `view-alunos.js`, inclusive quando o aluno não tem registros. Ele mostra o resumo de pendências/urgência e abre um modal com o histórico completo daquele aluno, agrupado em pendentes, agendadas, realizadas e expiradas.
-- **Por que importa**: o Painel de Pendentes da Home foi removido em 2026-09-18 (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`) e a PT ficou sem um caminho navegável para agir sobre pendências. A gestão volta no contexto em que ela já encontra o aluno, sem criar uma quarta aba.
+- **Por que importa**: o Painel de Pendentes da Home foi removido em 2026-09-18 (`docs/reports/2026-09-18-chore-remove-painel-pendentes.md`) e a PT ficou sem um caminho navegável para agir sobre pendências. A gestão volta no contexto em que ela já encontra o aluno, sem criar uma quarta aba.
 - **Convivência com o card atual**: o botão é um controle semântico próprio e interrompe a propagação do clique. Clicar na área livre continua abrindo a edição do aluno; o toggle Ativo/Inativo continua independente. Financeiro e Consistência não mudam.
 - **Reagendamento das pendentes**: no modal, cada `pendente` de aluno ativo oferece `Reagendar`, reaproveitando `window.iniciarReagendamentoReposicao` (`assets/js/modal-acao-slot.js`). O histórico fecha antes de abrir o modal existente, evitando empilhar modais; após sucesso, atualiza a badge e reabre o mesmo histórico.
 - **Ajuste necessário no modal reaproveitado**: fora da Home, `modalReagendarAula` calcula a próxima ocorrência a partir de hoje, e não de `window.dataSelecionada` ausente ou antiga. Não criar segundo modal de reagendamento.
@@ -370,7 +371,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
 - **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
-- **Histórico de correção (29/08/2026)**: uma auditoria do mês encontrou defeitos de sincronização (duplicata de série na edição, `EXDATE` do primeiro dia, `DTSTART` desalinhado do `BYDAY`, teto de pendência no lado errado, série truncada sem aulas, dia da semana sem acento e ordem invertida no `DELETE`). As rodadas A–H trataram esse conjunto; o estado final ficou registrado em [`specs/gcal-sync.md`](specs/gcal-sync.md) §9 e na tabela de relatórios da spec.
+- **Histórico de correção (29/08/2026)**: uma auditoria do mês encontrou defeitos de sincronização (duplicata de série na edição, `EXDATE` do primeiro dia, `DTSTART` desalinhado do `BYDAY`, teto de pendência no lado errado, série truncada sem aulas, dia da semana sem acento e ordem invertida no `DELETE`). As rodadas A–H trataram esse conjunto; o estado final ficou registrado em [`specs/gcal-sync.md`](specs/gcal-sync.md) §9.
 - **Esforço**: Médio. O custo que ficou aberto continua sendo o gatilho automático no boot, porque a validação executada foi por clique manual do botão de renovação e não por observação isolada do bootstrap; isso foi registrado como ressalva da entrega, não como regressão funcional visível.
 - **Validação concluída**: em 31/08/2026, o botão manual de renovação do canal foi executado e a expiração avançou para a semana seguinte, comprovando a cadeia completa de encerramento do canal antigo, registro do novo e sincronização de recuperação. A ressalva fica no boot: o disparo automático não foi observado isoladamente, mas o caminho da renovação foi validado em produção.
 - **Referência**: [`specs/gcal-sync.md`](specs/gcal-sync.md).
@@ -385,6 +386,9 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
 - **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
 - **Esforço**: Baixo–Médio.
+- **Nota (2026-09-30)**: se o **2.4** (B2) for executado, o boot ganha um quarto ponto de
+  leitura de dados; a consolidação deste item deve ser feita **depois** dele, já contando com esse
+  ponto (e com a spec `gcal-sync.md` §9.14 atualizada).
 
 ---
 
@@ -396,6 +400,48 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
 - **Esforço**: Médio.
+
+---
+
+### [ ] 2.4 Sync de leitura no boot sobre cache (B2 — stale-while-revalidate)
+
+> _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30). Desenho
+> completo e revalidado em [`plans/2026-09-30-plan-b2-sync-boot.md`](plans/2026-09-30-plan-b2-sync-boot.md)._
+
+- **O que é**: hoje o boot com cache renderiza na hora e **não faz nenhuma chamada remota** de
+  dados (medido em `storage.js`). O B2 passa a disparar, uma vez por sessão, uma releitura
+  remota em segundo plano depois que a Home já está em tela, reusando o caminho do auto-refresh
+  e o rótulo "Sincronizando dados..." já entregue no 5.8. É a implementação, no boot, do que a
+  spec de Finanças §6.1 já manda ("exibir o cache imediatamente e atualizar quando a resposta
+  chegar").
+- **Por que importa**: sem isso o app pode ficar mostrando dados velhos até o próximo gatilho
+  (troca de login, botão manual, voltar ao app depois de 90s+). É o que o PT vê ao abrir o app.
+- **Por que está no Grupo 2 e não no 1 ou no 4**: tema (sincronização no boot, vizinho do 2.2) e
+  esforço Médio, como 2.1 e 2.3. Não é Grupo 1: mexe em guarda contra perda de cache, trava de
+  concorrência leitura×escrita e guarda de dono. Não é Grupo 4: não há serviço externo nem
+  arquitetura nova.
+- **Riscos que o desenho já trata** (detalhe no report): **R1** — boot nunca dispara o caminho
+  de escrita "banco vazio → migrar cache" nem regrava o cache com listas vazias (opção
+  `somenteLeitura`); **R2** — caches locais passam a ter dono (`ownerEmail`), sem apagar cache
+  de quem ainda não logou; **R3** — 401 no boot sem toast; **R4** — trava global cobrindo
+  leitura e escrita, com prioridade de escrita.
+- **Decisões do dono já registradas**: desenho B2-puro + esqueleto de ETag; R1 “não disparar no
+  boot”; R2 dentro do escopo.
+- **Pendências antes de executar**: (a) comportamento do botão "Sincronizar Dados" com sync
+  já em voo; (b) mecanismo de cancelar/descartar leitura em voo quando o usuário salva
+  (`AbortController` ou descarte pós-resposta).
+- **Onde mexer**: `assets/js/storage.js` (`carregarDados`, `carregarDadosDoLocalStorage`,
+  `salvarNoLocalStorage`, cache de Finanças), `assets/js/app/bootstrap.js`. Sem mudança de
+  backend no B2-puro.
+- **Área sensível**: toca a sincronização de dados e a fronteira com autenticação
+  (`addAuthChangeListener`); confirmar antes de implementar.
+- **Sequência sugerida**: (1) B2-puro; (2) ETag/304 no backend (rodada separada, exige conferir
+  `updatedAt` em `Aluno` e `Agendamento`); (3) consolidação do boot no 2.2. Mesma família do
+  **1.11** (botão "Atualizar" em Finanças, bypass de cache).
+- **Esforço**: Médio (B2-puro) + Médio (ETag, rodada separada).
+- **Numeração**: "2.4" foi o número antigo do Portal do aluno (hoje 4.3, ver mapa de
+  2026-08-26). Referências anteriores a essa data que digam "2.4" se referem ao Portal, não a
+  este item.
 
 ---
 
@@ -584,7 +630,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 > Grupo vivo: cada rodada de UI/UX mobile entra aqui como um item novo, na ordem em que for
 > executada. Fonte de verdade do escopo e do diagnóstico original:
-> [`_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`](_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md)
+> [`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`](diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md)
 > (tabela mestra de rastreabilidade dos achados 4.1–4.17). Cada item abaixo corresponde a uma
 > "Etapa" desse diagnóstico; a numeração de Etapa não muda, só o item de roadmap é novo.
 
@@ -596,7 +642,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   (evitava abrir o teclado virtual sem intenção).
 - **Resolve**: achados 4.1 (formulário sem saída operacional) e 4.7 (diálogo inconsistente) do
   diagnóstico.
-- **Relatório**: [`_reports/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md`](_reports/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md).
+- **Relatório**: [`plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md`](plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md).
 
 ---
 
@@ -608,7 +654,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   futura —, `:focus-visible` dourado padronizado e `aria-label` em 13/13 botões ícone-only.
 - **Resolve**: achados 4.4 (tipografia pequena), 4.5 (alvos de toque) e a parte inicial de 4.6
   (foco/teclado básico) do diagnóstico.
-- **Relatório**: [`_reports/2026-09-26-etapa-2-legibilidade-toque-cartoes.md`](_reports/2026-09-26-etapa-2-legibilidade-toque-cartoes.md).
+- **Relatório**: [`plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`](plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md).
 
 ---
 
@@ -619,7 +665,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   safe areas via `--bottombar-height` medido em runtime e `viewport-fit=cover`.
 - **Resolve**: achados 4.2 (topo consome altura excessiva), 4.3 (navegação compete com conteúdo),
   4.14 (safe areas) e parte de 4.16 (ARIA de navegação) do diagnóstico.
-- **Relatório**: [`_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md`](_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md).
+- **Relatório**: [`plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`](plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md).
 
 ---
 
@@ -630,7 +676,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   texto preservado em `title`/`aria-label`.
 - **Resolve**: achado 4.11 (cards com informação excessiva). O achado 4.10 (filtros apertados) já
   havia sido resolvido fora da sequência formal (remoção de filtros de Finanças e Alunos).
-- **Relatório**: [`_reports/2026-09-27-etapa-4-densidade-cards-cartoes.md`](_reports/2026-09-27-etapa-4-densidade-cards-cartoes.md).
+- **Relatório**: [`plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md`](plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md).
 
 ---
 
@@ -640,7 +686,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   banda de 2 em colunas proporcionais, banda de 3+ em linhas empilhadas (nome, hora, chip) — e
   fundo do modo Dia nivelado (sem o cinza de painel) e esticado nas laterais.
 - **Resolve**: achado 4.12 (eventos simultâneos na agenda diária).
-- **Relatório**: [`_reports/2026-09-27-etapa-5-eventos-simultaneos.md`](_reports/2026-09-27-etapa-5-eventos-simultaneos.md).
+- **Relatório**: [`plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md`](plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md).
 
 ---
 
@@ -663,7 +709,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   final (removidos emojis e mensagens de debug; falhas passaram a "Não foi possível ...") em
   8 arquivos + 1 asserção de teste — suítes 77/77 e 232/232 antes e depois. Detalhe completo
   em
-  [`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md).
+  [`plans/2026-09-29-plan-etapa-6-toast-unificado.md`](plans/2026-09-29-plan-etapa-6-toast-unificado.md).
 - **Adição (2026-09-30, branch `feat/financas-toast-carregamento` — mergeada na `main` via
   PR #67)**: a tela de finanças, que mostrava só skeleton + “Carregando...” minúsculo,
   passou a usar o mecanismo unificado — o fetch de `carregarFinancas()` roda dentro de
@@ -707,12 +753,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Decisão do dono (2026-09-30)**: resolver **antes** da Etapa 7, em rodadas isoladas — é a
   última ponta do escopo original da Etapa 6 e é pré-requisito natural da auditoria de
   consistência global da Etapa 7.
-- **Plano**: [`_reports/2026-09-30-plano-skeletons-cache.md`](_reports/2026-09-30-plano-skeletons-cache.md)
+- **Plano**: [`plans/2026-09-30-plan-skeletons-cache.md`](plans/2026-09-30-plan-skeletons-cache.md)
   (inventário medido, proposta A de CSS `.skeleton` + `aria-busy`, proposta B de rótulo de cache
   no header) — **executado em 2026-09-30** (seção "Execução" do relatório).
 - **Decisões do dono (registradas no plano)**: (A1) aprovada; (Parte B) → **caminho B1**, após a
   descoberta de que **o estado original não existe** (no boot com cache o app **não dispara sync
-  remoto** — medido no `storage.js`); (texto) "Sincronizando dados...".
+  remoto** — medido no `storage.js`); (texto) "Sincronizando dados...". O B2 (sync no boot) ficou **fora** de propósito e virou o item
+  **2.4**, com desenho próprio.
 - **O que entrou na branch (2026-09-30)**:
   - **Parte A**: classe `.skeleton` única em `style.css` (fundo `#1d1d1d`, pulso 1.2s — padrão do
     histórico de reposições, aposentado); Home, Finanças e o modal de reposições passam a
@@ -730,7 +777,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   da Home persistia sobre as demais telas até o carregamento da tela destino terminar (router só
   reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app/router.js` + teste
   (`tests-frontend/router-fab-tela.test.js`, prova de mutação):
-  [`_reports/2026-09-30-hotfix-fab-home-troca-tela.md`](_reports/2026-09-30-hotfix-fab-home-troca-tela.md).
+  [`reports/2026-09-30-hotfix-fab-home-troca-tela.md`](reports/2026-09-30-hotfix-fab-home-troca-tela.md).
 - **Depende de**: 5.6 (concluído). Independente de 5.7, mas a execução fica **antes** dele por
   ordem do dono.
 

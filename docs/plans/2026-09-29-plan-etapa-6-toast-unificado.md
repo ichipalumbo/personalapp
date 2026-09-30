@@ -3,7 +3,7 @@
 > **Data de abertura**: 2026-09-29
 > **Branch de trabalho**: `feat/etapa-6-toast-unificado` (criada de `origin/main`, sem upstream track)
 > **Fonte**: seção "Etapa 6 — Estados assíncronos e recuperação" de
-> `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md` (achados 4.8 e 4.9)
+> `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md` (achados 4.8 e 4.9)
 > **Item de roadmap**: `docs/roadmap.md`, item 5.6 (Grupo 5 — auditoria de UI/UX mobile)
 > **Status**: ✅ CONCLUÍDO — execução 2026-09-29, passada de textos na mesma rodada, validação
 > em produção aprovada pelo dono, mergeado na `main` via PR #66 (2026-09-30). Adição da tela de

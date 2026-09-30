@@ -3,7 +3,7 @@
 > **Data**: 2026-09-27
 > **Branch**: `main` (decisão do dono)
 > **Origem**: pedido direto do dono ("deixar mais clean por enquanto"), independente das etapas
-> da auditoria mobile — não é a Etapa 4 (`docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`),
+> da auditoria mobile — não é a Etapa 4 (`docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`),
 > que trata de densidade/informação de cards com pergunta de produto própria.
 
 ## O que existia

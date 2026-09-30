@@ -2,7 +2,7 @@
 
 > **Data de abertura**: 2026-09-27
 > **Branch de trabalho**: `feat/etapa-5-eventos-simultaneos`
-> **Fonte**: achado **4.12** de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`
+> **Fonte**: achado **4.12** de `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`
 > **Status**: implementado e validado — aguardando commit/push do dono
 > **Evolutivo**: esta versão substitui a decisão original "C — cascata"
 > (primeira implementação, validada e depois rejeitada pelo dono para 4+
@@ -232,7 +232,7 @@ Outras validações medidas/executadas:
   Etapa 5.
 - **`Mídia.jpg`** (print do Outlook do dono) na raiz do repositório como
   **untracked** — decidir se entra no versionamento (sugestão: remover, ou
-  mover para `docs/_reports/assets/` se for manter de referência).
+  mover para `docs/reports/assets/` se for manter de referência).
 - **Modo SEMANA** (`.agenda-panel-semana`) e **Finanças** (`.agenda-panel`
   compartilhada): o esticar das laterais e o nivelar do fundo são **escopo
   só do Dia** (`#homeDayPanel`). Se fizer sentido alinhar a semana, é outra

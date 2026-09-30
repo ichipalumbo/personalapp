@@ -2,7 +2,7 @@
 
 > **Data**: 2026-09-27
 > **Branch**: `main` (decisão do dono — sem branch nova)
-> **Origem**: item 4.17.2 de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md` (Etapa 7),
+> **Origem**: item 4.17.2 de `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md` (Etapa 7),
 > classificado ali como bug isolado corrigível a qualquer momento, sem dependência de decisão
 > de produto.
 

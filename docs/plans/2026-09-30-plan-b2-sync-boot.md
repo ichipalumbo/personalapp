@@ -2,7 +2,7 @@
 
 > **Status**: DESENHO revalidado (não executado) · autor: IA, revisão do dono pendente
 > **Item**: o "caminho B2" deixado de fora na execução do **5.8**
-> (`2026-09-30-plano-skeletons-cache.md`) — o dono voltou a pedir o desenho em 2026-09-30,
+> (`2026-09-30-plan-skeletons-cache.md`) — o dono voltou a pedir o desenho em 2026-09-30,
 > após a explicação do padrão de mercado (stale-while-revalidate).
 > **Branch da rodada**: `feat/padronizar-skeletons-cache` (decisão do dono: seguir nela).
 > **Escopo desta rodada**: varredura completa + desenho. Nenhuma linha de código do app foi alterada.
@@ -453,18 +453,19 @@ Um 304 economiza isso todo.
   2. rodada B2-puro (§5);
   3. rodada ETag (backend + `apiFetchBackend` + 1 telinha de prova (Finanças));
   4. 2.2/9.14: consolidação dos gatilhos de boot (dados + GCal) num único orquestrador.
-- **Candidatos de roadmap**: nova linha no Grupo 1 (ex.: 1.12 "Revalidação de
-  leitura (ETag/304)") ou anexar ao 2.2 — decisão do dono (registro, item 8).
+- **Roadmap (registrado em 2026-09-30)**: o B2 virou o item **2.4** (Grupo 2, esforço
+  Médio, vizinho do 2.2). O ETag/304 fica como rodada separada dentro do 2.4 — não
+  ganhou número próprio.
 
 ## 8. Atualizações de documentação pendentes (apenas se o B2 for executado)
 
 - `docs/specs/gcal-sync.md` §9.14: "tripla" passa a considerar o 4º ponto (boot de
   dados) — a consolidação do 2.2 engloba ele.
-- `docs/roadmap.md`: novo item (B2 como 5.9 ou 1.12 + ETag como subitem; decisão do
-  dono) com link para este report.
+- `docs/roadmap.md`: **feito em 2026-09-30** — item 2.4 (tabela + seção, com link para
+  este report) e nota no 2.2 sobre a ordem de consolidação.
 - `docs/specs/financas-ciclo-cobranca.md` §6.1: nota "implementado no boot (B2,
   2026-XX)" quando executar.
-- `docs/_reports/2026-09-30-plano-skeletons-cache.md`: pointer para este report na
+- `docs/plans/2026-09-30-plan-skeletons-cache.md`: pointer para este report na
   seção B2 (o dono pediu o desenho; o plano segue EXECUTADO com B1).
 
 ## 9. Pendências / riscos residuais aceitos no desenho

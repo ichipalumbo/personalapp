@@ -6,7 +6,7 @@
 suíte em 111/111
 **Método:** execução real das funções de `backend/src/services/gcalSyncService.js` e
 `backend/src/controllers/agendamentoController.js` em sandbox, com `fetch` e Mongoose
-dublados, cruzada com a leitura dos relatórios anteriores em `docs/_reports/`
+dublados, cruzada com a leitura dos relatórios anteriores (hoje em `docs/archive/agent-reports/`)
 
 > **Observação de método.** As dependências (`mongoose`, `googleapis`,
 > `google-auth-library`, `express`) foram dubladas. Os **payloads** enviados ao Google e as

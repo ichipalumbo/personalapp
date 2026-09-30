@@ -2,7 +2,7 @@
 
 > **Data de abertura**: 2026-09-27
 > **Branch de trabalho**: `feat/etapa-4-densidade-cards` (criada de `origin/main`, sem upstream track)
-> **Fonte**: seção "Etapa 4 — Densidade de cards" de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`
+> **Fonte**: seção "Etapa 4 — Densidade de cards" de `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`
 
 ## Escopo desta etapa
 
@@ -10,7 +10,7 @@ O achado **4.10** (filtros apertados) já foi resolvido fora da sequência forma
 direta do dono, em duas rodadas isoladas:
 - Filtro de status da Finanças removido no Cartão A da Etapa 2 (`386b00c`, 2026-09-26).
 - Filtros de status/objetivo de Alunos removidos por completo em 2026-09-27 (ver
-  `docs/_reports/2026-09-27-remocao-filtros-tela-alunos.md`).
+  `docs/reports/2026-09-27-remocao-filtros-tela-alunos.md`).
 
 O que resta nesta etapa é só o achado **4.11 — cards com informação excessiva**.
 

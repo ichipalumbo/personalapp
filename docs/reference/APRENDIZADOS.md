@@ -1,7 +1,7 @@
 # Aprendizados consolidados dos relatórios
 
 > Extraído das seções "Defeitos encontrados e não corrigidos", "O que encontrei e não
-> alterei" e "Riscos" de todos os relatórios em `docs/_reports/`.
+> alterei" e "Riscos" de todos os relatórios em `docs/archive/agent-reports/` e `docs/reports/`.
 >
 > **Este arquivo não é fonte de verdade de regra de negócio** — as specs em `docs/specs/`
 > são. O que está aqui é o inventário de riscos, limites e decisões que os relatórios
@@ -203,7 +203,7 @@ na prática — mas o código que as gerou pode não ter mudado.
   `ignorarIds` chegou, não que o motor de conflito está certo.
 - **Remoção de bloco em arquivo grande via edição em massa arrastou ~250 linhas não
   relacionadas sem quebrar a sintaxe.** Em 2026-09-18, a remoção do painel de reposições
-  pendentes (`docs/_reports/2026-09-18-chore-remove-painel-pendentes.md`) apagou por engano um
+  pendentes (`docs/reports/2026-09-18-chore-remove-painel-pendentes.md`) apagou por engano um
   bloco de funções auxiliares de `assets/js/modal-acao-slot.js` (`obterCompromissoSelecionado`,
   `enviarParaReposicao`, `capturarValoresFormularioEdicao`, `reabrirModalEdicaoComValores`,
   `avisarFalhaPersistencia`, entre outras) e uma função inteira (`executarExclusaoAulaAvulsa`),
@@ -211,7 +211,7 @@ na prática — mas o código que as gerou pode não ter mudado.
   ao abrir o modal — a suíte `backend/test/gcal-duplicata-fix.test.js`, que carrega o arquivo
   via harness de `vm`, teria pego na hora, mas não foi rodada de ponta a ponta logo após o
   commit da remoção. Causa raiz e correção completa em
-  `docs/_reports/2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`. **Regra a aplicar**:
+  `docs/reports/2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`. **Regra a aplicar**:
   depois de qualquer remoção de bloco de código (não só edição pontual), rodar a suíte que
   carrega o arquivo afetado antes de prosseguir para a próxima tarefa — ausência de erro de
   sintaxe não é prova de que nada quebrou.

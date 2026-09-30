@@ -43,7 +43,7 @@ O dono do repositório confirmou duplicatas existentes em produção e fará a
 correção manual separadamente. Nenhuma escrita no Mongo de produção foi feita
 nesta rodada. A operação deve seguir dry-run, backup da coleção e avaliação de
 ajuste em ciclos já pagos, conforme o diagnóstico
-[`2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](../_diags_llm/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
+[`2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](../diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
 
 ## 6) Arquivos alterados
 

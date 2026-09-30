@@ -2,11 +2,11 @@
 
 > **Versão**: consolidação de 2026-09-24, reconciliando:
 > - `2026-09-23-diag-auditoria-ui-ux-mobile.md` (diagnóstico original + revisão `anti-ui-slop`)
-> - `2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md` (plano e execução da Etapa 1)
+> - `docs/plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md` (plano e execução da Etapa 1)
 >
 > **Atualização de status (2026-09-27)**: status das etapas sincronizado com os relatórios de
-> execução `docs/_reports/2026-09-26-etapa-2-legibilidade-toque-cartoes.md` (Etapa 2, mergeada na
-> `main` via PR #62) e `docs/_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md` (Etapa 3,
+> execução `docs/plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md` (Etapa 2, mergeada na
+> `main` via PR #62) e `docs/plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md` (Etapa 3,
 > mergeada na `main` via PR #63), verificados contra `git log`. O conteúdo de escopo dos achados
 > e das etapas não mudou — apenas status, progresso e decisões fechadas.
 >
@@ -14,7 +14,7 @@
 > `feat/etapa-6-toast-unificado` (2026-09-29), validada em produção pelo dono e mergeada na
 > `main` via PR #66; adição posterior (tela de finanças no toast de carregamento) mergeada via
 > PR #67, ambas em 2026-09-30 — ver seção 5, Etapa 6, e
-> `docs/_reports/2026-09-29-etapa-6-toast-unificado.md`.
+> `docs/plans/2026-09-29-plan-etapa-6-toast-unificado.md`.
 >
 > **Objetivo desta reescrita**: eliminar a duplicidade entre os "achados 4.1–4.17" (levantamento
 > amplo) e os "achados materiais" da revisão `anti-ui-slop` (fila de prioridade), mapear cada
@@ -63,7 +63,7 @@ Legenda de status usada em todo o documento:
 | 4.7 | Gerenciamento de diálogo inconsistente | Diagnóstico §4.7 | Etapa 1 | ✅ |
 | 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ✅ *implementado 2026-09-29, validado em produção pelo dono e mergeado via PR #66 (2026-09-30): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto (ver seção 5, Etapa 6)* |
 | 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6* |
-| 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/_reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
+| 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
 | 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
 | 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ⏳ |
 | 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
@@ -86,11 +86,11 @@ fila de prioridade da revisão `anti-ui-slop` **mesclada** com as etapas estrutu
    visível não cobrindo o FAB) entrou junto na branch `fix/mobile-formularios-dialogos`.
 3. ~~**Etapa 2 — fundação de legibilidade e toque**~~ → ✅ **concluída (2026-09-26)** — cartões
    A/B/C/D, commits `386b00c`, `b9a3c07`, `81485c5`, `e73f312`; mergeada na `main` via PR #62
-   (`468351b`). Report: `docs/_reports/2026-09-26-etapa-2-legibilidade-toque-cartoes.md`.
+   (`468351b`). Report: `docs/plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`.
 4. ~~**Etapa 3 — navegação e topo operacional**~~ → ✅ **concluída (2026-09-27)** — cartões
    E/F/G + rodadas 2 e 3 (FAB dinâmico, remoção da linha de ações do modo Dia, remoção da tarja
    LOCAL), commit `7ccb736` (+ `66593c9`, `3bbf152`); mergeada na `main` via PR #63
-   (`6910621`). Report: `docs/_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md`.
+   (`6910621`). Report: `docs/plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`.
 5. **Etapas 4, 5, 6** → seguem a ordem original do diagnóstico, sem dependência forte entre si.
 6. **Etapa 7 — consistência e acessibilidade final (ampliada)** → agora inclui explicitamente
    4.13 e 4.17, que não tinham dono nos documentos originais. **Atualização (2026-09-27)**:
@@ -169,7 +169,7 @@ como escopo. Isso evita duas rodadas de mudança na mesma região do layout em m
 `66593c9` — ver seção 5). "Sincronizar Dados" e "Configurar Grade Horária" saem do topo para a
 seção "Dados" do modal Área do usuário; topbar em uma linha; topo da Home cai de
 309→211px em 433×762 e 299→201px em 320×568 (−32%). Números completos no report
-`docs/_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md`.
+`docs/plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`.
 
 ---
 
@@ -224,7 +224,7 @@ original — reaproveitar, não redecidir):
 **Achados endereçados**: 4.4, 4.5, 4.6 (parcial — só a parte de foco/teclado básico; a semântica
 ARIA completa de tabs/navegação fica para a Etapa 7).
 
-**Resultado real** (ver relatório `docs/_reports/2026-09-26-etapa-2-legibilidade-toque-cartoes.md`):
+**Resultado real** (ver relatório `docs/plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`):
 - Cartões A→D executados nesta ordem, nos commits `386b00c` (A), `b9a3c07` (B), `81485c5` (C),
   `e73f312` (D). Suítes medidas a cada cartão: 77/0 na suíte de frontend.
 - Escala tipográfica aplicada (16/14/12px + campos ≥16px); zero texto legível <12px e zero
@@ -262,7 +262,7 @@ rodar em paralelo/antes da Fase 0.1 se for conveniente, já que são áreas de c
 
 **Achados endereçados**: 4.2, 4.3, 4.14 (+ absorve Fase 0.3).
 
-**Resultado real** (ver relatório `docs/_reports/2026-09-27-etapa-3-navegacao-e-topo-cartoes.md`):
+**Resultado real** (ver relatório `docs/plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`):
 - Cartões E/F/G + rodadas 2 e 3 no commit `7ccb736`; a correção do modal Área do usuário
   (rolagem interna + bottom-sheet, `66593c9`) e o gap entre ícone e texto nos botões `.btn`
   (`3bbf152`) entraram junto na mesma branch. Suítes medidas a cada rodada: 77/0 na de frontend.
@@ -357,7 +357,7 @@ componente** com 4 estados visuais (`success`/`warning` auto-somem, `progress` f
 resolver, `error` fica até ação com botão "Tentar de novo") — padrão Material Design 3
 snackbar + diretrizes de erro da Nielsen Norman Group. Detalhe completo, arquivos alterados e
 resultado da validação em
-[`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md).
+[`plans/2026-09-29-plan-etapa-6-toast-unificado.md`](../plans/2026-09-29-plan-etapa-6-toast-unificado.md).
 
 **O que ficou resolvido**:
 - Overlay bloqueante eliminado — nenhum estado trava mais `pointer-events` do `body`.
@@ -376,7 +376,7 @@ em uso real, sem mudança de decisão sobre a visibilidade do toast. Skeletons d
 indicação explícita de "dados em cache" (2 itens do escopo original) **não foram implementados
 nesta rodada** — ficaram fora por não terem sido pedidos na decisão de escopo desta execução.
 Em 2026-09-30 o dono decidiu executá-los **antes** da Etapa 7: viraram o item do roadmap
-**5.8** (plano em `docs/_reports/2026-09-30-plano-skeletons-cache.md`) — **executado na mesma
+**5.8** (plano em `docs/plans/2026-09-30-plan-skeletons-cache.md`) — **executado na mesma
 data** (Parte A: skeleton padronizado `.skeleton` + `aria-busy`; Parte B: rótulo "Sincronizando
 dados..." no header, caminho B1 após a descoberta de que o boot com cache não dispara sync
 remoto — detalhe na seção "Execução" do relatório; validação visual pendente do dono).
@@ -417,7 +417,7 @@ do cache (“Cache atualizado em ...”) permanece no cabeçalho. Ver relatório
 1. Mensagem de modo leitura escondida permanentemente pelo CSS mesmo com usuário desconectado
    — corrigir para exibir quando aplicável.
 2. ✅ **Bug real de seletor** *(corrigido 2026-09-27 — hotfix isolado na `main`, ver
-   `docs/_reports/2026-09-27-hotfix-seletor-historico-reposicoes-grupo.md`)*: JS gera
+   `docs/reports/2026-09-27-hotfix-seletor-historico-reposicoes-grupo.md`)*: JS gera
    `.historico-reposicao-grupo`, CSS usava `.historico-reposicoes-grupo` — divergência de nome
    corrigida no CSS (ajustado para singular, consistente com as classes irmãs do bloco).
 3. Textarea financeiro não compartilha integralmente estilo/foco de inputs e selects — padronizar.
@@ -435,7 +435,7 @@ ser um bug isolado de 1 linha sem dependência de decisão de produto.
 
 **⚠️ Item sugerido na execução da Etapa 6 (2026-09-29) — 7.1, consistência de nomenclatura de
 retry**: a passada de textos do toast (post-validação em produção, ver
-[`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md))
+[`plans/2026-09-29-plan-etapa-6-toast-unificado.md`](../plans/2026-09-29-plan-etapa-6-toast-unificado.md))
 encontrou dois nomes diferentes para a mesma ação de "tentar de novo" em pontos distintos do
 app: o botão do **toast unificado** usa *"Tentar de novo"* (`utils-kpi.js`) e o botão do erro do
 **histórico de reposições** (tela de alunos) já existia com *"Tentar novamente"*

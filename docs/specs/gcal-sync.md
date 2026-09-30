@@ -1,9 +1,8 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: em produção com validação concluída; sincronização, webhook, `RRULE` e
-> `EXDATE` validados ao longo das rodadas A–H; validação em produção concluída em 31/08/2026.
-> 
-> **Versão**: 11 · **Atualizado**: 2026-09-01
+> **Status**: Em produção · **Versão**: 11 · **Atualizado**: 2026-09-01
+> **Validação**: sincronização, webhook, `RRULE` e `EXDATE` validados ao longo das rodadas A–H;
+> validação em produção concluída em 31/08/2026.
 > **Defeitos em aberto**: 2 (ver seção 9): 9.14 (gatilho triplo de sincronização no boot) e 9.8
 > (cobertura parcial de I/O real no Google). Os defeitos 5 e 6 foram corrigidos, cobertos por
 > testes e verificados em produção pelo dono em 2026-09-01; as duas consultas do §5.1 do

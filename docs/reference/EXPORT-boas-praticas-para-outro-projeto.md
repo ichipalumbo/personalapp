@@ -140,7 +140,7 @@ Regras que evitaram problemas reais:
 
 ### 3.3 Um arquivo de "aprendizados consolidados"
 
-`docs/_reports/APRENDIZADOS.md`: extrai, de **todos** os relatórios, as seções "defeitos
+`docs/reference/APRENDIZADOS.md`: extrai, de **todos** os relatórios, as seções "defeitos
 encontrados e não corrigidos", "o que foi encontrado e não alterado" e "riscos". Organizado
 em:
 

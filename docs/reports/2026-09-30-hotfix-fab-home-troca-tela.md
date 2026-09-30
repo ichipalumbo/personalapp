@@ -76,6 +76,6 @@ reinicializam a view sem navegar (`refreshCurrentView`). Nenhuma mudança em
 ## Fora de escopo
 
 - Os estados de carregamento em si (skeletons + rótulo de cache) seguem no plano
-  `2026-09-30-plano-skeletons-cache.md` item 5.8, aguardando as 3 decisões do dono.
+  `plans/2026-09-30-plan-skeletons-cache.md` item 5.8, aguardando as 3 decisões do dono.
 - Nenhum outro ponto de criação/remoção de FAB foi tocado; o comportamento do FAB dentro da
   Home (modo Semana vs. Dia) é inalterado.

@@ -3,7 +3,7 @@
 > **Data**: 2026-09-24  
 > **Status**: **CONCLUÍDA** (2026-09-24)  
 > **Branch de trabalho**: `fix/mobile-formularios-dialogos`  
-> **Origem**: seção 6, "Etapa 1 — formulários e diálogos mobile", de `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`  
+> **Origem**: seção 6, "Etapa 1 — formulários e diálogos mobile", de `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`  
 > **Escopo desta rodada**: executar a primeira correção pequena e rastreável do bloqueio do cadastro de aluno em mobile, mantendo regras de negócio intactas.
 
 ## Resultado final (2026-09-24)
@@ -133,7 +133,7 @@ foco automático em **todas** as telas (não só mobile) e levar o foco para o
 > DialogController` — na mesma branch `fix/mobile-formularios-dialogos` (mergeada via PR #61).
 
 - `assets/js/view-financas.js` — restauração do fallback `modal.style.display = 'flex'` em `abrirDialogFinancas` + comentário. Sem ele, o teste `histórico não pago exibe ações e abre pagamento` falha.
-- `docs/_reports/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md` — reescrita da seção de progresso + status CONCLUÍDA.
+- `docs/plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md` — reescrita da seção de progresso + status CONCLUÍDA.
 
 ---
 
@@ -798,7 +798,7 @@ Definir se trocar Home/Finanças/Alunos:
 | `assets/js/settings-modal.js` | Área do usuário, em rodada sensível posterior. |
 | `tests-frontend/` | Unidade do controlador e integrações DOM selecionadas. |
 | `tests-frontend/index-html-ordem.test.js` | Ordem de carga, se o módulo novo introduzir dependência de avaliação. |
-| `docs/_reports/` | Relatório por rodada com evidências e resultados medidos. |
+| `docs/reports/` | Relatório por rodada com evidências e resultados medidos. |
 
 Não há necessidade identificada de dependência externa, framework ou build step.
 
@@ -823,7 +823,7 @@ Não há necessidade identificada de dependência externa, framework ou build st
 
 Foram inspecionados, sem edição:
 
-- `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`;
+- `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`;
 - `.agents/skills/vendor/anti-ui-slop/SKILL.md` e `reference/audit.md`;
 - `index.html`;
 - `assets/css/style.css`;

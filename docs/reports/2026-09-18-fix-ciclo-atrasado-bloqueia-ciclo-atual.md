@@ -2,7 +2,7 @@
 
 ## 1) Escopo da rodada
 
-Correção do defeito descrito no diagnóstico [`docs/_diags_llm/2026-09-18-diag-ciclo-atrasado-bloqueia-ciclo-atual.md`](../_diags_llm/2026-09-18-diag-ciclo-atrasado-bloqueia-ciclo-atual.md): a existência de qualquer ciclo financeiro anterior não pago (ex.: "Atrasado") que **não se sobreponha** ao ciclo vigente fazia `obterOuCriarCicloVigente` abortar e retornar `null` para o aluno inteiro, impedindo o cálculo/criação do ciclo atual e deixando os botões "Marcar como pago" e "Editar ajuste" inoperantes.
+Correção do defeito descrito no diagnóstico [`docs/diagnostics/2026-09-18-diag-ciclo-atrasado-bloqueia-ciclo-atual.md`](../diagnostics/2026-09-18-diag-ciclo-atrasado-bloqueia-ciclo-atual.md): a existência de qualquer ciclo financeiro anterior não pago (ex.: "Atrasado") que **não se sobreponha** ao ciclo vigente fazia `obterOuCriarCicloVigente` abortar e retornar `null` para o aluno inteiro, impedindo o cálculo/criação do ciclo atual e deixando os botões "Marcar como pago" e "Editar ajuste" inoperantes.
 
 Decisão do dono do repositório: o ciclo vigente deve **sempre** ser calculado, independentemente do status de ciclos anteriores — inclusive quando a professora simplesmente esqueceu de marcar um ciclo antigo como pago. A funcionalidade de edição de ciclos anteriores/inadimplência fica para uma etapa futura, fora do escopo desta correção.
 

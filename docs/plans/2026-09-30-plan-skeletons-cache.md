@@ -5,7 +5,7 @@
 > **Origem**: decisão do dono de resolver **antes** da Etapa 7 os dois itens abertos que ficaram
 > registrados no fechamento do 5.6 (Etapa 6) — "skeletons de carregamento" e "indicação
 > explícita de dados em cache" (escopo original do diagnóstico, achados 4.8/4.9, seção Etapa 6 de
-> `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`).
+> `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`).
 > **Item de roadmap**: 5.8 (novo, Grupo 5) — criado junto com este plano.
 > **Status**: ✅ EXECUTADO (2026-09-30) — Parte A + Parte B (caminho B1) implementadas na branch
 > `feat/padronizar-skeletons-cache`; suítes 84/84 frontend, 232/232 backend. Pendente: validação visual
@@ -114,9 +114,9 @@ ao usuário quando a sessão *começou no cache ainda sem confirmar o remoto*.
    dados..." aparece **só** enquanto um sync remoto real roda **sobre** dados locais já em tela
    (troca de login, botão "Sincronizar Dados", auto-refresh ao voltar para o app ausente 90s+).
    O caminho **B2** (adicionar sync remoto em background no boot — comportamento novo de
-   negócio) ficou deliberadamente **fora**; se um dia for pedido, provavelmente se une ao item
-   1.11 do roadmap ("Botão 'Atualizar' em Finanças", que é o mesmo problema de confiança no
-   cache).
+   negócio) ficou deliberadamente **fora** e virou o item **2.4** do roadmap, com desenho próprio
+   em `2026-09-30-plan-b2-sync-boot.md`; é da mesma família do item 1.11 ("Botão 'Atualizar'
+   em Finanças", o mesmo problema de confiança no cache).
 3. **Texto da Parte B**: ✅ **"Sincronizando dados..."** (alternativa mais curta do plano).
 
 ## Passos de execução (após aprovação)

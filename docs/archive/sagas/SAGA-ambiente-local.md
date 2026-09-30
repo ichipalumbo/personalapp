@@ -4,7 +4,7 @@
 > `2026-08-27-chore-frontend-local-api`, `2026-08-27-fix-api-config-urls-residuais`.
 > Os relatórios originais foram removidos na poda de 2026-09-03.
 >
-> **O passo a passo operacional vive em [`docs/setup-ambiente-local.md`](../setup-ambiente-local.md).**
+> **O passo a passo operacional vive em [`docs/setup-ambiente-local.md`](../../setup-ambiente-local.md).**
 > Este arquivo guarda só o porquê de cada decisão e o defeito que a saga descobriu.
 
 ## Causa-raiz

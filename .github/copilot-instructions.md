@@ -221,6 +221,11 @@ que pareçam pequenas:
 - `docs/specs/` — specs de feature, uma por arquivo, versionadas no cabeçalho.
   Fonte de verdade de regra de negócio.
 - `docs/roadmap.md` — documento vivo, único. Não duplicar nem versionar por data.
+- `docs/diagnostics/` (análise antes de agir), `docs/plans/` (plano vivo: decisões,
+  passos e **registro da execução no mesmo arquivo**) e `docs/reports/` (relatório
+  curto de mudança pontual). O trabalho **não gera relatório final por rodada**:
+  atualize o plano e o roadmap. `docs/archive/` é histórico do processo antigo,
+  só para consulta. Ciclo e nomes completos: `docs/README.md`.
 - `README.md` (raiz) — visão geral e onboarding. **A árvore de arquivos pode
   estar desatualizada**; o código é sempre a referência. Se notar divergência,
   reporte.
