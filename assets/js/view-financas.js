@@ -163,16 +163,18 @@
         const conteudo = document.getElementById('financasConteudo');
         if (!conteudo) return;
 
+        // 5.8 (Parte A): skeleton padronizado (.skeleton) — a silhueta do card
+        // (chrome de aluno-card + medidas) é mantida; só a cor/ritmo unificaram.
         conteudo.innerHTML = `
           <div style="display:flex;flex-direction:column;gap:12px;">
             ${Array.from({ length: 3 }).map(() => `
               <div class="aluno-card" style="opacity:0.7;border-left-color:#3a3a3a;">
-                <div style="height:16px;width:55%;background:#1d1d1d;border-radius:999px;margin-bottom:10px;"></div>
-                <div style="height:10px;width:80%;background:#1d1d1d;border-radius:999px;margin-bottom:8px;"></div>
-                <div style="height:10px;width:65%;background:#1d1d1d;border-radius:999px;margin-bottom:12px;"></div>
+                <div class="skeleton" style="height:16px;width:55%;margin-bottom:10px;"></div>
+                <div class="skeleton" style="height:10px;width:80%;margin-bottom:8px;"></div>
+                <div class="skeleton" style="height:10px;width:65%;margin-bottom:12px;"></div>
                 <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-                  <div style="height:72px;background:#1d1d1d;border-radius:10px;"></div>
-                  <div style="height:72px;background:#1d1d1d;border-radius:10px;"></div>
+                  <div class="skeleton" style="height:72px;"></div>
+                  <div class="skeleton" style="height:72px;"></div>
                 </div>
               </div>
             `).join('')}
@@ -590,6 +592,11 @@
         STATE.carregando = true;
         STATE.erro = null;
         atualizarCabecalhoCache();
+        // 5.8 (Parte A): o container do conteúdo sinaliza o estado de carga
+        // enquanto a chamada estiver em voo (incluindo cache exibida + refresh
+        // remoto em andamento).
+        const conteudoAgora = document.getElementById('financasConteudo');
+        if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'true');
 
         if (cache && cache.dados && !deveForcarRemoto) {
             STATE.cards = Array.isArray(cache.dados) ? cache.dados : [];
@@ -641,6 +648,8 @@
         } finally {
             STATE.carregando = false;
             atualizarCabecalhoCache();
+            const conteudoAgora = document.getElementById('financasConteudo');
+            if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'false');
         }
     }
 

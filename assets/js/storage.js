@@ -22,6 +22,28 @@ fetch(APP_API_CONFIG.apiRootUrl).catch(() => {});
 
 // Flag para timeout estendido na primeira requisição (cold start do Vercel + conexão MongoDB)
 let _primeiraRequisicao = true;
+
+// 5.8 (Parte B, caminho B1 — decisão do dono 2026-09-30): rótulo global no
+// header enquanto um sync remoto roda SOBRE dados locais já em tela. Não existe
+// no boot com cache (o boot apenas renderiza o cache, sem chamada remota);
+// existe em: troca de login, botão "Sincronizar Dados" e auto-refresh ao voltar
+// para o app ausente. Desaparece no fim do sync (sucesso ou falha). O toast de
+// "Sem conexão..." (storage.js) assume a comunicação nesse momento de falha.
+let _syncSobreCacheEmAndamento = false;
+function _marcarSyncSobreCache() {
+    _syncSobreCacheEmAndamento = usuarioAutenticadoNoApp() && _cachePossuiDados;
+}
+function _atualizarRotuloCacheHeader() {
+    const el = document.getElementById('headerCacheState');
+    if (!el) return;
+    el.hidden = !_syncSobreCacheEmAndamento;
+}
+function _limparSyncSobreCache() {
+    if (_syncSobreCacheEmAndamento) {
+        _syncSobreCacheEmAndamento = false;
+        _atualizarRotuloCacheHeader();
+    }
+}
 let _cacheInicializado = false;
 let _cachePossuiDados = false;
 let _syncBancoEmAndamento = false;
@@ -805,6 +827,10 @@ async function carregarDados(opcoes = {}) {
 
     try {
         const timeoutAtual = _primeiraRequisicao ? 40000 : API_TIMEOUT_MS;
+        // 5.8 (Parte B): se a chamada está sobre cache local, acende o rótulo
+        // do header (o estado só existe nos syncs remotos pós-cache).
+        _marcarSyncSobreCache();
+        _atualizarRotuloCacheHeader();
         window.log.info('[storage]', 'Iniciando sincronização com o banco de dados online...');
         const onRetry = () => carregarDados({ ...opcoes, forcarRemoto: true });
 
@@ -992,6 +1018,9 @@ async function carregarDados(opcoes = {}) {
 
             return { origem: 'local-auth-expirado' };
         }
+        // 5.8 (Parte B): falha na chamada — apaga o rótulo agora; o toast de
+        // "Sem conexão..." que vem a seguir assume a comunicação de falha.
+        _limparSyncSobreCache();
         window.log.error('[storage]', 'Falha na conexão com a API. Usando localStorage temporariamente.', error);
         const resultadoLocal = carregarDadosDoLocalStorage();
         _cachePossuiDados = resultadoLocal.temDados;
@@ -1007,6 +1036,10 @@ async function carregarDados(opcoes = {}) {
             forçarRenderizacaoInterface();
         }
         return { origem: 'local-fallback' };
+    } finally {
+        // 5.8 (Parte B): fim do sync (sucesso ou qualquer outro erro não tratado
+        // acima) — o rótulo do header é apagado aqui.
+        _limparSyncSobreCache();
     }
 
     return { origem: 'remoto' };

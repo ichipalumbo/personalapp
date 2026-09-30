@@ -376,7 +376,10 @@ em uso real, sem mudança de decisão sobre a visibilidade do toast. Skeletons d
 indicação explícita de "dados em cache" (2 itens do escopo original) **não foram implementados
 nesta rodada** — ficaram fora por não terem sido pedidos na decisão de escopo desta execução.
 Em 2026-09-30 o dono decidiu executá-los **antes** da Etapa 7: viraram o item do roadmap
-**5.8** (plano em `docs/_reports/2026-09-30-plano-skeletons-cache.md`).
+**5.8** (plano em `docs/_reports/2026-09-30-plano-skeletons-cache.md`) — **executado na mesma
+data** (Parte A: skeleton padronizado `.skeleton` + `aria-busy`; Parte B: rótulo "Sincronizando
+dados..." no header, caminho B1 após a descoberta de que o boot com cache não dispara sync
+remoto — detalhe na seção "Execução" do relatório; validação visual pendente do dono).
 
 **Critério de conclusão original**: toda falha possui caminho de recuperação e nenhuma escrita é
 apresentada como concluída antes da resposta da API. Retry e recuperação de erro: atendido.

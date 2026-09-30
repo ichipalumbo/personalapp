@@ -7,8 +7,9 @@
 > explícita de dados em cache" (escopo original do diagnóstico, achados 4.8/4.9, seção Etapa 6 de
 > `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md`).
 > **Item de roadmap**: 5.8 (novo, Grupo 5) — criado junto com este plano.
-> **Status**: 💬 PLANO — aguardando aprovação do dono (3 decisões no fim deste documento) antes de
-> qualquer escrita de código.
+> **Status**: ✅ EXECUTADO (2026-09-30) — Parte A + Parte B (caminho B1) implementadas na branch
+> `feat/padronizar-skeletons-cache`; suítes 84/84 frontend, 232/232 backend. Pendente: validação visual
+> manual (o Live Server local estava fora do ar/504 no fim da execução) e commit/PR do dono.
 > **Nota (2026-09-30)**: antes da execução deste plano, o dono acionou um bug separado na
 > mesma branch — FAB "Novo agendamento" da Home persistia ao trocar de tela (router.js).
 > Corrigido e testado à parte: `2026-09-30-hotfix-fab-home-troca-tela.md`. Sem sobreposição de
@@ -102,15 +103,21 @@ ao usuário quando a sessão *começou no cache ainda sem confirmar o remoto*.
 - Persistência de "última sincronização" global (hoje só Finanças grava `atualizadoEm` no seu
   próprio cache; criar um global implica regra nova de business — fora).
 
-## Decisões do dono (respondidas antes de qualquer escrita)
+## Decisões do dono (respondidas — 2026-09-30, antes da escrita de código)
 
-1. **Parte A**: aprova a proposta **A1** (CSS padrão + `aria-busy`, sem módulo JS novo)?
-2. **Parte B — onde escopo**: (a) indicador global no header (proposta); (b) só a Parte A,
-   deixando cache para outra rodada; (c) outro escopo que o dono definir.
-3. **Texto da Parte B** (se aprovada): proponho "Carregando dos dados deste aparelho —
-   sincronizando..." (padrão do "Sem conexão. Seus dados foram salvos neste aparelho." da
-   Etapa 6, aprovado). Alternativa mais curta: "Sincronizando dados...". O dono escolhe o
-   texto exato (linguagem de usuário final, sem tecnicismo).
+1. **Parte A**: ✅ aprovada a proposta **A1** (CSS padrão + `aria-busy`, sem módulo JS novo).
+2. **Parte B — escopo**: durante a preparação da execução, medi no `storage.js` que a premissa
+   do plano ("o app sempre abre com cache **+ sync remoto em background pendente**") **não confere
+   com o código**: no boot com cache o app renderiza na hora e **não** dispara chamada remota
+   (log: "Cache local carregado instantaneamente. Sem chamada inicial à API."). O rótulo do
+   item original nunca apareceria. O dono então escolheu o **caminho B1**: rótulo "Sincronizando
+   dados..." aparece **só** enquanto um sync remoto real roda **sobre** dados locais já em tela
+   (troca de login, botão "Sincronizar Dados", auto-refresh ao voltar para o app ausente 90s+).
+   O caminho **B2** (adicionar sync remoto em background no boot — comportamento novo de
+   negócio) ficou deliberadamente **fora**; se um dia for pedido, provavelmente se une ao item
+   1.11 do roadmap ("Botão 'Atualizar' em Finanças", que é o mesmo problema de confiança no
+   cache).
+3. **Texto da Parte B**: ✅ **"Sincronizando dados..."** (alternativa mais curta do plano).
 
 ## Passos de execução (após aprovação)
 
@@ -133,10 +140,61 @@ ao usuário quando a sessão *começou no cache ainda sem confirmar o remoto*.
 7. **Docs**: report de execução (este arquivo ganha seção "Execução"), roadmap 5.8 → `[~]`/`[x]`,
    seção Etapa 6 da auditoria ganha apontador para 5.8 (o "item aberto" deixa de ser aberto).
 
-## Suítes (registro — mede-se no passo 1 e repete no fim)
+## Suítes (registro — medido na execução)
 
-- Baseline: ____ (medir e preencher)
-- Após execução: ____ (medir e preencher)
+- Baseline: **82/82** frontend (os 81 esperados + 1 do hotfix do FAB, que entrou na branch antes),
+  **232/232** backend.
+- Após execução: **84/84** frontend (82 + 2 do teste novo da Parte B), **232/232** backend
+  (sem alterações de backend nesta rodada).
+
+## Execução (2026-09-30, branch `feat/padronizar-skeletons-cache`)
+
+**Decisões registradas acima** (A1 + B1 + texto). O que foi feito:
+
+**Parte A — skeleton** (apresentação pura; suíte inalterada, zero resíduo da classe antiga):
+
+- `assets/css/style.css` — nova classe `.skeleton` (fundo `#1d1d1d`, raio 10px, `@keyframes
+  skeletonPulso` 1.2s alternate — 0.45→0.9); `.historico-reposicoes-skeleton` e
+  `@keyframes historicoReposicoesPulso` **retirados**. Cor unificada no neutro mais escuro
+  (o modal de reposições muda de `#2a2a2a` para `#1d1d1d` — sutil, intencional).
+- `view-home.js` — 3 blocos dourados inline → 3× `.skeleton` (altura 112px mantida) +
+  `aria-busy` no `#tela-home` (liga no `renderizarLoadingHome`, desliga no `finally` do sync).
+- `view-financas.js` — 5 blocos inline por card → `.skeleton` (chrome de `aluno-card` e
+  medidas 16/10/72px mantidos) + `aria-busy` no `#financasConteudo` durante a chamada.
+- `view-alunos.js` — 3 barras do modal → `.skeleton` altura 78px inline (`role="status"` +
+  sr-only + `aria-busy` do modal já existiam).
+
+**Parte B — rótulo de cache (caminho B1)** (lógica no `storage.js` — coberta por teste):
+
+- `index.html` — `<span id="headerCacheState" hidden>Sincronizando dados...</span>` dentro de
+  `.brand-container`, do lado do título (o `header-topline` fica flex-col no mobile, então o
+  rótulo entra **de baixo** do título, sem alterar a geometria do header).
+- `assets/css/style.css` — `.header-cache-state` (11px, `#909090` — sem amarelo, achado 4.13,
+  `white-space: nowrap`).
+- `assets/js/storage.js` — estado interno `_syncSobreCacheEmAndamento`: acende no início da
+  chamada remota do `carregarDados` **se** usuário autenticado + cache com dados; apaga no
+  `finally` (todo caminho de saída) e também na rota de falha de conexão, antes do toast
+  "Sem conexão..." assumir. As saídas pré-chamada (boot com cache, sem login) nunca acendem.
+- **Teste** `tests-frontend/header-cache-state.test.js` (2 testes, `storage.js` + `state.js`
+  reais, entrada pública `sincronizarBancoDados` = o botão "Sincronizar Dados"): (1) sync sobre
+  cache → rótulo visível **durante** o voo e apagado no sucesso **e** na falha; (2) sync sem
+  cache → rótulo nunca acende. **Prova de mutação**: com o corpo de `_marcarSyncSobreCache`
+  anulado, o teste 1 falha e o 2 segue passando → a regra está coberta.
+
+**Validação (o que ficou a dever):**
+
+- Suítes: 84/84 + 232/232 (números acima) ✅; erros de compilação/lint zero ✅.
+- **Visual em browser: BLOQUEADO pelo ambiente local no fim da execução** — o Live Server
+  estava fora do ar (504 via service worker) e servindo JS/HTML antigos mesmo com o novo no
+  disco (confirmado por leitura direta dos arquivos). Pendente com o dono, em 433×762 DPR 2.81
+  + stress 320×568/390×844: (a) Home sem semana carregada → 3 barras cinzas **animadas**
+  (não o gradiente dourado antigo); (b) Finanças sem cache → cards skeleton pulsantes;
+  (c) histórico de reposições — mesmíssima silhueta, agora unificado; (d) botão "Sincronizar
+  Dados" → "Sincronizando dados..." aparece sob o título e some ao concluir; (e) abrir app com
+  cache (estado real) → **nada** aparece (comportamento B1 esperado).
+- Produção: quando o dono publicar a branch + PR e validar em rede real, conferir o item (d)
+  também no auto-refresh (ausente do app 90s+).
+
 
 ## Encontrei, não alterado (relevante para o plano)
 

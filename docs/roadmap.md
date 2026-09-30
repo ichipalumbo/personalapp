@@ -25,7 +25,9 @@ Cada item traz:
 finanças). O item **5.7** também está `[~]` em andamento (parte resolvida pelos cartões da
 Etapa 2/3, resto pendente de auditoria final). Aberto em 2026-09-30: **5.8** (estados de
 carregamento — skeletons + cache, o "item aberto" que restou do escopo original da Etapa 6),
-em planejamento.
+executado no mesmo dia — decisão do dono de fazer antes da Etapa 7; Parte A (skeletons) e Parte B
+(caminho B1 — rótulo global em sync sobre cache) concluídas no código; validação visual pendente
+do dono (Live Server local ficou fora do ar) — ver a seção 5.8.
 
 ---
 
@@ -695,7 +697,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [~] 5.8 Estados de carregamento: skeletons + cache — **EM ANDAMENTO** (em planejamento, 2026-09-30)
+### [~] 5.8 Estados de carregamento: skeletons + cache — **EM ANDAMENTO** (executado 2026-09-30; restante = validação visual + PR)
 
 - **O que é**: fechar os dois itens abertos que restaram do escopo original da Etapa 6 —
   (a) skeletons de carregamento padronizados (hoje existem 3 versões diferentes: Home inline
@@ -707,7 +709,23 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   consistência global da Etapa 7.
 - **Plano**: [`_reports/2026-09-30-plano-skeletons-cache.md`](_reports/2026-09-30-plano-skeletons-cache.md)
   (inventário medido, proposta A de CSS `.skeleton` + `aria-busy`, proposta B de rótulo de cache
-  no header, 3 decisões em pendência de aprovação do dono).
+  no header) — **executado em 2026-09-30** (seção "Execução" do relatório).
+- **Decisões do dono (registradas no plano)**: (A1) aprovada; (Parte B) → **caminho B1**, após a
+  descoberta de que **o estado original não existe** (no boot com cache o app **não dispara sync
+  remoto** — medido no `storage.js`); (texto) "Sincronizando dados...".
+- **O que entrou na branch (2026-09-30)**:
+  - **Parte A**: classe `.skeleton` única em `style.css` (fundo `#1d1d1d`, pulso 1.2s — padrão do
+    histórico de reposições, aposentado); Home, Finanças e o modal de reposições passam a
+    `.skeleton` com altura inline; `aria-busy` adicionado em Home e Finanças; zero resíduo da
+    classe antiga.
+  - **Parte B (B1)**: `#headerCacheState` ("Sincronizando dados...", `#909090`, 11px) no header,
+    acende **só** em sync remoto **sobre** cache local (troca de login, botão "Sincronizar
+    Dados", auto-refresh ao voltar 90s+); apaga no fim de todo caminho (na falha, o toast
+    "Sem conexão..." assume); coberto por 2 testes com prova de mutação
+    (`tests-frontend/header-cache-state.test.js`).
+  - **Suítes**: frontend 82/82 → **84/84** (+2 da Parte B); backend 232/232 (inalterado).
+- **Pendente (dono)**: validação visual no 433×762 (Live Server local ficou fora do ar/504 no
+  fim da execução — código novo confirmado no disco) + commit/PR da branch.
 - **Bug achado antes da execução (2026-09-30, resolvido na branch)**: o FAB "Novo agendamento"
   da Home persistia sobre as demais telas até o carregamento da tela destino terminar (router só
   reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app/router.js` + teste

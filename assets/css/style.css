@@ -171,6 +171,21 @@ body {
   display: flex;
   align-items: center;
   min-width: 0;
+  gap: 10px;
+}
+
+/* 5.8 (Parte B): rótulo global de sync sobre cache. Fica na 2ª linha do brand
+   (a linha do título nunca muda de altura — o --header-height medido em
+   runtime só é alterado na mudança de tela, não é problema de 14px por vez).
+   Cor cinza neutro #909090 (achado 4.13 — amarelo não, já sobrecarregado). */
+.header-cache-state {
+  font-size: 11px;
+  line-height: 1;
+  color: #909090;
+  white-space: nowrap;
+  flex-shrink: 0;
+  align-self: flex-end;
+  padding-bottom: 1px;
 }
 
 .marca-titulo {
@@ -2676,14 +2691,17 @@ body {
   display: grid;
   gap: 10px;
 }
-.historico-reposicoes-skeleton {
-  animation: historicoReposicoesPulso 1.2s ease-in-out infinite alternate;
-  background: #2a2a2a;
-  border-radius: 8px;
+/* 5.8 — Skeleton padrão: bloco único reaproveitado pelas telas (Home, Finanças,
+   histórico de reposições). Cor do preenchimento neutra da Finanças; ritmo de
+   pulso do padrão do histórico (Etapa 2, Cartão D). A altura fica por conta de
+   cada tela via style inline — a silhueta de cada uma imita o que carrega ali. */
+.skeleton {
+  animation: skeletonPulso 1.2s ease-in-out infinite alternate;
+  background: #1d1d1d;
+  border-radius: 10px;
   display: block;
-  height: 78px;
 }
-@keyframes historicoReposicoesPulso {
+@keyframes skeletonPulso {
   from { opacity: 0.45; }
   to { opacity: 0.9; }
 }
