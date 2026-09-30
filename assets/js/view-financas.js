@@ -599,7 +599,18 @@
         }
 
         try {
-            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas`, {}, opcoes.timeoutMs || 40000);
+            // Etapa 6 (2026-09-30): o fetch roda no mesmo mecanismo de feedback das demais
+            // telas — toast de progresso só se a operação passar de 3s (limiar do wrapper).
+            // A falha segue tratada pela própria tela (abaixo), por isso exibirFalha: false;
+            // o refresh em background (silencioso, ex.: após pagamento/ajuste) não exibe toast.
+            const executor = () => global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas`, {}, opcoes.timeoutMs || 40000);
+            const resposta = typeof global.executarOperacaoRemotaComFeedback === 'function'
+                ? await global.executarOperacaoRemotaComFeedback(executor, {
+                    contexto: 'carregandoFinancas',
+                    exibirFalha: false,
+                    silenciosoUI: silencioso
+                })
+                : await executor();
             if (resposta.status === 401) {
                 throw new Error('AUTH_REQUIRED');
             }

@@ -160,6 +160,13 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
         syncCalendario: {
             lenta: 'Atualizando sua Google Agenda...',
             erro: 'Não foi possível atualizar a Google Agenda agora.'
+        },
+        // Etapa 6 (2026-09-30): a tela de finanças entrou no mecanismo de feedback unificado.
+        // O wrapper não exibe erro aqui: a tela trata a falha sozinha
+        // (fallback de cache + toast de aviso), por isso o chamador usa exibirFalha: false.
+        carregandoFinancas: {
+            lenta: 'Carregando finanças...',
+            erro: 'Não foi possível carregar as finanças agora.'
         }
     };
 

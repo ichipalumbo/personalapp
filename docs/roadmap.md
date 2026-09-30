@@ -657,6 +657,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   8 arquivos + 1 asserção de teste — suítes 77/77 e 232/232 antes e depois. Detalhe completo
   em
   [`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md).
+- **Adição (2026-09-30, branch `feat/financas-toast-carregamento` — PR separada, PR #66
+  fechada)**: a tela de finanças, que mostrava só skeleton + “Carregando...” minúsculo,
+  passou a usar o mecanismo unificado — o fetch de `carregarFinancas()` roda dentro de
+  `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso
+  após o limiar de 3s, `exibirFalha: false` porque a tela trata a falha sozinha e o
+  refresh silencioso em background não exibe toast). A mensagem “Cache atualizado em...”
+  do cabeçalho não muda. 4 testes novos (frontend 77 → 81; backend 232/232).
 - **Pendente para fechar o item**: validação em produção (deploy Vercel) com login Google real —
   confirmar se o toast do sync do calendário no boot é ruidoso ou não. Skeletons de carregamento
   e indicação explícita de "dados em cache" (parte do escopo original do diagnóstico) não

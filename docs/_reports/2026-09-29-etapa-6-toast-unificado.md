@@ -269,3 +269,41 @@ do app — o botão do toast unificado usa **"Tentar de novo"** e o botão do er
 reposições (tela de alunos) já existia com **"Tentar novamente"**. Não foi alterado nesta
 passada (fora do conjunto de toasts aprovado); foi registrada como item de consistência na
 Etapa 7 — ver seção "Etapa 7" do diagnóstico (item sugerido 7.1) e item 5.7 do roadmap.
+
+---
+
+## Adição — tela de finanças no toast unificado (2026-09-30, branch `feat/financas-toast-carregamento`)
+
+> Branch criada de `origin/main` (que já continha o merge da Etapa 6 — PR #66, fechada antes).
+> Mudança em PR separada; commits/push do dono, como sempre.
+
+**Por que**: a única tela com loading local (skeleton) que não participava do mecanismo
+unificado era a de finanças — sem cache e em rede lenta, ela parecia travada com um texto
+minúsculo "Carregando..." no cabeçalho (o fetch tem timeout de 40s e ia direto para a API,
+fora do wrapper). Decisão do dono: incluir no toast, preservando a mensagem de **última
+atualização** do cabeçalho ("Cache atualizado em ...").
+
+**Arquivos alterados**:
+- `assets/js/view-financas.js` — o fetch de `GET /financas` em `carregarFinancas()` passa a
+  rodar dentro de `executarOperacaoRemotaComFeedback` com `contexto: 'carregandoFinancas'`,
+  `exibirFalha: false` (a tela mantém o tratamento de falha próprio: fallback de cache +
+  aviso + estado vazio — evita dois toasts disputando a regra de um só por vez) e
+  `silenciosoUI` ligado ao flag `silencioso` (o refresh em background após pagamento/ajuste
+  não exibe progresso).
+- `assets/js/storage.js` — nova entrada `carregandoFinancas` no mapa de mensagens do wrapper
+  ("Carregando finanças...").
+- `tests-frontend/view-financas-carregamento-toast.test.js` (novo) — 4 testes em jsdom usando
+  o wrapper e o toast **reais** (não stubs): (1) load lento > 3s → `#toast` em estado
+  `progress` com "Carregando finanças...", `role="status"`/`aria-live="polite"`, escondido ao
+  concluir, cards renderizados e o rótulo "Cache atualizado em ..." presente; (2) load rápido
+  (< 3s) → nenhum toast; (3) refresh silencioso > 3s → nenhum toast; (4) falha no load →
+  apenas o aviso da própria tela (sem erro duplicado do wrapper, sem botão retry).
+  **Provado por mutação**: com o fix revertido (fetch fora do wrapper), o teste 1 falha.
+
+**Não mudou**: a mensagem de última atualização (rótulo "Cache atualizado em ..." em
+`#financasCacheLabel`), o estado de sync do cabeçalho, o tratamento de falha local, o
+skeleton (continua como placeholder; o toast de progresso entra em cena se o fetch passar de
+3s) e nenhuma outra tela.
+
+**Suítes (medidas)**: frontend 77/77 antes → **81/81** depois (4 testes novos); backend
+232/232 antes e depois (a mudança não o toca).

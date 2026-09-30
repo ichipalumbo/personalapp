@@ -377,6 +377,14 @@ em rodada futura ou se o critério de conclusão original é revisado.
 apresentada como concluída antes da resposta da API. Retry e recuperação de erro: atendido.
 Skeletons/indicação de cache: não implementados nesta rodada (ver parágrafo acima).
 
+**Adição (2026-09-30, branch `feat/financas-toast-carregamento`)**: decisão do dono — a tela
+de finanças, a única do app que tinha loading local (skeleton) sem participar do toast
+unificado, entrou no mecanismo compartilhado: o fetch de `carregarFinancas()` agora roda
+via `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso
+após 3s, falha continuando no tratamento local da tela). A etiqueta de última atualização
+do cache (“Cache atualizado em ...”) permanece no cabeçalho. Ver relatório da Etapa 6
+(seção “Adição — tela de finanças”).
+
 ---
 
 ### Etapa 7 — Consistência e acessibilidade final (ampliada) ⏳ PENDENTE
