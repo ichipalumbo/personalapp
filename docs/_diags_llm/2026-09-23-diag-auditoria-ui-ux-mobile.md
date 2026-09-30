@@ -10,10 +10,11 @@
 > mergeada na `main` via PR #63), verificados contra `git log`. O conteúdo de escopo dos achados
 > e das etapas não mudou — apenas status, progresso e decisões fechadas.
 >
-> **Atualização de status (2026-09-29)**: Etapa 6 implementada na branch
-> `feat/etapa-6-toast-unificado` (ainda não commitada/mergeada) — ver seção 5, Etapa 6, e
-> `docs/_reports/2026-09-29-etapa-6-toast-unificado.md`. Status marcado como 🟡 (parcial) até o
-> dono concluir a validação em produção com login Google real.
+> **Atualização de status (2026-09-30)**: Etapa 6 **concluída** — implementada em
+> `feat/etapa-6-toast-unificado` (2026-09-29), validada em produção pelo dono e mergeada na
+> `main` via PR #66 (2026-09-30) — ver seção 5, Etapa 6, e
+> `docs/_reports/2026-09-29-etapa-6-toast-unificado.md`. Adição posterior (tela de finanças no
+> toast de carregamento) segue na branch `feat/financas-toast-carregamento`, PR separada.
 >
 > **Objetivo desta reescrita**: eliminar a duplicidade entre os "achados 4.1–4.17" (levantamento
 > amplo) e os "achados materiais" da revisão `anti-ui-slop` (fila de prioridade), mapear cada
@@ -60,7 +61,7 @@ Legenda de status usada em todo o documento:
 | 4.5 | Alvos de toque abaixo do recomendado | Diagnóstico §4.5 | Etapa 2 | 🟡 *ETAPA 2 CONCLUÍDA no escopo decidido: grupos 1 (Finanças → 48px) e 2 (grade de horários → 48px) corrigidos em `b9a3c07`; grupos 3 (cabeçalho/toolbar) deixados <44px por decisão do dono, registrados no report da Etapa 2 como candidatos a rodada futura* |
 | 4.6 | Cards/slots sem interação equivalente por teclado | Diagnóstico §4.6 | Etapa 2 (foco/teclado básico) + Etapa 7 (semântica final) | 🟡 *partida Etapa 2 concluída (Cartão C, `81485c5`): `:focus-visible` global dourado padronizado, 13/13 botões icon-only com `aria-label`. Semântica final de cards/tabs segue na Etapa 7 — ver seção 5* |
 | 4.7 | Gerenciamento de diálogo inconsistente | Diagnóstico §4.7 | Etapa 1 | ✅ |
-| 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | 🟡 *implementado 2026-09-29 (branch `feat/etapa-6-toast-unificado`): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto — falta validar em produção com login Google real (ver seção 5, Etapa 6)* |
+| 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ✅ *implementado 2026-09-29, validado em produção pelo dono e mergeado via PR #66 (2026-09-30): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto (ver seção 5, Etapa 6)* |
 | 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6* |
 | 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/_reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
 | 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
@@ -332,7 +333,10 @@ deve ser adotado para eventos simultâneos na agenda diária?
 
 ---
 
-### Etapa 6 — Estados assíncronos e recuperação 🟡 IMPLEMENTADO (2026-09-29), validação em produção pendente
+### Etapa 6 — Estados assíncronos e recuperação ✅ CONCLUÍDO (2026-09-30)
+
+> Implementado em 2026-09-29 na branch `feat/etapa-6-toast-unificado`, validado em produção
+> pelo dono e mergeado na `main` via PR #66 (2026-09-30).
 
 **Achados endereçados**: 4.8, 4.9.
 
@@ -365,17 +369,26 @@ resultado da validação em
   antes não acionava nenhum feedback, foi religado ao contexto `syncCalendario` do componente
   unificado.
 
-**Pendente antes de marcar como concluído**: o dono está validando o comportamento em produção
-(deploy Vercel) com login Google real — a preocupação específica é se o toast do sync do
-calendário aparece de forma ruidosa ao abrir o app (o mock de UI local bloqueia rede e não
-permitiu observar esse fluxo fim-a-fim). Skeletons de carregamento e indicação explícita de
-"dados em cache" (2 itens do escopo original) **não foram implementados nesta rodada** —
-ficaram fora por não terem sido pedidos na decisão de escopo desta execução; avaliar se entram
-em rodada futura ou se o critério de conclusão original é revisado.
+**Validação em produção (concluída)**: o dono validou o comportamento no deploy Vercel com
+login Google real e aprovou (2026-09-29/30) — a dúvida sobre o toast do sync do calendário ao
+abrir o app (que o mock de UI local bloqueia e não permitiu observar fim-a-fim) foi resolvida
+em uso real, sem mudança de decisão sobre a visibilidade do toast. Skeletons de carregamento e
+indicação explícita de "dados em cache" (2 itens do escopo original) **não foram implementados
+nesta rodada** — ficaram fora por não terem sido pedidos na decisão de escopo desta execução;
+avaliar se entram em rodada futura ou se o critério de conclusão original é revisado (item
+aberto registrado no roadmap 5.6).
 
 **Critério de conclusão original**: toda falha possui caminho de recuperação e nenhuma escrita é
 apresentada como concluída antes da resposta da API. Retry e recuperação de erro: atendido.
 Skeletons/indicação de cache: não implementados nesta rodada (ver parágrafo acima).
+
+**Adição (2026-09-30, branch `feat/financas-toast-carregamento`)**: decisão do dono — a tela
+de finanças, a única do app que tinha loading local (skeleton) sem participar do toast
+unificado, entrou no mecanismo compartilhado: o fetch de `carregarFinancas()` agora roda
+via `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso
+após 3s, falha continuando no tratamento local da tela). A etiqueta de última atualização
+do cache (“Cache atualizado em ...”) permanece no cabeçalho. Ver relatório da Etapa 6
+(seção “Adição — tela de finanças”).
 
 ---
 

@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-09-29
+> **Status**: Documento vivo · **Atualizado**: 2026-09-30
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -21,7 +21,7 @@ Cada item traz:
 
 **Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
 
-**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.5** (2026-09-27). O item **5.6** está `[~]` em andamento (implementado em 2026-09-29 na branch `feat/etapa-6-toast-unificado`, validação em produção pendente). O item **5.7** também está `[~]` em andamento (parte resolvida pelos cartões da Etapa 2/3, resto pendente de auditoria final).
+**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.5** (2026-09-27). O item **5.6** está `[~]` em andamento (implementado em 2026-09-29, validado em produção e mergeado na `main` via PR #66 em 2026-09-30; pendente só o merge da adição da tela de finanças, em PR separada). O item **5.7** também está `[~]` em andamento (parte resolvida pelos cartões da Etapa 2/3, resto pendente de auditoria final).
 
 ---
 
@@ -637,14 +637,14 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [~] 5.6 Erros e toasts (Etapa 6) — **EM ANDAMENTO** (implementado, validação em produção pendente)
+### [~] 5.6 Erros e toasts (Etapa 6) — **EM ANDAMENTO** (implementado e validado em produção; pendente merge da adição de finanças)
 
 - **O que é**: tratar o achado 4.8 (erro global bloqueante sem recuperação) e o achado 4.9
   (acessibilidade/contraste de toasts — `role="status"`/`role="alert"`, `aria-live`).
 - **Não refazer**: o hotfix de `pointer-events` do `.toast` (Fase 0.1 do diagnóstico) e o
   reancoramento do `bottom` via `--bottombar-height` (Etapa 3) já estavam resolvidos e foram
   preservados como base.
-- **O que foi entregue (2026-09-29, branch `feat/etapa-6-toast-unificado`)**: escopo ampliado por
+- **O que foi entregue (2026-09-29, branch `feat/etapa-6-toast-unificado` — mergeado na `main` via PR #66 em 2026-09-30, validação em produção aprovada)**: escopo ampliado por
   decisão do dono — os 3 mecanismos de feedback assíncrono do app (`#toast`, `#overlay-sinc`
   bloqueante, `#indicador-sync-bg` silencioso) foram unificados em um único componente com 4
   estados (`success`/`warning` auto-somem, `progress` fica até resolver sem bloquear a tela,
@@ -657,10 +657,19 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   8 arquivos + 1 asserção de teste — suítes 77/77 e 232/232 antes e depois. Detalhe completo
   em
   [`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md).
-- **Pendente para fechar o item**: validação em produção (deploy Vercel) com login Google real —
-  confirmar se o toast do sync do calendário no boot é ruidoso ou não. Skeletons de carregamento
-  e indicação explícita de "dados em cache" (parte do escopo original do diagnóstico) não
-  entraram nesta rodada.
+- **Adição (2026-09-30, branch `feat/financas-toast-carregamento` — PR separada, PR #66
+  fechada)**: a tela de finanças, que mostrava só skeleton + “Carregando...” minúsculo,
+  passou a usar o mecanismo unificado — o fetch de `carregarFinancas()` roda dentro de
+  `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso
+  após o limiar de 3s, `exibirFalha: false` porque a tela trata a falha sozinha e o
+  refresh silencioso em background não exibe toast). A mensagem “Cache atualizado em...”
+  do cabeçalho não muda. 4 testes novos (frontend 77 → 81; backend 232/232).
+- **Pendente para fechar o item**: merge da PR da adição da tela de finanças
+  (`feat/financas-toast-carregamento`, commit `9960eda`). Validação em produção da
+  implementação original: **concluída e aprovada** (2026-09-29/30). Skeletons de carregamento e
+  indicação explícita de "dados em cache" (parte do escopo original do diagnóstico) não
+  entraram nesta rodada — item aberto de decisão de produto (rodada futura ou revisão do
+  critério de conclusão).
 - **Depende de**: nenhum item deste grupo bloqueia.
 
 ---
