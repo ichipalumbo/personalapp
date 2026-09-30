@@ -5,7 +5,9 @@
 > **Fonte**: seção "Etapa 6 — Estados assíncronos e recuperação" de
 > `docs/_diags_llm/2026-09-23-diag-auditoria-ui-ux-mobile.md` (achados 4.8 e 4.9)
 > **Item de roadmap**: `docs/roadmap.md`, item 5.6 (Grupo 5 — auditoria de UI/UX mobile)
-> **Status**: planejamento fechado com o dono; execução ainda não iniciada
+> **Status**: ✅ CONCLUÍDO — execução 2026-09-29, passada de textos na mesma rodada, validação
+> em produção aprovada pelo dono, mergeado na `main` via PR #66 (2026-09-30). Adição da tela de
+> finanças registrada abaixo, em PR separada (`feat/financas-toast-carregamento`).
 
 ## Escopo desta etapa
 
@@ -191,7 +193,8 @@ com a conta conectada ao Google Calendar, observando se o toast de sync aparece 
 e se isso é ruidoso o suficiente para reverter a decisão 4 (trazer o `syncCalendario` para o
 toast visível). Como o sync normalmente responde em bem menos de 3s (só aparece após
 `SLEEP_MODE_THRESHOLD_MS`), a expectativa é que ele raramente apareça em conexões rápidas — mas
-isso só se confirma em uso real.
+isso só se confirma em uso real. **Desfecho (2026-09-30)**: o dono validou no deploy de
+produção, aprovou o comportamento e a decisão 4 se manteve sem alteração.
 
 ## Encontrado, não alterado
 
