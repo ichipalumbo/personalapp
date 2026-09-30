@@ -12,9 +12,9 @@
 >
 > **Atualização de status (2026-09-30)**: Etapa 6 **concluída** — implementada em
 > `feat/etapa-6-toast-unificado` (2026-09-29), validada em produção pelo dono e mergeada na
-> `main` via PR #66 (2026-09-30) — ver seção 5, Etapa 6, e
-> `docs/_reports/2026-09-29-etapa-6-toast-unificado.md`. Adição posterior (tela de finanças no
-> toast de carregamento) segue na branch `feat/financas-toast-carregamento`, PR separada.
+> `main` via PR #66; adição posterior (tela de finanças no toast de carregamento) mergeada via
+> PR #67, ambas em 2026-09-30 — ver seção 5, Etapa 6, e
+> `docs/_reports/2026-09-29-etapa-6-toast-unificado.md`.
 >
 > **Objetivo desta reescrita**: eliminar a duplicidade entre os "achados 4.1–4.17" (levantamento
 > amplo) e os "achados materiais" da revisão `anti-ui-slop` (fila de prioridade), mapear cada
@@ -374,15 +374,16 @@ login Google real e aprovou (2026-09-29/30) — a dúvida sobre o toast do sync 
 abrir o app (que o mock de UI local bloqueia e não permitiu observar fim-a-fim) foi resolvida
 em uso real, sem mudança de decisão sobre a visibilidade do toast. Skeletons de carregamento e
 indicação explícita de "dados em cache" (2 itens do escopo original) **não foram implementados
-nesta rodada** — ficaram fora por não terem sido pedidos na decisão de escopo desta execução;
-avaliar se entram em rodada futura ou se o critério de conclusão original é revisado (item
-aberto registrado no roadmap 5.6).
+nesta rodada** — ficaram fora por não terem sido pedidos na decisão de escopo desta execução.
+Em 2026-09-30 o dono decidiu executá-los **antes** da Etapa 7: viraram o item do roadmap
+**5.8** (plano em `docs/_reports/2026-09-30-plano-skeletons-cache.md`).
 
 **Critério de conclusão original**: toda falha possui caminho de recuperação e nenhuma escrita é
 apresentada como concluída antes da resposta da API. Retry e recuperação de erro: atendido.
 Skeletons/indicação de cache: não implementados nesta rodada (ver parágrafo acima).
 
-**Adição (2026-09-30, branch `feat/financas-toast-carregamento`)**: decisão do dono — a tela
+**Adição (2026-09-30, branch `feat/financas-toast-carregamento` — mergeada na `main` via
+PR #67)**: decisão do dono — a tela
 de finanças, a única do app que tinha loading local (skeleton) sem participar do toast
 unificado, entrou no mecanismo compartilhado: o fetch de `carregarFinancas()` agora roda
 via `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso

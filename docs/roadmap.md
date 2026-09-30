@@ -21,7 +21,11 @@ Cada item traz:
 
 **Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
 
-**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.5** (2026-09-27). O item **5.6** está `[~]` em andamento (implementado em 2026-09-29, validado em produção e mergeado na `main` via PR #66 em 2026-09-30; pendente só o merge da adição da tela de finanças, em PR separada). O item **5.7** também está `[~]` em andamento (parte resolvida pelos cartões da Etapa 2/3, resto pendente de auditoria final).
+**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.6** (2026-09-30 — PR #66, unificação + textos, e PR #67, tela de
+finanças). O item **5.7** também está `[~]` em andamento (parte resolvida pelos cartões da
+Etapa 2/3, resto pendente de auditoria final). Aberto em 2026-09-30: **5.8** (estados de
+carregamento — skeletons + cache, o "item aberto" que restou do escopo original da Etapa 6),
+em planejamento.
 
 ---
 
@@ -76,8 +80,9 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 5     | 5.3 Navegação e topo operacional (Etapa 3)       | `[x]`  | —                                                                |
 | 5     | 5.4 Densidade de cards (Etapa 4)                 | `[x]`  | —                                                                |
 | 5     | 5.5 Eventos simultâneos na agenda diária (Etapa 5) | `[x]`  | —                                                             |
-| 5     | 5.6 Erros e toasts (Etapa 6)                     | `[~]`  | —                                                                |
+| 5     | 5.6 Erros e toasts (Etapa 6)                     | `[x]`  | —                                                                |
 | 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[~]`  | 5.1 a 5.6                                                        |
+| 5     | 5.8 Estados de carregamento: skeletons + cache   | `[~]`  | 5.6                                                                |
 
 ---
 
@@ -637,7 +642,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [~] 5.6 Erros e toasts (Etapa 6) — **EM ANDAMENTO** (implementado e validado em produção; pendente merge da adição de finanças)
+### [x] 5.6 Erros e toasts (Etapa 6) — **CONCLUÍDO** (2026-09-30)
 
 - **O que é**: tratar o achado 4.8 (erro global bloqueante sem recuperação) e o achado 4.9
   (acessibilidade/contraste de toasts — `role="status"`/`role="alert"`, `aria-live`).
@@ -657,19 +662,17 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   8 arquivos + 1 asserção de teste — suítes 77/77 e 232/232 antes e depois. Detalhe completo
   em
   [`_reports/2026-09-29-etapa-6-toast-unificado.md`](_reports/2026-09-29-etapa-6-toast-unificado.md).
-- **Adição (2026-09-30, branch `feat/financas-toast-carregamento` — PR separada, PR #66
-  fechada)**: a tela de finanças, que mostrava só skeleton + “Carregando...” minúsculo,
+- **Adição (2026-09-30, branch `feat/financas-toast-carregamento` — mergeada na `main` via
+  PR #67)**: a tela de finanças, que mostrava só skeleton + “Carregando...” minúsculo,
   passou a usar o mecanismo unificado — o fetch de `carregarFinancas()` roda dentro de
   `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso
   após o limiar de 3s, `exibirFalha: false` porque a tela trata a falha sozinha e o
   refresh silencioso em background não exibe toast). A mensagem “Cache atualizado em...”
   do cabeçalho não muda. 4 testes novos (frontend 77 → 81; backend 232/232).
-- **Pendente para fechar o item**: merge da PR da adição da tela de finanças
-  (`feat/financas-toast-carregamento`, commit `9960eda`). Validação em produção da
-  implementação original: **concluída e aprovada** (2026-09-29/30). Skeletons de carregamento e
-  indicação explícita de "dados em cache" (parte do escopo original do diagnóstico) não
-  entraram nesta rodada — item aberto de decisão de produto (rodada futura ou revisão do
-  critério de conclusão).
+- **Fechado (2026-09-30)**: implementação original (PR #66) e adição da tela de finanças
+  (PR #67) mergeadas na `main`; validação em produção aprovada pelo dono. O que sobrou do
+  escopo original (skeletons padronizados + indicação explícita de "dados em cache") virou o
+  item **5.8** — ver abaixo.
 - **Depende de**: nenhum item deste grupo bloqueia.
 
 ---
@@ -691,5 +694,26 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   o item sugerido 7.1.
 
 ---
+
+### [~] 5.8 Estados de carregamento: skeletons + cache — **EM ANDAMENTO** (em planejamento, 2026-09-30)
+
+- **O que é**: fechar os dois itens abertos que restaram do escopo original da Etapa 6 —
+  (a) skeletons de carregamento padronizados (hoje existem 3 versões diferentes: Home inline
+  dourado, Finanças inline cinza estático, histórico de reposições com animação) e
+  (b) indicação explícita de "dados em cache" quando o app abre com dados locais antes da
+  confirmação remota (hoje só a Finanças tem rótulo de cache).
+- **Decisão do dono (2026-09-30)**: resolver **antes** da Etapa 7, em rodadas isoladas — é a
+  última ponta do escopo original da Etapa 6 e é pré-requisito natural da auditoria de
+  consistência global da Etapa 7.
+- **Plano**: [`_reports/2026-09-30-plano-skeletons-cache.md`](_reports/2026-09-30-plano-skeletons-cache.md)
+  (inventário medido, proposta A de CSS `.skeleton` + `aria-busy`, proposta B de rótulo de cache
+  no header, 3 decisões em pendência de aprovação do dono).
+- **Bug achado antes da execução (2026-09-30, resolvido na branch)**: o FAB "Novo agendamento"
+  da Home persistia sobre as demais telas até o carregamento da tela destino terminar (router só
+  reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app/router.js` + teste
+  (`tests-frontend/router-fab-tela.test.js`, prova de mutação):
+  [`_reports/2026-09-30-hotfix-fab-home-troca-tela.md`](_reports/2026-09-30-hotfix-fab-home-troca-tela.md).
+- **Depende de**: 5.6 (concluído). Independente de 5.7, mas a execução fica **antes** dele por
+  ordem do dono.
 
 _Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir._

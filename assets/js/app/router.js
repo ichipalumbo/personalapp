@@ -56,6 +56,16 @@
                 activeView.style.display = 'block';
             }
 
+            // Remove o FAB da Home assim que ela sai de tela — ANTES do init da
+            // tela alvo. Se ficasse só no initializeView (depois do await da
+            // navegação), o FAB persistiria durante todo o carregamento da
+            // tela de destino (sintoma: Home → Finanças, FAB visível até o
+            // fetch terminar; Home → Alunos, mesmo conflito com o FAB "Novo
+            // aluno"). A chamada idempotente no initializeView é mantida.
+            if (typeof global.trocarFABNovoHome === 'function') {
+                global.trocarFABNovoHome();
+            }
+
             await initializeView(targetId);
             global.scrollTo({ top: 0, behavior: 'smooth' });
 
