@@ -409,7 +409,7 @@ três estados coloridos passaram a usar a paleta de estado com texto `#1a1a1a` (
 
 ---
 
-### Etapa 7 — Consistência e acessibilidade final (ampliada) 🚧 EM ANDAMENTO (cartões A e B fechados, 2026-10-01)
+### Etapa 7 — Consistência e acessibilidade final (ampliada) ✅ CONCLUÍDA (cartões A, B, C e D, 2026-10-01)
 
 **Achados endereçados**: 4.6 (parte final — semântica de cards/tabs), 4.15, 4.16, **4.13 e 4.17
 (órfãos endereçados nesta reescrita)**.
@@ -433,8 +433,13 @@ três estados coloridos passaram a usar a paleta de estado com texto `#1a1a1a` (
   (reforça o padrão já usado em finanças, ver seção 4, item 8).
 
 **⚠️ Escopo adicionado nesta reescrita — item 4.17 (6 inconsistências específicas)**:
-1. Mensagem de modo leitura escondida permanentemente pelo CSS mesmo com usuário desconectado
-   — corrigir para exibir quando aplicável.
+1. ✅ **Mensagem de modo leitura escondida pelo CSS** *(resolvido 2026-10-01 — Cartão D,
+   branch `feat/etapa-7-consistencia-acessibilidade`)*: exibida a partir de 768px. **O diagnóstico
+   original estava incompleto**: o `display: none` da regra base realmente nunca era revertido —
+   mas **removê-lo quebra o header** (medido em 433×762, o pill sai 23px para fora da tela e cobre
+   a marca; em 320×568, 112px). Não era defeito de uma declaração, era restrição de layout. O
+   usuário desconectado já recebia o recado pelo toast do boot, então o pill é redundante e o
+   caminho barato é exibi-lo onde cabe. Contraste do texto: 8,75:1.
 2. ✅ **Bug real de seletor** *(corrigido 2026-09-27 — hotfix isolado na `main`, ver
    `docs/reports/2026-09-27-hotfix-seletor-historico-reposicoes-grupo.md`)*: JS gera
    `.historico-reposicao-grupo`, CSS usava `.historico-reposicoes-grupo` — divergência de nome
@@ -444,8 +449,11 @@ três estados coloridos passaram a usar a paleta de estado com texto `#1a1a1a` (
    vez de criar um novo.
 5. Botões icon-only dependentes só de `title` sem nome acessível robusto — reaproveitar padrão
    `aria-label` já definido na Etapa 2.
-6. Links de navegação com `href="#"` sem representar a tela ativa no histórico — decisão de
-   produto (ver seção 6, pergunta 5) antes de implementar.
+6. ✅ **Links de navegação com `href="#"` sem representar a tela ativa no histórico** *(resolvido
+   2026-10-01 — Cartão D)*: a tela ativa passou a ir para a URL por **hash** (`#tela-financas`),
+   com `replaceState` no boot e `pushState` nas navegações seguintes; reload e Voltar/Avançar
+   funcionam. Caminho (`/financas`) foi descartado por exigir rewrite no servidor local e no
+   deploy estático do Vercel. Decisão de produto da seção 6, pergunta 5, fechada em 2026-10-01.
 
 **Nota de sequenciamento interno**: os itens 4 e 5 do 4.17 são apenas "aplicar o padrão da
 Etapa 2 nos lugares que ela não cobriu" — não é trabalho novo de design, é auditoria de cobertura.
@@ -491,7 +499,8 @@ linkado no item 2 acima) — não depende mais da execução da Etapa 7.
   ambiente — Enter/Espaço não são entregues à página nem para um botão de controle que já
   existia antes da mudança. O mecanismo (elemento `<button>` real, na ordem de foco, com nome
   acessível) está verificado; o teste com teclado físico segue pendente.
-- **Pendente na etapa**: 4.17.1 e 4.17.6 (cartão D). Navegação por setas
+- **Pendente na etapa**: ~~4.17.1 e 4.17.6 (cartão D)~~ — **ambos fechados no Cartão D
+  (2026-10-01)**, abaixo. Navegação por setas
   no `tablist` ficou fora por ser prática do APG, não requisito da especificação ARIA.
 - **Cartão C (2026-10-01)** — **4.15**: cobertura completa de `prefers-reduced-motion` num bloco
   único no fim do `style.css` (as 4 animações existentes + as transições que movem), mais o
@@ -502,6 +511,12 @@ linkado no item 2 acima) — não depende mais da execução da Etapa 7.
   (`financas-ciclo-cobranca.md` §5 e `reposicoes-e-competencia.md`) — o toast era o único ponto
   fora do padrão. Medições em 433×762 DPR 2.81 com `prefers-reduced-motion` emulado nos dois
   estados; detalhe no plano da Etapa 7.
+- **Cartão D (2026-10-01)** — **4.17.6**: navegação por hash (`#tela-home`, `#tela-financas`,
+  `#tela-alunos`), com `getTelaInicial()` lendo a URL no boot, `hashchange` para Voltar/Avançar e
+  ignora id desconhecido. Antes, recarregar sempre caía na Home. **4.17.1**: o pill "Modo leitura"
+  passou a aparecer a partir de 768px (ver a correção do diagnóstico no item 1 do 4.17). Novo
+  arquivo `tests-frontend/router-historico.test.js` (7 casos, provados por mutação). Detalhe,
+  medições e o que ficou fora no plano da Etapa 7.
 
 **Critério de conclusão**: os fluxos principais são operáveis sem toque e permanecem
 compreensíveis com zoom/texto ampliado; nenhuma das 6 inconsistências do item 4.17 permanece;
@@ -523,8 +538,9 @@ tabela 10.0):
 4. ~~A sincronização manual deve permanecer exposta na Home ou migrar para área secundária
    (Etapa 3 / Fase 0.3)?~~ → **Fechada na abertura da Etapa 3 (2026-09-27)**: migra para área
    secundária — seção "Dados" no modal Área do usuário (junto com "Configurar Grade Horária").
-5. A tela ativa deve sobreviver à recarga e participar do histórico Voltar/Avançar (Etapa 7,
-   item 4.17.6)?
+5. ~~A tela ativa deve sobreviver à recarga e participar do histórico Voltar/Avançar (Etapa 7,
+   item 4.17.6)?~~ → **Fechada em 2026-10-01 (Cartão D)**: **sim** — por hash (`#tela-financas`),
+   que é a única forma que não exige rewrite no servidor local nem no deploy estático do Vercel.
 6. Amarelo como cor de estado: manter um único significado ou introduzir cor adicional
    (Etapa 7, item 4.13)?
 

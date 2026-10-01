@@ -5,14 +5,45 @@
         'tela-alunos': () => global.inicializarAlunos
     };
 
+    const TELA_PADRAO = 'tela-home';
+
     function getInitializer(targetId) {
         const resolver = VIEW_INITIALIZERS[targetId];
         return typeof resolver === 'function' ? resolver() : null;
     }
 
+    function telaValida(targetId) {
+        return typeof targetId === 'string' && Object.prototype.hasOwnProperty.call(VIEW_INITIALIZERS, targetId)
+            ? targetId
+            : null;
+    }
+
+    // Etapa 7 (Cartão D — achado 4.17.6): a tela ativa é refletida na URL pelo
+    // fragmento (#tela-financas). A escolha por hash e não por caminho é
+    // deliberada: caminho exigiria rewrite no servidor local e no deploy
+    // estático do Vercel, senão recarregar devolveria 404. A hash não passa
+    // pelo servidor, então reload e Voltar/Avançar funcionam sem config nova.
+    function lerTelaDaHash() {
+        const hash = (global.location && global.location.hash) || '';
+        if (hash.length < 2) {
+            return null;
+        }
+        try {
+            return telaValida(decodeURIComponent(hash.slice(1)));
+        } catch (_erro) {
+            // Hash malformada (ex.: '%' solto) — não derruba o app por isso.
+            return null;
+        }
+    }
+
     function createRouter() {
         const afterNavigateCallbacks = [];
         let currentViewId = null;
+        // A primeira escrita na URL substitui a entrada atual em vez de
+        // empilhar: a tela escolhida no boot (ou restaurada da hash) não é uma
+        // navegação do usuário, e Voltar deve sair do app, não voltar para uma
+        // tela que a pessoa não visitou.
+        let jaEscreveuNaUrl = false;
 
         async function initializeView(targetId) {
             const initializer = getInitializer(targetId);
@@ -31,14 +62,66 @@
             }
         }
 
+        // Escrever na URL nunca pode impedir a navegação: se a History API
+        // falhar (ambiente sem suporte, ou URL rejeitada), a troca de tela
+        // segue valendo e apenas o estado da URL fica defasado.
+        // A comparação com a hash atual é o que também guarda a navegação
+        // disparada pela própria URL (Voltar/Avançar): nesse caminho a hash já
+        // é a da tela de destino, então não há o que escrever — sem isso, o
+        // Voltar do navegador criaria uma entrada a cada uso.
+        function registrarTelaNaUrl(targetId, substituir) {
+            const history = global.history;
+            const novaHash = '#' + targetId;
+            if (!history || !global.location || global.location.hash === novaHash) {
+                return;
+            }
+            const metodo = substituir ? 'replaceState' : 'pushState';
+            if (typeof history[metodo] !== 'function') {
+                return;
+            }
+            try {
+                history[metodo].call(history, null, '', novaHash);
+                jaEscreveuNaUrl = true;
+            } catch (_erro) {
+                // Ignorado de propósito — ver comentário acima.
+            }
+        }
+
+        // Chamado quando a URL muda por fora da navegação (Voltar/Avançar do
+        // navegador, ou edição manual da barra de endereços).
+        function sincronizarComUrl() {
+            if (!currentViewId) {
+                // Boot ainda não escolheu a tela; getTelaInicial cuida disso.
+                return;
+            }
+            const tela = lerTelaDaHash();
+            if (!tela) {
+                // Hash inválida ou apagada: realinha a URL com a tela que está
+                // em exibição, sem criar entrada nova (não houve navegação).
+                registrarTelaNaUrl(currentViewId, true);
+                return;
+            }
+            if (tela === currentViewId) {
+                return;
+            }
+            void navigateTo(tela);
+        }
+
         async function navigateTo(targetId) {
+            const tela = telaValida(targetId);
+            if (!tela) {
+                return;
+            }
+
             const navLinks = document.querySelectorAll('.nav-inferior .nav-link-inferior');
             const views = document.querySelectorAll('.view-section');
-            const activeView = document.getElementById(targetId);
-            currentViewId = targetId;
+            const activeView = document.getElementById(tela);
+            currentViewId = tela;
+
+            registrarTelaNaUrl(tela, !jaEscreveuNaUrl);
 
             navLinks.forEach(link => {
-                const isActive = link.getAttribute('data-target') === targetId;
+                const isActive = link.getAttribute('data-target') === tela;
                 link.classList.toggle('ativo', isActive);
                 // Etapa 3 (Cartão E): estado ativo também semântico para leitores de tela.
                 if (isActive) {
@@ -49,7 +132,7 @@
             });
 
             views.forEach(view => {
-                view.style.display = view.id === targetId ? 'block' : 'none';
+                view.style.display = view.id === tela ? 'block' : 'none';
             });
 
             if (activeView) {
@@ -66,10 +149,10 @@
                 global.trocarFABNovoHome();
             }
 
-            await initializeView(targetId);
+            await initializeView(tela);
             global.scrollTo({ top: 0, behavior: 'smooth' });
 
-            afterNavigateCallbacks.forEach(callback => callback(targetId));
+            afterNavigateCallbacks.forEach(callback => callback(tela));
         }
 
         function bindNavigation() {
@@ -82,6 +165,12 @@
                     await navigateTo(targetId);
                 });
             });
+
+            // Entradas de histórico que diferem apenas no fragmento disparam
+            // 'hashchange' de forma garantida (é o nosso caso, pois só criamos
+            // entradas assim), então 'popstate' seria um segundo listener para
+            // o mesmo evento.
+            global.addEventListener('hashchange', sincronizarComUrl);
         }
 
         function onAfterNavigate(callback) {
@@ -106,6 +195,12 @@
             refreshCurrentView,
             getCurrentViewId: function () {
                 return currentViewId;
+            },
+            // Tela a abrir no boot: a da URL, se for uma tela conhecida;
+            // senão a padrão. Mantém o router como dono da decisão, sem o
+            // bootstrap precisar interpretar a hash.
+            getTelaInicial: function () {
+                return lerTelaDaHash() || TELA_PADRAO;
             }
         };
     }

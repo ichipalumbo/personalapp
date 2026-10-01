@@ -4,7 +4,7 @@
 > **Branch de trabalho**: `feat/etapa-7-consistencia-acessibilidade` (criada de `origin/main`, `--no-track`)
 > **Item de roadmap**: 5.7 (Grupo 5)
 > **Fonte de verdade do escopo**: `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`, seção 5 (Etapa 7) e tabela mestra (seção 1)
-> **Status**: 🚧 EM ANDAMENTO — **Cartões A, B e C fechados** (4.13, 4.16, 4.6, 4.17.3, auditoria de 4.17.4/5, 4.15, 7.1); falta o D
+> **Status**: ✅ CONCLUÍDA — **Cartões A, B, C e D fechados** (4.13, 4.16, 4.6, 4.17.3, auditoria de 4.17.4/5, 4.15, 7.1, 4.17.1 e 4.17.6)
 
 ---
 
@@ -26,11 +26,11 @@
 | 4.13 | amarelo sobrecarregado semanticamente | ✅ fechado no Cartão A |
 | 4.15 | `prefers-reduced-motion` parcial | ✅ fechado no Cartão C |
 | 4.16 | ARIA completo de navegação/tabs | ✅ fechado no Cartão B |
-| 4.17.1 | mensagem de modo leitura escondida pelo CSS | pendente (precisa de evidência) |
+| 4.17.1 | mensagem de modo leitura escondida pelo CSS | ✅ fechado no Cartão D — **diagnóstico corrigido**: não era só uma linha de CSS |
 | 4.17.3 | textarea financeiro sem estilo/foco de input | ✅ fechado no Cartão B (resíduo era só a fonte) |
 | 4.17.4 | `disabled` global | ✅ **já resolvido na Etapa 2** — auditoria de cobertura feita no Cartão B: 105 interativos, 0 sem nome |
 | 4.17.5 | `aria-label` em icon-only | ✅ **já resolvido na Etapa 2** — cobertura verificada no Cartão B |
-| 4.17.6 | `href="#"` sem representar a tela ativa no histórico | decisão fechada (item 2 acima) — execução no Cartão D |
+| 4.17.6 | `href="#"` sem representar a tela ativa no histórico | ✅ fechado no Cartão D (hash, conforme item 2) |
 | 7.1 | "Tentar de novo" × "Tentar novamente" | ✅ fechado no Cartão C (spec decide) |
 
 ---
@@ -42,10 +42,11 @@
 | **A** ✅ | Cor de estado (4.13): tokens + migração dos usos | fechado em 2026-10-01 |
 | **B** ✅ | ARIA e semântica (4.16, 4.6 final, 4.17.3, auditoria de 4.17.4/5) | fechado em 2026-10-01 |
 | **C** ✅ | Movimento reduzido e textos (4.15, 7.1) | fechado em 2026-10-01 |
-| **D** | Navegação com recarga/histórico (4.17.6) + 4.17.1 | — |
+| **D** ✅ | Navegação com recarga/histórico (4.17.6) + 4.17.1 | fechado em 2026-10-01 |
 
 Ordem sugerida de execução: **B → C → D → A** (A por último porque depende da decisão; B e C
-são os de menor risco).
+são os de menor risco). **A ordem proposta não foi seguida**: o dono optou por fazer A primeiro
+(e a decisão de cor foi tomada junto com o inventário), depois B, C e D.
 
 ---
 
@@ -302,3 +303,141 @@ mover não é decoração.
   movimento, não adicionar); registrado aqui para não se perder.
 
 _(cartão D: a preencher)_
+
+---
+
+## Cartão D — Navegação com histórico (4.17.6) e mensagem de modo leitura (4.17.1)
+
+### Decisões do dono (2026-10-01)
+
+1. **4.17.6 — a tela ativa vai para a URL por `hash`** (`#tela-financas`), não por caminho.
+   Motivo: roteamento por caminho (`/financas`) exigiria rewrite no `scripts/servir-local.js` e no
+   deploy estático do Vercel — sem isso, recarregar em `/financas` devolveria 404. A hash não passa
+   pelo servidor, então reload e Voltar/Avançar funcionam sem config nova. A query string
+   (`?tela=`) foi descartada por exigir `pushState`/`popstate` manuais sem ganho.
+2. **4.17.1 — o pill "Modo leitura" só aparece no desktop** (a partir de 768px).
+
+### 4.17.1 — o diagnóstico do achado estava incompleto
+
+O achado dizia "escondida permanentemente pelo CSS". Isso se confirma em parte: a regra base tem
+`display: none` e **nenhuma** das outras três regras (duas em media queries) mexeu em `display`,
+em nenhuma largura. Mas **tirar o `display: none` não resolve** — quebra o header:
+
+| Medição forçando o pill visível | Resultado |
+| --- | --- |
+| 433×762 | pill com `left: -23px` — **sai 23px para fora da tela**, sobre a marca (`visivelNaTela: false`) |
+| 320×568 | pill com `left: -112px` — pior ainda |
+
+Ou seja, é restrição de **layout**, não defeito de uma declaração. A decisão (2) resolve pelo
+caminho barato: exibir onde cabe.
+
+Contexto que reduz a urgência: o usuário desconectado **já recebe o recado** pelo toast
+_"Faça login com Google para carregar seus dados da nuvem."_ — o pill era redundante, não a única
+fonte da informação.
+
+### O que entrou
+
+- `assets/js/app/router.js`:
+  - `lerTelaDaHash()` / `telaValida()` — a hash só é aceita se for uma tela conhecida
+    (`VIEW_INITIALIZERS`); hash desconhecida ou malformada (`#%E0%A4%A`, que faz
+    `decodeURIComponent` lançar) cai na padrão em vez de derrubar o app.
+  - `registrarTelaNaUrl()` — escreve `#<tela>` na URL. **Primeira escrita usa `replaceState`**
+    (a tela do boot não é navegação do usuário: Voltar deve sair do app) e as seguintes usam
+    `pushState`. A comparação com a hash atual é o que também guarda a navegação vinda da própria
+    URL — sem ela, cada Voltar criaria uma entrada nova (pingue-pongue).
+  - `sincronizarComUrl()` — listener de `hashchange` registrado em `bindNavigation()`. Cobre
+    Voltar/Avançar e edição manual da barra de endereços. `popstate` seria um segundo listener
+    para o mesmo evento, já que só criamos entradas que diferem no fragmento.
+  - Todo acesso à History API é defendido com try/catch: URL é acessório, a troca de tela é o
+    essencial e não pode depender dela.
+  - `getTelaInicial()` — tela da URL se conhecida, senão a padrão. O router continua dono da
+    decisão; o bootstrap não interpreta hash.
+  - `navigateTo()` agora **ignora id que não é tela** (antes escondia todas as views).
+- `assets/js/app/bootstrap.js` — `navigateTo('tela-home')` → `navigateTo(router.getTelaInicial())`.
+- `index.html` — os três `href="#"` do `.nav-inferior` passaram a `#tela-home`,
+  `#tela-financas` e `#tela-alunos`.
+- `assets/css/style.css` — `.header-readonly-pill`: comentário na regra base e
+  `display: inline-flex` dentro do `@media (min-width: 768px)` que já existia (onde o elemento já
+  ganhava `flex: 1 1 auto`). Concentrar no breakpoint já existente evita media query nova.
+
+### Verificado no navegador (mock `desconectado`, CDP)
+
+**4.17.1 — visibilidade por largura** (`display` computado; `flex` é o valor *blockificado* de
+`inline-flex` num flex item, comportamento esperado, não divergência):
+
+| Largura | `display` | Dentro da tela | Altura do header | Estouro horizontal |
+| --- | --- | --- | --- | --- |
+| 320×568 | `none` ✅ | — | 54px | não |
+| 390×844 | `none` ✅ | — | 54px | não |
+| 431×762 | `none` ✅ | — | 66px | não |
+| **433×762** (referência) | `none` ✅ | — | 66px | não |
+| 600×900 | `none` ✅ | — | 66px | não |
+| **768×900** | `flex` ✅ | `left 270 / right 511` ✅ | 83px | não |
+| 1024×800 | `flex` ✅ | `left 526 / right 767` ✅ | 72px | não |
+| 1440×900 | `flex` ✅ | `left 750 / right 990` ✅ | 72px | não |
+
+Em 900×700 a altura do header é **72px com o pill visível e 72px com ele oculto** — o aviso não
+empurra o layout. Contraste do texto (`#9eb0c3` sobre o header `rgba(13,13,13,0.88)`):
+**8,75:1** (AA pede 4,5:1), 12px / peso 700. Captura do header confere a ordem visual:
+marca à esquerda, aviso no centro, botão de login à direita.
+
+**4.17.6 — ciclo completo de navegação** (433×762 DPR 2.81 + toque):
+
+| Ação | `location.hash` | Link ativo / `aria-current` | Tela visível |
+| --- | --- | --- | --- |
+| Boot (sem hash na URL) | `#tela-home` ✅ | `tela-home` | `tela-home` |
+| Clique em Finanças | `#tela-financas` ✅ | `tela-financas` | `tela-financas` |
+| **Recarregar** | `#tela-financas` ✅ | `tela-financas` | `tela-financas` ✅ |
+| **Voltar** | `#tela-home` ✅ | `tela-home` | `tela-home` ✅ |
+| **Avançar** | `#tela-financas` ✅ | `tela-financas` | `tela-financas` ✅ |
+| Hash inválida digitada | `#tela-financas` (realinhada) ✅ | `tela-financas` | `tela-financas` (não mudou) |
+
+A linha do reload é o ganho do achado: antes, recarregar sempre caía na Home.
+
+### Testes
+
+Novo arquivo `tests-frontend/router-historico.test.js` (7 casos): tela inicial vinda da URL;
+fallback para hash ausente, desconhecida e malformada; boot com `replaceState` e abrindo a tela da
+URL; clique empilhando `pushState`; mudança de URL por fora navegando **sem** escrever na URL;
+hash inválida realinhando com `replaceState` sem trocar de tela; id desconhecido ignorado.
+
+O medidor registra as chamadas de `pushState`/`replaceState` e **delega ao original**, para que
+`location.hash` continue sendo atualizada de verdade. O helper que simula o Voltar usa o método
+**original**, não o instrumentado: a mudança de URL é do navegador, não do app, e não pode contar
+como escrita do app (foi o que fez duas asserções falharem na primeira rodada — erro do medidor,
+não do código).
+
+**Prova por mutação** (as duas confirmadas com reversão e `git status` limpo):
+
+| Mutação | Falhas |
+| --- | --- |
+| remover a escrita na URL em `navigateTo` | 2 (`boot ... abre a tela que veio na URL`, `clicar ... empilha`) ✅ |
+| remover o guard de hash igual em `registrarTelaNaUrl` | 2 (`boot ...`, `mudança de URL por fora navega sem reescrever`) ✅ |
+
+**Uma mutação NÃO foi detectada e virou remoção de código:** o parâmetro
+`{ registrarHistorico: false }` que `sincronizarComUrl` passava a `navigateTo` não tinha efeito
+observável — no caminho vindo da URL a hash já é a da tela de destino, então o guard de hash igual
+já barra a escrita. Parâmetro removido em vez de mantido como código morto; a proteção é o guard,
+e é ele que a mutação acima prova.
+
+**Suítes**: `tests-frontend` **91/91** (84 + 7 novos) e `backend` **232/232**, 0 falhas.
+O `router-fab-tela.test.js` (ordem do FAB da Home, achado anterior) continua verde — era o teste
+sob maior risco de quebra.
+
+### Encontrado e não alterado
+
+- **`mocks/ui-runtime/mock-runtime.js:476`** chama `navigateTo('tela-home')` 150ms após instalar o
+  mock, mas com **condição avaliada na hora** (`if (window.__appShell && ...)`): como o mock
+  instala antes do `__appShell` existir, o `setTimeout` **não é agendado** e o trecho não executa.
+  É código morto pré-existente — não mexi (fora do escopo) e **não** foi o que impediu a validação
+  do reload, que passou.
+- **`docs/specs/gcal-sync.md`** (linhas ~295 e ~353) descreve a renovação do canal como acontecendo
+  "após `router.navigateTo('tela-home')`". O boot agora navega para a tela da URL. A descrição
+  continua verdadeira quanto à **ordem** (a renovação segue depois da navegação inicial), mas o
+  literal do trecho ficou impreciso. Spec não é documento que eu deva reescrever por tabela —
+  registrado para o dono decidir.
+- **`tests-frontend/router-fab-tela.test.js`** mantém `href="#"` nos seus links. Não precisa mudar
+  (o teste não olha href), mas agora diverge do `index.html` real; deixei como está para não
+  alterar teste que não pertence a este cartão.
+
+

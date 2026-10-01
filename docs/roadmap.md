@@ -724,7 +724,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [~] 5.7 Consistência e acessibilidade final (Etapa 7) — **EM ANDAMENTO**
+### [x] 5.7 Consistência e acessibilidade final (Etapa 7) — **CONCLUÍDO** (cartões A–D, 2026-10-01)
 
 - **O que é**: etapa ampliada para cobrir os achados que ficaram órfãos no diagnóstico original
   — 4.13 (amarelo sobrecarregado semanticamente) e 4.17 (6 inconsistências específicas) —, além
@@ -737,7 +737,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   retry — o toast unificado usa "Tentar de novo", o erro do histórico de reposições usa
   "Tentar novamente". **✅ Resolvido em 2026-10-01 (Cartão C)**: as duas specs já fixavam
   "Tentar novamente"; era o toast que estava fora do padrão — ver seção Etapa 7 do diagnóstico.
-- **Esforço restante**: só o 4.17.1 e o 4.17.6 (cartão D).
+- **Esforço restante**: ~~só o 4.17.1 e o 4.17.6 (cartão D)~~ — **fechado no Cartão D
+  (2026-10-01)**.
 - **Preparo da validação (2026-10-01)**: criado o cenário de mock `vitrineEstados`
   (`mocks/ui-runtime/scenarios.js`) com os estados que esta etapa audita — ciclo atrasado +
   reposição a vencer (amarelo, 4.13), ciclo pago (`disabled`, 4.17.4), aluno inativo em modo
@@ -766,7 +767,17 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   "Tentar novamente" (texto que as duas specs já fixavam). Correção de rumo: o achado 4.15 nomeava
   `halterBounce`, `pulseAgora` e `homeShimmer`, que não existem mais (removidas na limpeza de CSS),
   e o bloco `reduce` que já existia perdia para `.skeleton`/`.toast` por estar declarado antes
-  deles. Falta o D (4.17.6 + 4.17.1).
+  deles. **Cartão D (4.17.6 + 4.17.1) concluído**: a tela ativa passa a ir para a URL por
+  **hash** (`#tela-home`, `#tela-financas`, `#tela-alunos`) — `replaceState` no boot,
+  `pushState` nas navegações seguintes, `hashchange` para Voltar/Avançar —, então **recarregar
+  mantém a tela** (antes sempre caía na Home); hash desconhecida ou malformada cai na padrão em
+  vez de derrubar o app, e `navigateTo` ignora id que não é tela. Caminho (`/financas`) foi
+  descartado por exigir rewrite no servidor local e no deploy estático do Vercel. O pill
+  "Modo leitura" (4.17.1) passou a ser exibido **a partir de 768px** — o diagnóstico de que
+  bastava remover o `display: none` estava incompleto: medido em 433×762, o pill sai 23px para
+  fora da tela e cobre a marca. Novo `tests-frontend/router-historico.test.js` (7 casos,
+  provados por mutação); um parâmetro sem efeito observável foi **removido** em vez de mantido.
+  Suítes: frontend 91/91, backend 232/232.
 
 ---
 

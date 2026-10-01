@@ -647,6 +647,8 @@ body {
 }
 
 .header-readonly-pill {
+  /* Oculto por padrão e exibido apenas a partir de 768px (ver @media
+     min-width: 768px) — no mobile a linha do header não comporta o aviso. */
   display: none;
   align-items: center;
   gap: 6px;
@@ -1559,6 +1561,12 @@ body {
   }
 
   .header-readonly-pill {
+    /* Etapa 7 (Cartão D — achado 4.17.1): o elemento nasceu com `display:none`
+       na regra base e nunca recebeu o valor de exibição de volta, então ficava
+       invisível em qualquer largura. Ele só passa a ser exibido aqui, onde a
+       linha do header comporta marca + aviso + botão: medido em 433×762, o pill
+       sem esta restrição sai 23px para fora da tela e cobre a marca. */
+    display: inline-flex;
     flex: 1 1 auto;
   }
 
