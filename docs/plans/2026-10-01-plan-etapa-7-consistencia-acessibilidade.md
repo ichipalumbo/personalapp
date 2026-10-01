@@ -175,7 +175,12 @@ interativos dentro é justamente o que o padrão ARIA desaconselha.
 - **Card de aluno (4.6)** — `view-alunos.js` + `style.css`: novo `.aluno-card-editar` (32×32,
   `aria-label="Editar <nome>"`, ícone de lápis) dentro da área que já fazia `stopPropagation`, ao
   lado do toggle. O card continua clicável ao toque (alvo grande); o botão existe para o teclado.
-- **Fonte dos campos (4.17.3)** — `style.css`: `input, select, textarea { font-family: inherit }`.
+- **Fonte dos campos e dos botões (4.17.3)** — `style.css`: `input, select, textarea {
+  font-family: inherit }`, estendido a **`button`** em decisão separada do dono (2026-10-01, mesma
+  rodada): era o último controle fora do padrão — o `.btn` ficava em `Arial` ao lado de texto em
+  Segoe UI. **Não afeta os ícones**: `.fa-solid` é classe (especificidade 0,1,0) e vence o seletor
+  de elemento (0,0,1), mantendo `"Font Awesome 6 Free"` — verificado nos dois grupos
+  (`fa-solid` e `fa-brands`).
 - **Fonte do card** — `button.agenda-dia-aula { font: inherit }`, pelo mesmo motivo (botão não
   herda a fonte do app).
 
@@ -194,6 +199,10 @@ interativos dentro é justamente o que o padrão ARIA desaconselha.
 | `.aluno-card-editar` | — | 4/4 cards, 32×32, `aria-label` correto ✅ |
 | Campos: `font-family` | input/select `Arial`, textarea `monospace` | os três na fonte do app ✅ |
 | Textarea vs input no modal de finanças | fontes diferentes | fontes **iguais** ✅ |
+| Botões: `font-family` | `.btn` em `Arial` | **todos** os `<button>` na fonte do app (0 com fonte divergente) ✅ |
+| Ícones dentro de botões | — | `fa-solid` → `"Font Awesome 6 Free"`, `fa-brands` → `"Font Awesome 6 Brands"` ✅ |
+| `option` dentro de `select` | — | herda junto com o select ✅ |
+| Regressão de tamanho (bônus) | botão "Hoje" 12px · card 16px | inalterados ✅ |
 
 **Auditoria de cobertura do 4.17.4 / 4.17.5** (era o que restava desses dois, já resolvidos de
 fato na Etapa 2): **105 elementos interativos e 45 campos de formulário, zero sem nome

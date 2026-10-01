@@ -95,14 +95,18 @@
   outline-offset: 2px;
 }
 
-/* Etapa 7 (Cartão B, achado 4.17.3): campos nativos não herdam a fonte do app —
-   cada um cai no default do navegador (input/select em Arial, textarea em
-   monospace), o que faz dois campos do MESMO formulário renderem com fontes
-   diferentes. Herdar alinha todos. Medido antes: input/select "Arial", textarea
-   "monospace"; depois: os três na fonte do body. */
+/* Etapa 7 (Cartão B, achado 4.17.3): controles nativos não herdam a fonte do app —
+   cada um cai no default do navegador, o que faz dois controles lado a lado
+   renderizarem com fontes diferentes. Medido antes: input/select "Arial", textarea
+   "monospace", button "Arial"; depois: todos na fonte do body.
+   `button` entrou depois (decisão do dono, 2026-10-01): era o último controle fora
+   do padrão — o .btn ficava em Arial ao lado de texto em Segoe UI.
+   Não afeta os ícones do FontAwesome: .fa-solid (classe, especificidade 0,1,0)
+   vence o seletor de elemento (0,0,1) e mantém "Font Awesome 6 Free". */
 input,
 select,
-textarea {
+textarea,
+button {
   font-family: inherit;
 }
 
@@ -1734,10 +1738,12 @@ body {
 }
 /* Etapa 7 (Cartão B, achado 4.6): o card acionável é um <button> de verdade —
    foco de teclado (Tab/Enter/Espaço) sem JS. Aqui só se zera o que o UA ainda
-   impõe e o bloco .agenda-dia-aula acima não cobre: fonte, cor, alinhamento e
-   largura. Deliberadamente NÃO se mexe em margin/padding/border/background,
-   que já vêm das classes do card (evita conflito de especificidade com
-   .agenda-semana-card e com os formatos outlook/linha da Etapa 5). */
+   impõe e o bloco .agenda-dia-aula acima não cobre: cor, alinhamento e largura.
+   Deliberadamente NÃO se mexe em margin/padding/border/background, que já vêm
+   das classes do card (evita conflito de especificidade com .agenda-semana-card
+   e com os formatos outlook/linha da Etapa 5).
+   `font: inherit` continua necessário mesmo com a regra global de font-family:
+   o shorthand também herda font-size/weight/line-height, que o botão não pega. */
 button.agenda-dia-aula {
   appearance: none;
   -webkit-appearance: none;
