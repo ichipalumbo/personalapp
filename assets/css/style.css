@@ -95,6 +95,17 @@
   outline-offset: 2px;
 }
 
+/* Etapa 7 (Cartão B, achado 4.17.3): campos nativos não herdam a fonte do app —
+   cada um cai no default do navegador (input/select em Arial, textarea em
+   monospace), o que faz dois campos do MESMO formulário renderem com fontes
+   diferentes. Herdar alinha todos. Medido antes: input/select "Arial", textarea
+   "monospace"; depois: os três na fonte do body. */
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
 /* Etapa 2 (Cartão C, 2026-09-26): estado disabled padronizado.
    Botões (todas as telas): regra única — opacidade 0.6 (seletores dos botões gcal eram
    duplicados e caíram), cursor not-allowed (decisão do dono) e pointer-events: none.
@@ -805,6 +816,30 @@ body {
   padding: 16px;
   border-radius: 8px;
   border-left: 4px solid #ffd700;
+}
+/* Etapa 7 (Cartão B, achado 4.6): alvo de TECLADO do card de aluno. O card
+   segue clicável ao toque (alvo grande); este botão existe para dar foco e
+   acionamento por Tab/Enter. 32px é a medida que o app já usa para botão
+   somente-ícone (.btn-modal-close) — não é alvo de toque primário. */
+.aluno-card-editar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  border-radius: 6px;
+  background: rgba(255, 215, 0, 0.08);
+  color: #ffd700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.aluno-card-editar:hover,
+.aluno-card-editar:active {
+  background: rgba(255, 215, 0, 0.18);
 }
 
 /* Grid de indicadores do card do aluno: comporta novas caixinhas sem refatoração. */
@@ -1696,6 +1731,20 @@ body {
   overflow: hidden;
   box-sizing: border-box;
   pointer-events: auto;
+}
+/* Etapa 7 (Cartão B, achado 4.6): o card acionável é um <button> de verdade —
+   foco de teclado (Tab/Enter/Espaço) sem JS. Aqui só se zera o que o UA ainda
+   impõe e o bloco .agenda-dia-aula acima não cobre: fonte, cor, alinhamento e
+   largura. Deliberadamente NÃO se mexe em margin/padding/border/background,
+   que já vêm das classes do card (evita conflito de especificidade com
+   .agenda-semana-card e com os formatos outlook/linha da Etapa 5). */
+button.agenda-dia-aula {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
 }
 .agenda-semana-card {
   margin-bottom: 8px;

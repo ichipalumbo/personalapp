@@ -59,7 +59,7 @@ Legenda de status usada em todo o documento:
 | 4.3 | Navegação principal compete com conteúdo | Diagnóstico §4.3 | Etapa 3 | ✅ *ETAPA 3 CONCLUÍDA: navegação superior trocada por barra inferior fixa (3 telas, alvos 134×52px) — ver seção 5* |
 | 4.4 | Tipografia auxiliar muito pequena | Diagnóstico §4.4 | Etapa 2 | ✅ *ETAPA 2 CONCLUÍDA (2026-09-26, `386b00c`): escala mínima aplicada; 89 declarações + ~50 inlines de templates JS; zero texto legível <12px; filtros de status da Finanças removidos por decisão do dono no fim do cartão A (estouro pré-existente), o que também atende a 4.10 parcialmente — ver seção 5* |
 | 4.5 | Alvos de toque abaixo do recomendado | Diagnóstico §4.5 | Etapa 2 | 🟡 *ETAPA 2 CONCLUÍDA no escopo decidido: grupos 1 (Finanças → 48px) e 2 (grade de horários → 48px) corrigidos em `b9a3c07`; grupos 3 (cabeçalho/toolbar) deixados <44px por decisão do dono, registrados no report da Etapa 2 como candidatos a rodada futura* |
-| 4.6 | Cards/slots sem interação equivalente por teclado | Diagnóstico §4.6 | Etapa 2 (foco/teclado básico) + Etapa 7 (semântica final) | 🟡 *partida Etapa 2 concluída (Cartão C, `81485c5`): `:focus-visible` global dourado padronizado, 13/13 botões icon-only com `aria-label`. Semântica final de cards/tabs segue na Etapa 7 — ver seção 5* |
+| 4.6 | Cards/slots sem interação equivalente por teclado | Diagnóstico §4.6 | Etapa 2 (foco/teclado básico) + Etapa 7 (semântica final) | ✅ *fechado 2026-10-01 na Etapa 7, Cartão B: card de agenda virou `<button>` nativo e o card de aluno ganhou botão "Editar" próprio como alvo de teclado (o card tem interativo aninhado e não pode ser o controle). Parte da Etapa 2 (`81485c5`): `:focus-visible` global e 13/13 icon-only com `aria-label`* |
 | 4.7 | Gerenciamento de diálogo inconsistente | Diagnóstico §4.7 | Etapa 1 | ✅ |
 | 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ✅ *implementado 2026-09-29, validado em produção pelo dono e mergeado via PR #66 (2026-09-30): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto (ver seção 5, Etapa 6)* |
 | 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6. Complemento de contraste fechado em 2026-10-01 na Etapa 7, Cartão A (ver "Complemento (2026-10-01)" na Etapa 6)* |
@@ -69,7 +69,7 @@ Legenda de status usada em todo o documento:
 | 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
 | 4.14 | Safe areas / elementos flutuantes | Diagnóstico §4.14 | Etapa 3 | ✅ *ETAPA 3 CONCLUÍDA (2026-09-27, `7ccb736`): `--bottombar-height` medido em runtime, FAB/toast/barra ancorados no token, `viewport-fit=cover` no meta — valores declarados no report da Etapa 3 (env()=0 no DevTools; valida o cálculo, não o pixel)* |
 | 4.15 | Movimento reduzido parcial | Diagnóstico §4.15 | Etapa 7 | ⏳ |
-| 4.16 | Navegação/tabs sem ARIA completo | Diagnóstico §4.16 | Etapa 7 | 🟡 *parte: a barra inferior da Etapa 3 (2026-09-27) já opera `aria-current="page"` no item ativo (validado no report da Etapa 3). O restante da semântica de tabs/navegação segue na Etapa 7* |
+| 4.16 | Navegação/tabs sem ARIA completo | Diagnóstico §4.16 | Etapa 7 | ✅ *fechado 2026-10-01 na Etapa 7, Cartão B: os dois grupos de abas ganharam `role="tablist"` com nome acessível, `role="tab"` + `aria-selected` sincronizado com o estado real e painéis `role="tabpanel"` + `aria-labelledby`. Ressalva: sem roving `tabindex`/navegação por setas (prática do APG, não requisito da especificação). A barra inferior da Etapa 3 já operava `aria-current="page"`* |
 | 4.17 | 6 inconsistências específicas (inclui bug de seletor CSS/JS) | Diagnóstico §4.17 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
 
 ---
@@ -409,7 +409,7 @@ três estados coloridos passaram a usar a paleta de estado com texto `#1a1a1a` (
 
 ---
 
-### Etapa 7 — Consistência e acessibilidade final (ampliada) ⏳ PENDENTE
+### Etapa 7 — Consistência e acessibilidade final (ampliada) 🚧 EM ANDAMENTO (cartões A e B fechados, 2026-10-01)
 
 **Achados endereçados**: 4.6 (parte final — semântica de cards/tabs), 4.15, 4.16, **4.13 e 4.17
 (órfãos endereçados nesta reescrita)**.
@@ -464,6 +464,22 @@ Etapa 2 — o padrão é global e os 13 botões inventariados têm `aria-label`;
 7 é auditoria de cobertura (novos botões criados após o inventário), não trabalho novo.
 O item 4.17.2 (bug de seletor) foi corrigido nesta mesma data, como hotfix isolado (ver relatório
 linkado no item 2 acima) — não depende mais da execução da Etapa 7.
+
+**Registro de execução (2026-10-01 — cartões A e B, branch
+`feat/etapa-7-consistencia-acessibilidade`)**: plano vivo e medições completas em
+[`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](../plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md).
+- **Cartão A** — 4.13 (cor de estado tokenizada) e, de carona, a metade *contraste* do 4.9, que
+  ficara fora da Etapa 6.
+- **Cartão B** — 4.16, 4.6 (parte final), 4.17.3 e a auditoria de cobertura do 4.17.4/4.17.5.
+- **Achado novo no 4.17.3**: a etapa estava resolvida de fato desde a Etapa 2 — o resíduo era a
+  **fonte** dos campos (input/select em `Arial`, textarea em `monospace`, ambos *defaults* do
+  navegador). Unificado na fonte do app.
+- **Ressalva de validação**: a ativação por teclado dos cards **não pôde ser observada** neste
+  ambiente — Enter/Espaço não são entregues à página nem para um botão de controle que já
+  existia antes da mudança. O mecanismo (elemento `<button>` real, na ordem de foco, com nome
+  acessível) está verificado; o teste com teclado físico segue pendente.
+- **Pendente na etapa**: 4.15 e 7.1 (cartão C), 4.17.1 e 4.17.6 (cartão D). Navegação por setas
+  no `tablist` ficou fora por ser prática do APG, não requisito da especificação ARIA.
 
 **Critério de conclusão**: os fluxos principais são operáveis sem toque e permanecem
 compreensíveis com zoom/texto ampliado; nenhuma das 6 inconsistências do item 4.17 permanece;

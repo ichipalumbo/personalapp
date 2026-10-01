@@ -83,6 +83,8 @@
           <div class="home-sticky-header">
             <div
               class="tab-tipo-agendamento"
+              role="tablist"
+              aria-label="Visualização da agenda"
               style="
                 display: flex;
                 gap: 6px;
@@ -97,17 +99,23 @@
                 type="button"
                 class="tab-btn active"
                 id="tabHomeSemana"
+                role="tab"
+                aria-selected="true"
+                aria-controls="agendaPanelSemana"
                 onclick="window.alternarModoHome('semana')"
               >
-                <i class="fa-solid fa-calendar-week"></i> Semana
+                <i class="fa-solid fa-calendar-week" aria-hidden="true"></i> Semana
               </button>
               <button
                 type="button"
                 class="tab-btn"
                 id="tabHomeDia"
+                role="tab"
+                aria-selected="false"
+                aria-controls="homeDayPanel"
                 onclick="window.alternarModoHome('dia')"
               >
-                <i class="fa-solid fa-calendar-day"></i> Dia
+                <i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Dia
               </button>
             </div>
             <div class="home-weekly-toolbar">
@@ -153,7 +161,12 @@
             </div>
           </div>
         </div>
-        <div class="agenda-panel agenda-panel-semana">
+        <div
+          id="agendaPanelSemana"
+          class="agenda-panel agenda-panel-semana"
+          role="tabpanel"
+          aria-labelledby="tabHomeSemana"
+        >
           <div
             id="calendarioSemanalHomeGrid"
             class="calendario-semanal-home-grid"
@@ -699,6 +712,8 @@
 
         <div
           class="tab-tipo-agendamento"
+          role="tablist"
+          aria-label="Tipo de compromisso"
           style="
             display: flex;
             gap: 6px;
@@ -713,25 +728,33 @@
             type="button"
             class="tab-btn active"
             id="tabAgendarAula"
+            role="tab"
+            aria-selected="true"
+            aria-controls="camposTipoAula"
             onclick="selecionarTipoAgendamento('aula')"
           >
-            <i class="fa-solid fa-graduation-cap"></i> Aula
+            <i class="fa-solid fa-graduation-cap" aria-hidden="true"></i> Aula
           </button>
           <button
             type="button"
             class="tab-btn"
             id="tabAgendarDeslocamento"
+            role="tab"
+            aria-selected="false"
             onclick="selecionarTipoAgendamento('deslocamento')"
           >
-            <i class="fa-solid fa-car-side"></i> Deslocamento
+            <i class="fa-solid fa-car-side" aria-hidden="true"></i> Deslocamento
           </button>
           <button
             type="button"
             class="tab-btn"
             id="tabAgendarBloqueio"
+            role="tab"
+            aria-selected="false"
+            aria-controls="camposTipoBloqueio"
             onclick="selecionarTipoAgendamento('bloqueio')"
           >
-            <i class="fa-solid fa-lock"></i> Bloquear
+            <i class="fa-solid fa-lock" aria-hidden="true"></i> Bloquear
           </button>
         </div>
 

@@ -4,7 +4,7 @@
 > **Branch de trabalho**: `feat/etapa-7-consistencia-acessibilidade` (criada de `origin/main`, `--no-track`)
 > **Item de roadmap**: 5.7 (Grupo 5)
 > **Fonte de verdade do escopo**: `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`, seção 5 (Etapa 7) e tabela mestra (seção 1)
-> **Status**: 🚧 EM ANDAMENTO — **Cartão A fechado** (4.13); B, C e D pendentes
+> **Status**: 🚧 EM ANDAMENTO — **Cartões A e B fechados** (4.13, 4.16, 4.6, 4.17.3, auditoria de 4.17.4/5); C e D pendentes
 
 ---
 
@@ -22,16 +22,16 @@
 
 | Achado | Conteúdo | Situação |
 | --- | --- | --- |
-| 4.6 (parte final) | semântica de cards/tabs | parcial (Etapa 2 fez foco/`aria-label`) |
-| 4.13 | amarelo sobrecarregado semanticamente | **inventário feito nesta rodada** |
+| 4.6 (parte final) | semântica de cards/tabs | ✅ fechado no Cartão B |
+| 4.13 | amarelo sobrecarregado semanticamente | ✅ fechado no Cartão A |
 | 4.15 | `prefers-reduced-motion` parcial | pendente (4 animações) |
-| 4.16 | ARIA completo de navegação/tabs | parcial (barra inferior já tem `aria-current`) |
+| 4.16 | ARIA completo de navegação/tabs | ✅ fechado no Cartão B |
 | 4.17.1 | mensagem de modo leitura escondida pelo CSS | pendente (precisa de evidência) |
-| 4.17.3 | textarea financeiro sem estilo/foco de input | pendente |
-| 4.17.4 | `disabled` global | **já resolvido de fato na Etapa 2** — resta auditoria de cobertura |
-| 4.17.5 | `aria-label` em icon-only | **já resolvido de fato na Etapa 2** — resta auditoria de cobertura |
-| 4.17.6 | `href="#"` sem representar a tela ativa no histórico | decisão fechada (item 2 acima) |
-| 7.1 | "Tentar de novo" × "Tentar novamente" | pendente |
+| 4.17.3 | textarea financeiro sem estilo/foco de input | ✅ fechado no Cartão B (resíduo era só a fonte) |
+| 4.17.4 | `disabled` global | ✅ **já resolvido na Etapa 2** — auditoria de cobertura feita no Cartão B: 105 interativos, 0 sem nome |
+| 4.17.5 | `aria-label` em icon-only | ✅ **já resolvido na Etapa 2** — cobertura verificada no Cartão B |
+| 4.17.6 | `href="#"` sem representar a tela ativa no histórico | decisão fechada (item 2 acima) — execução no Cartão D |
+| 7.1 | "Tentar de novo" × "Tentar novamente" | pendente (Cartão C) |
 
 ---
 
@@ -39,8 +39,8 @@
 
 | Cartão | Conteúdo | Bloqueio |
 | --- | --- | --- |
-| **A** | Cor de estado (4.13): tokens + migração dos usos | ⛔ **decisão de cor pendente** |
-| **B** | ARIA e semântica (4.16, 4.6 final, 4.17.3, auditoria de 4.17.4/5) | — |
+| **A** ✅ | Cor de estado (4.13): tokens + migração dos usos | fechado em 2026-10-01 |
+| **B** ✅ | ARIA e semântica (4.16, 4.6 final, 4.17.3, auditoria de 4.17.4/5) | fechado em 2026-10-01 |
 | **C** | Movimento reduzido e textos (4.15, 7.1) | — |
 | **D** | Navegação com recarga/histórico (4.17.6) + 4.17.1 | — |
 
@@ -148,4 +148,87 @@ texto claro — contraste adequado, e o spinner só existe nesse estado).
 `--objetivo-*` (categoria GCal), `.badge-aula`/`.badge-desloc` (tipo), ícones decorativos em
 `#64b5f6` (`.aluno-card-observacoes i`, cabeçalhos de modais).
 
-_(cartões B, C e D: a preencher)_
+### Cartão B — ARIA e semântica (4.16, 4.6, 4.17.3, auditoria de 4.17.4/5) · 2026-10-01
+
+**Decisão do dono (4.6)**: o card de agenda vira `<button>` nativo; o card de aluno deixa de
+ser o alvo de teclado e ganha um botão "Editar" próprio. Contexto da decisão: o card de aluno
+tem interativo aninhado (toggle de status e `<details>`), e `role="button"` com filhos
+interativos dentro é justamente o que o padrão ARIA desaconselha.
+
+**O que entrou**:
+
+- **Abas (4.16)** — `index.html` + `view-home.js`: os dois grupos viram `role="tablist"` com nome
+  acessível ("Visualização da agenda" e "Tipo de compromisso"); cada botão recebe `role="tab"` e
+  `aria-selected`; os painéis recebem `role="tabpanel"` + `aria-labelledby`
+  (`#agendaPanelSemana`, `#homeDayPanel`). `alternarModoHome` e `selecionarTipoAgendamento`
+  passam a sincronizar `aria-selected` — a classe `.active` é só visual.
+  `#tabAgendarDeslocamento` fica **sem** `aria-controls`: o modo não tem painel próprio (os dois
+  painéis de campos ficam ocultos) e `aria-controls` é opcional no padrão.
+- **Card de agenda (4.6)** — `agenda-card-template.js`: os 3 cards acionáveis passam de
+  `<div onclick>` para `<button type="button">`, o que dá Tab + Enter/Espaço **sem JS**. Por isso
+  o conteúdo interno virou `<span>` (button só aceita conteúdo de frase — os `<div>` viraram
+  inválidos dentro dele). O card somente-leitura do GCal **continua `<div>`**: não é acionável e
+  não deve entrar na ordem de foco. `style.css` ganhou `button.agenda-dia-aula`, que zera apenas
+  o que o UA ainda impõe (fonte, cor, alinhamento, largura) — margin/padding/border/background
+  seguem vindo das classes do card, para não brigar com a especificidade de `.agenda-semana-card`
+  nem com os formatos outlook/linha da Etapa 5.
+- **Card de aluno (4.6)** — `view-alunos.js` + `style.css`: novo `.aluno-card-editar` (32×32,
+  `aria-label="Editar <nome>"`, ícone de lápis) dentro da área que já fazia `stopPropagation`, ao
+  lado do toggle. O card continua clicável ao toque (alvo grande); o botão existe para o teclado.
+- **Fonte dos campos (4.17.3)** — `style.css`: `input, select, textarea { font-family: inherit }`.
+- **Fonte do card** — `button.agenda-dia-aula { font: inherit }`, pelo mesmo motivo (botão não
+  herda a fonte do app).
+
+**Verificado no navegador** (mock `default`, **433×762 DPR 2.81 + emulação de toque**;
+`dpr 2.81`, `ontouch true`, `pointer:coarse true`):
+
+| Medição | Antes | Depois |
+| --- | --- | --- |
+| Card de agenda: tag | `DIV` | `BUTTON` (3/3 acionáveis) ✅ |
+| Card de agenda: nome acessível | — | "Maria Silva 08:00 - 09:00 Studio Centro Recorrente" ✅ |
+| Card de agenda: fonte | Arial (UA) | `"Segoe UI", Tahoma, …` ✅ |
+| Card de agenda: largura | 404px (= pai) | 404px (= pai) ✅ |
+| Card de agenda: padding / fundo / raio | `9px 12px 10px 10px` / `rgba(255,184,120,0.05)` / `6px` | idênticos ✅ |
+| Abas: `role`/`aria-selected`/`aria-controls` | ausentes | presentes; `aria-selected` acompanha a troca (Semana `false` ↔ Dia `true`) ✅ |
+| Painel do Dia após trocar para Dia | — | `role=tabpanel`, `aria-labelledby=tabHomeDia`, `display:block`; painel Semana `display:none` ✅ |
+| `.aluno-card-editar` | — | 4/4 cards, 32×32, `aria-label` correto ✅ |
+| Campos: `font-family` | input/select `Arial`, textarea `monospace` | os três na fonte do app ✅ |
+| Textarea vs input no modal de finanças | fontes diferentes | fontes **iguais** ✅ |
+
+**Auditoria de cobertura do 4.17.4 / 4.17.5** (era o que restava desses dois, já resolvidos de
+fato na Etapa 2): **105 elementos interativos e 45 campos de formulário, zero sem nome
+acessível** — incluindo os modais ocultos no DOM e o conteúdo do histórico de reposições, que é
+renderizado em runtime. `button[disabled]` medido: `opacity .6`, `cursor: not-allowed`,
+`pointer-events: none` (a regra única global). Nenhum uso de `[aria-disabled]` no app.
+
+**4.17.3 — quase todo já estava resolvido de fato.** A Etapa 2 (`386b00c`) foi quem colocou o
+`textarea` na regra compartilhada `.form-grupo-spa input, select, textarea`. Medi no modal de
+finanças: borda, fundo, cor, `font-size` 16px, padding, raio, largura e o foco `#ffd700` já eram
+idênticos ao input. O único resíduo era a **fonte**, agora unificada.
+
+**Suítes**: `tests-frontend` **84/84** e `backend` **232/232**, 0 falhas (antes e depois).
+
+**Limitação da validação — teclado não chegou a ser observado.** Enter/Espaço não produzem efeito
+**nenhum** nesta sessão de navegador: testei o card (Playwright e CDP `Input.dispatchKeyEvent`) e
+um **controle** — `#btnSemanaHomeProxima`, um botão comum que já existia antes desta rodada —
+também não reagiu ao Enter, enquanto o clique programático no mesmo botão funcionou. Ou seja, o
+problema é do ambiente, não do código: os eventos de teclado não estão sendo entregues à página.
+O que está provado é o **mecanismo** (o card é um `<button>` real, entra na ordem de foco com o
+`aria-label`/conteúdo como nome acessível, e a ativação por Enter/Espaço é garantia do navegador
+para esse elemento). A ativação com o teclado físico segue **não verificada**.
+
+**Fora do escopo, registrado sem alterar**:
+
+- **Navegação por setas no `tablist`** (roving `tabindex` + Arrow/Home/End) não foi implementada.
+  O escopo escrito da etapa pede "semântica de tabs e navegação (`aria-current`, `role`
+  apropriados)" — a camada que a especificação ARIA exige está feita; setas são prática
+  recomendada do APG, não requisito. As duas abas seguem acessíveis por Tab.
+- **`.btn` continua em `Arial`.** Botões também não herdam a fonte do app; a decisão do dono
+  cobriu os campos, e o card de agenda resolveu o caso dele localmente. Não estendi a regra para
+  `button` para não ampliar o escopo por conta própria.
+- **`getComputedStyle` durante transição CSS mente.** Ao medir o foco dos campos, a leitura deu
+  `#333` (valor anterior) mesmo com 500ms de espera e com a regra casando no `CSS.getMatchedStylesForNode`.
+  Com `transition: none` o valor veio `#ffd700`. Mesma armadilha que o toast do Cartão A — vale
+  como regra: **medir estilo com transição exige neutralizar a transição**.
+
+_(cartões C e D: a preencher)_

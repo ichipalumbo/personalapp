@@ -751,9 +751,16 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   (ok/informativo/aviso/erro/neutro), dourado passa a ser só identidade e "em aberto" deixa de
   ser dourado; os três toasts coloridos (success/error/warning) passaram a usar a paleta com
   texto escuro, fechando de carona o achado 4.9 (branco sobre preenchimento claro dava 2.8:1 e
-  4.2:1). Verificado no mock em 433×762 DPR 2.81 + toque. Pendentes: B (ARIA), C
-  (reduced-motion + retry) e D (navegação com recarga/histórico; decisão do dono: a tela ativa
-  deve sobreviver à recarga e entrar no histórico).
+  4.2:1). Verificado no mock em 433×762 DPR 2.81 + toque.
+  **Cartão B (ARIA e semântica) concluído**: os dois grupos de abas ganharam
+  `role="tablist"`/`tab`/`aria-selected` + painéis `role="tabpanel"` (4.16); o card de agenda
+  virou `<button>` nativo e o card de aluno ganhou botão "Editar" próprio como alvo de teclado
+  (4.6, decisão do dono); os campos passam a herdar a fonte do app (4.17.3 — já estava resolvido
+  de fato pela Etapa 2, exceto a fonte); auditoria de cobertura do 4.17.4/4.17.5: 105 interativos
+  e 45 campos, zero sem nome acessível. **Ressalva registrada no plano**: a ativação por teclado
+  não pôde ser observada neste ambiente (Enter não chega à página nem num botão de controle
+  pré-existente). Pendentes: C (reduced-motion + retry) e D (navegação com recarga/histórico;
+  decisão do dono: a tela ativa deve sobreviver à recarga e entrar no histórico).
 
 ---
 

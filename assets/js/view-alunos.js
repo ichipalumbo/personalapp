@@ -832,7 +832,18 @@ window.renderizarListaAlunos = function() {
                                 <span style="font-size: 0.75rem; color: #AAA; font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
                             </div>
                         </div>
-                        <div onclick="event.stopPropagation();" style="margin-left: auto; display: flex; justify-content: flex-end; flex-shrink: 0;">
+                        <div onclick="event.stopPropagation();" style="margin-left: auto; display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-shrink: 0;">
+                            <!-- Etapa 7 (Cartão B, achado 4.6): o card continua clicável ao
+                                 toque (alvo grande), mas NÃO é o alvo de teclado — ele tem
+                                 interativo aninhado (toggle de status e <details>), o que
+                                 impede que ele mesmo seja o controle. O alvo de teclado é
+                                 este botão. -->
+                            <button
+                                type="button"
+                                class="aluno-card-editar"
+                                onclick="prepararEdicaoAluno('${aluno.id}')"
+                                aria-label="Editar ${escaparTextoAluno(aluno.nome)}"
+                            ><i class="fa-solid fa-pen" aria-hidden="true"></i></button>
                             <label class="status-toggle status-toggle--card" for="alunoStatusCard-${aluno.id}" style="margin: 0;">
                                 <input type="checkbox" id="alunoStatusCard-${aluno.id}" ${statusAluno === 'ativo' ? 'checked' : ''} onchange="alternarStatusAluno('${aluno.id}', this.checked)" />
                                 <span class="status-toggle-track" aria-hidden="true"><span class="status-toggle-knob"></span></span>
