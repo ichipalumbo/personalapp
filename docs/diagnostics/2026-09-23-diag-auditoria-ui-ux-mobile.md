@@ -68,7 +68,7 @@ Legenda de status usada em todo o documento:
 | 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ✅ *ETAPA 5 CONCLUÍDA (2026-09-27, mergeada na `main`): formato híbrido estilo Outlook — banda de 2 em colunas, banda de 3+ em linhas empilhadas; fundo do Dia nivelado/esticado — ver seção 5, Etapa 5* |
 | 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
 | 4.14 | Safe areas / elementos flutuantes | Diagnóstico §4.14 | Etapa 3 | ✅ *ETAPA 3 CONCLUÍDA (2026-09-27, `7ccb736`): `--bottombar-height` medido em runtime, FAB/toast/barra ancorados no token, `viewport-fit=cover` no meta — valores declarados no report da Etapa 3 (env()=0 no DevTools; valida o cálculo, não o pixel)* |
-| 4.15 | Movimento reduzido parcial | Diagnóstico §4.15 | Etapa 7 | ⏳ |
+| 4.15 | Movimento reduzido parcial | Diagnóstico §4.15 | Etapa 7 | ✅ *fechado 2026-10-01 na Etapa 7, Cartão C: bloco único de `prefers-reduced-motion` no fim do `style.css`, cobrindo as 4 animações existentes e as transições que movem (`transform`/`opacity`). Correção de rumo: o achado nomeava `halterBounce`, `pulseAgora` e `homeShimmer`, removidas pela limpeza de CSS — ver seção 5, Etapa 7* |
 | 4.16 | Navegação/tabs sem ARIA completo | Diagnóstico §4.16 | Etapa 7 | ✅ *fechado 2026-10-01 na Etapa 7, Cartão B: os dois grupos de abas ganharam `role="tablist"` com nome acessível, `role="tab"` + `aria-selected` sincronizado com o estado real e painéis `role="tabpanel"` + `aria-labelledby`. Ressalva: sem roving `tabindex`/navegação por setas (prática do APG, não requisito da especificação). A barra inferior da Etapa 3 já operava `aria-current="page"`* |
 | 4.17 | 6 inconsistências específicas (inclui bug de seletor CSS/JS) | Diagnóstico §4.17 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
 
@@ -416,7 +416,13 @@ três estados coloridos passaram a usar a paleta de estado com texto `#1a1a1a` (
 
 **Escopo original**:
 - Completar semântica de tabs e navegação (`aria-current`, `role` apropriados).
-- Completar `prefers-reduced-motion`.
+- Completar `prefers-reduced-motion`. **(Etapa 7, Cartão C, 2026-10-01 — concluído.)** Nota de
+  precisão: o diagnóstico original listava `halterBounce`, `pulseAgora`, `homeShimmer` e
+  `girar-sinc`; as três primeiras **não existem mais** — eram keyframes residuais removidos pela
+  limpeza de CSS (`archive/sagas/SAGA-limpeza-css.md`, tarefas T3 e T5). Além disso, o bloco de
+  `reduce` que já existia estava no meio do arquivo, **antes** de `.skeleton` e `.toast`, e por
+  isso perdia para eles (media query não soma especificidade) — ou seja, o parcial que havia
+  não funcionava para os dois casos mais visíveis.
 - Validar teclado, leitor de tela e texto ampliado nos fluxos principais.
 
 **⚠️ Escopo adicionado nesta reescrita — item 4.13**:
@@ -458,6 +464,13 @@ a palavra em um único texto em todo o app (ou, se mantiver duas, documentar a r
 cada uma se aplica — ex.: "tela" vs. "ação"). Escopo mínimo: grep por `Tentar` nas mensagens de
 UI e alinhar.
 
+**✅ Resolvido em 2026-10-01 (Etapa 7, Cartão C)**: o grep por `Tentar` achou **três** pontos, não
+dois — o terceiro é o histórico de Finanças (`view-financas.js`). E a resposta já estava escrita no
+repositório: **as duas specs fixam "Tentar novamente"** (`financas-ciclo-cobranca.md` §5, para o
+histórico de finanças, e `reposicoes-e-competencia.md`, para reposições). O `"Tentar de novo"` do
+toast veio da Etapa 6 e nunca foi especificado — era o único ponto fora do padrão. Alinhado a
+`utils-kpi.js`, um arquivo alterado, e as specs seguem válidas sem edição.
+
 **Progresso já acumulado (2026-09-27, verificado contra `git log`)**: os itens 4.17.4
 (disabled) e 4.17.5 (aria-label icon-only) foram resolvidos de facto pelos cartões C e D da
 Etapa 2 — o padrão é global e os 13 botões inventariados têm `aria-label`; o que resta na Etapa
@@ -478,8 +491,17 @@ linkado no item 2 acima) — não depende mais da execução da Etapa 7.
   ambiente — Enter/Espaço não são entregues à página nem para um botão de controle que já
   existia antes da mudança. O mecanismo (elemento `<button>` real, na ordem de foco, com nome
   acessível) está verificado; o teste com teclado físico segue pendente.
-- **Pendente na etapa**: 4.15 e 7.1 (cartão C), 4.17.1 e 4.17.6 (cartão D). Navegação por setas
+- **Pendente na etapa**: 4.17.1 e 4.17.6 (cartão D). Navegação por setas
   no `tablist` ficou fora por ser prática do APG, não requisito da especificação ARIA.
+- **Cartão C (2026-10-01)** — **4.15**: cobertura completa de `prefers-reduced-motion` num bloco
+  único no fim do `style.css` (as 4 animações existentes + as transições que movem), mais o
+  **guard no JS** de `animarTrocaPeriodo`: como quem remove a classe depende de `animationend`, e
+  com `animation: none` o evento nunca dispara, a cobertura só de CSS prendia a classe no elemento
+  e **vazava um listener a cada swipe**. **7.1**: o toast passou de "Tentar de novo" para
+  **"Tentar novamente"**, que é o texto que as duas specs já fixavam
+  (`financas-ciclo-cobranca.md` §5 e `reposicoes-e-competencia.md`) — o toast era o único ponto
+  fora do padrão. Medições em 433×762 DPR 2.81 com `prefers-reduced-motion` emulado nos dois
+  estados; detalhe no plano da Etapa 7.
 
 **Critério de conclusão**: os fluxos principais são operáveis sem toque e permanecem
 compreensíveis com zoom/texto ampliado; nenhuma das 6 inconsistências do item 4.17 permanece;

@@ -15,6 +15,18 @@
   // Acima disso o gesto é tratado como hesitação/leitura, não como swipe.
   const DURACAO_MAXIMA_MS = 800;
 
+  // Etapa 7 (Cartão C, achado 4.15): leitura única e cacheada de prefers-reduced-motion.
+  // O CSS já zera a animação nesse modo, mas o CSS sozinho NÃO basta: quem adiciona a
+  // classe depende do evento `animationend` para removê-la, e com `animation: none` o
+  // evento nunca dispara — a classe ficaria presa no elemento e o listener `{ once: true }`
+  // vazaria a cada swipe. Por isso a função sai cedo, sem animação e sem listener.
+  // matchMedia é consultado a cada chamada (não cacheado) porque o dono pode mudar a
+  // preferência do sistema com o app aberto — o objeto MediaQueryList reflete isso.
+  function movimentoReduzido() {
+    return typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   window.ativarSwipePeriodo = function (elemento, opcoes) {
     if (!elemento || !opcoes) return;
 
@@ -85,6 +97,10 @@
 
   window.animarTrocaPeriodo = function (elemento, direcao) {
     if (!elemento) return;
+    // Etapa 7 (Cartão C, 4.15): com movimento reduzido não há animação — e como não há
+    // animação, `animationend` nunca viria. Sair aqui evita a classe presa e o listener
+    // vazado. O conteúdo troca do mesmo jeito: quem chama já renderizou o período.
+    if (movimentoReduzido()) return;
     elemento.classList.remove('periodo-anima-avanca', 'periodo-anima-volta');
     // Forçar reflow para que a remoção seja processada antes de re-adicionar a classe.
     void elemento.offsetWidth;

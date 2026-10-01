@@ -46,7 +46,11 @@ function _exibirToast(mensagem, estado, opcoes = {}) {
             const btnRetry = document.createElement('button');
             btnRetry.type = 'button';
             btnRetry.className = 'toast-retry';
-            btnRetry.textContent = 'Tentar de novo';
+            // Etapa 7 (Cartão C, achado 7.1): "Tentar novamente" é o texto fixado pelas
+            // specs (financas-ciclo-cobranca.md §5 e reposicoes-e-competencia.md), que já
+            // valiam para as telas de finanças e de reposições. O toast usava "Tentar de
+            // novo" desde a Etapa 6, sem spec — alinhado aqui ao texto canônico.
+            btnRetry.textContent = 'Tentar novamente';
             btnRetry.onclick = function () {
                 const retry = _toastOnRetryAtivo;
                 if (typeof retry === 'function') retry();

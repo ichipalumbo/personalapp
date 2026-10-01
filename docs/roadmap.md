@@ -735,10 +735,9 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   cobertura, não trabalho novo nesses dois pontos.
 - **Item sugerido na execução da Etapa 6 (2026-09-29) — 7.1**: consistência da nomenclatura de
   retry — o toast unificado usa "Tentar de novo", o erro do histórico de reposições usa
-  "Tentar novamente". Padronizar (ou documentar a regra da escolha) quando a Etapa 7 rodar; ver
-  seção Etapa 7 do diagnóstico.
-- **Esforço restante**: auditar 4.13, 4.15 (movimento reduzido parcial), o que sobrar de 4.17 e
-  o item sugerido 7.1.
+  "Tentar novamente". **✅ Resolvido em 2026-10-01 (Cartão C)**: as duas specs já fixavam
+  "Tentar novamente"; era o toast que estava fora do padrão — ver seção Etapa 7 do diagnóstico.
+- **Esforço restante**: só o 4.17.1 e o 4.17.6 (cartão D).
 - **Preparo da validação (2026-10-01)**: criado o cenário de mock `vitrineEstados`
   (`mocks/ui-runtime/scenarios.js`) com os estados que esta etapa audita — ciclo atrasado +
   reposição a vencer (amarelo, 4.13), ciclo pago (`disabled`, 4.17.4), aluno inativo em modo
@@ -761,6 +760,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   não pôde ser observada neste ambiente (Enter não chega à página nem num botão de controle
   pré-existente). Pendentes: C (reduced-motion + retry) e D (navegação com recarga/histórico;
   decisão do dono: a tela ativa deve sobreviver à recarga e entrar no histórico).
+  **Cartão C (movimento reduzido e textos) concluído**: bloco único de `prefers-reduced-motion` no
+  fim do `style.css` (as animações existentes + as transições que movem), guard no JS de
+  `animarTrocaPeriodo` para não prender a classe nem vazar listener, e o toast passa a
+  "Tentar novamente" (texto que as duas specs já fixavam). Correção de rumo: o achado 4.15 nomeava
+  `halterBounce`, `pulseAgora` e `homeShimmer`, que não existem mais (removidas na limpeza de CSS),
+  e o bloco `reduce` que já existia perdia para `.skeleton`/`.toast` por estar declarado antes
+  deles. Falta o D (4.17.6 + 4.17.1).
 
 ---
 

@@ -4,7 +4,7 @@
 > **Branch de trabalho**: `feat/etapa-7-consistencia-acessibilidade` (criada de `origin/main`, `--no-track`)
 > **Item de roadmap**: 5.7 (Grupo 5)
 > **Fonte de verdade do escopo**: `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`, seção 5 (Etapa 7) e tabela mestra (seção 1)
-> **Status**: 🚧 EM ANDAMENTO — **Cartões A e B fechados** (4.13, 4.16, 4.6, 4.17.3, auditoria de 4.17.4/5); C e D pendentes
+> **Status**: 🚧 EM ANDAMENTO — **Cartões A, B e C fechados** (4.13, 4.16, 4.6, 4.17.3, auditoria de 4.17.4/5, 4.15, 7.1); falta o D
 
 ---
 
@@ -24,14 +24,14 @@
 | --- | --- | --- |
 | 4.6 (parte final) | semântica de cards/tabs | ✅ fechado no Cartão B |
 | 4.13 | amarelo sobrecarregado semanticamente | ✅ fechado no Cartão A |
-| 4.15 | `prefers-reduced-motion` parcial | pendente (4 animações) |
+| 4.15 | `prefers-reduced-motion` parcial | ✅ fechado no Cartão C |
 | 4.16 | ARIA completo de navegação/tabs | ✅ fechado no Cartão B |
 | 4.17.1 | mensagem de modo leitura escondida pelo CSS | pendente (precisa de evidência) |
 | 4.17.3 | textarea financeiro sem estilo/foco de input | ✅ fechado no Cartão B (resíduo era só a fonte) |
 | 4.17.4 | `disabled` global | ✅ **já resolvido na Etapa 2** — auditoria de cobertura feita no Cartão B: 105 interativos, 0 sem nome |
 | 4.17.5 | `aria-label` em icon-only | ✅ **já resolvido na Etapa 2** — cobertura verificada no Cartão B |
 | 4.17.6 | `href="#"` sem representar a tela ativa no histórico | decisão fechada (item 2 acima) — execução no Cartão D |
-| 7.1 | "Tentar de novo" × "Tentar novamente" | pendente (Cartão C) |
+| 7.1 | "Tentar de novo" × "Tentar novamente" | ✅ fechado no Cartão C (spec decide) |
 
 ---
 
@@ -41,7 +41,7 @@
 | --- | --- | --- |
 | **A** ✅ | Cor de estado (4.13): tokens + migração dos usos | fechado em 2026-10-01 |
 | **B** ✅ | ARIA e semântica (4.16, 4.6 final, 4.17.3, auditoria de 4.17.4/5) | fechado em 2026-10-01 |
-| **C** | Movimento reduzido e textos (4.15, 7.1) | — |
+| **C** ✅ | Movimento reduzido e textos (4.15, 7.1) | fechado em 2026-10-01 |
 | **D** | Navegação com recarga/histórico (4.17.6) + 4.17.1 | — |
 
 Ordem sugerida de execução: **B → C → D → A** (A por último porque depende da decisão; B e C
@@ -240,4 +240,65 @@ para esse elemento). A ativação com o teclado físico segue **não verificada*
   Com `transition: none` o valor veio `#ffd700`. Mesma armadilha que o toast do Cartão A — vale
   como regra: **medir estilo com transição exige neutralizar a transição**.
 
-_(cartões C e D: a preencher)_
+### Cartão C — Movimento reduzido e textos (4.15, 7.1) · 2026-10-01
+
+**Decisão do dono**: o `prefers-reduced-motion` cobre as animações **e** as transições de
+movimento (`transform`/`opacity`); as de cor seguem. O texto de retry padroniza em
+**"Tentar novamente"** (é o que as specs fixam).
+
+**Correções de rumo no escopo herdado** (o diagnóstico estava desatualizado):
+
+- O achado nomeava `halterBounce`, `pulseAgora`, `homeShimmer` e `girar-sinc`. **As três primeiras
+  não existem mais** — eram keyframes residuais removidos pela limpeza de CSS
+  (`archive/sagas/SAGA-limpeza-css.md`, T3 e T5). Sobrou `girar-sinc`.
+- O bloco `@media (prefers-reduced-motion: reduce)` que já existia ficava **no meio** do arquivo
+  (linha ~2473), **antes** de `.skeleton` (2769) e `.toast` (2938). Como media query não soma
+  especificidade, ele **perdia** para as duas — a classe não era zerada. Ou seja: o "parcial" que
+  havia não funcionava justamente nos dois casos mais visíveis (spinner e skeleton).
+
+**O que entrou**:
+
+- `assets/css/style.css` — o bloco `reduce` foi **movido para o fim do arquivo** (única forma de
+  vencer as declarações originais) e ampliado. Cobre: `periodo-anima-*`, `time-grid-bg-slot-clicked`,
+  `.skeleton`, `.toast-spinner` (`animation: none`) + as transições de movimento
+  (`.nav-icon-anim`, `#btnFlutuanteAdicionar`, `.btn-weekly-add`, `.agenda-dia-aula`, `.card-stat`,
+  `.duracao-stepper-btn`, `.modal-escolha-opcao`, `.modal-recorrencia-trigger`, `.toast`) e as
+  mistas dos botões do Google/GCal, que **mantêm** `background`/`border-color`/`color`.
+- `assets/js/widget-swipe-periodo.js` — **guard em `animarTrocaPeriodo`**: sai cedo quando o
+  movimento está reduzido. Sem isso, `animationend` nunca dispararia (a animação é `none`) e a
+  classe ficaria presa no elemento, vazando um listener `{ once: true }` a cada swipe.
+- `assets/js/utils-kpi.js` — botão do toast de erro: `"Tentar de novo"` → **`"Tentar novamente"`**.
+  Grep por `Tentar` achou **3** pontos (toast, histórico de reposições e histórico de finanças);
+  as **duas specs** fixam "Tentar novamente" — o toast era o único fora do padrão.
+
+**Verificado no navegador** (mock `default` e `carregamentoLento`, **433×762 DPR 2.81 + emulação
+de toque**, com `prefers-reduced-motion` emulado via CDP nos dois estados):
+
+| Medição | `reduce` | `no-preference` |
+| --- | --- | --- |
+| `.skeleton` `animation-name` | `none` ✅ | (padrão) |
+| `.toast-spinner` `animation-name` | `none` ✅ | `girar-sinc` ✅ |
+| `.periodo-anima-avanca` `animation-name` | `none` ✅ | — |
+| `.toast` / `.agenda-semana-card` / `#btnFlutuanteAdicionar` / `.nav-icon-anim` `transition` | `none`, 0s ✅ | `all`/`transform` 0.2–0.3s ✅ |
+| `.btn-google-custom` `transition-property` | `background, border-color` ✅ | `transform, background, border-color` ✅ |
+| `animarTrocaPeriodo` adiciona a classe? | **não** ✅ | **sim** ✅ |
+| `.status-toggle-knob` `transform` | `translateX(14px)` preservado ✅ | idem |
+| `.time-grid-hour-label` `transform` | `translateY(-50%)` preservado ✅ | idem |
+| Card da agenda no modo Dia | ainda `BUTTON` (Cartão B intacto) ✅ | — |
+| Texto do retry no toast | `"Tentar novamente"` ✅ | — |
+
+Os dois últimos itens são o contra-teste: provam que a neutralização não encostou em `transform`
+de **estado** (knob do toggle) nem de **posicionamento** (centralização do rótulo de hora) — nesses,
+mover não é decoração.
+
+**Suítes**: `tests-frontend` **84/84** e `backend` **232/232**, 0 falhas.
+
+**Fora do escopo, registrado sem alterar**:
+
+- **`.app-header` tem `transition: all 0.3s`** e não foi tocado: nenhuma propriedade de movimento
+  muda no header, então o `all` não produz movimento. Vale como observação, não como defeito.
+- **`.status-toggle` (track/knob) não tem transição no knob** — o knob salta em vez de deslizar
+  mesmo com movimento liberado. É pré-existente e não é do 4.15 (o achado é sobre *reduzir*
+  movimento, não adicionar); registrado aqui para não se perder.
+
+_(cartão D: a preencher)_
