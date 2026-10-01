@@ -745,6 +745,15 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   somente leitura (4.17.1) e Consultoria Online (campos desabilitados). Servidor local passou a
   ser `node scripts/servir-local.js` (Live Server desinstalado); ver
   [`plans/2026-10-01-plan-servidor-local-e-mock.md`](plans/2026-10-01-plan-servidor-local-e-mock.md).
+- **Execução em cartões (2026-10-01, branch `feat/etapa-7-consistencia-acessibilidade`)**:
+  plano em [`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md).
+  **Cartão A (4.13 — cor de estado) concluído**: paleta de estado tokenizada em `:root`
+  (ok/informativo/aviso/erro/neutro), dourado passa a ser só identidade e "em aberto" deixa de
+  ser dourado; os três toasts coloridos (success/error/warning) passaram a usar a paleta com
+  texto escuro, fechando de carona o achado 4.9 (branco sobre preenchimento claro dava 2.8:1 e
+  4.2:1). Verificado no mock em 433×762 DPR 2.81 + toque. Pendentes: B (ARIA), C
+  (reduced-motion + retry) e D (navegação com recarga/histórico; decisão do dono: a tela ativa
+  deve sobreviver à recarga e entrar no histórico).
 
 ---
 

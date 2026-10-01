@@ -62,7 +62,7 @@ Legenda de status usada em todo o documento:
 | 4.6 | Cards/slots sem interação equivalente por teclado | Diagnóstico §4.6 | Etapa 2 (foco/teclado básico) + Etapa 7 (semântica final) | 🟡 *partida Etapa 2 concluída (Cartão C, `81485c5`): `:focus-visible` global dourado padronizado, 13/13 botões icon-only com `aria-label`. Semântica final de cards/tabs segue na Etapa 7 — ver seção 5* |
 | 4.7 | Gerenciamento de diálogo inconsistente | Diagnóstico §4.7 | Etapa 1 | ✅ |
 | 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ✅ *implementado 2026-09-29, validado em produção pelo dono e mergeado via PR #66 (2026-09-30): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto (ver seção 5, Etapa 6)* |
-| 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6* |
+| 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6. Complemento de contraste fechado em 2026-10-01 na Etapa 7, Cartão A (ver "Complemento (2026-10-01)" na Etapa 6)* |
 | 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
 | 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
 | 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ✅ *ETAPA 5 CONCLUÍDA (2026-09-27, mergeada na `main`): formato híbrido estilo Outlook — banda de 2 em colunas, banda de 3+ em linhas empilhadas; fundo do Dia nivelado/esticado — ver seção 5, Etapa 5* |
@@ -398,6 +398,14 @@ via `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de
 após 3s, falha continuando no tratamento local da tela). A etiqueta de última atualização
 do cache (“Cache atualizado em ...”) permanece no cabeçalho. Validação do dono em produção:
 aprovada em 2026-10-01. Ver relatório da Etapa 6 (seção “Adição — tela de finanças”).
+
+**Complemento (2026-10-01, Etapa 7 / Cartão A)**: a metade *“e contraste”* do 4.9 ficou de fora
+da execução original. Medição em 2026-10-01: o toast de `success` usava `#fff` sobre `#4caf50`
+(≈ **2.8:1**) e o de `error`, `#fff` sobre `#e53935` (≈ **4.2:1**) — ambos abaixo de AA 4.5:1. Os
+três estados coloridos passaram a usar a paleta de estado com texto `#1a1a1a` (10.06:1 / 8.65:1 /
+7.62:1 no warning/success/error) e o realce do botão de retry acompanhou. O `.toast.progress`
+(fundo escuro, texto claro) permaneceu. Detalhe em
+[`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](../plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md).
 
 ---
 
