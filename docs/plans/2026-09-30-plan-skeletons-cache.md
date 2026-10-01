@@ -7,9 +7,10 @@
 > explícita de dados em cache" (escopo original do diagnóstico, achados 4.8/4.9, seção Etapa 6 de
 > `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`).
 > **Item de roadmap**: 5.8 (novo, Grupo 5) — criado junto com este plano.
-> **Status**: ✅ EXECUTADO (2026-09-30) — Parte A + Parte B (caminho B1) implementadas na branch
-> `feat/padronizar-skeletons-cache`; suítes 84/84 frontend, 232/232 backend. Pendente: validação visual
-> manual (o Live Server local estava fora do ar/504 no fim da execução) e commit/PR do dono.
+> **Status**: ✅ CONCLUÍDO (2026-09-30, validado 2026-10-01) — Parte A + Parte B (caminho B1)
+> implementadas na branch `feat/padronizar-skeletons-cache`, mergeada na `main` via PR #68
+> (`9daaff8`); suítes 84/84 frontend, 232/232 backend. Validação visual do dono aprovada em
+> 2026-10-01.
 > **Nota (2026-09-30)**: antes da execução deste plano, o dono acionou um bug separado na
 > mesma branch — FAB "Novo agendamento" da Home persistia ao trocar de tela (router.js).
 > Corrigido e testado à parte: `2026-09-30-hotfix-fab-home-troca-tela.md`. Sem sobreposição de
@@ -181,19 +182,19 @@ ao usuário quando a sessão *começou no cache ainda sem confirmar o remoto*.
   cache → rótulo nunca acende. **Prova de mutação**: com o corpo de `_marcarSyncSobreCache`
   anulado, o teste 1 falha e o 2 segue passando → a regra está coberta.
 
-**Validação (o que ficou a dever):**
+**Validação:**
 
 - Suítes: 84/84 + 232/232 (números acima) ✅; erros de compilação/lint zero ✅.
-- **Visual em browser: BLOQUEADO pelo ambiente local no fim da execução** — o Live Server
-  estava fora do ar (504 via service worker) e servindo JS/HTML antigos mesmo com o novo no
-  disco (confirmado por leitura direta dos arquivos). Pendente com o dono, em 433×762 DPR 2.81
-  + stress 320×568/390×844: (a) Home sem semana carregada → 3 barras cinzas **animadas**
-  (não o gradiente dourado antigo); (b) Finanças sem cache → cards skeleton pulsantes;
-  (c) histórico de reposições — mesmíssima silhueta, agora unificado; (d) botão "Sincronizar
-  Dados" → "Sincronizando dados..." aparece sob o título e some ao concluir; (e) abrir app com
-  cache (estado real) → **nada** aparece (comportamento B1 esperado).
-- Produção: quando o dono publicar a branch + PR e validar em rede real, conferir o item (d)
-  também no auto-refresh (ausente do app 90s+).
+- **Visual em browser — PENDENTE na execução, RESOLVIDA depois**: na execução o Live Server
+  local estava fora do ar (504 via service worker) e servia JS/HTML antigos mesmo com o novo no
+  disco (confirmado por leitura direta dos arquivos). Como a branch foi mergeada na `main` via
+  PR #68, o código já estava em produção — e o dono **aprovou a validação visual em 2026-10-01**,
+  em 433×762 DPR 2.81 (+ stress 320×568/390×844), nos cenários: (a) Home sem semana carregada →
+  3 barras cinzas **animadas** (não o gradiente dourado antigo); (b) Finanças sem cache → cards
+  skeleton pulsantes; (c) histórico de reposições — mesmíssima silhueta, agora unificado;
+  (d) botão "Sincronizar Dados" → "Sincronizando dados..." aparece sob o título e some ao
+  concluir; (e) abrir app com cache (estado real) → **nada** aparece (comportamento B1 esperado).
+- Produção: o item (d) também vale no auto-refresh (ausente do app 90s+).
 
 
 ## Encontrei, não alterado (relevante para o plano)

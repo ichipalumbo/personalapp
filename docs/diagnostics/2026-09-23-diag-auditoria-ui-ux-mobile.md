@@ -65,7 +65,7 @@ Legenda de status usada em todo o documento:
 | 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6* |
 | 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
 | 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
-| 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ⏳ |
+| 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ✅ *ETAPA 5 CONCLUÍDA (2026-09-27, mergeada na `main`): formato híbrido estilo Outlook — banda de 2 em colunas, banda de 3+ em linhas empilhadas; fundo do Dia nivelado/esticado — ver seção 5, Etapa 5* |
 | 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
 | 4.14 | Safe areas / elementos flutuantes | Diagnóstico §4.14 | Etapa 3 | ✅ *ETAPA 3 CONCLUÍDA (2026-09-27, `7ccb736`): `--bottombar-height` medido em runtime, FAB/toast/barra ancorados no token, `viewport-fit=cover` no meta — valores declarados no report da Etapa 3 (env()=0 no DevTools; valida o cálculo, não o pixel)* |
 | 4.15 | Movimento reduzido parcial | Diagnóstico §4.15 | Etapa 7 | ⏳ |
@@ -318,7 +318,11 @@ redundante ou excessiva no primeiro nível.
 
 ---
 
-### Etapa 5 — Agenda diária e colisões ⏳ PENDENTE
+### Etapa 5 — Agenda diária e colisões ✅ CONCLUÍDA (2026-09-27, mergeada na `main`)
+
+> Plano: [`../plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md`](../plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md)
+> · roadmap item **5.5** (`[x]`). Formato híbrido estilo Outlook: banda de 2 em colunas
+> proporcionais, banda de 3+ em linhas empilhadas; fundo do modo Dia nivelado e esticado.
 
 **Achados endereçados**: 4.12.
 
@@ -379,7 +383,8 @@ Em 2026-09-30 o dono decidiu executá-los **antes** da Etapa 7: viraram o item d
 **5.8** (plano em `docs/plans/2026-09-30-plan-skeletons-cache.md`) — **executado na mesma
 data** (Parte A: skeleton padronizado `.skeleton` + `aria-busy`; Parte B: rótulo "Sincronizando
 dados..." no header, caminho B1 após a descoberta de que o boot com cache não dispara sync
-remoto — detalhe na seção "Execução" do relatório; validação visual pendente do dono).
+remoto — detalhe na seção "Execução" do relatório) e **concluído**: mergeado na `main` via
+PR #68, com validação visual do dono aprovada em 2026-10-01.
 
 **Critério de conclusão original**: toda falha possui caminho de recuperação e nenhuma escrita é
 apresentada como concluída antes da resposta da API. Retry e recuperação de erro: atendido.
@@ -391,8 +396,8 @@ de finanças, a única do app que tinha loading local (skeleton) sem participar 
 unificado, entrou no mecanismo compartilhado: o fetch de `carregarFinancas()` agora roda
 via `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso
 após 3s, falha continuando no tratamento local da tela). A etiqueta de última atualização
-do cache (“Cache atualizado em ...”) permanece no cabeçalho. Ver relatório da Etapa 6
-(seção “Adição — tela de finanças”).
+do cache (“Cache atualizado em ...”) permanece no cabeçalho. Validação do dono em produção:
+aprovada em 2026-10-01. Ver relatório da Etapa 6 (seção “Adição — tela de finanças”).
 
 ---
 
@@ -486,8 +491,13 @@ modelo executor (Qwen) nem pelo planejador.
 
 ### 7.1 Viewports e estados obrigatórios
 
+**Referência primária: 433×762 com DPR 2.81** — o smartphone real do dono; é o alvo de aceite.
+Sempre com **emulação de mobile completa (toque, UA, mídia `pointer`/`hover`)**, nunca só
+`setViewportSize` (seção 9 de `docs/setup-ambiente-local.md`). A tabela abaixo é complementar.
+
 | Cenário | Objetivo |
 | --- | --- |
+| **433×762 (DPR 2.81)** | **Referência primária — smartphone real do dono** |
 | 320×568 | Pior caso de largura e altura suportadas |
 | 360×640 e 360×800 | Android compacto e alongado |
 | 390×844 | iPhone atual de tamanho intermediário |
@@ -507,19 +517,26 @@ erro remoto com cache disponível e sem cache.
 
 ### 7.3 Ambiente recomendado
 
-Usar o runtime mockado em `mocks/ui-runtime/` (preserva o frontend real, intercepta `/api/*`,
-bloqueia escritas, remove caches locais):
+Servir o frontend pelo servidor estático do próprio repo (`node scripts/servir-local.js`,
+substitui o Live Server desinstalado em 2026-10-01) e usar o runtime mockado em
+`mocks/ui-runtime/` (preserva o frontend real, intercepta `/api/*`, bloqueia escritas,
+remove caches locais):
 
 ```text
 http://127.0.0.2:5500/index.html?mockScenario=default
 ```
 
-Cenários disponíveis: `default`, `agendaLotada`, `alunosEmAtraso`, `vazio`.
+Cenários disponíveis: `default`, `agendaLotada`, `densidadeAgenda`, `agendaSimultaneos`,
+`alunosEmAtraso`, `vazio`, **`vitrineEstados`** (estados da Etapa 7), **`carregamentoLento`** e
+**`desconectado`**. Flags: `?mockLatencia=<ms>` e `?mockFalha=<rotas>` (HTTP 500 simulado).
+Detalhe em [`mocks/ui-runtime/README.md`](../../mocks/ui-runtime/README.md).
 
 Checklist mínimo por ajuste:
-1. Abrir a URL mockada em janela de viewport mobile.
+1. Abrir a URL mockada em **433×762 com DPR 2.81 e emulação de mobile completa (toque, UA,
+   mídia `pointer`/`hover`)** — referência primária; confirmar `dpr=2.81`, `ontouchstart` e
+   `matchMedia('(pointer:coarse)')` antes de medir (seção 9 de `docs/setup-ambiente-local.md`).
 2. Reproduzir o fluxo na tela afetada e verificar loading, erro, vazio e conteúdo preenchido.
-3. Repetir em 320×568 e 390×844; testar também teclado aberto quando houver formulário.
+3. Repetir em 320×568 e 390×844 (stress test); testar também teclado aberto quando houver formulário.
 4. Confirmar que nenhuma ação de escrita altera dados reais.
 5. Registrar cenário, viewport e resultado junto do relatório da etapa.
 

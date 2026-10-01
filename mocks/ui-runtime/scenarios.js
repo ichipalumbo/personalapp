@@ -404,6 +404,73 @@ window.__UI_MOCK_SCENARIOS = {
     ],
     homeSummary: { proximoCompromisso: '2026-09-25 10:00', totalAtivos: 2, totalPendentes: 1, totalSemana: 2 }
   },
+  // ───────────────────────────────────────────────────────────────────────────
+  // CENÁRIO DE AUDITORIA — Etapa 7 (consistência e acessibilidade), 2026-10-01
+  // Reúne num só lugar os estados que a Etapa 7 precisa auditar:
+  //   v1 Helena Prado — ciclo ATRASADO + reposição PENDENTE A VENCER (≤5 dias)
+  //                     → amarelo de alerta em contextos diferentes (4.13)
+  //   v2 Rafael Lima  — ciclo PAGO → "Marcar como pago"/"Editar ajuste"
+  //                     desabilitados em Finanças (4.17.4)
+  //   v3 Sofia Alves  — aluno INATIVO com aula hoje → modal em modo somente
+  //                     leitura (#editAvisoAlunoInativo) (4.17.1)
+  //   v4 Diego Souza  — Consultoria Online → campos do form do aluno
+  //                     desabilitados (4.17.4)
+  //   v5 Marina Reis  — configuração financeira pendente
+  // As datas são RELATIVAS a hoje (este cenário não "vence" como os pinados em
+  // 2026-09-27): os compromissos caem no dia atual para aparecerem na Home.
+  // ───────────────────────────────────────────────────────────────────────────
+  vitrineEstados: (function () {
+    function iso(deslocamentoDias) {
+      const d = new Date();
+      d.setDate(d.getDate() + deslocamentoDias);
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+    const hoje = iso(0);
+    const ontem = iso(-1);
+    return {
+      name: 'vitrineEstados',
+      label: 'Etapa 7 — vitrine de estados (amarelo, disabled, modo leitura)',
+      ownerEmail: 'mock@local.test',
+      profile: { name: 'Mock User', email: 'mock@local.test', picture: '' },
+      configuracao: { horaInicio: '07:00', horaFim: '21:00', diasTrabalho: ['seg', 'ter', 'qua', 'qui', 'sex', 'sab', 'dom'], limiteAlunosAtivos: 40 },
+      alunos: [
+        { id: 'v1', nome: 'Helena Prado', email: 'helena@example.com', telefone: '(11) 90777-0001', local: 'Studio Centro', preco: 60, frequenciaSemanal: 2, objetivo: 'Hipertrofia', status: 'ativo', diaVencimento: 2, fechamentoMesCheio: false, metodoCobranca: 'por_aula', valorFixoCiclo: 0, observacoes: 'Ciclo atrasado e reposição a vencer — vitrine do amarelo.', corObjetivo: { nome: 'Tangerina', hex: '#ff8a5b' } },
+        { id: 'v2', nome: 'Rafael Lima', email: 'rafael@example.com', telefone: '(11) 90777-0002', local: 'Online', preco: 0, frequenciaSemanal: 1, objetivo: 'Emagrecimento', status: 'ativo', diaVencimento: 12, fechamentoMesCheio: true, metodoCobranca: 'valor_fixo', valorFixoCiclo: 200, observacoes: 'Ciclo pago — botões desabilitados em Finanças.', corObjetivo: { nome: 'Azul', hex: '#64b5f6' } },
+        { id: 'v3', nome: 'Sofia Alves', email: 'sofia@example.com', telefone: '(11) 90777-0003', local: 'Parque Municipal', preco: 55, frequenciaSemanal: 1, objetivo: 'Resistência', status: 'inativo', diaVencimento: 18, fechamentoMesCheio: false, metodoCobranca: 'por_aula', valorFixoCiclo: 0, observacoes: 'Inativa com aula hoje — dispara o modo somente leitura.', corObjetivo: { nome: 'Rosa', hex: '#ec407a' } },
+        { id: 'v4', nome: 'Diego Souza', email: 'diego@example.com', telefone: '(11) 90777-0004', local: 'Online', preco: 0, frequenciaSemanal: 1, objetivo: 'Consultoria Online', status: 'ativo', diaVencimento: null, fechamentoMesCheio: false, metodoCobranca: 'valor_fixo', valorFixoCiclo: 150, observacoes: 'Consultoria online — campos do cadastro desabilitados.', corObjetivo: { nome: 'Verde', hex: '#4caf50' } },
+        { id: 'v5', nome: 'Marina Reis', email: 'marina@example.com', telefone: '(11) 90777-0005', local: 'Studio Norte', preco: 50, frequenciaSemanal: 2, objetivo: 'Mobilidade', status: 'ativo', diaVencimento: null, fechamentoMesCheio: false, metodoCobranca: 'por_aula', valorFixoCiclo: 0, observacoes: 'Configuração financeira pendente.', corObjetivo: { nome: 'Roxo', hex: '#ab47bc' } }
+      ],
+      agendamentos: [
+        { id: 'vg1', alunoId: 'v1', tipo: 'aula', frequencia: 'uma_vez', data: hoje, horarioInicio: '08:00', horarioFim: '09:00', descricao: 'Treino resistido' },
+        { id: 'vg2', alunoId: 'v3', tipo: 'aula', frequencia: 'uma_vez', data: hoje, horarioInicio: '10:00', horarioFim: '11:00', descricao: 'Aula de aluna inativa' },
+        { id: 'vg3', alunoId: 'v2', tipo: 'aula', frequencia: 'uma_vez', data: hoje, horarioInicio: '18:00', horarioFim: '19:00', descricao: 'Treino online' },
+        { id: 'vg4', alunoId: 'v1', tipo: 'aula', frequencia: 'uma_vez', data: ontem, horarioInicio: '09:00', horarioFim: '10:00', descricao: 'Aula que virou reposição' }
+      ],
+      bloqueiosExternos: [
+        { id: 'gcal_v', googleCalendarEventId: 'gcal-mock-v', titulo: 'Compromisso pessoal', data: hoje, horarioInicio: '12:00', horarioFim: '13:00', fullDay: false }
+      ],
+      reposicoes: [
+        { id: 'vr1', alunoId: 'v1', dataOriginal: ontem, horarioOriginal: '09:00', status: 'pendente', cobravel: true, validoAte: iso(2) },
+        { id: 'vr2', alunoId: 'v1', dataOriginal: iso(-12), horarioOriginal: '08:00', status: 'expirada', cobravel: false, validoAte: iso(-5) },
+        { id: 'vr3', alunoId: 'v1', dataOriginal: iso(-3), horarioOriginal: '18:00', status: 'agendada', cobravel: false, validoAte: iso(4), agendamentoReposicaoId: 'vg1' }
+      ],
+      financas: [
+        { alunoId: 'v1', aluno: { id: 'v1', nome: 'Helena Prado' }, configuracaoPendente: false, cicloAtual: { _id: 'cv1', alunoId: 'v1', cicloInicio: iso(-30), cicloFim: hoje, status: 'atrasado', metodoCobranca: 'por_aula', aulasContadas: 5, aulasManuaisExtras: 0, valorTotalCiclo: 300, extrato: [] }, historicoDisponivel: true },
+        { alunoId: 'v2', aluno: { id: 'v2', nome: 'Rafael Lima' }, configuracaoPendente: false, cicloAtual: { _id: 'cv2', alunoId: 'v2', cicloInicio: iso(-30), cicloFim: hoje, status: 'pago', dataPagamento: iso(-2), metodoCobranca: 'valor_fixo', aulasContadas: 0, aulasManuaisExtras: 0, valorTotalCiclo: 200, extrato: [] }, historicoDisponivel: true },
+        { alunoId: 'v3', aluno: { id: 'v3', nome: 'Sofia Alves' }, configuracaoPendente: false, cicloAtual: { _id: 'cv3', alunoId: 'v3', cicloInicio: iso(-30), cicloFim: hoje, status: 'em_aberto', metodoCobranca: 'por_aula', aulasContadas: 1, aulasManuaisExtras: 0, valorTotalCiclo: 55, extrato: [] }, historicoDisponivel: true },
+        { alunoId: 'v4', aluno: { id: 'v4', nome: 'Diego Souza' }, configuracaoPendente: false, cicloAtual: { _id: 'cv4', alunoId: 'v4', cicloInicio: iso(-30), cicloFim: hoje, status: 'em_aberto', metodoCobranca: 'valor_fixo', aulasContadas: 0, aulasManuaisExtras: 0, valorTotalCiclo: 150, extrato: [] }, historicoDisponivel: true },
+        { alunoId: 'v5', aluno: { id: 'v5', nome: 'Marina Reis' }, configuracaoPendente: true, cicloAtual: null, historicoDisponivel: false }
+      ],
+      consistenciaAgenda: [
+        { alunoId: 'v1', aulasSemanaisContrato: 2, aulasFaltamAgendar: 1 },
+        { alunoId: 'v2', aulasSemanaisContrato: 1, aulasFaltamAgendar: 0 },
+        { alunoId: 'v3', aulasSemanaisContrato: 1, aulasFaltamAgendar: 0 },
+        { alunoId: 'v4', aulasSemanaisContrato: 1, aulasFaltamAgendar: 1 },
+        { alunoId: 'v5', aulasSemanaisContrato: 2, aulasFaltamAgendar: 2 }
+      ],
+      homeSummary: { proximoCompromisso: hoje + ' 08:00', totalAtivos: 4, totalPendentes: 1, totalSemana: 3 }
+    };
+  })(),
   vazio: {
     name: 'vazio',
     label: 'Estado vazio / sem dados',
@@ -418,5 +485,26 @@ window.__UI_MOCK_SCENARIOS = {
     homeSummary: { proximoCompromisso: null, totalAtivos: 0, totalPendentes: 0, totalSemana: 0 }
   }
 };
+
+// ───────────────────────────────────────────────────────────────────────────
+// CENÁRIOS DERIVADOS (clones do `default`, ajustados por flag) — 2026-10-01
+// ───────────────────────────────────────────────────────────────────────────
+
+// Carregamento lento — atrasa toda resposta /api/* em 4s para ver skeleton e o
+// toast de progresso (>3s) sem throttle do browser. Também aceita
+// `?mockLatencia=<ms>` em qualquer cenário.
+window.__UI_MOCK_SCENARIOS.carregamentoLento = Object.assign({}, window.__UI_MOCK_SCENARIOS.default, {
+  name: 'carregamentoLento',
+  label: 'Carregamento lento — skeleton e progresso',
+  latenciaMs: 4000
+});
+
+// Usuário desconectado — o mock responde como sessão ausente (sem ownerEmail nem
+// perfil), para auditar a área de sessão (4.17.4) e o estado sem login.
+window.__UI_MOCK_SCENARIOS.desconectado = Object.assign({}, window.__UI_MOCK_SCENARIOS.default, {
+  name: 'desconectado',
+  label: 'Usuário desconectado (sem sessão)',
+  signedIn: false
+});
 
 window.__UI_MOCK_SCENARIO_NAMES = Object.keys(window.__UI_MOCK_SCENARIOS);

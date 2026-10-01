@@ -304,6 +304,9 @@ atualização** do cabeçalho ("Cache atualizado em ...").
   apenas o aviso da própria tela (sem erro duplicado do wrapper, sem botão retry).
   **Provado por mutação**: com o fix revertido (fetch fora do wrapper), o teste 1 falha.
 
+**Validação (dono)**: ✅ aprovada em produção em 2026-10-01 (a validação desta adição estava
+registrada apenas no roadmap, sem eco aqui).
+
 **Não mudou**: a mensagem de última atualização (rótulo "Cache atualizado em ..." em
 `#financasCacheLabel`), o estado de sync do cabeçalho, o tratamento de falha local, o
 skeleton (continua como placeholder; o toast de progresso entra em cena se o fetch passar de

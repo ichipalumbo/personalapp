@@ -174,14 +174,20 @@ Dois projetos Vercel independentes, ambos ligados a este repositório:
 
 **Fluxo real de desenvolvimento** (não existe `npm run dev`):
 
-- O frontend é servido localmente pela extensão Live Server do VS Code.
-- Não há backend local em execução: `API_BASE_URL` em `assets/js/storage.js`
-  é uma constante fixa apontando para a API de produção. **Portanto o
-  frontend rodando local escreve no banco de produção.**
+- O frontend é servido pelo servidor estático versionado do próprio repo:
+  `node scripts/servir-local.js` → `http://127.0.0.2:5500`. **Não** use a extensão
+  Live Server (desinstalada em 2026-10-01) nem sirva por `file://`.
+- **Validação de UI usa o mock** (`mocks/ui-runtime/`), nunca produção:
+  `http://127.0.0.2:5500/index.html?mockScenario=<cenário>`. O mock intercepta
+  `/api/*`, finge login, bloqueia escrita e limpa os caches — não toca dado real,
+  e não precisa de backend nem de Mongo.
+- Backend local existe (`npm start` em `backend/`, itens 3.2–3.4) e aponta para o
+  banco de desenvolvimento `personalapp_dev`, mas **não está em execução por
+  padrão**. A URL da API é decidida por hostname em
+  `assets/js/config/api-config.js` — não é mais uma constante fixa de produção.
 - Quando é preciso testar alteração de backend, o deploy é feito antes.
-- Não sugira `npm run dev`, watch mode, script de seed ou ambiente local —
-  nada disso existe hoje. Se uma tarefa depender de execução local, diga
-  isso explicitamente em vez de assumir que há como rodar.
+- Não sugira `npm run dev`, watch mode ou script de seed — nada disso existe.
+  Se uma tarefa depender de execução local, diga isso explicitamente.
 
 **Push ou merge na `main` faz redeploy automático em produção nos dois.**
 Não existe branch de preview nem ambiente intermediário.

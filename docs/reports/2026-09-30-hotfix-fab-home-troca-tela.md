@@ -70,8 +70,10 @@ reinicializam a view sem navegar (`refreshCurrentView`). Nenhuma mudança em
   foi confirmada removida antes de prosseguir.
 - Suíte `tests-frontend/` (`node --test`): **81/81 antes → 82/82 depois** (o +1 é o teste novo).
 - Suíte `backend/`: sem alterações de backend nesta rodada — não reexecutada.
-- **Validação manual (dono)**: em rede real, Home → Finanças e Home → Alunos — o FAB deve
-  sumir no instante da troca de tela, antes do skeleton/carregamento da tela destino terminar.
+- **Validação manual (dono)**: ✅ aprovada em 2026-10-01 — em rede real, Home → Finanças e
+  Home → Alunos: o FAB "Novo agendamento" some no instante da troca de tela, antes do
+  skeleton/carregamento da tela destino terminar. (A correção foi mergeada na `main` via PR #68,
+  na mesma branch do item 5.8.)
 
 ## Fora de escopo
 

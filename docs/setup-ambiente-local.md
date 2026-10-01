@@ -11,7 +11,7 @@
 ## O que este ambiente é
 
 ```
-Live Server                 backend/server.js              MongoDB Atlas
+servir-local.js             backend/server.js              MongoDB Atlas
 localhost:5500       →      localhost:5000        →        personalapp_dev
 (frontend)                  (API)                          (clone de produção)
 ```
@@ -32,7 +32,7 @@ para a API de produção — ou seja, **escreve no banco de produção**. A dete
 | Item | Observação |
 |---|---|
 | Node.js | As duas suítes usam `node --test`, que exige Node 18+ |
-| Extensão Live Server (VS Code) | É o único servidor do frontend — não há build step |
+| Servidor estático do próprio repo | `node scripts/servir-local.js` — substitui o Live Server (desinstalado em 2026-10-01) e é o único servidor do frontend (não há build step) |
 | MongoDB Database Tools | `mongodump` e `mongorestore`, para clonar a base |
 | Acesso ao painel Vercel | Projeto `personal-app-api`, para copiar as variáveis |
 | Acesso ao Google Cloud Console | Para liberar a origem `localhost` |
@@ -113,13 +113,44 @@ porta precisa constar quando não é 80. Sem isso, o login falha com `origin_mis
 
 ---
 
-## 4. Live Server em `localhost:5500`
+## 4. Servir o frontend em `localhost:5500`
 
-Abra `index.html` com o Live Server e **acesse por `http://localhost:5500`**, não por
-`http://127.0.0.1:5500`. As duas URLs não são a mesma origem para o Google.
+Suba o servidor estático do próprio repo:
+
+```powershell
+node scripts/servir-local.js --host localhost --port 5500
+```
+
+Acesse por **`http://localhost:5500`**, não por `http://127.0.0.1:5500`. As duas URLs não
+são a mesma origem para o Google.
 
 Ambas são reconhecidas como ambiente local pelo `api-config.js`, mas só `localhost` está
 autorizada no Console.
+
+> Sem `--host`, o servidor sobe em `127.0.0.2:5500` — que é o host do **mock** (seção 4.1).
+> Para o app real com backend local, use `--host localhost`.
+
+### 4.1 Mock de UI (validação de tela sem backend nem Mongo)
+
+A validação de tela usa o mock em `mocks/ui-runtime/`, **nunca produção**. Ele intercepta
+`/api/*`, finge login, bloqueia escrita e limpa os caches — não toca dado real.
+
+```powershell
+node scripts/servir-local.js
+# abrir http://127.0.0.2:5500/index.html?mockScenario=<cenário>
+```
+
+No host `127.0.0.2` o cenário `default` ativa sozinho. Cenários e flags completos estão em
+[`mocks/ui-runtime/README.md`](../mocks/ui-runtime/README.md) — inclui `vitrineEstados`
+(auditoria de estados da Etapa 7), `carregamentoLento`, `desconectado` e as flags
+`?mockLatencia=<ms>` e `?mockFalha=<rotas>`.
+
+> **Validação obrigatória no mobile de referência.** Toda validação do mock **deve** ser feita
+> em **433×762 com DPR 2.81** e com **emulação de mobile completa (toque, UA, mídia
+> `pointer`/`hover`)** — o app é primariamente mobile. `setViewportSize` sozinho não basta:
+> sem a emulação completa o DPR fica `2`, `ontouchstart` ausente e `matchMedia('(pointer:
+> coarse)')` falso, e qualquer código que decida algo por esses sinais mede errado. O padrão
+> completo e a conferência estão na **seção 9**.
 
 ---
 

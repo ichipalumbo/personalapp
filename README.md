@@ -353,8 +353,8 @@ npm test
 
 Opcao recomendada para desenvolvimento:
 
-1. Usar uma extensao de servidor local (ex.: Live Server no VS Code).
-2. Servir o frontend em `http://localhost:5500` e padronizar o host como `localhost` (na extensao Live Server, usar `"liveServer.settings.host": "localhost"`).
+1. Servir o frontend com o servidor estatico versionado do proprio repo: `node scripts/servir-local.js --host localhost --port 5500` (substitui o Live Server, desinstalado em 2026-10-01; nao ha build step).
+2. Acessar por `http://localhost:5500` e padronizar o host como `localhost`.
 3. Nao alternar para `127.0.0.1`: `http://127.0.0.1:5500` e `http://localhost:5500` sao origens diferentes para o Google Identity Services.
 4. A deteccao do ambiente acontece automaticamente por hostname em `assets/js/config/api-config.js`, que passa a ser o unico lugar que define a URL da API no frontend:
    - `localhost`, `127.0.0.1` e `::1` -> `http://localhost:5000/api`

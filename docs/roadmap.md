@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-09-30
+> **Status**: Documento vivo · **Atualizado**: 2026-10-01
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -21,13 +21,12 @@ Cada item traz:
 
 **Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
 
-**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.6** (2026-09-30 — PR #66, unificação + textos, e PR #67, tela de
-finanças). O item **5.7** também está `[~]` em andamento (parte resolvida pelos cartões da
-Etapa 2/3, resto pendente de auditoria final). Aberto em 2026-09-30: **5.8** (estados de
-carregamento — skeletons + cache, o "item aberto" que restou do escopo original da Etapa 6),
-executado no mesmo dia — decisão do dono de fazer antes da Etapa 7; Parte A (skeletons) e Parte B
-(caminho B1 — rótulo global em sync sobre cache) concluídas no código; validação visual pendente
-do dono (Live Server local ficou fora do ar) — ver a seção 5.8.
+**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é
+executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.8**
+(2026-09-30 — PR #68, skeletons padronizados + rótulo de cache B1; validação visual do dono
+aprovada em 2026-10-01). Antes dele, **5.6** (2026-09-30 — PR #66, unificação + textos, e PR #67,
+tela de finanças). O item **5.7** é o próximo e permanece `[~]` em andamento (parte resolvida
+pelos cartões da Etapa 2/3, resto pendente de auditoria final).
 
 ---
 
@@ -85,7 +84,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 5     | 5.5 Eventos simultâneos na agenda diária (Etapa 5) | `[x]`  | —                                                             |
 | 5     | 5.6 Erros e toasts (Etapa 6)                     | `[x]`  | —                                                                |
 | 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[~]`  | 5.1 a 5.6                                                        |
-| 5     | 5.8 Estados de carregamento: skeletons + cache   | `[~]`  | 5.6                                                                |
+| 5     | 5.8 Estados de carregamento: skeletons + cache   | `[x]`  | 5.6 (validado 2026-10-01)                                        |
 
 ---
 
@@ -740,10 +739,16 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   seção Etapa 7 do diagnóstico.
 - **Esforço restante**: auditar 4.13, 4.15 (movimento reduzido parcial), o que sobrar de 4.17 e
   o item sugerido 7.1.
+- **Preparo da validação (2026-10-01)**: criado o cenário de mock `vitrineEstados`
+  (`mocks/ui-runtime/scenarios.js`) com os estados que esta etapa audita — ciclo atrasado +
+  reposição a vencer (amarelo, 4.13), ciclo pago (`disabled`, 4.17.4), aluno inativo em modo
+  somente leitura (4.17.1) e Consultoria Online (campos desabilitados). Servidor local passou a
+  ser `node scripts/servir-local.js` (Live Server desinstalado); ver
+  [`plans/2026-10-01-plan-servidor-local-e-mock.md`](plans/2026-10-01-plan-servidor-local-e-mock.md).
 
 ---
 
-### [~] 5.8 Estados de carregamento: skeletons + cache — **EM ANDAMENTO** (executado 2026-09-30; restante = validação visual + PR)
+### [x] 5.8 Estados de carregamento: skeletons + cache — **CONCLUÍDO** (executado 2026-09-30; validado 2026-10-01)
 
 - **O que é**: fechar os dois itens abertos que restaram do escopo original da Etapa 6 —
   (a) skeletons de carregamento padronizados (hoje existem 3 versões diferentes: Home inline
@@ -771,8 +776,12 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
     "Sem conexão..." assume); coberto por 2 testes com prova de mutação
     (`tests-frontend/header-cache-state.test.js`).
   - **Suítes**: frontend 82/82 → **84/84** (+2 da Parte B); backend 232/232 (inalterado).
-- **Pendente (dono)**: validação visual no 433×762 (Live Server local ficou fora do ar/504 no
-  fim da execução — código novo confirmado no disco) + commit/PR da branch.
+- **Merge e validação (2026-09-30 / 2026-10-01)**: a branch `feat/padronizar-skeletons-cache`
+  foi **mergeada na `main` via PR #68** (`9daaff8`), o que já levou o código a produção. A
+  validação visual do dono foi **aprovada em 2026-10-01** no viewport 433×762 DPR 2.81 (+ stress
+  320×568/390×844), cobrindo os cenários: Home sem semana (barras cinzas animadas), Finanças sem
+  cache (cards pulsantes), histórico de reposições unificado, botão "Sincronizar Dados" (rótulo
+  "Sincronizando dados..." sob o título) e boot com cache (nada aparece — comportamento B1).
 - **Bug achado antes da execução (2026-09-30, resolvido na branch)**: o FAB "Novo agendamento"
   da Home persistia sobre as demais telas até o carregamento da tela destino terminar (router só
   reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app/router.js` + teste
