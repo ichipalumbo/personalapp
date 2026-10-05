@@ -1,6 +1,6 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: Em produção · **Versão**: 11 · **Atualizado**: 2026-09-01
+> **Status**: Em produção · **Versão**: 12 · **Atualizado**: 2026-10-05
 > **Validação**: sincronização, webhook, `RRULE` e `EXDATE` validados ao longo das rodadas A–H;
 > validação em produção concluída em 31/08/2026.
 > **Defeitos em aberto**: 2 (ver seção 9): 9.14 (gatilho triplo de sincronização no boot) e 9.8
@@ -8,9 +8,9 @@
 > testes e verificados em produção pelo dono em 2026-09-01; as duas consultas do §5.1 do
 > diagnóstico retornaram vazias nas duas contas, sem dano gravado.
 >
-> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` (v6) define a
+> **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
-> `docs/specs/financas-ciclo-cobranca.md` (v7) não é afetada — o Google não participa de
+> `docs/specs/financas-ciclo-cobranca.md` não é afetada — o Google não participa de
 > nenhum cálculo financeiro.
 
 ---
@@ -292,7 +292,7 @@ Pontos em que o engine local já coincide com a RFC e não precisam de trabalho:
 ### 5.1 Gatilhos
 
 - **Webhook**: `gcalWebhookController` → `syncConnectionByWebhookHeaders(channelId, resourceId)`.
-- **Boot**: `assets/js/app/bootstrap.js` dispara `renovarCanalGoogleCalendar()` após `router.navigateTo('tela-home')`, com guarda `gcalWatchCheckDisparado` e `setTimeout(..., 0)`.
+- **Boot**: `assets/js/app/bootstrap.js` dispara `renovarCanalGoogleCalendar()` logo após a navegação inicial, com guarda `gcalWatchCheckDisparado` e `setTimeout(..., 0)`. A navegação inicial é `router.navigateTo(router.getTelaInicial())` — desde a Etapa 7 a tela vem da URL (`#tela-home` por padrão), não de um literal fixo.
 - **Manual**: botão `btnRenewGoogleCalendarWatch` no modal de configurações chama o mesmo endpoint de renovação e também dispara o catch-up simultâneo.
 - **Manual/automático**: `iniciarSyncGoogleCalendar` no bootstrap, quando há conexão.
 
@@ -349,11 +349,13 @@ Esse comportamento corrige o defeito anterior em que o full sync apagava bloquei
 
 ### 5.1.3 Gatilho no boot e escape hatch
 
-A verificação do canal no boot está ancorada em `assets/js/app/bootstrap.js`, logo após
- `router.navigateTo('tela-home')`, protegida por `gcalWatchCheckDisparado` e disparada com
- `setTimeout(..., 0)` para não bloquear o primeiro render. Ela roda uma vez por carga de
- página. Nenhum dos três `carregarDados` existentes dispara a renovação; o gatilho do boot é
- independente do ciclo de sincronização normal.
+A verificação do canal no boot está ancorada em `assets/js/app/bootstrap.js`, logo após a
+ navegação inicial, protegida por `gcalWatchCheckDisparado` e disparada com
+ `setTimeout(..., 0)` para não bloquear o primeiro render. A navegação inicial é
+ `router.navigateTo(router.getTelaInicial())`: desde a Etapa 7 a tela vem da URL
+ (`#tela-home` por padrão), então o trecho não depende de um literal fixo. Ela roda uma vez por
+ carga de página. Nenhum dos três `carregarDados` existentes dispara a renovação; o gatilho do
+ boot é independente do ciclo de sincronização normal.
 
 Se não há sessão Google, a função sai sem forçar login. O botão manual
  `btnRenewGoogleCalendarWatch` no modal de configurações chama o mesmo endpoint do boot para

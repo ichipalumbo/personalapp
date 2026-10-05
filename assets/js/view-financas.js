@@ -384,7 +384,7 @@
                   <div style="border:1px solid #262626;border-radius:10px;padding:10px 12px;background:#0f0f0f;">
                     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
                       <strong style="color:#fff;font-size:0.875rem;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</strong>
-                      <span style="color:${ciclo.status === 'pago' ? '#81c784' : (ciclo.status === 'atrasado' ? '#ff8a80' : '#ffd700')};font-size:0.75rem;font-weight:700;">${status}</span>
+                      <span style="color:${ciclo.status === 'pago' ? 'var(--cor-estado-ok)' : (ciclo.status === 'atrasado' ? 'var(--cor-estado-erro)' : 'var(--cor-estado-neutro)')};font-size:0.75rem;font-weight:700;">${status}</span>
                     </div>
                     <div style="font-size:0.75rem;color:#9a9a9a;margin-top:6px;">
                       ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
@@ -510,7 +510,7 @@
                 <strong style="display:block;color:#fff;font-size:1.02rem;word-break:break-word;">${escaparHtml(aluno.nome || 'Aluno')}</strong>
                 ${card.configuracaoPendente ? '' : `<div style="margin-top:4px;font-size:0.75rem;color:#b8b8b8;">${resumoCiclo(card)}</div>`}
               </div>
-              <span style="font-size:0.75rem;font-weight:800;color:${card.configuracaoPendente ? '#ff8a80' : (status === 'pago' ? '#81c784' : (status === 'atrasado' ? '#ff8a80' : '#ffd700'))};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
+              <span style="font-size:0.75rem;font-weight:800;color:${card.configuracaoPendente ? 'var(--cor-estado-erro)' : (status === 'pago' ? 'var(--cor-estado-ok)' : (status === 'atrasado' ? 'var(--cor-estado-erro)' : 'var(--cor-estado-neutro)'))};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
             </div>
 
             ${card.configuracaoPendente ? `

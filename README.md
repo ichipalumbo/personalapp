@@ -80,55 +80,76 @@ Comportamento de resiliencia:
 ```text
 personalapp/
 |- index.html
+|- manifest.json                   <- manifest do PWA
+|- sw.js                           <- service worker da raiz (escopo do PWA)
 |- README.md
+|- .github/copilot-instructions.md <- instrucoes permanentes para agentes de IA
+|- .agents/skills/                 <- skills de agente versionadas
 |- assets/
 |  |- css/
 |  |  |- style.css
+|  |- images/
+|  |- vendor/
+|  |  |- fontawesome/              <- FontAwesome servido do proprio repo (sem CDN)
 |  |- js/
-|  |  |  --- [0] Auth ---
+|  |  |  --- [0] Infra de base ---
+|  |  |- logger.js                 <- logger com niveis -> window.log
+|  |  |- config/api-config.js      <- escolhe a URL da API por hostname (lido no topo de storage.js)
+|  |  |  --- [1] Auth ---
 |  |  |- auth/
 |  |  |  |- google-identity.js         <- autenticacao Google (GIS JWT) -> window.googleIdentity
-|  |  |  --- [1] Core State & Data ---
+|  |  |  --- [2] Core State & Data ---
 |  |  |- state.js                  <- estado global (alunos, aulas, constantes)
 |  |  |- storage.js                <- sync API + fallback localStorage
-|  |  |  --- [2] Pure Utilities ---
+|  |  |  --- [3] Pure Utilities ---
 |  |  |- utils-kpi.js              <- utilidades genericas (toast, overlays de sync)
 |  |  |- utils-datetime.js         <- helpers de data e hora
-|  |  |  --- [3] Domain Helpers ---
+|  |  |- utils-formatters.js       <- formatadores de texto e numero
+|  |  |  --- [4] Domain Helpers ---
 |  |  |- alunos-helpers.js         <- lookup e select de alunos
 |  |  |- calendario-engine.js      <- motor de recorrencia + grid mensal
 |  |  |- agenda-conflitos.js       <- deteccao de conflitos de horario
 |  |  |- cascade-sync-aluno.js     <- sync em cascata ao editar/excluir aluno
-|  |  |- settings-modal.js         <- modal de configuracoes/ajustes da agenda
 |  |  |- agenda-card-template.js   <- template do card de agenda reutilizado nas views
-|  |  |  --- [4] UI Widgets ---
+|  |  |  --- [5] UI Widgets ---
 |  |  |- widget-stepper-duracao.js <- widget +/- de duracao
 |  |  |- widget-bloqueio.js        <- helpers de estado "dia inteiro"
-|  |  |  --- [5] Modais ---
+|  |  |- widget-swipe-periodo.js   <- swipe de periodo + animacao de troca
+|  |  |  --- [6] Modais ---
 |  |  |- modal-agendamento.js      <- modais: tipo, agendamento unico, recorrente
 |  |  |- modal-acao-slot.js        <- modais: edicao, cancelamento, reagendamento, reposicao
+|  |  |- settings-modal.js         <- modal Area do usuario (dados, grade horaria, GCal)
 |  |  |- features/
 |  |  |  |- modals/
+|  |  |  |  |- dialog-controller.js       <- pilha de dialogos: foco, Escape, underlay, scroll lock
 |  |  |  |  |- scheduling-serializer.js   <- serializacao de agendamentos para salvar
 |  |  |  |  |- scheduling-flow-state.js   <- estado interno do fluxo de criacao de agendamento
 |  |  |  |- user/
 |  |  |  |  |- user-area-session-helper.js <- helper de sessao/usuario da area do aluno
-|  |  |  --- [6] Page Views ---
+|  |  |  --- [7] Page Views ---
 |  |  |- view-home.js              <- aba Home: agenda diaria
 |  |  |- view-financas.js          <- aba Financas: ciclo financeiro e cobrancas
 |  |  |- view-calendario.js        <- aba Calendario: visao semanal (sem mensal e sem KPI dashboard)
 |  |  |- view-alunos.js            <- aba Alunos: CRM de cadastro/edicao
 |  |  |- google-calendar.js        <- integracao Google Calendar (leitura/escrita de eventos)
-|  |  |  --- [7] App Shell ---
+|  |  |  --- [8] App Shell ---
 |  |  |- app/
 |  |  |  |- bootstrap.js           <- inicializacao da SPA e ordem de startup
-|  |  |  |- router.js              <- navegacao entre abas Home/Financas/Alunos
+|  |  |  |- router.js              <- navegacao entre abas Home/Financas/Alunos + tela ativa na URL
 |  |  |  |- service-worker.js      <- registro do service worker
-|  |  |  --- [8] SPA Entry ---
+|  |  |  --- [9] SPA Entry ---
 |  |  |- app.js                    <- ponto de entrada estavel da interface
 |- backend/
 |  |- package.json
 |  |- server.js                    <- entry point principal do backend
+|  |- vercel.json
+|  |- .env.example
+|  |- scripts/
+|  |  |- normalize-agenda-formats.js
+|  |- shared/                      <- modulos compartilhados entre frontend e backend (sem DOM)
+|  |  |- recurrence-helpers.js     <- motor de recorrencia isomorfico (agenda + financeiro)
+|  |  |- calculo-ciclo.js          <- ciclo vigente + prazo de reposicao (fonte unica do financeiro)
+|  |  |- reposicao-flow-helpers.js <- regra "a vencer" + mensagens de reposicao
 |  |- src/
 |  |  |- app.js
 |  |  |- config/
@@ -136,48 +157,32 @@ personalapp/
 |  |  |  |- env.js
 |  |  |- middleware/
 |  |  |  |- requireAuth.js          <- valida JWT Google e popula req.auth.ownerEmail
-|  |  |- controllers/
-|  |  |  |- agendamentoController.js
-|  |  |  |- alunoController.js
-|  |  |  |- bloqueioExternoController.js
-|  |  |  |- configController.js
-|  |  |  |- financasController.js
-|  |  |  |- gcalAuthController.js
-|  |  |  |- gcalWebhookController.js
-|  |  |- models/
-|  |  |  |- Agendamento.js
-|  |  |  |- Aluno.js
-|  |  |  |- BloqueioExterno.js
-|  |  |  |- CicloFinanceiro.js
-|  |  |  |- Config.js
-|  |  |  |- GoogleCalendarConnection.js
-|  |  |- routes/
-|  |  |  |- agendamentoRoutes.js
-|  |  |  |- alunoRoutes.js
-|  |  |  |- bloqueioExternoRoutes.js
-|  |  |  |- configRoutes.js
-|  |  |  |- financasRoutes.js
-|  |  |  |- gcalAuthRoutes.js
-|  |  |  |- gcalWebhookRoutes.js
-|  |  |  |- healthRoutes.js
-|  |  |- services/
-|  |  |  |- agendaConsistencyService.js
-|  |  |  |- agendamentoService.js
-|  |  |  |- financasService.js
-|  |  |  |- gcalSyncService.js
-|  |- shared/                  <- modulos compartilhados entre frontend e backend (sem DOM)
-|  |  |- recurrence-helpers.js  <- motor de recorrencia isomorfico (agenda + financeiro)
-|  |  |- calculo-ciclo.js       <- ciclo vigente + prazo de reposicao (fonte unica do financeiro)
-|  |  |- reposicao-flow-helpers.js <- regra "a vencer" + mensagens de reposicao
-|  |  |- utils/
-|  |  |  |- controllerHelpers.js
-|  |  |  |- emailNormalizer.js
-|  |  |  |- gcalCrypto.js
-|  |  |  |- ownerScope.js
-|  |  |  |- studentValueExtractors.js
-|  |  |  |- time.js
-|  |  |  |- valueNormalizer.js
-|  |- vercel.json
+|  |  |- controllers/               <- agendamento, aluno, bloqueioExterno, config,
+|  |  |                               financas, gcalAuth, gcalWebhook, reposicao
+|  |  |- models/                    <- Agendamento, Aluno, BloqueioExterno, CicloFinanceiro,
+|  |  |                               Config, GoogleCalendarConnection, Reposicao
+|  |  |- routes/                    <- agendamento, aluno, bloqueioExterno, config, financas,
+|  |  |                               gcalAuth, gcalWebhook, health, reposicao
+|  |  |- services/                  <- agendaConsistency, agendamento, financas, gcalSync, reposicao
+|  |  |- utils/                     <- controllerHelpers, emailNormalizer, gcalCrypto, ownerScope,
+|  |  |                               studentValueExtractors, time, valueNormalizer
+|  |- test/                        <- suite do backend (node --test)
+|- tests-frontend/                 <- suite do frontend (node --test); pasta separada por causa do
+|  |                                  Root Directory da Vercel (ver .vercelignore)
+|  |- setup/carregar-frontend.js   <- carrega assets/js em contexto vm para os testes
+|  |- *.test.js
+|- mocks/
+|  |- ui-runtime/                  <- mock de /api: valida tela sem backend nem Mongo
+|  |  |- mock-runtime.js
+|  |  |- scenarios.js
+|  |  |- README.md
+|- scripts/
+|  |- servir-local.js              <- servidor estatico local do frontend
+|  |- auditar-css-morto.js
+|- docs/                           <- indice completo em docs/README.md
+|  |- roadmap.md
+|  |- setup-ambiente-local.md
+|  |- specs/  diagnostics/  plans/  reports/  reference/  archive/
 ```
 
 ## Convencao de Nomes dos Arquivos JS
@@ -200,31 +205,62 @@ Os arquivos seguem prefixos que indicam sua camada:
 
 ## Ordem de Carregamento dos Scripts (index.html)
 
-A ordem importa porque os scripts usam globais `window.xxx` definidos em outros arquivos:
+A lista abaixo espelha o `index.html` — a ordem real e a do arquivo, nao a desta lista por
+si. Caminhos relativos a `index.html`.
 
 ```
-0.  auth/google-identity.js    <- sem dependencias  // window.googleIdentity (isSignedIn, getIdToken, getOwnerEmail)
-1.  state.js                   <- sem dependencias  // vars module-scope: alunos, aulas, agendaConfig (sem window.X proprio)
-2.  storage.js                 <- depende de state.js  // window.sincronizarBancoDados, window.apiFetchBackend, window.carregarDadosDoLocalStorage; seta window.alunos e window.aulas ao carregar
-3.  utils-kpi.js               <- depende de state.js
-4.  utils-datetime.js          <- depende de state.js (em runtime)  // window.somarMinutos, window.diferencaMinutos, window.getDiaTextoSelecionado, window.formatarDataPtBr
-5.  alunos-helpers.js          <- depende de state.js  // window.getAluno, window.getAlunosParaSelect
-6.  calendario-engine.js       <- depende de state.js  // window.parseDataFlex, window.resolverCompromissoRecorrenteNaData, window.checarCompromissoNaData
-7.  agenda-conflitos.js        <- depende de state.js + calendario-engine.js  // window.getConflitosNoDia, window.getDatasConflitoRecorrencia
-8.  widget-stepper-duracao.js  <- depende de state.js + widget-bloqueio.js (runtime)  // window.configurarStepperDuracao, window.inicializarSteppersDuracao
-9.  widget-bloqueio.js         <- depende de widget-stepper-duracao.js  // window.BLOQUEIO_MAX_MINUTOS, window.ehBloqueioDiaInteiroCompromisso
-10. modal-agendamento.js       <- depende de layers 1-9  // window.abrirNovoAgendamento, window.abrirAgendamentoModal, window.abrirModalRecorrencia
-11. modal-acao-slot.js         <- depende de layers 1-9 + modal-agendamento.js  // window.abrirModalAcaoSlot, window.fecharModalAcaoSlot
-12. agenda-card-template.js    <- depende de helpers/modais em runtime
-13. view-home.js               <- depende de layers 1-12  // window.inicializarHome, window.renderizarAgendaDia, window.dataSelecionada
-14. view-calendario.js         <- depende de layers 1-13  // window.inicializarPaginaCalendario, window.renderizarHomeSemana, window.modoCalendarioAtivo, window.preencherFiltrosAlunos
-15. view-alunos.js             <- depende de layers 1-13  // window.inicializarAlunos, window.inicializarPaginaCadastro, window.renderizarListaAlunos
-16. google-calendar.js         <- depende de auth/google-identity.js + layers 1-15
-17. app/service-worker.js      <- sem dependencia de DOM da aplicacao
-18. app/router.js              <- depende dos inicializadores globais das views  // window.__appRouter
-19. app/bootstrap.js           <- depende de app/router.js e service-worker.js
-20. app.js                     <- depende de tudo (deve ser o ultimo)
+ 0. assets/js/logger.js                                  <- sem dependencias
+ 1. assets/js/config/api-config.js                       <- sem dependencias; window.APP_API_CONFIG e lido no TOPO de storage.js (ordem obrigatoria)
+ 2. assets/js/state.js                                   <- sem dependencias
+ 3. assets/js/storage.js                                 <- depende de config/api-config.js (topo)  // window.sincronizarBancoDados, window.apiFetchBackend
+ 4. assets/js/utils-kpi.js                               <- runtime
+ 5. assets/js/utils-datetime.js                          <- runtime
+ 6. assets/js/utils-formatters.js                        <- runtime
+ 7. backend/shared/recurrence-helpers.js                 <- sem dependencias (modulo isomorfico, sem DOM)  // window.recurrenceHelpers
+ 8. backend/shared/reposicao-flow-helpers.js             <- sem dependencias (modulo isomorfico, sem DOM)
+ 9. assets/js/alunos-helpers.js                          <- runtime
+10. assets/js/calendario-engine.js                       <- depende de recurrence-helpers.js (topo)  // lanca erro se o global nao existir
+11. assets/js/agenda-conflitos.js                        <- runtime
+12. assets/js/widget-stepper-duracao.js                  <- runtime
+13. assets/js/widget-bloqueio.js                         <- runtime
+14. assets/js/widget-swipe-periodo.js                    <- runtime
+15. assets/js/features/modals/scheduling-flow-state.js   <- runtime
+16. assets/js/features/modals/scheduling-serializer.js   <- runtime
+17. assets/js/features/modals/dialog-controller.js       <- runtime
+18. assets/js/modal-agendamento.js                       <- runtime
+19. assets/js/modal-acao-slot.js                         <- runtime
+20. assets/js/agenda-card-template.js                    <- runtime
+21. assets/js/view-home.js                               <- runtime  // window.inicializarHome, window.dataSelecionada
+22. assets/js/view-financas.js                           <- runtime  // window.inicializarFinancas
+23. assets/js/view-calendario.js                         <- runtime
+24. assets/js/cascade-sync-aluno.js                      <- runtime
+25. assets/js/view-alunos.js                             <- runtime  // window.inicializarAlunos
+26. assets/js/auth/google-identity.js                    <- runtime  // window.googleIdentity (isSignedIn, getIdToken, getOwnerEmail)
+27. assets/js/features/user/user-area-session-helper.js  <- runtime
+28. assets/js/settings-modal.js                          <- runtime
+29. assets/js/google-calendar.js                         <- runtime  // window.gcal
+30. mocks/ui-runtime/scenarios.js                        <- sem efeito sem ?mockScenario=<cenario>
+31. mocks/ui-runtime/mock-runtime.js                     <- sem efeito sem ?mockScenario=<cenario>
+32. assets/js/app/service-worker.js                      <- registro do service worker
+33. assets/js/app/router.js                              <- depende dos inicializadores globais das views  // window.__appRouter
+34. assets/js/app/bootstrap.js                           <- orquestra o boot; usa o router
+35. assets/js/app.js                                     <- ultimo (ponto de entrada)
 ```
+
+**Dependencia de runtime nao governa ordem de carga.** O cabecalho `// Depende de:` de cada
+arquivo descreve o que a funcao precisa **quando executa**, e a maioria nao impoe ordem:
+`agenda-conflitos.js`, por exemplo, declara depender de `view-home.js`, que carrega depois dele.
+So o que e lido **durante a avaliacao do script** exige ordem — hoje sao dois pares, ambos
+protegidos por `throw` explicito no proprio codigo:
+
+| Precisa vir antes | Dependente | Global lido |
+| --- | --- | --- |
+| `assets/js/config/api-config.js` | `assets/js/storage.js` | `window.APP_API_CONFIG` |
+| `backend/shared/recurrence-helpers.js` | `assets/js/calendario-engine.js` | `window.recurrenceHelpers` |
+
+`tests-frontend/index-html-ordem.test.js` protege esses pares (secao 8 de
+`docs/setup-ambiente-local.md`). Ao adicionar um script novo em `index.html` que leia um global
+no topo do arquivo, acrescente o par la.
 
 ## Papel dos Arquivos Principais
 

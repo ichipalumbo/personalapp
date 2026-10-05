@@ -21,12 +21,13 @@ Cada item traz:
 
 **Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
 
-**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é
-executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.8**
-(2026-09-30 — PR #68, skeletons padronizados + rótulo de cache B1; validação visual do dono
-aprovada em 2026-10-01). Antes dele, **5.6** (2026-09-30 — PR #66, unificação + textos, e PR #67,
-tela de finanças). O item **5.7** é o próximo e permanece `[~]` em andamento (parte resolvida
-pelos cartões da Etapa 2/3, resto pendente de auditoria final).
+**Grupo 5 — concluído**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não foi
+executado em sequência única — rodou em paralelo, por rodadas. Os oito itens (5.1–5.8) estão
+fechados. Os últimos: **5.8** (2026-09-30 — PR #68, skeletons padronizados + rótulo de cache B1;
+validação visual do dono aprovada em 2026-10-01), **5.6** (2026-09-30 — PR #66, unificação +
+textos, e PR #67, tela de finanças) e **5.7** (2026-10-01 — cartões A–D da Etapa 7, branch
+`feat/etapa-7-consistencia-acessibilidade`). Com isso o documento-mãe do grupo
+(`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`) não tem mais achado em aberto.
 
 ---
 
@@ -83,7 +84,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 5     | 5.4 Densidade de cards (Etapa 4)                 | `[x]`  | —                                                                |
 | 5     | 5.5 Eventos simultâneos na agenda diária (Etapa 5) | `[x]`  | —                                                             |
 | 5     | 5.6 Erros e toasts (Etapa 6)                     | `[x]`  | —                                                                |
-| 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[~]`  | 5.1 a 5.6                                                        |
+| 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[x]`  | 5.1 a 5.6                                                        |
 | 5     | 5.8 Estados de carregamento: skeletons + cache   | `[x]`  | 5.6 (validado 2026-10-01)                                        |
 
 ---
@@ -724,7 +725,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [~] 5.7 Consistência e acessibilidade final (Etapa 7) — **EM ANDAMENTO**
+### [x] 5.7 Consistência e acessibilidade final (Etapa 7) — **CONCLUÍDO** (cartões A–D, 2026-10-01)
 
 - **O que é**: etapa ampliada para cobrir os achados que ficaram órfãos no diagnóstico original
   — 4.13 (amarelo sobrecarregado semanticamente) e 4.17 (6 inconsistências específicas) —, além
@@ -735,16 +736,61 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   cobertura, não trabalho novo nesses dois pontos.
 - **Item sugerido na execução da Etapa 6 (2026-09-29) — 7.1**: consistência da nomenclatura de
   retry — o toast unificado usa "Tentar de novo", o erro do histórico de reposições usa
-  "Tentar novamente". Padronizar (ou documentar a regra da escolha) quando a Etapa 7 rodar; ver
-  seção Etapa 7 do diagnóstico.
-- **Esforço restante**: auditar 4.13, 4.15 (movimento reduzido parcial), o que sobrar de 4.17 e
-  o item sugerido 7.1.
+  "Tentar novamente". **✅ Resolvido em 2026-10-01 (Cartão C)**: as duas specs já fixavam
+  "Tentar novamente"; era o toast que estava fora do padrão — ver seção Etapa 7 do diagnóstico.
+- **Esforço restante**: ~~só o 4.17.1 e o 4.17.6 (cartão D)~~ — **fechado no Cartão D
+  (2026-10-01)**.
 - **Preparo da validação (2026-10-01)**: criado o cenário de mock `vitrineEstados`
   (`mocks/ui-runtime/scenarios.js`) com os estados que esta etapa audita — ciclo atrasado +
   reposição a vencer (amarelo, 4.13), ciclo pago (`disabled`, 4.17.4), aluno inativo em modo
   somente leitura (4.17.1) e Consultoria Online (campos desabilitados). Servidor local passou a
   ser `node scripts/servir-local.js` (Live Server desinstalado); ver
   [`plans/2026-10-01-plan-servidor-local-e-mock.md`](plans/2026-10-01-plan-servidor-local-e-mock.md).
+- **Execução em cartões (2026-10-01, branch `feat/etapa-7-consistencia-acessibilidade`)**:
+  plano em [`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md).
+  **Cartão A (4.13 — cor de estado) concluído**: paleta de estado tokenizada em `:root`
+  (ok/informativo/aviso/erro/neutro), dourado passa a ser só identidade e "em aberto" deixa de
+  ser dourado; os três toasts coloridos (success/error/warning) passaram a usar a paleta com
+  texto escuro, fechando de carona o achado 4.9 (branco sobre preenchimento claro dava 2.8:1 e
+  4.2:1). Verificado no mock em 433×762 DPR 2.81 + toque.
+  **Cartão B (ARIA e semântica) concluído**: os dois grupos de abas ganharam
+  `role="tablist"`/`tab`/`aria-selected` + painéis `role="tabpanel"` (4.16); o card de agenda
+  virou `<button>` nativo e o card de aluno ganhou botão "Editar" próprio como alvo de teclado
+  (4.6, decisão do dono); os campos passam a herdar a fonte do app (4.17.3 — já estava resolvido
+  de fato pela Etapa 2, exceto a fonte); auditoria de cobertura do 4.17.4/4.17.5: 105 interativos
+  e 45 campos, zero sem nome acessível. **Ressalva registrada no plano**: a ativação por teclado
+  não pôde ser observada neste ambiente (Enter não chega à página nem num botão de controle
+  pré-existente). **Pendentes naquele momento**: C (reduced-motion + retry) e D (navegação com
+  recarga/histórico; decisão do dono: a tela ativa deve sobreviver à recarga e entrar no
+  histórico) — os dois fechados na sequência, nos registros abaixo.
+  **Cartão C (movimento reduzido e textos) concluído**: bloco único de `prefers-reduced-motion` no
+  fim do `style.css` (as animações existentes + as transições que movem), guard no JS de
+  `animarTrocaPeriodo` para não prender a classe nem vazar listener, e o toast passa a
+  "Tentar novamente" (texto que as duas specs já fixavam). Correção de rumo: o achado 4.15 nomeava
+  `halterBounce`, `pulseAgora` e `homeShimmer`, que não existem mais (removidas na limpeza de CSS),
+  e o bloco `reduce` que já existia perdia para `.skeleton`/`.toast` por estar declarado antes
+  deles. **Cartão D (4.17.6 + 4.17.1) concluído**: a tela ativa passa a ir para a URL por
+  **hash** (`#tela-home`, `#tela-financas`, `#tela-alunos`) — `replaceState` no boot,
+  `pushState` nas navegações seguintes, `hashchange` para Voltar/Avançar —, então **recarregar
+  mantém a tela** (antes sempre caía na Home); hash desconhecida ou malformada cai na padrão em
+  vez de derrubar o app, e `navigateTo` ignora id que não é tela. Caminho (`/financas`) foi
+  descartado por exigir rewrite no servidor local e no deploy estático do Vercel. O pill
+  "Modo leitura" (4.17.1) passou a ser exibido **a partir de 768px** — o diagnóstico de que
+  bastava remover o `display: none` estava incompleto: medido em 433×762, o pill sai 23px para
+  fora da tela e cobre a marca. Novo `tests-frontend/router-historico.test.js` (7 casos,
+  provados por mutação); um parâmetro sem efeito observável foi **removido** em vez de mantido.
+  Suítes: frontend 91/91, backend 232/232.
+- **Validação em deploy (2026-10-05)**: o dono validou a branch num deploy provisório do Vercel,
+  com checklist próprio —
+  [`plans/2026-10-05-validacao-etapa-7-branch.md`](plans/2026-10-05-validacao-etapa-7-branch.md).
+  **A seção de teclado e TalkBack passou inteira** (7 itens): era a ressalva "a ativação por
+  teclado não pôde ser observada neste ambiente", registrada desde o Cartão B, e agora tem
+  observação real no aparelho. Um defeito apareceu no item de Voltar/Avançar: **após recarregar,
+  a primeira navegação usava `replaceState` em vez de `pushState`** e o Voltar pulava uma tela —
+  e o caminho da recarga é justamente o que este item existe para resolver. Corrigido em
+  `assets/js/app/router.js` (`jaEscreveuNaUrl` passou a marcar "o boot já passou", e não "a URL
+  foi escrita"), com caso novo em `tests-frontend/router-historico.test.js` e prova por mutação;
+  re-testado e aprovado. Suítes finais: **frontend 92/92, backend 232/232**.
 
 ---
 
@@ -787,7 +833,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app/router.js` + teste
   (`tests-frontend/router-fab-tela.test.js`, prova de mutação):
   [`reports/2026-09-30-hotfix-fab-home-troca-tela.md`](reports/2026-09-30-hotfix-fab-home-troca-tela.md).
-- **Depende de**: 5.6 (concluído). Independente de 5.7, mas a execução fica **antes** dele por
-  ordem do dono.
+- **Depende de**: 5.6 (concluído). Independente de 5.7 — a execução ficou **antes** dele por
+  ordem do dono, e os dois estão concluídos.
 
 _Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir._

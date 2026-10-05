@@ -8,6 +8,21 @@
 
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
+
+  /* [TAG-STYLE-ESTADO] Paleta de ESTADO — achado 4.13 (Etapa 7, 2026-10-01).
+     Regra: um significado por cor. O dourado (#ffd700) é IDENTIDADE/destaque
+     (ação, item ativo, foco, título) e o Tangerine (--objetivo-*) é CATEGORIA
+     externa do Google Calendar — nenhum dos dois indica estado.
+     ok = concluído · informativo = agendado · aviso = atenção (a vencer/pendente)
+     · erro = atrasado/expirado · neutro = em aberto (aguardando, sem atraso). */
+  --cor-estado-ok: #81c784;
+  --cor-estado-informativo: #64b5f6;
+  --cor-estado-aviso: #ffb74d;
+  --cor-estado-aviso-fundo: rgba(255, 183, 77, 0.12);
+  --cor-estado-aviso-borda: rgba(255, 183, 77, 0.34);
+  --cor-estado-erro: #ff8a80;
+  --cor-estado-neutro: #cfcfcf;
+
   /* Contrato de camadas da visão Calendário > Dia */
   --z-cal-dia-grid-surface: 1;
   --z-cal-dia-grid-lines: 1;
@@ -78,6 +93,21 @@
 :where(button, a, [role="button"], input, select, textarea):focus-visible {
   outline: 2px solid #ffd700;
   outline-offset: 2px;
+}
+
+/* Etapa 7 (Cartão B, achado 4.17.3): controles nativos não herdam a fonte do app —
+   cada um cai no default do navegador, o que faz dois controles lado a lado
+   renderizarem com fontes diferentes. Medido antes: input/select "Arial", textarea
+   "monospace", button "Arial"; depois: todos na fonte do body.
+   `button` entrou depois (decisão do dono, 2026-10-01): era o último controle fora
+   do padrão — o .btn ficava em Arial ao lado de texto em Segoe UI.
+   Não afeta os ícones do FontAwesome: .fa-solid (classe, especificidade 0,1,0)
+   vence o seletor de elemento (0,0,1) e mantém "Font Awesome 6 Free". */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
 }
 
 /* Etapa 2 (Cartão C, 2026-09-26): estado disabled padronizado.
@@ -617,6 +647,8 @@ body {
 }
 
 .header-readonly-pill {
+  /* Oculto por padrão e exibido apenas a partir de 768px (ver @media
+     min-width: 768px) — no mobile a linha do header não comporta o aviso. */
   display: none;
   align-items: center;
   gap: 6px;
@@ -791,6 +823,30 @@ body {
   border-radius: 8px;
   border-left: 4px solid #ffd700;
 }
+/* Etapa 7 (Cartão B, achado 4.6): alvo de TECLADO do card de aluno. O card
+   segue clicável ao toque (alvo grande); este botão existe para dar foco e
+   acionamento por Tab/Enter. 32px é a medida que o app já usa para botão
+   somente-ícone (.btn-modal-close) — não é alvo de toque primário. */
+.aluno-card-editar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  border-radius: 6px;
+  background: rgba(255, 215, 0, 0.08);
+  color: #ffd700;
+  font-size: 0.875rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.2s ease;
+}
+.aluno-card-editar:hover,
+.aluno-card-editar:active {
+  background: rgba(255, 215, 0, 0.18);
+}
 
 /* Grid de indicadores do card do aluno: comporta novas caixinhas sem refatoração. */
 .aluno-card-indicadores {
@@ -822,8 +878,8 @@ body {
   outline: none;
 }
 .aluno-card-indicador--alerta {
-  background: rgba(255, 152, 0, 0.12);
-  border-color: rgba(255, 152, 0, 0.28);
+  background: var(--cor-estado-aviso-fundo);
+  border-color: var(--cor-estado-aviso-borda);
 }
 .aluno-card-indicador-titulo {
   font-size: 0.75rem;
@@ -831,7 +887,7 @@ body {
   font-weight: 700;
 }
 .aluno-card-indicador--alerta .aluno-card-indicador-titulo {
-  color: #ffb74d;
+  color: var(--cor-estado-aviso);
 }
 .aluno-card-indicador-detalhe {
   font-size: 0.75rem;
@@ -1505,6 +1561,12 @@ body {
   }
 
   .header-readonly-pill {
+    /* Etapa 7 (Cartão D — achado 4.17.1): o elemento nasceu com `display:none`
+       na regra base e nunca recebeu o valor de exibição de volta, então ficava
+       invisível em qualquer largura. Ele só passa a ser exibido aqui, onde a
+       linha do header comporta marca + aviso + botão: medido em 433×762, o pill
+       sem esta restrição sai 23px para fora da tela e cobre a marca. */
+    display: inline-flex;
     flex: 1 1 auto;
   }
 
@@ -1682,6 +1744,22 @@ body {
   box-sizing: border-box;
   pointer-events: auto;
 }
+/* Etapa 7 (Cartão B, achado 4.6): o card acionável é um <button> de verdade —
+   foco de teclado (Tab/Enter/Espaço) sem JS. Aqui só se zera o que o UA ainda
+   impõe e o bloco .agenda-dia-aula acima não cobre: cor, alinhamento e largura.
+   Deliberadamente NÃO se mexe em margin/padding/border/background, que já vêm
+   das classes do card (evita conflito de especificidade com .agenda-semana-card
+   e com os formatos outlook/linha da Etapa 5).
+   `font: inherit` continua necessário mesmo com a regra global de font-family:
+   o shorthand também herda font-size/weight/line-height, que o botão não pega. */
+button.agenda-dia-aula {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  width: 100%;
+}
 .agenda-semana-card {
   margin-bottom: 8px;
   padding: 9px 12px 10px 10px;
@@ -1742,7 +1820,7 @@ body {
   flex: 0 0 auto;
 }
 .agenda-semana-card-time--completed {
-  color: #81c784;
+  color: var(--cor-estado-ok);
 }
 .agenda-semana-card--completed {
   opacity: 0.6;
@@ -2400,12 +2478,10 @@ body {
 .periodo-anima-volta {
   animation: periodoEntraDaEsquerda 180ms cubic-bezier(0.4, 0, 0.2, 1);
 }
-@media (prefers-reduced-motion: reduce) {
-  .periodo-anima-avanca,
-  .periodo-anima-volta {
-    animation: none;
-  }
-}
+/* Etapa 7 (Cartão C, achado 4.15): o coverage de prefers-reduced-motion saiu daqui e
+   virou um bloco único no FIM do arquivo. Motivo: media query NÃO soma especificidade —
+   este bloco perdia para `.skeleton` e `.toast`, declarados depois dele. As regras de
+   .periodo-anima-* estão lá, junto com o resto. */
 
 .bloqueio-dia-inteiro-ativo {
   opacity: 0.5;
@@ -2743,10 +2819,10 @@ body {
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
-.historico-reposicao-status--pendente { color: #ffb74d; }
-.historico-reposicao-status--agendada { color: #64b5f6; }
-.historico-reposicao-status--realizada { color: #81c784; }
-.historico-reposicao-status--expirada { color: #ef9a9a; }
+.historico-reposicao-status--pendente { color: var(--cor-estado-aviso); }
+.historico-reposicao-status--agendada { color: var(--cor-estado-informativo); }
+.historico-reposicao-status--realizada { color: var(--cor-estado-ok); }
+.historico-reposicao-status--expirada { color: var(--cor-estado-erro); }
 .historico-reposicao-cobranca,
 .historico-reposicao-detalhes,
 .historico-reposicao-aviso {
@@ -2760,7 +2836,7 @@ body {
   margin: 8px 0 6px;
 }
 .historico-reposicao-detalhes strong {
-  color: #ffb74d;
+  color: var(--cor-estado-aviso);
   font-size: 0.75rem;
 }
 .historico-reposicao-linha-acao {
@@ -2854,8 +2930,11 @@ body {
   justify-content: center;
   gap: 10px;
   text-align: center;
-  background: #4caf50;
-  color: #fff;
+  /* Etapa 7 (achado 4.13): os três estados coloridos usam a paleta de estado com texto
+     escuro. Branco sobre os preenchimentos claros não passa contraste AA: 2.8:1 no verde
+     e 4.2:1 no vermelho. Com #1a1a1a: 8.7:1 e 7.6:1. */
+  background: var(--cor-estado-ok);
+  color: #1a1a1a;
   padding: 12px;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -2877,10 +2956,14 @@ body {
   pointer-events: auto;
 }
 .toast.error {
-  background: #e53935;
+  background: var(--cor-estado-erro);
+  color: #1a1a1a;
 }
+/* Etapa 7 (achado 4.13): o aviso usa a cor de estado. Texto escuro pelo mesmo motivo
+   acima — branco sobre âmbar claro também falha (o .toast base definia #fff). */
 .toast.warning {
-  background: #ff9800;
+  background: var(--cor-estado-aviso);
+  color: #1a1a1a;
 }
 .toast.progress {
   background: #1a1a1a;
@@ -2909,11 +2992,13 @@ body {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* Etapa 7 (achado 4.13): o retry só aparece no toast de erro, que agora é claro —
+   o realce translúcido branco sumiria sobre o fundo. Contraste escuro sobre escuro. */
 .toast-retry {
   flex: 0 0 auto;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  color: #fff;
+  background: rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.4);
+  color: #1a1a1a;
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 0.8125rem;
@@ -2921,7 +3006,7 @@ body {
   cursor: pointer;
 }
 .toast-retry:active {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(0, 0, 0, 0.24);
 }
 
 /* [TAG-STYLE-FILTRO-ALUNO-CALENDARIO] - Filter dropdown styling */
@@ -3445,5 +3530,64 @@ body {
   }
   #semana-dia-hoje-elemento {
     scroll-margin-top: calc(var(--header-height, 78px) + 170px);
+  }
+}
+
+/* ───────────────────────────────────────────────────────────────────────────
+   Etapa 7 (Cartão C, achado 4.15) — prefers-reduced-motion: cobertura completa.
+
+   Fica no FIM do arquivo de propósito: media query não soma especificidade, então
+   para vencer as declarações originais (mesma especificidade, 0,1,0) precisa vir
+   DEPOIS delas. Quando este bloco ficava junto dos @keyframes de troca de período,
+   ele perdia para .skeleton e .toast, declarados mais abaixo.
+
+   Dois grupos:
+     1. @keyframes — as que existem hoje. O achado nomeava halterBounce, pulseAgora
+        e homeShimmer, que NÃO existem mais: eram keyframes residuais removidos pela
+        limpeza de CSS (docs/archive/sagas/SAGA-limpeza-css.md, tarefas T3 e T5).
+     2. Transições que movem (transform/opacity). As de cor (background, border-color,
+        color) seguem ativas: não são movimento e carregam feedback de hover/estado.
+
+   O que NÃO se toca: transform de posicionamento ou de estado — o knob do toggle
+   (.status-toggle-knob, translateX) e a centralização do rótulo de hora
+   (.time-grid-hour-label, translateY(-50%)). Nesses, mover não é decoração.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  /* 1. Animações */
+  .periodo-anima-avanca,
+  .periodo-anima-volta,       /* troca Semana / Dia */
+  .time-grid-bg-slot-clicked, /* timeGridSlotPulse — slot da grade clicado */
+  .skeleton,                  /* skeletonPulso — infinito */
+  .toast-spinner {            /* girar-sinc — infinito */
+    animation: none;
+  }
+
+  /* 2a. Transições puramente de movimento: o estado final continua, só sem deslizar */
+  .nav-icon-anim,             /* scale no :active da barra inferior */
+  #btnFlutuanteAdicionar,     /* scale no :active do FAB de Alunos */
+  .btn-weekly-add,            /* FAB da Home: hover translateY + active scale */
+  .agenda-dia-aula,           /* card: hover translateY */
+  .card-stat,
+  .duracao-stepper-btn,
+  .modal-escolha-opcao,
+  .modal-recorrencia-trigger,
+  .toast {                    /* entrada/saída: opacity + translateY */
+    transition: none;
+  }
+
+  /* 2b. Transições mistas: mantém a cor, remove o deslocamento de 1px do :active */
+  .btn-google-custom,
+  .btn-google-signout,
+  .btn-user-area-trigger {
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
+  }
+  .btn-gcal-connect,
+  .btn-gcal-disconnect {
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
   }
 }

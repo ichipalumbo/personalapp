@@ -212,10 +212,16 @@ ao calendário real.**
 
 ## 7. Rodar as suítes
 
-São **duas suítes independentes**, cada uma com seu `package.json` e seu próprio número. Nenhuma
-delas precisa do backend rodando, de `.env` ou de banco — são todas de lógica pura, em processo.
+São **duas suítes independentes**, cada uma com seu `package.json`. Nenhuma delas precisa do
+backend rodando, de `.env` ou de banco — rodam em processo.
 
-**Backend** — 218 testes:
+**O total de testes não é escrito aqui de propósito.** Número em documentação envelhece e passa
+a mentir sem avisar. Meça sempre — e meça **antes e depois** do ajuste, reportando os dois
+números. A suíte deve **começar verde**: se ela chegar com falha antes de você tocar em qualquer
+coisa, isso é achado, não ruído — investigue ou reporte antes de seguir, em vez de tratar as
+falhas como "pré-existentes e esperadas".
+
+**Backend**:
 
 ```powershell
 cd backend
@@ -223,7 +229,7 @@ npm install
 npm test
 ```
 
-**Frontend** — 37 testes:
+**Frontend**:
 
 ```powershell
 cd tests-frontend
@@ -241,14 +247,25 @@ Ambas usam `node --test`, o runner nativo do Node. Não há Jest, Vitest nem wat
 
 | Arquivo | Cobre |
 |---|---|
-| `tests-frontend/recurrence-helpers.test.js` | `backend/shared/recurrence-helpers.js` — o módulo isomórfico consumido pela agenda e pelo financeiro |
-| `tests-frontend/calendario-engine.test.js` | `assets/js/calendario-engine.js` — guard de ordem de carga, repasses e fallback do mapa de dias |
-| `tests-frontend/reposicao-flow.test.js` | `backend/shared/reposicao-flow-helpers.js` — a regra de alerta "a vencer" (limite de dias e resumo por aluno) |
-| `tests-frontend/index-html-ordem.test.js` | A ordem das tags `<script>` em `index.html` |
+| `recurrence-helpers.test.js` | `backend/shared/recurrence-helpers.js` — o módulo isomórfico consumido pela agenda e pelo financeiro (recorrência, exceções, limites, `parseDataFlex`) |
+| `calendario-engine.test.js` | `assets/js/calendario-engine.js` — guard de ordem de carga, repasses para `recurrenceHelpers` e fallback do mapa de dias |
+| `reposicao-flow.test.js` | `backend/shared/reposicao-flow-helpers.js` — a regra de alerta "a vencer" (limite de dias, resumo por aluno, agrupamento do histórico) |
+| `index-html-ordem.test.js` | A ordem das tags `<script>` em `index.html` (ver seção 8) |
+| `dialog-controller.test.js` | `assets/js/features/modals/dialog-controller.js` — foco no contexto, Escape, underlay e a declaração de cada `modal-overlay` do `index.html` |
+| `settings-modal-dialog.test.js` | `assets/js/settings-modal.js` no `DialogController` — área do usuário e política de fechar pelo fundo |
+| `router-fab-tela.test.js` | `assets/js/app/router.js` — ordem de remoção do FAB da Home na troca de tela (o FAB não pode esperar o carregamento do destino) |
+| `router-historico.test.js` | `assets/js/app/router.js` — tela inicial vinda da URL, `replaceState` no boot, `pushState` na navegação e ausência de escrita quando a URL muda por fora |
+| `view-alunos-observacoes.test.js` | `assets/js/view-alunos.js` — observação escapada no card, edição e a pilha de diálogos do aluno |
+| `view-financas-carregamento-toast.test.js` | `assets/js/view-financas.js` — toast unificado no carregamento lento, silêncio abaixo do limiar e refresh em background |
+| `view-financas-historico.test.js` | `assets/js/view-financas.js` — ciclos anteriores: ações só no não pago, pagamento no `DialogController` e falha HTTP mantendo o modal |
+| `header-cache-state.test.js` | O rótulo de cache do header (5.8, caminho B1) — acende só em sync remoto **sobre** cache local |
 
-**Não cobre tela.** `view-*.js`, os modais e `agenda-conflitos.js` continuam sem cobertura
-automatizada, e a validação de UI segue manual. O `jsdom` já está instalado como
-`devDependency`, mas ainda não há teste usando.
+**Cobre tela? Só pontualmente.** O `jsdom` é `devDependency` e **8 dos 12 arquivos** o usam para
+executar views e modais de verdade — mas sempre em recortes específicos (uma função de render,
+um diálogo, um estado de carregamento). **Tela** no sentido de comportamento visual completo
+(layout, densidade, contraste, área de toque, fluxo de ponta a ponta) **continua sem cobertura**:
+a validação de UI segue manual, nos viewports da seção 9. `agenda-conflitos.js` segue sem
+cobertura automatizada.
 
 ### Por que a pasta é separada da raiz
 

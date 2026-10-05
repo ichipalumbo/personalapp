@@ -203,6 +203,11 @@ const BADGE_STYLES = {
             classes.push('agenda-semana-card--completed');
         }
 
+        // Etapa 7 (Cartão B, achado 4.6): o card acionável é um <button> nativo —
+        // foco e acionamento por teclado (Tab + Enter/Espaço) sem JS. Por isso o
+        // conteúdo interno é <span> e não <div>: <button> só aceita conteúdo de
+        // frase. O card somente-leitura do GCal (abaixo) segue <div>, porque não é
+        // acionável e não deve entrar na ordem de foco.
         if (tipo === 'aula') {
             const aluno = typeof window.getAluno === 'function' ? window.getAluno(comp.alunoId) : null;
             const alunoInativo = typeof window.alunoEstaAtivo === 'function' ? !window.alunoEstaAtivo(aluno) : false;
@@ -244,25 +249,25 @@ const BADGE_STYLES = {
             const tagStatusRodapeHtml = visualContext ? '' : montarSlotBadgeInline(tagStatusHtml);
 
             return `
-                <div class="${classes.join(' ')}"${montarAtributo('style', styleCardAula)}${montarAtributo('onclick', opcoes.onclick)}>
-                    <div class="card-content-wrapper">
-                        <div class="agenda-semana-card-top">
-                            <div class="agenda-semana-card-title-group">
+                <button type="button" class="${classes.join(' ')}"${montarAtributo('style', styleCardAula)}${montarAtributo('onclick', opcoes.onclick)}>
+                    <span class="card-content-wrapper">
+                        <span class="agenda-semana-card-top">
+                            <span class="agenda-semana-card-title-group">
                                 <span class="agenda-dia-aula-nome"><i class="fa-solid fa-graduation-cap"></i><span class="agenda-dia-aula-nome-texto">${nomeSeguro}</span></span>
                                 ${montarSlotBadgeInline(tagStatusHtml)}
-                            </div>
+                            </span>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
-                        </div>
-                        <div class="agenda-semana-card-bottom">
+                        </span>
+                        <span class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local"><i class="fa-solid fa-location-dot"></i> ${localSeguro}</span>
-                            <div class="agenda-semana-card-meta">
+                            <span class="agenda-semana-card-meta">
                                 ${objetivo === 'Consultoria Online' ? `<span class="agenda-dia-aula-detalhes">${objetivoSeguro}</span>` : ''}
                                 ${tagVisualHtml}
                                 ${tagStatusRodapeHtml}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                            </span>
+                        </span>
+                    </span>
+                </button>
             `;
         }
 
@@ -273,19 +278,19 @@ const BADGE_STYLES = {
             const descricaoDeslocamento = escapeHtml(comp.descricao || 'Trânsito');
 
             return `
-                <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
-                    <div class="card-content-wrapper">
-                        <div class="agenda-semana-card-top">
-                            <div class="agenda-semana-card-title-group">
+                <button type="button" class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
+                    <span class="card-content-wrapper">
+                        <span class="agenda-semana-card-top">
+                            <span class="agenda-semana-card-title-group">
                                 <span class="agenda-dia-aula-nome" style="color: #51b749;"><i class="fa-solid fa-car-side"></i><span class="agenda-dia-aula-nome-texto">Deslocamento</span></span>
-                            </div>
+                            </span>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
-                        </div>
-                        <div class="agenda-semana-card-bottom">
+                        </span>
+                        <span class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #DDD;">${descricaoDeslocamento}</span>
-                        </div>
-                    </div>
-                </div>
+                        </span>
+                    </span>
+                </button>
             `;
         }
 
@@ -319,19 +324,19 @@ const BADGE_STYLES = {
             const descricaoBloqueioInterno = escapeHtml(comp.descricao || 'Compromisso');
 
             return `
-                <div class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
-                    <div class="card-content-wrapper">
-                        <div class="agenda-semana-card-top">
-                            <div class="agenda-semana-card-title-group">
+                <button type="button" class="${classes.join(' ')}"${montarAtributo('style', opcoes.style)}${montarAtributo('onclick', opcoes.onclick)}>
+                    <span class="card-content-wrapper">
+                        <span class="agenda-semana-card-top">
+                            <span class="agenda-semana-card-title-group">
                                 <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: #DDD;"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
-                            </div>
+                            </span>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
-                        </div>
-                        <div class="agenda-semana-card-bottom">
+                        </span>
+                        <span class="agenda-semana-card-bottom">
                             <span class="agenda-dia-aula-local" style="color: #ff5c54;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
-                        </div>
-                    </div>
-                </div>
+                        </span>
+                    </span>
+                </button>
             `;
         }
 

@@ -2,6 +2,7 @@
 
 > **Data de abertura**: 2026-09-26
 > **Branch de trabalho**: `fix/legibilidade-e-toque` (criada de `origin/main` em `b752601`, sem upstream track)
+> **Status**: ✅ CONCLUÍDA (2026-09-26) — cartões A–D; mergeada na `main` via PR #62 (`468351b`)
 > **Fonte**: seção "Etapa 2 — Fundação de legibilidade e toque" de `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`
 > **Inventário inicial (medido 2026-09-26, leitura apenas)**: base de fonte 16px (padrão do browser; o CSS usa 100% `rem`); 89 declarações de `font-size` entre `0.62rem` (≈10px) e `1.6rem` (25.6px), com 3 `!important`; 10 regras `:focus-visible` isoladas e sem regra global; 10 botões `title` sem `aria-label` no `index.html`.
 

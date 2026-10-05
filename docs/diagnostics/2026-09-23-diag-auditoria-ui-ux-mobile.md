@@ -33,8 +33,8 @@
 2. A **seção 2** explica a ordem de execução e por que ela não é simplesmente "1, 2, 3, 4...".
 3. As **seções 3 a 5** detalham, respectivamente: hotfixes pontuais (Fase 0), achados completos
    com dono definido, e cada etapa estrutural.
-4. As **seções 6 a 9** são material de apoio permanente (padrões a preservar, decisões pendentes,
-   matriz de validação, escopo).
+4. As **seções 6 a 9** são material de apoio permanente (padrões a preservar, registro das
+   decisões de produto, matriz de validação, escopo).
 
 Legenda de status usada em todo o documento:
 
@@ -59,18 +59,18 @@ Legenda de status usada em todo o documento:
 | 4.3 | Navegação principal compete com conteúdo | Diagnóstico §4.3 | Etapa 3 | ✅ *ETAPA 3 CONCLUÍDA: navegação superior trocada por barra inferior fixa (3 telas, alvos 134×52px) — ver seção 5* |
 | 4.4 | Tipografia auxiliar muito pequena | Diagnóstico §4.4 | Etapa 2 | ✅ *ETAPA 2 CONCLUÍDA (2026-09-26, `386b00c`): escala mínima aplicada; 89 declarações + ~50 inlines de templates JS; zero texto legível <12px; filtros de status da Finanças removidos por decisão do dono no fim do cartão A (estouro pré-existente), o que também atende a 4.10 parcialmente — ver seção 5* |
 | 4.5 | Alvos de toque abaixo do recomendado | Diagnóstico §4.5 | Etapa 2 | 🟡 *ETAPA 2 CONCLUÍDA no escopo decidido: grupos 1 (Finanças → 48px) e 2 (grade de horários → 48px) corrigidos em `b9a3c07`; grupos 3 (cabeçalho/toolbar) deixados <44px por decisão do dono, registrados no report da Etapa 2 como candidatos a rodada futura* |
-| 4.6 | Cards/slots sem interação equivalente por teclado | Diagnóstico §4.6 | Etapa 2 (foco/teclado básico) + Etapa 7 (semântica final) | 🟡 *partida Etapa 2 concluída (Cartão C, `81485c5`): `:focus-visible` global dourado padronizado, 13/13 botões icon-only com `aria-label`. Semântica final de cards/tabs segue na Etapa 7 — ver seção 5* |
+| 4.6 | Cards/slots sem interação equivalente por teclado | Diagnóstico §4.6 | Etapa 2 (foco/teclado básico) + Etapa 7 (semântica final) | ✅ *fechado 2026-10-01 na Etapa 7, Cartão B: card de agenda virou `<button>` nativo e o card de aluno ganhou botão "Editar" próprio como alvo de teclado (o card tem interativo aninhado e não pode ser o controle). Parte da Etapa 2 (`81485c5`): `:focus-visible` global e 13/13 icon-only com `aria-label`* |
 | 4.7 | Gerenciamento de diálogo inconsistente | Diagnóstico §4.7 | Etapa 1 | ✅ |
 | 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ✅ *implementado 2026-09-29, validado em produção pelo dono e mergeado via PR #66 (2026-09-30): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto (ver seção 5, Etapa 6)* |
-| 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6* |
+| 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6. Complemento de contraste fechado em 2026-10-01 na Etapa 7, Cartão A (ver "Complemento (2026-10-01)" na Etapa 6)* |
 | 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
-| 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
+| 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ✅ *ETAPA 4 CONCLUÍDA (2026-09-27, PR #64): divulgação progressiva nos cards de Aluno, Finanças e agenda — áreas expansíveis ("Ver detalhes") e badges em modo ícone com o texto preservado em `title`/`aria-label` — ver seção 5, Etapa 4* |
 | 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ✅ *ETAPA 5 CONCLUÍDA (2026-09-27, mergeada na `main`): formato híbrido estilo Outlook — banda de 2 em colunas, banda de 3+ em linhas empilhadas; fundo do Dia nivelado/esticado — ver seção 5, Etapa 5* |
-| 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
+| 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ✅ *fechado 2026-10-01 na Etapa 7, Cartão A: paleta de estado tokenizada em `:root` (ok/informativo/aviso/erro/neutro); o dourado passa a ser só identidade e "em aberto" deixa de ser dourado — ver seção 5, Etapa 7* |
 | 4.14 | Safe areas / elementos flutuantes | Diagnóstico §4.14 | Etapa 3 | ✅ *ETAPA 3 CONCLUÍDA (2026-09-27, `7ccb736`): `--bottombar-height` medido em runtime, FAB/toast/barra ancorados no token, `viewport-fit=cover` no meta — valores declarados no report da Etapa 3 (env()=0 no DevTools; valida o cálculo, não o pixel)* |
-| 4.15 | Movimento reduzido parcial | Diagnóstico §4.15 | Etapa 7 | ⏳ |
-| 4.16 | Navegação/tabs sem ARIA completo | Diagnóstico §4.16 | Etapa 7 | 🟡 *parte: a barra inferior da Etapa 3 (2026-09-27) já opera `aria-current="page"` no item ativo (validado no report da Etapa 3). O restante da semântica de tabs/navegação segue na Etapa 7* |
-| 4.17 | 6 inconsistências específicas (inclui bug de seletor CSS/JS) | Diagnóstico §4.17 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
+| 4.15 | Movimento reduzido parcial | Diagnóstico §4.15 | Etapa 7 | ✅ *fechado 2026-10-01 na Etapa 7, Cartão C: bloco único de `prefers-reduced-motion` no fim do `style.css`, cobrindo as 4 animações existentes e as transições que movem (`transform`/`opacity`). Correção de rumo: o achado nomeava `halterBounce`, `pulseAgora` e `homeShimmer`, removidas pela limpeza de CSS — ver seção 5, Etapa 7* |
+| 4.16 | Navegação/tabs sem ARIA completo | Diagnóstico §4.16 | Etapa 7 | ✅ *fechado 2026-10-01 na Etapa 7, Cartão B: os dois grupos de abas ganharam `role="tablist"` com nome acessível, `role="tab"` + `aria-selected` sincronizado com o estado real e painéis `role="tabpanel"` + `aria-labelledby`. Ressalva: sem roving `tabindex`/navegação por setas (prática do APG, não requisito da especificação). A barra inferior da Etapa 3 já operava `aria-current="page"`* |
+| 4.17 | 6 inconsistências específicas (inclui bug de seletor CSS/JS) | Diagnóstico §4.17 | **Etapa 7 (ampliada)** | ✅ *fechado 2026-10-01 na Etapa 7: os 6 itens resolvidos ao longo dos cartões A–D (o item 2, bug de seletor, já em 2026-09-27) — ver seção 5, Etapa 7* |
 
 ---
 
@@ -91,12 +91,15 @@ fila de prioridade da revisão `anti-ui-slop` **mesclada** com as etapas estrutu
    E/F/G + rodadas 2 e 3 (FAB dinâmico, remoção da linha de ações do modo Dia, remoção da tarja
    LOCAL), commit `7ccb736` (+ `66593c9`, `3bbf152`); mergeada na `main` via PR #63
    (`6910621`). Report: `docs/plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`.
-5. **Etapas 4, 5, 6** → seguem a ordem original do diagnóstico, sem dependência forte entre si.
-6. **Etapa 7 — consistência e acessibilidade final (ampliada)** → agora inclui explicitamente
-   4.13 e 4.17, que não tinham dono nos documentos originais. **Atualização (2026-09-27)**:
-   os itens 4.17.4 e 4.17.5 foram resolvidos de facto pelos cartões C e D da Etapa 2 (padrões
-   `disabled` e `aria-label` já são globais) — a Etapa 7 executa auditoria de cobertura, não
-   trabalho novo.
+5. ~~**Etapas 4, 5, 6**~~ → ✅ **concluídas**: Etapa 4 (2026-09-27, PR #64 / `b52564f`), Etapa 5
+   (2026-09-27, PR #65 / `5e20d96`) e Etapa 6 (2026-09-30, PRs #66 e #67). Seguiram a ordem
+   original do diagnóstico, sem dependência forte entre si.
+6. ~~**Etapa 7 — consistência e acessibilidade final (ampliada)**~~ → ✅ **concluída
+   (2026-10-01)**, nos cartões A–D (branch `feat/etapa-7-consistencia-acessibilidade`). Incluiu
+   explicitamente 4.13 e 4.17, que não tinham dono nos documentos originais. **Nota de
+   2026-09-27**: os itens 4.17.4 e 4.17.5 já haviam sido resolvidos de facto pelos cartões C e D
+   da Etapa 2 (padrões `disabled` e `aria-label` globais) — a Etapa 7 fez a auditoria de
+   cobertura, não trabalho novo.
 
 **Por que a Fase 0.1 não foi feita junto com a Etapa 1?** O relatório de conclusão da Etapa 1
 registra explicitamente que `#toast` ficou **fora de escopo**. Isso foi uma decisão correta de
@@ -300,12 +303,12 @@ secundária → seção "Dados" do modal).
 
 ---
 
-### Etapa 4 — Densidade de cards ⏳ PENDENTE (escopo reduzido)
+### Etapa 4 — Densidade de cards ✅ CONCLUÍDA (2026-09-27, mergeada na `main` via PR #64 / `b52564f`)
 
 **Achados endereçados**: 4.11 (4.10 já resolvido — ver tabela mestra e nota abaixo).
 
 **Nota (2026-09-27)**: o achado 4.10 ("filtros apertados") saiu do escopo desta etapa. Os
-filtros de Finças e de Alunos foram **removidos por completo** em duas rodadas isoladas
+filtros de Finanças e de Alunos foram **removidos por completo** em duas rodadas isoladas
 (Etapa 2, Cartão A, e hotfix de 2026-09-27), por decisão direta do dono, em vez de adaptados.
 O que resta nesta etapa é só 4.11 (cards com informação excessiva).
 
@@ -315,6 +318,11 @@ de corrigir).
 
 **Critério de conclusão**: cards continuam compreensíveis em 320–430px sem informação
 redundante ou excessiva no primeiro nível.
+
+**Registro de execução**: cartões A–D (card de Aluno, card de Finanças, card de agenda e
+reorganização do card), com as decisões de primeiro nível tomadas na abertura da etapa e o
+detalhamento medido no plano
+[`plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md`](../plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md).
 
 ---
 
@@ -399,16 +407,30 @@ após 3s, falha continuando no tratamento local da tela). A etiqueta de última 
 do cache (“Cache atualizado em ...”) permanece no cabeçalho. Validação do dono em produção:
 aprovada em 2026-10-01. Ver relatório da Etapa 6 (seção “Adição — tela de finanças”).
 
+**Complemento (2026-10-01, Etapa 7 / Cartão A)**: a metade *“e contraste”* do 4.9 ficou de fora
+da execução original. Medição em 2026-10-01: o toast de `success` usava `#fff` sobre `#4caf50`
+(≈ **2.8:1**) e o de `error`, `#fff` sobre `#e53935` (≈ **4.2:1**) — ambos abaixo de AA 4.5:1. Os
+três estados coloridos passaram a usar a paleta de estado com texto `#1a1a1a` (10.06:1 / 8.65:1 /
+7.62:1 no warning/success/error) e o realce do botão de retry acompanhou. O `.toast.progress`
+(fundo escuro, texto claro) permaneceu. Detalhe em
+[`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](../plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md).
+
 ---
 
-### Etapa 7 — Consistência e acessibilidade final (ampliada) ⏳ PENDENTE
+### Etapa 7 — Consistência e acessibilidade final (ampliada) ✅ CONCLUÍDA (cartões A, B, C e D, 2026-10-01)
 
 **Achados endereçados**: 4.6 (parte final — semântica de cards/tabs), 4.15, 4.16, **4.13 e 4.17
 (órfãos endereçados nesta reescrita)**.
 
 **Escopo original**:
 - Completar semântica de tabs e navegação (`aria-current`, `role` apropriados).
-- Completar `prefers-reduced-motion`.
+- Completar `prefers-reduced-motion`. **(Etapa 7, Cartão C, 2026-10-01 — concluído.)** Nota de
+  precisão: o diagnóstico original listava `halterBounce`, `pulseAgora`, `homeShimmer` e
+  `girar-sinc`; as três primeiras **não existem mais** — eram keyframes residuais removidos pela
+  limpeza de CSS (`archive/sagas/SAGA-limpeza-css.md`, tarefas T3 e T5). Além disso, o bloco de
+  `reduce` que já existia estava no meio do arquivo, **antes** de `.skeleton` e `.toast`, e por
+  isso perdia para eles (media query não soma especificidade) — ou seja, o parcial que havia
+  não funcionava para os dois casos mais visíveis.
 - Validar teclado, leitor de tela e texto ampliado nos fluxos principais.
 
 **⚠️ Escopo adicionado nesta reescrita — item 4.13**:
@@ -419,8 +441,13 @@ aprovada em 2026-10-01. Ver relatório da Etapa 6 (seção “Adição — tela 
   (reforça o padrão já usado em finanças, ver seção 4, item 8).
 
 **⚠️ Escopo adicionado nesta reescrita — item 4.17 (6 inconsistências específicas)**:
-1. Mensagem de modo leitura escondida permanentemente pelo CSS mesmo com usuário desconectado
-   — corrigir para exibir quando aplicável.
+1. ✅ **Mensagem de modo leitura escondida pelo CSS** *(resolvido 2026-10-01 — Cartão D,
+   branch `feat/etapa-7-consistencia-acessibilidade`)*: exibida a partir de 768px. **O diagnóstico
+   original estava incompleto**: o `display: none` da regra base realmente nunca era revertido —
+   mas **removê-lo quebra o header** (medido em 433×762, o pill sai 23px para fora da tela e cobre
+   a marca; em 320×568, 112px). Não era defeito de uma declaração, era restrição de layout. O
+   usuário desconectado já recebia o recado pelo toast do boot, então o pill é redundante e o
+   caminho barato é exibi-lo onde cabe. Contraste do texto: 8,75:1.
 2. ✅ **Bug real de seletor** *(corrigido 2026-09-27 — hotfix isolado na `main`, ver
    `docs/reports/2026-09-27-hotfix-seletor-historico-reposicoes-grupo.md`)*: JS gera
    `.historico-reposicao-grupo`, CSS usava `.historico-reposicoes-grupo` — divergência de nome
@@ -430,8 +457,11 @@ aprovada em 2026-10-01. Ver relatório da Etapa 6 (seção “Adição — tela 
    vez de criar um novo.
 5. Botões icon-only dependentes só de `title` sem nome acessível robusto — reaproveitar padrão
    `aria-label` já definido na Etapa 2.
-6. Links de navegação com `href="#"` sem representar a tela ativa no histórico — decisão de
-   produto (ver seção 6, pergunta 5) antes de implementar.
+6. ✅ **Links de navegação com `href="#"` sem representar a tela ativa no histórico** *(resolvido
+   2026-10-01 — Cartão D)*: a tela ativa passou a ir para a URL por **hash** (`#tela-financas`),
+   com `replaceState` no boot e `pushState` nas navegações seguintes; reload e Voltar/Avançar
+   funcionam. Caminho (`/financas`) foi descartado por exigir rewrite no servidor local e no
+   deploy estático do Vercel. Decisão de produto da seção 6, pergunta 5, fechada em 2026-10-01.
 
 **Nota de sequenciamento interno**: os itens 4 e 5 do 4.17 são apenas "aplicar o padrão da
 Etapa 2 nos lugares que ela não cobriu" — não é trabalho novo de design, é auditoria de cobertura.
@@ -450,6 +480,13 @@ a palavra em um único texto em todo o app (ou, se mantiver duas, documentar a r
 cada uma se aplica — ex.: "tela" vs. "ação"). Escopo mínimo: grep por `Tentar` nas mensagens de
 UI e alinhar.
 
+**✅ Resolvido em 2026-10-01 (Etapa 7, Cartão C)**: o grep por `Tentar` achou **três** pontos, não
+dois — o terceiro é o histórico de Finanças (`view-financas.js`). E a resposta já estava escrita no
+repositório: **as duas specs fixam "Tentar novamente"** (`financas-ciclo-cobranca.md` §5, para o
+histórico de finanças, e `reposicoes-e-competencia.md`, para reposições). O `"Tentar de novo"` do
+toast veio da Etapa 6 e nunca foi especificado — era o único ponto fora do padrão. Alinhado a
+`utils-kpi.js`, um arquivo alterado, e as specs seguem válidas sem edição.
+
 **Progresso já acumulado (2026-09-27, verificado contra `git log`)**: os itens 4.17.4
 (disabled) e 4.17.5 (aria-label icon-only) foram resolvidos de facto pelos cartões C e D da
 Etapa 2 — o padrão é global e os 13 botões inventariados têm `aria-label`; o que resta na Etapa
@@ -457,30 +494,74 @@ Etapa 2 — o padrão é global e os 13 botões inventariados têm `aria-label`;
 O item 4.17.2 (bug de seletor) foi corrigido nesta mesma data, como hotfix isolado (ver relatório
 linkado no item 2 acima) — não depende mais da execução da Etapa 7.
 
+**Registro de execução (2026-10-01 — cartões A e B, branch
+`feat/etapa-7-consistencia-acessibilidade`)**: plano vivo e medições completas em
+[`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](../plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md).
+- **Cartão A** — 4.13 (cor de estado tokenizada) e, de carona, a metade *contraste* do 4.9, que
+  ficara fora da Etapa 6.
+- **Cartão B** — 4.16, 4.6 (parte final), 4.17.3 e a auditoria de cobertura do 4.17.4/4.17.5.
+- **Achado novo no 4.17.3**: a etapa estava resolvida de fato desde a Etapa 2 — o resíduo era a
+  **fonte** dos campos (input/select em `Arial`, textarea em `monospace`, ambos *defaults* do
+  navegador). Unificado na fonte do app.
+- **Ressalva de validação**: a ativação por teclado dos cards **não pôde ser observada** neste
+  ambiente — Enter/Espaço não são entregues à página nem para um botão de controle que já
+  existia antes da mudança. O mecanismo (elemento `<button>` real, na ordem de foco, com nome
+  acessível) está verificado. **✅ Fechada em 2026-10-05**: a validação no aparelho confirmou os
+  7 itens de teclado e TalkBack (Enter no card da agenda e no botão de editar do aluno, evento
+  externo fora da ordem de foco, contorno de foco, foco preso no modal, Escape devolvendo o foco
+  e as abas anunciadas com estado selecionado) — ver
+  [`plans/2026-10-05-validacao-etapa-7-branch.md`](../plans/2026-10-05-validacao-etapa-7-branch.md).
+- **Pendente na etapa**: ~~4.17.1 e 4.17.6 (cartão D)~~ — **ambos fechados no Cartão D
+  (2026-10-01)**, abaixo. Navegação por setas
+  no `tablist` ficou fora por ser prática do APG, não requisito da especificação ARIA.
+- **Cartão C (2026-10-01)** — **4.15**: cobertura completa de `prefers-reduced-motion` num bloco
+  único no fim do `style.css` (as 4 animações existentes + as transições que movem), mais o
+  **guard no JS** de `animarTrocaPeriodo`: como quem remove a classe depende de `animationend`, e
+  com `animation: none` o evento nunca dispara, a cobertura só de CSS prendia a classe no elemento
+  e **vazava um listener a cada swipe**. **7.1**: o toast passou de "Tentar de novo" para
+  **"Tentar novamente"**, que é o texto que as duas specs já fixavam
+  (`financas-ciclo-cobranca.md` §5 e `reposicoes-e-competencia.md`) — o toast era o único ponto
+  fora do padrão. Medições em 433×762 DPR 2.81 com `prefers-reduced-motion` emulado nos dois
+  estados; detalhe no plano da Etapa 7.
+- **Cartão D (2026-10-01)** — **4.17.6**: navegação por hash (`#tela-home`, `#tela-financas`,
+  `#tela-alunos`), com `getTelaInicial()` lendo a URL no boot, `hashchange` para Voltar/Avançar e
+  ignora id desconhecido. Antes, recarregar sempre caía na Home. **4.17.1**: o pill "Modo leitura"
+  passou a aparecer a partir de 768px (ver a correção do diagnóstico no item 1 do 4.17). Novo
+  arquivo `tests-frontend/router-historico.test.js` (7 casos, provados por mutação). Detalhe,
+  medições e o que ficou fora no plano da Etapa 7.
+
 **Critério de conclusão**: os fluxos principais são operáveis sem toque e permanecem
 compreensíveis com zoom/texto ampliado; nenhuma das 6 inconsistências do item 4.17 permanece;
 uso de cor de estado é semanticamente consistente.
 
 ---
 
-## 6) Decisões de produto pendentes (não inferir durante implementação)
+## 6) Decisões de produto — registro histórico (não inferir durante implementação)
 
-Aplicável às etapas ainda não iniciadas (a Etapa 1 já teve suas decisões fechadas na seção 5,
-tabela 10.0):
+Todas as decisões abaixo estão **fechadas** — nenhuma etapa da auditoria segue com decisão de
+produto em aberto. O registro abaixo mantém quando e onde cada uma foi resolvida:
 
 1. ~~A barra inferior (Etapa 3) substitui integralmente a navegação superior ou coexistirá em
    alguma tela?~~ → **Fechada na abertura da Etapa 3 (2026-09-27)**: substitui integralmente;
    título e login permanecem no topo por exceção donal.
-2. Quais informações são indispensáveis no primeiro nível dos cards de agenda, aluno e finanças
-   (Etapa 4)?
-3. Qual comportamento desejado para eventos simultâneos na agenda diária (Etapa 5)?
+2. ~~Quais informações são indispensáveis no primeiro nível dos cards de agenda, aluno e finanças
+   (Etapa 4)?~~ → **Fechada na abertura da Etapa 4 (2026-09-27)**: o primeiro nível de cada card
+   foi definido na tabela de decisões do plano daquela etapa, e o restante migrou para áreas
+   expansíveis ("Ver detalhes").
+3. ~~Qual comportamento desejado para eventos simultâneos na agenda diária (Etapa 5)?~~ →
+   **Fechada na Etapa 5 (2026-09-27)**: formato híbrido estilo Outlook — banda de 2 eventos em
+   colunas, banda de 3+ em linhas empilhadas. A decisão original "C — cascata" foi validada e
+   depois substituída pelo dono para 4+ eventos.
 4. ~~A sincronização manual deve permanecer exposta na Home ou migrar para área secundária
    (Etapa 3 / Fase 0.3)?~~ → **Fechada na abertura da Etapa 3 (2026-09-27)**: migra para área
    secundária — seção "Dados" no modal Área do usuário (junto com "Configurar Grade Horária").
-5. A tela ativa deve sobreviver à recarga e participar do histórico Voltar/Avançar (Etapa 7,
-   item 4.17.6)?
-6. Amarelo como cor de estado: manter um único significado ou introduzir cor adicional
-   (Etapa 7, item 4.13)?
+5. ~~A tela ativa deve sobreviver à recarga e participar do histórico Voltar/Avançar (Etapa 7,
+   item 4.17.6)?~~ → **Fechada em 2026-10-01 (Cartão D)**: **sim** — por hash (`#tela-financas`),
+   que é a única forma que não exige rewrite no servidor local nem no deploy estático do Vercel.
+6. ~~Amarelo como cor de estado: manter um único significado ou introduzir cor adicional
+   (Etapa 7, item 4.13)?~~ → **Fechada em 2026-10-01 (Cartão A)**: paleta de estado tokenizada
+   (ok/informativo/aviso/erro/neutro) em `:root`; o dourado deixa de indicar estado e passa a ser
+   só identidade visual. Não foi preciso introduzir cor nova.
 
 Estas são decisões de experiência; não devem ser inferidas durante a implementação nem pelo
 modelo executor (Qwen) nem pelo planejador.

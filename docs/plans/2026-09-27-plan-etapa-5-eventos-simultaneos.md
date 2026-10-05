@@ -3,7 +3,8 @@
 > **Data de abertura**: 2026-09-27
 > **Branch de trabalho**: `feat/etapa-5-eventos-simultaneos`
 > **Fonte**: achado **4.12** de `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`
-> **Status**: implementado e validado — aguardando commit/push do dono
+> **Status**: ✅ CONCLUÍDA (2026-09-27) — formato híbrido validado pelo dono; mergeada na `main`
+> via PR #65 (`5e20d96`)
 > **Evolutivo**: esta versão substitui a decisão original "C — cascata"
 > (primeira implementação, validada e depois rejeitada pelo dono para 4+
 > eventos). A rotação de formatos está registrada em "Decisões do dono".

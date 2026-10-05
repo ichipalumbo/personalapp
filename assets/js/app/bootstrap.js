@@ -108,7 +108,10 @@
             setTimeout(atualizarMedidasLayout, 50);
         });
 
-        await router.navigateTo('tela-home');
+        // Etapa 7 (Cartão D — achado 4.17.6): a tela inicial vem da URL
+        // (#tela-financas), para que recarregar a página mantenha a tela em que
+        // a pessoa estava. Sem hash válida, o router devolve a padrão.
+        await router.navigateTo(router.getTelaInicial());
 
         if (global.gcal && typeof global.gcal.isSignedIn === 'function' && global.gcal.isSignedIn()) {
             setTimeout(function () {

@@ -375,6 +375,11 @@ window.selecionarTipoAgendamento = function(tipo) {
     tabAula.classList.remove('active');
     tabDeslocamento.classList.remove('active');
     tabBloqueio.classList.remove('active');
+    // Etapa 7 (Cartão B, achado 4.16): .active é só visual; quem anuncia a aba
+    // selecionada é aria-selected (o grupo é role="tablist").
+    tabAula.setAttribute('aria-selected', String(tipo === 'aula'));
+    tabDeslocamento.setAttribute('aria-selected', String(tipo === 'deslocamento'));
+    tabBloqueio.setAttribute('aria-selected', String(tipo === 'bloqueio'));
 
     if (tipo === 'aula') {
         tabAula.classList.add('active');

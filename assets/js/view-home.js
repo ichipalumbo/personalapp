@@ -79,9 +79,9 @@ function garantirHomeTabs() {
     tabsWrapper.id = 'homeTabsWrapper';
     tabsWrapper.style.marginBottom = '14px';
     tabsWrapper.innerHTML = `
-      <div class="tab-tipo-agendamento" style="display:flex;gap:6px;background:#0d0d0d;padding:4px;border-radius:8px;border:1px solid #2a2a2a;">
-        <button type="button" class="tab-btn active" id="tabHomeSemana" onclick="window.alternarModoHome('semana')"><i class="fa-solid fa-calendar-week"></i> Semana</button>
-        <button type="button" class="tab-btn" id="tabHomeDia" onclick="window.alternarModoHome('dia')"><i class="fa-solid fa-calendar-day"></i> Dia</button>
+      <div class="tab-tipo-agendamento" role="tablist" aria-label="Visualização da agenda" style="display:flex;gap:6px;background:#0d0d0d;padding:4px;border-radius:8px;border:1px solid #2a2a2a;">
+        <button type="button" class="tab-btn active" id="tabHomeSemana" role="tab" aria-selected="true" aria-controls="agendaPanelSemana" onclick="window.alternarModoHome('semana')"><i class="fa-solid fa-calendar-week"></i> Semana</button>
+        <button type="button" class="tab-btn" id="tabHomeDia" role="tab" aria-selected="false" aria-controls="homeDayPanel" onclick="window.alternarModoHome('dia')"><i class="fa-solid fa-calendar-day"></i> Dia</button>
       </div>
     `;
 
@@ -120,6 +120,9 @@ function garantirHomeTabs() {
   const dayPanel = document.createElement('div');
   dayPanel.id = 'homeDayPanel';
   dayPanel.className = 'agenda-panel';
+  // Etapa 7 (Cartão B, achado 4.16): painel do modo Dia — par do tabHomeDia.
+  dayPanel.setAttribute('role', 'tabpanel');
+  dayPanel.setAttribute('aria-labelledby', 'tabHomeDia');
   dayPanel.style.display = 'none';
   dayPanel.innerHTML = `<div class="agenda-dia-container" id="agendaGridHomeHome"></div>`;
 
@@ -187,6 +190,10 @@ window.alternarModoHome = function (modo) {
 
   if (semBtn) semBtn.classList.toggle('active', window.modoHomeAtivo === 'semana');
   if (diaBtn) diaBtn.classList.toggle('active', window.modoHomeAtivo === 'dia');
+  // Etapa 7 (Cartão B, achado 4.16): o estado visual (.active) não é acessível —
+  // aria-selected é o que o leitor de tela anuncia.
+  if (semBtn) semBtn.setAttribute('aria-selected', String(window.modoHomeAtivo === 'semana'));
+  if (diaBtn) diaBtn.setAttribute('aria-selected', String(window.modoHomeAtivo === 'dia'));
   if (weekToolbar) weekToolbar.style.display = window.modoHomeAtivo === 'semana' ? '' : 'none';
   const dayNavRow = document.getElementById('homeDayNavRow');
   if (dayNavRow) dayNavRow.style.display = window.modoHomeAtivo === 'dia' ? '' : 'none';
