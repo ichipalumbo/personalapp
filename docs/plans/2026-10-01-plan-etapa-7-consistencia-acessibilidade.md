@@ -431,13 +431,26 @@ sob maior risco de quebra.
   instala antes do `__appShell` existir, o `setTimeout` **não é agendado** e o trecho não executa.
   É código morto pré-existente — não mexi (fora do escopo) e **não** foi o que impediu a validação
   do reload, que passou.
-- **`docs/specs/gcal-sync.md`** (linhas ~295 e ~353) descreve a renovação do canal como acontecendo
-  "após `router.navigateTo('tela-home')`". O boot agora navega para a tela da URL. A descrição
-  continua verdadeira quanto à **ordem** (a renovação segue depois da navegação inicial), mas o
-  literal do trecho ficou impreciso. Spec não é documento que eu deva reescrever por tabela —
-  registrado para o dono decidir.
+- **`docs/specs/gcal-sync.md`** (linhas ~295 e ~353) descrevia a renovação do canal como
+  acontecendo "após `router.navigateTo('tela-home')`", e o boot passou a navegar para a tela da
+  URL. **Resolvido**: a spec foi atualizada para a navegação inicial e a versão dela subiu para a
+  12 (commit `71e24b4`, rodada de fechamento de lacunas).
 - **`tests-frontend/router-fab-tela.test.js`** mantém `href="#"` nos seus links. Não precisa mudar
   (o teste não olha href), mas agora diverge do `index.html` real; deixei como está para não
   alterar teste que não pertence a este cartão.
+
+### Correção posterior à validação (2026-10-05)
+
+A validação em deploy provisório encontrou um defeito neste cartão: **após recarregar, a primeira
+navegação do usuário substituía a entrada de histórico em vez de empilhar**, e o Voltar pulava uma
+tela — e o caminho da recarga é justamente o que o 4.17.6 existe para resolver. Corrigido em
+`assets/js/app/router.js` (`jaEscreveuNaUrl` passou a marcar "o boot já passou", e não "a URL foi
+escrita"), com caso novo em `tests-frontend/router-historico.test.js` e prova por mutação.
+Medições, provas e o registro da validação inteira em
+[`plans/2026-10-05-validacao-etapa-7-branch.md`](2026-10-05-validacao-etapa-7-branch.md).
+Suítes após o fix: frontend **92/92**, backend **232/232**.
+
+**A ressalva do teclado caiu nesta rodada**: a validação no aparelho confirmou os 7 itens de
+teclado e TalkBack que o Cartão B registrava como "não pôde ser observada neste ambiente".
 
 

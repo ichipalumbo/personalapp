@@ -1,6 +1,6 @@
 # Validação — Etapa 7 (branch `feat/etapa-7-consistencia-acessibilidade`)
 
-> **Status**: 🚧 FIX APLICADO — aguardando o re-teste do item 1.3 no deploy da branch
+> **Status**: ✅ VALIDADA — aprovada para a `main` em 2026-10-05
 > **Aberto em**: 2026-10-05
 > **Commit sob validação**: `71e24b4` (branch `feat/etapa-7-consistencia-acessibilidade`)
 > **Deploy**: provisório no Vercel, a partir da branch
@@ -68,12 +68,14 @@ Decisão sobre o defeito (marque uma):
 
 - [x] 1.1
 - [x] 1.2
-- [ ] 1.3
+- [x] 1.3 — **reprovou no build `71e24b4`, aprovou no build com o fix** (ver Registro da execução)
 - [x] 1.4
 - [x] 1.5
 - [x] 1.6
 
-> Resposta 1: O 1. 3 nao funcionou e é o comportamento listado em defeitos conhecidos!<!-- o que observou -->
+> Resposta 1 (build `71e24b4`): O 1. 3 nao funcionou e é o comportamento listado em defeitos conhecidos!
+>
+> Resposta 1 (re-teste, com o fix): passou.
 
 ---
 
@@ -212,6 +214,10 @@ o que muda é só o frontend.
 
 > Observações finais:Precisamos verificar o 1.3 <!-- qualquer coisa que não caiba nas respostas acima -->
 
+**O `REPROVADO` acima é do build `71e24b4`** — é o histórico de como a rodada aconteceu, não o
+estado final. Com o fix aplicado e re-testado, o resultado foi **aprovado** (ver Registro da
+execução, abaixo).
+
 ---
 
 ## Registro da execução (agente) — 2026-10-05
@@ -247,8 +253,9 @@ link, a primeira navegação do usuário também empilha" — que é exatamente 
 O ciclo no navegador é a reprodução exata do 1.3, na mesma sequência que o dono usou (recarregar
 antes de navegar). Antes do fix o Voltar ia para a Home; agora vai para Finanças.
 
-**Pendente**: refazer o deploy da branch e **re-testar só o 1.3**. Se passar, o item 5.7 fecha e o
-resultado entra no roadmap.
+**Re-teste (2026-10-05)**: **aprovado**. O dono validou no desktop — com simulação de viewport e
+em modo desktop normal — e confirmou que o 1.3 passou. Com isso o item 5.7 fecha e o resultado
+entra no roadmap.
 
 **Ainda em aberto neste arquivo**: a seção "Ambiente da validação" continua sem preenchimento
 (data, aparelho, PWA × navegador, largura do desktop). Sem isso o registro não diz contra o que

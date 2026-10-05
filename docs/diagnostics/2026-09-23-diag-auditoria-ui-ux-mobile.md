@@ -506,7 +506,11 @@ linkado no item 2 acima) — não depende mais da execução da Etapa 7.
 - **Ressalva de validação**: a ativação por teclado dos cards **não pôde ser observada** neste
   ambiente — Enter/Espaço não são entregues à página nem para um botão de controle que já
   existia antes da mudança. O mecanismo (elemento `<button>` real, na ordem de foco, com nome
-  acessível) está verificado; o teste com teclado físico segue pendente.
+  acessível) está verificado. **✅ Fechada em 2026-10-05**: a validação no aparelho confirmou os
+  7 itens de teclado e TalkBack (Enter no card da agenda e no botão de editar do aluno, evento
+  externo fora da ordem de foco, contorno de foco, foco preso no modal, Escape devolvendo o foco
+  e as abas anunciadas com estado selecionado) — ver
+  [`plans/2026-10-05-validacao-etapa-7-branch.md`](../plans/2026-10-05-validacao-etapa-7-branch.md).
 - **Pendente na etapa**: ~~4.17.1 e 4.17.6 (cartão D)~~ — **ambos fechados no Cartão D
   (2026-10-01)**, abaixo. Navegação por setas
   no `tablist` ficou fora por ser prática do APG, não requisito da especificação ARIA.

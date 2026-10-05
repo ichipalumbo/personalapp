@@ -780,6 +780,17 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   fora da tela e cobre a marca. Novo `tests-frontend/router-historico.test.js` (7 casos,
   provados por mutação); um parâmetro sem efeito observável foi **removido** em vez de mantido.
   Suítes: frontend 91/91, backend 232/232.
+- **Validação em deploy (2026-10-05)**: o dono validou a branch num deploy provisório do Vercel,
+  com checklist próprio —
+  [`plans/2026-10-05-validacao-etapa-7-branch.md`](plans/2026-10-05-validacao-etapa-7-branch.md).
+  **A seção de teclado e TalkBack passou inteira** (7 itens): era a ressalva "a ativação por
+  teclado não pôde ser observada neste ambiente", registrada desde o Cartão B, e agora tem
+  observação real no aparelho. Um defeito apareceu no item de Voltar/Avançar: **após recarregar,
+  a primeira navegação usava `replaceState` em vez de `pushState`** e o Voltar pulava uma tela —
+  e o caminho da recarga é justamente o que este item existe para resolver. Corrigido em
+  `assets/js/app/router.js` (`jaEscreveuNaUrl` passou a marcar "o boot já passou", e não "a URL
+  foi escrita"), com caso novo em `tests-frontend/router-historico.test.js` e prova por mutação;
+  re-testado e aprovado. Suítes finais: **frontend 92/92, backend 232/232**.
 
 ---
 
