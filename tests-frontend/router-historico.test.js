@@ -132,6 +132,31 @@ test('clicar na navegação empilha a tela na URL', async (t) => {
     assert.equal(router.getCurrentViewId(), 'tela-financas');
 });
 
+test('após boot por deep link, a primeira navegação do usuário também empilha', async (t) => {
+    // A recarga cai neste mesmo caminho: recarregar já em #tela-financas faz o
+    // boot encontrar a hash igual à da tela, sem nada a escrever. Se a primeira
+    // navegação do usuário substituir a entrada atual em vez de empilhar, o
+    // Voltar pula uma tela (recarregar em Finanças → Alunos → Voltar ia para a
+    // Home, não para Finanças).
+    const { dom, window, router, escritas, aguardar } = criarAmbiente('http://localhost/#tela-financas');
+    t.after(() => dom.window.close());
+
+    await router.navigateTo(router.getTelaInicial());
+    assert.deepEqual(escritas, [], 'pré-condição: boot por deep link não escreve na URL');
+
+    window.document.querySelector('[data-target="tela-alunos"]').click();
+    await aguardar();
+    await aguardar();
+
+    assert.deepEqual(
+        escritas,
+        [{ metodo: 'pushState', url: '#tela-alunos' }],
+        'a primeira navegação após o boot tem de criar entrada, não substituir a atual'
+    );
+    assert.equal(window.location.hash, '#tela-alunos');
+    assert.equal(router.getCurrentViewId(), 'tela-alunos');
+});
+
 test('mudança de URL por fora navega sem reescrever a URL', async (t) => {
     const { dom, router, escritas, mudarUrlPorFora, aguardar, visivel } = criarAmbiente('http://localhost/#tela-financas');
     t.after(() => dom.window.close());

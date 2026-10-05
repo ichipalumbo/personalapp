@@ -71,8 +71,19 @@
         // Voltar do navegador criaria uma entrada a cada uso.
         function registrarTelaNaUrl(targetId, substituir) {
             const history = global.history;
+            if (!history || !global.location) {
+                return;
+            }
+            // A flag marca "o boot já passou", NÃO "a URL foi escrita". Num deep
+            // link — ou numa recarga já em #tela-financas, que é o mesmo caminho
+            // e o caso que o item 4.17.6 existe para resolver — a hash já é a da
+            // tela, então não há o que escrever. Marcá-la só depois de uma
+            // escrita bem-sucedida deixava a PRIMEIRA navegação do usuário
+            // usando replaceState em vez de pushState: a entrada não era
+            // criada, e o Voltar pulava uma tela.
+            jaEscreveuNaUrl = true;
             const novaHash = '#' + targetId;
-            if (!history || !global.location || global.location.hash === novaHash) {
+            if (global.location.hash === novaHash) {
                 return;
             }
             const metodo = substituir ? 'replaceState' : 'pushState';
@@ -81,7 +92,6 @@
             }
             try {
                 history[metodo].call(history, null, '', novaHash);
-                jaEscreveuNaUrl = true;
             } catch (_erro) {
                 // Ignorado de propósito — ver comentário acima.
             }
