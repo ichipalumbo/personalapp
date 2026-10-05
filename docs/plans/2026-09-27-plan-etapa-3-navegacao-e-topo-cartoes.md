@@ -1,6 +1,7 @@
 # Etapa 3 — Navegação e Topo Operacional (Plano e Registro, formato cartões)
 
 > Criado: 2026-09-27 · Branch: `feat/navegacao-e-topo` (criada de `origin/main` com `--no-track`)
+> **Status**: ✅ CONCLUÍDA (2026-09-27) — cartões E/F/G + rodadas 2 e 3; mergeada na `main` via PR #63 (`6910621`)
 > Fonte do escopo: `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md` §5 (Etapa 3), que absolve
 > os achados 4.2 (topo da Home consome altura excessiva), 4.3 (navegação compete com conteúdo) e
 > 4.14 (safe areas / elementos flutuantes) e incorpora a **Fase 0.3** (F0.3 altura operacional da Home).

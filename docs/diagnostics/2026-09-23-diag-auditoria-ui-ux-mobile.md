@@ -33,8 +33,8 @@
 2. A **seção 2** explica a ordem de execução e por que ela não é simplesmente "1, 2, 3, 4...".
 3. As **seções 3 a 5** detalham, respectivamente: hotfixes pontuais (Fase 0), achados completos
    com dono definido, e cada etapa estrutural.
-4. As **seções 6 a 9** são material de apoio permanente (padrões a preservar, decisões pendentes,
-   matriz de validação, escopo).
+4. As **seções 6 a 9** são material de apoio permanente (padrões a preservar, registro das
+   decisões de produto, matriz de validação, escopo).
 
 Legenda de status usada em todo o documento:
 
@@ -64,13 +64,13 @@ Legenda de status usada em todo o documento:
 | 4.8 | Erro global bloqueante sem recuperação | Diagnóstico §4.8 | Etapa 6 | ✅ *implementado 2026-09-29, validado em produção pelo dono e mergeado via PR #66 (2026-09-30): overlay bloqueante removido, retry conectado ao `onRetry` que existia morto (ver seção 5, Etapa 6)* |
 | 4.9 | Toasts/assíncronos: acessibilidade e contraste | Diagnóstico §4.9 | Etapa 6 | ✅ *implementado 2026-09-29: `role`/`aria-live` dinâmicos por estado — ver seção 5, Etapa 6. Complemento de contraste fechado em 2026-10-01 na Etapa 7, Cartão A (ver "Complemento (2026-10-01)" na Etapa 6)* |
 | 4.10 | Filtros apertados | Diagnóstico §4.10 | Etapa 4 | ✅ *resolvida sem ser a Etapa 4 estrutural: o fim do Cartão A da Etapa 2 (2026-09-26, `386b00c`) removeu o filtro de status da Finanças (estouro pré-existente; decisão do dono). Os 2 filtros de Alunos (status/objetivo) foram removidos por completo em 2026-09-27, pedido direto do dono ("deixar mais clean"), fora da sequência formal — ver `docs/reports/2026-09-27-remocao-filtros-tela-alunos.md`. Nada resta a fazer neste achado; a Etapa 4 perde este escopo* |
-| 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ⏳ |
+| 4.11 | Cards com informação excessiva | Diagnóstico §4.11 | Etapa 4 | ✅ *ETAPA 4 CONCLUÍDA (2026-09-27, PR #64): divulgação progressiva nos cards de Aluno, Finanças e agenda — áreas expansíveis ("Ver detalhes") e badges em modo ícone com o texto preservado em `title`/`aria-label` — ver seção 5, Etapa 4* |
 | 4.12 | Eventos simultâneos na agenda diária | Diagnóstico §4.12 | Etapa 5 | ✅ *ETAPA 5 CONCLUÍDA (2026-09-27, mergeada na `main`): formato híbrido estilo Outlook — banda de 2 em colunas, banda de 3+ em linhas empilhadas; fundo do Dia nivelado/esticado — ver seção 5, Etapa 5* |
-| 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
+| 4.13 | Amarelo sobrecarregado semanticamente | Diagnóstico §4.13 | **Etapa 7 (ampliada)** | ✅ *fechado 2026-10-01 na Etapa 7, Cartão A: paleta de estado tokenizada em `:root` (ok/informativo/aviso/erro/neutro); o dourado passa a ser só identidade e "em aberto" deixa de ser dourado — ver seção 5, Etapa 7* |
 | 4.14 | Safe areas / elementos flutuantes | Diagnóstico §4.14 | Etapa 3 | ✅ *ETAPA 3 CONCLUÍDA (2026-09-27, `7ccb736`): `--bottombar-height` medido em runtime, FAB/toast/barra ancorados no token, `viewport-fit=cover` no meta — valores declarados no report da Etapa 3 (env()=0 no DevTools; valida o cálculo, não o pixel)* |
 | 4.15 | Movimento reduzido parcial | Diagnóstico §4.15 | Etapa 7 | ✅ *fechado 2026-10-01 na Etapa 7, Cartão C: bloco único de `prefers-reduced-motion` no fim do `style.css`, cobrindo as 4 animações existentes e as transições que movem (`transform`/`opacity`). Correção de rumo: o achado nomeava `halterBounce`, `pulseAgora` e `homeShimmer`, removidas pela limpeza de CSS — ver seção 5, Etapa 7* |
 | 4.16 | Navegação/tabs sem ARIA completo | Diagnóstico §4.16 | Etapa 7 | ✅ *fechado 2026-10-01 na Etapa 7, Cartão B: os dois grupos de abas ganharam `role="tablist"` com nome acessível, `role="tab"` + `aria-selected` sincronizado com o estado real e painéis `role="tabpanel"` + `aria-labelledby`. Ressalva: sem roving `tabindex`/navegação por setas (prática do APG, não requisito da especificação). A barra inferior da Etapa 3 já operava `aria-current="page"`* |
-| 4.17 | 6 inconsistências específicas (inclui bug de seletor CSS/JS) | Diagnóstico §4.17 | **Etapa 7 (ampliada)** | ⚠️ ⏳ *órfão — ver seção 5, Etapa 7* |
+| 4.17 | 6 inconsistências específicas (inclui bug de seletor CSS/JS) | Diagnóstico §4.17 | **Etapa 7 (ampliada)** | ✅ *fechado 2026-10-01 na Etapa 7: os 6 itens resolvidos ao longo dos cartões A–D (o item 2, bug de seletor, já em 2026-09-27) — ver seção 5, Etapa 7* |
 
 ---
 
@@ -91,12 +91,15 @@ fila de prioridade da revisão `anti-ui-slop` **mesclada** com as etapas estrutu
    E/F/G + rodadas 2 e 3 (FAB dinâmico, remoção da linha de ações do modo Dia, remoção da tarja
    LOCAL), commit `7ccb736` (+ `66593c9`, `3bbf152`); mergeada na `main` via PR #63
    (`6910621`). Report: `docs/plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`.
-5. **Etapas 4, 5, 6** → seguem a ordem original do diagnóstico, sem dependência forte entre si.
-6. **Etapa 7 — consistência e acessibilidade final (ampliada)** → agora inclui explicitamente
-   4.13 e 4.17, que não tinham dono nos documentos originais. **Atualização (2026-09-27)**:
-   os itens 4.17.4 e 4.17.5 foram resolvidos de facto pelos cartões C e D da Etapa 2 (padrões
-   `disabled` e `aria-label` já são globais) — a Etapa 7 executa auditoria de cobertura, não
-   trabalho novo.
+5. ~~**Etapas 4, 5, 6**~~ → ✅ **concluídas**: Etapa 4 (2026-09-27, PR #64 / `b52564f`), Etapa 5
+   (2026-09-27, PR #65 / `5e20d96`) e Etapa 6 (2026-09-30, PRs #66 e #67). Seguiram a ordem
+   original do diagnóstico, sem dependência forte entre si.
+6. ~~**Etapa 7 — consistência e acessibilidade final (ampliada)**~~ → ✅ **concluída
+   (2026-10-01)**, nos cartões A–D (branch `feat/etapa-7-consistencia-acessibilidade`). Incluiu
+   explicitamente 4.13 e 4.17, que não tinham dono nos documentos originais. **Nota de
+   2026-09-27**: os itens 4.17.4 e 4.17.5 já haviam sido resolvidos de facto pelos cartões C e D
+   da Etapa 2 (padrões `disabled` e `aria-label` globais) — a Etapa 7 fez a auditoria de
+   cobertura, não trabalho novo.
 
 **Por que a Fase 0.1 não foi feita junto com a Etapa 1?** O relatório de conclusão da Etapa 1
 registra explicitamente que `#toast` ficou **fora de escopo**. Isso foi uma decisão correta de
@@ -300,12 +303,12 @@ secundária → seção "Dados" do modal).
 
 ---
 
-### Etapa 4 — Densidade de cards ⏳ PENDENTE (escopo reduzido)
+### Etapa 4 — Densidade de cards ✅ CONCLUÍDA (2026-09-27, mergeada na `main` via PR #64 / `b52564f`)
 
 **Achados endereçados**: 4.11 (4.10 já resolvido — ver tabela mestra e nota abaixo).
 
 **Nota (2026-09-27)**: o achado 4.10 ("filtros apertados") saiu do escopo desta etapa. Os
-filtros de Finças e de Alunos foram **removidos por completo** em duas rodadas isoladas
+filtros de Finanças e de Alunos foram **removidos por completo** em duas rodadas isoladas
 (Etapa 2, Cartão A, e hotfix de 2026-09-27), por decisão direta do dono, em vez de adaptados.
 O que resta nesta etapa é só 4.11 (cards com informação excessiva).
 
@@ -315,6 +318,11 @@ de corrigir).
 
 **Critério de conclusão**: cards continuam compreensíveis em 320–430px sem informação
 redundante ou excessiva no primeiro nível.
+
+**Registro de execução**: cartões A–D (card de Aluno, card de Finanças, card de agenda e
+reorganização do card), com as decisões de primeiro nível tomadas na abertura da etapa e o
+detalhamento medido no plano
+[`plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md`](../plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md).
 
 ---
 
@@ -524,25 +532,32 @@ uso de cor de estado é semanticamente consistente.
 
 ---
 
-## 6) Decisões de produto pendentes (não inferir durante implementação)
+## 6) Decisões de produto — registro histórico (não inferir durante implementação)
 
-Aplicável às etapas ainda não iniciadas (a Etapa 1 já teve suas decisões fechadas na seção 5,
-tabela 10.0):
+Todas as decisões abaixo estão **fechadas** — nenhuma etapa da auditoria segue com decisão de
+produto em aberto. O registro abaixo mantém quando e onde cada uma foi resolvida:
 
 1. ~~A barra inferior (Etapa 3) substitui integralmente a navegação superior ou coexistirá em
    alguma tela?~~ → **Fechada na abertura da Etapa 3 (2026-09-27)**: substitui integralmente;
    título e login permanecem no topo por exceção donal.
-2. Quais informações são indispensáveis no primeiro nível dos cards de agenda, aluno e finanças
-   (Etapa 4)?
-3. Qual comportamento desejado para eventos simultâneos na agenda diária (Etapa 5)?
+2. ~~Quais informações são indispensáveis no primeiro nível dos cards de agenda, aluno e finanças
+   (Etapa 4)?~~ → **Fechada na abertura da Etapa 4 (2026-09-27)**: o primeiro nível de cada card
+   foi definido na tabela de decisões do plano daquela etapa, e o restante migrou para áreas
+   expansíveis ("Ver detalhes").
+3. ~~Qual comportamento desejado para eventos simultâneos na agenda diária (Etapa 5)?~~ →
+   **Fechada na Etapa 5 (2026-09-27)**: formato híbrido estilo Outlook — banda de 2 eventos em
+   colunas, banda de 3+ em linhas empilhadas. A decisão original "C — cascata" foi validada e
+   depois substituída pelo dono para 4+ eventos.
 4. ~~A sincronização manual deve permanecer exposta na Home ou migrar para área secundária
    (Etapa 3 / Fase 0.3)?~~ → **Fechada na abertura da Etapa 3 (2026-09-27)**: migra para área
    secundária — seção "Dados" no modal Área do usuário (junto com "Configurar Grade Horária").
 5. ~~A tela ativa deve sobreviver à recarga e participar do histórico Voltar/Avançar (Etapa 7,
    item 4.17.6)?~~ → **Fechada em 2026-10-01 (Cartão D)**: **sim** — por hash (`#tela-financas`),
    que é a única forma que não exige rewrite no servidor local nem no deploy estático do Vercel.
-6. Amarelo como cor de estado: manter um único significado ou introduzir cor adicional
-   (Etapa 7, item 4.13)?
+6. ~~Amarelo como cor de estado: manter um único significado ou introduzir cor adicional
+   (Etapa 7, item 4.13)?~~ → **Fechada em 2026-10-01 (Cartão A)**: paleta de estado tokenizada
+   (ok/informativo/aviso/erro/neutro) em `:root`; o dourado deixa de indicar estado e passa a ser
+   só identidade visual. Não foi preciso introduzir cor nova.
 
 Estas são decisões de experiência; não devem ser inferidas durante a implementação nem pelo
 modelo executor (Qwen) nem pelo planejador.

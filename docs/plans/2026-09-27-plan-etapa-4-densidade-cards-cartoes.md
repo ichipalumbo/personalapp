@@ -2,6 +2,7 @@
 
 > **Data de abertura**: 2026-09-27
 > **Branch de trabalho**: `feat/etapa-4-densidade-cards` (criada de `origin/main`, sem upstream track)
+> **Status**: ✅ CONCLUÍDA (2026-09-27) — cartões A–D; mergeada na `main` via PR #64 (`b52564f`)
 > **Fonte**: seção "Etapa 4 — Densidade de cards" de `docs/diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`
 
 ## Escopo desta etapa

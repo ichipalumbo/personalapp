@@ -21,12 +21,13 @@ Cada item traz:
 
 **Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
 
-**Grupo 5 em andamento**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não é
-executado em sequência única — roda em paralelo, por rodadas. Último item concluído: **5.8**
-(2026-09-30 — PR #68, skeletons padronizados + rótulo de cache B1; validação visual do dono
-aprovada em 2026-10-01). Antes dele, **5.6** (2026-09-30 — PR #66, unificação + textos, e PR #67,
-tela de finanças). O item **5.7** é o próximo e permanece `[~]` em andamento (parte resolvida
-pelos cartões da Etapa 2/3, resto pendente de auditoria final).
+**Grupo 5 — concluído**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não foi
+executado em sequência única — rodou em paralelo, por rodadas. Os oito itens (5.1–5.8) estão
+fechados. Os últimos: **5.8** (2026-09-30 — PR #68, skeletons padronizados + rótulo de cache B1;
+validação visual do dono aprovada em 2026-10-01), **5.6** (2026-09-30 — PR #66, unificação +
+textos, e PR #67, tela de finanças) e **5.7** (2026-10-01 — cartões A–D da Etapa 7, branch
+`feat/etapa-7-consistencia-acessibilidade`). Com isso o documento-mãe do grupo
+(`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`) não tem mais achado em aberto.
 
 ---
 
@@ -83,7 +84,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 5     | 5.4 Densidade de cards (Etapa 4)                 | `[x]`  | —                                                                |
 | 5     | 5.5 Eventos simultâneos na agenda diária (Etapa 5) | `[x]`  | —                                                             |
 | 5     | 5.6 Erros e toasts (Etapa 6)                     | `[x]`  | —                                                                |
-| 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[~]`  | 5.1 a 5.6                                                        |
+| 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[x]`  | 5.1 a 5.6                                                        |
 | 5     | 5.8 Estados de carregamento: skeletons + cache   | `[x]`  | 5.6 (validado 2026-10-01)                                        |
 
 ---
@@ -759,8 +760,9 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   de fato pela Etapa 2, exceto a fonte); auditoria de cobertura do 4.17.4/4.17.5: 105 interativos
   e 45 campos, zero sem nome acessível. **Ressalva registrada no plano**: a ativação por teclado
   não pôde ser observada neste ambiente (Enter não chega à página nem num botão de controle
-  pré-existente). Pendentes: C (reduced-motion + retry) e D (navegação com recarga/histórico;
-  decisão do dono: a tela ativa deve sobreviver à recarga e entrar no histórico).
+  pré-existente). **Pendentes naquele momento**: C (reduced-motion + retry) e D (navegação com
+  recarga/histórico; decisão do dono: a tela ativa deve sobreviver à recarga e entrar no
+  histórico) — os dois fechados na sequência, nos registros abaixo.
   **Cartão C (movimento reduzido e textos) concluído**: bloco único de `prefers-reduced-motion` no
   fim do `style.css` (as animações existentes + as transições que movem), guard no JS de
   `animarTrocaPeriodo` para não prender a classe nem vazar listener, e o toast passa a
@@ -820,7 +822,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app/router.js` + teste
   (`tests-frontend/router-fab-tela.test.js`, prova de mutação):
   [`reports/2026-09-30-hotfix-fab-home-troca-tela.md`](reports/2026-09-30-hotfix-fab-home-troca-tela.md).
-- **Depende de**: 5.6 (concluído). Independente de 5.7, mas a execução fica **antes** dele por
-  ordem do dono.
+- **Depende de**: 5.6 (concluído). Independente de 5.7 — a execução ficou **antes** dele por
+  ordem do dono, e os dois estão concluídos.
 
 _Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir._
