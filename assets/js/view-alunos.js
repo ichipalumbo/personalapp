@@ -772,7 +772,30 @@ window.salvarEdicaoCobrancaReposicao = async function() {
     }
 };
 
-async function carregarDadosComplementaresAlunos(opcoes = {}) {
+let complementosAlunosEmVoo = null;
+
+function telaAlunosAtiva() {
+    const router = window.__appShell && window.__appShell.router;
+    return !router || router.getCurrentViewId() === 'tela-alunos';
+}
+
+function carregarDadosComplementaresAlunos(opcoes = {}) {
+    const operacao = opcoes.operacao;
+    const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+    const interacao = window.contextoDados.capturarInteracao();
+    const voo = complementosAlunosEmVoo;
+    if (opcoes.reutilizarEmVoo && voo && window.contextoDados.atual(voo.contexto)
+        && voo.contexto.ownerEmail === contexto.ownerEmail && voo.contexto.geracao === contexto.geracao
+        && voo.interacao === interacao && voo.operacao === operacao) return voo.promise;
+    const novo = { contexto, interacao, operacao };
+    complementosAlunosEmVoo = novo;
+    novo.promise = executarComplementosAlunos({ ...opcoes, contextoDados: contexto }).finally(() => {
+        if (complementosAlunosEmVoo === novo) complementosAlunosEmVoo = null;
+    });
+    return novo.promise;
+}
+
+async function executarComplementosAlunos(opcoes = {}) {
     const operacao = opcoes.operacao;
     const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
     const interacao = window.contextoDados.capturarInteracao();
@@ -787,7 +810,7 @@ async function carregarDadosComplementaresAlunos(opcoes = {}) {
             resumo = window.obterResumoFinanceiroPorAluno();
         } else {
             if (typeof window.garantirDadosFinancas !== 'function') throw new Error('Financeiro indisponível.');
-            resumo = await window.garantirDadosFinancas({ forcarRemoto: true, operacao, contextoDados: contexto });
+            resumo = await window.garantirDadosFinancas({ forcarRemoto: true, operacao, contextoDados: contexto, reutilizarEmVoo: opcoes.reutilizarEmVoo === true });
         }
         if (!podeAplicar()) return false;
         if (!resumo || typeof resumo !== 'object' || Array.isArray(resumo)) throw new Error('Resumo financeiro inválido.');
@@ -840,9 +863,16 @@ async function carregarDadosComplementaresAlunos(opcoes = {}) {
 
     if (!podeAplicar()) return false;
     window.invalidarChaveRenderAlunos();
-    window.renderizarListaAlunos();
+    if (telaAlunosAtiva()) window.renderizarListaAlunos();
     return podeAplicar() && sucesso;
 }
+
+// D1: atualizar lista/complementos sem fechar cadastro nem reexecutar inicialização.
+window.atualizarAlunosAposSync = function(opcoes = {}) {
+    if (!window.contextoDados.atual(opcoes.contextoDados) || !window.contextoDados.podeLer()) return false;
+    window.renderizarListaAlunos();
+    return carregarDadosComplementaresAlunos({ ...opcoes, reutilizarEmVoo: true });
+};
 
 // Recuperação explícita (cartão C): refaz somente a leitura dos complementos da lista
 // de alunos. Nunca escreve e nunca reenvia operação; devolve false quando a leitura
@@ -874,6 +904,7 @@ window.inicializarPaginaCadastro = async function(opcoes = {}) {
         if (!podeAplicar() || !resultado || resultado.ok !== true) return;
         window.__sincronizacaoInicialConcluida = true;
     }
+    if (!telaAlunosAtiva()) return;
     window.renderizarListaAlunos();
     window.togglePainelCadastro(false);
     carregarDadosComplementaresAlunos(opcoes);
@@ -998,6 +1029,11 @@ window.renderizarListaAlunos = function() {
         })();
         if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderAlunos) return;
         _ultimaChaveRenderAlunos = _chaveAtual;
+        const foco = document.activeElement;
+        const cardFocado = foco && foco.closest('.aluno-card');
+        const indiceFoco = cardFocado ? Array.from(cardFocado.querySelectorAll('button, input, summary')).indexOf(foco) : -1;
+        const alunoFocado = cardFocado && cardFocado.getAttribute('data-aluno-id');
+        const detalhesAbertos = new Set(Array.from(listaContainer.querySelectorAll('.aluno-card[data-aluno-id]')).filter((el) => el.querySelector('details[open]')).map((el) => el.getAttribute('data-aluno-id')));
 
         if (alunos.length === 0) {
             listaContainer.innerHTML = `
@@ -1041,7 +1077,7 @@ window.renderizarListaAlunos = function() {
             ].filter(Boolean).join('');
 
             return `
-                <div class="aluno-card aluno-card--gerenciavel" onclick="prepararEdicaoAluno('${aluno.id}')" style="display: flex; flex-direction: column; gap: 10px; position: relative; cursor: pointer;">
+                <div class="aluno-card aluno-card--gerenciavel" data-aluno-id="${escaparTextoAluno(aluno.id)}" onclick="prepararEdicaoAluno('${aluno.id}')" style="display: flex; flex-direction: column; gap: 10px; position: relative; cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                         <div>
                             <strong style="display: block; color: #FFF; font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
@@ -1071,7 +1107,7 @@ window.renderizarListaAlunos = function() {
                         </div>
                     </div>
 
-                    <details class="aluno-card-detalhes" onclick="event.stopPropagation();" style="border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
+                    <details class="aluno-card-detalhes" ${detalhesAbertos.has(aluno.id) ? 'open' : ''} onclick="event.stopPropagation();" style="border-top: 1px solid #2A2A2A; padding-top: 8px; margin-top: 2px;">
                         <summary style="cursor: pointer; color: #FFD700; font-weight: 700; font-size: 0.875rem;">Ver detalhes</summary>
                         <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.875rem; color: #B0B0B0; margin-top: 8px;">
                             <div><i class="fa-solid fa-location-dot" style="color: #FFD700; margin-right: 6px; width: 12px;"></i> ${local}</div>
@@ -1086,6 +1122,11 @@ window.renderizarListaAlunos = function() {
                 </div>
             `;
         }).join('');
+        if (alunoFocado && indiceFoco >= 0) {
+            const novoCard = Array.from(listaContainer.querySelectorAll('[data-aluno-id]')).find((el) => el.getAttribute('data-aluno-id') === alunoFocado);
+            const novoFoco = novoCard && novoCard.querySelectorAll('button, input, summary')[indiceFoco];
+            if (novoFoco) novoFoco.focus({ preventScroll: true });
+        }
     }
 };
 window.prepararEdicaoAluno = function(id) {

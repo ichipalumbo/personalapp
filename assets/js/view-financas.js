@@ -23,8 +23,15 @@
         // Detalhes do extrato do ciclo atual, persistidos em memória para sobreviver a re-renders.
         extratoAberto: {}
     };
+    let leituraFinancasEmVoo = null;
+
+    function telaFinancasAtiva() {
+        const router = global.__appShell && global.__appShell.router;
+        return !router || router.getCurrentViewId() === 'tela-financas';
+    }
 
     contextoDados.aoInvalidar(() => {
+        leituraFinancasEmVoo = null;
         STATE.cards = [];
         STATE.historicoPorAluno = {};
         STATE.historicoAberto = {};
@@ -599,9 +606,14 @@
     }
 
     function renderizarCards() {
+        if (!telaFinancasAtiva()) return;
         const conteudo = document.getElementById('financasConteudo');
         if (!conteudo) return;
 
+        const foco = document.activeElement;
+        const atributo = foco && foco.getAttributeNames().find((nome) => nome.startsWith('data-financas-'));
+        const detalheFocado = foco && foco.tagName === 'SUMMARY' ? foco.parentElement : null;
+        const idDetalhe = detalheFocado && (detalheFocado.getAttribute('data-financas-historico-details') || detalheFocado.getAttribute('data-financas-extrato-details'));
         const cards = filtrarCards(STATE.cards);
         if (cards.length === 0) {
             renderizarVazio('Nenhum aluno para exibir.');
@@ -609,9 +621,14 @@
         }
 
         conteudo.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;">${cards.map(renderizarCard).join('')}</div>`;
+        let novoFoco;
+        if (atributo) novoFoco = Array.from(conteudo.querySelectorAll(`[${atributo}]`)).find((el) => el.getAttribute(atributo) === foco.getAttribute(atributo) && el.getAttribute('data-ciclo-id') === foco.getAttribute('data-ciclo-id'));
+        else if (idDetalhe) novoFoco = Array.from(conteudo.querySelectorAll('details')).find((el) => (el.getAttribute('data-financas-historico-details') || el.getAttribute('data-financas-extrato-details')) === idDetalhe)?.querySelector('summary');
+        if (novoFoco) novoFoco.focus({ preventScroll: true });
     }
 
     function atualizarCabecalhoCache() {
+        if (!telaFinancasAtiva()) return;
         const label = document.getElementById('financasCacheLabel');
         const syncState = document.getElementById('financasSyncState');
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
@@ -634,12 +651,29 @@
         }
     }
 
-    async function carregarFinancas(opcoes = {}) {
+    function carregarFinancas(opcoes = {}) {
+        const operacao = opcoes.operacao;
+        const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        const voo = leituraFinancasEmVoo;
+        if (opcoes.reutilizarEmVoo === true && voo && contextoDados.atual(voo.contexto)
+            && voo.contexto.ownerEmail === contexto.ownerEmail && voo.contexto.geracao === contexto.geracao
+            && voo.interacao === interacao && voo.operacao === operacao
+            && voo.timeoutMs === (opcoes.timeoutMs || 40000)) return voo.promise;
+        const novo = { contexto, interacao, operacao, timeoutMs: opcoes.timeoutMs || 40000 };
+        leituraFinancasEmVoo = novo;
+        novo.promise = executarLeituraFinancas({ ...opcoes, contextoDados: contexto }).finally(() => {
+            if (leituraFinancasEmVoo === novo) leituraFinancasEmVoo = null;
+        });
+        return novo.promise;
+    }
+
+    async function executarLeituraFinancas(opcoes = {}) {
         const operacao = opcoes.operacao;
         const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || contextoDados.capturar();
         const interacao = contextoDados.capturarInteracao();
         if (!contextoDados.atual(contexto)) {
-            if (!operacao) renderizarVazio('Faça login para carregar o financeiro.');
+            if (!operacao && telaFinancasAtiva()) renderizarVazio('Faça login para carregar o financeiro.');
             return false;
         }
         if (!contextoDados.podeAplicarInteracao(interacao, operacao)) return false;
@@ -655,7 +689,7 @@
         // 5.8 (Parte A): o container do conteúdo sinaliza o estado de carga
         // enquanto a chamada estiver em voo (incluindo cache exibida + refresh
         // remoto em andamento).
-        const conteudoAgora = document.getElementById('financasConteudo');
+        const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
         if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'true');
 
         if (silencioso && STATE.cards.length > 0) {
@@ -664,7 +698,7 @@
             STATE.cards = Array.isArray(cache.dados) ? cache.dados : [];
             renderizarCards();
         } else {
-            renderizarSkeleton();
+            if (telaFinancasAtiva()) renderizarSkeleton();
         }
 
         try {
@@ -710,7 +744,7 @@
                 if (!silencioso && typeof global.mostrarToast === 'function') {
                     global.mostrarToast(STATE.erro, 'warning');
                 }
-                if (!cache) {
+                if (!cache && telaFinancasAtiva()) {
                     renderizarVazio(STATE.erro);
                 }
             }
@@ -720,7 +754,7 @@
             if (podeAplicar()) {
                 STATE.carregando = false;
                 atualizarCabecalhoCache();
-                const conteudoAgora = document.getElementById('financasConteudo');
+                const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
                 if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'false');
             }
         }
@@ -1010,10 +1044,22 @@
     };
 
     window.renderizarFinancas = function () {
-        renderizarCabecalho();
+        if (!telaFinancasAtiva()) return;
+        if (!document.getElementById('financasConteudo')) renderizarCabecalho();
         bindHandlers();
         renderizarCards();
         atualizarCabecalhoCache();
+    };
+
+    // D1: leitura própria existente, compartilhada quando compatível; nunca reinicializa.
+    window.atualizarFinancasAposSync = function (opcoes = {}) {
+        if (!contextoDados.podeLer(opcoes.operacao)) return false;
+        if (telaFinancasAtiva() && !document.getElementById('financasConteudo')) {
+            renderizarCabecalho();
+            ensureModais();
+            bindHandlers();
+        }
+        return carregarFinancas({ ...opcoes, forcarRemoto: true, silencioso: true, reutilizarEmVoo: true });
     };
 
     // Consumido pelo card do aluno (view-alunos.js) para não duplicar o cálculo de ciclo no frontend.
@@ -1062,7 +1108,7 @@
             estado.dados = [];
             estado.erro = null;
         });
-        if (!await carregarFinancas({ forcarRemoto: true, silencioso: true, contextoDados: contexto })) return false;
+        if (!await carregarFinancas({ forcarRemoto: true, silencioso: true, contextoDados: contexto, reutilizarEmVoo: false })) return false;
         if (!podeAplicar()) return false;
         let sucesso = true;
         for (const alunoId of abertos) {

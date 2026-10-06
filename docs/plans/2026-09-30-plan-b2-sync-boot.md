@@ -1,11 +1,11 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Aberto — A e B validados localmente; C–E não iniciados
+> **Status**: Aberto — A–C e D1 validados localmente; D2/D3/E não iniciados
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: implementação somente do cartão B; base `7f7d140`, mesma branch autorizada.
+> **Rodada atual**: somente D1, base `14fc0e2`, mesma branch limpa autorizada pelo dono; B2 desligado.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
@@ -289,7 +289,7 @@ nem passa a ter atomicidade/idempotência só por separar o botão de atualizaç
 
 ## 5. Cartões de execução propostos
 
-Cartões A–C concluídos nos recortes abaixo, ainda sem publicação; D/E não iniciados.
+Cartões A–C concluídos nos recortes abaixo, ainda sem publicação; D dividido em D1→D2→D3.
 Escopo revalidado: **Médio–Alto**, revisar após inventário do C.
 Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E numa alteração única.
 
@@ -351,6 +351,60 @@ Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E
   não restaura dados locais. GETs lazy do backend permanecem; testes não cobrem Mongo/GCal real.
 - **Limite de tentativas**: no máximo 2 por falha de validação; na segunda, registrar e parar
   o incremento para decisão do dono, sem seguir a dependentes.
+
+### Cartão D1 — Hidratar cache e atualizar sem reinicializar a tela
+
+- **Objetivo / resultado**: cache principal autorizado em memória antes de abrir qualquer
+  hash; atualização da tela ativa sem fechamento/reset de formulário, período ou URL.
+- **Depende de**: A–C, base `14fc0e2`.
+- **Arquivos / componentes prováveis**: storage, bootstrap, views Alunos/Finanças,
+  testes frontend e documentação neste plano/roadmap.
+- **Inclui**: hidratação síncrona idempotente sem rede; vazio válido; despacho neutro;
+  reaproveitamento de leituras complementares compatíveis em voo; aplicação em memória
+  separada de render da tela ativa; preservação de foco e detalhes ainda existentes.
+- **Não inclui**: coordenador, gatilho B2, retomadas novas, rótulo por operação, mudança
+  em auth/GCal/cascata/backend/cálculo, dependências ou consolidação do item 2.2.
+- **Decisões pendentes / bloqueios**: nenhum. Finanças conserva seu GET existente;
+  hidratar cache principal não cria carga remota principal nessa tela neste cartão.
+- **Critérios de aceite**: três hashes recebem cache antes do inicializador; sessão inválida
+  ou outra conta não recebem cache; hidratação repetida não restaura disco sobre memória;
+  refresh não reinicializa/navega; GET financeiro compatível em voo não é duplicado;
+  resposta complementar não renderiza tela abandonada; edição/foco/período preservados.
+- **Resultado**: implementado e validado localmente em 06/10; registro §13 abaixo.
+- **Validação**: frontend antes 197/197, zero falhas; testes focados com código real,
+  mutações restauradas, suíte final e smoke local mock. Backend não afetado/não executado.
+- **Riscos e rollback**: GETs lazy continuam existentes; reversão de código não desfaz
+  efeito externo. Nenhum acesso a produção, commit, push ou deploy pelo agente.
+- **Limite de tentativas**: no máximo 2 por falha; segunda falha bloqueia dependentes.
+
+### Cartão D2 — Preparar coordenador B2 sem ligar ao boot
+
+- **Objetivo / resultado**: estado pendente/em voo/aplicado por contexto com retomada
+  por eventos e rótulo pertencente à operação, sem disparo de bootstrap.
+- **Depende de**: D1 validado.
+- **Arquivos / componentes prováveis**: storage/coordenador de dados, testes frontend,
+  plano e roadmap; ligação de bootstrap permanece para D3.
+- **Inclui**: coordenação, limite de uma aplicação por contexto, adiamentos e retomadas
+  conforme §4.4; testes focados desses contratos.
+- **Não inclui**: ativação no boot, consolidação GCal/2.2 ou aceite integrado E.
+- **Decisões pendentes / bloqueios**: refinar eventos e propriedade do rótulo antes do
+  código; confirmar branch no início da rodada. Não reutilizar resposta B2 como manual.
+- **Critérios de aceite**: contrato testado isoladamente; B2 ainda desligado.
+- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 tentativas por falha.
+
+### Cartão D3 — Ligar e ativar B2 nas três telas iniciais
+
+- **Objetivo / resultado**: ligar coordenador após apresentação inicial e integrar os
+  gatilhos existentes estritamente necessários, sem duplicar leitura compatível.
+- **Depende de**: D2 validado.
+- **Arquivos / componentes prováveis**: bootstrap, storage/coordenador, testes frontend,
+  specs pertinentes e registro de ativação no plano/roadmap.
+- **Inclui**: ligação ao bootstrap e testes das três hashes com/sem cache.
+- **Não inclui**: consolidação geral GCal/2.2 ou fechamento antecipado de E.
+- **Decisões pendentes / bloqueios**: revalidar integração com cargas iniciais e triggers
+  atuais após D2; qualquer área sensível exige autorização própria antes de edição.
+- **Critérios de aceite**: cache imediato e revalidação elegível sem reset/duplicação.
+- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 tentativas por falha.
 
 ### Arquivos previstos da frente completa
 
@@ -579,8 +633,8 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Próxima rodada
 
-Próximo **cartão D — boot e render neutro**: confirmar branch, conferir A–C entregues e
-medir baseline frontend antes do código. D depende dessas garantias; E fecha aceite.
+Próximo **cartão D2 — coordenador sem ligação ao boot**: confirmar branch, conferir A–C/D1
+entregues e medir baseline frontend antes do código. D3 liga o boot; E fecha aceite.
 Se inventário exigir alterar autenticação,
 GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
 sem relatório paralelo por cartão.
@@ -728,3 +782,66 @@ essa dependência antes de seguir, sem substituir silenciosamente as decisões a
   ainda descreve caminho histórico anterior à mudança dos módulos compartilhados — fora
   deste cartão. Nenhuma dependência nova, cálculo/motor/conflitos ou backend de produção.
 - **Não realizado**: D/E, ativação B2 no boot, publicação ou alteração de dados reais.
+
+## 13. Registro da execução do cartão D1 — 06/10
+
+- **Branch/base**: `docs/planejar-sync-boot`, C commitado em `14fc0e2`, árvore inicialmente
+  limpa e upstream próprio. Continuidade confirmada pelo dono antes de qualquer escrita.
+- **Arquivos alterados**:
+  - `assets/js/storage.js`: `hidratarCacheDados` idempotente por contexto, sem rede,
+    normalização/migração/CRUD; reutilizada na carga existente. Despacho público
+    `atualizarViewAtualAposSync` consulta tela ativa, protege edição/operação e mantém
+    caminho de leitura nova para manual/recuperação. Vazio válido continua sendo snapshot.
+  - `assets/js/app/bootstrap.js`: hidrata antes do inicializador de qualquer hash;
+    refresh usa despacho neutro, não `router.refreshCurrentView`. Auto-refresh não renderiza
+    leitura falha/descartada; login conserva leitura própria de Finanças mesmo se batch
+    principal falhar. Nenhum novo gatilho, coordenador ou ativação B2.
+  - `assets/js/view-financas.js`: voo compatível por contexto/interação/raiz/prazo
+    compartilhado **somente no refresh passivo D1**. Manual/recuperação continuam exigindo
+    GET novo. Atualização não reconstrói cabeçalho; monta apenas estrutura ausente após
+    inicialização adiada. Cards/históricos/extrato/foco preservados; resultado fora da tela
+    atualiza memória/cache autorizado sem renderizar cards/indicadores antigos.
+  - `assets/js/view-alunos.js`: refresh sem inicializar/fechar cadastro; reuso do complemento
+    compatível já em voo apenas no caminho passivo. Render preserva detalhes/foco dos
+    alunos ainda existentes; complemento terminado após navegação não renderiza a lista.
+  - `tests-frontend/d1-hidratacao-render.test.js`: 29 regressões com bootstrap, storage,
+    contexto, router e views reais, rede totalmente sintética. Matriz das três hashes ×
+    cache presente/vazio/ausente/outra conta/sem sessão/legado; idempotência, fluxo passivo,
+    edição/período/hash, navegação em voo, histórico sob demanda e manual exige leitura nova.
+  - Este plano e `docs/roadmap.md`: corrigido cabeçalho antigo do B sem apagar registro C;
+    divisão D1→D2→D3 e entrega parcial documentadas. Sem relatório paralelo/spec de regra nova.
+- **Suítes medidas**: frontend **197/197 antes → 226/226 depois**, zero falhas. Foco
+  existente 53/53; D1 final 29/29. **Backend não executado nesta rodada**: nenhum arquivo
+  backend/shared ou harness backend alterado; não reapresentar 232 como medição nova.
+- **Revisão focada**: uma revisão read-only; corrigidos reuso indevido possível pelo manual
+  e montagem de estrutura ausente. Acrescentadas regressões específicas e mantida leitura
+  financeira independente no login. Sem nova auditoria geral C/GCal/recorrência.
+- **Provas por mutação**, dois grupos controlados e restaurados por edição:
+
+  | Mutação | Assert que falhou | Resultado do grupo | Restaurada |
+  |---|---|---|---|
+  | Retirar hidratação antes do init | 6 casos presente/vazio nas três hashes | 21 passam / 8 falham | sim |
+  | Voltar ao refresh genérico do router | modo/período e inicializador da Home | mesmo grupo acima | sim |
+  | Reconstruir cabeçalho no render financeiro | identidade de `financasConteudo` | mesmo grupo acima | sim |
+  | Desativar reuso passivo financeiro | um GET compatível em voo | 27 passam / 2 falham | sim |
+  | Retirar guarda de cards fora da tela | DOM antigo não pode mudar | mesmo grupo acima | sim |
+
+  Cada mutação tem assert próprio falhando. Após restaurar todos os trechos, diff/status
+  conferidos e suíte completa **226/226**; diagnósticos dos arquivos alterados limpos.
+  Primeiro teste da fixture teve evento nativo `toggle` após fechar JSDOM; drenagem no
+  teardown corrigida, sem afrouxar guardas de produção. Não contado como prova de mutação.
+- **Smoke local mock**: `default`, **433×762, DPR ~2.81**, touch/pointer coarse confirmados;
+  caches estáticos limpos antes de ler arquivos atualizados. Finanças: conteúdo raiz, extrato
+  aberto, foco/hash/scroll preservados após refresh; Alunos: edição preenchida permanece
+  aberta/focada e refresh retorna adiamento; Home: modo Dia/data/semana/hash preservados.
+  Sem overflow horizontal nos três casos. Cliques reportaram timeout apesar de ação
+  observável no snapshot; demais verificações via DOM. Sem alegar teste de TalkBack.
+  Mock bloqueia caches/escritas: persistência e reload com caches são prova do harness,
+  não desse smoke. Ping localhost:5000 recusado e renovação GCal bloqueada permanecem esperados.
+- **Encontrado, não alterado**: integração/retomadas e dono do rótulo aguardam D2/D3;
+  consolidação GCal permanece 2.2; validade/efeito lazy dos GETs e limites CRUD do C intactos.
+  Foco só pode permanecer no controle correspondente se registro/ciclo continuar existindo;
+  não se cria alvo artificial para registro removido. Teclado/TalkBack e aceite ponta a ponta E
+  ainda não validados. `router.refreshCurrentView` genérico mantido, sem consumidor no bootstrap.
+- **Não realizado**: D2/D3/E, novas dependências, auth/GCal/cascata/motor/conflitos/backend,
+  commit, push, merge, deploy ou API/dados de produção. **B2 continua desligado.**

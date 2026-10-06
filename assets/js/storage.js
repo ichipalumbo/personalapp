@@ -1052,31 +1052,12 @@ async function carregarDados(opcoes = {}) {
     const forcarRemoto = opcoes.forcarRemoto === true;
     const silenciosoUI = opcoes.silenciosoUI === true;
 
+    hidratarCacheDados();
     if (CONTEXTO_DADOS.obterPendencia(contexto) && !opcoes.operacao) {
-        if (!_cacheInicializado) {
-            carregarDadosDoLocalStorage();
-            _cacheInicializado = true;
-            _cachePossuiDados = true;
-        }
         return { ok: false, estado: 'adiado', motivo: 'pendencia-local', origem: 'local-pendente' };
     }
 
-    if (!_cacheInicializado) {
-        const resultadoLocal = carregarDadosDoLocalStorage();
-        _cacheInicializado = true;
-        _cachePossuiDados = resultadoLocal.temDados;
-
-        if (_cachePossuiDados && !forcarRemoto && !opcoes.operacao) {
-            window.log.info('[storage]', 'Cache local carregado instantaneamente. Sem chamada inicial à API.');
-            if (typeof window.preencherFiltrosAlunos === 'function') {
-                window.preencherFiltrosAlunos();
-            }
-            if (deveForcarRender) {
-                forçarRenderizacaoInterface();
-            }
-            return { ok: true, estado: 'local', origem: 'local-cache' };
-        }
-    } else if (_cachePossuiDados && !forcarRemoto && !opcoes.operacao) {
+    if (_cachePossuiDados && !forcarRemoto && !opcoes.operacao) {
         if (typeof window.preencherFiltrosAlunos === 'function') {
             window.preencherFiltrosAlunos();
         }
@@ -1278,6 +1259,17 @@ async function salvarDados(silencioso = false, opcoes = {}) {
     }
 }
 
+// D1: hidratação local antes de qualquer view. Não inicia leitura remota nem B2,
+// e não reaplica disco sobre memória já hidratada/editada neste contexto.
+function hidratarCacheDados() {
+    CONTEXTO_DADOS.capturar(); // Invalidação de conta/sessão também reinicia as flags.
+    if (!_cacheInicializado) {
+        _cachePossuiDados = carregarDadosDoLocalStorage().temDados;
+        _cacheInicializado = true;
+    }
+    return { temDados: _cachePossuiDados };
+}
+
 function carregarDadosDoLocalStorage() {
     const snapshot = CONTEXTO_DADOS.lerPrincipal();
     const backupAlunos = snapshot ? snapshot.alunos : [];
@@ -1327,13 +1319,20 @@ function forçarRenderizacaoInterface() {
     }, 0);
 }
 
-async function atualizarViewAtualAposSync(contexto) {
+async function atualizarViewAtualAposSync(contexto, opcoes = {}) {
+    if (!CONTEXTO_DADOS.atual(contexto) || !CONTEXTO_DADOS.podeLer()) return false;
     const router = window.__appShell && window.__appShell.router;
     const tela = router && router.getCurrentViewId ? router.getCurrentViewId() : null;
-    if (tela === 'tela-alunos' && window.atualizarAlunosAposRecuperacao) return await window.atualizarAlunosAposRecuperacao({ contextoDados: contexto });
+    if (tela === 'tela-alunos' && opcoes.recuperacao && window.atualizarAlunosAposRecuperacao) return await window.atualizarAlunosAposRecuperacao({ contextoDados: contexto });
+    if (tela === 'tela-alunos' && window.atualizarAlunosAposSync) return await window.atualizarAlunosAposSync({ contextoDados: contexto });
+    else if (tela === 'tela-alunos' && window.atualizarAlunosAposRecuperacao) return await window.atualizarAlunosAposRecuperacao({ contextoDados: contexto });
     else if (tela === 'tela-alunos' && window.renderizarListaAlunos) window.renderizarListaAlunos();
-    else if (tela === 'tela-financas' && window.atualizarFinancasAposRecuperacao) return await window.atualizarFinancasAposRecuperacao({}, { contextoDados: contexto });
+    else if (tela === 'tela-financas') {
+        if (opcoes.recuperacao && window.atualizarFinancasAposRecuperacao) return await window.atualizarFinancasAposRecuperacao({}, { contextoDados: contexto });
+        if (window.atualizarFinancasAposSync) return await window.atualizarFinancasAposSync({ contextoDados: contexto });
+    }
     else if (tela === 'tela-home') {
+        if (window.__homeCarregando) return false;
         if (window.atualizarDashboardStats) window.atualizarDashboardStats();
         if (window.modoHomeAtivo === 'dia' && window.renderizarHomeDia) window.renderizarHomeDia();
         else if (window.renderizarHomeSemana) window.renderizarHomeSemana();
@@ -1343,6 +1342,8 @@ async function atualizarViewAtualAposSync(contexto) {
 
 window.apiFetchBackend = apiFetchBackend;
 window.executarOperacaoRemotaComFeedback = executarOperacaoRemotaComFeedback;
+window.hidratarCacheDados = hidratarCacheDados;
+window.atualizarViewAtualAposSync = atualizarViewAtualAposSync;
 window.carregarDadosDoLocalStorage = carregarDadosDoLocalStorage;
 window.temDadosLocaisNoCache = temDadosLocaisNoCache;
 
@@ -1374,7 +1375,7 @@ function _processarLeituraManual() {
             resultado = await carregarDados({ ...pedido.opcoes, forcarRender: false, forcarRemoto: true, silenciosoUI: true });
             if (!CONTEXTO_DADOS.atual(pedido.contexto)) return;
             if (resultado.estado === 'aplicado') {
-                const complementos = await atualizarViewAtualAposSync(pedido.contexto);
+                const complementos = await atualizarViewAtualAposSync(pedido.contexto, { recuperacao: true });
                 if (complementos === false || (complementos && complementos.ok === false)) resultado = { ...resultado, complementoPendente: true };
                 if (CONTEXTO_DADOS.atual(pedido.contexto) && typeof mostrarToast === 'function') {
                     mostrarToast(resultado.complementoPendente ? 'Dados principais atualizados, mas a leitura complementar falhou. Atualize apenas os dados.' : 'Dados atualizados.', resultado.complementoPendente ? 'warning' : 'success');

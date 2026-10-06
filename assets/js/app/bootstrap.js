@@ -38,15 +38,9 @@
         atualizarAlturaBarraInferior();
     }
 
-    async function refreshActiveView(router) {
-        if (router && typeof router.refreshCurrentView === 'function') {
-            await router.refreshCurrentView();
-            return;
-        }
-
-        if (typeof global.renderizarHomeSemana === 'function') {
-            global.renderizarHomeSemana();
-        }
+    async function refreshActiveView(contexto = global.contextoDados.capturar()) {
+        // Refresh não é navegação: preserva formulário, hash, período e modo.
+        return global.atualizarViewAtualAposSync(contexto);
     }
 
     let gcalWatchCheckDisparado = false;
@@ -89,7 +83,7 @@
         global.__appShell.atualizarAlturaTabsCalendario = atualizarAlturaTabsCalendario;
         global.__appShell.atualizarMedidasLayout = atualizarMedidasLayout;
         global.__appShell.refreshActiveView = function () {
-            return refreshActiveView(router);
+            return refreshActiveView();
         };
 
         if (global.__appServiceWorker && typeof global.__appServiceWorker.register === 'function') {
@@ -106,6 +100,7 @@
             }
         }
         global.contextoDados.iniciar();
+        global.hidratarCacheDados();
 
         router.bindNavigation();
         router.onAfterNavigate(() => {
@@ -153,7 +148,9 @@
                         global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
                     }
 
-                    await refreshActiveView(router);
+                    // A leitura própria de Finanças não depende do sucesso do batch principal.
+                    // O despacho não reinicializa telas nem aplica snapshot de fallback.
+                    await refreshActiveView(contexto);
                 } catch (error) {
                     console.error('Falha ao atualizar a view após mudança de autenticação:', error);
                 }
@@ -199,7 +196,7 @@
             autoRefreshEmAndamento = true;
             const contexto = global.contextoDados.capturar();
             try {
-                await global.carregarDados({
+                const resultado = await global.carregarDados({
                     forcarRender: false,
                     forcarRemoto: true,
                     silenciosoUI: true,
@@ -207,7 +204,7 @@
                 });
                 if (!global.contextoDados.atual(contexto)) return;
                 ultimoAutoRefreshAt = Date.now();
-                await refreshActiveView(router);
+                if (resultado && resultado.ok) await refreshActiveView(contexto);
             } catch (error) {
                 console.error('[Bootstrap] Falha no auto-refresh silencioso:', error);
             } finally {
