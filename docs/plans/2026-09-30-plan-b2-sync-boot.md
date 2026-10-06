@@ -1,11 +1,11 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Aberto — cartão A implementado e validado localmente; B–E não iniciados
+> **Status**: Aberto — A e B validados localmente; C–E não iniciados
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: implementação somente do cartão A; base `36db6fa`, mesma branch autorizada.
+> **Rodada atual**: implementação somente do cartão B; base `7f7d140`, mesma branch autorizada.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
@@ -289,7 +289,7 @@ nem passa a ter atomicidade/idempotência só por separar o botão de atualizaç
 
 ## 5. Cartões de execução propostos
 
-Cartão A concluído no recorte abaixo, ainda sem publicação; B–E não iniciados.
+Cartões A e B concluídos nos recortes abaixo, ainda sem publicação; C–E não iniciados.
 Escopo revalidado: **Médio–Alto**, revisar após inventário do C.
 Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E numa alteração única.
 
@@ -327,7 +327,32 @@ Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E
 - **Limite de tentativas**: no máximo 2 por falha de validação; na segunda, registrar e
   parar esse incremento para decisão do dono, sem avançar a dependentes.
 
-### Arquivos previstos (não alterados nesta rodada)
+### Cartão T02 (B) — Aplicar somente leitura remota completa e válida
+
+- **Objetivo / resultado**: obter/validar/preparar o batch sem mutar estado; aplicar tudo
+  somente após sucesso e autorização, sem migrações ou fallback destrutivo.
+- **Depende de**: T01 (A), commit `7f7d140`.
+- **Arquivos / componentes prováveis**: `assets/js/storage.js`, testes frontend de leitura,
+  spec Finanças §6.1.2, registro neste plano e item 2.4 do roadmap.
+- **Inclui**: leitura das cinco tarefas com fallback de rota da grade somente por 404;
+  validação estrutural, retorno explícito, aplicação separada, vazio válido, normalização
+  única sem CRUD, descarte de leitura substituída/conta antiga e bloqueio por pendência.
+- **Não inclui**: fila manual, recuperação UI, fronteiras completas de gravação/formulário
+  C; gatilho de boot D; mocks E; auth/GCal/cascata/backend/cálculo financeiro.
+- **Decisões pendentes / bloqueios**: nenhum para o batch. Formatos incompatíveis são falha,
+  sem inventar padrões; ausência de sinal do fallback interno 200 da grade é limite backend.
+- **Critérios de aceite**: zero POST/PUT/PATCH/DELETE causados por `carregarDados`; falha de
+  qualquer tarefa/JSON preserva memória/cache; vazio válido remove dados antigos; resposta
+  obsoleta ou pendência surgida durante leitura não é aplicada.
+- **Resultado**: implementado e validado localmente em 06/10; registro abaixo. B2 permanece desligado.
+- **Validação**: baseline real frontend 109/109 e backend 232/232; testes determinísticos
+  usando storage/contexto reais; mutações e suites finais; nenhuma API real.
+- **Riscos e rollback**: vazio remoto confirmado esvazia cache ativo; reversão de código
+  não restaura dados locais. GETs lazy do backend permanecem; testes não cobrem Mongo/GCal real.
+- **Limite de tentativas**: no máximo 2 por falha de validação; na segunda, registrar e parar
+  o incremento para decisão do dono, sem seguir a dependentes.
+
+### Arquivos previstos da frente completa
 
 - `assets/js/storage.js`: cache, leitura, contexto das requisições, resultado e sync manual.
 - `assets/js/utils-kpi.js` e markup/CSS de recuperação, **se necessários**: conectar ações e
@@ -554,8 +579,8 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Próxima rodada
 
-Próximo **cartão B — leitura segura**: confirmar branch, conferir este recorte entregue e
-medir baseline frontend antes do código. C/D dependem dessas garantias; E fecha aceite.
+Próximo **cartão C — interação e recuperação**: confirmar branch, conferir A/B entregues e
+medir baseline frontend antes do código. D depende dessas garantias; E fecha aceite.
 Se inventário exigir alterar autenticação,
 GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
 sem relatório paralelo por cartão.
@@ -563,3 +588,57 @@ sem relatório paralelo por cartão.
 O refinamento fecha a experiência dos dois pontos discutidos, mas não declara o plano
 "100% garantido": inventário de C e testes podem revelar dependência de backend. Trazer
 essa dependência antes de seguir, sem substituir silenciosamente as decisões aprovadas.
+
+## 11. Registro da execução do cartão B — 06/10
+
+- **Branch/base**: `docs/planejar-sync-boot`, A commitado pelo dono em `7f7d140`;
+  árvore inicialmente limpa e upstream próprio. Continuidade confirmada antes das escritas.
+- **Escopo realizado**:
+  - `assets/js/storage.js`: `obterLeituraDados` busca/valida/prepara sem mutação e
+    `aplicarLeituraDados` aplica somente leitura preparada autorizada. Batch principal
+    completo; snapshot público separado do interno; sequência descarta leitura substituída.
+  - `carregarDados` reutiliza essas etapas; retirados os ramos de recovery/migração e
+    persistência de normalização de objetivos. Vazio válido é aplicado sem CRUD; falha
+    preserva memória/cache anterior sem reidratação destrutiva. Resultados explícitos
+    conservam `origem` para consumidores existentes.
+  - Grade só usa segunda rota após 404, com JSON/horários textuais válidos. Listas precisam
+    de estrutura válida, identificadores e status pertinentes; bloqueio com ID objeto não
+    passa por coerção. Meta preservada de cache autorizado na leitura anterior à hidratação.
+  - Timeout/cancelamento cobrem headers **e corpo JSON**, inclusive resposta que não termina;
+    abort externo retorna descarte, não timeout/fallback. Nenhum sinal cancela efeito remoto lazy.
+  - `tests-frontend/storage-leitura-segura.test.js`: 25 regressões reais do batch, falhas por
+    rota/payload, vazio/normalização sem CRUD, aplicação separada, pendência, sequência,
+    cancelamento/timeout e meta. Harness backend ganhou apenas `AbortController` nativo;
+    backend de produção, auth/GCal/cascata e motor não foram alterados.
+  - Spec Finanças §6.1.2: contrato de leitura antes do código. Plano/roadmap registram a
+    entrega, sem relatório paralelo e sem tratar o item 2.4 inteiro como concluído.
+- **Suítes medidas**: frontend **109/109 antes → 134/134 depois**; backend **232/232 antes
+  → 232/232 depois**, zero falhas finais. Na primeira validação final do corpo JSON, um
+  harness sem AbortController falhou; ambiente sintético corrigido e backend completo verde.
+- **Mutação**, sempre restaurada por edição:
+
+  | Mutação | Medição | Restaurada |
+  |---|---|---|
+  | HTTP 500 vira array vazio | 22 testes: 18 passam, 4 falham | sim |
+  | Aplicação ignora pendência | 22 testes: 21 passam, 1 falha | sim |
+  | Obtenção ignora sequência substituída | 22 testes: 21 passam, 1 falha | sim |
+  | ID externo por coerção | 25 testes: 24 passam, 1 falha | sim |
+  | Retirar interrupção do corpo JSON | 25 testes: 22 passam, 3 falham | sim |
+
+  Última restauração seguida de frontend completo **134/134**; busca e status conferidos
+  sem mutação residual; diagnósticos limpos e diff sem erro de whitespace.
+- **Mock local**: em 433×762 DPR ~2.81, touch/pointer coarse confirmados, cenário `default`
+  carregou 4 alunos e leitura forçada retornou `estado: aplicado`. Inicialmente o browser
+  estava executando JS antigo em cache; após limpar cache estático/recarregar, preparador
+  novo confirmado. Persistência do cache e falhas do batch são provadas no harness, não
+  pelo mock que bloqueia gravação. GCal permanece com aviso de escrita simulada bloqueada.
+- **Não realizado**: ativação B2 no boot, fila/feedback/manual de recuperação, trava geral
+  de formulários/gravações ou atualização neutra de view (C/D); extensão de mock e aceite
+  ponta a ponta (E). Nenhum commit, push, deploy ou API de produção pelo agente.
+- **Limites para o C**: botão manual já usa o leitor sem CRUD, mas ainda ignora seu resultado
+  e pode anunciar sucesso após falha/adiamento. C deve consumir estados explícitos e conectar
+  recuperação/fila. Leituras têm sequência e pendência, não proteção completa contra edição
+  transitória sem marcador nem conclusão de operação composta. Não declarar essa concorrência
+  resolvida. `cachePersistido: false` não é confirmação local; persistência multi-chave não
+  é atômica, conforme contrato do A. GET 200 de grade com fallback interno continua não
+  distinguível de padrão legítimo sem mudança backend, fora desta rodada.

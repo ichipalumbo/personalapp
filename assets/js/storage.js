@@ -53,8 +53,11 @@ let _cacheInicializado = false;
 let _cachePossuiDados = false;
 let _syncBancoEmAndamento = false;
 let _renderDebounceTimer = null;
+let _sequenciaLeitura = 0;
+const _leiturasPreparadas = new WeakMap();
 
 CONTEXTO_DADOS.aoInvalidar(() => {
+    _sequenciaLeitura += 1;
     clearTimeout(_renderDebounceTimer);
     _cacheInicializado = false;
     _cachePossuiDados = false;
@@ -86,17 +89,28 @@ CONTEXTO_DADOS.aoInvalidar(() => {
 
 async function fetchComTimeout(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    let excedeuTempo = false;
+    const cancelar = () => controller.abort();
+    const signalExterno = options.signal;
+    if (signalExterno) {
+        if (signalExterno.aborted) cancelar();
+        else signalExterno.addEventListener('abort', cancelar, { once: true });
+    }
+    const timeoutId = setTimeout(() => { excedeuTempo = true; controller.abort(); }, timeoutMs);
 
     try {
         return await fetch(url, { ...options, signal: controller.signal });
     } catch (error) {
         if (error && error.name === 'AbortError') {
-            throw new Error(`Tempo limite de ${timeoutMs}ms excedido para ${url}`);
+            if (!excedeuTempo) throw error;
+            const erroTempo = new Error(`Tempo limite de ${timeoutMs}ms excedido para ${url}`);
+            erroTempo.code = 'TIMEOUT';
+            throw erroTempo;
         }
         throw error;
     } finally {
         clearTimeout(timeoutId);
+        if (signalExterno) signalExterno.removeEventListener('abort', cancelar);
     }
 }
 
@@ -299,34 +313,81 @@ async function apiFetchBackend(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
     return resposta;
 }
 
-async function _carregarConfiguracaoGradeHorarios(timeoutMs) {
+async function _lerRespostaDados(url, contexto, timeoutMs, signal) {
+    // O prazo da tarefa inclui headers e corpo; fetchComTimeout sozinho termina nos headers.
+    const controller = new AbortController();
+    let timer;
+    let cancelar;
+    const interrupcao = new Promise((_, reject) => {
+        cancelar = () => {
+            controller.abort();
+            const erro = new Error('Leitura cancelada');
+            erro.name = 'AbortError';
+            reject(erro);
+        };
+        if (signal) {
+            if (signal.aborted) cancelar();
+            else signal.addEventListener('abort', cancelar, { once: true });
+        }
+        timer = setTimeout(() => {
+            controller.abort();
+            const erro = new Error(`Tempo limite de ${timeoutMs}ms excedido para ${url}`);
+            erro.code = 'TIMEOUT';
+            reject(erro);
+        }, timeoutMs);
+    });
+    try {
+        const dados = (async () => {
+            if (signal && signal.aborted) {
+                const erro = new Error('Leitura cancelada');
+                erro.name = 'AbortError';
+                throw erro;
+            }
+            const resposta = await apiFetchBackend(url, { contextoDados: contexto, signal: controller.signal }, timeoutMs);
+            if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
+            if (!resposta.ok) {
+                const erro = new Error(`Leitura retornou HTTP ${resposta.status}`);
+                erro.status = resposta.status;
+                throw erro;
+            }
+            return resposta.json();
+        })();
+        return await Promise.race([interrupcao, dados]);
+    } finally {
+        clearTimeout(timer);
+        if (signal) signal.removeEventListener('abort', cancelar);
+    }
+}
+
+function _validarListaRemota(dados, nome, validarItem = () => true) {
+    if (!Array.isArray(dados) || dados.some((item) => !item || typeof item !== 'object' || Array.isArray(item) || !validarItem(item))) {
+        throw new Error(`Formato inválido: ${nome}`);
+    }
+    return dados;
+}
+
+async function _carregarConfiguracaoGradeHorarios(timeoutMs, contexto, signal) {
     const rotas = [
         `${API_BASE_URL}/configuracao/grade_horarios`,
         `${API_BASE_URL}/configuracao`
     ];
 
     for (const rota of rotas) {
-        const res = await apiFetchBackend(rota, {}, timeoutMs);
-
-        if (res.status === 401) {
-            throw new Error('AUTH_REQUIRED');
-        }
-
-        if (res.status === 404) {
-            continue;
-        }
-
-        if (!res.ok) {
-            throw new Error('API Configuração retornou ' + res.status);
-        }
-
-        const dados = await res.json().catch(() => null);
-        if (dados && typeof dados === 'object') {
+        try {
+            const dados = await _lerRespostaDados(rota, contexto, timeoutMs, signal);
+            if (!dados || typeof dados !== 'object' || Array.isArray(dados)
+                || typeof dados.horaInicio !== 'string' || typeof dados.horaFim !== 'string'
+                || !/^([01]\d|2[0-3]):[0-5]\d$/.test(dados.horaInicio)
+                || !/^([01]\d|2[0-3]):[0-5]\d$/.test(dados.horaFim)) {
+                throw new Error('Formato inválido: configuração da grade');
+            }
             return dados;
+        } catch (erro) {
+            if (erro.status !== 404) throw erro;
         }
     }
 
-    return null;
+    throw new Error('Configuração da grade indisponível');
 }
 
 function usuarioAutenticadoNoApp() {
@@ -822,6 +883,96 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
     return _respostaVirtual(200, { gcalSyncFailed });
 }
 
+// Obtenção independente: nenhuma projeção ou cache é alterado antes da aplicação.
+async function obterLeituraDados(opcoes = {}) {
+    const contexto = CONTEXTO_DADOS.capturar();
+    const sequencia = ++_sequenciaLeitura;
+    const signal = opcoes.signal;
+    if (!CONTEXTO_DADOS.atual(contexto)) return { ok: false, estado: 'adiado', motivo: 'sem-sessao' };
+    const timeout = opcoes.timeoutMs || (_primeiraRequisicao ? 40000 : API_TIMEOUT_MS);
+    try {
+        const [alunosRemotos, aulasRemotas, config, bloqueiosRemotos, reposicoesRemotas] = await Promise.all([
+            _lerRespostaDados(`${API_BASE_URL}/alunos`, contexto, timeout, signal),
+            _lerRespostaDados(`${API_BASE_URL}/agendamentos`, contexto, timeout, signal),
+            _carregarConfiguracaoGradeHorarios(timeout, contexto, signal),
+            _lerRespostaDados(`${API_BASE_URL}/bloqueios-externos`, contexto, timeout, signal),
+            _lerRespostaDados(`${API_BASE_URL}/reposicoes`, contexto, timeout, signal)
+        ]);
+        if (!CONTEXTO_DADOS.atual(contexto) || sequencia !== _sequenciaLeitura) {
+            return { ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' };
+        }
+        if (signal && signal.aborted) return { ok: false, estado: 'descartado', motivo: 'cancelado' };
+        const temId = (item) => typeof item.id === 'string' && item.id.trim().length > 0;
+        const listaAlunos = _validarListaRemota(alunosRemotos, 'alunos', (aluno) => temId(aluno) && typeof aluno.nome === 'string' && aluno.nome.trim().length > 0);
+        const listaAulas = _validarListaRemota(aulasRemotas, 'agendamentos', temId);
+        const listaBloqueios = _validarListaRemota(bloqueiosRemotos, 'bloqueios', (item) => {
+            const id = item.googleCalendarEventId || item.id;
+            return typeof id === 'string' && id.trim().length > 0;
+        });
+        const listaReposicoes = _validarListaRemota(reposicoesRemotas, 'reposições', (r) => temId(r) && ['pendente', 'agendada', 'realizada', 'expirada'].includes(r.status));
+        // Só a cópia preparada recebe normalização; objetos das respostas não são mutados.
+        const alunosPreparados = listaAlunos.map((aluno) => ({
+            ...aluno,
+            objetivo: normalizarObjetivoAlunoMigracao(aluno.objetivo),
+            corObjetivo: montarCorObjetivoTangerinaMigracao()
+        }));
+        const bloqueios = listaBloqueios.map(mapearBloqueioExterno);
+        if (bloqueios.some((item) => !item)) throw new Error('Formato inválido: bloqueio externo');
+        const pendentes = listaReposicoes.filter((r) => r.status === 'pendente').map(mapearReposicaoParaUI);
+        if (pendentes.some((item) => !item)) throw new Error('Formato inválido: reposição pendente');
+        const snapshot = {
+            alunos: alunosPreparados,
+            aulas: _removerCamposPendenciaGcalDaLista(listaAulas.map((aula) => ({ ...aula })).concat(bloqueios)),
+            reposicoes: pendentes,
+            grade: { inicio: config.horaInicio, fim: config.horaFim },
+            meta: _cacheInicializado ? (window.faturamentoMeta || 0) : ((CONTEXTO_DADOS.lerPrincipal(contexto) || {}).meta || 0)
+        };
+        const snapshotPreparado = JSON.parse(JSON.stringify(snapshot));
+        const resultado = Object.freeze({ ok: true, estado: 'preparado', dados: JSON.parse(JSON.stringify(snapshotPreparado)) });
+        _leiturasPreparadas.set(resultado, { contexto, sequencia, signal, snapshot: snapshotPreparado });
+        return resultado;
+    } catch (erro) {
+        if (!CONTEXTO_DADOS.atual(contexto) || sequencia !== _sequenciaLeitura) {
+            return { ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' };
+        }
+        if ((signal && signal.aborted) || erro.name === 'AbortError') {
+            return { ok: false, estado: 'descartado', motivo: 'cancelado' };
+        }
+        return { ok: false, estado: 'falha', motivo: erro.message === 'AUTH_REQUIRED' ? 'sessao-expirada' : 'falha-leitura', erro: erro.message };
+    }
+}
+
+function aplicarLeituraDados(leitura) {
+    const preparada = _leiturasPreparadas.get(leitura);
+    if (!preparada) return { ok: false, estado: 'descartado', motivo: 'leitura-invalida' };
+    const { contexto, sequencia, signal, snapshot } = preparada;
+    if (!CONTEXTO_DADOS.atual(contexto) || sequencia !== _sequenciaLeitura) {
+        return { ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' };
+    }
+    if (signal && signal.aborted) return { ok: false, estado: 'descartado', motivo: 'cancelado' };
+    if (CONTEXTO_DADOS.obterPendencia(contexto)) {
+        return { ok: false, estado: 'adiado', motivo: 'pendencia-local' };
+    }
+    _leiturasPreparadas.delete(leitura);
+    atualizarAlunos(snapshot.alunos);
+    atualizarAulas(snapshot.aulas);
+    atualizarReposicoes(snapshot.reposicoes);
+    atualizarLimitesGrade(snapshot.grade);
+    if (typeof agendaConfig !== 'undefined') {
+        agendaConfig.horaInicio = parseInt(snapshot.grade.inicio.split(':')[0], 10);
+        agendaConfig.horaFim = parseInt(snapshot.grade.fim.split(':')[0], 10);
+    }
+    window.faturamentoMeta = snapshot.meta;
+    const cachePersistido = CONTEXTO_DADOS.salvarPrincipal(snapshot, contexto);
+    _cacheInicializado = true;
+    _cachePossuiDados = true; // Inclusive snapshot remoto válido vazio.
+    _primeiraRequisicao = false;
+    return { ok: true, estado: 'aplicado', origem: 'remoto', cachePersistido };
+}
+
+window.obterLeituraDados = obterLeituraDados;
+window.aplicarLeituraDados = aplicarLeituraDados;
+
 async function carregarDados(opcoes = {}) {
     const contexto = CONTEXTO_DADOS.capturar();
     const deveForcarRender = opcoes.forcarRender !== false;
@@ -829,8 +980,12 @@ async function carregarDados(opcoes = {}) {
     const silenciosoUI = opcoes.silenciosoUI === true;
 
     if (CONTEXTO_DADOS.obterPendencia(contexto)) {
-        carregarDadosDoLocalStorage();
-        return { origem: 'local-pendente' };
+        if (!_cacheInicializado) {
+            carregarDadosDoLocalStorage();
+            _cacheInicializado = true;
+            _cachePossuiDados = true;
+        }
+        return { ok: false, estado: 'adiado', motivo: 'pendencia-local', origem: 'local-pendente' };
     }
 
     if (!_cacheInicializado) {
@@ -846,7 +1001,7 @@ async function carregarDados(opcoes = {}) {
             if (deveForcarRender) {
                 forçarRenderizacaoInterface();
             }
-            return { origem: 'local-cache' };
+            return { ok: true, estado: 'local', origem: 'local-cache' };
         }
     } else if (_cachePossuiDados && !forcarRemoto) {
         if (typeof window.preencherFiltrosAlunos === 'function') {
@@ -855,7 +1010,7 @@ async function carregarDados(opcoes = {}) {
         if (deveForcarRender) {
             forçarRenderizacaoInterface();
         }
-        return { origem: 'local-cache' };
+        return { ok: true, estado: 'local', origem: 'local-cache' };
     }
 
     if (!usuarioAutenticadoNoApp()) {
@@ -874,11 +1029,10 @@ async function carregarDados(opcoes = {}) {
             notificarLoginObrigatorio('Faça login com Google para carregar seus dados da nuvem.');
         }
 
-        return { origem: 'local-sem-login' };
+        return { ok: false, estado: 'adiado', motivo: 'sem-sessao', origem: 'local-sem-login' };
     }
 
     try {
-        const timeoutAtual = _primeiraRequisicao ? 40000 : API_TIMEOUT_MS;
         // 5.8 (Parte B): se a chamada está sobre cache local, acende o rótulo
         // do header (o estado só existe nos syncs remotos pós-cache).
         _marcarSyncSobreCache();
@@ -886,219 +1040,48 @@ async function carregarDados(opcoes = {}) {
         window.log.info('[storage]', 'Iniciando sincronização com o banco de dados online...');
         const onRetry = () => carregarDados({ ...opcoes, forcarRemoto: true });
 
-        const [resAlunos, resAgendamentos, dadosConfig, resBloqueiosExt, dadosReposicoes] = await executarOperacaoRemotaComFeedback(async () => {
-            return Promise.all([
-                apiFetchBackend(`${API_BASE_URL}/alunos`, {}, timeoutAtual).catch(() => { throw new Error('API Alunos fora do ar ou lenta (timeout)'); }),
-                apiFetchBackend(`${API_BASE_URL}/agendamentos`, {}, timeoutAtual).catch(() => { throw new Error('API Agendamentos fora do ar ou lenta (timeout)'); }),
-                _carregarConfiguracaoGradeHorarios(timeoutAtual)
-                    .catch((err) => { throw new Error(err.message || 'API Configuração fora do ar ou lenta (timeout)'); }),
-                // [TAG-STORAGE-BLOQUEIOS-EXT] Sempre resolve para array — qualquer falha (404, 500, rede) devolve []
-                // para não quebrar carregarDados() enquanto a rota do backend ainda não está deployed.
-                apiFetchBackend(`${API_BASE_URL}/bloqueios-externos`, {}, timeoutAtual)
-                    .then(res => res.ok ? res.json() : [])
-                    .catch(err => { window.log.warn('[storage]', '/bloqueios-externos indisponível', err.message); return []; }),
-                apiFetchBackend(`${API_BASE_URL}/reposicoes`, {}, timeoutAtual)
-                    .then(res => res.ok ? res.json() : [])
-                    .catch(err => { window.log.warn('[storage]', '/reposicoes indisponível', err.message); return []; })
-            ]);
-            }, { contexto: 'carregando', onRetry, silenciosoUI });
-
-        if (resAlunos.status === 401 || resAgendamentos.status === 401) {
-            throw new Error('AUTH_REQUIRED');
+        const leitura = await executarOperacaoRemotaComFeedback(
+            () => obterLeituraDados(opcoes),
+            { contexto: 'carregando', onRetry, silenciosoUI }
+        );
+        const resultado = leitura.ok ? aplicarLeituraDados(leitura) : leitura;
+        if (resultado.estado === 'descartado') return { ...resultado, origem: 'contexto-obsoleto' };
+        if (resultado.estado === 'adiado') return { ...resultado, origem: 'local-pendente' };
+        if (!resultado.ok) {
+            if (resultado.motivo === 'sessao-expirada') throw new Error('AUTH_REQUIRED');
+            throw new Error(resultado.erro || 'Falha ao carregar dados');
         }
-
-        if (!resAlunos.ok || !resAgendamentos.ok) {
-            throw new Error("Uma ou mais requisições falharam no servidor.");
-        }
-
-        const dadosAlunos = await resAlunos.json();
-        const dadosAgendamentos = await resAgendamentos.json();
-        if (!CONTEXTO_DADOS.atual(contexto)) return { origem: 'contexto-obsoleto' };
-        const listaAlunosAPIOriginal = Array.isArray(dadosAlunos) ? dadosAlunos : [];
-        const listaAlunosAPI = listaAlunosAPIOriginal.map((aluno) => {
-            const objetivoNormalizado = normalizarObjetivoAlunoMigracao(aluno && aluno.objetivo);
-            return {
-                ...aluno,
-                objetivo: objetivoNormalizado,
-                corObjetivo: montarCorObjetivoTangerinaMigracao()
-            };
-        });
-        const houveMigracaoPersistenteAlunos = listaAlunosAPI.some((alunoNormalizado, idx) => {
-            const alunoOriginal = listaAlunosAPIOriginal[idx] || {};
-            const corOriginal = alunoOriginal.corObjetivo || {};
-            return (alunoOriginal.objetivo || '') !== alunoNormalizado.objetivo
-                || corOriginal.nome !== alunoNormalizado.corObjetivo.nome
-                || corOriginal.hex !== alunoNormalizado.corObjetivo.hex;
-        });
-        const listaAulasAPI = _removerCamposPendenciaGcalDaLista(Array.isArray(dadosAgendamentos) ? dadosAgendamentos : []);
-        const listaReposicoesAPI = Array.isArray(dadosReposicoes) ? dadosReposicoes : [];
-        // [TAG-STORAGE-REPOSICOES-PENDENTES] A fila do painel é só pendente: agendada/realizada/expirada já saíram do fluxo de ação e contam duas vezes se forem listadas aqui.
-        const reposicoesPendentes = listaReposicoesAPI
-            .filter((reposicao) => reposicao && reposicao.status === 'pendente')
-            .map(mapearReposicaoParaUI)
-            .filter(Boolean);
-        atualizarReposicoes(reposicoesPendentes);
-
-        if (listaAlunosAPI.length === 0 && listaAulasAPI.length === 0) {
-            const cacheAutorizado = CONTEXTO_DADOS.lerPrincipal(contexto);
-            const backupUnificado = null; // Legado sem dono nunca é recuperado.
-            const backupAlunos = cacheAutorizado ? JSON.stringify(cacheAutorizado.alunos) : null;
-            const backupAulas = cacheAutorizado ? JSON.stringify(cacheAutorizado.aulas) : null;
-            
-            let alunosLocais = [];
-            let aulasLocais = [];
-
-            if (backupUnificado) {
-                try {
-                    const parsed = JSON.parse(backupUnificado);
-                    alunosLocais = parsed.alunos || [];
-                    aulasLocais = parsed.aulas || [];
-                } catch(e) {}
-            } else if (backupAlunos || backupAulas) {
-                try {
-                    alunosLocais = backupAlunos ? JSON.parse(backupAlunos) : [];
-                    aulasLocais = backupAulas ? JSON.parse(backupAulas) : [];
-                } catch(e) {}
-            }
-
-            if (alunosLocais.length > 0 || aulasLocais.length > 0) {
-                window.log.info('[storage]', 'Banco online vazio. Migrando dados locais antigos para o MongoDB Atlas.', {
-                    alunos: alunosLocais.length,
-                    aulas: aulasLocais.length
-                });
-
-                atualizarAlunos(alunosLocais);
-                atualizarAulas(aulasLocais);
-                await salvarDados(true);
-                if (!CONTEXTO_DADOS.atual(contexto)) return { origem: 'contexto-obsoleto' };
-                
-                if (typeof mostrarToast === 'function') {
-                    mostrarToast("Seus dados locais foram migrados com sucesso para a nuvem!", "success");
-                }
-                if (typeof window.preencherFiltrosAlunos === 'function') {
-                    window.preencherFiltrosAlunos();
-                }
-                if (deveForcarRender) {
-                    forçarRenderizacaoInterface();
-                }
-                return;
-            }
-        }
-        // [TAG-STORAGE-MERGE-EXTERNO] Mescla bloqueios externos persistidos no MongoDB com os agendamentos do app.
-        // Esses eventos chegam com source: 'google_external' e são filtrados fora de salvarDados().
-        // resBloqueiosExt é sempre um array (garante a chain .then/.catch acima).
-        let aulasParaCarregar = listaAulasAPI;
-        if (Array.isArray(resBloqueiosExt) && resBloqueiosExt.length > 0) {
-            const bloqueiosMapeados = resBloqueiosExt
-                .map(mapearBloqueioExterno)
-                .filter(b => b !== null); // Remove bloqueios mal formados
-             
-            if (bloqueiosMapeados.length > 0) {
-                aulasParaCarregar = listaAulasAPI.concat(bloqueiosMapeados);
-                window.log.info('[storage]', 'Bloqueios externos carregados do MongoDB.', { total: bloqueiosMapeados.length });
-            }
-        }
-        aulasParaCarregar = _removerCamposPendenciaGcalDaLista(aulasParaCarregar);
-        atualizarAlunos(listaAlunosAPI);
-        atualizarAulas(aulasParaCarregar);
-
-        if (houveMigracaoPersistenteAlunos) {
-            window.log.info('[storage]', 'Migração de objetivos de alunos aplicada. Persistindo no banco remoto...');
-            await salvarDados(true);
-            if (!CONTEXTO_DADOS.atual(contexto)) return { origem: 'contexto-obsoleto' };
-        }
-
-        const aulasCarregadas = obterAulas();
-        const totalAulas = aulasCarregadas.length;
-        const totalSeries = aulasCarregadas.filter((aula) => aula && aula.frequencia === 'semanal').length;
-        const totalAvulsas = aulasCarregadas.filter((aula) => aula && aula.frequencia !== 'semanal' && (aula.tipo || 'aula') !== 'bloqueio').length;
-        const totalExternos = aulasCarregadas.filter((aula) => aula && aula.source === 'google_external').length;
-        window.log.info('[storage]', 'Aulas carregadas no frontend', {
-            total: totalAulas,
-            series: totalSeries,
-            avulsas: totalAvulsas,
-            externos: totalExternos
-        });
-        window.log.grupo('[storage] Detalhe de aulas carregadas no frontend', () => {
-            window.log.debug('[storage]', 'Aulas carregadas', aulasCarregadas);
-        });
-
-        if (dadosConfig) {
-            atualizarLimitesGrade({
-                inicio: dadosConfig.horaInicio || "06:00",
-                fim: dadosConfig.horaFim || "22:00"
-            });
-        } else {
-            atualizarLimitesGrade({ inicio: "06:00", fim: "22:00" });
-        }
-        const gradeCarregada = obterLimitesGrade();
-        if (typeof agendaConfig !== 'undefined') {
-            agendaConfig.horaInicio = parseInt(gradeCarregada.inicio.split(':')[0]);
-            agendaConfig.horaFim = parseInt(gradeCarregada.fim.split(':')[0]);
-        }
-        salvarNoLocalStorage(contexto);
-
-        if (typeof window.preencherFiltrosAlunos === 'function') {
-            window.preencherFiltrosAlunos();
-        }
-
-        _primeiraRequisicao = false;
-        _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
-        window.log.info('[storage]', 'Dados sincronizados do MongoDB com sucesso!', {
-            alunos: obterAlunos().length,
-            aulas: obterAulas().length,
-            grade: obterLimitesGrade()
-        });
-
-        if (deveForcarRender) {
-            forçarRenderizacaoInterface();
-        }
+        if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
+        if (deveForcarRender) forçarRenderizacaoInterface();
+        return resultado;
 
     } catch (error) {
-        if (!CONTEXTO_DADOS.atual(contexto)) return { origem: 'contexto-obsoleto' };
+        if (!CONTEXTO_DADOS.atual(contexto)) return { ok: false, estado: 'descartado', motivo: 'contexto-obsoleto', origem: 'contexto-obsoleto' };
         if (error && error.message === 'AUTH_REQUIRED') {
             if (!deveSilenciarAuthToast(opcoes)) {
                 notificarLoginObrigatorio('Sua sessão Google expirou. Entre novamente para sincronizar.');
             }
 
-            const resultadoLocal = carregarDadosDoLocalStorage();
-            _cachePossuiDados = resultadoLocal.temDados;
-
-            if (typeof window.preencherFiltrosAlunos === 'function') {
-                window.preencherFiltrosAlunos();
-            }
-
-            if (deveForcarRender) {
-                forçarRenderizacaoInterface();
-            }
-
-            return { origem: 'local-auth-expirado' };
+            return { ok: false, estado: 'falha', motivo: 'sessao-expirada', origem: 'local-auth-expirado' };
         }
         // 5.8 (Parte B): falha na chamada — apaga o rótulo agora; o toast de
         // "Sem conexão..." que vem a seguir assume a comunicação de falha.
         _limparSyncSobreCache();
-        window.log.error('[storage]', 'Falha na conexão com a API. Usando localStorage temporariamente.', error);
-        const resultadoLocal = carregarDadosDoLocalStorage();
-        _cachePossuiDados = resultadoLocal.temDados;
-
-        if (typeof window.preencherFiltrosAlunos === 'function') {
-            window.preencherFiltrosAlunos();
-        }
+        window.log.error('[storage]', 'Falha na leitura. Estado anterior preservado.', error);
         
         if (!silenciosoUI && typeof mostrarToast === 'function') {
-            mostrarToast("Sem conexão. Seus dados foram salvos neste aparelho.", "warning");
+            mostrarToast('Não foi possível atualizar os dados agora.', 'warning');
         }
         if (deveForcarRender) {
             forçarRenderizacaoInterface();
         }
-        return { origem: 'local-fallback' };
+        return { ok: false, estado: 'falha', motivo: 'falha-leitura', origem: 'local-fallback' };
     } finally {
         // 5.8 (Parte B): fim do sync (sucesso ou qualquer outro erro não tratado
         // acima) — o rótulo do header é apagado aqui.
         if (CONTEXTO_DADOS.atual(contexto)) _limparSyncSobreCache();
     }
 
-    return { origem: 'remoto' };
 }
 async function salvarDados(silencioso = false) {
     const contexto = CONTEXTO_DADOS.capturar();

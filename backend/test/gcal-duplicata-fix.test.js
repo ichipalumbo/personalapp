@@ -141,6 +141,7 @@ function carregarStorageHarness() {
     setTimeout,
     clearTimeout,
     Headers,
+    AbortController,
     fetch: () => Promise.resolve(criarRespostaJson(200, {})),
     localStorage: {
       getItem: (key) => (store.has(key) ? store.get(key) : null),

@@ -1,6 +1,6 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 8 · **Atualizado**: 2026-10-06
+> **Status**: Em produção · **Versão**: 9 · **Atualizado**: 2026-10-06
 > **Evolução de cache**: isolamento abaixo implementado no frontend, publicação pendente;
 > revalidação automática no boot e recuperação explícita ainda não entregues.
 > **Defeitos em aberto**: 0
@@ -425,6 +425,24 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
   uma leitura normal ou confirmação antiga não pode apagar pendência mais recente.
 - Isolamento do cache é defesa frontend. A autoridade de autorização continua no backend
   pelo JWT validado e `ownerEmail`; não confiar no marcador local como autorização da API.
+
+#### 6.1.2 Leitura principal segura (alunos, agenda, grade, bloqueios e reposições)
+
+- Buscar e validar os cinco conjuntos antes de atualizar qualquer projeção. Falha HTTP,
+  rede, JSON inválido ou formato incompatível de um conjunto preserva o snapshot inteiro
+  anterior. Não converter indisponibilidade de bloqueios/reposições em lista vazia.
+- Uma lista vazia válida da mesma conta representa o estado atual do servidor e deve ser
+  aplicada, sem repovoar o banco com cache. Normalização para exibição também não dispara
+  migração, reconciliação ou CRUD. Gravar continua sendo ação explícita de edição.
+- Separar obtenção/preparação da aplicação. Resultados indicam aplicação, falha, descarte
+  ou adiamento; fallback não é sucesso remoto. Falha/cancelamento não reidrata cache por
+  cima do estado em memória. A hidratação inicial autorizada permanece disponível.
+- Conferir dono/geração e pendência antes da aplicação; resposta de leitura substituída
+  não pode sobrescrever leitura mais recente. Pendência local não confirmada adia aplicação.
+- A garantia é do batch no cliente, não transação entre collections nem ausência de escrita
+  lazy no servidor. GETs existentes mantêm expiração, configuração padrão e cálculos atuais.
+- Coordenação de formulários/operações compostas, recuperação explícita e revalidação no
+  boot são incrementos posteriores; este contrato não declara esses fluxos já entregues.
 
 ### 6.2 Histórico de ciclos sob demanda
 
