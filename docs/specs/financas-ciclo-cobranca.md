@@ -1,8 +1,8 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 10 · **Atualizado**: 2026-10-06
+> **Status**: Em produção · **Versão**: 11 · **Atualizado**: 2026-10-06
 > **Evolução de cache**: isolamento abaixo implementado no frontend, publicação pendente;
-> leitura segura e recuperação explícita validadas localmente; revalidação automática no boot ainda não entregue.
+> leitura segura, recuperação explícita e revalidação no boot ligadas/validadas localmente; aceite ampliado e publicação pendentes.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
@@ -441,7 +441,7 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
   não pode sobrescrever leitura mais recente. Pendência local não confirmada adia aplicação.
 - A garantia é do batch no cliente, não transação entre collections nem ausência de escrita
   lazy no servidor. GETs existentes mantêm expiração, configuração padrão e cálculos atuais.
-- Coordenação e recuperação seguem 6.1.3; revalidação automática no boot permanece posterior.
+- Coordenação e recuperação seguem 6.1.3; revalidação automática no boot segue 6.1.4.
 
 #### 6.1.3 Interação, recuperação e atualização manual (cartão C, sem publicação)
 
@@ -461,6 +461,23 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
 - Recuperação invalida históricos afetados em memória, recarregando imediatamente só os
   abertos. Complementos incompletos mantêm aviso com retry de leitura, sem prefetch geral.
   Nenhum cálculo financeiro é implementado no cliente; GETs lazy existentes são preservados.
+
+#### 6.1.4 Revalidação de leitura ao abrir (B2, publicação pendente)
+
+- Hidratar cache principal autorizado antes de qualquer tela inicial; depois da apresentação
+  inicial, revalidar em background. Sem cache, aproveitar carga principal válida já necessária,
+  sem batch duplicado. Cache vazio válido também é revalidado.
+- Uma aplicação principal por contexto da conta nessa carga da página; edição/operação
+  invalida leitura em voo e adia leitura nova. Pendência não confirmada exige recuperação.
+  Falha/401 preserva estado e só retoma por evento pertinente, sem polling/retry por fechar form.
+- Atualizar a tela ativa sem reinicializar formulário, hash, período, detalhes ou foco.
+  Finanças conserva GET próprio: só o B2 reutiliza leitura financeira bem-sucedida da mesma
+  geração/interação concluída ou em voo; vazio confirmado é válido. Cache em disco/falha não
+  são recibo de leitura. Manual/recuperação e escrita continuam exigindo suas leituras próprias.
+- Login e retorno à aba não concorrem com B2 pendente. Após sua aplicação, permanecem
+  gatilhos de atualização existentes; não consolidar GCal nem mudar regras financeiras.
+- Rótulo pertence ao voo/contexto e só indica leitura sobre cache autorizado. Sem migração,
+  reconciliação/CRUD pelo frontend; os GETs lazy existentes do backend continuam inalterados.
 
 ### 6.2 Histórico de ciclos sob demanda
 

@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–C e D1/D2 validados localmente; D3/E pendentes; B2 desligado |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–D3 validados localmente; B2 ligado; E/publicação pendentes |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -408,14 +408,15 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30).
 > [Plano vivo](plans/2026-09-30-plan-b2-sync-boot.md) **revalidado em 2026-10-05**, com
 > decisões de recuperação e botão manual refinadas; **cartões A–C implementados/validados
-> localmente em 06/10**, ainda sem publicação. **D1/D2 validados localmente**; D3/E não
-> iniciados e B2 continua desligado.
+> localmente em 06/10**, ainda sem publicação. **D1–D3 validados localmente**; B2 ligado
+> no código, com E/aceite ampliado e publicação pendentes.
 > B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
 - **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
   imediata, com o rótulo "Sincronizando dados..." do 5.8. Cobrir as três telas iniciais
-  preservadas pela hash, não apenas Home. `storage.js` ainda retorna do cache sem releitura
-  principal; Finanças **já faz seu próprio GET** e não deve duplicá-lo por render.
+  preservadas pela hash, não apenas Home. D3 liga coordenador após apresentação inicial;
+  carga principal já concluída pode atender B2. Finanças conserva seu próprio GET sem duplicar
+  leitura válida concluída/em voo por render B2.
 - **Por que importa**: reduzir dados antigos sem sobrescrever rascunhos/gravações ou expor
   cache de outra conta. Tema do Grupo 2, vizinho da consolidação 2.2.
 - **Decisões de 05/10**: descartar caches sem dono, inclusive backup legado; preservar cache
@@ -441,7 +442,9 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   nova. D2 entrega coordenador inerte, cota por contexto, retomadas por eventos/recibos e
   rótulo por voo; falha espera conexão/sessão, sem retry por fechar formulário. Manual
   aguarda complementos e faz batch próprio. Frontend D2 medido **226→256**, zero falhas;
-  próximo cartão D3 para ligação/ativação, ainda não executado. Resultados,
+  D3 liga após apresentação, observa login cedo e serializa retorno à aba; financeiro
+  válido/vazio concluído pode atender complemento B2, nunca o manual. Frontend D3 medido
+  **256→288**, zero falhas; próximo cartão E para aceite ampliado/fechamento. Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,

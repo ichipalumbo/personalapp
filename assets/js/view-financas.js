@@ -24,6 +24,7 @@
         extratoAberto: {}
     };
     let leituraFinancasEmVoo = null;
+    let leituraFinancasConfirmada = null;
 
     function telaFinancasAtiva() {
         const router = global.__appShell && global.__appShell.router;
@@ -32,6 +33,7 @@
 
     contextoDados.aoInvalidar(() => {
         leituraFinancasEmVoo = null;
+        leituraFinancasConfirmada = null;
         STATE.cards = [];
         STATE.historicoPorAluno = {};
         STATE.historicoAberto = {};
@@ -660,6 +662,14 @@
             && voo.contexto.ownerEmail === contexto.ownerEmail && voo.contexto.geracao === contexto.geracao
             && voo.interacao === interacao && voo.operacao === operacao
             && voo.timeoutMs === (opcoes.timeoutMs || 40000)) return voo.promise;
+        const recibo = leituraFinancasConfirmada;
+        if (opcoes.reutilizarConcluidaBoot === true && !voo && !operacao && recibo
+            && contextoDados.atual(contexto) && contextoDados.atual(recibo.contexto)
+            && recibo.interacao === interacao && recibo.requestId === STATE.requestId) {
+            if (telaFinancasAtiva()) window.renderizarFinancas();
+            return Promise.resolve(true);
+        }
+        leituraFinancasConfirmada = null;
         const novo = { contexto, interacao, operacao, timeoutMs: opcoes.timeoutMs || 40000 };
         leituraFinancasEmVoo = novo;
         novo.promise = executarLeituraFinancas({ ...opcoes, contextoDados: contexto }).finally(() => {
@@ -733,6 +743,7 @@
             }
             STATE.cacheAtualizadoEm = new Date().toISOString();
             STATE.erro = null;
+            if (!operacao) leituraFinancasConfirmada = { contexto, interacao, requestId };
             renderizarCards();
             return true;
         } catch (error) {

@@ -94,7 +94,7 @@
                 atual.aguardarEvento = false;
                 if (contextoDados.podeAplicarInteracao(voo.interacao)) {
                     try {
-                        const render = await global.atualizarViewAtualAposSync(atual.contexto);
+                        const render = await global.atualizarViewAtualAposSync(atual.contexto, { boot: true });
                         if (resultadoAtual() && (render === false || (render && render.ok === false))) atual.resultado.complementoPendente = true;
                     } catch (_) {
                         if (resultadoAtual()) atual.resultado.complementoPendente = true;
@@ -120,10 +120,15 @@
             agendar();
         }
     }
-    function iniciar() {
+    function iniciar(opcoes = {}) {
         if (!ativo) {
             ativo = true;
             contextoDados.iniciar();
+            if (opcoes.aguardarEvento === true) {
+                const atual = sincronizarRodada();
+                atual.aguardarEvento = true;
+                atual.motivo = opcoes.motivo || 'falha-leitura';
+            }
             removerObservadores = [contextoDados.aoInvalidar(interacaoMudou), contextoDados.aoMudarInteracao(interacaoMudou), leituras.aoMudar(agendar)];
             const identidade = global.googleIdentity;
             if (identidade && typeof identidade.addAuthChangeListener === 'function') {

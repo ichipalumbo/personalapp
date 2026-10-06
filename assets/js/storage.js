@@ -63,6 +63,7 @@ let _sequenciaLeitura = 0;
 const _leiturasPreparadas = new WeakMap();
 const _observadoresLeitura = new Set();
 let _ultimaAplicacaoLeitura = null;
+let _ultimaFalhaCarregamento = null;
 function _avisarLeiturasDados() {
     _observadoresLeitura.forEach((fn) => {
         try { fn(); } catch (erro) { window.log.error('[storage]', 'Falha no observador de leitura.', erro); }
@@ -87,6 +88,7 @@ window.leiturasDados = Object.freeze({
     reservar: _reservarLeituraDados,
     liberar: _liberarLeituraDados,
     ultimaAplicacao: () => _ultimaAplicacaoLeitura,
+    ultimaFalha: () => _ultimaFalhaCarregamento,
     aoMudar: (fn) => { _observadoresLeitura.add(fn); return () => _observadoresLeitura.delete(fn); },
     iniciarFeedback: _marcarSyncSobreCache,
     finalizarFeedback: _limparSyncSobreCache
@@ -94,6 +96,7 @@ window.leiturasDados = Object.freeze({
 
 CONTEXTO_DADOS.aoInvalidar(() => {
     _ultimaAplicacaoLeitura = null;
+    _ultimaFalhaCarregamento = null;
     _sequenciaLeitura += 1;
     clearTimeout(_renderDebounceTimer);
     _cacheInicializado = false;
@@ -1072,6 +1075,7 @@ function aplicarLeituraDados(leitura, recuperacao) {
     _cachePossuiDados = true; // Inclusive snapshot remoto válido vazio.
     _primeiraRequisicao = false;
     const resultado = { ok: true, estado: 'aplicado', origem: 'remoto', cachePersistido };
+    _ultimaFalhaCarregamento = null;
     _ultimaAplicacaoLeitura = Object.freeze({ contexto, interacao, operacao: Boolean(operacao), recuperacao: Boolean(recuperacaoValida), resultado: Object.freeze({ ...resultado }) });
     _avisarLeiturasDados();
     return resultado;
@@ -1082,6 +1086,7 @@ window.aplicarLeituraDados = aplicarLeituraDados;
 
 async function carregarDados(opcoes = {}) {
     const contexto = CONTEXTO_DADOS.capturar();
+    const interacaoCarregamento = CONTEXTO_DADOS.capturarInteracao();
     const deveForcarRender = opcoes.forcarRender !== false;
     const forcarRemoto = opcoes.forcarRemoto === true;
     const silenciosoUI = opcoes.silenciosoUI === true;
@@ -1152,7 +1157,9 @@ async function carregarDados(opcoes = {}) {
                 notificarLoginObrigatorio('Sua sessão Google expirou. Entre novamente para sincronizar.');
             }
 
-            return { ok: false, estado: 'falha', motivo: 'sessao-expirada', origem: 'local-auth-expirado' };
+            const resultado = { ok: false, estado: 'falha', motivo: 'sessao-expirada', origem: 'local-auth-expirado' };
+            _ultimaFalhaCarregamento = Object.freeze({ contexto, interacao: interacaoCarregamento, resultado });
+            return resultado;
         }
         // 5.8 (Parte B): falha na chamada — apaga o rótulo agora; o toast de
         // "Sem conexão..." que vem a seguir assume a comunicação de falha.
@@ -1165,7 +1172,9 @@ async function carregarDados(opcoes = {}) {
         if (deveForcarRender) {
             forçarRenderizacaoInterface();
         }
-        return { ok: false, estado: 'falha', motivo: 'falha-leitura', origem: 'local-fallback' };
+        const resultado = { ok: false, estado: 'falha', motivo: 'falha-leitura', origem: 'local-fallback' };
+        _ultimaFalhaCarregamento = Object.freeze({ contexto, interacao: interacaoCarregamento, resultado });
+        return resultado;
     } finally {
         // 5.8 (Parte B): fim do sync (sucesso ou qualquer outro erro não tratado
         // acima) — o rótulo do header é apagado aqui.
@@ -1361,12 +1370,12 @@ async function atualizarViewAtualAposSync(contexto, opcoes = {}) {
     const router = window.__appShell && window.__appShell.router;
     const tela = router && router.getCurrentViewId ? router.getCurrentViewId() : null;
     if (tela === 'tela-alunos' && opcoes.recuperacao && window.atualizarAlunosAposRecuperacao) return await window.atualizarAlunosAposRecuperacao({ contextoDados: contexto });
-    if (tela === 'tela-alunos' && window.atualizarAlunosAposSync) return await window.atualizarAlunosAposSync({ contextoDados: contexto });
+    if (tela === 'tela-alunos' && window.atualizarAlunosAposSync) return await window.atualizarAlunosAposSync({ contextoDados: contexto, reutilizarConcluidaBoot: opcoes.boot === true });
     else if (tela === 'tela-alunos' && window.atualizarAlunosAposRecuperacao) return await window.atualizarAlunosAposRecuperacao({ contextoDados: contexto });
     else if (tela === 'tela-alunos' && window.renderizarListaAlunos) window.renderizarListaAlunos();
     else if (tela === 'tela-financas') {
         if (opcoes.recuperacao && window.atualizarFinancasAposRecuperacao) return await window.atualizarFinancasAposRecuperacao({}, { contextoDados: contexto });
-        if (window.atualizarFinancasAposSync) return await window.atualizarFinancasAposSync({ contextoDados: contexto });
+        if (window.atualizarFinancasAposSync) return await window.atualizarFinancasAposSync({ contextoDados: contexto, reutilizarConcluidaBoot: opcoes.boot === true });
     }
     else if (tela === 'tela-home') {
         if (window.__homeCarregando) return false;

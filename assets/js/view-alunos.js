@@ -810,7 +810,7 @@ async function executarComplementosAlunos(opcoes = {}) {
             resumo = window.obterResumoFinanceiroPorAluno();
         } else {
             if (typeof window.garantirDadosFinancas !== 'function') throw new Error('Financeiro indisponível.');
-            resumo = await window.garantirDadosFinancas({ forcarRemoto: true, operacao, contextoDados: contexto, reutilizarEmVoo: opcoes.reutilizarEmVoo === true });
+            resumo = await window.garantirDadosFinancas({ forcarRemoto: true, operacao, contextoDados: contexto, reutilizarEmVoo: opcoes.reutilizarEmVoo === true, reutilizarConcluidaBoot: opcoes.reutilizarConcluidaBoot === true });
         }
         if (!podeAplicar()) return false;
         if (!resumo || typeof resumo !== 'object' || Array.isArray(resumo)) throw new Error('Resumo financeiro inválido.');

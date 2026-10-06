@@ -1,17 +1,17 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Aberto — A–C e D1/D2 validados localmente; D3/E não iniciados
+> **Status**: Aberto — A–D3 validados localmente; B2 ligado no código; E/publicação pendentes
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: somente D2, base `2a795fd`, mesma branch limpa autorizada pelo dono; B2 desligado no app.
+> **Rodada atual**: somente D3, base `60c46c7`, mesma branch limpa explicitamente autorizada; ligação B2 validada localmente.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
-**5.8 entregue**: skeletons (Parte A) e rótulo nos syncs existentes (B1). **B2 apenas desenhado**: a
-revalidação principal no boot ainda não foi implementada. Este documento aberto recebe
-o refinamento e, futuramente, a execução; não se cria plano paralelo nem se reabre o B1.
+**5.8 entregue**: skeletons (Parte A) e rótulo nos syncs existentes (B1). **B2 agora ligado e
+validado localmente até D3**, com aceite ampliado E e publicação pendentes. Este documento
+aberto recebe o refinamento e a execução; não se cria plano paralelo nem se reabre o B1.
 As decisões abaixo substituem o desenho anterior onde houver divergência. Um plano não
 substitui specs: incorporar os contratos aprovados nas specs pertinentes no cartão A,
 antes do código que os implementa.
@@ -423,7 +423,20 @@ Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E
 - **Decisões pendentes / bloqueios**: revalidar integração com cargas iniciais e triggers
   atuais após D2; qualquer área sensível exige autorização própria antes de edição.
 - **Critérios de aceite**: cache imediato e revalidação elegível sem reset/duplicação.
-- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 tentativas por falha.
+- **Resultado**: ligado e validado localmente em 06/10; registro §15 abaixo; E não executado.
+- **Refinamento técnico**: manter barreira da navegação inicial, dar oportunidade de
+  apresentação por animation frame e iniciar B2 sem aguardar sua Promise. Listener de
+  sessão antes do init, sem leitura concorrente durante a barreira. Login/retorno à aba
+  usam B2 pendente; após cota aplicada conservam refresh remoto existente serializado.
+  Somente B2 pode reaproveitar financeiro concluído nesta geração/interação (inclusive
+  vazio), nunca cache de disco, falha ou leitura anterior à edição. Manual mantém GET novo.
+- **Validação**: baseline frontend **256/256**; integração das três hashes com cache
+  presente/vazio/ausente, leitura financeira já concluída/em voo, login em boot, falhas,
+  edição/navegação/manual e retorno à aba; mutações, suíte final, smoke mock mobile.
+  Backend/Google/Mongo reais não executados; aceite ampliado continua E.
+- **Riscos / rollback**: GETs lazy continuam existentes. Nenhuma mudança no motor,
+  cálculo, auth, GCal ou cascata; não publicar nem acessar dados reais. Reversão de código
+  não desfaz estado remoto. Máximo 2 tentativas por falha; segunda bloqueia dependentes.
 
 ### Arquivos previstos da frente completa
 
@@ -652,8 +665,9 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Próxima rodada
 
-Próximo **cartão D3 — ligação e ativação**: confirmar branch, conferir A–C/D1/D2
-entregues e medir baseline frontend antes do código. E fecha aceite integrado.
+Próximo **cartão E — aceite e fechamento integrado**: confirmar branch, conferir A–D3
+entregues e definir matriz de mock/aceite antes de editar. B2 está ligado no código local;
+publicação/PR/deploy são do dono e não foram executados pelo agente.
 Se inventário exigir alterar autenticação,
 GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
 sem relatório paralelo por cartão.
@@ -927,3 +941,72 @@ essa dependência antes de seguir, sem substituir silenciosamente as decisões a
 - **Não realizado**: D3/E, ligação/ativação automática no boot, consolidar GCal/2.2,
   auth/cascata/motor/conflitos/backend, dependências, commit/push/merge/deploy ou dados/API
   de produção. **B2 permanece desligado no app.**
+
+## 15. Registro da execução do cartão D3 — 06/10
+
+- **Branch/base**: `docs/planejar-sync-boot`, D2 commitado em `60c46c7`, working tree limpo
+  e upstream próprio. Dono autorizou explicitamente continuar na mesma branch no pedido.
+- **Arquivos alterados**:
+  - `assets/js/app/bootstrap.js`: listener de sessão registrado antes de initialize/whenReady
+    e navegação; eventos durante abertura não iniciam leitura concorrente. B2 inicia após
+    navegação inicial e oportunidade de apresentação por animation frame, sem await do batch
+    ou da renovação GCal. Login aciona contexto novo pelo coordenador; financeiro permanece
+    independente da falha principal. Retorno à aba usa B2 pendente ou pedido de refresh
+    serializado quando a cota já aplicou; aguarda leitura/manual/edição, conserva pedido
+    descartado por nova edição e refaz leitura nova ao liberar. Throttle/90s preexistentes
+    mantidos; não há polling ou consolidação de GCal.
+  - `assets/js/view-financas.js`: recibo de leitura bem-sucedida por contexto/interação/
+    requestId, descartado ao iniciar nova leitura e invalidar conta. Só opção B2 reutiliza
+    resultado concluído (inclusive vazio); cache de disco, falha, operação ou resposta
+    anterior à edição não servem. Reuso de leitura em voo existente continua.
+  - `assets/js/view-alunos.js` e `assets/js/storage.js`: propagam opção B2 ao financeiro
+    complementar, preservando GET novo do manual/recuperação. Storage registra falha da carga
+    inicial para B2 não repetir imediatamente 500/401 sem evento; sucesso/invalidação limpam
+    registro. Nenhuma mudança em cálculos financeiros ou escrita/normalização de negócio.
+  - `assets/js/app/coordenador-sync-boot.js`: render B2 identificado com `boot:true`;
+    início pode herdar espera por evento após carga inicial falha. Mantém cota D2.
+  - `tests-frontend/d3-boot-integracao.test.js` (novo): **32 testes** com bootstrap/router/
+    contexto/storage/coordenador/inicializadores reais, rede fake; render complexo da grade
+    é fronteira da fixture. Matriz 3 hashes × cache presente/vazio/ausente, financeiro
+    concluído/em voo/falho/vazio, login cedo/troca/sem sessão, remoto vazio, offline/falha,
+    edição/navegação/manual, retorno à aba antes/depois da cota e durante complemento.
+  - `tests-frontend/d1-hidratacao-render.test.js`: coordenador fake explícito para continuar
+    isolando D1; integração real testada no D3. `d2-coordenador-sync-boot.test.js`: removida
+    expectativa histórica de ausência de ligação no bootstrap; módulo isolado continua inerte.
+  - Spec Finanças §6.1.4, plano e roadmap: contrato aprovado e entrega parcial até D3.
+    Sem relatório paralelo ou alteração de specs de cálculo/prazo.
+- **Suítes medidas**: frontend **256/256 antes → 288/288 depois**, zero falhas. Integração
+  D3 final 32/32; foco D1+D2+D3 **91/91**. **Backend não executado** nesta rodada:
+  nenhum backend/shared/harness backend alterado. Diagnósticos e diff-check limpos;
+  avisos CRLF dos arquivos preexistentes registrados sem renormalização fora do escopo.
+- **Revisão focada**: uma exploração curta e uma revisão read-only. Revisão apontou
+  retry imediatamente após falha inicial e retorno perdido quando principal já aplicado
+  aguardava complementos; ambos corrigidos e testados. Acrescentado pedido novo após
+  retorno descartado por edição (D3-19). Não reiniciar auditoria C/GCal.
+- **Provas por mutação**, cinco alterações em dois grupos, restauradas por edição:
+
+  | Mutação | Assert próprio que falhou | Resultado do grupo | Restaurada |
+  |---|---|---|---|
+  | Desativar reuso financeiro concluído | D3-01 Alunos/Finanças, D3-03/04/14 | 14 passam / 18 falham | sim |
+  | Ignorar falha inicial no início B2 | D3-17 quatro casos 500/401 | mesmo grupo | sim |
+  | Descartar retorno durante complemento B2 | D3-18 | mesmo grupo | sim |
+  | Não conservar pedido descartado por edição | D3-19 | mesmo grupo | sim |
+  | Iniciar B2 imediatamente sem frame | D3-01 nove casos de apresentação | 22 passam / 10 falham | sim |
+
+  Todas provas contadas por assert, não timeout. Patch de restauração inicialmente fora
+  de ordem recusado sem mudanças; corrigido na ordem do arquivo. Após restauração integral,
+  status/diff conferidos e suíte completa **288/288**. Nenhuma mutação residual.
+- **Smoke mobile somente mock**: `default`, **433×762, DPR ~2.81**, touch/pointer coarse
+  confirmados, cache estático limpo. Reload real de Home/Alunos/Finanças preservou hash e
+  apresentou coordenador **ativo=true, estado=aplicado, emVoo=false**, quatro alunos/cards
+  pertinentes, sem overflow horizontal. Home/Alunos aproveitaram recibo da carga inicial;
+  Finanças recebeu batch principal remoto. Mock bloqueia persistência normal: cache stale/
+  reload/contagem GET são provados no harness, não nesse smoke. Ping localhost:5000 recusado
+  e aviso GCal bloqueado são preexistentes/esperados; nenhuma API ou escrita de produção.
+- **Encontrado, não alterado**: barreira de navegação inicial ainda espera GET próprio de
+  Finanças; cache é apresentado durante essa espera e o batch principal começa depois,
+  sem acrescentar GET financeiro. Consolidação GCal/2.2, ETag, CRUD entre dispositivos e
+  atomicidade de localStorage não resolvidos. Matriz visual ampliada/com cache sintético,
+  TalkBack/teclado e aceite E ainda pendentes. Não considerar smoke prova de Google/Mongo real.
+- **Não realizado**: E/fechamento integral da 2.4, mudança auth/GCal/cascata/motor/conflitos/
+  backend, dependências, commit/push/merge/deploy. **B2 ligado no código local; publicação pendente.**

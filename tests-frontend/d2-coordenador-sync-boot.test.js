@@ -102,15 +102,13 @@ function conferirBatch(chamadas) {
     assert.deepEqual(chamadas.map((c) => c.rota).sort(), [...BATCH].sort());
 }
 
-testar('D2-01 — carregar módulo e eventos não ativam B2; bootstrap continua sem ligação', async (t) => {
+testar('D2-01 — carregar módulo e eventos não ativam B2 sem iniciar explícito', async (t) => {
     const a = ambiente(t);
     a.conexao(true); a.formulario(true); a.formulario(false); a.sessao(true);
     await eventos();
     assert.equal(a.estado().ativo, false);
     assert.equal(a.chamadas.length, 0);
     assert.equal(a.rotulo(), true);
-    const bootstrap = fs.readFileSync(path.join(RAIZ, 'assets/js/app/bootstrap.js'), 'utf8');
-    assert.equal(/syncBootDados\s*\.\s*iniciar\s*\(/.test(bootstrap), false, 'D3 ainda não executado');
 });
 
 testar('D2-02 — uma aplicação por contexto, inclusive iniciar/online repetidos', async (t) => {

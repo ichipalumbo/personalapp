@@ -49,6 +49,8 @@ function ambiente(t, opcoes = {}) {
     let token = 'token-d1';
     const listeners = [];
     const a = { dom, window, chamadas: [], scrolls: [], iniciais: [], renders: [] };
+    // Isolar o contrato D1: ativação/concorrência do coordenador real é testada no D3.
+    window.syncBootDados = { iniciar() {}, retomar() {}, obterEstado: () => ({ estado: 'aplicado', emVoo: false }) };
     window.googleIdentity = {
         getOwnerEmail: () => conta, getIdToken: () => token,
         addAuthChangeListener: (fn) => { listeners.push(fn); }, initialize() {}, whenReady: async () => {}
