@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-10-01
+> **Status**: Documento vivo · **Atualizado**: 2026-10-05
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[ ]`  | desenho pronto; 2.2 consolida depois                             |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[ ]`  | plano revalidado e decisões registradas em 05/10; 2.2 consolida depois |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -405,40 +405,45 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [ ] 2.4 Sync de leitura no boot sobre cache (B2 — stale-while-revalidate)
 
-> _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30). Desenho
-> completo e revalidado em [`plans/2026-09-30-plan-b2-sync-boot.md`](plans/2026-09-30-plan-b2-sync-boot.md)._
+> _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30).
+> [Plano vivo](plans/2026-09-30-plan-b2-sync-boot.md) **revalidado em 2026-10-05**, com
+> decisões de recuperação e botão manual refinadas; implementação não iniciada.
+> B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
-- **O que é**: hoje o boot com cache renderiza na hora e **não faz nenhuma chamada remota** de
-  dados (medido em `storage.js`). O B2 passa a disparar, uma vez por sessão, uma releitura
-  remota em segundo plano depois que a Home já está em tela, reusando o caminho do auto-refresh
-  e o rótulo "Sincronizando dados..." já entregue no 5.8. É a implementação, no boot, do que a
-  spec de Finanças §6.1 já manda ("exibir o cache imediatamente e atualizar quando a resposta
-  chegar").
-- **Por que importa**: sem isso o app pode ficar mostrando dados velhos até o próximo gatilho
-  (troca de login, botão manual, voltar ao app depois de 90s+). É o que o PT vê ao abrir o app.
-- **Por que está no Grupo 2 e não no 1 ou no 4**: tema (sincronização no boot, vizinho do 2.2) e
-  esforço Médio, como 2.1 e 2.3. Não é Grupo 1: mexe em guarda contra perda de cache, trava de
-  concorrência leitura×escrita e guarda de dono. Não é Grupo 4: não há serviço externo nem
-  arquitetura nova.
-- **Riscos que o desenho já trata** (detalhe no report): **R1** — boot nunca dispara o caminho
-  de escrita "banco vazio → migrar cache" nem regrava o cache com listas vazias (opção
-  `somenteLeitura`); **R2** — caches locais passam a ter dono (`ownerEmail`), sem apagar cache
-  de quem ainda não logou; **R3** — 401 no boot sem toast; **R4** — trava global cobrindo
-  leitura e escrita, com prioridade de escrita.
-- **Decisões do dono já registradas**: desenho B2-puro + esqueleto de ETag; R1 “não disparar no
-  boot”; R2 dentro do escopo.
-- **Pendências antes de executar**: (a) comportamento do botão "Sincronizar Dados" com sync
-  já em voo; (b) mecanismo de cancelar/descartar leitura em voo quando o usuário salva
-  (`AbortController` ou descarte pós-resposta).
-- **Onde mexer**: `assets/js/storage.js` (`carregarDados`, `carregarDadosDoLocalStorage`,
-  `salvarNoLocalStorage`, cache de Finanças), `assets/js/app/bootstrap.js`. Sem mudança de
-  backend no B2-puro.
-- **Área sensível**: toca a sincronização de dados e a fronteira com autenticação
-  (`addAuthChangeListener`); confirmar antes de implementar.
-- **Sequência sugerida**: (1) B2-puro; (2) ETag/304 no backend (rodada separada, exige conferir
-  `updatedAt` em `Aluno` e `Agendamento`); (3) consolidação do boot no 2.2. Mesma família do
-  **1.11** (botão "Atualizar" em Finanças, bypass de cache).
-- **Esforço**: Médio (B2-puro) + Médio (ETag, rodada separada).
+- **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
+  imediata, com o rótulo "Sincronizando dados..." do 5.8. Cobrir as três telas iniciais
+  preservadas pela hash, não apenas Home. `storage.js` ainda retorna do cache sem releitura
+  principal; Finanças **já faz seu próprio GET** e não deve duplicá-lo por render.
+- **Por que importa**: reduzir dados antigos sem sobrescrever rascunhos/gravações ou expor
+  cache de outra conta. Tema do Grupo 2, vizinho da consolidação 2.2.
+- **Decisões de 05/10**: descartar caches sem dono, inclusive backup legado; preservar cache
+  identificado sem sessão válida **sem exibi-lo**; aceitar vazio válido da mesma conta;
+  falha em qualquer dataset do batch B2 preserva esse batch inteiro. B2 não dispara migração/CRUD frontend;
+  efeitos lazy dos GETs existentes no backend permanecem inalterados.
+- **Interação**: formulário/gravação descarta B2 e adia nova leitura até ficar livre; estado
+  local de gravação falha fica preservado e suspende B2 até resolução. Troca de conta
+  fecha/descarta rascunho anterior e avisa se havia edição. Botão manual durante B2 dá
+  feedback imediato e executa **seu próprio sync depois**. Falha real só retoma por novo
+  evento de sessão/conexão ou gatilho existente, não por fechar formulário. Sem polling;
+  dono/gerações protegem respostas tardias e indicadores.
+- **Refinamento aprovado (05/10)**: pendência tem saídas explícitas **Verificar no servidor**
+  e **Usar dados do servidor**, sem replay cego após timeout/falha parcial. Usar servidor
+  exige confirmação + leitura nova válida antes de abandonar intenção local; não desfaz
+  estado remoto. **Todo botão Sincronizar Dados passa a somente leitura**, sem migração,
+  reconciliação CRUD ou diff de snapshot antigo; salvar fica nas ações de edição.
+- **Execução proposta**: A — contratos nas specs e isolamento; B — leitura segura; C —
+  fronteiras de formulários/gravações e recuperação explícita; D — boot/render neutro; E — mock seguro, testes e
+  aceite mobile. Critérios no plano; nenhuma garantia implementada ainda.
+- **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
+  e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,
+  cálculo financeiro, motor, autenticação ou integração GCal no B2-puro.
+- **Área sensível**: confirmar antes se execução exigir tocar autenticação, GCal ou algoritmo
+  da cascata; não presumir autorização pela ampliação do plano.
+- **Sequência**: B2-puro antes do **2.2**. ETag/304 separado, não bloqueia 2.2 e exige novo
+  desenho de invalidação (collections + passagem do dia). Dono decide ordem entre essas
+  rodadas posteriores. **1.11** continua independente.
+- **Esforço**: Médio–Alto (B2-puro, revisar após inventário de operações); ETag a estimar
+  separadamente. Sem dependências novas previstas.
 - **Numeração**: "2.4" foi o número antigo do Portal do aluno (hoje 4.3, ver mapa de
   2026-08-26). Referências anteriores a essa data que digam "2.4" se referem ao Portal, não a
   este item.

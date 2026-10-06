@@ -1,497 +1,468 @@
-# 2026-09-30 — Desenho do B2: sincronização de leitura no boot sobre cache
-
-> **Status**: DESENHO revalidado (não executado) · autor: IA, revisão do dono pendente
-> **Item**: o "caminho B2" deixado de fora na execução do **5.8**
-> (`2026-09-30-plan-skeletons-cache.md`) — o dono voltou a pedir o desenho em 2026-09-30,
-> após a explicação do padrão de mercado (stale-while-revalidate).
-> **Branch da rodada**: `feat/padronizar-skeletons-cache` (decisão do dono: seguir nela).
-> **Escopo desta rodada**: varredura completa + desenho. Nenhuma linha de código do app foi alterada.
-> **Revalidação (2026-09-30, mesma data)**: o dono pediu releitura completa em busca de
-> brechas. Encontradas e corrigidas **3 brechas de desenho** (marcadas inline como
-> "Correção da revalidação"): (1) crítica — `somenteLeitura` como descrito originalmente
-> não impedia a perda do cache em caso de remoto vazio, porque o `return` que blindava
-> isso estava dentro do `if` pulado; (2) a guarda R2 apagava cache de usuário legítimo
-> ainda não logado; (3) a trava R4 não cobria o cruzamento leitura-B2 × escrita-usuário.
-> Também registrada 1 ambiguidade de UX a decidir na execução (botão manual durante
-> sync em voo).
-
-## Decisões do dono (registradas em 2026-09-30)
-
-1. **Escopo do desenho**: B2-puro **+ esqueleto de ETag** (capítulo de desenho no
-   backend, sem implementação agora).
-2. **R1 (caminho de escrita "banco vazio")**: **não dispara no boot**. O boot é só
-   leitura; a migração de dados locais para o Atlas continua disponível quando o app
-   abre **sem cache** (caminho de recovery original).
-3. **R2 (caches sem dono)**: **entrar no escopo** do desenho — escopar `personal_financas_cache`
-   por `ownerEmail` e avaliar as demais chaves globais de localStorage.
-
----
-
-## 1. Contexto — o que o 5.8 descobriu
-
-A premissa original do plano 5.8 era "o app sempre abre com dados locais e
-sincroniza em background". Medido no código, **não**: o boot com cache
-(`carregarDados` em `assets/js/storage.js`) renderiza na hora e **retorna sem nenhuma
-chamada remota** (2 short-circuits: `_cacheInicializado=false` e
-`_cachePossuiDados && !forcarRemoto`, ambos retornando `{ origem: 'local-cache' }`).
-Por isso a execução do 5.8 fez o **B1** (rótulo global só nos syncs remotos que já
-existiam: troca de login, botão "Sincronizar Dados", auto-refresh) e deixou o B2
-("disparar sync no boot também") fora — comportamento novo de negócio, candidato a
-futuro item de roadmap (provavelmente junto do 2.2).
-
-O dono entendeu que é importante e pediu varredura completa + desenho antes de
-decidir se implementa. Este report é esse desenho.
-
-## 2. Padrão de mercado aplicado (resumo)
-
-Stale-while-revalidate: (1) render do cache imediato; (2) revalidação condicional
-(ETag/304) quando viável; (3) reconciliação de **leitura** com o servidor como fonte
-de verdade; (4) indicador sutil não-bloqueante (o B1 já entrega); (5) TTL/throttle;
-(6) silêncio offline. Duas regras duras: nunca merge de escrita no boot e nunca
-pisar em formulário aberto. Detalhamento no item 7 (etapa ETag).
-
-## 3. Varredura — estado atual medido (base do desenho)
-
-### 3.1 Cadeia de boot
-
-`bootstrap.js → initialize()`:
-1. `googleIdentity.initialize()` + `await whenReady(1600)`;
-2. `router.navigateTo('tela-home')` — o `initializeView` do router chama
-   `inicializarHome()` **sem args**;
-3. `inicializarHome()` (`view-home.js`): `deveSincronizar` = `!__sincronizacaoInicialConcluida`
-   (sempre `true` no boot) → `_sincronizarDadosHome` →
-   `carregarDados({ forcarRender: false, forcarRemoto: false })` —
-   **`forcarRemoto` vem de `opcoes.sincronizar === true`, que é `undefined` no boot**;
-   com cache, entra num short-circuit local e o boot termina sem rede de dados.
-   (O loading da Home só aparece `deveMostrarLoading` quando não há cache local.)
-4. **Depois** da navegação, o bootstrap ancora em `setTimeout(0)`:
-   `dispararVerificacaoCanalGCal()` (guarda `gcalWatchCheckDisparado`) e
-   `iniciarSyncGoogleCalendarAutomatica()` — 2ª rede de chamadas paralela,
-   **independente** de `carregarDados` (spec `gcal-sync.md` 5.1.3: "Nenhum dos três
-   `carregarDados` existentes dispara a renovação").
-5. Listeners já registrados no bootstrap: **auth-change**
-   (`carregarDados({forcarRender:false, forcarRemoto:true})` + refresh da view) e
-   **visibilitychange** auto-refresh (≥90s oculto, throttle 30s, guarda
-   `autoRefreshEmAndamento`, `silenciosoUI:true`, `silenciarAuthToast:true`).
-
-Gatilhos remotos que existem hoje: auth-change, auto-refresh, botão manual
-`window.sincronizarBancoDados` (guarda `_syncBancoEmAndamento`), e chamadas pontuais
-de views (`view-alunos.js`, `modal-acao-slot.js` — refresh pós-gravação).
-
-### 3.2 O caminho remoto de `carregarDados` (o que o B2 reutilizaria)
-
-- `Promise.all` de **5 fetches**: `/alunos`, `/agendamentos`, `configuracao/grade_horarios`,
-  `/bloqueios-externos` (fallback `[]`), `/reposicoes` (fallback `[]`); primeira
-  requisição da vida com timeout de **40s**, depois `API_TIMEOUT_MS` (8s).
-- **Caminho de escrita oculto nº 1 ("banco vazio")**: se `alunos.length===0 &&
-  aulas.length===0` no remoto e existir backup local (`personalTrainerData` ou
-  `personal_alunos`/`personal_aulas`), o app faz `atualizarAlunos/...` +
-  **`salvarDados(true)`** + toast "Seus dados locais foram migrados com sucesso".
-  `salvarDados` é **CRUD bidirecional** (`_sincronizarAlunosViaCRUD` /
-  `_sincronizarAgendamentosViaCRUD`): POST o que falta no remoto, PUT o que mudou,
-  **DELETE no remoto o que não existe no local**, mais `PUT` de grade.
-- **Caminho de escrita oculto nº 2 ("migração de objetivos")**: a normalização de
-  `objetivo`/`corObjetivo` na leitura; se mudou algo, `salvarDados(true)` de novo.
-- Sucesso: `salvarNoLocalStorage()` (5 chaves: `personal_alunos`, `personal_aulas`,
-  `personal_reposicoes`, `personal_limitesGrade`, `faturamentoMeta`) + render
-  (se `forcarRender`).
-- Falha: `local-fallback` — recarrega cache local, toast "Sem conexão. Seus dados
-  foram salvos neste aparelho." (suprimido se `silenciosoUI`).
-- 401: `local-auth-expirado` + toast "Sua sessão Google expirou..." (suprimido se
-  `silenciarAuthToast`).
-- **Rótulo de cache (B1)**: `_marcarSyncSobreCache()` acende quando
-  `usuarioAutenticadoNoApp() && _cachePossuiDados` — **o B2 acenderia o rótulo
-  automaticamente por esta definição**, sem mudança em UI nova.
-
-### 3.3 Caches locais — espalhadas, desalinhadas
-
-| Onde | O quê | Escopo por dono? |
-| --- | --- | --- |
-| `personal_alunos`, `personal_aulas`, `personal_reposicoes`, `personal_limitesGrade`, `faturamentoMeta` (`storage.js`) | os 5 datasets principais | ❌ nenhuma |
-| `personal_financas_cache` (`storage.js`, `{atualizadoEm, dados}`) | último `GET /api/financas` | ❌ |
-| `gis_profile_cache`, `gis_session_cache`, `gcal_connection_cache` (`auth/google-identity.js`, `google-calendar.js`) | sessão Google / estado OAuth | ✅ intrínsecos (token do dono logado) |
-
-Consequência R2 medida: trocar de conta Google **com o app fechado** e reabrir → o
-login novo restaura, mas o boot **renderiza o cache do dono anterior** e só corrige
-no sync remoto (1–8s). Pior caso R2×R1: Mongo do novo dono vazio + cache do antigo →
-o caminho "banco vazio" **re-semeia o Mongo do novo dono com os dados do antigo**
-(leak entre contas — o app é multiusuário por `ownerEmail`).
-
-### 3.4 Serviço worker (`sw.js`)
-
-Shell: cache-first. `/api/`: **network-first**, cache só como fallback de erro
-(retorna 504 sintético "Offline"). Não interfere no B2, mas explica o 504 do
-Live Server visto na execução do 5.8. Nenhuma mudança planejada.
-
-### 3.5 Regras de negócio que **limitam** o desenho (specs lidas na íntegra)
-
-- **Finanças 6.1 / decisão #14** — "cache local apenas leitura/resiliência a cold
-  start... **Exibir o cache imediatamente e atualizar quando a resposta chegar**".
-  O B2 é a implementação dessa frase no boot; **não é regra nova**, é a regra que
-  falta.
-- **Finanças 5.8/5.9 / decisão #23** — recálculo do ciclo não-pago é automático a
-  cada leitura de `GET /api/financas` (é o que corrige a contagem após exclusão de
-  aula, decisão #16); recálculo usa **só snapshot**; ciclo **pago** congelado — o
-  B2 não toca congelamento algum (só re-consulta a GET).
-- **Finanças 6.2/#25** — histórico de ciclos fora do cache persistente (só memória
-  de sessão) → inalterado pelo B2.
-- **Reposições** — o bloco de reposições em tela e o modal fazem **leituras
-  próprias** (`GET /api/...`); o texto da spec ("o modal tenta a leitura própria")
-  continua verdadeiro no B2.
-- **gcal-sync 9.14** — "gatilho **triplo** de sincronização no boot" pendente; o 2.2
-  do roadmap ("Consolidação das três syncs no boot") é o item-pai da consolidação.
-  **O B2 cria um 4º ponto de boot de dados** — a descrição de 9.14/2.2 precisa ser
-  atualizada para refletir isso (ver item 8).
-- **Isolamento `ownerEmail`** (regra 4.1 das instruções do repositório) — toda query
-  filtra por dono; a R2 é o espelho frontend dessa regra (o backend já isola; o
-  cache não).
-
-### 3.6 Riscos encontrados (classificados)
-
-- **R1 (alto) — caminho de escrita "banco vazio" no boot**: decidido **não disparar
-  no boot** (decisão 2 acima). Sem mudança de código, o B2 o ativaría no boot com
-  cache + Mongo zerado (exatamente o fluxo de "limpar produção" do dono).
-- **R2 (médio, elevado pela R1) — caches sem dono**: decisão **incluir no escopo**
-  (decisão 3). Cenário de leak entre contas descrito em 3.3.
-- **R3 (médio) — 401 silencioso vira toast surpresa**: no boot com cache, a
-  falha de 401 mostraria "Sua sessão Google expirou..." sobre uma Home já pintada.
-  Tratado com `silenciarAuthToast: true` (mesma opção que o auto-refresh já usa).
-- **R4 (médio) — concorrência no boot**: no mesmo segundo correm gcal-watch +
-  gcal-connection + (B2) 5 fetches + possível auth-change. Hoje cada gatilho tem
-  guarda própria; não existe trava **global** de "1 sync remoto de dados por vez".
-  Tratado com trava global (§5.4).
-- **R5 (baixo para B2, central no item 7) — sem ETag no backend**: nenhum
-  `ETag`/`If-None-Match`/`Last-Modified` existe em nenhuma rota (`grep` em
-  `backend/src` vazio). O B2-puro reenvia o payload inteiro a cada boot; o desenho
-  do item 7 é o caminho para tornar barato.
-- **R6 (baixo) — timeout de 40s com rótulo à vista**: na primeira requisição da
-  vida, o rótulo "Sincronizando dados..." pode durar ~40s em rede ruim. Desenhado
-  como-is (a alternativa — cap de display — ficaria como nota opcional, item 9).
-- **Observação (não se muda no B2)**: o auto-refresh re-renderiza **só a view ativa**
-  (`refreshCurrentView`). No boot a ativa é a Home; Alunos/Finanças ficam frescos
-  na próxima navegação (as telas leem cache local + GET próprio). Comportamento
-  idêntico ao do auto-refresh atual, documentado para não causar surpresa.
-
-## 4. O que o B2-puro **não** faz (fronteiras do desenho)
-
-- Não implementa ETag (desenhado, item 7) — zero mudança de backend.
-- Não encara a consolidação dos gatilhos GCal do boot (9.14/2.2 segue pendente,
-  mas a nota passa a considerar o B2).
-- Não cria fila de escrita offline (o app já grava direto na API + espelha em
-  localStorage; fora de escopo por spec).
-- Não altera TTL/throttle do auto-refresh (90s/30s mantêm).
-- Não adiciona novas UI além do rótulo B1 já executado.
-
-## 5. Desenho — B2-puro
-
-### 5.1 Gatilho e ponto de chamada
-
-Nova função em `storage.js`: `window.sincronizarBootSobreCache()`, chamada uma vez
-no `bootstrap.js` **após** os dois triggers GCal (final do `initialize()`), de modo
-que a Home já tenha sido pintada do cache e para não preceder as chamadas GCal.
-Guardas, todas dentro da função (testeável isoladamente):
-
-1. `!_syncBootDisparado` (uma vez por sessão) e marca ao chamar;
-2. `usuarioAutenticadoNoApp()`;
-3. `_cachePossuiDados` (sem cache o gatilho normal do boot já resolve — ver 5.6);
-4. `!_syncRemotoDadosEmAndamento` (trava global, 5.4);
-5. `navigator.onLine !== false` (atalho barato; a falha de rede real já é tratada).
-
-Chamada efetiva — **idêntica à do auto-refresh** (caminho em produção há semanas):
-
-```
-carregarDados({
-  forcarRender: false,
-  forcarRemoto: true,
-  silenciosoUI: true,
-  silenciarAuthToast: true,
-  somenteLeitura: true        // novo — ver 5.2
-})
-// no sucesso: refreshActiveView(router) — a view ativa (Home) pinta os dados frescos
-```
-
-Rótulo: acende sozinho via `_marcarSyncSobreCache()` (definido em 3.2) — **nenhuma
-UI nova**; some no `finally` (sucesso, falha ou 401).
-
-### 5.2 Tratamento R1 — `somenteLeitura`
-
-Nova opção em `carregarDados`/`salvarDados`: **`somenteLeitura: true`**.
-
-> **Correção da revalidação (2026-09-30)**: a primeira versão deste desenho
-> dizia que bastava pular os dois caminhos de escrita ocultos. **Isso não
-> bastava** — reler o controle de fluxo real de `carregarDados` mostra que o
-> `return` da migração fica **dentro** do `if (listaAlunosAPI.length === 0 &&
-> listaAulasAPI.length === 0)`. Se esse `if` for apenas pulado, a função
-> **continua** e executa, incondicionalmente logo abaixo, `atualizarAlunos(
-> listaAlunosAPI)` / `atualizarAulas(aulasParaCarregar)` com os arrays
-> **vazios** do remoto, e depois `salvarNoLocalStorage()` — ou seja, o cache
-> local seria apagado de qualquer forma, só que por um caminho diferente do
-> que o R1 queria fechar. A correção precisa agir **antes** desse ponto:
-
-- **Guarda nova, no topo do bloco de tratamento da resposta bem-sucedida**: se
-  `somenteLeitura === true` **e** `listaAlunosAPI.length === 0 && listaAulasAPI.length
-  === 0` **e** havia cache local com dados (`_cachePossuiDados` antes da
-  chamada) → **sair imediatamente** sem tocar `atualizarAlunos`/`atualizarAulas`/
-  `salvarNoLocalStorage`, mantendo o estado de memória e o localStorage
-  intactos, com um `log.warn` ("Boot: remoto vazio com cache local presente —
-  preservando cache, sem migrar.") e retorno equivalente a `{ origem:
-  'local-cache' }`. Isso fecha o R1 de fato — nenhuma leitura de estado
-  muda, nenhuma escrita ocorre.
-- "migração de objetivos → `salvarDados(true)`" (branch
-  `houveMigracaoPersistenteAlunos`) — **continua** bloqueada por
-  `somenteLeitura`, mas aqui o pulo é seguro: a branch só é alcançada quando o
-  remoto **não** está vazio (já passou da guarda acima), então pular apenas o
-  `salvarDados(true)` não descarta nada — os dados normalizados já foram
-  aplicados ao estado em memória e ao `localStorage` normalmente; só a
-  gravação de volta no Mongo fica para o próximo sync não-`somenteLeitura`.
-
-Somente **o gatilho de boot** passa `somenteLeitura: true`. Auto-refresh,
-auth-change, botão manual e iniciais de views seguem sem a flag (a recovery original
-com sem-cache segue intacta — teste de regressão obrigatório, item 6).
-
-Consequência documentada: se o Mongo for zerado e o aparelho tiver cache, o app
-**funciona do cache** até que o dono crie/importe dados pela UI (qualquer gravação
-via `salvarDados` normal re-semeia o banco legítima).
-
-### 5.3 Tratamento R3
-
-`silenciarAuthToast: true` no gatilho de boot. Em 401 com cache: `local-auth-expirado`,
-cache preservada, **sem toast**; o fluxo de login do Google (prompt da GIS) assume a
-comunicação, comportamento idêntico ao auto-refresh com 401.
-
-### 5.4 Tratamento R4 — trava global
-
-Novo flag em `storage.js`: `_syncRemotoDadosEmAndamento`, true no início do caminho
-remoto de `carregarDados` e false no `finally`. Todas as entradas existentes
-(gatilho de boot, auth-change, auto-refresh, `sincronizarBancoDados`, refresh de
-views) passam a ser **mútua-mente exclusivas**: quem chega com a trava levantada
-delega ao sync em voo (comportamento: "já tem sync em curso, o resultado dele
-cobre"). As guardas por-gatilho existentes (`autoRefreshEmAndamento`,
-`_syncBancoEmAndamento`, `gcalWatchCheckDisparado`) **permanecem** (defesa em
-profundidade, zero custo).
-
-> **Correção da revalidação (2026-09-30) — brecha de escopo**: a trava acima só
-> serializa chamadas de **leitura** (`carregarDados` × `carregarDados`). Ela
-> **não** cobre `salvarDados` — que faz sua própria `GET` fresca dentro do CRUD
-> (`_sincronizarAlunosViaCRUD`/`_sincronizarAgendamentosViaCRUD`) antes de
-> calcular o diff a aplicar. Se o boot-sync (B2) estiver em voo exatamente
-> quando o usuário salva algo (ex.: editar um agendamento), são duas operações
-> HTTP independentes sobre a mesma coleção, cada uma computando diff a partir
-> de uma fotografia potencialmente diferente — risco real de POST duplicado
-> ou DELETE indevido (a regra de mercado "nunca pisar em formulário/gravação em
-> curso" da seção 2 da conversa). **Correção**: a trava vira
-> `_syncRemotoEmAndamento` (leitura **e** escrita) com prioridade de escrita —
-> se `salvarDados` for chamado enquanto uma leitura B2/auto-refresh está em
-> voo, a leitura é **abortada** (ou seu resultado descartado ao terminar) e a
-> escrita segue sem esperar; se for o inverso (leitura chega com escrita em
-> voo), a leitura **aguarda** a escrita terminar antes de iniciar. Isso exige
-> um `AbortController` acessível para a leitura em voo — ponto a detalhar na
-> rodada de execução, não neste desenho.
-
-**Ambiguidade de UX a decidir (revalidação)**: se o botão manual "Sincronizar
-Dados" for tocado enquanto a trava já estiver levantada por outro gatilho
-(boot/auto-refresh), o clique deve (a) anexar-se ao sync em curso e mostrar
-"Sincronizando..." imediatamente, ou (b) ficar sem efeito visível até o próximo
-clique? Recomendo (a) — o usuário não pode ver o botão "parado" sem feedback
-quando algo já está de fato sincronizando. Decisão do dono na rodada de
-execução.
-
-### 5.5 Tratamento R2 — escopo das caches por `ownerEmail`
-
-Objetivo: um boot **nunca** renderiza (nem migra) dados de outro dono.
-
-1. **Nova chave** `personal_cache_dono` no `localStorage` = `ownerEmail` da sessão
-   que fez a última escrita (gravada em `salvarNoLocalStorage()` e nas 3 operações
-   de `limparCacheFinancas`/cache de finanças; lida no boot).
-2. **Guarda de leitura em `carregarDadosDoLocalStorage()`**: se
-   `personal_cache_dono` existir **e** `ownerEmail atual` **também existir**
-   (usuário autenticado) **e** os dois divergirem → **remove do `localStorage`
-   as 5 chaves de dado + a chave de dono** e não carrega nada para o estado de
-   memória; `_cachePossuiDados = false`.
-   > **Correção da revalidação (2026-09-30) — brecha de desenho**: a primeira
-   > versão comparava `personal_cache_dono !== ownerEmail atual` sem checar se
-   > havia sessão. Isso quebrava um caso real e já suportado hoje: o app
-   > **mostra cache para quem ainda não logou** (`carregarDados` tem o caminho
-   > dedicado `local-sem-login`). Se o app reabre e a sessão Google ainda não
-   > restaurou (ou expirou), `ownerEmail atual` é `null`; a comparação ingênua
-   > `"a@b.com" !== null` é verdadeira e apagaria o cache de um usuário
-   > **legítimo que simplesmente ainda não logou** — o oposto do objetivo da
-   > R2. A guarda corrigida **só dispara com um dono atual conhecido e
-   > divergente**; ausência de sessão nunca é motivo de descarte.
-   Detalhe que torna a remoção (e não apenas o "não carregar") obrigatória: o
-   caminho de escrita "banco vazio" lê o backup **direto do `localStorage`**,
-   não do estado de memória — sem a remoção, a migração re-semearia o Mongo com
-   o cache do antigo dono (cenário R2×R1 de 3.3, e note que esse caminho de
-   migração já está desligado no boot pela correção do R1 em 5.2 — a remoção
-   aqui continua valendo para os demais gatilhos, ex.: auth-change, que **não**
-   usam `somenteLeitura`). Efeitos em cadeia:
-   - boot com cache **de outro dono** → comportamento igual a boot **sem cache**
-     (skeleton na Home, chamada remota normal do boot, **sem** rótulo "sobre cache"
-     — o `_marcarSyncSobreCache` cai por `_cachePossuiDados=false`), e o caminho
-     "banco vazio" **não pode executar a migração** (ele só roda se houver backup
-     local — a guarda também protege a R1 contra o cenário de leak R2×R1, 3.3);
-   - troca de conta **com o app aberto** (auth-change) → mesmo: cache descartada,
-     sync remoto do novo dono;
-   - dona igual ao `person_cache_dono` → inalterado, zero novo custo.
-3. **`personal_financas_cache`** ganha campo `ownerEmail` no objeto
-   `{atualizadoEm, ownerEmail, dados}`; `obterCacheFinancas()` retorna `null` se o
-   campo não bater com a sessão atual (a telinha de Finanças e o card do aluno
-   (`obterResumoFinanceiroPorAluno`) passam a tratar "cache sem dono" como "sem
-   cache" — já tratam `null` hoje).
-4. **Demais chaves globais** (`personal_alunos` etc.): cobertas pela guarda 2 da
-   chave única `personal_cache_dono` — **não** escopa cada chave
-   individualmente (5 chaves × formato raw = migração mais arriscada por zero
-   ganho real: o dono atual do espelho é sempre o dono da sessão, por definição da
-   guarda). `faturamentoMeta` segue a mesma guarda.
-5. Chaves de sessão/OAuth (`gis_*`, `gcal_connection_cache`) **não entram** —
-   já são intrínsecas ao token/logado do dono.
-6. **Sem efeito no backend** e na regra de isolamento 4.1 (que já filtra
-   `ownerEmail` em toda query) — a guarda é defesa do **estado local** só.
-
-### 5.6 Sequência de boot de cabeça no B2 (caso: app fechado → reaberto → cache do dono atual)
-
-1. `whenReady(1600)` → sessão restaurada do cache OAuth (`gis_session_cache`);
-2. `navigateTo('tela-home')` → `inicializarHome()` → `carregarDados` sem remota →
-   **Home pintada do cache na hora** (com 3 barras `.skeleton` da 5.8 só se **não**
-   havia cache);
-3. GCal: watch-check + connection (paralelos, `setTimeout(0)`);
-4. `sincronizarBootSobreCache()` → rótulo "Sincronizando dados..." acende no
-   header → os 5 GETs → `somenteLeitura` → dados novos;
-5. Sucesso: `salvarNoLocalStorage` (com nova `personal_cache_dono`),
-   `refreshActiveView` → Home re-renderiza com os frescos; rótulo some.
-   Falha: cache intacta, rótulo some, **sem toast** (silencioso); 401: item 5.3.
-
-Caso sem cache (boot primeiro uso / após clear): o passo 4 é **pulador**
-(`_cachePossuiDados=false`) — o boot já faz a chamada remota via `inicializarHome`
-(como hoje), skeleton da 5.8 na Home, e o botão "Sincronizar Dados" continua como
-gatilho de recovery.
-
-## 6. Testes planejados (`tests-frontend/`, harness jsdom + `vm`, padrão do repositório)
-
-Arquivo: `tests-frontend/boot-sync-b2.test.js` (novo). Casos:
-
-1. **Boot com cache + online** → 1 batch de 5 GETs; rótulo visível **durante** o voo,
-   oculto no sucesso; view refreshada; `personal_cache_dono` gravada.
-2. **Boot com cache + rede caida** → cache intacta; rótulo apaga sem toast
-   (silencioso); nenhum dado perdido.
-3. **Boot com cache + 401** → `local-auth-expirado`; cache preservada; **sem toast**
-   (R3).
-4. **Boot sem cache** → gatilho não dispara (o boot normal já resolve); no máximo
-   1 batch de GETs (prova anti-dobro).
-5. **Trava global (R4)**: sync manual em voo + boot → **1** batch de GETs total; o
-   segundo é delegado / pulado.
-6. **R1**: boot com cache + remoto **vazio** (lista `[]`) → **zero writes** (POST/PUT/DELETE
-   zero), `salvarNoLocalStorage` não sobrescreve o backup, sem toast "migrados".
-7. **Regressão R1**: boot **sem cache** + remoto vazio + backup local → migração
-   **segue funcionando** como hoje.
-8. **R2-a**: boot com cache + `personal_cache_dono` de outra conta (e `ownerEmail`
-   atual conhecido, sessão restaurada) → cache descartada (estado de memória
-   vazio), chamada remota normal, rótulo não acende, migração não executa.
-9. **R2-b**: `personal_financas_cache` com `ownerEmail` diverso →
-   `obterCacheFinancas()` retorna `null`.
-10. **R2-c**: mesmo dono → zero novo overhead (cache lida normalmente).
-11. **R2-d (brecha da revalidação)**: cache com `personal_cache_dono` gravado, mas
-    `ownerEmail` atual ainda não restaurado (sessão não chegou/expirada) → cache
-    não é descartado; app continua mostrando os dados em cache no caminho
-    `local-sem-login` de hoje. Prova de que a guarda R2 não regride o caso já
-    suportado de "ver cache sem estar logado".
-12. **R1-b (brecha da revalidação)**: boot com cache + `somenteLeitura` + remoto
-    devolvendo listas vazias → o estado de memória (`obterAlunos()`/`obterAulas()`)
-    permanece idêntico ao de antes da chamada e `localStorage` não é regravado
-    (spy em `atualizarAlunos`/`atualizarAulas`/`salvarNoLocalStorage` com zero
-    chamadas) — cobre o caminho que a v1 do desenho deixava passar.
-13. **R4-b (brecha da revalidação)**: `salvarDados` chamado enquanto um boot-sync
-    de leitura está em voo → a leitura não aplica seu resultado por cima da
-    escrita (ordem final do estado reflete a escrita do usuário, não a leitura
-    stale); o inverso (leitura chega com escrita em voo) → leitura aguarda.
-
-**Prova de mutação** (regra do repositório): para cada fix reverter individualmente
-(`somenteLeitura` ignorado → caso 6 deve falhar; guarda de vazio removida → caso 12
-deve falhar; guarda R2 removida → caso 8 deve falhar; guarda R2 sem checar sessão
-atual → caso 11 deve falhar; trava global removida → caso 5 deve falhar; trava sem
-cobrir escrita → caso 13 deve falhar; `silenciarAuthToast` removido → caso 3 deve
-falhar). Confirma `git status` limpo após restaurar.
-
-## 7. Esqueleto de ETag (desenhado, não implementado)
-
-Objetivo de mercado (item 3.6-R5 + 2): tornar **barato** o sync repetido — o
-custo real do B2 não é o payload (KBs) e sim o **recalculo servidor** que cada
-`GET /api/financas` dispara (recontagem dia-a-dia de agenda por aluno não-pago,
-cálculo das reposições, sincronização de ciclos — ver "revisão N+1" da spec).
-Um 304 economiza isso todo.
-
-- **Caminho (weak ETag por rota)**: cada `GET` de listagem calcula
-  `W/"<ownerEmail-hash>:<count>:<maxUpdatedAt>"` a partir da **própria**
-  collection filtrada pelo dono (1 agregação, indexada se houver índice em
-  `updatedAt`) — ex.: `/alunos` → collection `Aluno`. Um ETag por rota, em
-  memória por sessão (persistência opcional). Resposta:
-  - `If-None-Match` bate nos dois → **304**, body vazio;
-  - não bate → 200 completo + novo `ETag`.
-- **Contrato no cliente**: `apiFetchBackend` passa `If-None-Match` (do último `ETag`
-  em memória por sessão + persistido opcionalmente) e trata 304 como **sucesso**
-  sem payload → `carregarDados` mantém o cache (não sobrescreve por vazio), o
-  rótulo do B1 some, `refreshActiveView` fica opcional (dados idênticos).
-- **Onde ajuda mais**: `view-financas.js` (recalculador pesado) e `view-home.js`
-  (lista de agendamentos). O 5-parallel do boot vira 5 HEAD-like quase gratuitos.
-- **Custos/cuidados**:
-  - `updatedAt` precisa ser mantido nos schemas (verificar quais collections têm —
-    `CicloFinanceiro` tem; `Aluno` e `Agendamento` **a conferir** — se faltar, 1º
-    passo é o campo, que é backend só);
-  - ETag **weak** (`W/`) é o correto aqui: o body 200 é derivado na hora (recálculo
-    de leitura) e pode variar sem o documento mudar em conteúdo semanticamente
-    relevante; o ETag marca "os documentos de base mudaram?";
-  - 304 + `somenteLeitura` nunca escreve (compatível com 5.2);
-  - service worker: em `fetch()` nativo, `response.ok` é `false` para 304 (só
-    200–299). O caminho `network-first` do `sw.js` tratará o 304 como resposta
-    normal (não entra no cache, é retornado ao chamador) — **mas** o `catch` do
-    handler de fetch só roda se o `fetch` rejeitar, e 304 não rejeita; mesmo
-    assim, **testar** o caminho do SW com 304 explicitamente na rodada ETag
-    (comportamento pode variar por browser — Chrome/Edge/Firefox concordam em
-    `ok===false`, mas a validação é obrigatória pelo padrão do repositório).
-- **Sequência de rodadas sugerida (se o dono aprovar o B2)**:
-  1. rodada atual (este report) — decisão;
-  2. rodada B2-puro (§5);
-  3. rodada ETag (backend + `apiFetchBackend` + 1 telinha de prova (Finanças));
-  4. 2.2/9.14: consolidação dos gatilhos de boot (dados + GCal) num único orquestrador.
-- **Roadmap (registrado em 2026-09-30)**: o B2 virou o item **2.4** (Grupo 2, esforço
-  Médio, vizinho do 2.2). O ETag/304 fica como rodada separada dentro do 2.4 — não
-  ganhou número próprio.
-
-## 8. Atualizações de documentação pendentes (apenas se o B2 for executado)
-
-- `docs/specs/gcal-sync.md` §9.14: "tripla" passa a considerar o 4º ponto (boot de
-  dados) — a consolidação do 2.2 engloba ele.
-- `docs/roadmap.md`: **feito em 2026-09-30** — item 2.4 (tabela + seção, com link para
-  este report) e nota no 2.2 sobre a ordem de consolidação.
-- `docs/specs/financas-ciclo-cobranca.md` §6.1: nota "implementado no boot (B2,
-  2026-XX)" quando executar.
-- `docs/plans/2026-09-30-plan-skeletons-cache.md`: pointer para este report na
-  seção B2 (o dono pediu o desenho; o plano segue EXECUTADO com B1).
-
-## 9. Pendências / riscos residuais aceitos no desenho
-
-- **R6** (40s de rótulo em rede ruim): aceito as-is; cap de display opcional (nota).
-- **Sw com 304**: validação explícita exigida na rodada ETag (item 7).
-- **Auto-refresh com Mongo zerado** (espelho da R1 fora do boot): comportamento de
-  hoje, **não muda no B2** — registrado como observação para o dono (o mesmo
-  `somenteLeitura` poderia se estender, mas foge do escopo desta rodada).
-- **ETag de campo `updatedAt`**: 1º passo depende de confirmar presença/correção do
-  campo nas collections (a conferir, backend só).
-- **Multi-janelas do mesmo dono** (2 abas): fora do desenho de escopo (o app é
-  1 usuário/1 abas na prática); a trava global é por-janela (memória JS).
-- **Ambiguidade de UX (revalidação, §5.4)**: botão "Sincronizar Dados" tocado com
-  a trava já levantada por outro gatilho — decisão do dono pendente (recomendação:
-  anexar ao sync em curso e refletir "Sincronizando..." de imediato).
-- **`AbortController` para leitura em voo (revalidação, §5.4)**: a prioridade de
-  escrita sobre leitura exige cancelar (ou descartar) uma leitura já em rede —
-  mecanismo concreto (abort vs. flag de descarte pós-resposta) fica para detalhar
-  na rodada de execução do B2-puro, não neste desenho.
-
-## 10. Validade
-
-Este desenho é válido contra o código de `feat/padronizar-skeletons-cache` no
-commit `bb9762b` + mudanças não-commitadas da rodada de skeletons (arquivos
-`storage.js`, `view-home.js`, `view-financas.js`, `view-alunos.js`, `style.css`,
-`index.html`). Se a rodada de skeletons mudar alguma das âncoras citadas (short-
-circuits de `carregarDados`, `_marcarSyncSobreCache`, guardas do auto-refresh),
-reler esta seção antes de executar.
+# Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
+
+> **Status**: Planejamento refinado; decisões de recuperação e sync manual aprovadas; implementação não iniciada
+> **Criado**: 2026-09-30 · **Atualizado**: 2026-10-05
+> **Item**: 2.4 do [roadmap](../roadmap.md)
+> **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
+> **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
+> **Rodada atual**: pesquisa, decisões e documentação. Nenhum código, teste ou mock alterado.
+
+Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
+[`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
+**5.8 entregue**: skeletons (Parte A) e rótulo nos syncs existentes (B1). **B2 apenas desenhado**: a
+revalidação principal no boot ainda não foi implementada. Este documento aberto recebe
+o refinamento e, futuramente, a execução; não se cria plano paralelo nem se reabre o B1.
+As decisões abaixo substituem o desenho anterior onde houver divergência. Um plano não
+substitui specs: incorporar os contratos aprovados nas specs pertinentes no cartão A,
+antes do código que os implementa.
+
+## 1. Objetivo e contrato
+
+Mostrar imediatamente o cache **identificado da conta autenticada** e revalidar os dados
+principais em segundo plano. Cobrir Home, Alunos e Finanças, preservando a hash. Reutilizar
+`Sincronizando dados...`, sem bloquear navegação ou sobrescrever edição.
+
+**Somente leitura no B2** significa: nenhuma migração, reconciliação CRUD ou chamada
+POST/PUT/PATCH/DELETE iniciada por esse caminho no frontend. Não significa zero escrita
+no Mongo: GETs existentes de configuração, reposições e Finanças fazem criação, expiração
+ou recálculo lazy no backend. Esses comportamentos permanecem inalterados. Abort no cliente
+não desfaz processamento remoto.
+
+Fontes de verdade consultadas:
+- [`financas-ciclo-cobranca.md`](../specs/financas-ciclo-cobranca.md), especialmente §6.1,
+  §6.2 e decisões #14, #21–25;
+- [`reposicoes-e-competencia.md`](../specs/reposicoes-e-competencia.md): competência,
+  prazo, expiração e histórico;
+- [`gcal-sync.md`](../specs/gcal-sync.md): sincronização externa e limites do item 2.2.
+
+## 2. Decisões do dono
+
+### Mantidas de 30/09
+
+1. B2-puro primeiro; esqueleto de ETag apenas como desenho, implementação em rodada separada.
+2. O boot não dispara migração de backup local para banco vazio.
+3. Isolamento do cache principal e financeiro por `ownerEmail` dentro do escopo.
+
+### Confirmadas em 05/10
+
+| Tema | Decisão |
+|---|---|
+| Cache antigo sem dono | **Descartar** e buscar novamente no servidor. Não atribuir à conta atual nem criar recuperação/quarentena. |
+| Cache identificado sem sessão válida | **Preservar no aparelho, mas não exibir** até identificar/autenticar a conta. B2 não renova login. |
+| Outra conta | Não exibir, aplicar ou migrar cache anterior; invalidar memória e respostas antigas. |
+| Remoto vazio válido da mesma conta | **Aceitar como estado atual do servidor**, inclusive esvaziar tela/cache ativo. Erro ou payload inválido não equivale a vazio. |
+| Falha de qualquer dataset B2 | **Preservar o batch inteiro** anterior, sem aplicar respostas parciais. |
+| Escopo de arquivos | Autorizado planejar ajustes mínimos em Alunos, Finanças e modais, além de storage/bootstrap, para proteger conta, formulários e gravações. |
+| Formulário ou gravação | Descartar leitura em voo; nova tentativa quando não houver formulário/gravação pendente. Não reutilizar resposta antiga. |
+| Botão manual durante B2 | Mostrar progresso imediatamente e executar **seu próprio sync depois**, quando livre. Não considerar B2 equivalente ao manual. |
+| Sem sessão/rede no boot | Manter tentativa pendente; retomar por evento de sessão/conexão ou leitura compatível existente, sem polling. |
+| Estado local não confirmado | Suspender B2 até resolver a gravação; não substituir alterações locais não confirmadas. Não criar fila offline. |
+| Troca de conta com rascunho | Fechar/descartar o rascunho anterior, limpar contexto e avisar se havia edição. Não desfazer gravações já enviadas. |
+| Falha de rede/timeout/servidor | Não repetir em loop; próxima tentativa por retorno de conexão/sessão ou gatilho existente. |
+
+### Refinamento dos dois pontos — aprovado em 05/10
+
+| Tema | Decisão que complementa/substitui o desenho anterior |
+|---|---|
+| Saída da pendência | Oferecer **Verificar no servidor** e **Usar dados do servidor**, preservando a intenção local até confirmar o descarte e aplicar leitura válida. Não depender de retry genérico existente. |
+| Repetir escrita | Só por ação explícita e contrato específico comprovado; nunca repetir cegamente `salvarDados`, reabertura ou operação composta após timeout/falha parcial. |
+| Papel do botão manual | **Sincronizar Dados passa a ser somente leitura em todos os cliques**, inclusive fora do B2. Não migra, reconcilia ou salva cache no servidor. Salvar continua nas ações de edição. |
+| Manual durante B2 | Feedback imediato de espera; executar seu próprio batch novo quando livre. Enfileirar pedido de leitura, não snapshot/diff antigo. |
+| Manual com pendência local | Oferecer recuperação explícita; não sobrescrever intenção local nem usar o botão como retry de escrita. |
+| Backup/importação | Migração implícita retirada do botão manual. Eventual importação explícita é outra frente, fora desta rodada. |
+
+**Consequência de rollout autorizada:** descartar caches sem identificação pode perder
+dados locais que nunca chegaram ao servidor. Depois de zerar legitimamente o banco, B2
+não repovoará a conta a partir do aparelho.
+
+## 3. Revalidação contra o código atual
+
+| Evidência | Correção necessária no desenho |
+|---|---|
+| `storage.js`: retorno `local-cache` com alunos/aulas locais | Confirma a ausência de revalidação principal nesse caminho. |
+| `bootstrap.js`: `navigateTo(router.getTelaInicial())` | Não presumir Home nem depender de sua inicialização para hidratar cache. |
+| Finanças já faz GET com cache ao inicializar | B2 não é o primeiro refresh financeiro; evitar GET extra por reinicialização. |
+| Inicialização de Alunos fecha cadastro e busca complementos | `refreshCurrentView()` não é render neutro; pode fechar formulário/repetir GETs. |
+| Remoto vazio/migração de objetivos chamam `salvarDados(true)` | `forcarRemoto` sozinho não é seguro; `salvarDados` recebe booleano, não opções. |
+| Reposições aplicadas antes do ramo de vazio | Validar/preparar todos os datasets antes de qualquer mutação de memória. |
+| Falhas de bloqueios/reposições viram `[]` | Distinguir falha de vazio; B2 não aplica batch parcial. |
+| `_cachePossuiDados` só conta alunos/aulas não vazios | Distinguir snapshot válido vazio, cache ausente e cache ainda não hidratado. |
+| Recovery lê `personalTrainerData` direto | Limpeza deve cobrir o backup legado, não só as cinco chaves atuais. |
+| Auth-change força remoto e pode pular hidratação | Guarda de dono apenas em `carregarDadosDoLocalStorage` é insuficiente. |
+| Cards/históricos de Finanças e resumos de Alunos ficam em memória | Isolar também projeções e respostas tardias, não apenas localStorage. |
+| PATCHs diretos não passam por `salvarDados` | Trava apenas nessa função não cobre gravações reais. |
+| `salvarDados` sobrescreve cache antes da escrita e retorna `ok:false` em falha | Cache preservado não comprova gravação; callbacks atuais não oferecem recuperação geral segura. |
+| CRUD de alunos/agenda usa GET → diff da lista inteira → POST/PUT/DELETE | Snapshot antigo pode apagar registros novos; retry genérico não é aceitável como saída da pendência. |
+| `Promise.all` rejeita sem esperar todas as tarefas | Outras tarefas podem continuar gravando após o catch; acompanhar término de todas antes de liberar proteção. |
+| Modais de reposição executam múltiplas escritas/compensações | Timeout pode deixar efeito parcial remoto; repetir formulário pode gerar outro ID ou histórico duplicado. |
+| Sync manual atual chama carga com migrações e anuncia sucesso após fallback | Seu novo contrato precisa de batch somente leitura e resultado explícito, não só fila de espera. |
+| `fetchComTimeout` substitui signal externo por controller privado | Compor signals se usar abort; descarte por geração é a garantia de correção. |
+| `sw.js` ignora `/api/` e cross-origin | Corrige descrição anterior de cache da API; não alterar SW neste item. |
+| Mock limpa/bloqueia caches e não simula sessão/abort | Estender mock seguro: hoje não prova stale-while-revalidate. |
+
+### Aprendizados preservados das revalidações de 30/09
+
+- Pular migração não bastava: o código continuava sobrescrevendo memória/cache com vazio.
+  Agora vazio válido é aceito por decisão explícita, **sem migração**; falha não sobrescreve.
+- Comparar dono com sessão ausente apagava cache legítimo. Preservação em disco e
+  autorização de exibição passam a ser regras separadas.
+- Trava de leitura não protege gravação; proteger antes da mutação local e durante toda
+  operação composta, não só requisição HTTP.
+- Fallback/`finally` antigos não podem reidratar estado nem limpar indicador de outra operação.
+
+## 4. Arquitetura proposta para B2-puro
+
+As decisões de produto fechadas estão no §2. Os mecanismos deste capítulo são propostas
+técnicas para concretizá-las, não regras novas já implementadas. O limite de uma aplicação
+retoma a premissa de uma revalidação por sessão do desenho de 30/09; seu recorte por conta
+e a coalescência dos cliques manuais devem ser conferidos na execução. O silêncio de 401
+preserva o R3 do desenho anterior, sem mudar o fluxo de login.
+
+### 4.1 Identidade e cache
+
+- Consumir `googleIdentity.getOwnerEmail()` e token utilizável existentes; não alterar
+  emissor/verificador de credencial. Capturar dono/geração **antes** da requisição.
+- Inicializar política de cache antes de views consumirem dados; observar mudança de conta
+  cedo o suficiente para não perder eventos durante o boot.
+- Cache principal: marcador `personal_cache_dono` e validade/presença do snapshot. Chaves:
+  `personal_alunos`, `personal_aulas`, `personal_reposicoes`, `personal_limitesGrade`,
+  `faturamentoMeta`. Incluir `personalTrainerData` no descarte legado.
+- Cache financeiro: `{ ownerEmail, atualizadoEm, dados }`, independente do marcador principal.
+  Gravação financeira não reatribui dono ao cache principal.
+- Resposta não recebe o dono logado ao **terminar**: deve pertencer ao contexto capturado
+  na origem e ainda ser autorizada na aplicação.
+- Sem sessão válida: não exibir projeções anteriores; preservar cache identificado em disco.
+  Conta diferente invalida contexto anterior, sem reaproveitá-lo. Caches legados sem dono
+  não passam por fallback, recovery ou confirmação automática.
+- Pendência local precisa de metadado associado ao dono, inclusive persistido, para recarga
+  não converter gravação falha em snapshot confirmado elegível ao B2. Isso não armazena
+  fila de comandos para replay automático. Preservar intenção/snapshot e identificação da
+  tentativa necessária à apresentação; recuperação explícita definida no §4.5.
+
+### 4.2 Obter → validar → preparar → aplicar
+
+- Reutilizar helpers existentes, separando B2 da migração/CRUD. Não duplicar recorrência,
+  prazo ou cálculo financeiro; manter únicas as normalizações de UI existentes.
+- Batch principal: alunos, agendamentos, grade, bloqueios externos e reposições. São **cinco
+  tarefas**, não teto de cinco HTTPs: configuração admite seu fallback existente. Ping,
+  GCal e leituras complementares são contabilizados separadamente.
+- Validar todos os HTTPs/payloads necessários. 404 de configuração admite fallback; erro
+  ou cancelamento de reposições/bloqueios não equivale a lista vazia.
+- Preparar agenda com bloqueios, alunos, pendências e grade sem tocar globais/DOM/cache.
+- Aplicar somente com dono/gerações atuais, sem formulário, gravação ou estado local pendente.
+  Arrays vazios válidos são aplicados; falha/descarte não reidrata localStorage.
+- Aplicação coordenada é garantia **do cliente**, não transação entre collections no servidor.
+  Não prometer atomicidade de vários `localStorage.setItem`.
+- Resultado explícito: aplicado, falha, descartado ou adiado, com motivo/contexto. Promise
+  resolvida ou cache salvo não significa escrita remota confirmada.
+
+### 4.3 Concorrência: proteger aplicação, não reformar toda a API
+
+- Coordenador por janela: dono, gerações de conta/leitura/mutação, Promise em voo, pendência
+  B2 e contagem de operações/formulários. Leitura de A não atende B; booleano não delega resultado.
+- Abrir formulário ou iniciar mutação invalida B2 **antes** de alterar memória. Abortar rede
+  se viável, mas sempre descartar resposta e efeitos de fallback/`finally` obsoletos.
+- Proteger operações compostas até concluir: salvar, vincular reposição, compensar e refresh.
+  Não liberar proteção entre PATCHs; evitar deadlock com chamadas internas de `salvarDados`.
+- Incluir `salvarDados`, PATCHs de pagamento/ajuste/cobrança e criação, reabertura,
+  reagendamento/compensação nos modais. Liberar apenas após confirmação da operação
+  correspondente e término das tarefas conhecidas; falha não confirmada mantém pendência.
+- Acompanhar todas as tarefas de uma operação, mesmo após a primeira rejeição. Impedir novas
+  etapas não iniciadas após abandono/troca de contexto; não considerar catch/finally de
+  `Promise.all` prova de que todas terminaram. Abort não desfaz requisição enviada.
+- Não alterar algoritmo da cascata ou GCal. Manter a proteção no chamador até concluir
+  dependências; se precisar editar área sensível, parar e confirmar.
+- Operação antiga multietapas não pode continuar com credencial da conta seguinte. Conferir
+  contexto antes de nova etapa mutável; resposta já enviada não altera a conta seguinte.
+- Releituras disparadas pelo B2 recebem essas guardas. Integrar gatilhos existentes para
+  evitar sobreposição com B2; consolidação completa deles permanece no **2.2**.
+- Botão manual: feedback imediato de espera, seu próprio batch **somente leitura** quando
+  livre, sem migração nem replay CRUD. Enfileirar intenção de ler, nunca arrays, payload de
+  escrita, resposta B2 ou diff. Nova edição exige esperar/descartar a leitura, não usar snapshot
+  anterior. Troca de conta invalida pedido antigo; pendência abre recuperação do §4.5.
+- Sync manual só anuncia sucesso após resultado remoto válido, não fallback/401.
+
+### 4.4 Boot, retomada e apresentação
+
+- Hidratar cache autorizado independentemente da tela inicial; não navegar à Home para isso.
+- Após apresentar tela inicial, disparar revalidação elegível em background. Não aguardar
+  renovação GCal nem criar dependência entre ela e batch de dados.
+- Sem snapshot principal válido, carga inicial já necessária pode atender leitura, sem
+  duplicá-la. Finanças mantém GET próprio e recebe hidratação principal independente.
+- Snapshot válido vazio também é revalidado; presença não depende só de `alunos.length`.
+- No máximo **uma revalidação B2 aplicada por contexto de conta nesta carga da página**.
+  Troca real de conta cria contexto novo; descarte/adiamento não contam como aplicação.
+- Retomadas por sessão válida, `online`, término de formulário/operação ou gatilho compatível.
+  Falha real aguarda próximo evento de conexão/sessão ou gatilho existente; fechar formulário
+  não cria loop de retry de rede. Nenhum timer/polling.
+- 401 silencioso no B2; não expor dados enquanto sessão não for válida.
+- Renderizar **view ativa na aplicação** de modo neutro: não reinicializar genericamente
+  fechamento de cadastro, hash/scroll ou fetches. Home preserva período/data/sub-aba; Alunos
+  atualiza lista/complementos sem resetar interação; Finanças acompanha/reutiliza leitura
+  própria compatível, sem GET extra por render. Histórico permanece sob demanda/em memória.
+- Rótulo só durante remoto sobre cache autorizado em tela; oculto no adiamento/sem cache e
+  no fim. Associar à operação para `finally` antigo não apagar rótulo da seguinte.
+
+### 4.5 Pendência de gravação: saída explícita, sem retry cego
+
+O app atual não fornece recuperação geral segura. `salvarDados` reconcilia listas inteiras;
+seu callback de retry pode usar estado diferente do original. POST/reabertura, compensações
+e PATCHs com efeitos derivados não são universalmente idempotentes. Preservar um snapshot
+é proteção contra perda local, **não autorização para reenviar**.
+
+#### Classificar por operação e tentativa
+
+| Estado observado | Tratamento |
+|---|---|
+| Não enviada | Validação local/token ausente antes de qualquer envio; corrigir e tentar a ação específica. |
+| Rejeitada com garantia do endpoint | Esta etapa não foi aceita; verificar outras etapas antes de classificar toda operação. 409 não pede repetição igual. |
+| Parcial | Há etapas confirmadas e outras rejeitadas/incompletas; não repetir o fluxo inteiro nem compensar genericamente. |
+| Resultado desconhecido | Timeout, perda de resposta, abort após envio ou erro sem garantia de ausência de efeito; não afirmar que nada gravou. |
+| Escrita confirmada, atualização da tela falhou | Repetir apenas a leitura; não reenviar pagamento/ajuste/escrita já confirmados. |
+
+Identificar dono, tentativa e geração da intenção local. Um sucesso antigo não limpa
+pendência de uma alteração mais recente. Não interpretar status HTTP isolado como garantia
+universal: considerar contrato do endpoint e etapas da operação. Falha GCal após gravação
+confirmada no Mongo não equivale a perda da gravação local; segue feedback específico existente.
+
+#### Apresentação mínima de recuperação
+
+- Usar superfície persistente e acessível, não somente toast que pode ser substituído:
+  mensagem de alteração não confirmada + ações **Verificar no servidor** e **Usar dados do
+  servidor**. Reaproveitar formulário/diálogo existente quando adequado; sem nova aba.
+- **Verificar no servidor**: leitura nova no contexto correto; preparar resultado separado,
+  sem aplicar por cima da intenção/snapshot local. Consultar também alvos financeiros/históricos
+  ou reposição por ID quando necessários à operação específica. Falha preserva pendência.
+- Não deduzir conclusão de operação composta só porque um registro existe ou os arrays
+  parecem iguais. Se houver comparação comprovadamente suficiente para aquela ação, exibir
+  o estado observado; no caso desconhecido, informar que a gravação pode ter sido efetivada.
+- **Usar dados do servidor**: confirmação explícita para abandonar a intenção local. Texto
+  informa que não é rollback e que alterações já gravadas no servidor serão mantidas.
+  Na mesma conta e com formulários fechados/tarefas cliente conhecidas encerradas, obter
+  **nova leitura válida**, sem reutilizar resposta da verificação anterior, e aplicar.
+- Só após aplicação válida abandonar snapshot/intenção local e remover sua pendência
+  persistida. Leitura falha, 401, payload inválido ou troca de conta não limpam pendência.
+- Essa leitura de recuperação é exceção **explícita e confirmada** à guarda de pendência;
+  B2/manual ordinários continuam bloqueados. Não apagar marcador antes de buscar dados.
+- Abandonar intenção local não declara a tentativa remota concluída. Timeout não informa
+  quando o servidor terminou; GET fornece observação atual, não garantia de resultado final.
+  Informar esse limite, invalidar callbacks antigos e permitir revalidações futuras normais;
+  não manter bloqueio eterno depois do abandono explícito bem-sucedido.
+- Troca/logout não descartam pendência persistida silenciosamente. Rascunho em edição fecha
+  conforme decisão anterior; pendência identificada segue preservada para recuperação pela
+  mesma conta, sem exposição à seguinte. Não prometer guardar várias contas simultaneamente.
+
+#### Quando oferecer repetição de escrita
+
+Somente se inventário/prova do fluxo específico demonstrar: alvo/ID/payload estáveis, conta
+atual correta, tarefas anteriores encerradas e tratamento das etapas já confirmadas,
+conflitos e efeitos de repetição. Reautenticar ou receber 500 não basta para liberar replay.
+
+No B2-puro **não oferecer retry geral de `salvarDados` nem de operação composta parcialmente
+concluída/desconhecida**. Manter leitura/verificação e abandono explícito como saída segura.
+Se a recuperação exigir endpoint idempotente, controle de versão ou status remoto da tentativa,
+parar e trazer dependência de backend; não implementar fila offline ou novo contrato por inferência.
+
+### 4.6 Manual somente leitura: contrato completo
+
+Esta é mudança de comportamento aprovada no refinamento: separar **atualizar** de **salvar**.
+Aplica-se ao botão inteiro, não apenas ao clique durante B2. Reusar obtenção/validação/preparação
+do batch seguro; jamais entrar nos ramos de migração por remoto vazio ou normalização de objetivos.
+
+1. Clique registra pedido de leitura vinculado à conta, sem snapshot ou diff de escrita.
+2. Se há B2/tarefa/formulário em andamento, feedback imediato **Aguardando para atualizar...**;
+   durante requisição, **Sincronizando...**. Não anunciar sucesso enquanto estiver aguardando.
+3. Pendência não confirmada apresenta recuperação do §4.5; simples clique não autoriza descartá-la.
+4. Ao ficar livre, iniciar seu próprio batch novo. Mesmo B2 terminado não conta como atendimento
+   do clique; compartilhar helpers não significa reutilizar resposta já obtida.
+5. Revalidar conta/gerações na aplicação; nova edição descarta/adia leitura (sem aplicar snapshot
+   antigo). Troca de conta cancela pedido de A, sem executar automaticamente para B.
+6. Aplicar batch completo válido, inclusive vazio; nenhuma migração, POST/PUT/PATCH/DELETE por
+   esse caminho. Falha mantém estado anterior e informa erro com retry **somente de leitura**.
+7. Finanças/histórico afetados usam leituras próprias necessárias sem reenviar escrita ou
+   implementar cálculo no cliente. Evitar prefetch indiscriminado dos históricos.
+
+Antes de entregar C, inventariar callbacks de retry de escrita que podem contornar essa proteção.
+Sem esse inventário/teste, não considerar a saída de pendência concluída. O CRUD de salvar
+continua com limites preexistentes, inclusive concorrência entre dispositivos; não é reformado
+nem passa a ter atomicidade/idempotência só por separar o botão de atualização.
+
+## 5. Cartões de execução propostos
+
+Nenhum cartão implementado. Escopo revalidado: **Médio–Alto**, revisar após inventário do C.
+
+| Cartão | Trabalho | Critério de saída |
+|---|---|---|
+| **A — Contrato e isolamento** | Specs pertinentes; caches/legado; ausência/troca de sessão; memória/respostas tardias; metadado de pendência local. | Nenhum dado de outra conta ou legado sem dono exibido, aplicado ou migrado. |
+| **B — Leitura segura** | Separar obter/preparar/aplicar; batch válido; sem migração; aceitar vazio; resultado explícito; descarte sem fallback destrutivo. | Zero CRUD pelo B2; falha parcial preserva snapshot inteiro. |
+| **C — Interação e recuperação** | Fronteiras/retornos das operações e retries; gerações; término de tarefas; saída explícita da pendência; manual somente leitura. | B2 não sobrescreve intenção; pendência tem saída testada sem replay cego; manual nunca reconcilia snapshot antigo. |
+| **D — Boot e render** | Três hashes; hidratação; retomada por eventos; leitura compatível; render neutro; rótulo por operação. | Cache imediato/revalidado sem reset de tela, bloqueio ou duplicação criada pelo B2. |
+| **E — Aceite e fechamento** | Mock seguro, integração/mutação, UI mobile, suítes medidas, atualização de plano/specs/roadmap. | Casos aprovados e limites relatados; PR/deploy/validação pelo dono. |
+
+### Arquivos previstos (não alterados nesta rodada)
+
+- `assets/js/storage.js`: cache, leitura, contexto das requisições, resultado e sync manual.
+- `assets/js/utils-kpi.js` e markup/CSS de recuperação, **se necessários**: conectar ações e
+  impedir callback genérico de retry de escrita contornar a proteção. Inventariar antes;
+  não alterar feedbacks de outras operações sem necessidade.
+- `assets/js/app/bootstrap.js`: hidratação, observação de conta, gatilho e retomadas.
+- `assets/js/view-home.js`, `view-alunos.js`, `view-financas.js`: projeções, leitura/render,
+  contexto de conta e fronteiras de interação.
+- `assets/js/modal-acao-slot.js`, `modal-agendamento.js`, `settings-modal.js`: proteção de
+  formulário/gravação, sem mudar regras ou integração GCal.
+- `DialogController` existente: aproveitar stack/hooks reais; só editar se faltar notificação.
+  Inventariar no C controles que não passam por ele.
+- `mocks/ui-runtime/mock-runtime.js`, `scenarios.js`: cache sintético/respostas controladas;
+  nunca liberar API ou cache real.
+- `tests-frontend/`: testes separados por contrato (cache, leitura, concorrência, boot).
+- Specs pertinentes, este plano e roadmap: documentação no mesmo ciclo de execução.
+
+Sem dependências novas, bundler ou novo script por padrão. Se necessário script novo,
+validar ordem de carga em `index.html` e `DEPENDENCIAS_DE_CARGA`.
+
+## 6. Testes e aceite
+
+### Automatizados: código real com `node:test`, `assert`, `jsdom` e `vm`
+
+1. Três hashes: cache identificado imediato, vazio válido, sem cache, sem depender da Home.
+2. Cache legado sem dono, financeiro sem dono e `personalTrainerData`: descarte, zero migração.
+3. Sem sessão: cache identificado preservado em disco, nenhum dado exibido/batch enviado.
+4. Conta restaurada autoriza; outra conta invalida globais, cards, históricos e DOM.
+5. A→B com respostas invertidas: resultado/fallback/`finally` de A não alteram B.
+6. Batch válido aplica todos os conjuntos, dono correto e rótulo durante o voo.
+7. Vazio válido esvazia tela/cache; zero POST/PUT/PATCH/DELETE do caminho B2.
+8. Falha individual em cada rota, JSON inválido/não-array, 401 e timeout: snapshot anterior intacto.
+9. Bloqueios/reposições falhando não desaparecem como se a resposta fosse `[]`.
+10. B2 não chama `salvarDados` por recovery/objetivos; recuperação explícita só usa cache
+    identificado legítimo, nunca legado descartado ou dado de outra conta.
+11. Abrir formulário descarta leitura e preserva campos/foco; fechar permite leitura nova.
+12. Leitura aguarda escrita; escrita invalida leitura antes da mutação local.
+13. PATCH direto/operação composta: nenhuma aplicação entre etapas, sem deadlock; falha mantém
+    pendência, sucesso libera conforme confirmação real.
+14. Falha de gravação + recarga: metadado pendente impede B2 de substituir estado não confirmado.
+15. Troca com rascunho fecha/descarta/avisa; etapas seguintes não usam credencial nova.
+16. Botão manual: feedback imediato, sync próprio depois; fallback/401 sem sucesso falso.
+17. Retomadas por evento, sem polling/loop; uma aplicação por contexto.
+18. Navegação durante voo: render atual preserva hash/período, sem fechar formulário, GET financeiro
+    extra por reinicialização ou prefetch de histórico.
+19. localStorage indisponível/snapshot vazio: sem sucesso falso nem perda de pendência local.
+20. Se usar signal externo: abort diferente de timeout; cancelamento sem fallback destrutivo;
+    `finally` antigo não apaga indicador novo.
+21. Falha parcial com tarefas ainda ativas: catch não libera proteção; nenhuma nova etapa
+  após abandono e nenhuma resposta velha limpa pendência mais recente.
+22. Timeout após servidor gravar: classificar desconhecido, sem replay automático ou mensagem
+  de rollback. Verificação não substitui snapshot/intenção local.
+23. Usar servidor: cancelamento da confirmação mantém tudo; confirmação + GET novo válido
+  abandona intenção sem CRUD; GET falho/401/inválido mantém marcador/snapshot.
+24. Escrita confirmada + falha no GET posterior: retry só da leitura, sem segundo PATCH/POST.
+25. Replay de reposição/reabertura/reagendamento não gera novo ID ou histórico por callback
+  automático. Se repetição não for comprovada, ação de retry de escrita não é oferecida.
+26. Cache divergente após rollback local e recarga: pendência continua detectável; sync manual
+  não migra esse snapshot nem apaga remoto por ausência local.
+27. Manual enfileira só pedido: registro criado remotamente durante espera não é apagado;
+  remoto vazio não dispara migração; normalização não causa PUT; todos os cliques são leitura.
+28. Mudança de conta, edição durante espera, cliques repetidos e recuperação pendente: não
+  reutilizar contexto/diff, não duplicar escrita; feedback distingue espera de execução.
+29. Abandono local após timeout não é prova de conclusão remota: avisar limite e permitir
+  próxima revalidação sem callbacks antigos, sem manter bloqueio eterno.
+
+Provar novos testes por mutação: neutralizar guardas de dono/geração/pendência, restaurar
+`[]` em falha parcial, religar migração B2 ou reinicializar view deve produzir falha.
+Restaurar **por edição**, sem operações git proibidas; conferir ausência de mutação residual.
+Não exigir working tree limpo durante implementação.
+
+Medir frontend antes/depois; backend como controle final (e antes/depois se código backend
+for autorizado futuramente). Não usar números históricos como baseline. Conferir Node e
+dependências antes: requisito do jsdom atual difere do mínimo genérico do setup. Não
+instalar/atualizar dependência por inferência. **Nenhuma suíte executada nesta rodada.**
+
+### UI: exclusivamente mock local seguro
+
+Mock atual não conserva cache: estender com cache **sintético separado**, sessão/conta
+controlável, latência/falha/401/abort e contador de rotas/métodos. APIs reais permanecem bloqueadas.
+Não usar a aba de produção nem URL sem `mockScenario` para aceite.
+
+Validar `http://127.0.0.2:5500/index.html?mockScenario=<cenário>` nas três hashes:
+- **433×762, DPR 2.81, mobile/touch/UA/pointer completos**; stress 390×844 e 320×568;
+- cache sintético aparece antes da resposta e atualiza sem flash vazio;
+- erro mantém conteúdo, vazio válido remove conteúdo antigo;
+- rótulo acompanha operação atual; navegação livre; foco, campos e período preservados;
+- sem sessão/conta diferente não vê dados anteriores; troca com rascunho fecha/informa;
+- salvar e sync manual durante B2 respeitam decisões; nenhuma escrita real nem confirmação
+  financeira baseada apenas no cache.
+- recuperação permanece acessível após toast sumir e após recarga; verificar não perde
+  intenção; usar servidor confirma descarte, mantém pendência em falha e não faz rollback remoto;
+- manual diferencia espera/execução e não salva/importa, inclusive com servidor vazio.
+
+Teclado/leitor de tela: aceite manual do dono se automação não entregar eventos; não reportar
+como observado sem evidência. Mock não comprova efeitos lazy do Mongo nem I/O real GCal.
+
+## 7. ETag/304 — rodada separada, não pré-requisito
+
+O desenho anterior propunha `count:maxUpdatedAt` por collection e afirmava que 304 evitaria
+todo recálculo. Revalidado: isso não basta para respostas derivadas de Finanças.
+
+- Express pode gerar ETag **depois** de executar controller; economiza payload, não cálculos
+  ou escritas lazy já realizados.
+- Aluno/Agendamento não têm timestamps automáticos; CicloFinanceiro usa `atualizadoEm`.
+- Finanças depende de várias collections **e da passagem do dia**. Weak ETag não permite
+  ignorar mudanças semânticas; count/máxima data de uma collection não captura tudo.
+- Rodada futura deve definir dependências/versões/relógio, autorizar antes do 304 e garantir
+  atualização de ciclos abertos/expiração. Não prometer economia antes de medir.
+- Cliente só aceita 304 sem JSON com cache autorizado correspondente; validar exposição de
+  header via CORS cross-origin e interação com HTTP/SW/browser reais se necessário.
+
+Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **2.2**;
+2.2 depende do B2 para incluir seu gatilho, **não depende de ETag**.
+
+## 8. Fora de escopo e achados não alterados
+
+- Reorganizar GCal/webhook, renovar login: 2.2/4.9 ou rodada própria.
+- Motor, conflitos, algoritmo da cascata, cálculo financeiro, competência/prazo e ciclo pago.
+- Fila de escrita offline, conciliação entre abas/dispositivos ou transação entre collections.
+- Refazer todo manual/auto-refresh/recovery: apenas fronteiras necessárias ao B2 e isolamento;
+  outras políticas preexistentes requerem decisão separada.
+- **Exceção aprovada no refinamento:** botão manual inteiro passa a somente leitura e a
+  recuperação explícita mínima do §4.5 entra no escopo; não é uma fila offline nem reforma do CRUD.
+- Retry geral seguro, atomicidade multietapas, conclusão de requisição remota perdida e
+  concorrência entre dispositivos não podem ser garantidos com os contratos frontend atuais.
+  Requerimentos futuros de idempotência/versionamento/status remoto pertencem a rodada própria.
+- `gcal_connection_cache` não possui dono explícito, contrariando a classificação anterior
+  como intrinsecamente isolado. Registro apenas; alteração auth/GCal exige confirmação.
+- Configuração pode responder padrão após falha interna: 200 assim não informa degradação;
+  validação frontend não distingue de padrão legítimo. Backend não alterado.
+- Divergência de requisito Node entre setup/jsdom: conferir ambiente na execução, sem
+  acrescentar dependência nem declarar suíte verde nesta rodada.
+
+## 9. Registro do planejamento — 05/10
+
+- Branch autorizada `docs/planejar-sync-boot`, sem upstream; base `f3fe4f2`.
+- Revalidados plano, storage, bootstrap/router, views, fluxos diretos, specs, mocks e testes.
+- Registradas onze decisões; substituídas premissas de Home obrigatória, preservação de vazio,
+  exibição sem sessão, legado aproveitável e delegação do manual ao B2.
+- Ampliação do planejamento autorizada pelo dono; nenhum código implementado.
+- Roadmap atualizado apenas no 2.4/dependência/data, sem implementar outra feature.
+- Sem testes, validação UI, commit ou push nesta rodada; números antigos não reusados.
+
+### Refinamento posterior na mesma branch — 05/10
+
+- Dono confirmou continuar em `docs/planejar-sync-boot`, preservando mudanças documentais anteriores.
+- Conferidos retries, CRUD por diff, operação parcial/timeout, compensações e confirmação financeira.
+- Aprovadas recuperação explícita conservadora e mudança de **todo botão manual** para leitura.
+- Detalhados estados de pendência, término das tarefas, verificação sem sobrescrita e abandono
+  confirmado com nova leitura; retirada afirmação de que fluxos existentes já resolvem a pendência.
+- Preservada distinção: plano aberto B2 será reaproveitado; entrega B1 não será reaberta.
+- Sem implementação, suíte, validação UI, commit ou push. Desenho não equivale a garantia de
+  execução: contratos dos fluxos específicos ainda devem ser provados no cartão C.
+
+## 10. Próxima rodada
+
+Começar pelo **cartão A**: confirmar branch e fronteiras concretas, incorporar contratos
+nas specs pertinentes, conferir ambiente e medir baseline frontend antes do código.
+B–D dependem dessas garantias; E fecha aceite. Se inventário exigir alterar autenticação,
+GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
+sem relatório paralelo por cartão.
+
+O refinamento fecha a experiência dos dois pontos discutidos, mas não declara o plano
+"100% garantido": inventário de C e testes podem revelar dependência de backend. Trazer
+essa dependência antes de seguir, sem substituir silenciosamente as decisões aprovadas.
