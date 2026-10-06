@@ -11,6 +11,11 @@
     let removerListener = null;
     let tentativa = 0;
     const invalidadores = new Set();
+    const observadores = new Set();
+    const operacoes = new Set();
+    const formularios = new Set();
+    let geracaoInteracao = 0;
+    const avisar = () => observadores.forEach((fn) => fn());
 
     function ler(chave) {
         try { return global.localStorage.getItem(chave); } catch (_) { return null; }
@@ -48,6 +53,8 @@
             const anterior = dono;
             dono = atual;
             geracao += 1;
+            geracaoInteracao += 1;
+            formularios.clear();
             const modais = Array.from(global.document.querySelectorAll('.modal-overlay')).filter((el) => el.style.display && el.style.display !== 'none');
             const haviaEdicao = modais.some((el) => el.querySelector('form'));
             invalidadores.forEach((invalidar) => invalidar({ anterior, ownerEmail: dono, geracao }));
@@ -111,6 +118,87 @@
         if (!gravar(PENDENCIAS, JSON.stringify({ versao: 1, itens }))) return null;
         return item.tentativaId;
     }
+    function atualizarPendencia(id, contexto, detalhes) {
+        const itens = lerPendencias();
+        const item = itens.find((p) => p.ownerEmail === contexto.ownerEmail && p.tentativaId === id);
+        if (!item) return false;
+        Object.assign(item, copiar(detalhes));
+        return gravar(PENDENCIAS, JSON.stringify({ versao: 1, itens }));
+    }
+    function abandonarPendencia(id, contexto) {
+        if (!atual(contexto)) return false;
+        const itens = lerPendencias();
+        if (!itens.some((p) => p.ownerEmail === contexto.ownerEmail && p.tentativaId === id)) return false;
+        return gravar(PENDENCIAS, JSON.stringify({ versao: 1, itens: itens.filter((p) => p.ownerEmail !== contexto.ownerEmail || p.tentativaId !== id) }));
+    }
+    function snapshotLocal() {
+        return copiar({ alunos: global.obterAlunos ? global.obterAlunos() : (global.alunos || []), aulas: global.obterAulas ? global.obterAulas() : (global.aulas || []), reposicoes: global.obterReposicoes ? global.obterReposicoes() : (global.aulasParaRepor || []), grade: global.obterLimitesGrade ? global.obterLimitesGrade() : { inicio: '06:00', fim: '22:00' }, meta: global.faturamentoMeta || 0 });
+    }
+    function operacaoAtual(op) { return Boolean(op && operacoes.has(op) && !op.finalizada && atual(op.contexto)); }
+    function ocupado(op) { return Array.from(operacoes).some((outra) => outra !== op && atual(outra.contexto)); }
+    function iniciarOperacao(opcoes = {}) {
+        const contexto = opcoes.contexto || capturar();
+        if (!atual(contexto) || obterPendencia(contexto) || ocupado()) return null;
+        const id = iniciarPendencia(snapshotLocal(), contexto);
+        if (!id) return null;
+        const op = { contexto, id, tipo: opcoes.tipo || 'dados', alvos: opcoes.alvos || {}, intencao: opcoes.intencao || {}, etapas: [], tarefas: new Set(), falha: false, finalizada: false };
+        operacoes.add(op);
+        geracaoInteracao += 1;
+        if (!atualizarOperacao(op, {})) {
+            operacoes.delete(op);
+            return null;
+        }
+        avisar();
+        return op;
+    }
+    function atualizarOperacao(op, detalhes = {}) {
+        if (!operacaoAtual(op)) return false;
+        geracaoInteracao += 1;
+        op.alvos = { ...op.alvos, ...(detalhes.alvos || {}) };
+        if (detalhes.intencao) op.intencao = detalhes.intencao;
+        return atualizarPendencia(op.id, op.contexto, { tipo: op.tipo, alvos: op.alvos, intencao: op.intencao, etapas: op.etapas, snapshot: snapshotLocal(), estado: op.falha ? 'desconhecida' : 'em-andamento' });
+    }
+    function marcarFalhaOperacao(op, erro) {
+        if (!op) return;
+        op.falha = true;
+        atualizarPendencia(op.id, op.contexto, { estado: op.etapas.some((e) => e.confirmada) ? 'parcial' : (op.etapas.length ? 'desconhecida' : 'nao-enviada'), erro: erro && (erro.message || erro.motivo) || 'Gravação não confirmada', etapas: op.etapas });
+    }
+    function registrarEtapa(op, etapa) {
+        if (!operacaoAtual(op) || op.falha) throw new Error('OPERACAO_INTERROMPIDA');
+        op.etapas.push(etapa);
+        if (!atualizarOperacao(op)) throw new Error('PENDENCIA_NAO_PERSISTIDA');
+    }
+    function acompanharTarefa(op, promise) {
+        op.tarefas.add(promise);
+        promise.then(() => op.tarefas.delete(promise), () => op.tarefas.delete(promise));
+        return promise;
+    }
+    async function finalizarOperacao(op) {
+        if (!op || op.finalizada) return;
+        while (op.tarefas.size) await Promise.allSettled(Array.from(op.tarefas));
+        if (operacaoAtual(op)) {
+            if (!op.falha && op.etapas.every((e) => e.confirmada)) {
+                if (op.etapas.length && !confirmarPendencia(op.id, op.contexto, snapshotLocal())) marcarFalhaOperacao(op, new Error('Confirmação local indisponível'));
+                else abandonarPendencia(op.id, op.contexto);
+            } else marcarFalhaOperacao(op);
+        }
+        op.finalizada = true;
+        operacoes.delete(op);
+        if (atual(op.contexto)) {
+            geracaoInteracao += 1;
+            avisar();
+        }
+    }
+    function definirFormulario(chave, aberto) {
+        if (aberto) { formularios.add(chave); geracaoInteracao += 1; }
+        else formularios.delete(chave);
+        avisar();
+    }
+    function capturarInteracao() { return geracaoInteracao; }
+    function invalidarLeiturasAnteriores() { geracaoInteracao += 1; }
+    function podeLer(op) { return !ocupado(op) && (op ? operacaoAtual(op) : formularios.size === 0); }
+    function podeAplicarInteracao(versao, op) { return versao === geracaoInteracao && podeLer(op); }
+    function semOperacoes() { return !ocupado(); }
     function confirmarPendencia(id, contexto, snapshot) {
         if (!atual(contexto)) return false;
         const itens = lerPendencias();
@@ -151,6 +239,12 @@
         iniciar, capturar, atual, lerPrincipal, salvarPrincipal, lerFinancas, salvarFinancas,
         obterPendencia, iniciarPendencia, confirmarPendencia,
         atualizarVinculoPendente,
+        atualizarPendencia, abandonarPendencia, iniciarOperacao, operacaoAtual, atualizarOperacao,
+        marcarFalhaOperacao, registrarEtapa, acompanharTarefa, finalizarOperacao,
+        definirFormulario, capturarInteracao, podeLer, podeAplicarInteracao,
+        invalidarLeiturasAnteriores,
+        semOperacoes,
+        aoMudarInteracao: (fn) => { observadores.add(fn); return () => observadores.delete(fn); },
         aoInvalidar: (fn) => { invalidadores.add(fn); return () => invalidadores.delete(fn); }
     });
 })(window);

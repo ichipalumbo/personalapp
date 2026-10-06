@@ -38,6 +38,43 @@ function criarRespostaTexto(status, body) {
   };
 }
 
+// Fixtures de persistência: não substituem o coordenador nem seus guards.
+// A falha retornada deixa a etapa sem confirmação; o chamador marca op.falha.
+function registrarEtapaFixture(context, operacao, resultado, url, method) {
+  assert.ok(context.contextoDados.operacaoAtual(operacao), 'a fixture precisa receber a raiz ativa');
+  context.contextoDados.registrarEtapa(operacao, { url, method, confirmada: resultado.ok === true });
+  return resultado;
+}
+
+function criarSalvamentoFixture(context, salvar = async () => ({ ok: true, motivo: 'sucesso' })) {
+  return async (alvo, opcoes) => {
+    const resultado = await salvar(alvo, opcoes);
+    return registrarEtapaFixture(context, opcoes.operacao, resultado,
+      `https://api.example.com/agendamentos/${alvo && alvo.id ? alvo.id : 'fixture'}`, 'PUT');
+  };
+}
+
+function assertOperacaoEdicao(gravacao, id, escopo) {
+  assert.equal(gravacao.id, id);
+  assert.equal(gravacao.operacao.tipo, 'editar-agendamento');
+  assert.equal(gravacao.operacao.intencao.acao, 'editar');
+  assert.equal(gravacao.operacao.intencao.escopo, escopo);
+  assert.equal(gravacao.operacao.contexto.ownerEmail, 'teste@example.com');
+  assert.equal(gravacao.operacao.finalizada, true);
+}
+
+function assertPendenciaFalha(context, tipo, confirmadas, total) {
+  const pendencia = context.contextoDados.obterPendencia();
+  assert.ok(pendencia, 'a tentativa não confirmada precisa continuar em disco');
+  assert.equal(pendencia.tipo, tipo);
+  assert.equal(pendencia.etapas.length, total);
+  assert.equal(pendencia.etapas.filter((etapa) => etapa.confirmada).length, confirmadas);
+  assert.equal(pendencia.estado, confirmadas ? 'parcial' : 'desconhecida');
+  assert.ok(pendencia.erro);
+  assert.equal(context.contextoDados.semOperacoes(), true, 'a raiz encerra sem apagar a pendência');
+  return pendencia;
+}
+
 function criarHarnessGoogleCalendar(opcoes = {}) {
   const originalFetch = global.fetch;
   const originalFindOne = GoogleCalendarConnection.findOne;
@@ -181,6 +218,7 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   const scriptPath = path.resolve(__dirname, '../../assets/js/modal-acao-slot.js');
   const script = fs.readFileSync(scriptPath, 'utf8');
   const elementos = {};
+  const store = new Map();
 
   const criarElemento = (id, extra = {}) => ({
     id,
@@ -295,9 +333,9 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
     fetch: async () => criarRespostaJson(200, {}),
     document,
     localStorage: {
-      getItem: () => null,
-      setItem: () => {},
-      removeItem: () => {}
+      getItem: (key) => (store.has(key) ? store.get(key) : null),
+      setItem: (key, value) => store.set(key, String(value)),
+      removeItem: (key) => store.delete(key)
     },
     aulas: Array.isArray(aulas) ? aulas : [],
     alunos: [
@@ -414,6 +452,7 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   const contextoDadosPath = path.resolve(__dirname, '../../assets/js/app/contexto-dados.js');
   vm.runInNewContext(fs.readFileSync(contextoDadosPath, 'utf8'), context, { filename: contextoDadosPath });
   context.contextoDados.capturar();
+  context.salvarDados = criarSalvamentoFixture(context);
   context.APP_API_CONFIG = {
     apiBaseUrl: 'https://api.example.com',
     apiRootUrl: 'https://api.example.com'
@@ -3959,14 +3998,13 @@ test('envio para reposição em série preserva a série e marca exceção', asy
   context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) => {
     return callback(true);
   };
-  context.window.apiFetchBackend = async () => ({
-    ok: true,
-    json: async () => ({ id: 'repo-serie-1', validoAte: '2026-09-15' }),
-  });
+  context.window.apiFetchBackend = async (url, opcoes) => {
+    registrarEtapaFixture(context, opcoes.operacao, { ok: true }, url, opcoes.method);
+    return criarRespostaJson(200, { ...JSON.parse(opcoes.body), validoAte: '2026-09-15' });
+  };
   context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
   context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
-  context.salvarDados = async () => ({ ok: true });
-  context.window.salvarDados = async () => ({ ok: true });
+  context.window.salvarDados = criarSalvamentoFixture(context);
   context.window.carregarDados = async () => {};
   context.window.inicializarHome = async () => {};
   context.window.fecharModalAcaoSlot = () => {};
@@ -3977,6 +4015,7 @@ test('envio para reposição em série preserva a série e marca exceção', asy
 
   assert.equal(context.aulas.length, totalAntes, 'a série não deve ser removida do array');
   assert.ok(context.aulas[0].excecoes.includes('31/08/2026'), 'a data alvo deve entrar em excecoes');
+  assert.equal(context.contextoDados.obterPendencia(), null);
 });
 
 test('envio para reposição em avulsa remove a aula', async () => {
@@ -3997,22 +4036,18 @@ test('envio para reposição em avulsa remove a aula', async () => {
   context.window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) => {
     return callback(true);
   };
-  context.window.apiFetchBackend = async () => ({
-    ok: true,
-    json: async () => ({ id: 'repo-avulsa-1' }),
-  });
+  context.window.apiFetchBackend = async (url, opcoes) => {
+    registrarEtapaFixture(context, opcoes.operacao, { ok: true }, url, opcoes.method);
+    return criarRespostaJson(200, JSON.parse(opcoes.body));
+  };
   context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
   context.window.alunoEstaAtivo = (aluno) => Boolean(aluno && aluno.ativo);
 
   let salvarChamadas = 0;
-  context.salvarDados = async () => {
+  context.window.salvarDados = criarSalvamentoFixture(context, async () => {
     salvarChamadas += 1;
     return { ok: true };
-  };
-  context.window.salvarDados = async () => {
-    salvarChamadas += 1;
-    return { ok: true };
-  };
+  });
   context.window.carregarDados = async () => {};
   context.window.inicializarHome = async () => {};
   context.window.fecharModalAcaoSlot = () => {};
@@ -4021,6 +4056,7 @@ test('envio para reposição em avulsa remove a aula', async () => {
 
   assert.equal(context.aulas.length, 0, 'a aula avulsa deve sair do array');
   assert.equal(salvarChamadas, 1, 'a persistência da avulsa deve ser chamada');
+  assert.equal(context.contextoDados.obterPendencia(), null);
 });
 
 test('reenvio de aula vinculada reabre a reposição original sem criar outra', async () => {
@@ -4205,15 +4241,17 @@ test('Ponto 2 — edição sem split com gravação bem-sucedida não reverte ne
     dataAlvoStr: '31/08/2026',
     escopo: 'entireSeries',
   });
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     return { ok: true, motivo: 'sucesso' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
   assert.equal(gravacoes.length, 1);
-  assert.deepEqual(gravacoes[0], { id: 'serie-p2-ok', operacao: 'atualizar' });
+  assertOperacaoEdicao(gravacoes[0], 'serie-p2-ok', 'entireSeries');
+  assert.equal(gravacoes[0].operacao.etapas.length, 1);
+  assert.equal(context.contextoDados.obterPendencia(), null);
   assert.equal(aulas[0].horarioInicio, '10:00');
   assert.equal(reaberturas.length, 0);
   assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
@@ -4228,14 +4266,18 @@ test('Ponto 2 — edição sem split reverte, avisa e reabre o modal preenchido 
     dataAlvoStr: '31/08/2026',
     escopo: 'entireSeries',
   });
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     return { ok: false, motivo: 'falha_remota' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
   assert.equal(gravacoes.length, 1);
+  assertOperacaoEdicao(gravacoes[0], 'serie-p2-falha', 'entireSeries');
+  assert.equal(gravacoes[0].operacao.falha, true);
+  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 0, 1);
+  assert.equal(pendencia.snapshot.aulas[0].horarioInicio, '10:00');
   assert.equal(aulas.length, 1);
   assert.equal(aulas[0].horarioInicio, '09:00', 'o horário anterior precisa voltar');
   assert.equal(aulas[0].horarioFim, '10:00');
@@ -4254,16 +4296,19 @@ test('Ponto 4 — split occurrence com as duas gravações bem-sucedidas mantém
     dataAlvoStr: '31/08/2026',
     escopo: 'occurrence',
   });
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     return { ok: true, motivo: 'sucesso' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
   assert.equal(gravacoes.length, 2);
-  assert.equal(gravacoes[0].operacao, 'atualizar');
-  assert.equal(gravacoes[1].operacao, 'criar');
+  assertOperacaoEdicao(gravacoes[0], 'serie-p4-ok', 'occurrence');
+  assert.equal(gravacoes[1].operacao, gravacoes[0].operacao, 'as duas gravações usam a mesma raiz');
+  assert.equal(gravacoes[1].id, gravacoes[0].operacao.intencao.novaOcorrencia.id);
+  assert.equal(gravacoes[0].operacao.etapas.length, 2);
+  assert.equal(context.contextoDados.obterPendencia(), null);
   assert.equal(aulas.length, 2);
   assert.ok(aulas[0].excecoes.includes('31/08/2026'));
   assert.equal(reaberturas.length, 0);
@@ -4279,15 +4324,19 @@ test('Ponto 4 — falha na PRIMEIRA gravação do split occurrence impede a segu
     dataAlvoStr: '31/08/2026',
     escopo: 'occurrence',
   });
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     return { ok: false, motivo: 'falha_remota' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
   assert.equal(gravacoes.length, 1, 'a segunda gravação não pode ser disparada quando a primeira falha');
-  assert.equal(gravacoes[0].operacao, 'atualizar');
+  assertOperacaoEdicao(gravacoes[0], 'serie-p4-falha1', 'occurrence');
+  assert.equal(gravacoes[0].operacao.falha, true);
+  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 0, 1);
+  assert.equal(pendencia.snapshot.aulas.length, 2);
+  assert.ok(pendencia.snapshot.aulas[0].excecoes.includes('31/08/2026'));
   assert.equal(aulas.length, 1, 'a ocorrência nova precisa sair do array');
   assert.deepEqual(Array.from(aulas[0].excecoes || []), [], 'o EXDATE precisa ser desfeito');
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
@@ -4295,7 +4344,7 @@ test('Ponto 4 — falha na PRIMEIRA gravação do split occurrence impede a segu
   assert.equal(context.document.getElementById('editEscopoRecorrencia').value, 'occurrence');
 });
 
-test('Ponto 4 — falha na SEGUNDA gravação do split occurrence dispara compensação da primeira', async () => {
+test('Ponto 4 — falha na SEGUNDA gravação do split occurrence não compensa e preserva a tentativa parcial', async () => {
   const serieMae = criarSerieFamiliaBase({ id: 'serie-p4-falha2', excecoes: [] });
   const aulas = [serieMae];
   const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
@@ -4305,22 +4354,25 @@ test('Ponto 4 — falha na SEGUNDA gravação do split occurrence dispara compen
     escopo: 'occurrence',
   });
   const excecoesPorGravacao = [];
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     excecoesPorGravacao.push(Array.isArray(alvo && alvo.excecoes) ? [...alvo.excecoes] : null);
     return gravacoes.length === 2
       ? { ok: false, motivo: 'falha_remota' }
       : { ok: true, motivo: 'sucesso' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
-  assert.equal(gravacoes.length, 3, 'primeira, segunda e a gravação de compensação');
-  assert.equal(gravacoes[0].operacao, 'atualizar');
-  assert.equal(gravacoes[1].operacao, 'criar');
-  assert.equal(gravacoes[2].operacao, 'atualizar', 'a compensação devolve a série ao estado anterior no servidor');
-  assert.equal(gravacoes[2].id, 'serie-p4-falha2');
-  assert.deepEqual(Array.from(excecoesPorGravacao[2] || []), [], 'a compensação envia a série já sem o EXDATE');
+  assert.equal(gravacoes.length, 2, 'ZERO gravações compensatórias após o resultado desconhecido');
+  assertOperacaoEdicao(gravacoes[0], 'serie-p4-falha2', 'occurrence');
+  assert.equal(gravacoes[1].operacao, gravacoes[0].operacao);
+  assert.equal(gravacoes[1].id, gravacoes[0].operacao.intencao.novaOcorrencia.id);
+  assert.deepEqual(excecoesPorGravacao[0], ['31/08/2026']);
+  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 1, 2);
+  assert.equal(gravacoes[0].operacao.falha, true);
+  assert.equal(pendencia.snapshot.aulas.length, 2, 'snapshot preserva a intenção anterior ao rollback visual');
+  assert.ok(pendencia.snapshot.aulas[0].excecoes.includes('31/08/2026'));
   assert.equal(aulas.length, 1);
   assert.deepEqual(Array.from(aulas[0].excecoes || []), []);
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
@@ -4336,16 +4388,19 @@ test('Ponto 5 — split fromDate com as duas gravações bem-sucedidas mantém a
     dataAlvoStr: '02/09/2026',
     escopo: 'fromDate',
   });
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     return { ok: true, motivo: 'sucesso' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
   assert.equal(gravacoes.length, 2);
-  assert.equal(gravacoes[0].operacao, 'atualizar');
-  assert.equal(gravacoes[1].operacao, 'criar');
+  assertOperacaoEdicao(gravacoes[0], 'serie-p5-ok', 'fromDate');
+  assert.equal(gravacoes[1].operacao, gravacoes[0].operacao);
+  assert.equal(gravacoes[1].id, gravacoes[0].operacao.intencao.novaSerie.id);
+  assert.equal(gravacoes[0].operacao.etapas.length, 2);
+  assert.equal(context.contextoDados.obterPendencia(), null);
   assert.equal(aulas.length, 2);
   assert.equal(aulas[0].recorrenciaDataFim, '01/09/2026');
   assert.equal(reaberturas.length, 0);
@@ -4361,14 +4416,18 @@ test('Ponto 5 — falha na PRIMEIRA gravação do split fromDate impede a segund
     dataAlvoStr: '02/09/2026',
     escopo: 'fromDate',
   });
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     return { ok: false, motivo: 'falha_remota' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
   assert.equal(gravacoes.length, 1, 'a segunda gravação não pode ser disparada quando a primeira falha');
+  assertOperacaoEdicao(gravacoes[0], 'serie-p5-falha1', 'fromDate');
+  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 0, 1);
+  assert.equal(pendencia.snapshot.aulas.length, 2);
+  assert.equal(pendencia.snapshot.aulas[0].recorrenciaDataFim, '01/09/2026');
   assert.equal(aulas.length, 1, 'a série nova precisa sair do array');
   assert.equal(aulas[0].id, 'serie-p5-falha1');
   assert.equal(aulas[0].recorrenciaDataFim, undefined, 'o UNTIL do corte precisa ser desfeito');
@@ -4377,7 +4436,7 @@ test('Ponto 5 — falha na PRIMEIRA gravação do split fromDate impede a segund
   assert.equal(context.document.getElementById('editEscopoRecorrencia').value, 'fromDate');
 });
 
-test('Ponto 5 — falha na SEGUNDA gravação do split fromDate dispara compensação da primeira', async () => {
+test('Ponto 5 — falha na SEGUNDA gravação do split fromDate não compensa e preserva a tentativa parcial', async () => {
   const serieMae = criarSerieFamiliaBase({ id: 'serie-p5-falha2', excecoes: [] });
   const aulas = [serieMae];
   const { context, form, gravacoes, toasts, reaberturas } = prepararEdicaoComGCal({
@@ -4387,21 +4446,25 @@ test('Ponto 5 — falha na SEGUNDA gravação do split fromDate dispara compensa
     escopo: 'fromDate',
   });
   const fimPorGravacao = [];
-  context.window.salvarEventoComGCal = async (alvo, opcoes) => {
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async (alvo, opcoes) => {
     gravacoes.push({ id: alvo && alvo.id, operacao: opcoes && opcoes.operacao });
     fimPorGravacao.push(alvo ? alvo.recorrenciaDataFim : null);
     return gravacoes.length === 2
       ? { ok: false, motivo: 'falha_remota' }
       : { ok: true, motivo: 'sucesso' };
-  };
+  });
 
   await form.listeners.submit({ preventDefault() {} });
 
-  assert.equal(gravacoes.length, 3, 'primeira, segunda e a gravação de compensação');
-  assert.equal(gravacoes[2].operacao, 'atualizar');
-  assert.equal(gravacoes[2].id, 'serie-p5-falha2');
+  assert.equal(gravacoes.length, 2, 'ZERO gravações compensatórias após o resultado desconhecido');
+  assertOperacaoEdicao(gravacoes[0], 'serie-p5-falha2', 'fromDate');
+  assert.equal(gravacoes[1].operacao, gravacoes[0].operacao);
+  assert.equal(gravacoes[1].id, gravacoes[0].operacao.intencao.novaSerie.id);
   assert.equal(fimPorGravacao[0], '01/09/2026', 'a primeira gravou o corte');
-  assert.equal(fimPorGravacao[2], undefined, 'a compensação devolve a série sem o corte');
+  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 1, 2);
+  assert.equal(pendencia.snapshot.aulas.length, 2);
+  assert.equal(pendencia.snapshot.aulas[0].recorrenciaDataFim, '01/09/2026');
+  assert.equal(gravacoes[0].operacao.falha, true);
   assert.equal(aulas.length, 1);
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
   assert.deepEqual(reaberturas, ['serie-p5-falha2']);
@@ -4422,13 +4485,14 @@ function prepararReagendamentoReposicao({ gcalResultado }) {
   context.window.mostrarToast = (...args) => {
     toasts.push(args);
   };
-  context.window.salvarEventoComGCal = async () => gcalResultado;
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async () => gcalResultado);
   context.window.apiFetchBackend = async (url, opcoes = {}) => {
     chamadasApi.push({
       url: String(url),
       method: opcoes.method || 'GET',
       body: opcoes.body ? JSON.parse(opcoes.body) : null,
     });
+    registrarEtapaFixture(context, opcoes.operacao, { ok: true }, String(url), opcoes.method || 'GET');
     return criarRespostaJson(200, {});
   };
 
@@ -4448,9 +4512,10 @@ test('Ponto 3 — reagendamento de reposição com gravação bem-sucedida mant�
   assert.equal(chamadasApi.filter((c) => c.method === 'PATCH').length, 1);
   assert.equal(chamadasApi[0].body.status, 'agendada');
   assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
+  assert.equal(context.contextoDados.obterPendencia(), null);
 });
 
-test('Ponto 3 — falha na gravação do reagendamento devolve a reposição para pendente e remove a aula', async () => {
+test('Ponto 3 — falha na gravação do reagendamento não repete PATCH e preserva aula e tentativa parcial', async () => {
   const { context, chamadasApi, toasts } = prepararReagendamentoReposicao({
     gcalResultado: { ok: false, motivo: 'falha_remota' },
   });
@@ -4458,14 +4523,18 @@ test('Ponto 3 — falha na gravação do reagendamento devolve a reposição par
   await context.document.getElementById('formReagendarAula').listeners.submit({ preventDefault() {} });
 
   const novaAula = context.window.aulas.find((item) => item.id.startsWith('ag-'));
-  assert.equal(novaAula, undefined, 'a aula criada precisa sair do array');
+  assert.ok(novaAula, 'a aula confirmada antes do PATCH não pode ser removida por compensação');
   assert.equal(context.window.aulasParaRepor.length, 1, 'a reposição continua na fila');
 
   const patches = chamadasApi.filter((c) => c.method === 'PATCH');
-  assert.equal(patches.length, 2, 'o PATCH de agendada precisa ser desfeito por um segundo PATCH');
+  assert.equal(patches.length, 1, 'ZERO PATCH compensatório para pendente após resultado desconhecido');
   assert.equal(patches[0].body.status, 'agendada');
-  assert.equal(patches[1].body.status, 'pendente');
-  assert.equal(patches[1].body.agendamentoReposicaoId, null);
+  assert.equal(patches[0].body.agendamentoReposicaoId, novaAula.id);
+  assert.equal(chamadasApi.filter((c) => c.method === 'DELETE').length, 0);
+  const pendencia = assertPendenciaFalha(context, 'reagendar-reposicao', 2, 3);
+  assert.equal(pendencia.snapshot.aulas[0].id, novaAula.id);
+  assert.equal(pendencia.intencao.reposicaoId, 'rep-6i');
+  assert.equal(pendencia.intencao.status, 'agendada');
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
 });
 
@@ -4494,7 +4563,7 @@ function prepararEnvioAvulsaParaReposicao({ gcalResultado, falharDelete = false 
   };
   context.window.getAluno = (id) => ({ id, nome: 'Aluno Teste', ativo: true });
   context.window.alunoEstaAtivo = () => true;
-  context.window.salvarEventoComGCal = async () => gcalResultado;
+  context.window.salvarEventoComGCal = criarSalvamentoFixture(context, async () => gcalResultado);
   context.window.carregarDados = async () => {};
   context.window.apiFetchBackend = async (url, opcoes = {}) => {
     const method = opcoes.method || 'GET';
@@ -4506,7 +4575,8 @@ function prepararEnvioAvulsaParaReposicao({ gcalResultado, falharDelete = false 
     if (falharDelete && method === 'DELETE') {
       throw new Error('rede indisponível');
     }
-    return criarRespostaJson(200, { id: 'rep-criada-p6', status: 'pendente' });
+    registrarEtapaFixture(context, opcoes.operacao, { ok: true }, String(url), method);
+    return criarRespostaJson(200, { ...JSON.parse(opcoes.body), status: 'pendente' });
   };
   context.window.abrirModalEscolhaCobrancaReposicao = async (_compromisso, callback) => {
     await callback(true);
@@ -4524,6 +4594,7 @@ test('Ponto 6 — envio de aula avulsa para reposição com gravação bem-suced
 
   assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6-vizinha']);
   assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
+  assert.equal(context.contextoDados.obterPendencia(), null);
 });
 
 test('Ponto 6 — falha na gravação do envio para reposição devolve a aula avulsa à agenda e avisa', async () => {
@@ -4534,12 +4605,15 @@ test('Ponto 6 — falha na gravação do envio para reposição devolve a aula a
   await context.window.executarEnvioParaReposicao();
 
   assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6', 'avulsa-p6-vizinha']);
+  const pendencia = assertPendenciaFalha(context, 'enviar-para-reposicao', 1, 2);
+  assert.deepEqual(pendencia.snapshot.aulas.map((item) => item.id), ['avulsa-p6-vizinha']);
+  assert.equal(pendencia.intencao.removerAgendamento, true);
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
 });
 
-// ── Etapa 6i-b — reposição órfã é apagada quando o rollback do Ponto 6 dispara ─────────────────
+// Resultado desconhecido: manter tentativa para recuperação, sem replay compensatório.
 
-test('Ponto 6 — falha na gravação dispara DELETE da reposição criada, com o id correto', async () => {
+test('Ponto 6 — falha na gravação não dispara DELETE e preserva o id da reposição criada', async () => {
   const { context, chamadasApi } = prepararEnvioAvulsaParaReposicao({
     gcalResultado: { ok: false, motivo: 'falha_remota' },
   });
@@ -4547,8 +4621,12 @@ test('Ponto 6 — falha na gravação dispara DELETE da reposição criada, com 
   await context.window.executarEnvioParaReposicao();
 
   const deletes = chamadasApi.filter((c) => c.method === 'DELETE');
-  assert.equal(deletes.length, 1, 'a reposição órfã precisa ser apagada');
-  assert.equal(deletes[0].url, 'https://api.example.com/reposicoes/rep-criada-p6');
+  assert.equal(deletes.length, 0, 'ZERO DELETE compensatório após resultado desconhecido');
+  assert.equal(chamadasApi.length, 1, 'somente o POST confirmado foi enviado');
+  assert.equal(chamadasApi[0].method, 'POST');
+  const pendencia = assertPendenciaFalha(context, 'enviar-para-reposicao', 1, 2);
+  assert.equal(pendencia.intencao.reposicao.id, chamadasApi[0].body.id);
+  assert.deepEqual(pendencia.alvos.reposicaoIds, [chamadasApi[0].body.id]);
 });
 
 test('Ponto 6 — sucesso na gravação não dispara DELETE de reposição', async () => {
@@ -4561,7 +4639,7 @@ test('Ponto 6 — sucesso na gravação não dispara DELETE de reposição', asy
   assert.equal(chamadasApi.filter((c) => c.method === 'DELETE').length, 0);
 });
 
-test('Ponto 6 — DELETE que falha não impede a aula de voltar nem o toast de erro', async () => {
+test('Ponto 6 — endpoint DELETE indisponível não é chamado e não apaga a tentativa em falha', async () => {
   const { context, aulas, chamadasApi, toasts } = prepararEnvioAvulsaParaReposicao({
     gcalResultado: { ok: false, motivo: 'falha_remota' },
     falharDelete: true,
@@ -4569,7 +4647,9 @@ test('Ponto 6 — DELETE que falha não impede a aula de voltar nem o toast de e
 
   await context.window.executarEnvioParaReposicao();
 
-  assert.equal(chamadasApi.filter((c) => c.method === 'DELETE').length, 1, 'o DELETE foi tentado');
+  assert.equal(chamadasApi.filter((c) => c.method === 'DELETE').length, 0, 'ZERO tentativas de DELETE mesmo com endpoint indisponível');
+  assert.equal(chamadasApi.length, 1);
+  assertPendenciaFalha(context, 'enviar-para-reposicao', 1, 2);
   assert.deepEqual(aulas.map((item) => item.id), ['avulsa-p6', 'avulsa-p6-vizinha'], 'a aula volta mesmo assim');
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
 });

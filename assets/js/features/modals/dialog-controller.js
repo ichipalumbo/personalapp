@@ -167,6 +167,7 @@
         bindKeydown();
         updateBodyScrollLock();
         setDialogOpen(target, true);
+        if (window.contextoDados && target.querySelector('form')) window.contextoDados.definirFormulario(target, true);
         focusDialogContext(target);
 
         return {
@@ -187,6 +188,7 @@
         }
 
         setDialogOpen(target, false);
+        if (window.contextoDados) window.contextoDados.definirFormulario(target, false);
         target.style.zIndex = '';
 
         const previous = getCurrentTopDialog();

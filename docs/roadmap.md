@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A/B validados localmente; C–E pendentes; 2.2 consolida depois |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–C validados localmente; D/E pendentes; 2.2 consolida depois |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -407,8 +407,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 > _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30).
 > [Plano vivo](plans/2026-09-30-plan-b2-sync-boot.md) **revalidado em 2026-10-05**, com
-> decisões de recuperação e botão manual refinadas; **cartões A/B implementados/validados
-> localmente em 06/10**, ainda sem publicação. C–E não iniciados e B2 continua desligado.
+> decisões de recuperação e botão manual refinadas; **cartões A–C implementados/validados
+> localmente em 06/10**, ainda sem publicação. D/E não iniciados e B2 continua desligado.
 > B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
 - **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
@@ -434,11 +434,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   reconciliação CRUD ou diff de snapshot antigo; salvar fica nas ações de edição.
 - **Execução proposta**: A — contratos nas specs e isolamento; B — leitura segura; C —
   fronteiras de formulários/gravações e recuperação explícita; D — boot/render neutro; E — mock seguro, testes e
-  aceite mobile. A implementa isolamento e B leitura validada sem CRUD; próximo cartão C. Resultados,
+  aceite mobile. A implementa isolamento, B leitura validada sem CRUD e C interação/recuperação;
+  próximo cartão D. Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,
-  cálculo financeiro, motor, autenticação ou integração GCal no B2-puro.
+  cálculo financeiro ou motor. C teve autorização explícita para fronteiras de contexto/raiz
+  na ponte GCal, conexão OAuth e cascata; não mudou tokens, endpoints ou algoritmo de recorrência.
 - **Área sensível**: confirmar antes se execução exigir tocar autenticação, GCal ou algoritmo
   da cascata; não presumir autorização pela ampliação do plano.
 - **Sequência**: B2-puro antes do **2.2**. ETag/304 separado, não bloqueia 2.2 e exige novo

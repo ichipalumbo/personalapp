@@ -289,7 +289,7 @@ nem passa a ter atomicidade/idempotência só por separar o botão de atualizaç
 
 ## 5. Cartões de execução propostos
 
-Cartões A e B concluídos nos recortes abaixo, ainda sem publicação; C–E não iniciados.
+Cartões A–C concluídos nos recortes abaixo, ainda sem publicação; D/E não iniciados.
 Escopo revalidado: **Médio–Alto**, revisar após inventário do C.
 Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E numa alteração única.
 
@@ -579,7 +579,7 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Próxima rodada
 
-Próximo **cartão C — interação e recuperação**: confirmar branch, conferir A/B entregues e
+Próximo **cartão D — boot e render neutro**: confirmar branch, conferir A–C entregues e
 medir baseline frontend antes do código. D depende dessas garantias; E fecha aceite.
 Se inventário exigir alterar autenticação,
 GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
@@ -642,3 +642,89 @@ essa dependência antes de seguir, sem substituir silenciosamente as decisões a
   resolvida. `cachePersistido: false` não é confirmação local; persistência multi-chave não
   é atômica, conforme contrato do A. GET 200 de grade com fallback interno continua não
   distinguível de padrão legítimo sem mudança backend, fora desta rodada.
+
+## 12. Registro da execução do cartão C — 06/10
+
+- **Branch/base**: `docs/planejar-sync-boot`, B commitado pelo dono em `612aba7`.
+  Continuidade confirmada; recorte sensível da ponte GCal, conexão OAuth e cascata autorizado
+  explicitamente antes das escritas. Sem commit/push/deploy pelo agente.
+- **Escopo executado por arquivo**:
+  - `assets/js/app/contexto-dados.js`: raiz por conta/tentativa, persistência antes do envio,
+    etapas/tarefas, geração de interação e término sem bloquear/invalidar a conta seguinte.
+  - `assets/js/storage.js`: propagação de contexto/raiz, status esperados, prazo total de
+    headers/corpo/clones, voos por contexto e término das leituras; manual enfileirado somente
+    GET, batch novo e resultado efetivo com complementos. Erro de lista CRUD não vira vazio.
+  - `assets/js/app/recuperacao-dados.js` (novo), `index.html` e `assets/css/style.css`:
+    painel persistente com verificar/adotar, confirmação e leitura nova, alvos por ID,
+    fechamento de formulários e invalidação de callbacks anteriores na adoção. Complementos
+    falhos deixam aviso de releitura sem repetir batch/escrita.
+  - `assets/js/features/modals/dialog-controller.js`: registra abertura/fechamento dos
+    formulários para proteger leituras. Diálogo de cobrança sem form usa registro explícito.
+  - `assets/js/modal-agendamento.js`, `assets/js/modal-acao-slot.js`: raiz em criação,
+    exclusões, edição/split, reagendamento e envio/reabertura de reposição; alvos registrados
+    antes do envio, refresh/histórico aguardados. Retiradas compensações remotas genéricas;
+    falha conserva intenção/pendência em vez de reenviar/desfazer o servidor.
+  - `assets/js/view-alunos.js`: raiz em cadastro/edição/status/exclusão/cobrança, cascata
+    aguardada, histórico contextual com resultado explícito e complementos validados.
+  - `assets/js/view-financas.js`: raiz em pagamento/ajuste; escrita confirmada separada de
+    refresh, trava dos ciclos aguardando leitura coberta, invalidação de históricos afetados
+    (inclusive fechados/em voo), sem cálculo duplicado ou prefetch indiscriminado.
+  - `assets/js/view-home.js`: raiz da grade, contexto das leituras e indicador de carga
+    por proprietário; falha sai do skeleton sem aplicar snapshot antigo.
+  - `assets/js/google-calendar.js`, `assets/js/cascade-sync-aluno.js`,
+    `assets/js/auth/google-identity.js`: propagam a mesma raiz/contexto nas fronteiras;
+    ponte distingue escrita confirmada de refresh falho; exchange OAuth não reenvia código
+    após falha desconhecida/500, permite fallback só por 404, sem persistir código/token.
+  - Testes novos: `tests-frontend/c-operacao-manual.test.js`, `c-prazo-corpo.test.js`,
+    `c-oauth-operacao.test.js`, `c-financas-recuperacao.test.js`, `c-ponte-home.test.js`,
+    `c-alunos-complementos.test.js`, `recuperacao-dados.test.js` e seu helper
+    `setup/recuperacao-dados.js`. Guard de ordem inclui recuperação após contexto.
+    Três harnesses GCal em `backend/test/` ajustados à raiz real e ausência de compensação.
+- **Suítes medidas**: frontend **134/134 antes → 197/197 depois** (63 testes novos);
+  backend **232/232 antes → 232/232 depois**. Primeira integração backend teve 14 falhas
+  de harness/expectativas de compensação antiga; corrigidas, sem alterar backend de produção.
+  Frontend intermediário **196/196**; revisão final encontrou callback complementar antigo
+  ainda aplicável sem formulário, corrigido e coberto pelo T13. Zero falhas finais.
+- **Provas por mutação**, restauradas imediatamente por edição:
+
+  | Mutação | Teste focado | Passam / falham | Restaurada |
+  |---|---|---|---|
+  | Omitir persistência da raiz | manual M01 | 0 / 1 | sim |
+  | Ignorar 404 esperado | manual M05 | 0 / 1 | sim |
+  | Término de A alterar geração de B | manual M06 | 0 / 1 | sim |
+  | Manual ignorar batch em voo | manual M08 | 0 / 1 | sim |
+  | Verificar tentar aplicar leitura | recuperação T02 | 0 / 1 | sim |
+  | Não invalidar históricos fechados | finanças, 2 testes | 0 / 2 | sim |
+  | POST OAuth sem raiz | OAuth O03 | 0 / 1 | sim |
+  | Renovar deadline vencido do corpo | prazo P02 | 0 / 1 | sim |
+  | Toast apesar de histórico falho | manual M16 | 0 / 1 | sim |
+  | Ignorar refresh false da Home | ponte, refresh false | 0 / 1 | sim |
+  | Não invalidar callback na adoção sem form | recuperação T13 | 0 / 1 | sim |
+
+  Todas provas contabilizadas falharam por assert; O02 preliminar com TypeError não foi
+  contado. Na última mutação T12 passou (não prova isoladamente esta guarda); T13 falhou.
+  Após restaurações: frontend completo **197/197**; status/busca sem mutação residual.
+- **Inventário de retries (§4.6)**:
+  - Zero callbacks ativos de retry de escrita: `salvarDados`/operações compostas não
+    oferecem `onRetry` geral; o toast apenas despacha callback fornecido.
+  - Retries restantes: leitura principal/manual em `storage.js`, histórico de reposições
+    em `view-alunos.js` e histórico financeiro em `view-financas.js`; não reenviam PATCH.
+  - Reabertura visual de formulário retorna às guardas da raiz, não dispara replay automático.
+  - PUT→POST da cascata somente após 404 sob mesma raiz; exchange OAuth só muda endpoint
+    após 404 esperado. Demais falhas interrompem a tentativa, sem reaproveitar autorização.
+  - Renovação/catch-up GCal e desconexão de calendário não foram reformados: ver limites abaixo.
+- **Mock mobile**: `default` em **433×762, DPR 2.81**, touch e pointer coarse confirmados,
+  após limpeza de cache estático. Painel visível e sem overflow horizontal; botões medidos
+  **48px** de altura. Falha/pendência simulada exclusivamente em armazenamento efêmero
+  em memória no browser (mock bloqueia localStorage); nenhuma escrita em API real.
+  Verificar retornou `verificado` preservando intenção; adoção confirmada retornou `aplicado`,
+  limpou pendência e aviso; manual aguardou formulário e aplicou batch próprio após liberar.
+  Backend local ausente gerou aviso do ping; renovação GCal permaneceu bloqueada pelo mock.
+  Persistência/reload/falhas são comprovados no harness, não neste armazenamento efêmero.
+  Teclado/leitor de tela não validados neste ambiente; aceite ampliado segue cartão E.
+- **Encontrado, não alterado**: CRUD sem atomicidade/idempotência entre dispositivos;
+  GET lazy não garante término de escrita cuja resposta se perdeu; renovação tripla GCal
+  permanece no 2.2 e desconexão de calendário exige recorte específico. Spec Finanças §2.4
+  ainda descreve caminho histórico anterior à mudança dos módulos compartilhados — fora
+  deste cartão. Nenhuma dependência nova, cálculo/motor/conflitos ou backend de produção.
+- **Não realizado**: D/E, ativação B2 no boot, publicação ou alteração de dados reais.

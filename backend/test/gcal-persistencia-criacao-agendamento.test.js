@@ -51,6 +51,7 @@ function criarElemento(id) {
 
 function carregarHarnessModalAgendamento({ aulas = [], alunos = [{ id: 'aluno-1', nome: 'Aluno Teste', ativo: true }] } = {}) {
   const elementos = new Map();
+  const store = new Map();
   const document = {
     listeners: {},
     getElementById(id) {
@@ -143,7 +144,11 @@ function carregarHarnessModalAgendamento({ aulas = [], alunos = [{ id: 'aluno-1'
   context.window = context;
   context.globalThis = context;
   context.addEventListener = () => {};
-  context.localStorage = { getItem: () => null, removeItem: () => {}, setItem: () => {} };
+  context.localStorage = {
+    getItem: (key) => (store.has(key) ? store.get(key) : null),
+    setItem: (key, value) => store.set(key, String(value)),
+    removeItem: (key) => store.delete(key),
+  };
   context.googleIdentity = { getOwnerEmail: () => 'teste@example.com', getIdToken: () => 'token-de-teste' };
 
   const carregar = (relativo) => {
@@ -170,6 +175,21 @@ function prepararCriacaoDeAula({ resultadoPersistencia, comGCal = true }) {
   const { context, document } = carregarHarnessModalAgendamento({ aulas });
   const toasts = [];
   const reaberturas = [];
+  const gravacoes = [];
+
+  const salvarFixture = async (_alvo, opcoes) => {
+    const op = opcoes.operacao;
+    assert.ok(context.contextoDados.operacaoAtual(op));
+    assert.equal(op.tipo, 'criar-agendamento');
+    assert.equal(op.intencao.acao, 'criar');
+    assert.equal(op.intencao.agendamento.alunoId, 'aluno-1');
+    assert.equal(opcoes.contextoDados, op.contexto);
+    gravacoes.push(op);
+    context.contextoDados.registrarEtapa(op, {
+      url: 'https://api.example.com/agendamentos', method: 'POST', confirmada: resultadoPersistencia.ok === true,
+    });
+    return resultadoPersistencia;
+  };
 
   context.window.mostrarToast = (...args) => {
     toasts.push(args);
@@ -189,17 +209,17 @@ function prepararCriacaoDeAula({ resultadoPersistencia, comGCal = true }) {
 
   if (comGCal) {
     context.window.gcal = { isSignedIn: () => true };
-    context.window.salvarEventoComGCal = async () => resultadoPersistencia;
+    context.window.salvarEventoComGCal = salvarFixture;
   } else {
     context.window.gcal = { isSignedIn: () => false };
-    context.window.salvarDados = async () => resultadoPersistencia;
+    context.window.salvarDados = salvarFixture;
   }
 
-  return { context, document, aulas, toasts, reaberturas };
+  return { context, document, aulas, toasts, reaberturas, gravacoes };
 }
 
 test('Ponto 1 — criação de aula com gravação bem-sucedida mantém a aula e não reabre o formulário', async () => {
-  const { context, document, aulas, toasts, reaberturas } = prepararCriacaoDeAula({
+  const { context, document, aulas, toasts, reaberturas, gravacoes } = prepararCriacaoDeAula({
     resultadoPersistencia: { ok: true, motivo: 'sucesso' },
   });
 
@@ -210,6 +230,10 @@ test('Ponto 1 — criação de aula com gravação bem-sucedida mantém a aula e
   assert.equal(reaberturas.length, 0, 'o formulário não pode reabrir em caso de sucesso');
   assert.equal(toasts.filter(([, tipo]) => tipo === 'error').length, 0);
   assert.equal(context.document.getElementById('modalAgendamento').style.display, 'none');
+  assert.equal(gravacoes.length, 1);
+  assert.equal(gravacoes[0].finalizada, true);
+  assert.equal(context.contextoDados.obterPendencia(), null);
+  assert.equal(context.contextoDados.lerPrincipal().aulas[0].id, aulas[0].id);
 });
 
 test('fechar agendamento pelo botão remove o modal do DialogController', () => {
@@ -347,7 +371,7 @@ test('clique no fundo da recorrência não fecha o modal', () => {
 });
 
 test('Ponto 1 — falha na gravação remove a aula, avisa e reabre o formulário preenchido', async () => {
-  const { document, aulas, toasts, reaberturas } = prepararCriacaoDeAula({
+  const { context, document, aulas, toasts, reaberturas, gravacoes } = prepararCriacaoDeAula({
     resultadoPersistencia: { ok: false, motivo: 'falha_remota' },
   });
 
@@ -360,10 +384,17 @@ test('Ponto 1 — falha na gravação remove a aula, avisa e reabre o formulári
   assert.equal(document.getElementById('agendaAluno').value, 'aluno-1', 'o aluno escolhido precisa voltar preenchido');
   assert.equal(document.getElementById('agendaHoraInicio').value, '09:00');
   assert.equal(document.getElementById('agendaDuracao').value, '60');
+  assert.equal(gravacoes.length, 1, 'sem replay após a falha');
+  const pendencia = context.contextoDados.obterPendencia();
+  assert.equal(pendencia.estado, 'desconhecida');
+  assert.equal(pendencia.snapshot.aulas.length, 1, 'o rollback visual não apaga o snapshot da tentativa');
+  assert.equal(pendencia.intencao.agendamento.id, pendencia.snapshot.aulas[0].id);
+  assert.equal(pendencia.etapas[0].confirmada, false);
+  assert.equal(gravacoes[0].falha, true);
 });
 
 test('Ponto 1 — falha na gravação sem Google Agenda conectada também reverte, avisa e reabre', async () => {
-  const { document, aulas, toasts, reaberturas } = prepararCriacaoDeAula({
+  const { context, document, aulas, toasts, reaberturas, gravacoes } = prepararCriacaoDeAula({
     resultadoPersistencia: { ok: false, motivo: 'sessao_expirada' },
     comGCal: false,
   });
@@ -373,4 +404,7 @@ test('Ponto 1 — falha na gravação sem Google Agenda conectada também revert
   assert.equal(aulas.length, 0);
   assert.ok(toasts.some(([mensagem, tipo]) => tipo === 'error' && String(mensagem).includes('Sessão expirada')));
   assert.equal(reaberturas.length, 1);
+  assert.equal(gravacoes.length, 1, 'sem repetição da escrita');
+  assert.equal(context.contextoDados.obterPendencia().snapshot.aulas.length, 1);
+  assert.equal(context.contextoDados.obterPendencia().estado, 'desconhecida');
 });

@@ -1,8 +1,8 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 9 · **Atualizado**: 2026-10-06
+> **Status**: Em produção · **Versão**: 10 · **Atualizado**: 2026-10-06
 > **Evolução de cache**: isolamento abaixo implementado no frontend, publicação pendente;
-> revalidação automática no boot e recuperação explícita ainda não entregues.
+> leitura segura e recuperação explícita validadas localmente; revalidação automática no boot ainda não entregue.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
@@ -441,8 +441,26 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
   não pode sobrescrever leitura mais recente. Pendência local não confirmada adia aplicação.
 - A garantia é do batch no cliente, não transação entre collections nem ausência de escrita
   lazy no servidor. GETs existentes mantêm expiração, configuração padrão e cálculos atuais.
-- Coordenação de formulários/operações compostas, recuperação explícita e revalidação no
-  boot são incrementos posteriores; este contrato não declara esses fluxos já entregues.
+- Coordenação e recuperação seguem 6.1.3; revalidação automática no boot permanece posterior.
+
+#### 6.1.3 Interação, recuperação e atualização manual (cartão C, sem publicação)
+
+- Formulários e operações compostas protegem a intenção local. A raiz guarda dono,
+  tentativa, alvos e etapas antes do envio e permanece ativa até encerrar tarefas conhecidas.
+  Falha parcial/desconhecida conserva pendência; não oferece replay geral nem compensação remota.
+- **Verificar no servidor** consulta dados e alvos necessários sem aplicar nem apagar a
+  intenção. **Usar dados do servidor** exige confirmação, fecha formulários, busca leitura
+  nova válida e só então abandona a pendência; invalida callbacks anteriores mesmo sem formulário.
+  Não é rollback: GET não comprova o término de escrita cuja resposta se perdeu.
+- **Sincronizar Dados** faz apenas leitura. Clique aguarda formulário/operação/batch da
+  mesma conta, depois executa batch próprio novo. Adiamento/falha não anunciam sucesso;
+  troca de conta cancela o pedido anterior. Retry desse caminho refaz somente a leitura.
+- PATCH confirmado com refresh falho continua confirmado: aviso orienta não repetir a
+  escrita. Ciclos que aguardam releitura ficam protegidos até leitura que realmente os
+  cubra; histórico não libera o ciclo vigente que seu endpoint não retorna.
+- Recuperação invalida históricos afetados em memória, recarregando imediatamente só os
+  abertos. Complementos incompletos mantêm aviso com retry de leitura, sem prefetch geral.
+  Nenhum cálculo financeiro é implementado no cliente; GETs lazy existentes são preservados.
 
 ### 6.2 Histórico de ciclos sob demanda
 
@@ -522,6 +540,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 | 27  | Histórico pode ser pago ou ajustado?                          | Sim, enquanto não houver `dataPagamento`, inclusive nos status `atrasado` e `em_aberto`. A data inicia hoje, mas é editável para registrar o recebimento real; ciclo pago continua congelado.              |
 | 28 | Cache pode ser mostrado sem sessão válida ou para outra conta? | Não. Preservação em disco não autoriza exibição; descartar legado sem dono e invalidar respostas/contextos antigos conforme 6.1.1. |
 | 29 | Troca de conta pode perder pendência local identificada? | Não silenciosamente. Preservar snapshot separado por dono, sem replay automático; mecanismo de recuperação é incremental. |
+| 30 | Atualização manual ou recuperação podem repetir escrita não confirmada? | Não. Atualização é somente leitura; recuperação verifica ou abandona intenção com confirmação e leitura nova, conforme 6.1.3. |
 
 ---
 

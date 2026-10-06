@@ -29,22 +29,32 @@
             && global.googleIdentity.isSignedIn());
     }
 
-    async function _persistirDadosComBackend(silencioso) {
+    async function _persistirDadosComBackend(silencioso, operacao) {
         if (typeof global.salvarDados !== 'function') {
             return { ok: false, motivo: 'falha_remota' };
         }
 
-        const resultado = await global.salvarDados(!!silencioso);
+        if (!global.contextoDados.operacaoAtual(operacao)) return { ok: false, motivo: 'sessao_expirada' };
+        const resultado = await global.salvarDados(!!silencioso, { operacao, contextoDados: operacao.contexto });
 
-        if (resultado && resultado.ok === false) {
-            return resultado;
+        if (!resultado || resultado.ok !== true) {
+            return resultado || { ok: false, motivo: 'falha_remota' };
         }
 
         if (typeof global.inicializarHome === 'function') {
-            await global.inicializarHome();
+            try {
+                const atualizada = await global.inicializarHome({ operacao, contextoDados: operacao.contexto });
+                if (atualizada !== false) return resultado;
+            } catch (_) {
+                // O Mongo já confirmou: falha de refresh não é falha de gravação.
+            }
+            if (!silencioso && global.contextoDados.operacaoAtual(operacao) && typeof global.mostrarToast === 'function') {
+                global.mostrarToast('Alteração salva, mas a tela não foi atualizada. Atualize apenas os dados; não repita a gravação.', 'warning');
+            }
+            return { ...resultado, atualizacaoPendente: true };
         }
 
-        return resultado && typeof resultado === 'object' ? resultado : { ok: true };
+        return resultado;
     }
 
     async function _verificarCanalGoogleCalendar() {
@@ -121,11 +131,23 @@
         var opts = opcoes && typeof opcoes === 'object' ? opcoes : {};
         var silencioso = opts.silencioso === true;
 
-        if (_isAppSignedIn()) {
-            await _ensureCalendarConnection({ interactive: true, force: false });
+        const propria = !opts.operacao || typeof opts.operacao !== 'object';
+        const operacao = propria ? global.contextoDados.iniciarOperacao({ tipo: 'agenda', contexto: opts.contextoDados }) : opts.operacao;
+        if (!operacao) return { ok: false, motivo: 'falha_remota' };
+        try {
+            if (_isAppSignedIn()) {
+                await _ensureCalendarConnection({ interactive: true, force: false, operacao, contextoDados: operacao.contexto });
+            }
+            if (!global.contextoDados.operacaoAtual(operacao)) return { ok: false, motivo: 'sessao_expirada' };
+            const resultado = await _persistirDadosComBackend(silencioso, operacao);
+            if (!resultado.ok) global.contextoDados.marcarFalhaOperacao(operacao, resultado);
+            return resultado;
+        } catch (erro) {
+            global.contextoDados.marcarFalhaOperacao(operacao, erro);
+            return { ok: false, motivo: 'falha_remota' };
+        } finally {
+            if (propria) await global.contextoDados.finalizarOperacao(operacao);
         }
-
-        return _persistirDadosComBackend(silencioso);
     };
 
     global.solicitarSyncCalendario = async function (opcoes) {

@@ -208,7 +208,9 @@ function obterFrequenciaContratoAluno(aluno) {
 
 // Dados complementares vindos do backend (Finanças e consistência de agenda), indexados por alunoId.
 let _resumoFinanceiroPorAluno = {};
+let _resumoFinanceiroErro = false;
 let _consistenciaAgendaPorAluno = {};
+let _consistenciaAgendaErro = false;
 let _reposicoesHistorico = null;
 let _reposicoesHistoricoErro = false;
 let _historicoReposicoesModal = {
@@ -219,11 +221,47 @@ let _historicoReposicoesModal = {
     erro: null
 };
 let _edicaoCobrancaReposicao = null;
+let _operacaoAluno = null;
+let _operacaoCobrancaReposicao = null;
+
+function alvosOperacaoAluno(alunoId) {
+    const vinculados = typeof aulas !== 'undefined' && Array.isArray(aulas) ? aulas : (window.aulas || []);
+    return {
+        alunoIds: [alunoId],
+        agendamentoIds: vinculados.filter((aula) => aula && aula.alunoId === alunoId && aula.source !== 'google_external').map((aula) => aula.id),
+        cicloIds: [],
+        reposicaoIds: []
+    };
+}
+
+function exigirOperacaoAlunoAtual(op) {
+    if (!window.contextoDados.operacaoAtual(op)) throw new Error('CONTEXTO_OBSOLETO');
+}
+
+function exigirPersistenciaAluno(op, resultado) {
+    if (!resultado || resultado.ok !== true || op.falha) {
+        window.contextoDados.marcarFalhaOperacao(op, resultado);
+        throw new Error(resultado && resultado.motivo || 'Gravação não confirmada.');
+    }
+    exigirOperacaoAlunoAtual(op);
+}
+
+async function recuperarOperacaoAluno() {
+    if (typeof window.abrirRecuperacaoDados === 'function') await window.abrirRecuperacaoDados();
+}
 
 if (!window.contextoDados) throw new Error('contexto-dados.js precisa carregar antes de view-alunos.js.');
 window.contextoDados.aoInvalidar(() => {
+    _operacaoAluno = null;
+    _operacaoCobrancaReposicao = null;
+    ['btnSalvarAluno', 'btnExcluirAlunoModal'].forEach((id) => {
+        const botao = document.getElementById(id);
+        if (botao) botao.disabled = false;
+    });
     _resumoFinanceiroPorAluno = {};
+    _resumoFinanceiroErro = false;
     _consistenciaAgendaPorAluno = {};
+    _consistenciaAgendaErro = false;
     _reposicoesHistorico = null;
     _reposicoesHistoricoErro = false;
     const botaoCobranca = document.getElementById('btnSalvarEdicaoCobrancaReposicao');
@@ -244,6 +282,9 @@ window.contextoDados.aoInvalidar(() => {
 function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
     if (objetivo === 'Consultoria Online') return '';
 
+    if (_resumoFinanceiroErro) {
+        return '<div class="aluno-card-indicador aluno-card-indicador--alerta" role="alert">Não foi possível atualizar o financeiro.</div>';
+    }
     const resumo = _resumoFinanceiroPorAluno[aluno.id];
     const pendente = !resumo
         ? (!aluno.fechamentoMesCheio && !aluno.diaVencimento)
@@ -262,6 +303,9 @@ function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
 }
 
 function montarCaixinhaConsistenciaAluno(aluno) {
+    if (_consistenciaAgendaErro) {
+        return '<div class="aluno-card-indicador aluno-card-indicador--alerta" role="alert">Não foi possível atualizar a consistência da agenda.</div>';
+    }
     const consistencia = _consistenciaAgendaPorAluno[aluno.id];
     if (!consistencia || !consistencia.aulasFaltamAgendar) return '';
 
@@ -470,15 +514,22 @@ function renderizarHistoricoReposicoes() {
     `).join('');
 }
 
-async function carregarHistoricoReposicoesAluno(alunoId) {
-    const contexto = window.contextoDados.capturar();
+async function carregarHistoricoReposicoesAluno(alunoId, opcoes = {}) {
+    const operacao = opcoes.operacao;
+    const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+    const interacao = window.contextoDados.capturarInteracao();
+    const podeAplicar = () => window.contextoDados.atual(contexto)
+        && window.contextoDados.podeAplicarInteracao(interacao, operacao)
+        && (typeof opcoes.podeAplicar !== 'function' || opcoes.podeAplicar());
+    if (!podeAplicar()) throw new Error('CONTEXTO_OBSOLETO');
     const base = window.APP_API_CONFIG && window.APP_API_CONFIG.apiBaseUrl;
     if (typeof window.apiFetchBackend !== 'function' || !base) throw new Error('API indisponível.');
-    const resposta = await window.apiFetchBackend(`${base}/reposicoes?alunoId=${encodeURIComponent(alunoId)}`);
+    const resposta = await window.apiFetchBackend(`${base}/reposicoes?alunoId=${encodeURIComponent(alunoId)}`, { operacao, contextoDados: contexto });
     if (!resposta.ok) throw new Error('Falha ao carregar reposições.');
     const dados = await resposta.json();
-    if (!window.contextoDados.atual(contexto)) throw new Error('CONTEXTO_OBSOLETO');
-    const lista = Array.isArray(dados) ? dados : [];
+    if (!podeAplicar()) throw new Error('CONTEXTO_OBSOLETO');
+    if (!Array.isArray(dados)) throw new Error('Histórico de reposições inválido.');
+    const lista = dados;
     const anteriores = Array.isArray(_reposicoesHistorico)
         ? _reposicoesHistorico.filter((reposicao) => reposicao && reposicao.alunoId !== alunoId)
         : [];
@@ -489,11 +540,14 @@ async function carregarHistoricoReposicoesAluno(alunoId) {
     return lista;
 }
 
-window.abrirHistoricoReposicoes = async function(alunoId, origem) {
-    const contexto = window.contextoDados.capturar();
-    if (!window.contextoDados.atual(contexto)) return;
+window.abrirHistoricoReposicoes = async function(alunoId, origem, opcoes = {}) {
+    const operacao = opcoes.operacao;
+    const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+    const interacao = window.contextoDados.capturarInteracao();
+    const contextoAtual = () => window.contextoDados.atual(contexto) && window.contextoDados.podeAplicarInteracao(interacao, operacao);
+    if (!contextoAtual()) return false;
     const modal = document.getElementById('modalHistoricoReposicoes');
-    if (!modal) return;
+    if (!modal || !document.getElementById('conteudoHistoricoReposicoes')) return false;
     _historicoReposicoesModal = {
         alunoId,
         dados: null,
@@ -513,21 +567,31 @@ window.abrirHistoricoReposicoes = async function(alunoId, origem) {
     }
     renderizarHistoricoReposicoes();
     const estadoModal = _historicoReposicoesModal;
+    const podeAplicar = () => contextoAtual() && estadoModal === _historicoReposicoesModal
+        && modal.isConnected && modal.style.display !== 'none';
     try {
-        const dados = await carregarHistoricoReposicoesAluno(alunoId);
-        if (!window.contextoDados.atual(contexto) || estadoModal !== _historicoReposicoesModal) return;
+        const dados = await carregarHistoricoReposicoesAluno(alunoId, { operacao, contextoDados: contexto, podeAplicar });
+        if (!podeAplicar()) return false;
         estadoModal.dados = dados;
     } catch (_) {
-        if (!window.contextoDados.atual(contexto) || estadoModal !== _historicoReposicoesModal) return;
-        _historicoReposicoesModal.dados = Array.isArray(_reposicoesHistorico)
-            ? _reposicoesHistorico.filter((reposicao) => reposicao && reposicao.alunoId === alunoId)
+        if (!podeAplicar()) return false;
+        _reposicoesHistorico = Array.isArray(_reposicoesHistorico)
+            ? _reposicoesHistorico.filter((reposicao) => reposicao && reposicao.alunoId !== alunoId)
             : [];
-        _historicoReposicoesModal.erro = true;
+        _reposicoesHistoricoErro = true;
+        estadoModal.dados = [];
+        estadoModal.erro = true;
+        // Falha de GET não transforma etapas de escrita confirmadas em resultado desconhecido.
+        // Se a raiz já falhou, sua pendência permanece; caso contrário, só a leitura pede retry.
+        window.invalidarChaveRenderAlunos();
+        window.renderizarListaAlunos();
     } finally {
-        if (!window.contextoDados.atual(contexto) || estadoModal !== _historicoReposicoesModal) return;
-        _historicoReposicoesModal.carregando = false;
-        renderizarHistoricoReposicoes();
+        if (podeAplicar()) {
+            estadoModal.carregando = false;
+            renderizarHistoricoReposicoes();
+        }
     }
+    return podeAplicar() && estadoModal.erro !== true;
 };
 
 window.recarregarHistoricoReposicoes = function() {
@@ -548,15 +612,20 @@ window.iniciarReagendamentoReposicaoDoHistorico = function(reposicaoId) {
 };
 
 window.finalizarRetornoHistoricoReposicoes = async function(resultado) {
-    const contexto = window.contextoDados.capturar();
+    const operacao = resultado && resultado.operacao;
+    const contexto = (operacao && operacao.contexto) || window.contextoDados.capturar();
+    const interacao = window.contextoDados.capturarInteracao();
+    const podeAplicar = () => window.contextoDados.atual(contexto) && window.contextoDados.podeAplicarInteracao(interacao, operacao);
+    if (!podeAplicar()) return false;
     const retorno = window._retornoHistoricoReposicoes;
     window._retornoHistoricoReposicoes = null;
-    if (!retorno) return;
-    await window.abrirHistoricoReposicoes(retorno.alunoId, retorno.origem);
-    if (!window.contextoDados.atual(contexto)) return;
+    if (!retorno) return false;
+    const historicoCarregado = await window.abrirHistoricoReposicoes(retorno.alunoId, retorno.origem, { operacao, contextoDados: contexto });
+    if (!podeAplicar() || historicoCarregado !== true || (operacao && operacao.falha)) return false;
     if (resultado && resultado.status === 'sucesso' && typeof window.mostrarToast === 'function') {
         window.mostrarToast('Histórico de reposições atualizado.');
     }
+    return true;
 };
 
 window.fecharHistoricoReposicoes = function() {
@@ -577,10 +646,13 @@ window.fecharHistoricoReposicoes = function() {
 };
 
 window.abrirEdicaoCobrancaReposicao = function(reposicaoId, cobravel) {
+    if (_operacaoCobrancaReposicao) return;
     const modal = document.getElementById('modalEdicaoCobrancaReposicao');
     const seletor = document.getElementById('seletorCobrancaReposicao');
     const descricao = document.getElementById('descricaoEdicaoCobrancaReposicao');
     if (!modal || !seletor) return;
+    // Este diálogo usa select/botões, sem <form>; o controlador não o registra sozinho.
+    window.contextoDados.definirFormulario(modal, true);
     _edicaoCobrancaReposicao = { reposicaoId, cobravel: Boolean(cobravel) };
     seletor.value = String(Boolean(cobravel));
     if (descricao) descricao.textContent = 'Escolha quando a reposição deve entrar na cobrança.';
@@ -597,16 +669,19 @@ window.abrirEdicaoCobrancaReposicao = function(reposicaoId, cobravel) {
 };
 
 window.fecharEdicaoCobrancaReposicao = function() {
+    if (_operacaoCobrancaReposicao && window.contextoDados.operacaoAtual(_operacaoCobrancaReposicao)) return;
     const modal = document.getElementById('modalEdicaoCobrancaReposicao');
     if (modal && dialogEstaNaPilha(modal)) {
         window.DialogController.close(modal);
     } else if (modal) {
         modal.style.display = 'none';
+        window.contextoDados.definirFormulario(modal, false);
     }
     _edicaoCobrancaReposicao = null;
 };
 
 window.salvarEdicaoCobrancaReposicao = async function() {
+    if (_operacaoCobrancaReposicao) return;
     const conta = window.contextoDados.capturar();
     if (!window.contextoDados.atual(conta)) return;
     const contexto = _edicaoCobrancaReposicao;
@@ -620,13 +695,27 @@ window.salvarEdicaoCobrancaReposicao = async function() {
 
     const base = window.APP_API_CONFIG && window.APP_API_CONFIG.apiBaseUrl;
     if (typeof window.apiFetchBackend !== 'function' || !base) return;
+    const registro = (Array.isArray(_reposicoesHistorico) ? _reposicoesHistorico : []).find((item) => item && item.id === contexto.reposicaoId);
+    const alunoId = registro && registro.alunoId || _historicoReposicoesModal.alunoId;
+    const op = window.contextoDados.iniciarOperacao({
+        tipo: 'cobranca-reposicao', contexto: conta,
+        alvos: { alunoIds: alunoId ? [alunoId] : [], reposicaoIds: [contexto.reposicaoId], agendamentoIds: registro && registro.agendamentoReposicaoId ? [registro.agendamentoReposicaoId] : [], cicloIds: [] },
+        intencao: { reposicaoId: contexto.reposicaoId, cobravel: novoCobravel }
+    });
+    if (!op) { await recuperarOperacaoAluno(); return; }
+    _operacaoCobrancaReposicao = op;
     const botao = document.getElementById('btnSalvarEdicaoCobrancaReposicao');
     if (botao) botao.disabled = true;
+    let escritaConfirmada = false;
     try {
+        exigirOperacaoAlunoAtual(op);
+        if (!window.contextoDados.atualizarOperacao(op)) throw new Error('Não foi possível preservar a alteração.');
         const resposta = await window.apiFetchBackend(
             `${base}/reposicoes/${encodeURIComponent(contexto.reposicaoId)}`,
             {
                 method: 'PATCH',
+                operacao: op,
+                contextoDados: op.contexto,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ cobravel: novoCobravel })
             }
@@ -635,85 +724,159 @@ window.salvarEdicaoCobrancaReposicao = async function() {
             const erro = await resposta.json().catch(() => ({}));
             throw new Error(erro.error || 'Não foi possível alterar a cobrança.');
         }
+        escritaConfirmada = true;
         const atualizado = await resposta.json();
-        if (!window.contextoDados.atual(conta)) return;
+        exigirOperacaoAlunoAtual(op);
+        if (!atualizado || atualizado.id !== contexto.reposicaoId) throw new Error('Resposta de cobrança inválida.');
         if (Array.isArray(_reposicoesHistorico)) {
             const indice = _reposicoesHistorico.findIndex((item) => item && item.id === contexto.reposicaoId);
             if (indice !== -1) _reposicoesHistorico[indice] = atualizado;
         }
-        window.fecharEdicaoCobrancaReposicao();
+        contexto.cobravel = novoCobravel;
+        if (Array.isArray(_historicoReposicoesModal.dados)) {
+            const indice = _historicoReposicoesModal.dados.findIndex((item) => item && item.id === contexto.reposicaoId);
+            if (indice !== -1) _historicoReposicoesModal.dados[indice] = atualizado;
+        }
         window.invalidarChaveRenderAlunos();
         window.renderizarListaAlunos();
         renderizarHistoricoReposicoes();
         if (typeof window.mostrarToast === 'function') window.mostrarToast('Cobrança da reposição atualizada.');
     } catch (erro) {
-        if (!window.contextoDados.atual(conta)) return;
-        if (typeof window.mostrarToast === 'function') window.mostrarToast('Não foi possível atualizar a cobrança. Tente novamente.', 'error');
+        escritaConfirmada = escritaConfirmada || op.etapas.some((etapa) => etapa.method === 'PATCH' && etapa.confirmada);
+        if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+        if (window.contextoDados.operacaoAtual(op)) {
+            if (escritaConfirmada) {
+                // O PATCH já foi aceito: recuperação repete somente a consulta, nunca a escrita.
+                contexto.cobravel = novoCobravel;
+                try {
+                    if (!alunoId) throw new Error('Aluno da reposição indisponível.');
+                    const dados = await carregarHistoricoReposicoesAluno(alunoId, { operacao: op, contextoDados: op.contexto });
+                    exigirOperacaoAlunoAtual(op);
+                    if (_historicoReposicoesModal.alunoId === alunoId) _historicoReposicoesModal.dados = dados;
+                    renderizarHistoricoReposicoes();
+                } catch (_) { /* A escrita continua confirmada mesmo se a releitura falhar. */ }
+            }
+            if (window.contextoDados.operacaoAtual(op) && typeof window.mostrarToast === 'function') {
+                window.mostrarToast(escritaConfirmada ? 'Cobrança salva. Se o histórico não atualizou, tente novamente apenas a leitura.' : 'Cobrança não confirmada. Verifique os dados no servidor antes de tentar novamente.', escritaConfirmada ? 'warning' : 'error');
+            }
+        }
     } finally {
-        if (!window.contextoDados.atual(conta)) return;
-        if (botao) botao.disabled = false;
+        try { await window.contextoDados.finalizarOperacao(op); }
+        finally {
+            if (window.contextoDados.atual(op.contexto) && _operacaoCobrancaReposicao === op) {
+                _operacaoCobrancaReposicao = null;
+                if (botao) botao.disabled = false;
+                if (escritaConfirmada) window.fecharEdicaoCobrancaReposicao();
+            }
+        }
     }
 };
 
-async function carregarDadosComplementaresAlunos() {
-    const contexto = window.contextoDados.capturar();
-    if (!window.contextoDados.atual(contexto)) return;
-    if (typeof window.garantirDadosFinancas === 'function') {
-        try {
-            const resumo = await window.garantirDadosFinancas() || {};
-            if (!window.contextoDados.atual(contexto)) return;
-            _resumoFinanceiroPorAluno = resumo;
-        } catch (_) { /* card do aluno segue sem o bloco financeiro */ }
-    }
-
-    if (typeof window.apiFetchBackend === 'function') {
-        try {
-            const base = window.APP_API_CONFIG.apiBaseUrl;
-            const resposta = await window.apiFetchBackend(`${base}/reposicoes`);
-            if (!resposta.ok) throw new Error('Falha ao carregar reposições.');
-            const dados = await resposta.json();
-            if (!window.contextoDados.atual(contexto)) return;
-            _reposicoesHistorico = Array.isArray(dados) ? dados : [];
-            _reposicoesHistoricoErro = false;
-        } catch (_) {
-            if (!window.contextoDados.atual(contexto)) return;
-            _reposicoesHistorico = [];
-            _reposicoesHistoricoErro = true;
+async function carregarDadosComplementaresAlunos(opcoes = {}) {
+    const operacao = opcoes.operacao;
+    const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+    const interacao = window.contextoDados.capturarInteracao();
+    const podeAplicar = () => window.contextoDados.atual(contexto) && window.contextoDados.podeAplicarInteracao(interacao, operacao);
+    if (!podeAplicar()) return false;
+    let sucesso = true;
+    try {
+        let resumo;
+        if (opcoes.financasAtualizadas === true) {
+            // A recuperação já confirmou a leitura: até um mapa vazio é válido e não exige outro GET.
+            if (typeof window.obterResumoFinanceiroPorAluno !== 'function') throw new Error('Financeiro indisponível.');
+            resumo = window.obterResumoFinanceiroPorAluno();
+        } else {
+            if (typeof window.garantirDadosFinancas !== 'function') throw new Error('Financeiro indisponível.');
+            resumo = await window.garantirDadosFinancas({ forcarRemoto: true, operacao, contextoDados: contexto });
         }
-
-        try {
-            const base = window.APP_API_CONFIG.apiBaseUrl;
-            const resposta = await window.apiFetchBackend(`${base}/alunos/consistencia-agenda`);
-            if (resposta.ok) {
-                const dados = await resposta.json();
-                if (!window.contextoDados.atual(contexto)) return;
-                _consistenciaAgendaPorAluno = {};
-                (Array.isArray(dados) ? dados : []).forEach((item) => {
-                    if (item && item.alunoId) _consistenciaAgendaPorAluno[item.alunoId] = item;
-                });
-            }
-        } catch (_) { /* indicador de consistência é opcional */ }
+        if (!podeAplicar()) return false;
+        if (!resumo || typeof resumo !== 'object' || Array.isArray(resumo)) throw new Error('Resumo financeiro inválido.');
+        _resumoFinanceiroPorAluno = resumo;
+        _resumoFinanceiroErro = false;
+    } catch (_) {
+        if (!podeAplicar()) return false;
+        _resumoFinanceiroPorAluno = {};
+        _resumoFinanceiroErro = true;
+        sucesso = false;
     }
 
+    const base = window.APP_API_CONFIG && window.APP_API_CONFIG.apiBaseUrl;
+    if (!podeAplicar()) return false;
+    try {
+        if (typeof window.apiFetchBackend !== 'function' || !base) throw new Error('API indisponível.');
+        const resposta = await window.apiFetchBackend(`${base}/reposicoes`, { operacao, contextoDados: contexto });
+        if (!resposta.ok) throw new Error('Falha ao carregar reposições.');
+        const dados = await resposta.json();
+        if (!podeAplicar()) return false;
+        if (!Array.isArray(dados)) throw new Error('Histórico de reposições inválido.');
+        _reposicoesHistorico = dados;
+        _reposicoesHistoricoErro = false;
+    } catch (_) {
+        if (!podeAplicar()) return false;
+        _reposicoesHistorico = [];
+        _reposicoesHistoricoErro = true;
+        sucesso = false;
+    }
+
+    if (!podeAplicar()) return false;
+    try {
+        if (typeof window.apiFetchBackend !== 'function' || !base) throw new Error('API indisponível.');
+        const resposta = await window.apiFetchBackend(`${base}/alunos/consistencia-agenda`, { operacao, contextoDados: contexto });
+        if (!resposta.ok) throw new Error('Falha ao carregar consistência da agenda.');
+        const dados = await resposta.json();
+        if (!podeAplicar()) return false;
+        if (!Array.isArray(dados)) throw new Error('Consistência da agenda inválida.');
+        _consistenciaAgendaPorAluno = {};
+        dados.forEach((item) => {
+            if (item && item.alunoId) _consistenciaAgendaPorAluno[item.alunoId] = item;
+        });
+        _consistenciaAgendaErro = false;
+    } catch (_) {
+        if (!podeAplicar()) return false;
+        _consistenciaAgendaPorAluno = {};
+        _consistenciaAgendaErro = true;
+        sucesso = false;
+    }
+
+    if (!podeAplicar()) return false;
     window.invalidarChaveRenderAlunos();
-    if (!window.contextoDados.atual(contexto)) return;
     window.renderizarListaAlunos();
+    return podeAplicar() && sucesso;
 }
 
+// Recuperação explícita (cartão C): refaz somente a leitura dos complementos da lista
+// de alunos. Nunca escreve e nunca reenvia operação; devolve false quando a leitura
+// ficou incompleta (a recuperação usa isso para manter o aviso de complemento pendente).
+window.atualizarAlunosAposRecuperacao = async function(opcoes = {}) {
+    const operacao = opcoes.operacao;
+    const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+    const interacao = window.contextoDados.capturarInteracao();
+    const podeAplicar = () => window.contextoDados.atual(contexto) && window.contextoDados.podeAplicarInteracao(interacao, operacao);
+    if (!podeAplicar()) return false;
+    const atualizado = await carregarDadosComplementaresAlunos({ ...opcoes, contextoDados: contexto });
+    return podeAplicar() && atualizado === true;
+};
+
 window.inicializarPaginaCadastro = async function(opcoes = {}) {
-    const contexto = window.contextoDados.capturar();
+    const operacao = opcoes.operacao;
+    const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+    const interacao = window.contextoDados.capturarInteracao();
+    const podeAplicar = () => window.contextoDados.atual(contexto) && window.contextoDados.podeAplicarInteracao(interacao, operacao);
+    if (!podeAplicar()) return;
     const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
     if (deveSincronizar && typeof carregarDados === 'function') {
-        await carregarDados({
+        const resultado = await carregarDados({
             forcarRender: false,
-            forcarRemoto: opcoes.sincronizar === true
+            forcarRemoto: opcoes.sincronizar === true,
+            operacao,
+            contextoDados: contexto
         });
-        if (!window.contextoDados.atual(contexto)) return;
+        if (!podeAplicar() || !resultado || resultado.ok !== true) return;
         window.__sincronizacaoInicialConcluida = true;
     }
     window.renderizarListaAlunos();
     window.togglePainelCadastro(false);
-    carregarDadosComplementaresAlunos();
+    carregarDadosComplementaresAlunos(opcoes);
 };
 window.inicializarAlunos = async function() {
     await window.inicializarPaginaCadastro();
@@ -735,6 +898,7 @@ function dialogEstaNaPilha(modal) {
 }
 
 window.cancelarCadastroAluno = function() {
+    if (_operacaoAluno) return;
     const alterado = assinaturaAberturaCadastroAluno !== null
         && assinaturaFormularioAluno() !== assinaturaAberturaCadastroAluno;
     if (alterado && !window.confirm('Descartar as alterações deste aluno?')) return;
@@ -742,8 +906,13 @@ window.cancelarCadastroAluno = function() {
 };
 
 window.togglePainelCadastro = function(mostrar) {
+    if (_operacaoAluno && window.contextoDados.operacaoAtual(_operacaoAluno)) return;
     const modal = document.getElementById('modalFormAluno');
-    if (!modal) return;
+    const form = document.getElementById('formNovoAluno');
+    if (!modal) {
+        if (form) window.contextoDados.definirFormulario(form, !!mostrar);
+        return;
+    }
 
     if (mostrar) {
         modal.setAttribute('role', 'dialog');
@@ -755,6 +924,7 @@ window.togglePainelCadastro = function(mostrar) {
                 onRequestClose: window.cancelarCadastroAluno
             });
         } else {
+            window.contextoDados.definirFormulario(modal, true);
             modal.style.display = 'flex';
             modal.setAttribute('aria-modal', 'true');
             modal.setAttribute('tabindex', '-1');
@@ -767,8 +937,8 @@ window.togglePainelCadastro = function(mostrar) {
         } else {
             modal.style.display = 'none';
             modal.setAttribute('aria-modal', 'false');
+            window.contextoDados.definirFormulario(modal, false);
         }
-        const form = document.getElementById('formNovoAluno');
         if (form) form.reset();
 
         const elObjetivoSwitch = document.getElementById('alunoObjetivoSwitch');
@@ -783,6 +953,7 @@ window.togglePainelCadastro = function(mostrar) {
     }
 };
 window.abrirCadastroParaNovo = function() {
+    if (_operacaoAluno) return;
     const titulo = document.getElementById('tituloFormAluno');
     const botao = document.getElementById('btnSalvarAluno');
 
@@ -817,7 +988,9 @@ window.renderizarListaAlunos = function() {
             try {
                 return JSON.stringify(alunos)
                     + '|' + JSON.stringify(_resumoFinanceiroPorAluno)
+                    + '|' + _resumoFinanceiroErro
                     + '|' + JSON.stringify(_consistenciaAgendaPorAluno)
+                    + '|' + _consistenciaAgendaErro
                     + '|' + JSON.stringify(_reposicoesHistorico)
                     + '|' + _reposicoesHistoricoErro
                     + '|' + JSON.stringify(typeof aulasParaRepor === 'undefined' ? [] : aulasParaRepor);
@@ -916,6 +1089,7 @@ window.renderizarListaAlunos = function() {
     }
 };
 window.prepararEdicaoAluno = function(id) {
+    if (_operacaoAluno) return;
     if (typeof alunos === 'undefined') return;
     const aluno = obterAlunoPorIdView(id);
     if (!aluno) return;
@@ -954,29 +1128,55 @@ window.prepararEdicaoAluno = function(id) {
     aplicarRegrasObjetivoNoFormulario();
     window.togglePainelCadastro(true);
 };
-window.deletarAlunoSPA = function(id) {
-    if (confirm("Excluir remove permanentemente o cadastro e os vínculos atuais de agenda. Para preservar histórico operacional, prefira inativar. Deseja realmente excluir este aluno?")) {
-        if (typeof alunos !== 'undefined') {
-            const _idxDeletar = alunos.findIndex(a => a.id === id);
-            if (_idxDeletar !== -1) alunos.splice(_idxDeletar, 1);
-            if (typeof salvarDados === 'function') salvarDados();
-            window.renderizarListaAlunos();
-            if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats();
-            if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
-            if (typeof mostrarToast === 'function') mostrarToast('Aluno removido com sucesso!');
-            return true;
+window.deletarAlunoSPA = async function(id) {
+    if (_operacaoAluno || typeof alunos === 'undefined') return false;
+    const contexto = window.contextoDados.capturar();
+    if (!window.contextoDados.atual(contexto)) return false;
+    const indice = alunos.findIndex(a => a.id === id);
+    if (indice === -1 || !confirm("Excluir remove permanentemente o cadastro e os vínculos atuais de agenda. Para preservar histórico operacional, prefira inativar. Deseja realmente excluir este aluno?")) return false;
+    const op = window.contextoDados.iniciarOperacao({ tipo: 'excluir-aluno', contexto, alvos: alvosOperacaoAluno(id), intencao: { alunoId: id, excluir: true } });
+    if (!op) { await recuperarOperacaoAluno(); return false; }
+    _operacaoAluno = op;
+    const botao = document.getElementById('btnExcluirAlunoModal');
+    if (botao) botao.disabled = true;
+    let escritaConfirmada = false;
+    try {
+        exigirOperacaoAlunoAtual(op);
+        alunos.splice(indice, 1);
+        if (!window.contextoDados.atualizarOperacao(op)) throw new Error('Não foi possível preservar a exclusão.');
+        if (typeof salvarDados !== 'function') throw new Error('Persistência indisponível.');
+        exigirPersistenciaAluno(op, await salvarDados(true, { operacao: op, contextoDados: op.contexto }));
+        escritaConfirmada = true;
+        window.renderizarListaAlunos();
+        if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats();
+        if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
+        if (typeof mostrarToast === 'function') mostrarToast('Aluno removido com sucesso!');
+        return true;
+    } catch (erro) {
+        if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+        if (window.contextoDados.operacaoAtual(op) && typeof mostrarToast === 'function') mostrarToast(escritaConfirmada ? 'Aluno excluído. Atualize apenas os dados para atualizar a tela.' : 'Exclusão não confirmada. Verifique os dados no servidor.', escritaConfirmada ? 'warning' : 'error');
+        return escritaConfirmada;
+    } finally {
+        try { await window.contextoDados.finalizarOperacao(op); }
+        finally {
+            if (window.contextoDados.atual(op.contexto) && _operacaoAluno === op) {
+                _operacaoAluno = null;
+                if (botao) botao.disabled = false;
+            }
         }
     }
-    return false;
 };
-window.excluirAlunoViaModal = function() {
+window.excluirAlunoViaModal = async function() {
+    const contexto = window.contextoDados.capturar();
     const idEdicao = document.getElementById('alunoIdEdicao').value;
     if (!idEdicao) return;
-    const excluiu = window.deletarAlunoSPA(idEdicao);
-    if (excluiu) window.togglePainelCadastro(false);
+    const excluiu = await window.deletarAlunoSPA(idEdicao);
+    if (excluiu && window.contextoDados.atual(contexto)) window.togglePainelCadastro(false);
 };
-window.alternarStatusAluno = function(id, ativoForcado) {
-    if (typeof alunos === 'undefined') return;
+window.alternarStatusAluno = async function(id, ativoForcado) {
+    if (_operacaoAluno || typeof alunos === 'undefined') return;
+    const contexto = window.contextoDados.capturar();
+    if (!window.contextoDados.atual(contexto)) return;
     const index = alunos.findIndex(a => a.id === id);
     if (index === -1) return;
 
@@ -986,12 +1186,33 @@ window.alternarStatusAluno = function(id, ativoForcado) {
         : (statusAtual === 'inativo' ? 'ativo' : 'inativo');
     if (statusAtual === proximoStatus) return;
 
-    alunos[index].status = proximoStatus;
-    if (typeof salvarDados === 'function') salvarDados();
-    window.renderizarListaAlunos();
-    if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
-    if (typeof mostrarToast === 'function') {
-        mostrarToast(proximoStatus === 'inativo' ? 'Aluno inativado com sucesso!' : 'Aluno ativado com sucesso!');
+    const op = window.contextoDados.iniciarOperacao({ tipo: 'status-aluno', contexto, alvos: alvosOperacaoAluno(id), intencao: { alunoId: id, status: proximoStatus } });
+    if (!op) { await recuperarOperacaoAluno(); return; }
+    _operacaoAluno = op;
+    const controle = document.getElementById(`alunoStatusCard-${id}`);
+    if (controle) controle.disabled = true;
+    let escritaConfirmada = false;
+    try {
+        exigirOperacaoAlunoAtual(op);
+        alunos[index].status = proximoStatus;
+        if (!window.contextoDados.atualizarOperacao(op)) throw new Error('Não foi possível preservar o status.');
+        if (typeof salvarDados !== 'function') throw new Error('Persistência indisponível.');
+        exigirPersistenciaAluno(op, await salvarDados(true, { operacao: op, contextoDados: op.contexto }));
+        escritaConfirmada = true;
+        window.renderizarListaAlunos();
+        if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
+        if (typeof mostrarToast === 'function') mostrarToast(proximoStatus === 'inativo' ? 'Aluno inativado com sucesso!' : 'Aluno ativado com sucesso!');
+    } catch (erro) {
+        if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+        if (window.contextoDados.operacaoAtual(op) && typeof mostrarToast === 'function') mostrarToast(escritaConfirmada ? 'Status salvo. Atualize apenas os dados para atualizar a tela.' : 'Status não confirmado. Verifique os dados no servidor.', escritaConfirmada ? 'warning' : 'error');
+    } finally {
+        try { await window.contextoDados.finalizarOperacao(op); }
+        finally {
+            if (window.contextoDados.atual(op.contexto) && _operacaoAluno === op) {
+                _operacaoAluno = null;
+                if (controle) controle.disabled = false;
+            }
+        }
     }
 };
 document.addEventListener('DOMContentLoaded', () => {
@@ -1026,8 +1247,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const formAluno = document.getElementById('formNovoAluno');
     if (formAluno) {
-        formAluno.addEventListener('submit', (e) => {
+        formAluno.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if (_operacaoAluno) return;
+            const contexto = window.contextoDados.capturar();
+            if (!window.contextoDados.atual(contexto)) return;
 
             const idEdicao = document.getElementById('alunoIdEdicao').value;
             const ehConsultoriaOnline = objetivoSwitchEstaAtivo();
@@ -1084,73 +1308,58 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            if (idEdicao) {
-                const index = alunos.findIndex(a => a.id === idEdicao);
-                if (index !== -1) {
-                    const alunoAntigo = { ...alunos[index] };
+            const index = idEdicao ? alunos.findIndex(a => a.id === idEdicao) : -1;
+            if (idEdicao && index === -1) return;
+            const id = idEdicao || Date.now().toString();
+            const dadosAluno = { id, nome, local, preco, telefone, observacoes, objetivo, corObjetivo, frequenciaSemanal, status, fechamentoMesCheio, diaVencimento, metodoCobranca, valorFixoCiclo };
+            const alunoAntigo = index !== -1 ? { ...alunos[index] } : null;
+            const deveSincronizarAgenda = alunoAntigo && (alunoAntigo.nome !== nome || alunoAntigo.local !== local);
+            const op = window.contextoDados.iniciarOperacao({
+                tipo: idEdicao ? 'editar-aluno' : 'criar-aluno', contexto,
+                alvos: alvosOperacaoAluno(id), intencao: { aluno: dadosAluno }
+            });
+            if (!op) { await recuperarOperacaoAluno(); return; }
+            _operacaoAluno = op;
+            const botao = document.getElementById('btnSalvarAluno');
+            if (botao) botao.disabled = true;
+            let concluida = false;
+            try {
+                exigirOperacaoAlunoAtual(op);
+                if (index !== -1) Object.assign(alunos[index], dadosAluno);
+                else alunos.push(dadosAluno);
+                if (!window.contextoDados.atualizarOperacao(op, { alvos: alvosOperacaoAluno(id), intencao: { aluno: dadosAluno } })) throw new Error('Não foi possível preservar o cadastro.');
 
-                    alunos[index].nome = nome;
-                    alunos[index].local = local;
-                    alunos[index].preco = preco;
-                    alunos[index].telefone = telefone;
-                    alunos[index].observacoes = observacoes;
-                    alunos[index].objetivo = objetivo;
-                    alunos[index].corObjetivo = corObjetivo;
-                    alunos[index].frequenciaSemanal = frequenciaSemanal;
-                    alunos[index].status = status;
-                    alunos[index].fechamentoMesCheio = fechamentoMesCheio;
-                    alunos[index].diaVencimento = diaVencimento;
-                    alunos[index].metodoCobranca = metodoCobranca;
-                    alunos[index].valorFixoCiclo = valorFixoCiclo;
-
-                    // [TAG-CASCADE-SYNC] Se nome ou local mudou, sincroniza agendamentos futuros
-                    if (alunoAntigo.nome !== nome || alunoAntigo.local !== local) {
-                        window.log.debug('[view-alunos]', 'Detectada mudança no nome ou local, acionando cascade sync...');
-                        if (typeof sincronizarAgendamentosDoAluno === 'function') {
-                            sincronizarAgendamentosDoAluno(idEdicao, {
-                                nome: nome,
-                                local: local,
-                                objetivo: objetivo
-                            });
-                        }
-                    }
-
-                    window.log.info('[aluno]', 'Aluno editado', {
-                        id: idEdicao,
-                        nome: nome,
-                        metodoCobranca: metodoCobranca || 'por_aula'
-                    });
-                    if (typeof mostrarToast === 'function') mostrarToast('Aluno atualizado com sucesso!');
+                // [TAG-CASCADE-SYNC] Preparar/persistir a agenda sob a mesma raiz antes do snapshot de salvarDados.
+                // A cascata recebe a raiz: não iniciar salvamentos concorrentes com dados antigos.
+                if (deveSincronizarAgenda) {
+                    if (typeof sincronizarAgendamentosDoAluno !== 'function') throw new Error('Sincronização dos agendamentos indisponível.');
+                    exigirOperacaoAlunoAtual(op);
+                    const resultado = await sincronizarAgendamentosDoAluno(id, { nome, local, objetivo }, { operacao: op, contextoDados: op.contexto });
+                    exigirOperacaoAlunoAtual(op);
+                    if (!window.contextoDados.atualizarOperacao(op, { alvos: alvosOperacaoAluno(id) })) throw new Error('Não foi possível preservar os agendamentos.');
+                    exigirPersistenciaAluno(op, resultado);
                 }
-            } else {
-                const novoAluno = {
-                    id: Date.now().toString(),
-                    nome: nome,
-                    local: local,
-                    preco: preco,
-                    telefone: telefone,
-                    observacoes: observacoes,
-                    objetivo: objetivo,
-                    corObjetivo: corObjetivo,
-                    frequenciaSemanal: frequenciaSemanal,
-                    status: status,
-                    fechamentoMesCheio: fechamentoMesCheio,
-                    diaVencimento: diaVencimento,
-                    metodoCobranca: metodoCobranca,
-                    valorFixoCiclo: valorFixoCiclo
-                };
-                alunos.push(novoAluno);
-                window.log.info('[aluno]', 'Aluno criado', {
-                    id: novoAluno.id,
-                    nome: novoAluno.nome,
-                    metodoCobranca: novoAluno.metodoCobranca || 'por_aula'
-                });
-                if (typeof mostrarToast === 'function') mostrarToast('Aluno cadastrado com sucesso!');
+                exigirOperacaoAlunoAtual(op);
+                if (typeof salvarDados !== 'function') throw new Error('Persistência indisponível.');
+                exigirPersistenciaAluno(op, await salvarDados(true, { operacao: op, contextoDados: op.contexto }));
+                concluida = true;
+                window.log.info('[aluno]', idEdicao ? 'Aluno editado' : 'Aluno criado', { id, nome, metodoCobranca });
+                window.renderizarListaAlunos();
+                if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats();
+                if (typeof mostrarToast === 'function') mostrarToast(idEdicao ? 'Aluno atualizado com sucesso!' : 'Aluno cadastrado com sucesso!');
+            } catch (erro) {
+                if (!concluida) window.contextoDados.marcarFalhaOperacao(op, erro);
+                if (window.contextoDados.operacaoAtual(op) && typeof mostrarToast === 'function') mostrarToast(concluida ? 'Cadastro salvo. Atualize apenas os dados para atualizar a tela.' : 'Cadastro não confirmado. A alteração foi mantida para verificar no servidor.', concluida ? 'warning' : 'error');
+            } finally {
+                try { await window.contextoDados.finalizarOperacao(op); }
+                finally {
+                    if (window.contextoDados.atual(op.contexto) && _operacaoAluno === op) {
+                        _operacaoAluno = null;
+                        if (botao) botao.disabled = false;
+                        if (concluida && !op.falha) window.togglePainelCadastro(false);
+                    }
+                }
             }
-            if (typeof salvarDados === 'function') salvarDados();
-            window.togglePainelCadastro(false); // Fecha o modal
-            window.renderizarListaAlunos(); // Atualiza a lista na tela
-            if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats(); // Atualiza contador na Home
         });
     }
 });

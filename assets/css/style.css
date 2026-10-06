@@ -1,3 +1,16 @@
+/* Recuperação local explícita: permanece visível até resolução, independente do toast. */
+.recuperacao-dados {
+  margin: 12px 0;
+  padding: 16px;
+  border: 1px solid var(--estado-aviso, #e6b85c);
+  border-radius: 12px;
+  background: #1d1d1d;
+}
+.recuperacao-dados[hidden] { display: none; }
+.recuperacao-dados h2 { margin: 0 0 8px; font-size: 1rem; }
+.recuperacao-dados p { margin: 0 0 12px; font-size: .875rem; }
+.recuperacao-dados-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+.recuperacao-dados-acoes .btn { min-height: 48px; white-space: normal; }
 /* [TAG-STYLE-OBJETIVOS] - Cores dos objetivos de treino (centralizado em CSS Custom Properties) */
 /* Etapa 3 (Cartão F, 2026-09-27): altura da barra inferior = 56px + safe area do sistema
    (Android/PWA com viewport-fit=cover). Sobrevive ao env() não suportado (0px).

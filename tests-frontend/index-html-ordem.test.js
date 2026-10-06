@@ -22,6 +22,7 @@ const DEPENDENCIAS_DE_CARGA = [
     { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/view-financas.js' },
     { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/view-alunos.js' },
     { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/settings-modal.js' },
+    { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/app/recuperacao-dados.js' },
     { antes: 'backend/shared/recurrence-helpers.js', depois: 'assets/js/calendario-engine.js' }
 ];
 

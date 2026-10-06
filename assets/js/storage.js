@@ -51,7 +51,11 @@ function _limparSyncSobreCache() {
 }
 let _cacheInicializado = false;
 let _cachePossuiDados = false;
-let _syncBancoEmAndamento = false;
+let _pedidoManualEmVoo = null;
+// Escopo de voo da leitura remota do batch completo: existe entre o primeiro fetch
+// e o fim do obterLeituraDados. O pedido manual aguarda (rótulo "Aguardando para
+// atualizar...") em vez de abrir uma segunda leitura que descartaria a primeira.
+const _leiturasRemotasEmVoo = new Set();
 let _renderDebounceTimer = null;
 let _sequenciaLeitura = 0;
 const _leiturasPreparadas = new WeakMap();
@@ -61,7 +65,7 @@ CONTEXTO_DADOS.aoInvalidar(() => {
     clearTimeout(_renderDebounceTimer);
     _cacheInicializado = false;
     _cachePossuiDados = false;
-    _syncBancoEmAndamento = false;
+    _pedidoManualEmVoo = null;
     _setEstadoBotaoSyncBanco('pronto');
     _limparSyncSobreCache();
     atualizarAlunos([]);
@@ -287,7 +291,9 @@ async function executarOperacaoRemotaComFeedback(executor, opcoes = {}) {
 }
 
 async function apiFetchBackend(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
-    const contexto = options.contextoDados || CONTEXTO_DADOS.capturar();
+    const operacao = options.operacao;
+    if (operacao && !CONTEXTO_DADOS.operacaoAtual(operacao)) throw new Error('CONTEXTO_OBSOLETO');
+    const contexto = options.contextoDados || (operacao && operacao.contexto) || CONTEXTO_DADOS.capturar();
     if (!CONTEXTO_DADOS.atual(contexto)) {
         const error = new Error('AUTH_REQUIRED');
         error.code = 'AUTH_REQUIRED';
@@ -307,9 +313,54 @@ async function apiFetchBackend(url, options = {}, timeoutMs = API_TIMEOUT_MS) {
 
     headers.set('Authorization', 'Bearer ' + idToken);
 
-    const { contextoDados: _contexto, ...opcoesFetch } = options;
-    const resposta = await fetchComTimeout(url, { ...opcoesFetch, headers }, timeoutMs);
+    const { contextoDados: _contexto, operacao: _operacao, statusEsperados = [], ...opcoesFetch } = options;
+    const etapa = operacao && options.method && options.method !== 'GET' ? { url, method: options.method, confirmada: false } : null;
+    if (etapa) CONTEXTO_DADOS.registrarEtapa(operacao, etapa);
+    const prazo = Date.now() + timeoutMs;
+    const tarefa = fetchComTimeout(url, { ...opcoesFetch, headers }, timeoutMs);
+    let resposta;
+    try {
+        resposta = await (operacao ? CONTEXTO_DADOS.acompanharTarefa(operacao, tarefa) : tarefa);
+    } catch (erro) {
+        if (etapa) CONTEXTO_DADOS.marcarFalhaOperacao(operacao, erro);
+        throw erro;
+    }
+    if (etapa) {
+        etapa.confirmada = resposta.ok || statusEsperados.includes(resposta.status);
+        etapa.status = resposta.status;
+        if (!etapa.confirmada) CONTEXTO_DADOS.marcarFalhaOperacao(operacao, new Error(`HTTP ${resposta.status}`));
+        else CONTEXTO_DADOS.atualizarOperacao(operacao);
+    }
     if (!CONTEXTO_DADOS.atual(contexto)) throw new Error('CONTEXTO_OBSOLETO');
+    return _limitarCorpoResposta(resposta, prazo, contexto, operacao);
+}
+
+function _limitarCorpoResposta(resposta, prazo, contexto, operacao) {
+    for (const metodo of ['json', 'text']) {
+        if (typeof resposta[metodo] !== 'function') continue;
+        const ler = resposta[metodo].bind(resposta);
+        resposta[metodo] = function () {
+            let timer;
+            const tarefa = Promise.race([
+                Promise.resolve().then(ler),
+                new Promise((_, reject) => {
+                    timer = setTimeout(() => {
+                        const erro = new Error('Tempo limite do corpo da resposta excedido.');
+                        erro.code = 'TIMEOUT';
+                        reject(erro);
+                    }, Math.max(0, prazo - Date.now()));
+                })
+            ]).then((dados) => {
+                if (!CONTEXTO_DADOS.atual(contexto) || (operacao && !CONTEXTO_DADOS.operacaoAtual(operacao))) throw new Error('CONTEXTO_OBSOLETO');
+                return dados;
+            }).finally(() => clearTimeout(timer));
+            return operacao ? CONTEXTO_DADOS.acompanharTarefa(operacao, tarefa) : tarefa;
+        };
+    }
+    if (typeof resposta.clone === 'function') {
+        const clonar = resposta.clone.bind(resposta);
+        resposta.clone = () => _limitarCorpoResposta(clonar(), prazo, contexto, operacao);
+    }
     return resposta;
 }
 
@@ -697,15 +748,15 @@ function _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamentoLocal, paylo
     }
 }
 
-async function _sincronizarAlunosViaCRUD(alunosLocais, timeoutMs, contexto) {
-    const requisitar = (url, opcoes = {}) => apiFetchBackend(url, { ...opcoes, contextoDados: contexto }, timeoutMs);
+async function _sincronizarAlunosViaCRUD(alunosLocais, timeoutMs, contexto, operacao) {
+    const requisitar = (url, opcoes = {}) => apiFetchBackend(url, { ...opcoes, contextoDados: contexto, operacao }, timeoutMs);
     const respostaLista = await requisitar(`${API_BASE_URL}/alunos`);
     if (!respostaLista.ok) {
         return respostaLista;
     }
 
-    const alunosRemotos = await respostaLista.json().catch(() => []);
-    const listaRemota = Array.isArray(alunosRemotos) ? alunosRemotos : [];
+    const alunosRemotos = await respostaLista.json();
+    const listaRemota = _validarListaRemota(alunosRemotos, 'alunos');
     const listaLocal = Array.isArray(alunosLocais) ? alunosLocais : [];
 
     const remotoPorId = new Map(listaRemota.map((aluno) => [aluno.id, aluno]));
@@ -746,7 +797,7 @@ async function _sincronizarAlunosViaCRUD(alunosLocais, timeoutMs, contexto) {
         if (localPorId.has(alunoRemoto.id)) continue;
 
         const resExcluir = await requisitar(`${API_BASE_URL}/alunos/${encodeURIComponent(alunoRemoto.id)}`, {
-            method: 'DELETE'
+            method: 'DELETE', statusEsperados: [404]
         }, timeoutMs);
 
         if (!resExcluir.ok && resExcluir.status !== 404) {
@@ -757,10 +808,11 @@ async function _sincronizarAlunosViaCRUD(alunosLocais, timeoutMs, contexto) {
     return _respostaVirtual(200);
 }
 
-async function _salvarConfiguracaoViaCRUD(gradeData, timeoutMs, contexto) {
+async function _salvarConfiguracaoViaCRUD(gradeData, timeoutMs, contexto, operacao) {
     return apiFetchBackend(`${API_BASE_URL}/configuracao/grade_horarios`, {
         method: 'PUT',
         contextoDados: contexto,
+        operacao,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
             chave: 'grade_horarios',
@@ -770,15 +822,15 @@ async function _salvarConfiguracaoViaCRUD(gradeData, timeoutMs, contexto) {
     }, timeoutMs);
 }
 
-async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, contexto, tentativaId) {
-    const requisitar = (url, opcoes = {}) => apiFetchBackend(url, { ...opcoes, contextoDados: contexto }, timeoutMs);
+async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, contexto, tentativaId, operacao) {
+    const requisitar = (url, opcoes = {}) => apiFetchBackend(url, { ...opcoes, contextoDados: contexto, operacao }, timeoutMs);
     const respostaLista = await requisitar(`${API_BASE_URL}/agendamentos`);
     if (!respostaLista.ok) {
         return respostaLista;
     }
 
-    const agendamentosRemotos = await respostaLista.json().catch(() => []);
-    const listaRemota = Array.isArray(agendamentosRemotos) ? agendamentosRemotos : [];
+    const agendamentosRemotos = await respostaLista.json();
+    const listaRemota = _validarListaRemota(agendamentosRemotos, 'agendamentos');
     const listaLocal = _removerCamposPendenciaGcalDaLista(Array.isArray(agendamentosLocais) ? agendamentosLocais : []);
 
     const remotoPorId = new Map(listaRemota.map((agendamento) => [agendamento.id, agendamento]));
@@ -856,7 +908,7 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
         if (localPorId.has(agendamentoRemoto.id)) continue;
 
         const resExcluir = await requisitar(`${API_BASE_URL}/agendamentos/${encodeURIComponent(agendamentoRemoto.id)}`, {
-            method: 'DELETE'
+            method: 'DELETE', statusEsperados: [404]
         }, timeoutMs);
 
         if (!resExcluir.ok && resExcluir.status !== 404) {
@@ -885,19 +937,25 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
 
 // Obtenção independente: nenhuma projeção ou cache é alterado antes da aplicação.
 async function obterLeituraDados(opcoes = {}) {
-    const contexto = CONTEXTO_DADOS.capturar();
+    const contexto = opcoes.contextoDados || (opcoes.operacao && opcoes.operacao.contexto) || CONTEXTO_DADOS.capturar();
     const sequencia = ++_sequenciaLeitura;
     const signal = opcoes.signal;
+    const interacao = CONTEXTO_DADOS.capturarInteracao();
+    const operacao = opcoes.operacao;
     if (!CONTEXTO_DADOS.atual(contexto)) return { ok: false, estado: 'adiado', motivo: 'sem-sessao' };
+    if (!CONTEXTO_DADOS.podeLer(operacao) && !(opcoes.verificacao === true && CONTEXTO_DADOS.semOperacoes())) return { ok: false, estado: 'adiado', motivo: 'interacao-em-andamento' };
     const timeout = opcoes.timeoutMs || (_primeiraRequisicao ? 40000 : API_TIMEOUT_MS);
+    const voo = { contexto };
+    _leiturasRemotasEmVoo.add(voo);
+    const tarefas = [
+        _lerRespostaDados(`${API_BASE_URL}/alunos`, contexto, timeout, signal),
+        _lerRespostaDados(`${API_BASE_URL}/agendamentos`, contexto, timeout, signal),
+        _carregarConfiguracaoGradeHorarios(timeout, contexto, signal),
+        _lerRespostaDados(`${API_BASE_URL}/bloqueios-externos`, contexto, timeout, signal),
+        _lerRespostaDados(`${API_BASE_URL}/reposicoes`, contexto, timeout, signal)
+    ];
     try {
-        const [alunosRemotos, aulasRemotas, config, bloqueiosRemotos, reposicoesRemotas] = await Promise.all([
-            _lerRespostaDados(`${API_BASE_URL}/alunos`, contexto, timeout, signal),
-            _lerRespostaDados(`${API_BASE_URL}/agendamentos`, contexto, timeout, signal),
-            _carregarConfiguracaoGradeHorarios(timeout, contexto, signal),
-            _lerRespostaDados(`${API_BASE_URL}/bloqueios-externos`, contexto, timeout, signal),
-            _lerRespostaDados(`${API_BASE_URL}/reposicoes`, contexto, timeout, signal)
-        ]);
+        const [alunosRemotos, aulasRemotas, config, bloqueiosRemotos, reposicoesRemotas] = await Promise.all(tarefas);
         if (!CONTEXTO_DADOS.atual(contexto) || sequencia !== _sequenciaLeitura) {
             return { ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' };
         }
@@ -929,7 +987,7 @@ async function obterLeituraDados(opcoes = {}) {
         };
         const snapshotPreparado = JSON.parse(JSON.stringify(snapshot));
         const resultado = Object.freeze({ ok: true, estado: 'preparado', dados: JSON.parse(JSON.stringify(snapshotPreparado)) });
-        _leiturasPreparadas.set(resultado, { contexto, sequencia, signal, snapshot: snapshotPreparado });
+        _leiturasPreparadas.set(resultado, { contexto, sequencia, signal, interacao, operacao, snapshot: snapshotPreparado });
         return resultado;
     } catch (erro) {
         if (!CONTEXTO_DADOS.atual(contexto) || sequencia !== _sequenciaLeitura) {
@@ -939,21 +997,35 @@ async function obterLeituraDados(opcoes = {}) {
             return { ok: false, estado: 'descartado', motivo: 'cancelado' };
         }
         return { ok: false, estado: 'falha', motivo: erro.message === 'AUTH_REQUIRED' ? 'sessao-expirada' : 'falha-leitura', erro: erro.message };
+    } finally {
+        await Promise.allSettled(tarefas);
+        _leiturasRemotasEmVoo.delete(voo);
+        // O pedido manual bloqueado por este voo precisa ser reavaliado quando ele
+        // terminar; sem isso o clique ficaria em "Aguardando para atualizar..." sem
+        // nenhum evento capaz de acordá-lo.
+        if (_pedidoLeituraManual) setTimeout(_processarLeituraManual, 0);
     }
 }
 
-function aplicarLeituraDados(leitura) {
+function aplicarLeituraDados(leitura, recuperacao) {
     const preparada = _leiturasPreparadas.get(leitura);
     if (!preparada) return { ok: false, estado: 'descartado', motivo: 'leitura-invalida' };
-    const { contexto, sequencia, signal, snapshot } = preparada;
+    const { contexto, sequencia, signal, interacao, operacao, snapshot } = preparada;
     if (!CONTEXTO_DADOS.atual(contexto) || sequencia !== _sequenciaLeitura) {
         return { ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' };
     }
     if (signal && signal.aborted) return { ok: false, estado: 'descartado', motivo: 'cancelado' };
-    if (CONTEXTO_DADOS.obterPendencia(contexto)) {
+    if (!CONTEXTO_DADOS.podeAplicarInteracao(interacao, operacao)) return { ok: false, estado: 'descartado', motivo: 'interacao-alterada' };
+    const pendencia = CONTEXTO_DADOS.obterPendencia(contexto);
+    const recuperacaoValida = recuperacao && pendencia && pendencia.tentativaId === recuperacao.tentativaId;
+    if (pendencia && !recuperacaoValida && (!operacao || pendencia.tentativaId !== operacao.id || operacao.falha)) {
         return { ok: false, estado: 'adiado', motivo: 'pendencia-local' };
     }
+    if (recuperacaoValida && !CONTEXTO_DADOS.salvarPrincipal(snapshot, contexto)) {
+        return { ok: false, estado: 'falha', motivo: 'cache-indisponivel' };
+    }
     _leiturasPreparadas.delete(leitura);
+    if (recuperacaoValida) CONTEXTO_DADOS.invalidarLeiturasAnteriores();
     atualizarAlunos(snapshot.alunos);
     atualizarAulas(snapshot.aulas);
     atualizarReposicoes(snapshot.reposicoes);
@@ -963,7 +1035,8 @@ function aplicarLeituraDados(leitura) {
         agendaConfig.horaFim = parseInt(snapshot.grade.fim.split(':')[0], 10);
     }
     window.faturamentoMeta = snapshot.meta;
-    const cachePersistido = CONTEXTO_DADOS.salvarPrincipal(snapshot, contexto);
+    const cachePersistido = recuperacaoValida || CONTEXTO_DADOS.salvarPrincipal(snapshot, contexto);
+    if (recuperacaoValida && !CONTEXTO_DADOS.abandonarPendencia(pendencia.tentativaId, contexto)) return { ok: false, estado: 'falha', motivo: 'pendencia-nao-removida' };
     _cacheInicializado = true;
     _cachePossuiDados = true; // Inclusive snapshot remoto válido vazio.
     _primeiraRequisicao = false;
@@ -979,7 +1052,7 @@ async function carregarDados(opcoes = {}) {
     const forcarRemoto = opcoes.forcarRemoto === true;
     const silenciosoUI = opcoes.silenciosoUI === true;
 
-    if (CONTEXTO_DADOS.obterPendencia(contexto)) {
+    if (CONTEXTO_DADOS.obterPendencia(contexto) && !opcoes.operacao) {
         if (!_cacheInicializado) {
             carregarDadosDoLocalStorage();
             _cacheInicializado = true;
@@ -993,7 +1066,7 @@ async function carregarDados(opcoes = {}) {
         _cacheInicializado = true;
         _cachePossuiDados = resultadoLocal.temDados;
 
-        if (_cachePossuiDados && !forcarRemoto) {
+        if (_cachePossuiDados && !forcarRemoto && !opcoes.operacao) {
             window.log.info('[storage]', 'Cache local carregado instantaneamente. Sem chamada inicial à API.');
             if (typeof window.preencherFiltrosAlunos === 'function') {
                 window.preencherFiltrosAlunos();
@@ -1003,7 +1076,7 @@ async function carregarDados(opcoes = {}) {
             }
             return { ok: true, estado: 'local', origem: 'local-cache' };
         }
-    } else if (_cachePossuiDados && !forcarRemoto) {
+    } else if (_cachePossuiDados && !forcarRemoto && !opcoes.operacao) {
         if (typeof window.preencherFiltrosAlunos === 'function') {
             window.preencherFiltrosAlunos();
         }
@@ -1083,8 +1156,10 @@ async function carregarDados(opcoes = {}) {
     }
 
 }
-async function salvarDados(silencioso = false) {
-    const contexto = CONTEXTO_DADOS.capturar();
+async function salvarDados(silencioso = false, opcoes = {}) {
+    const propria = !opcoes.operacao;
+    const operacao = opcoes.operacao || CONTEXTO_DADOS.iniciarOperacao({ tipo: 'dados', contexto: opcoes.contextoDados });
+    const contexto = operacao ? operacao.contexto : CONTEXTO_DADOS.capturar();
 
     if (!usuarioAutenticadoNoApp()) {
         if (!silencioso) {
@@ -1092,10 +1167,18 @@ async function salvarDados(silencioso = false) {
         }
         return { ok: false, motivo: 'nao_autenticado' };
     }
+    if (!operacao) {
+        if (typeof window.abrirRecuperacaoDados === 'function') window.abrirRecuperacaoDados();
+        return { ok: false, motivo: 'falha_remota' };
+    }
 
     const snapshot = capturarSnapshotLocal();
-    const tentativaId = CONTEXTO_DADOS.iniciarPendencia(snapshot, contexto);
-    if (!tentativaId) return { ok: false, motivo: 'falha_remota' };
+    const tentativaId = operacao.id;
+    if (!CONTEXTO_DADOS.atualizarOperacao(operacao)) {
+        CONTEXTO_DADOS.marcarFalhaOperacao(operacao, new Error('Pendência não preservada'));
+        if (propria) await CONTEXTO_DADOS.finalizarOperacao(operacao);
+        return { ok: false, motivo: 'falha_remota' };
+    }
     salvarNoLocalStorage(contexto);
 
     try {
@@ -1106,16 +1189,18 @@ async function salvarDados(silencioso = false) {
         // não entram no CRUD de `agendamentos`.
         const aulasData = snapshot.aulas.filter(a => a.source !== 'google_external');
         const gradeData = snapshot.grade;
-        const onRetry = () => CONTEXTO_DADOS.atual(contexto) ? salvarDados(silencioso) : null;
         const timeoutAtual = _primeiraRequisicao ? 40000 : API_TIMEOUT_MS;
 
         const [resAlunos, resAgendamentos, resConfig] = await executarOperacaoRemotaComFeedback(async () => {
-            return Promise.all([
-                _sincronizarAlunosViaCRUD(alunosData, timeoutAtual, contexto),
-                _sincronizarAgendamentosViaCRUD(aulasData, timeoutAtual, contexto, tentativaId),
-                _salvarConfiguracaoViaCRUD(gradeData, timeoutAtual, contexto)
+            const resultados = await Promise.allSettled([
+                _sincronizarAlunosViaCRUD(alunosData, timeoutAtual, contexto, operacao),
+                _sincronizarAgendamentosViaCRUD(aulasData, timeoutAtual, contexto, tentativaId, operacao),
+                _salvarConfiguracaoViaCRUD(gradeData, timeoutAtual, contexto, operacao)
             ]);
-        }, { contexto: 'syncDados', onRetry, exibirFalha: true });
+            const falhou = resultados.find((r) => r.status === 'rejected');
+            if (falhou) throw falhou.reason;
+            return resultados.map((r) => r.value);
+        }, { contexto: 'syncDados', exibirFalha: false, silenciosoUI: silencioso });
 
         if (!CONTEXTO_DADOS.atual(contexto)) return { ok: false, motivo: 'sessao_expirada' };
 
@@ -1157,7 +1242,7 @@ async function salvarDados(silencioso = false) {
             const local = aulasAtuais.find((aula) => aula.id === enviada.id);
             if (local && enviada.googleCalendarEventId) local.googleCalendarEventId = enviada.googleCalendarEventId;
         });
-        CONTEXTO_DADOS.confirmarPendencia(tentativaId, contexto, snapshot);
+        // Só o scope raiz confirma a tentativa completa; um salvar interno não libera a proteção.
         _cachePossuiDados = _cacheTemDados(obterAlunos(), obterAulas());
         window.log.info('[storage]', 'Alterações sincronizadas com o banco remoto!');
 
@@ -1175,6 +1260,7 @@ async function salvarDados(silencioso = false) {
         return { ok: true, motivo: 'sucesso' };
 
     } catch (error) {
+        CONTEXTO_DADOS.marcarFalhaOperacao(operacao, error);
         if (!CONTEXTO_DADOS.atual(contexto)) return { ok: false, motivo: 'sessao_expirada' };
         if (error && error.message === 'AUTH_REQUIRED') {
             if (!silencioso) {
@@ -1187,6 +1273,8 @@ async function salvarDados(silencioso = false) {
             mostrarToast('Erro de conexão. Salvo temporariamente no aparelho.', 'error');
         }
         return { ok: false, motivo: 'falha_remota' };
+    } finally {
+        if (propria) await CONTEXTO_DADOS.finalizarOperacao(operacao);
     }
 }
 
@@ -1239,13 +1327,18 @@ function forçarRenderizacaoInterface() {
     }, 0);
 }
 
-async function atualizarViewAtualAposSync() {
-    if (window.__appShell && window.__appShell.router && typeof window.__appShell.router.refreshCurrentView === 'function') {
-        await window.__appShell.router.refreshCurrentView();
-        return;
+async function atualizarViewAtualAposSync(contexto) {
+    const router = window.__appShell && window.__appShell.router;
+    const tela = router && router.getCurrentViewId ? router.getCurrentViewId() : null;
+    if (tela === 'tela-alunos' && window.atualizarAlunosAposRecuperacao) return await window.atualizarAlunosAposRecuperacao({ contextoDados: contexto });
+    else if (tela === 'tela-alunos' && window.renderizarListaAlunos) window.renderizarListaAlunos();
+    else if (tela === 'tela-financas' && window.atualizarFinancasAposRecuperacao) return await window.atualizarFinancasAposRecuperacao({}, { contextoDados: contexto });
+    else if (tela === 'tela-home') {
+        if (window.atualizarDashboardStats) window.atualizarDashboardStats();
+        if (window.modoHomeAtivo === 'dia' && window.renderizarHomeDia) window.renderizarHomeDia();
+        else if (window.renderizarHomeSemana) window.renderizarHomeSemana();
     }
-
-    forçarRenderizacaoInterface();
+    return true;
 }
 
 window.apiFetchBackend = apiFetchBackend;
@@ -1253,40 +1346,90 @@ window.executarOperacaoRemotaComFeedback = executarOperacaoRemotaComFeedback;
 window.carregarDadosDoLocalStorage = carregarDadosDoLocalStorage;
 window.temDadosLocaisNoCache = temDadosLocaisNoCache;
 
-window.sincronizarBancoDados = async function (opcoes = {}) {
-    const contexto = CONTEXTO_DADOS.capturar();
-    if (_syncBancoEmAndamento) {
+let _pedidoLeituraManual = null;
+function _processarLeituraManual() {
+    const pedido = _pedidoLeituraManual;
+    if (!pedido) return;
+    if (!CONTEXTO_DADOS.atual(pedido.contexto)) {
+        _pedidoLeituraManual = null;
+        pedido.resolver({ ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' });
         return;
     }
+    if (pedido.executando) return;
+    if (!CONTEXTO_DADOS.semOperacoes()) return;
+    if (CONTEXTO_DADOS.obterPendencia(pedido.contexto)) {
+        _pedidoLeituraManual = null;
+        _setEstadoBotaoSyncBanco('pronto');
+        if (window.abrirRecuperacaoDados) window.abrirRecuperacaoDados();
+        pedido.resolver({ ok: false, estado: 'adiado', motivo: 'pendencia-local' });
+        return;
+    }
+    if (!CONTEXTO_DADOS.podeLer() || _pedidoManualEmVoo || Array.from(_leiturasRemotasEmVoo).some((voo) => CONTEXTO_DADOS.atual(voo.contexto))) return;
+    pedido.executando = true;
+    _pedidoManualEmVoo = pedido;
+    _setEstadoBotaoSyncBanco('sincronizando');
+    (async () => {
+        let resultado;
+        try {
+            resultado = await carregarDados({ ...pedido.opcoes, forcarRender: false, forcarRemoto: true, silenciosoUI: true });
+            if (!CONTEXTO_DADOS.atual(pedido.contexto)) return;
+            if (resultado.estado === 'aplicado') {
+                const complementos = await atualizarViewAtualAposSync(pedido.contexto);
+                if (complementos === false || (complementos && complementos.ok === false)) resultado = { ...resultado, complementoPendente: true };
+                if (CONTEXTO_DADOS.atual(pedido.contexto) && typeof mostrarToast === 'function') {
+                    mostrarToast(resultado.complementoPendente ? 'Dados principais atualizados, mas a leitura complementar falhou. Atualize apenas os dados.' : 'Dados atualizados.', resultado.complementoPendente ? 'warning' : 'success');
+                }
+            } else if (resultado.motivo === 'pendencia-local' && window.abrirRecuperacaoDados) {
+                window.abrirRecuperacaoDados();
+            } else if (resultado.estado === 'descartado' || resultado.estado === 'adiado') {
+                // Interação nova ou leitura concorrente: adiar sem aplicar snapshot antigo e
+                // tentar de novo quando a interação liberar. Conta trocada e sessão ausente
+                // resolvem como estão (sem erro de rede e sem laço de retry).
+                const motivoAdiavel = resultado.motivo === 'interacao-alterada'
+                    || resultado.motivo === 'interacao-em-andamento'
+                    || resultado.motivo === 'contexto-obsoleto';
+                if (CONTEXTO_DADOS.atual(pedido.contexto) && motivoAdiavel) pedido.executando = false;
+            } else if (typeof mostrarOverlayErroConexao === 'function') {
+                mostrarOverlayErroConexao('Não foi possível atualizar os dados.', { onRetry: () => window.sincronizarBancoDados(pedido.opcoes) });
+            }
+        } catch (erro) {
+            resultado = { ok: false, estado: 'falha', motivo: 'falha-leitura' };
+        } finally {
+            if (_pedidoManualEmVoo === pedido) _pedidoManualEmVoo = null;
+            if (pedido.executando || !CONTEXTO_DADOS.atual(pedido.contexto)) {
+                if (_pedidoLeituraManual === pedido) _pedidoLeituraManual = null;
+                pedido.resolver(resultado || { ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' });
+            }
+            if (CONTEXTO_DADOS.atual(pedido.contexto)) {
+                if (!pedido.executando && _pedidoLeituraManual === pedido) {
+                    const label = document.getElementById('btnSyncBancoText');
+                    if (label) label.textContent = 'Aguardando para atualizar...';
+                } else _setEstadoBotaoSyncBanco('pronto');
+            }
+            if (!pedido.executando && _pedidoLeituraManual === pedido && CONTEXTO_DADOS.podeLer()) Promise.resolve().then(_processarLeituraManual);
+        }
+    })();
+}
+CONTEXTO_DADOS.aoMudarInteracao(() => Promise.resolve().then(_processarLeituraManual));
+CONTEXTO_DADOS.aoInvalidar(() => Promise.resolve().then(_processarLeituraManual));
 
+window.sincronizarBancoDados = function (opcoes = {}) {
+    const contexto = CONTEXTO_DADOS.capturar();
     if (!usuarioAutenticadoNoApp()) {
         notificarLoginObrigatorio('Faça login com Google antes de sincronizar o banco.');
-        return;
+        return Promise.resolve({ ok: false, estado: 'adiado', motivo: 'sem-sessao' });
     }
-
-    _syncBancoEmAndamento = true;
-    _setEstadoBotaoSyncBanco('sincronizando');
-
-    try {
-        await carregarDados({
-            ...opcoes,
-            forcarRender: false,
-            forcarRemoto: true,
-            silenciosoUI: true
-        });
-        if (!CONTEXTO_DADOS.atual(contexto)) return;
-        await atualizarViewAtualAposSync();
-        if (!CONTEXTO_DADOS.atual(contexto)) return;
-
-        if (typeof mostrarToast === 'function') {
-            mostrarToast('Dados sincronizados com sucesso!', 'success');
-        }
-    } catch (error) {
-        if (!CONTEXTO_DADOS.atual(contexto)) return;
-        window.log.error('[storage]', 'Erro na sincronização manual do banco:', error);
-    } finally {
-        if (!CONTEXTO_DADOS.atual(contexto)) return;
-        _syncBancoEmAndamento = false;
-        _setEstadoBotaoSyncBanco('pronto');
+    if (_pedidoLeituraManual && !CONTEXTO_DADOS.atual(_pedidoLeituraManual.contexto)) {
+        const antigo = _pedidoLeituraManual;
+        _pedidoLeituraManual = null;
+        antigo.resolver({ ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' });
     }
+    if (_pedidoLeituraManual) return _pedidoLeituraManual.promise;
+    let resolver;
+    const promise = new Promise((resolve) => { resolver = resolve; });
+    _pedidoLeituraManual = { contexto, opcoes, promise, resolver, executando: false };
+    const label = document.getElementById('btnSyncBancoText');
+    if (label) label.textContent = 'Aguardando para atualizar...';
+    _processarLeituraManual();
+    return promise;
 };
