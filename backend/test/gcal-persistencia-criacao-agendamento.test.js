@@ -142,6 +142,9 @@ function carregarHarnessModalAgendamento({ aulas = [], alunos = [{ id: 'aluno-1'
 
   context.window = context;
   context.globalThis = context;
+  context.addEventListener = () => {};
+  context.localStorage = { getItem: () => null, removeItem: () => {}, setItem: () => {} };
+  context.googleIdentity = { getOwnerEmail: () => 'teste@example.com', getIdToken: () => 'token-de-teste' };
 
   const carregar = (relativo) => {
     const scriptPath = path.resolve(__dirname, relativo);
@@ -149,6 +152,8 @@ function carregarHarnessModalAgendamento({ aulas = [], alunos = [{ id: 'aluno-1'
   };
 
   carregar('../shared/reposicao-flow-helpers.js');
+  carregar('../../assets/js/app/contexto-dados.js');
+  context.contextoDados.capturar();
   carregar('../../assets/js/features/modals/scheduling-flow-state.js');
   carregar('../../assets/js/features/modals/scheduling-serializer.js');
   carregar('../../assets/js/modal-agendamento.js');

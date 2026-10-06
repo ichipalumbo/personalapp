@@ -37,6 +37,7 @@ function criarAmbiente({ comCache }) {
     { runScripts: 'outside-only', url: 'http://localhost' },
   );
   const { window } = dom;
+  require('./setup/contexto-dados')(dom);
 
   // Obrigatório no topo do storage.js (validação de config + ping fire-and-forget).
   window.APP_API_CONFIG = { apiBaseUrl: 'http://api.test', apiRootUrl: 'http://api.test' };
@@ -47,12 +48,13 @@ function criarAmbiente({ comCache }) {
   window.googleIdentity = {
     isSignedIn: () => true,
     getIdToken: () => 'token-de-teste',
+    getOwnerEmail: () => 'teste@example.com',
   };
 
   // Respostas por rota; latência controlada para segurar o sync no ar.
   let latenciaMs = 0;
   let modoFalha = false;
-  const corpoAlunos = [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer' }];
+  const corpoAlunos = [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer', corObjetivo: { nome: 'Tangerina', hex: '#FF887C' } }];
   window.fetch = async (url) => {
     const caminho = String(url).replace(/^https?:\/\/[^/]+/, '');
     if (latenciaMs > 0) await esperar(latenciaMs);
@@ -78,6 +80,7 @@ function criarAmbiente({ comCache }) {
 
   // Estado do app "aberto com cache local" (o que o boot deixou em localStorage).
   if (comCache) {
+    window.localStorage.setItem('personal_cache_dono', 'teste@example.com');
     window.localStorage.setItem('personal_alunos', JSON.stringify(corpoAlunos));
     window.localStorage.setItem('personal_aulas', JSON.stringify([{ id: 'aula-1', alunoId: 'aluno-1', tipo: 'aula' }]));
     window.localStorage.setItem('personal_reposicoes', '[]');

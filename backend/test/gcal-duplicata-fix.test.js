@@ -148,11 +148,18 @@ function carregarStorageHarness() {
       removeItem: (key) => store.delete(key)
     },
     document: {
-      getElementById: () => null
+      getElementById: () => null,
+      querySelectorAll: () => [],
+      addEventListener: () => {}
     }
   };
 
   context.window = context;
+  context.addEventListener = () => {};
+  context.googleIdentity = { getOwnerEmail: () => 'teste@example.com', getIdToken: () => 'token-de-teste' };
+  const contextoDadosPath = path.resolve(__dirname, '../../assets/js/app/contexto-dados.js');
+  vm.runInNewContext(fs.readFileSync(contextoDadosPath, 'utf8'), context, { filename: contextoDadosPath });
+  context.contextoDados.capturar();
   context.APP_API_CONFIG = {
     apiBaseUrl: 'https://api.example.com',
     apiRootUrl: 'https://api.example.com'
@@ -401,6 +408,11 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   };
 
   context.window = context;
+  context.addEventListener = () => {};
+  context.googleIdentity = { getOwnerEmail: () => 'teste@example.com', getIdToken: () => 'token-de-teste' };
+  const contextoDadosPath = path.resolve(__dirname, '../../assets/js/app/contexto-dados.js');
+  vm.runInNewContext(fs.readFileSync(contextoDadosPath, 'utf8'), context, { filename: contextoDadosPath });
+  context.contextoDados.capturar();
   context.APP_API_CONFIG = {
     apiBaseUrl: 'https://api.example.com',
     apiRootUrl: 'https://api.example.com'
@@ -1111,7 +1123,8 @@ test('storage remove gcalSyncPendingAt da carga remota para evitar deadlock no e
 
   context.window.googleIdentity = {
     isSignedIn: () => true,
-    getIdToken: () => 'token-test'
+    getIdToken: () => 'token-test',
+    getOwnerEmail: () => 'teste@example.com'
   };
   context.apiFetchBackend = async (url, options = {}) => {
     const method = options.method || 'GET';

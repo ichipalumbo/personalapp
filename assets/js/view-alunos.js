@@ -220,6 +220,25 @@ let _historicoReposicoesModal = {
 };
 let _edicaoCobrancaReposicao = null;
 
+if (!window.contextoDados) throw new Error('contexto-dados.js precisa carregar antes de view-alunos.js.');
+window.contextoDados.aoInvalidar(() => {
+    _resumoFinanceiroPorAluno = {};
+    _consistenciaAgendaPorAluno = {};
+    _reposicoesHistorico = null;
+    _reposicoesHistoricoErro = false;
+    const botaoCobranca = document.getElementById('btnSalvarEdicaoCobrancaReposicao');
+    if (botaoCobranca) botaoCobranca.disabled = false;
+    window._retornoHistoricoReposicoes = null;
+    window.fecharEdicaoCobrancaReposicao();
+    window.fecharHistoricoReposicoes();
+    window.togglePainelCadastro(false);
+    window.invalidarChaveRenderAlunos();
+    ['listaAlunos', 'conteudoHistoricoReposicoes', 'resumoHistoricoReposicoes', 'descricaoEdicaoCobrancaReposicao'].forEach((id) => {
+        const elemento = document.getElementById(id);
+        if (elemento) elemento.replaceChildren();
+    });
+});
+
 // Caixinha só de alerta: resumo de valor/status do ciclo saiu por ser redundante
 // com o card do aluno na tela de Finanças (Etapa 4, Cartão A).
 function montarCaixinhaFinanceiraAluno(aluno, objetivo) {
@@ -452,11 +471,13 @@ function renderizarHistoricoReposicoes() {
 }
 
 async function carregarHistoricoReposicoesAluno(alunoId) {
+    const contexto = window.contextoDados.capturar();
     const base = window.APP_API_CONFIG && window.APP_API_CONFIG.apiBaseUrl;
     if (typeof window.apiFetchBackend !== 'function' || !base) throw new Error('API indisponível.');
     const resposta = await window.apiFetchBackend(`${base}/reposicoes?alunoId=${encodeURIComponent(alunoId)}`);
     if (!resposta.ok) throw new Error('Falha ao carregar reposições.');
     const dados = await resposta.json();
+    if (!window.contextoDados.atual(contexto)) throw new Error('CONTEXTO_OBSOLETO');
     const lista = Array.isArray(dados) ? dados : [];
     const anteriores = Array.isArray(_reposicoesHistorico)
         ? _reposicoesHistorico.filter((reposicao) => reposicao && reposicao.alunoId !== alunoId)
@@ -469,6 +490,8 @@ async function carregarHistoricoReposicoesAluno(alunoId) {
 }
 
 window.abrirHistoricoReposicoes = async function(alunoId, origem) {
+    const contexto = window.contextoDados.capturar();
+    if (!window.contextoDados.atual(contexto)) return;
     const modal = document.getElementById('modalHistoricoReposicoes');
     if (!modal) return;
     _historicoReposicoesModal = {
@@ -489,14 +512,19 @@ window.abrirHistoricoReposicoes = async function(alunoId, origem) {
         modal.focus({ preventScroll: true });
     }
     renderizarHistoricoReposicoes();
+    const estadoModal = _historicoReposicoesModal;
     try {
-        _historicoReposicoesModal.dados = await carregarHistoricoReposicoesAluno(alunoId);
+        const dados = await carregarHistoricoReposicoesAluno(alunoId);
+        if (!window.contextoDados.atual(contexto) || estadoModal !== _historicoReposicoesModal) return;
+        estadoModal.dados = dados;
     } catch (_) {
+        if (!window.contextoDados.atual(contexto) || estadoModal !== _historicoReposicoesModal) return;
         _historicoReposicoesModal.dados = Array.isArray(_reposicoesHistorico)
             ? _reposicoesHistorico.filter((reposicao) => reposicao && reposicao.alunoId === alunoId)
             : [];
         _historicoReposicoesModal.erro = true;
     } finally {
+        if (!window.contextoDados.atual(contexto) || estadoModal !== _historicoReposicoesModal) return;
         _historicoReposicoesModal.carregando = false;
         renderizarHistoricoReposicoes();
     }
@@ -520,10 +548,12 @@ window.iniciarReagendamentoReposicaoDoHistorico = function(reposicaoId) {
 };
 
 window.finalizarRetornoHistoricoReposicoes = async function(resultado) {
+    const contexto = window.contextoDados.capturar();
     const retorno = window._retornoHistoricoReposicoes;
     window._retornoHistoricoReposicoes = null;
     if (!retorno) return;
     await window.abrirHistoricoReposicoes(retorno.alunoId, retorno.origem);
+    if (!window.contextoDados.atual(contexto)) return;
     if (resultado && resultado.status === 'sucesso' && typeof window.mostrarToast === 'function') {
         window.mostrarToast('Histórico de reposições atualizado.');
     }
@@ -577,6 +607,8 @@ window.fecharEdicaoCobrancaReposicao = function() {
 };
 
 window.salvarEdicaoCobrancaReposicao = async function() {
+    const conta = window.contextoDados.capturar();
+    if (!window.contextoDados.atual(conta)) return;
     const contexto = _edicaoCobrancaReposicao;
     const seletor = document.getElementById('seletorCobrancaReposicao');
     if (!contexto || !seletor) return;
@@ -604,6 +636,7 @@ window.salvarEdicaoCobrancaReposicao = async function() {
             throw new Error(erro.error || 'Não foi possível alterar a cobrança.');
         }
         const atualizado = await resposta.json();
+        if (!window.contextoDados.atual(conta)) return;
         if (Array.isArray(_reposicoesHistorico)) {
             const indice = _reposicoesHistorico.findIndex((item) => item && item.id === contexto.reposicaoId);
             if (indice !== -1) _reposicoesHistorico[indice] = atualizado;
@@ -614,16 +647,22 @@ window.salvarEdicaoCobrancaReposicao = async function() {
         renderizarHistoricoReposicoes();
         if (typeof window.mostrarToast === 'function') window.mostrarToast('Cobrança da reposição atualizada.');
     } catch (erro) {
+        if (!window.contextoDados.atual(conta)) return;
         if (typeof window.mostrarToast === 'function') window.mostrarToast('Não foi possível atualizar a cobrança. Tente novamente.', 'error');
     } finally {
+        if (!window.contextoDados.atual(conta)) return;
         if (botao) botao.disabled = false;
     }
 };
 
 async function carregarDadosComplementaresAlunos() {
+    const contexto = window.contextoDados.capturar();
+    if (!window.contextoDados.atual(contexto)) return;
     if (typeof window.garantirDadosFinancas === 'function') {
         try {
-            _resumoFinanceiroPorAluno = await window.garantirDadosFinancas() || {};
+            const resumo = await window.garantirDadosFinancas() || {};
+            if (!window.contextoDados.atual(contexto)) return;
+            _resumoFinanceiroPorAluno = resumo;
         } catch (_) { /* card do aluno segue sem o bloco financeiro */ }
     }
 
@@ -633,9 +672,11 @@ async function carregarDadosComplementaresAlunos() {
             const resposta = await window.apiFetchBackend(`${base}/reposicoes`);
             if (!resposta.ok) throw new Error('Falha ao carregar reposições.');
             const dados = await resposta.json();
+            if (!window.contextoDados.atual(contexto)) return;
             _reposicoesHistorico = Array.isArray(dados) ? dados : [];
             _reposicoesHistoricoErro = false;
         } catch (_) {
+            if (!window.contextoDados.atual(contexto)) return;
             _reposicoesHistorico = [];
             _reposicoesHistoricoErro = true;
         }
@@ -645,6 +686,7 @@ async function carregarDadosComplementaresAlunos() {
             const resposta = await window.apiFetchBackend(`${base}/alunos/consistencia-agenda`);
             if (resposta.ok) {
                 const dados = await resposta.json();
+                if (!window.contextoDados.atual(contexto)) return;
                 _consistenciaAgendaPorAluno = {};
                 (Array.isArray(dados) ? dados : []).forEach((item) => {
                     if (item && item.alunoId) _consistenciaAgendaPorAluno[item.alunoId] = item;
@@ -654,16 +696,19 @@ async function carregarDadosComplementaresAlunos() {
     }
 
     window.invalidarChaveRenderAlunos();
+    if (!window.contextoDados.atual(contexto)) return;
     window.renderizarListaAlunos();
 }
 
 window.inicializarPaginaCadastro = async function(opcoes = {}) {
+    const contexto = window.contextoDados.capturar();
     const deveSincronizar = opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
     if (deveSincronizar && typeof carregarDados === 'function') {
         await carregarDados({
             forcarRender: false,
             forcarRemoto: opcoes.sincronizar === true
         });
+        if (!window.contextoDados.atual(contexto)) return;
         window.__sincronizacaoInicialConcluida = true;
     }
     window.renderizarListaAlunos();
@@ -758,6 +803,7 @@ window.abrirCadastroParaNovo = function() {
     window.togglePainelCadastro(true);
 };
 window.renderizarListaAlunos = function() {
+    if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
     const listaContainer = document.getElementById('listaAlunos');
 
     if (!listaContainer) return;

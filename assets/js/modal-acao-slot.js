@@ -17,6 +17,21 @@ window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
 
 let _submissaoEdicaoEmAndamento = false;
 
+if (window.contextoDados) window.contextoDados.aoInvalidar(() => {
+  window.idCompromissoSelecionado = '';
+  window._retornoHistoricoReposicoes = null;
+  window._reagendamentoFluxoConcluido = false;
+  window.reposicaoIdEmReagendamento = null;
+  _submissaoEdicaoEmAndamento = false;
+  atualizarEstadoSubmitEdicao(false);
+  if (typeof resolveEscolhaCobrancaReposicao === 'function') {
+    const resolver = resolveEscolhaCobrancaReposicao;
+    resolveEscolhaCobrancaReposicao = null;
+    resolver();
+  }
+  document.querySelectorAll('[data-reposicao-cobravel]').forEach((botao) => { botao.onclick = null; });
+});
+
 function obterBotaoSubmitEdicao() {
   return document.querySelector('#formEditarCompromisso button[type="submit"]');
 }
@@ -1110,6 +1125,7 @@ window.abrirModalEscolhaCobrancaReposicao = function (
   callback,
   opcoes = {},
 ) {
+  const contexto = window.contextoDados ? window.contextoDados.capturar() : null;
   return new Promise((resolve) => {
     const finalizar = () => {
       if (typeof resolve === "function") {
@@ -1164,6 +1180,7 @@ window.abrirModalEscolhaCobrancaReposicao = function (
     }
     opcaoButtons.forEach((botao) => {
       botao.onclick = async () => {
+        if (contexto && !window.contextoDados.atual(contexto)) return;
         const cobravel = botao.dataset.reposicaoCobravel === "true";
         if (window.DialogController && typeof window.DialogController.close === "function") {
           window.DialogController.close(modal);
@@ -1408,6 +1425,8 @@ window.fecharReagendarAulaModal = function () {
 };
 
 window.executarExclusaoInstancia = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const compromisso = window.obterCompromissoSelecionado
     ? window.obterCompromissoSelecionado()
     : null;
@@ -1476,11 +1495,14 @@ window.executarExclusaoInstancia = async function () {
       }
     }
 
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof window.inicializarHome === "function") {
       await window.inicializarHome({ sincronizar: true });
     }
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
   } catch (erro) {
+    if (!window.contextoDados.atual(contextoConta)) return;
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1495,6 +1517,8 @@ window.executarExclusaoInstancia = async function () {
 };
 
 window.executarExclusaoSerie = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const _serieDeletar = window.obterCompromissoSelecionado
     ? window.obterCompromissoSelecionado()
     : null;
@@ -1582,12 +1606,15 @@ window.executarExclusaoSerie = async function () {
       }
     }
 
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof window.inicializarHome === "function") {
       await window.inicializarHome({ sincronizar: true });
     }
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof mostrarToast === "function")
       mostrarToast("Série excluída — todas as ocorrências.");
   } catch (erro) {
+    if (!window.contextoDados.atual(contextoConta)) return;
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1602,6 +1629,8 @@ window.executarExclusaoSerie = async function () {
 };
 
 window.executarExclusaoAulaAvulsa = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const _compDeletar = window.obterCompromissoSelecionado
     ? window.obterCompromissoSelecionado()
     : null;
@@ -1659,11 +1688,14 @@ window.executarExclusaoAulaAvulsa = async function () {
       }
     }
 
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof window.inicializarHome === "function") {
       await window.inicializarHome({ sincronizar: true });
     }
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
   } catch (erro) {
+    if (!window.contextoDados.atual(contextoConta)) return;
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1678,6 +1710,8 @@ window.executarExclusaoAulaAvulsa = async function () {
 };
 
 window.executarExclusaoSerieAPartirDe = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const compromisso =
     window.obterCompromissoSelecionado
       ? window.obterCompromissoSelecionado()
@@ -1714,13 +1748,16 @@ window.executarExclusaoSerieAPartirDe = async function () {
       throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
     }
 
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof window.inicializarHome === "function") {
       await window.inicializarHome({ sincronizar: true });
     }
+    if (!window.contextoDados.atual(contextoConta)) return;
     if (typeof mostrarToast === "function") {
       mostrarToast("Exclusão aplicada a partir de " + dataAlvo + ".");
     }
   } catch (erro) {
+    if (!window.contextoDados.atual(contextoConta)) return;
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1870,6 +1907,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (formReagendarAula) {
     formReagendarAula.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const contextoConta = window.contextoDados.capturar();
+      if (!window.contextoDados.atual(contextoConta)) return;
 
       let alunoId = "";
       let repObj = null;
@@ -1970,6 +2009,7 @@ document.addEventListener("DOMContentLoaded", () => {
           typeof salvar === "function"
             ? await salvar(true)
             : { ok: false, motivo: "falha_remota" };
+          if (!window.contextoDados.atual(contextoConta)) return;
         if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
           throw new Error(
             obterMensagemFalhaPersistencia(resultadoPersistencia),
@@ -1980,6 +2020,7 @@ document.addEventListener("DOMContentLoaded", () => {
           `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(repObj.id)}`,
           {
             method: "PATCH",
+            contextoDados: contextoConta,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               status: "agendada",
@@ -1988,6 +2029,7 @@ document.addEventListener("DOMContentLoaded", () => {
           },
         );
 
+        if (!window.contextoDados.atual(contextoConta)) return;
         if (!respostaPatch.ok) {
           const erroPatch = await respostaPatch.json().catch(() => ({}));
           throw new Error(
@@ -2004,8 +2046,10 @@ document.addEventListener("DOMContentLoaded", () => {
             novoCompromisso,
             { operacao: "criar" },
           );
+          if (!window.contextoDados.atual(contextoConta)) return;
           if (!deveEnviarPatchReposicao(resultadoGCal)) {
             await reverterVinculoReposicaoAgendada(repObj.id);
+            if (!window.contextoDados.atual(contextoConta)) return;
             const _idxNovoCompromisso = aulas.findIndex(
               (a) => a && a.id === novoCompromisso.id,
             );
@@ -2031,6 +2075,7 @@ document.addEventListener("DOMContentLoaded", () => {
             silenciosoUI: true,
           });
         }
+        if (!window.contextoDados.atual(contextoConta)) return;
         window.inicializarHome();
 
         let mensagemPrazo = "";
@@ -2040,6 +2085,7 @@ document.addEventListener("DOMContentLoaded", () => {
             mensagemPrazo = ` Prazo: até ${window.formatarDataPtBr ? window.formatarDataPtBr(patchJson.validoAte) : patchJson.validoAte}.`;
           }
         } catch (_) {}
+        if (!window.contextoDados.atual(contextoConta)) return;
         if (typeof mostrarToast === "function") {
           mostrarToast(`Reposição reagendada com sucesso!${mensagemPrazo}`);
         }
@@ -2047,11 +2093,13 @@ document.addEventListener("DOMContentLoaded", () => {
           await window.finalizarRetornoHistoricoReposicoes({ status: "sucesso" });
         }
       } catch (erro) {
+        if (!window.contextoDados.atual(contextoConta)) return;
         window._reagendamentoFluxoConcluido = true;
         window.fecharReagendarAulaModal();
         if (typeof window.finalizarRetornoHistoricoReposicoes === "function") {
           await window.finalizarRetornoHistoricoReposicoes({ status: "erro" });
         }
+        if (!window.contextoDados.atual(contextoConta)) return;
         if (typeof mostrarToast === "function") {
           mostrarToast(
             erro && erro.message
@@ -2074,6 +2122,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (formEditar) {
     formEditar.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const contextoConta = window.contextoDados.capturar();
+      if (!window.contextoDados.atual(contextoConta)) return;
       if (_submissaoEdicaoEmAndamento) {
         return;
       }
@@ -2591,6 +2641,7 @@ document.addEventListener("DOMContentLoaded", () => {
               snapshotAnterior: _snapshotEdicao,
             },
           );
+          if (!window.contextoDados.atual(contextoConta)) return;
 
           // FALHA NA PRIMEIRA GRAVAÇÃO — nada persistiu; a segunda não pode rodar.
           if (!deveEnviarPatchReposicao(_resultadoPrimeiraGravacao)) {
@@ -2609,6 +2660,7 @@ document.addEventListener("DOMContentLoaded", () => {
               _alvoSegundaGravacao,
               { operacao: "criar" },
             );
+            if (!window.contextoDados.atual(contextoConta)) return;
 
             // FALHA NA SEGUNDA GRAVAÇÃO — a primeira já persistiu no servidor e precisa ser
             // desfeita lá, não só na memória: daí a gravação de compensação com o estado restaurado.
@@ -2623,6 +2675,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   snapshotAnterior: compromisso,
                 });
               }
+              if (!window.contextoDados.atual(contextoConta)) return;
               avisarFalhaPersistencia(_resultadoSegundaGravacao);
               reabrirModalEdicaoComValores(
                 _idCompromissoEdicao,
@@ -2637,6 +2690,7 @@ document.addEventListener("DOMContentLoaded", () => {
             typeof salvarDados === "function"
               ? await salvarDados()
               : { ok: false, motivo: "falha_remota" };
+              if (!window.contextoDados.atual(contextoConta)) return;
           if (!deveEnviarPatchReposicao(_resultadoPersistencia)) {
             aulas.splice(0, aulas.length, ..._snapshotAulasEdicao);
             avisarFalhaPersistencia(_resultadoPersistencia);
@@ -2649,10 +2703,12 @@ document.addEventListener("DOMContentLoaded", () => {
           if (typeof window.inicializarHome === "function") {
             await window.inicializarHome();
           }
+          if (!window.contextoDados.atual(contextoConta)) return;
           if (typeof mostrarToast === "function")
             mostrarToast("Alterações salvas com sucesso!");
         }
       } finally {
+        if (!window.contextoDados.atual(contextoConta)) return;
         _submissaoEdicaoEmAndamento = false;
         atualizarEstadoSubmitEdicao(false);
       }
@@ -2676,6 +2732,8 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
   window.executarEnvioParaReposicao = async function () {
+    const contextoConta = window.contextoDados.capturar();
+    if (!window.contextoDados.atual(contextoConta)) return;
     const compromisso = obterCompromissoSelecionado();
     if (!compromisso) return;
     if (compromissoTemAlunoInativo(compromisso)) {
@@ -2693,6 +2751,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ehReabertura) {
       await obterReposicaoParaReabertura(compromisso.reposicaoId);
     }
+    if (!window.contextoDados.atual(contextoConta)) return;
     const ehSerie = compromisso.frequencia !== "uma_vez";
     const _snapshot = ehSerie
       ? { ...compromisso, excecoes: [...(compromisso.excecoes || [])] }
@@ -2708,6 +2767,7 @@ document.addEventListener("DOMContentLoaded", () => {
     await window.abrirModalEscolhaCobrancaReposicao(
       compromisso,
       async (cobravel) => {
+        if (!window.contextoDados.atual(contextoConta)) return;
         // Fora do `try` para que o `catch` alcance a reposição já criada e possa apagá-la.
         let reposicao = null;
         try {
@@ -2718,6 +2778,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ehSerie ? dataAlvoStr : dataAlvoISO,
                 cobravel,
               );
+              if (!window.contextoDados.atual(contextoConta)) return;
           if (!reposicao || !reposicao.id) {
             throw new Error("Reposição não foi criada no servidor.");
           }
@@ -2742,6 +2803,7 @@ document.addEventListener("DOMContentLoaded", () => {
               typeof salvarDados === "function"
                 ? await salvarDados(true)
                 : { ok: false, motivo: "falha_remota" };
+              if (!window.contextoDados.atual(contextoConta)) return;
             if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
               throw new Error(
                 obterMensagemFalhaPersistencia(resultadoPersistencia),
@@ -2753,9 +2815,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 silenciosoUI: true,
               });
             }
+            if (!window.contextoDados.atual(contextoConta)) return;
             if (typeof window.inicializarHome === "function") {
               await window.inicializarHome();
             }
+            if (!window.contextoDados.atual(contextoConta)) return;
 
             let mensagemPrazo = "";
             if (reposicao && reposicao.validoAte) {
@@ -2780,6 +2844,7 @@ document.addEventListener("DOMContentLoaded", () => {
               },
               { ehReabertura },
             );
+            if (!window.contextoDados.atual(contextoConta)) return;
             if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
               throw new Error(
                 obterMensagemFalhaPersistencia(resultadoPersistencia),
@@ -2790,6 +2855,7 @@ document.addEventListener("DOMContentLoaded", () => {
               typeof salvarDados === "function"
                 ? await salvarDados()
                 : { ok: false, motivo: "falha_remota" };
+              if (!window.contextoDados.atual(contextoConta)) return;
             if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
               throw new Error(
                 obterMensagemFalhaPersistencia(resultadoPersistencia),
@@ -2803,14 +2869,17 @@ document.addEventListener("DOMContentLoaded", () => {
               silenciosoUI: true,
             });
           }
+          if (!window.contextoDados.atual(contextoConta)) return;
           if (typeof window.inicializarHome === "function") {
             await window.inicializarHome();
           }
+          if (!window.contextoDados.atual(contextoConta)) return;
           if (typeof mostrarToast === "function") {
             mostrarToast("Aula enviada para reposição.", "success");
           }
           return reposicao;
         } catch (erro) {
+          if (!window.contextoDados.atual(contextoConta)) return null;
           if (ehSerie && _mutouExcecoes) {
             compromisso.excecoes = [...(_snapshot.excecoes || [])];
           }

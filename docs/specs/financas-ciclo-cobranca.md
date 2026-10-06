@@ -1,6 +1,8 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 7 · **Atualizado**: 2026-08-25
+> **Status**: Em produção · **Versão**: 8 · **Atualizado**: 2026-10-06
+> **Evolução de cache**: isolamento abaixo implementado no frontend, publicação pendente;
+> revalidação automática no boot e recuperação explícita ainda não entregues.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
@@ -398,6 +400,32 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
     Durante a espera, exibir estado transitório claro (botão "Salvando...", desabilitado) e informar erro/retry em caso de falha. Nunca aplicar a mudança apenas no cache local como definitiva.
 - **Motivo**: valor financeiro e status de pagamento não podem divergir entre dispositivos nem entre local e servidor.
 
+#### 6.1.1 Isolamento do cache e do estado por conta
+
+- Cache só pode ser exibido com dono conhecido e token utilizável da mesma conta, obtidos
+  pelos getters existentes da sessão. Sem sessão válida, preservar cache identificado no
+  aparelho, mas limpar suas projeções de memória/tela. Conferir nos acessos, nas respostas
+  e no retorno de foco/visibilidade; não há polling ou alteração do login.
+- Cache principal (alunos, agenda, pendências, grade e meta) tem identificação própria;
+  cache financeiro inclui `ownerEmail`, `atualizadoEm` e `dados`, sem reatribuir dono ao
+  principal. Um snapshot vazio identificado é distinto de cache inexistente.
+- Descartar caches antigos sem dono, inclusive backup legado `personalTrainerData`. Não
+  migrar, identificar retroativamente pela conta atual ou recuperar automaticamente esse
+  conteúdo. Isso pode perder alterações locais que nunca chegaram ao servidor.
+- Toda resposta é vinculada ao dono e à geração de conta capturados antes da requisição.
+  Troca, logout ou perda de sessão invalida respostas/fallbacks antigos; A→B→A não torna
+  novamente válida uma resposta da primeira sessão de A. Renovação válida da mesma conta
+  não invalida dados só porque o token mudou.
+- Limpar também cards, resumos, históricos e contextos de ação em memória. Na troca de
+  conta fechar/descartar rascunho anterior e avisar se havia edição, sem rollback remoto.
+- Snapshot local não confirmado não é leitura confirmada. Preservar pendência identificada
+  e seu snapshot separadamente por dono antes de substituir cache ativo ao trocar de conta.
+  Isso é armazenamento de recuperação, não fila offline nem autorização para reenviar CRUD.
+  Recuperação explícita e cobertura de operações compostas são incrementos posteriores;
+  uma leitura normal ou confirmação antiga não pode apagar pendência mais recente.
+- Isolamento do cache é defesa frontend. A autoridade de autorização continua no backend
+  pelo JWT validado e `ownerEmail`; não confiar no marcador local como autorização da API.
+
 ### 6.2 Histórico de ciclos sob demanda
 
 #### 6.2.1 Backend — payload enxuto
@@ -474,6 +502,8 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 | 25  | O histórico entra no cache de localStorage?                    | Não. Apenas cache em memória durante a sessão da tela (6.2.2).                                                                                                                                             |
 | 26  | A rota de consistência de agenda é um problema de performance? | Não. É **comportamento aceito** (10.1): custo fixo de 2 consultas, não escala por aluno. Não tratar como dívida técnica.                                                                                   |
 | 27  | Histórico pode ser pago ou ajustado?                          | Sim, enquanto não houver `dataPagamento`, inclusive nos status `atrasado` e `em_aberto`. A data inicia hoje, mas é editável para registrar o recebimento real; ciclo pago continua congelado.              |
+| 28 | Cache pode ser mostrado sem sessão válida ou para outra conta? | Não. Preservação em disco não autoriza exibição; descartar legado sem dono e invalidar respostas/contextos antigos conforme 6.1.1. |
+| 29 | Troca de conta pode perder pendência local identificada? | Não silenciosamente. Preservar snapshot separado por dono, sem replay automático; mecanismo de recuperação é incremental. |
 
 ---
 

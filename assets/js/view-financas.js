@@ -2,6 +2,8 @@
 // Responsabilidade: Tela de Finanças por ciclo, leitura com cache local e escritas confirmadas pelo backend
 
 (function (global) {
+    const contextoDados = global.contextoDados;
+    if (!contextoDados) throw new Error('contexto-dados.js precisa carregar antes de view-financas.js.');
     const STATE = {
         cards: [],
         carregando: false,
@@ -18,6 +20,30 @@
         // Detalhes do extrato do ciclo atual, persistidos em memória para sobreviver a re-renders.
         extratoAberto: {}
     };
+
+    contextoDados.aoInvalidar(() => {
+        STATE.cards = [];
+        STATE.historicoPorAluno = {};
+        STATE.historicoAberto = {};
+        STATE.extratoAberto = {};
+        STATE.cardAtivo = null;
+        STATE.cacheAtualizadoEm = null;
+        STATE.carregando = false;
+        STATE.salvando = false;
+        STATE.erro = null;
+        ['btnSalvarPagamento', 'btnSalvarAjuste'].forEach((id) => {
+            const botao = document.getElementById(id);
+            if (botao) botao.disabled = false;
+        });
+        const conteudo = document.getElementById('financasConteudo');
+        if (conteudo) conteudo.setAttribute('aria-busy', 'false');
+        fecharModal('pagamento');
+        fecharModal('ajuste');
+        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasAjusteResumo'].forEach((id) => {
+            const elemento = document.getElementById(id);
+            if (elemento) elemento.replaceChildren();
+        });
+    });
 
     function formatarMoeda(valor) {
         const numero = Number(valor) || 0;
@@ -436,6 +462,8 @@
     }
 
     async function carregarHistoricoAluno(alunoId, opcoes = {}) {
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) return;
         const estado = obterEstadoHistorico(alunoId);
         const forcar = opcoes.forcar === true;
         if (!forcar && (estado.status === 'pronto' || estado.status === 'carregando')) {
@@ -463,6 +491,8 @@
             if (!resposta.ok) throw new Error(`Falha ao carregar histórico (${resposta.status})`);
             const dados = await resposta.json();
 
+            if (!contextoDados.atual(contexto)) return;
+
             // Ignora respostas tardias de uma chamada já substituída por outra mais recente para o mesmo aluno.
             if (requestId !== estado.requestId) return;
 
@@ -470,6 +500,7 @@
             estado.dados = Array.isArray(dados) ? dados : [];
             estado.erro = null;
         } catch (error) {
+            if (!contextoDados.atual(contexto)) return;
             if (requestId !== estado.requestId) return;
             estado.status = 'erro';
             estado.erro = error && error.message === 'AUTH_REQUIRED'
@@ -585,6 +616,11 @@
     }
 
     async function carregarFinancas(opcoes = {}) {
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) {
+            renderizarVazio('Faça login para carregar o financeiro.');
+            return;
+        }
         const deveForcarRemoto = opcoes.forcarRemoto === true;
         const silencioso = opcoes.silencioso === true;
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
@@ -626,14 +662,16 @@
             }
 
             const dados = await resposta.json();
+            if (!contextoDados.atual(contexto)) return;
             STATE.cards = Array.isArray(dados) ? dados : [];
             if (typeof global.salvarCacheFinancas === 'function') {
-                global.salvarCacheFinancas(STATE.cards);
+                global.salvarCacheFinancas(STATE.cards, contexto);
             }
             STATE.cacheAtualizadoEm = new Date().toISOString();
             STATE.erro = null;
             renderizarCards();
         } catch (error) {
+            if (!contextoDados.atual(contexto)) return;
             if (!cache || deveForcarRemoto) {
                 STATE.erro = error && error.message === 'AUTH_REQUIRED'
                     ? 'Faça login para carregar o financeiro.'
@@ -646,6 +684,7 @@
                 }
             }
         } finally {
+            if (!contextoDados.atual(contexto)) return;
             STATE.carregando = false;
             atualizarCabecalhoCache();
             const conteudoAgora = document.getElementById('financasConteudo');
@@ -718,6 +757,8 @@
 
     async function salvarPagamento(event) {
         event.preventDefault();
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) return;
         if (!STATE.cardAtivo || !STATE.cardAtivo.cicloId) return;
 
         const dataPagamento = document.getElementById('financasDataPagamento');
@@ -739,6 +780,7 @@
 
             if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
             if (!resposta.ok) throw new Error(`Falha ao salvar pagamento (${resposta.status})`);
+            if (!contextoDados.atual(contexto)) return;
 
             const cardAtivo = STATE.cardAtivo;
             fecharModal('pagamento');
@@ -748,13 +790,16 @@
                 await carregarFinancas({ forcarRemoto: true, silencioso: true });
             }
             if (typeof global.mostrarToast === 'function') {
+                if (!contextoDados.atual(contexto)) return;
                 global.mostrarToast('Pagamento confirmado com sucesso!', 'success');
             }
         } catch (error) {
+            if (!contextoDados.atual(contexto)) return;
             if (typeof global.mostrarToast === 'function') {
                 global.mostrarToast(error && error.message === 'AUTH_REQUIRED' ? 'Faça login para salvar na nuvem.' : 'Não foi possível salvar o pagamento.', 'error');
             }
         } finally {
+            if (!contextoDados.atual(contexto)) return;
             STATE.salvando = false;
             if (btn) btn.disabled = false;
             atualizarCabecalhoCache();
@@ -763,6 +808,8 @@
 
     async function salvarAjuste(event) {
         event.preventDefault();
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) return;
         if (!STATE.cardAtivo || !STATE.cardAtivo.cicloId) return;
 
         const extrasInput = document.getElementById('financasAulasExtras');
@@ -784,6 +831,7 @@
 
             if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
             if (!resposta.ok) throw new Error(`Falha ao salvar ajuste (${resposta.status})`);
+            if (!contextoDados.atual(contexto)) return;
 
             const cardAtivo = STATE.cardAtivo;
             fecharModal('ajuste');
@@ -793,13 +841,16 @@
                 await carregarFinancas({ forcarRemoto: true, silencioso: true });
             }
             if (typeof global.mostrarToast === 'function') {
+                if (!contextoDados.atual(contexto)) return;
                 global.mostrarToast('Ajuste salvo com sucesso!', 'success');
             }
         } catch (error) {
+            if (!contextoDados.atual(contexto)) return;
             if (typeof global.mostrarToast === 'function') {
                 global.mostrarToast(error && error.message === 'AUTH_REQUIRED' ? 'Faça login para salvar na nuvem.' : 'Não foi possível salvar o ajuste.', 'error');
             }
         } finally {
+            if (!contextoDados.atual(contexto)) return;
             STATE.salvando = false;
             if (btn) btn.disabled = false;
             atualizarCabecalhoCache();
@@ -824,9 +875,12 @@
 
             const configurarBtn = event.target.closest('[data-financas-configurar]');
             if (configurarBtn && typeof global.prepararEdicaoAluno === 'function') {
+                const contexto = contextoDados.capturar();
+                if (!contextoDados.atual(contexto)) return;
                 const alunoId = configurarBtn.getAttribute('data-financas-configurar');
                 if (typeof global.__appShell !== 'undefined' && global.__appShell.router && typeof global.__appShell.router.navigateTo === 'function') {
                     global.__appShell.router.navigateTo('tela-alunos').then(function () {
+                        if (!contextoDados.atual(contexto)) return;
                         global.prepararEdicaoAluno(alunoId);
                     });
                 } else {
@@ -930,6 +984,7 @@
 
     // Consumido pelo card do aluno (view-alunos.js) para não duplicar o cálculo de ciclo no frontend.
     window.obterResumoFinanceiroPorAluno = function () {
+        if (!contextoDados.atual(contextoDados.capturar())) return {};
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
         const fonte = STATE.cards.length > 0
             ? STATE.cards

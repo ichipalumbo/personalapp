@@ -24,6 +24,20 @@ let rascunhoRecorrenciaTemporario = null;
 let ultimoFocoAntesModalRecorrencia = null;
 let trapFocoRecorrenciaAtivo = null;
 
+if (window.contextoDados) window.contextoDados.aoInvalidar(() => {
+    slotSelecionadoHora = '';
+    slotSelecionadoDiaTexto = '';
+    rascunhoFluxoAgendamento = null;
+    rascunhoRecorrenciaTemporario = null;
+    ultimoFocoAntesModalRecorrencia = null;
+    assinaturaAberturaAgendamento = null;
+    const modal = document.getElementById('modalAgendamento');
+    if (modal) modal.classList.remove('modal-underlay-blocked');
+    if (trapFocoRecorrenciaAtivo) document.removeEventListener('keydown', trapFocoRecorrenciaAtivo);
+    trapFocoRecorrenciaAtivo = null;
+    window.reposicaoIdEmReagendamento = null;
+});
+
 function getDataSelecionadaAtualPtBr() {
     const iso = getDataSelecionadaAtualIso();
     if (!iso) return '';
@@ -935,6 +949,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formAgendamento) {
         formAgendamento.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const contexto = window.contextoDados.capturar();
+            if (!window.contextoDados.atual(contexto)) return;
             capturarFormularioPrincipalNoRascunho();
 
             if (typeof window.serializarRascunhoAgendamento !== 'function') {
@@ -958,6 +974,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            if (!window.contextoDados.atual(contexto)) return;
             aulas.push(resultado.payload);
             const valoresFormularioAgendamento = capturarValoresFormularioAgendamento();
             const payloadCriado = resultado.payload || {};
@@ -990,6 +1007,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
                 // Optimistic UI in salvarEventoComGCal renders the new event immediately.
                 const resultadoPersistencia = await window.salvarEventoComGCal(resultado.payload, { operacao: 'criar' });
+                if (!window.contextoDados.atual(contexto)) return;
                 if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
                     reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
                     return;
@@ -998,6 +1016,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const resultadoPersistencia = typeof salvarDados === 'function'
                     ? await salvarDados()
                     : { ok: false, motivo: 'falha_remota' };
+                if (!window.contextoDados.atual(contexto)) return;
                 if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
                     reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
                     return;

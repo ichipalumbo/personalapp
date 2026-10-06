@@ -57,6 +57,7 @@ async function carregarAmbiente() {
     { runScripts: 'outside-only', url: 'http://localhost' },
   );
   const { window } = dom;
+  require('./setup/contexto-dados')(dom);
 
   // Necessário no topo do storage.js (validação de config + warm-up).
   window.APP_API_CONFIG = { apiBaseUrl: 'http://api.test', apiRootUrl: 'http://api.test' };

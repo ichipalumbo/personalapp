@@ -1,11 +1,11 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Planejamento refinado; decisões de recuperação e sync manual aprovadas; implementação não iniciada
-> **Criado**: 2026-09-30 · **Atualizado**: 2026-10-05
+> **Status**: Aberto — cartão A implementado e validado localmente; B–E não iniciados
+> **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: pesquisa, decisões e documentação. Nenhum código, teste ou mock alterado.
+> **Rodada atual**: implementação somente do cartão A; base `36db6fa`, mesma branch autorizada.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
@@ -289,7 +289,9 @@ nem passa a ter atomicidade/idempotência só por separar o botão de atualizaç
 
 ## 5. Cartões de execução propostos
 
-Nenhum cartão implementado. Escopo revalidado: **Médio–Alto**, revisar após inventário do C.
+Cartão A concluído no recorte abaixo, ainda sem publicação; B–E não iniciados.
+Escopo revalidado: **Médio–Alto**, revisar após inventário do C.
+Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E numa alteração única.
 
 | Cartão | Trabalho | Critério de saída |
 |---|---|---|
@@ -298,6 +300,32 @@ Nenhum cartão implementado. Escopo revalidado: **Médio–Alto**, revisar após
 | **C — Interação e recuperação** | Fronteiras/retornos das operações e retries; gerações; término de tarefas; saída explícita da pendência; manual somente leitura. | B2 não sobrescreve intenção; pendência tem saída testada sem replay cego; manual nunca reconcilia snapshot antigo. |
 | **D — Boot e render** | Três hashes; hidratação; retomada por eventos; leitura compatível; render neutro; rótulo por operação. | Cache imediato/revalidado sem reset de tela, bloqueio ou duplicação criada pelo B2. |
 | **E — Aceite e fechamento** | Mock seguro, integração/mutação, UI mobile, suítes medidas, atualização de plano/specs/roadmap. | Casos aprovados e limites relatados; PR/deploy/validação pelo dono. |
+
+### Cartão T01 (A) — Isolar cache, projeções e contexto por conta
+
+- **Objetivo / resultado**: cache legado não identificado é descartado; dados identificados
+  só são exibidos/aplicados para sessão utilizável do mesmo dono e geração.
+- **Depende de**: decisões do §2; nenhuma entrega de B–E.
+- **Arquivos / componentes prováveis**: contexto central de cache, storage, bootstrap,
+  views e invalidação de modais; specs de Finanças/Reposições, testes e ordem de carga.
+- **Inclui**: contrato nas specs; cache principal/financeiro; geração de conta; ocultação
+  sem sessão; descarte legado; invalidar projeções e rascunhos; guardas de aplicação tardia;
+  metadado mínimo em `salvarDados` e snapshot pendente separado por dono.
+- **Não inclui**: batch seguro B, recuperação UI/coordenação completa C, boot B2 D ou
+  extensão de mock E; auth, GCal, cascata, motor, cálculo financeiro e backend.
+- **Decisões pendentes / bloqueios**: dono aprovou snapshot pendente separado por conta e
+  limites das áreas sensíveis. Expiração conferida em acessos e foco/visibilidade, não
+  ocultação cronometrada em repouso. Fluxos internos sensíveis permanecem fora do aceite.
+- **Critérios de aceite**: legado nunca hidratado/migrado; sem sessão não exibe; A→B→A
+  descarta resposta antiga; cache financeiro não altera dono principal; pendência de A
+  sobrevive cache ativo de B; limpeza não grava vazio por cima do snapshot identificado.
+- **Resultado**: implementado e validado em 06/10; ver registro da execução abaixo.
+- **Validação**: baseline frontend medida 92/92, 0 falhas; suítes final, regressões de
+  isolamento com código real e mutações individuais; UI visual integral não coberta.
+- **Riscos e rollback**: descarte de legado é irreversível por reversão de código; snapshot
+  pendente não prova conclusão remota. Não executar escrita/API real nem deploy nesta rodada.
+- **Limite de tentativas**: no máximo 2 por falha de validação; na segunda, registrar e
+  parar esse incremento para decisão do dono, sem avançar a dependentes.
 
 ### Arquivos previstos (não alterados nesta rodada)
 
@@ -374,7 +402,8 @@ Não exigir working tree limpo durante implementação.
 Medir frontend antes/depois; backend como controle final (e antes/depois se código backend
 for autorizado futuramente). Não usar números históricos como baseline. Conferir Node e
 dependências antes: requisito do jsdom atual difere do mínimo genérico do setup. Não
-instalar/atualizar dependência por inferência. **Nenhuma suíte executada nesta rodada.**
+instalar/atualizar dependência por inferência. Medições da implementação no registro abaixo;
+as rodadas de planejamento de 05/10 não executaram suítes.
 
 ### UI: exclusivamente mock local seguro
 
@@ -455,11 +484,79 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 - Sem implementação, suíte, validação UI, commit ou push. Desenho não equivale a garantia de
   execução: contratos dos fluxos específicos ainda devem ser provados no cartão C.
 
+### Execução do cartão A — 06/10
+
+- **Branch/base**: dono confirmou continuar em `docs/planejar-sync-boot`; árvore inicialmente
+  limpa, commit `36db6fa`, upstream na própria branch, nunca na `main`.
+- **Confirmações adicionais**: implementar A (não apenas detalhá-lo); preservar snapshot
+  pendente separado por dono; manter auth/GCal/cascata intactos e declarar seus limites.
+- **Implementação**:
+  - `assets/js/app/contexto-dados.js` (novo): contexto consumidor de dono/geração, descarte
+    legado, cache principal/financeiro separado, snapshot pendente por conta, confirmação
+    por tentativa, campos de vínculo Google confirmados preservados em falha parcial.
+  - `storage.js`: hidratação/fallback/recovery autorizados, snapshot copiado na gravação,
+    pendência mínima em `salvarDados`, guarda em cada etapa CRUD de sua conta, render/feedback
+    obsoletos descartados. Não transforma o botão manual em somente leitura ainda (C).
+  - Bootstrap: iniciar observação de contexto antes de views; não adiciona revalidação B2.
+  - Views Home/Semana/Alunos/Finanças: invalidar projeções e controlar aplicações tardias,
+    incluindo históricos; manter hash/período e handlers; limpar campos/controles antigos.
+  - Modais e settings: limpar rascunhos/seleção, não reabrir após conta mudar; proteger
+    retornos/rollback/DOM dos chamadores. Não alterar implementação interna GCal ou cascata.
+  - `index.html` e teste de carga: novo script antes dos consumidores; fixtures frontend e
+    dois arquivos backend que já executavam storage/modais carregam contexto real sintético.
+  - Specs Finanças/Reposições: contratos aprovados antes do código; nenhuma regra de dinheiro,
+    prazo ou competência alterada; backend de produção intacto.
+- **Medições reais**: frontend **92/92 antes → 109/109 depois**, 0 falhas; backend **232/232**
+  no controle final. Baseline backend antes da mudança não foi medida; não apresentar número
+  histórico como medição. Suítes rodadas com Node real 22.20.0, sem instalação de dependências.
+- **Correções durante validação**: fixture do rótulo disparava migração de objetivos e
+  pendência inesperada; dados de fixture alinhados sem neutralizar proteção. Controle backend
+  encontrou harnesses de storage/modais sem contexto/getOwnerEmail; fixtures atualizadas,
+  regras backend preservadas. Antes de fechar, ambas as suítes completas voltaram verdes.
+- **Provas por mutação**, restauradas por edição:
+
+  | Mutação | Resultado medido | Restaurada |
+  |---|---|---|
+  | `atual` aceita todo contexto | 15 testes: 10 passaram, 5 falharam | sim |
+  | Não descartar `personalTrainerData`/legado | 15 testes: 14 passaram, 1 falhou | sim |
+  | Confirmação ignora tentativaId | 15 testes: 14 passaram, 1 falhou | sim |
+  | Não invalidar projeções de memória | 17 testes: 11 passaram, 6 falharam | sim |
+
+  Após última restauração, isolamento **17/17**, sem falhas. Busca e `git status` confirmaram
+  ausência de mutação residual. Diff sem erro de whitespace; diagnósticos dos arquivos limpos.
+- **Conferência no browser**, somente mock local `default`, 433×762, DPR aproximado 2.81,
+  touch e pointer coarse verificados: lista com 4 alunos e abertura do cadastro de Maria;
+  simulação de perda de sessão limpa lista, cards e campos, fecha diálogo e esvazia stack;
+  aviso de edição encerrada observado. Clique teve timeout na automação, mas abertura foi
+  observada no snapshot; teclado/TalkBack não testados nesta rodada.
+- **Limite do mock**: bloqueia escrita e persistência; migração de objetivos existente e
+  verificação GCal causam erros/avisos de escrita bloqueada. Nenhuma API de produção usada;
+  ping local teve conexão recusada porque backend local não está em execução. Mock não prova
+  cache persistente/alternância de contas em fluxo real; regressões determinísticas fazem isso.
+- **Sem commit, push ou deploy do agente.** Descarte legado, quando publicado e executado,
+  não é recuperável por revert. Publicação só pelo dono, via PR, conforme política.
+
+#### Achados/limites que não foram alterados no A
+
+- Ponte `salvarEventoComGCal` e cascata podem atravessar awaits internos e iniciar ações
+  com contexto então vigente; guardas externas não corrigem seu interior. Dono aprovou
+  manter áreas sensíveis intactas; confirmação específica necessária no C antes de editar.
+- `gcal_connection_cache` não ganha dono neste cartão; autenticação permanece intacta.
+- Pendência mínima instrumenta `salvarDados`, não todos os PATCHs/operações compostas.
+  Término de todas as tarefas paralelas, classificação/retry e UI de recuperação pertencem
+  ao C; não declarar gravação parcialmente concluída restaurada pela infraestrutura de A.
+- Batch parcial, tratamento de remoto vazio sem migration e leitura manual segura ainda
+  não implementados (B/C). A não é, isoladamente, o aceite completo da 2.4.
+- Expiração não é cronometrada em repouso: revalidação acontece em acessos, navegação,
+  aplicação de resposta ou retorno de foco/visibilidade. Sem polling/alteração do login.
+- Node/jsdom: versões instaladas executaram testes; divergência do requisito genérico do
+  setup continua registrada, sem atualizar ambiente ou lock nesta rodada.
+
 ## 10. Próxima rodada
 
-Começar pelo **cartão A**: confirmar branch e fronteiras concretas, incorporar contratos
-nas specs pertinentes, conferir ambiente e medir baseline frontend antes do código.
-B–D dependem dessas garantias; E fecha aceite. Se inventário exigir alterar autenticação,
+Próximo **cartão B — leitura segura**: confirmar branch, conferir este recorte entregue e
+medir baseline frontend antes do código. C/D dependem dessas garantias; E fecha aceite.
+Se inventário exigir alterar autenticação,
 GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
 sem relatório paralelo por cartão.
 

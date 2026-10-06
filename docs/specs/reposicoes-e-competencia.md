@@ -1,10 +1,10 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Em produção · **Versão**: 12 · **Atualizado**: 2026-09-23
+> **Status**: Em produção · **Versão**: 13 · **Atualizado**: 2026-10-06
 > **Situação**: histórico contextual e edição protegida da cobrança implementados; correção de
 > dados duplicados em produção concluída pelo dono em 2026-09-23.
 >
-> **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md` (v7).
+> **Relação com outras specs**: complementa `docs/specs/financas-ciclo-cobranca.md`.
 > Esta spec **altera a regra 5.8** daquela (o que conta como aula cobrável) e introduz
 > uma entidade nova. A spec de Finanças continua sendo a fonte de verdade sobre ciclo,
 > snapshot, congelamento e status de pagamento.
@@ -145,6 +145,13 @@ para histórico e auditoria.
 
 Toda query à collection **deve** filtrar por `ownerEmail`, via `getOwnerEmailOrThrow`,
 igual ao resto do sistema. Não há outra camada impedindo vazamento entre contas.
+
+O cache local de pendências, o histórico completo em memória e o contexto de reagendamento
+também seguem o isolamento de `financas-ciclo-cobranca.md` §6.1.1: exibição só para sessão
+utilizável do mesmo dono; respostas da conta anterior não reaplicam dados nem reabrem
+modais. Rascunhos são descartados na troca, sem desfazer operações remotas. Pendência
+identificada é preservada separadamente, sem repetir criação/reabertura ou PATCH por esse
+armazenamento. Prazo, expiração lazy, competência e cobrança continuam exclusivos do backend.
 
 ### 4.4 Formato de datas
 

@@ -96,12 +96,16 @@
             global.__appServiceWorker.register();
         }
 
+        // Isolar dados antes de inicializar qualquer view; não adiciona sync B2.
+        global.contextoDados.iniciar();
+
         if (global.googleIdentity && typeof global.googleIdentity.initialize === 'function') {
             global.googleIdentity.initialize();
             if (typeof global.googleIdentity.whenReady === 'function') {
                 await global.googleIdentity.whenReady(1600);
             }
         }
+        global.contextoDados.iniciar();
 
         router.bindNavigation();
         router.onAfterNavigate(() => {
@@ -131,6 +135,7 @@
             let ultimoOwnerEmail = global.googleIdentity.getOwnerEmail ? global.googleIdentity.getOwnerEmail() : null;
 
             global.googleIdentity.addAuthChangeListener(async function (session) {
+                const contexto = global.contextoDados.capturar();
                 const ownerEmailAtual = session && session.ownerEmail ? session.ownerEmail : null;
                 if (ownerEmailAtual === ultimoOwnerEmail) {
                     return;
@@ -142,6 +147,7 @@
                     if (typeof global.carregarDados === 'function') {
                         await global.carregarDados({ forcarRender: false, forcarRemoto: true });
                     }
+                    if (!global.contextoDados.atual(contexto)) return;
 
                     if (ownerEmailAtual && typeof global.iniciarSyncGoogleCalendar === 'function') {
                         global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
@@ -191,6 +197,7 @@
             }
 
             autoRefreshEmAndamento = true;
+            const contexto = global.contextoDados.capturar();
             try {
                 await global.carregarDados({
                     forcarRender: false,
@@ -198,6 +205,7 @@
                     silenciosoUI: true,
                     silenciarAuthToast: true
                 });
+                if (!global.contextoDados.atual(contexto)) return;
                 ultimoAutoRefreshAt = Date.now();
                 await refreshActiveView(router);
             } catch (error) {

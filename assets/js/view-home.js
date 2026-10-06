@@ -174,6 +174,7 @@ function garantirHomeTabs() {
 }
 
 window.renderizarHomeDia = function () {
+  if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
   window.atualizarDataAtual('dataAtualHome', 'diaSemanaAtualHome');
   window.renderizarAgendaDia('agendaGridHomeHome');
 };
@@ -215,6 +216,7 @@ window.alternarModoHome = function (modo) {
 // ── Internal helpers for inicializarHome ─────────────────────────────────────────────────────
 
 async function _sincronizarDadosHome(opcoes) {
+  const contexto = window.contextoDados.capturar();
   const deveMostrarLoading =
     opcoes.sincronizar === true ||
     typeof window.temDadosLocaisNoCache !== "function" ||
@@ -232,8 +234,10 @@ async function _sincronizarDadosHome(opcoes) {
         forcarRemoto: opcoes.sincronizar === true,
       });
     }
+    if (!window.contextoDados.atual(contexto)) return;
     window.__sincronizacaoInicialConcluida = true;
   } finally {
+    if (!window.contextoDados.atual(contexto)) return;
     if (deveMostrarLoading) {
       window.__homeCarregando = false;
       const telaHome = document.getElementById("tela-home");
@@ -251,6 +255,7 @@ function _renderizarHome(opcoes) {
 }
 
 window.inicializarHome = async function (opcoes = {}) {
+  const contexto = window.contextoDados.capturar();
   if (!agendaConfig) agendaConfig = { horaInicio: 7, horaFim: 21 };
   if (!aulasParaRepor) aulasParaRepor = [];
 
@@ -263,6 +268,7 @@ window.inicializarHome = async function (opcoes = {}) {
   if (deveSincronizar) {
     await _sincronizarDadosHome(opcoes);
   }
+  if (!window.contextoDados.atual(contexto)) return;
 
   garantirHomeTabs();
   _renderizarHome(opcoes);
@@ -292,6 +298,7 @@ window.atualizarDataAtual = function (dataId, diaId) {
 };
 
 window.atualizarDashboardStats = function () {
+  if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
   const elAulasHoje = document.getElementById("totalAulasHoje");
 
   if (elAulasHoje && typeof aulas !== "undefined") {
@@ -321,6 +328,7 @@ window.abrirEscolhaTipoModalPorSlotHome = function (diaTexto, horaStr, elSlot) {
 };
 
 window.renderizarAgendaDia = function (gridId) {
+  if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
   const grid = document.getElementById(gridId || "agendaGridHome");
   if (!grid) return;
 
