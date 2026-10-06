@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–C e D1 validados localmente; D2/D3/E pendentes; B2 desligado |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–C e D1/D2 validados localmente; D3/E pendentes; B2 desligado |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -408,7 +408,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30).
 > [Plano vivo](plans/2026-09-30-plan-b2-sync-boot.md) **revalidado em 2026-10-05**, com
 > decisões de recuperação e botão manual refinadas; **cartões A–C implementados/validados
-> localmente em 06/10**, ainda sem publicação. **D1 validado localmente**; D2/D3/E não
+> localmente em 06/10**, ainda sem publicação. **D1/D2 validados localmente**; D3/E não
 > iniciados e B2 continua desligado.
 > B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
@@ -438,7 +438,10 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   neutro**, **D2 — coordenador sem ligação**, **D3 — ligação/ativação**; E — mock seguro,
   testes e aceite mobile. D1 hidrata local antes das três hashes e atualiza sem reinicializar,
   compartilhando só voo complementar passivo compatível; manual/recuperação exigem leitura
-  nova. Frontend medido 197→226, zero falhas; próximo cartão D2, sem ativar B2. Resultados,
+  nova. D2 entrega coordenador inerte, cota por contexto, retomadas por eventos/recibos e
+  rótulo por voo; falha espera conexão/sessão, sem retry por fechar formulário. Manual
+  aguarda complementos e faz batch próprio. Frontend D2 medido **226→256**, zero falhas;
+  próximo cartão D3 para ligação/ativação, ainda não executado. Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,

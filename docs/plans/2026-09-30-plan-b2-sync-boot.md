@@ -1,11 +1,11 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Aberto — A–C e D1 validados localmente; D2/D3/E não iniciados
+> **Status**: Aberto — A–C e D1/D2 validados localmente; D3/E não iniciados
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: somente D1, base `14fc0e2`, mesma branch limpa autorizada pelo dono; B2 desligado.
+> **Rodada atual**: somente D2, base `2a795fd`, mesma branch limpa autorizada pelo dono; B2 desligado no app.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
@@ -382,15 +382,34 @@ Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E
 - **Objetivo / resultado**: estado pendente/em voo/aplicado por contexto com retomada
   por eventos e rótulo pertencente à operação, sem disparo de bootstrap.
 - **Depende de**: D1 validado.
-- **Arquivos / componentes prováveis**: storage/coordenador de dados, testes frontend,
-  plano e roadmap; ligação de bootstrap permanece para D3.
+- **Arquivos / componentes prováveis**: `assets/js/storage.js`, novo
+  `assets/js/app/coordenador-sync-boot.js`, ordem em `index.html`, testes frontend,
+  plano e roadmap; bootstrap não chama o coordenador antes de D3.
 - **Inclui**: coordenação, limite de uma aplicação por contexto, adiamentos e retomadas
   conforme §4.4; testes focados desses contratos.
 - **Não inclui**: ativação no boot, consolidação GCal/2.2 ou aceite integrado E.
-- **Decisões pendentes / bloqueios**: refinar eventos e propriedade do rótulo antes do
-  código; confirmar branch no início da rodada. Não reutilizar resposta B2 como manual.
-- **Critérios de aceite**: contrato testado isoladamente; B2 ainda desligado.
-- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 tentativas por falha.
+- **Decisões pendentes / bloqueios**: nenhum neste recorte. Contratos técnicos refinados:
+  módulo carrega inerte; `iniciar` só será chamado no D3. Depois de iniciado, contexto,
+  sessão, `online`, interação e término de leitura são eventos; falha real só libera nova
+  tentativa por sessão/conexão/retomada explícita ou leitura compatível já aplicada.
+- **Inclui adicionalmente**: recibo interno de aplicação principal compatível (mesmo
+  contexto/interação, sem raiz de escrita/adoção); reserva de leitura até finalizar
+  render/complementos para o manual aguardar, sem transformar B2 em raiz de gravação.
+  Cache vazio também é cache. Aplicação conta mesmo se render complementar falhar;
+  não repetir batch principal para corrigir complemento.
+- **Rótulo**: cada voo guarda seu próprio identificador/contexto; cancelar/adiar/invalidar
+  oculta somente seu aviso. Um finally antigo não apaga aviso da leitura seguinte.
+- **Critérios de aceite**: uma aplicação B2 por contexto; perda/troca de sessão cancela
+  efeitos; edição descarta e só refaz leitura nova quando livre; pendência bloqueia;
+  falha/401 não repetem por fechar formulário; manual espera e faz batch próprio;
+  recibo compatível evita duplicação; rótulo correto sobre cache; nenhum início no boot.
+- **Resultado**: implementado e validado localmente em 06/10; registro §14 abaixo.
+- **Validação**: baseline frontend medida **226/226**, zero falhas; testes determinísticos
+  do coordenador com storage/contexto reais, provas por mutação, suíte final e ordem de
+  carga. Backend não alterado/não executado. UI/ativação integrada permanece D3/E.
+- **Riscos e rollback**: cancelamento não desfaz GET lazy; reserva acompanha tarefas do
+  cliente, não prova término remoto. Não acessar produção/alterar auth/GCal/backend.
+- **Limite de tentativas**: máximo 2 por falha; segunda falha bloqueia dependentes.
 
 ### Cartão D3 — Ligar e ativar B2 nas três telas iniciais
 
@@ -633,8 +652,8 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Próxima rodada
 
-Próximo **cartão D2 — coordenador sem ligação ao boot**: confirmar branch, conferir A–C/D1
-entregues e medir baseline frontend antes do código. D3 liga o boot; E fecha aceite.
+Próximo **cartão D3 — ligação e ativação**: confirmar branch, conferir A–C/D1/D2
+entregues e medir baseline frontend antes do código. E fecha aceite integrado.
 Se inventário exigir alterar autenticação,
 GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
 sem relatório paralelo por cartão.
@@ -845,3 +864,66 @@ essa dependência antes de seguir, sem substituir silenciosamente as decisões a
   ainda não validados. `router.refreshCurrentView` genérico mantido, sem consumidor no bootstrap.
 - **Não realizado**: D2/D3/E, novas dependências, auth/GCal/cascata/motor/conflitos/backend,
   commit, push, merge, deploy ou API/dados de produção. **B2 continua desligado.**
+
+## 14. Registro da execução do cartão D2 — 06/10
+
+- **Branch/base**: `docs/planejar-sync-boot`, D1 commitado em `2a795fd`, árvore inicialmente
+  limpa/upstream próprio. Continuidade confirmada pelo dono antes das escritas.
+- **Arquivos alterados**:
+  - `assets/js/app/coordenador-sync-boot.js` (novo): módulo inerte; início explícito
+    instala observação de contexto/sessão/interação, conexão e leituras. Estados
+    pendente/em-voo/aplicado por contexto, uma aplicação por geração de conta, abort/descarte
+    durante edição, pendência local bloqueia. Falha/401/timeout preservam cache e esperam
+    evento pertinente, sem retry por fechamento de form. Recibo compatível atende cota;
+    resultado de escrita/adoção ou anterior à interação não atende. Complemento falho não
+    repete batch aplicado. Manual aguarda reserva completa e faz leitura própria.
+  - `assets/js/storage.js`: contrato de observação/recibo/reserva, sem rede ao registrar;
+    reserva da carga existente abrange obtenção **e aplicação**. Registro/encerramento do
+    pedido manual também notifica observadores. Rótulo por identificador/contexto de voo;
+    término antigo só remove seu aviso, sem apagar outra leitura. Sem alterar cálculo,
+    migração/CRUD, autenticação ou significado do botão manual entregue no C.
+  - `index.html`: carrega coordenador após storage/contexto/mock; **não chama `iniciar`**.
+    `tests-frontend/index-html-ordem.test.js`: pares de dependência storage/contexto→coordenador.
+  - `tests-frontend/d2-coordenador-sync-boot.test.js` (novo): 30 testes com storage/contexto
+    reais, rede/sessão/DOM sintéticos; eventos controlados sem polling. Cobrem inércia,
+    cota por contexto, cache presente/vazio/ausente, edição/raízes/pendência, falhas/401/timeout,
+    offline/login, A→B→A, recibos, complemento, prioridade/manual próprio e aviso por voo.
+  - Plano vivo e `docs/roadmap.md`: recorte D2 detalhado e entrega parcial registrada.
+- **Suítes medidas**: frontend **226/226 antes → 256/256 depois**, zero falhas. Foco
+  coordenador+manual+rótulo **48/48** (30 D2 + 18 existentes). **Backend não executado**:
+  nenhum arquivo backend/shared ou harness backend alterado. Diagnósticos limpos e diff
+  sem erro de whitespace; aviso CRLF do plano é preexistente, sem renormalização extra.
+- **Revisão focada**: uma revisão read-only, sem auditoria ampla C/D1. Corrigido evento
+  `online`/sessão recebido durante voo falho que ainda aguarda tarefa: versão da retomada
+  conserva autorização para uma tentativa após o término. Complemento interrompido por
+  nova edição registra `complementoPendente` no contexto atual, sem reabrir cota.
+  Primeiro teste identificou intervalo entre obter/aplicar da carga existente: reserva
+  estendida até a aplicação, testada pelo D2-13. Encerramento manual sem recibo ganha
+  notificação própria, testada pelo D2-24. Sem dependência nova ou alteração sensível.
+- **Provas por mutação**, seis alterações em dois grupos controlados:
+
+  | Mutação | Assert próprio que falhou | Resultado do grupo | Restaurada |
+  |---|---|---|---|
+  | Retirar trava de cota aplicada | D2-02, D2-15 e D2-22 | 19 passam / 11 falham | sim |
+  | Interação liberar falha real | D2-08 (HTTP/JSON/rede/401), D2-23 | mesmo grupo | sim |
+  | Ignorar leitura principal em voo | D2-13 | mesmo grupo | sim |
+  | Finally limpar todos os avisos | D2-18 e D2-20 | mesmo grupo | sim |
+  | Retirar reserva B2 durante complementos | D2-16 | 27 passam / 3 falham | sim |
+  | Falha sobrescrever evento recebido em voo | D2-21 online/sessão | mesmo grupo | sim |
+
+  Todas as provas contabilizadas tiveram falha de assert. Restauração integral por edição,
+  status/diff conferidos e suíte completa **256/256** após restaurar. Nenhuma mutação residual.
+- **Smoke local de inércia**: mock `default` em **433×762, DPR ~2.81**, touch/pointer coarse
+  confirmados; caches estáticos limpos antes do reload. App manteve `#tela-home`, sem
+  overflow; coordenador presente com **ativo=false, estado=inativo**, nenhuma ligação
+  ao boot. Aviso GCal de escrita bloqueada é do mock existente. Não iniciar coordenador
+  no browser nesta rodada: execução/concorrência provadas no harness, ligação visual D3/E.
+- **Encontrado, não alterado**: gatilhos existentes de login/retorno à aba/GCal ainda não
+  foram integrados ao coordenador; D3 precisa verificar prioridade/recibo e custo financeiro
+  nas três hashes. Recibo principal não certifica complementos nem término de GET lazy
+  remoto. Rótulo depende de cache principal autorizado hidratado; aceite sobre diferentes
+  combinações de cache financeiro/principal fica no D3/E. Não prometer cache multi-chave
+  transacional ou proteção de conflito entre dispositivos. Teclado/TalkBack segue E.
+- **Não realizado**: D3/E, ligação/ativação automática no boot, consolidar GCal/2.2,
+  auth/cascata/motor/conflitos/backend, dependências, commit/push/merge/deploy ou dados/API
+  de produção. **B2 permanece desligado no app.**

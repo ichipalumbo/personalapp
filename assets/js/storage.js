@@ -34,20 +34,22 @@ let _primeiraRequisicao = true;
 // existe em: troca de login, botão "Sincronizar Dados" e auto-refresh ao voltar
 // para o app ausente. Desaparece no fim do sync (sucesso ou falha). O toast de
 // "Sem conexão..." (storage.js) assume a comunicação nesse momento de falha.
-let _syncSobreCacheEmAndamento = false;
-function _marcarSyncSobreCache() {
-    _syncSobreCacheEmAndamento = usuarioAutenticadoNoApp() && _cachePossuiDados;
+const _syncsSobreCacheEmAndamento = new Set();
+function _marcarSyncSobreCache(contexto = CONTEXTO_DADOS.capturar()) {
+    const voo = { contexto };
+    if (CONTEXTO_DADOS.atual(contexto) && _cachePossuiDados) _syncsSobreCacheEmAndamento.add(voo);
+    _atualizarRotuloCacheHeader();
+    return voo;
 }
 function _atualizarRotuloCacheHeader() {
     const el = document.getElementById('headerCacheState');
     if (!el) return;
-    el.hidden = !_syncSobreCacheEmAndamento;
+    el.hidden = !Array.from(_syncsSobreCacheEmAndamento).some((voo) => CONTEXTO_DADOS.atual(voo.contexto));
 }
-function _limparSyncSobreCache() {
-    if (_syncSobreCacheEmAndamento) {
-        _syncSobreCacheEmAndamento = false;
-        _atualizarRotuloCacheHeader();
-    }
+function _limparSyncSobreCache(voo) {
+    if (voo) _syncsSobreCacheEmAndamento.delete(voo);
+    else _syncsSobreCacheEmAndamento.clear(); // Invalidação global da sessão.
+    _atualizarRotuloCacheHeader();
 }
 let _cacheInicializado = false;
 let _cachePossuiDados = false;
@@ -59,8 +61,39 @@ const _leiturasRemotasEmVoo = new Set();
 let _renderDebounceTimer = null;
 let _sequenciaLeitura = 0;
 const _leiturasPreparadas = new WeakMap();
+const _observadoresLeitura = new Set();
+let _ultimaAplicacaoLeitura = null;
+function _avisarLeiturasDados() {
+    _observadoresLeitura.forEach((fn) => {
+        try { fn(); } catch (erro) { window.log.error('[storage]', 'Falha no observador de leitura.', erro); }
+    });
+}
+function _reservarLeituraDados(contexto) {
+    const voo = { contexto };
+    _leiturasRemotasEmVoo.add(voo);
+    _avisarLeiturasDados();
+    return voo;
+}
+function _liberarLeituraDados(voo) {
+    _leiturasRemotasEmVoo.delete(voo);
+    _avisarLeiturasDados();
+    if (_pedidoLeituraManual) setTimeout(_processarLeituraManual, 0);
+}
+
+// Fronteira de coordenação; registrar/carregar este contrato não dispara rede.
+window.leiturasDados = Object.freeze({
+    emAndamento: (contexto) => Array.from(_leiturasRemotasEmVoo).some((voo) => CONTEXTO_DADOS.atual(voo.contexto) && voo.contexto.geracao === contexto.geracao),
+    temPedidoManual: (contexto) => Boolean(_pedidoLeituraManual && CONTEXTO_DADOS.atual(_pedidoLeituraManual.contexto) && _pedidoLeituraManual.contexto.geracao === contexto.geracao),
+    reservar: _reservarLeituraDados,
+    liberar: _liberarLeituraDados,
+    ultimaAplicacao: () => _ultimaAplicacaoLeitura,
+    aoMudar: (fn) => { _observadoresLeitura.add(fn); return () => _observadoresLeitura.delete(fn); },
+    iniciarFeedback: _marcarSyncSobreCache,
+    finalizarFeedback: _limparSyncSobreCache
+});
 
 CONTEXTO_DADOS.aoInvalidar(() => {
+    _ultimaAplicacaoLeitura = null;
     _sequenciaLeitura += 1;
     clearTimeout(_renderDebounceTimer);
     _cacheInicializado = false;
@@ -945,8 +978,7 @@ async function obterLeituraDados(opcoes = {}) {
     if (!CONTEXTO_DADOS.atual(contexto)) return { ok: false, estado: 'adiado', motivo: 'sem-sessao' };
     if (!CONTEXTO_DADOS.podeLer(operacao) && !(opcoes.verificacao === true && CONTEXTO_DADOS.semOperacoes())) return { ok: false, estado: 'adiado', motivo: 'interacao-em-andamento' };
     const timeout = opcoes.timeoutMs || (_primeiraRequisicao ? 40000 : API_TIMEOUT_MS);
-    const voo = { contexto };
-    _leiturasRemotasEmVoo.add(voo);
+    const voo = _reservarLeituraDados(contexto);
     const tarefas = [
         _lerRespostaDados(`${API_BASE_URL}/alunos`, contexto, timeout, signal),
         _lerRespostaDados(`${API_BASE_URL}/agendamentos`, contexto, timeout, signal),
@@ -999,11 +1031,10 @@ async function obterLeituraDados(opcoes = {}) {
         return { ok: false, estado: 'falha', motivo: erro.message === 'AUTH_REQUIRED' ? 'sessao-expirada' : 'falha-leitura', erro: erro.message };
     } finally {
         await Promise.allSettled(tarefas);
-        _leiturasRemotasEmVoo.delete(voo);
+        _liberarLeituraDados(voo);
         // O pedido manual bloqueado por este voo precisa ser reavaliado quando ele
         // terminar; sem isso o clique ficaria em "Aguardando para atualizar..." sem
         // nenhum evento capaz de acordá-lo.
-        if (_pedidoLeituraManual) setTimeout(_processarLeituraManual, 0);
     }
 }
 
@@ -1040,7 +1071,10 @@ function aplicarLeituraDados(leitura, recuperacao) {
     _cacheInicializado = true;
     _cachePossuiDados = true; // Inclusive snapshot remoto válido vazio.
     _primeiraRequisicao = false;
-    return { ok: true, estado: 'aplicado', origem: 'remoto', cachePersistido };
+    const resultado = { ok: true, estado: 'aplicado', origem: 'remoto', cachePersistido };
+    _ultimaAplicacaoLeitura = Object.freeze({ contexto, interacao, operacao: Boolean(operacao), recuperacao: Boolean(recuperacaoValida), resultado: Object.freeze({ ...resultado }) });
+    _avisarLeiturasDados();
+    return resultado;
 }
 
 window.obterLeituraDados = obterLeituraDados;
@@ -1086,11 +1120,13 @@ async function carregarDados(opcoes = {}) {
         return { ok: false, estado: 'adiado', motivo: 'sem-sessao', origem: 'local-sem-login' };
     }
 
+    // A obtenção termina antes do consumidor aplicar: conservar reserva até o
+    // recibo de aplicação para um observador não iniciar B2 nesse intervalo.
+    const reservaCarregamento = _reservarLeituraDados(contexto);
+    const feedbackLeitura = _marcarSyncSobreCache(contexto);
     try {
         // 5.8 (Parte B): se a chamada está sobre cache local, acende o rótulo
         // do header (o estado só existe nos syncs remotos pós-cache).
-        _marcarSyncSobreCache();
-        _atualizarRotuloCacheHeader();
         window.log.info('[storage]', 'Iniciando sincronização com o banco de dados online...');
         const onRetry = () => carregarDados({ ...opcoes, forcarRemoto: true });
 
@@ -1120,7 +1156,7 @@ async function carregarDados(opcoes = {}) {
         }
         // 5.8 (Parte B): falha na chamada — apaga o rótulo agora; o toast de
         // "Sem conexão..." que vem a seguir assume a comunicação de falha.
-        _limparSyncSobreCache();
+        _limparSyncSobreCache(feedbackLeitura);
         window.log.error('[storage]', 'Falha na leitura. Estado anterior preservado.', error);
         
         if (!silenciosoUI && typeof mostrarToast === 'function') {
@@ -1133,7 +1169,8 @@ async function carregarDados(opcoes = {}) {
     } finally {
         // 5.8 (Parte B): fim do sync (sucesso ou qualquer outro erro não tratado
         // acima) — o rótulo do header é apagado aqui.
-        if (CONTEXTO_DADOS.atual(contexto)) _limparSyncSobreCache();
+        _limparSyncSobreCache(feedbackLeitura);
+        _liberarLeituraDados(reservaCarregamento);
     }
 
 }
@@ -1354,6 +1391,7 @@ function _processarLeituraManual() {
     if (!CONTEXTO_DADOS.atual(pedido.contexto)) {
         _pedidoLeituraManual = null;
         pedido.resolver({ ok: false, estado: 'descartado', motivo: 'contexto-obsoleto' });
+        _avisarLeiturasDados();
         return;
     }
     if (pedido.executando) return;
@@ -1363,6 +1401,7 @@ function _processarLeituraManual() {
         _setEstadoBotaoSyncBanco('pronto');
         if (window.abrirRecuperacaoDados) window.abrirRecuperacaoDados();
         pedido.resolver({ ok: false, estado: 'adiado', motivo: 'pendencia-local' });
+        _avisarLeiturasDados();
         return;
     }
     if (!CONTEXTO_DADOS.podeLer() || _pedidoManualEmVoo || Array.from(_leiturasRemotasEmVoo).some((voo) => CONTEXTO_DADOS.atual(voo.contexto))) return;
@@ -1407,6 +1446,7 @@ function _processarLeituraManual() {
                     if (label) label.textContent = 'Aguardando para atualizar...';
                 } else _setEstadoBotaoSyncBanco('pronto');
             }
+            _avisarLeiturasDados();
             if (!pedido.executando && _pedidoLeituraManual === pedido && CONTEXTO_DADOS.podeLer()) Promise.resolve().then(_processarLeituraManual);
         }
     })();
@@ -1429,6 +1469,7 @@ window.sincronizarBancoDados = function (opcoes = {}) {
     let resolver;
     const promise = new Promise((resolve) => { resolver = resolve; });
     _pedidoLeituraManual = { contexto, opcoes, promise, resolver, executando: false };
+    _avisarLeiturasDados();
     const label = document.getElementById('btnSyncBancoText');
     if (label) label.textContent = 'Aguardando para atualizar...';
     _processarLeituraManual();
