@@ -131,7 +131,8 @@ for (const cache of ['presente', 'vazio', 'ausente']) {
         a.b2.iniciar();
         await eventos();
         assert.equal(a.estado().estado, 'em-voo');
-        assert.equal(a.rotulo(), cache === 'ausente');
+        assert.equal(a.rotulo(), false);
+        assert.equal(a.w.document.getElementById('headerCacheState').textContent, cache === 'ausente' ? 'Carregando dados...' : 'Sincronizando dados...');
         gate.liberar(); await eventos();
         assert.equal(a.rotulo(), true);
         assert.equal(a.estado().estado, 'aplicado');

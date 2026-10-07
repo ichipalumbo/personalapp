@@ -711,6 +711,8 @@
             if (telaFinancasAtiva()) renderizarSkeleton();
         }
 
+        const feedback = !operacao && global.leiturasDados
+            ? global.leiturasDados.iniciarFeedback(contexto, { tela: 'tela-financas', temDados: Boolean(cache) || STATE.cards.length > 0 }) : null;
         try {
             // Etapa 6 (2026-09-30): o fetch roda no mesmo mecanismo de feedback das demais
             // telas — toast de progresso só se a operação passar de 3s (limiar do wrapper).
@@ -761,6 +763,7 @@
             }
             return false;
         } finally {
+            if (feedback) global.leiturasDados.finalizarFeedback(feedback);
             // Uma leitura antiga não apaga o indicador nem o erro da operação seguinte.
             if (podeAplicar()) {
                 STATE.carregando = false;
@@ -1060,6 +1063,14 @@
         bindHandlers();
         renderizarCards();
         atualizarCabecalhoCache();
+    };
+
+    // Só descreve apresentação; não calcula valores nem inicia consulta.
+    window.temConteudoFinancasExibido = function () {
+        const conteudo = document.getElementById('financasConteudo');
+        return Boolean(contextoDados.atual(contextoDados.capturar()) && conteudo
+            && conteudo.childElementCount && !conteudo.querySelector('.skeleton')
+            && (leituraFinancasConfirmada || (global.obterCacheFinancas && global.obterCacheFinancas())));
     };
 
     // D1: leitura própria existente, compartilhada quando compatível; nunca reinicializa.

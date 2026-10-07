@@ -462,6 +462,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) §6.1.1–6.1.4.
   Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
+- **Ajuste pontual após E3**: dono relatou uso normal aparentemente correto no deploy da
+  branch, mas Home inicialmente vazia ao abrir pelo ícone, sem aviso. Implementado aviso
+  imediato **Carregando dados...** antes da sessão/consulta e **Sincronizando dados...**
+  sobre conteúdo autorizado existente, nas três telas. Frontend medido **321→337**, zero
+  falhas; mock mobile validado, teste desse ajuste no app instalado/deploy ainda pendente.
+  Registro em [`reports/2026-10-06-fix-aviso-carga-inicial.md`](reports/2026-10-06-fix-aviso-carga-inicial.md).
+  Não reabre A–E3 nem antecipa `[x]` sem aceite manual/publicação.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,
   cálculo financeiro ou motor. C teve autorização explícita para fronteiras de contexto/raiz

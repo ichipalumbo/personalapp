@@ -28,7 +28,7 @@ function ambiente(t, opcoes = {}) {
         <main class="view-section" id="tela-alunos"><div id="listaAlunos"></div></main>
         <main class="view-section" id="tela-financas"></main>
         <div class="modal-overlay" id="modalFormAluno" style="display:none"><form id="formNovoAluno"><input id="alunoNome"><textarea id="alunoObservacoes"></textarea></form></div>
-        <span id="headerCacheState" hidden>Sincronizando dados...</span>
+        ${opcoes.cargaInicial ? '<span id="headerCacheState" role="status" data-carga-inicial="true">Carregando dados...</span>' : '<span id="headerCacheState" hidden>Sincronizando dados...</span>'}
         <button id="btnSyncBanco"><span id="btnSyncBancoText">Sincronizar Dados</span></button>
     </div></body></html>`, { url: `http://localhost/index.html#${tela}`, runScripts: 'outside-only' });
     const w = dom.window;
@@ -48,7 +48,7 @@ function ambiente(t, opcoes = {}) {
         getOwnerEmail: () => email, getIdToken: () => token,
         addAuthChangeListener: (fn) => { listeners.add(fn); return () => listeners.delete(fn); },
         initialize: () => { if (a.aoInicializarIdentidade) a.aoInicializarIdentidade(); },
-        whenReady: async () => {}
+        whenReady: () => a.sessaoPronta ? a.sessaoPronta.promise : Promise.resolve()
     };
     w.Headers = Headers;
     w.AbortController = AbortController;
@@ -420,3 +420,124 @@ for (const tela of ['tela-home', 'tela-alunos']) {
         assert.equal(a.w.__homeCarregando, false);
     });
 }
+
+testar('Carga inicial — HTML anuncia carregamento antes de executar o bootstrap', (t) => {
+    const html = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
+    const dom = new JSDOM(html);
+    t.after(() => dom.window.close());
+    const aviso = dom.window.document.getElementById('headerCacheState');
+    assert.equal(aviso.hidden, false);
+    assert.equal(aviso.getAttribute('role'), 'status');
+    assert.equal(aviso.dataset.cargaInicial, 'true');
+    assert.equal(aviso.textContent, 'Carregando dados...');
+    const manifest = JSON.parse(fs.readFileSync(path.join(RAIZ, 'manifest.json'), 'utf8'));
+    assert.equal(manifest.start_url, '/index.html', 'ícone instalado entra pelo mesmo HTML');
+});
+
+for (const tela of ['tela-home', 'tela-alunos', 'tela-financas']) {
+    testar(`Carga inicial — ${tela} sem dados anuncia desde sessão até fim da leitura`, async (t) => {
+        const a = ambiente(t, { tela, cache: 'ausente', financeiroCache: false, cargaInicial: true });
+        const aviso = a.w.document.getElementById('headerCacheState');
+        a.sessaoPronta = adiada();
+        const gate = a.segurar(tela === 'tela-financas' ? 'financas' : 'alunos');
+        const inicial = a.iniciar();
+        assert.equal(aviso.hidden, false, 'visível antes de whenReady resolver');
+        assert.equal(aviso.textContent, 'Carregando dados...');
+        a.sessaoPronta.resolver(); await eventos();
+        assert.equal(aviso.hidden, false, 'não espera timer de 3s');
+        assert.equal(aviso.textContent, 'Carregando dados...');
+        gate.liberar(); await inicial; await a.pintar();
+        assert.equal(aviso.hidden, true, 'fim de carga não deixa aviso preso');
+        assert.equal(a.principais(), 1);
+        assert.equal(a.financas(), tela === 'tela-home' ? 0 : 1);
+        assert.equal(a.w.location.hash, `#${tela}`);
+    });
+
+    for (const status of [500, 401]) {
+        testar(`Carga inicial — ${tela} falha ${status} encerra aviso e mantém orientação`, async (t) => {
+            const a = ambiente(t, { tela, cache: 'ausente', financeiroCache: false, cargaInicial: true });
+            a.responder = () => resposta({}, status);
+            await a.iniciar(); await a.pintar();
+            assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+            if (tela === 'tela-financas') {
+                assert.match(a.w.document.getElementById('financasConteudo').textContent, status === 401 ? /Faça login/ : /Não foi possível/);
+            } else assert.ok(a.avisos.some((aviso) => /não foi possível|login|expirou/i.test(aviso[0])));
+        });
+    }
+}
+
+testar('Carga inicial — sem sessão não deixa aviso infinito nem expõe cache', async (t) => {
+    const a = ambiente(t, { sessao: false, cargaInicial: true });
+    await a.iniciar(); await a.pintar();
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    assert.equal(a.estado().motivo, 'sem-sessao');
+    assert.equal(a.w.obterAlunos().length, 0);
+    assert.equal(a.chamadas.length, 0);
+});
+
+testar('Carga inicial — cache disponível mantém sincronização, não carga sem conteúdo', async (t) => {
+    const a = ambiente(t, { cargaInicial: true });
+    const gate = a.segurar('alunos');
+    await a.iniciar();
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true, 'hidratação terminou sem aguardar rede');
+    await a.pintar();
+    const aviso = a.w.document.getElementById('headerCacheState');
+    assert.equal(aviso.hidden, false);
+    assert.equal(aviso.textContent, 'Sincronizando dados...');
+    gate.liberar(); await eventos();
+    assert.equal(aviso.hidden, true);
+});
+
+testar('Carga inicial — finanças em voo continua anunciada após término do batch principal', async (t) => {
+    const a = ambiente(t, { cargaInicial: true, financeiroCache: false });
+    await a.iniciar(); await a.pintar();
+    const gate = a.segurar('financas');
+    const navegacao = a.w.__appShell.router.navigateTo('tela-financas'); await eventos();
+    const aviso = a.w.document.getElementById('headerCacheState');
+    assert.equal(aviso.hidden, false);
+    assert.equal(aviso.textContent, 'Carregando dados...');
+    const principal = await a.w.carregarDados({ forcarRender: false, forcarRemoto: true });
+    assert.equal(principal.estado, 'aplicado');
+    assert.equal(aviso.hidden, false, 'finally principal não apaga financeiro');
+    assert.equal(aviso.textContent, 'Carregando dados...');
+    gate.liberar(); await navegacao;
+    assert.equal(aviso.hidden, true);
+});
+
+testar('Carga inicial — edição descarta aviso financeiro e resposta antiga não o reativa', async (t) => {
+    const a = ambiente(t, { tela: 'tela-financas', cache: 'ausente', financeiroCache: false, cargaInicial: true });
+    const gate = a.segurar('financas');
+    const inicial = a.iniciar(); await eventos();
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, false);
+    a.w.contextoDados.definirFormulario('carga', true);
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    a.w.contextoDados.definirFormulario('carga', false);
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true, 'fechar não reativa apresentação inicial invalidada');
+    // A resposta financeira velha foi invalidada pela edição; não ressuscitar seu aviso.
+    gate.liberar(); await inicial;
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+});
+
+testar('Carga inicial — perda de sessão durante await encerra imediatamente o aviso', async (t) => {
+    const a = ambiente(t, { tela: 'tela-financas', cache: 'ausente', financeiroCache: false, cargaInicial: true });
+    const gate = a.segurar('financas');
+    const inicial = a.iniciar(); await eventos();
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, false);
+    await a.sessao(null);
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    gate.liberar(); await inicial;
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+});
+
+testar('Carga inicial — B2 sem cache principal sincroniza sobre financeiro já exibido', async (t) => {
+    const a = ambiente(t, { tela: 'tela-financas', cache: 'ausente', financeiroCache: false, cargaInicial: true });
+    await a.iniciar();
+    const gate = a.segurar('alunos');
+    await a.pintar();
+    const aviso = a.w.document.getElementById('headerCacheState');
+    assert.equal(aviso.hidden, false);
+    assert.equal(aviso.textContent, 'Sincronizando dados...');
+    assert.equal(a.financas(), 1, 'indicador não cria GET financeiro');
+    gate.liberar(); await eventos();
+    assert.equal(aviso.hidden, true);
+});

@@ -34,9 +34,9 @@
                 ><i class="fa-solid fa-dumbbell"></i> Prô</span
               ><span class="marca-mente"> Josy</span>
             </h1>
-            <!-- 5.8 (Parte B): rotulo global de sincronização remoto sobre cache.
-                 Oculto por padrão; storage.js alterna `hidden`. Texto aprovado pelo dono: "Sincronizando dados..." -->
-            <span id="headerCacheState" class="header-cache-state" hidden>Sincronizando dados...</span>
+              <!-- Aviso imediato antes do bootstrap: storage distingue carga sem conteúdo
+                de atualização sobre dados existentes e encerra por voo/contexto. -->
+              <span id="headerCacheState" class="header-cache-state" role="status" data-carga-inicial="true">Carregando dados...</span>
           </div>
           <div class="auth-banner" id="headerSession">
             <div id="googleSignedOutState" class="header-session-state">

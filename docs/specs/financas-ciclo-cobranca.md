@@ -1,8 +1,9 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 12 · **Atualizado**: 2026-10-06
+> **Status**: Em produção · **Versão**: 13 · **Atualizado**: 2026-10-06
 > **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
 > execução e aceite mock encerrados localmente. Confirmação nativa, teclado/TalkBack e publicação ainda pendentes; não declarados validados em produção.
+> **Apresentação inicial**: aviso imediato com/sem conteúdo implementado e validado no mock; teste desse ajuste no app instalado ainda pendente.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
@@ -476,8 +477,14 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
   são recibo de leitura. Manual/recuperação e escrita continuam exigindo suas leituras próprias.
 - Login e retorno à aba não concorrem com B2 pendente. Após sua aplicação, permanecem
   gatilhos de atualização existentes; não consolidar GCal nem mudar regras financeiras.
-- Rótulo pertence ao voo/contexto e só indica leitura sobre cache autorizado. Sem migração,
-  reconciliação/CRUD pelo frontend; os GETs lazy existentes do backend continuam inalterados.
+- Aviso inicial **Carregando dados...** aparece antes de aguardar sessão/dados quando
+  ainda não há conteúdo autorizado; com conteúdo disponível, a leitura indica
+  **Sincronizando dados...**. Rótulo pertence ao voo/contexto e acompanha a tela ativa,
+  inclusive Finanças já exibida enquanto o batch principal está chegando.
+- Conclusão, falha, sessão ausente/perdida ou adiamento não mantêm aviso de carregamento
+  indefinido nem reativam indicador de uma leitura invalidada por edição. O aviso não
+  confirma escrita/sucesso remoto; orientações de login/falha/pendência continuam próprias.
+- Sem migração/reconciliação/CRUD pelo frontend; GETs lazy existentes do backend intactos.
 
 ### 6.2 Histórico de ciclos sob demanda
 

@@ -119,24 +119,28 @@
         // Isolar dados antes de inicializar qualquer view.
         global.contextoDados.iniciar();
 
-        if (global.googleIdentity && typeof global.googleIdentity.initialize === 'function') {
-            global.googleIdentity.initialize();
-            if (typeof global.googleIdentity.whenReady === 'function') {
-                await global.googleIdentity.whenReady(1600);
+        try {
+            if (global.googleIdentity && typeof global.googleIdentity.initialize === 'function') {
+                global.googleIdentity.initialize();
+                if (typeof global.googleIdentity.whenReady === 'function') {
+                    await global.googleIdentity.whenReady(1600);
+                }
             }
+            global.contextoDados.iniciar();
+            const cacheInicial = global.hidratarCacheDados();
+            if (cacheInicial.temDados) global.leiturasDados.finalizarApresentacaoInicial();
+
+            router.bindNavigation();
+            router.onAfterNavigate(() => {
+                global.leiturasDados.atualizarFeedback();
+                setTimeout(atualizarMedidasLayout, 50);
+            });
+
+            // Hash preservada inclusive na abertura pelo ícone do app instalado.
+            await router.navigateTo(router.getTelaInicial());
+        } finally {
+            global.leiturasDados.finalizarApresentacaoInicial();
         }
-        global.contextoDados.iniciar();
-        global.hidratarCacheDados();
-
-        router.bindNavigation();
-        router.onAfterNavigate(() => {
-            setTimeout(atualizarMedidasLayout, 50);
-        });
-
-        // Etapa 7 (Cartão D — achado 4.17.6): a tela inicial vem da URL
-        // (#tela-financas), para que recarregar a página mantenha a tela em que
-        // a pessoa estava. Sem hash válida, o router devolve a padrão.
-        await router.navigateTo(router.getTelaInicial());
 
         // D3: a tela inicial já renderizou. O frame dá oportunidade de apresentação;
         // B2 começa em background, sem aguardar sua leitura ou a renovação do GCal.

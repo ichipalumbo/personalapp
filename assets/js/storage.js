@@ -28,29 +28,48 @@ fetch(APP_API_CONFIG.apiRootUrl).catch(() => {});
 // Flag para timeout estendido na primeira requisição (cold start do Vercel + conexão MongoDB)
 let _primeiraRequisicao = true;
 
-// 5.8 (Parte B, caminho B1 — decisão do dono 2026-09-30): rótulo global no
-// header enquanto um sync remoto roda SOBRE dados locais já em tela. Não existe
-// no boot com cache (o boot apenas renderiza o cache, sem chamada remota);
-// existe em: troca de login, botão "Sincronizar Dados" e auto-refresh ao voltar
-// para o app ausente. Desaparece no fim do sync (sucesso ou falha). O toast de
-// "Sem conexão..." (storage.js) assume a comunicação nesse momento de falha.
+// Aviso imediato de leitura: sem conteúdo = carregando; com dados = sincronizando.
+// Cada voo remove somente seu aviso. HTML já sinaliza carga antes de identificar a conta.
 const _syncsSobreCacheEmAndamento = new Set();
-function _marcarSyncSobreCache(contexto = CONTEXTO_DADOS.capturar()) {
-    const voo = { contexto };
-    if (CONTEXTO_DADOS.atual(contexto) && _cachePossuiDados) _syncsSobreCacheEmAndamento.add(voo);
+let _apresentacaoInicialPendente = document.getElementById('headerCacheState')?.dataset.cargaInicial === 'true';
+function _marcarSyncSobreCache(contexto = CONTEXTO_DADOS.capturar(), opcoes = {}) {
+    const voo = { contexto, interacao: CONTEXTO_DADOS.capturarInteracao(), tela: opcoes.tela,
+        temDados: opcoes.temDados === undefined ? _cachePossuiDados : opcoes.temDados };
+    if (CONTEXTO_DADOS.atual(contexto)) _syncsSobreCacheEmAndamento.add(voo);
     _atualizarRotuloCacheHeader();
     return voo;
 }
 function _atualizarRotuloCacheHeader() {
     const el = document.getElementById('headerCacheState');
     if (!el) return;
-    el.hidden = !Array.from(_syncsSobreCacheEmAndamento).some((voo) => CONTEXTO_DADOS.atual(voo.contexto));
+    const router = window.__appShell && window.__appShell.router;
+    const ativos = Array.from(_syncsSobreCacheEmAndamento).filter((voo) => CONTEXTO_DADOS.atual(voo.contexto)
+        && voo.interacao === CONTEXTO_DADOS.capturarInteracao() && CONTEXTO_DADOS.podeLer()
+        && !CONTEXTO_DADOS.obterPendencia(voo.contexto)
+        && (!voo.tela || !router || router.getCurrentViewId() === voo.tela));
+    const cargaInicial = _apresentacaoInicialPendente && CONTEXTO_DADOS.podeLer()
+        && !CONTEXTO_DADOS.obterPendencia();
+    const financeiroEmTela = router && router.getCurrentViewId() === 'tela-financas'
+        && typeof window.temConteudoFinancasExibido === 'function';
+    const carregando = ativos.length
+        ? (financeiroEmTela ? !window.temConteudoFinancasExibido() : ativos.some((voo) => !voo.temDados))
+        : cargaInicial;
+    el.textContent = carregando ? 'Carregando dados...' : 'Sincronizando dados...';
+    el.hidden = !ativos.length && !cargaInicial;
 }
 function _limparSyncSobreCache(voo) {
     if (voo) _syncsSobreCacheEmAndamento.delete(voo);
     else _syncsSobreCacheEmAndamento.clear(); // Invalidação global da sessão.
     _atualizarRotuloCacheHeader();
 }
+function _finalizarApresentacaoInicial() {
+    _apresentacaoInicialPendente = false;
+    _atualizarRotuloCacheHeader();
+}
+CONTEXTO_DADOS.aoMudarInteracao(() => {
+    if (!CONTEXTO_DADOS.podeLer() || CONTEXTO_DADOS.obterPendencia()) _apresentacaoInicialPendente = false;
+    _atualizarRotuloCacheHeader();
+});
 let _cacheInicializado = false;
 let _cachePossuiDados = false;
 let _pedidoManualEmVoo = null;
@@ -91,10 +110,13 @@ window.leiturasDados = Object.freeze({
     ultimaFalha: () => _ultimaFalhaCarregamento,
     aoMudar: (fn) => { _observadoresLeitura.add(fn); return () => _observadoresLeitura.delete(fn); },
     iniciarFeedback: _marcarSyncSobreCache,
-    finalizarFeedback: _limparSyncSobreCache
+    finalizarFeedback: _limparSyncSobreCache,
+    finalizarApresentacaoInicial: _finalizarApresentacaoInicial,
+    atualizarFeedback: _atualizarRotuloCacheHeader
 });
 
-CONTEXTO_DADOS.aoInvalidar(() => {
+CONTEXTO_DADOS.aoInvalidar(({ anterior }) => {
+    if (anterior) _apresentacaoInicialPendente = false;
     _ultimaAplicacaoLeitura = null;
     _ultimaFalhaCarregamento = null;
     _sequenciaLeitura += 1;
