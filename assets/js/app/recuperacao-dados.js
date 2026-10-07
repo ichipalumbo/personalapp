@@ -1,7 +1,7 @@
 // Saída explícita para intenção local não confirmada. Nunca reenvia escrita nem desfaz remoto.
 (function (global) {
     const contexto = global.contextoDados;
-    const MENSAGEM_PADRAO = 'A alteração local foi preservada. Verifique os dados antes de continuar; a gravação pode ter sido efetivada no servidor.';
+    const MENSAGEM_PADRAO = 'Sua alteração está guardada neste aparelho. Ela pode já ter sido salva. Verifique no servidor.';
     const MENSAGEM_COMPLEMENTO = 'Dados locais substituídos, mas não foi possível atualizar todos os dados complementares. Atualize apenas a leitura.';
     const requisicoes = new Set();
     let consulta = 0;
@@ -224,7 +224,7 @@
                 conferirConsulta(rodada);
                 return resultadoAplicado(rodada, !atualizado);
             }
-            escreverMensagem('Dados consultados. A alteração local foi preservada. A consulta não comprova o término de uma gravação cuja resposta se perdeu. Use os dados do servidor para abandonar a intenção local.');
+            escreverMensagem('Consulta concluída. Sua alteração segue guardada. Uma gravação ainda pode estar em andamento.');
             return { ok: true, estado: 'verificado' };
         } catch (erro) {
             if (!contexto.atual(conta) || rodada.id !== consulta) return { ok: false, estado: 'descartado' };

@@ -1,11 +1,11 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Aberto — A–D3 e E1 validados localmente; B2 ligado; E2/E3/publicação pendentes
+> **Status**: Aberto — A–D3/E1/E2 validados localmente com lacunas manuais registradas; E3/publicação pendentes
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: somente E1, base `a42cb54`, mesma branch limpa explicitamente autorizada; preparar mock sem alterar regras/app.
+> **Rodada atual**: somente E2, base `925cd7c`, mesma branch confirmada; aceite mock concluído e mensagem curta aprovada.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
@@ -475,7 +475,18 @@ Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E
 - **Depende de**: E1 validado; branch e matriz confirmadas antes da rodada.
 - **Inclui**: aceite visual/funcional e correções pontuais evidenciadas; registrar lacunas.
 - **Não inclui**: ampliar features/Google/backend ou considerar mock prova de produção.
-- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 por falha.
+- **Matriz**: cache antigo→atual nas três hashes, falha preserva/vazio remove, ausência/troca
+  de sessão, edição/navegação em voo, manual próprio, verificação/adoção/reload da pendência;
+  viewport 433×762/DPR2.81/touch, stress 390×844 e 320×568.
+- **Inclui pedido do dono**: medir mensagem de pendência no mobile e confirmar redação
+  curta antes de alterar; preservar aviso de gravação possível e adoção sem rollback.
+- **Validação**: baseline frontend **318/318**, browser mock/contadores/storage sintético;
+  testes focados/mutação para qualquer fix, suíte afetada final. Backend controle final E3.
+  Sem alegar TalkBack/teclado se eventos não chegarem ao browser.
+- **Riscos / limite**: reset apenas de envelopes sintéticos; falhas concretas fora deste
+  recorte requerem confirmação. Máximo 2 tentativas por falha, segunda bloqueia E3.
+- **Resultado**: aceite local e fixes pontuais validados; registro §17. Confirmação nativa,
+  teclado/TalkBack e produção não declarados validados; E3 deve consolidar essas lacunas.
 
 ### Cartão E3 — Consolidar verificações e fechar entrega local
 
@@ -714,8 +725,9 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Próxima rodada
 
-Próximo **cartão E2 — aceite integrado**: confirmar branch, conferir A–D3/E1
-entregues e definir matriz de mock/aceite antes de editar. E3 consolida fechamento/suites.
+Próximo **cartão E3 — consolidação e fechamento local**: confirmar branch, conferir A–E2
+entregues, medir suítes finais (backend como controle) e consolidar lacunas manuais.
+Não reabrir auditoria A–D3 nem declarar verificação de produção executada.
 B2 está ligado no código local;
 publicação/PR/deploy são do dono e não foram executados pelo agente.
 Se inventário exigir alterar autenticação,
@@ -1129,3 +1141,87 @@ essa dependência antes de seguir, sem substituir silenciosamente as decisões a
   E2 deve medir contagem/campos/foco/viewport nas três hashes e E3 medir controle backend.
 - **Não realizado**: E2/E3/fechamento da 2.4, alteração de regras/app/auth/GCal/backend,
   novas dependências, commit/push/merge/deploy ou acesso a dados reais. B2 local continua ligado.
+
+## 17. Registro da execução do cartão E2 — 06/10
+
+- **Branch/base**: `docs/planejar-sync-boot`, E1 commitado em `925cd7c`; árvore inicialmente
+  limpa e upstream próprio, um commit à frente do remoto. Continuidade confirmada antes
+  das escritas. Retomada após interrupção preservou os mesmos arquivos/base; nenhum Git mutável.
+- **Aceite no mock**: páginas dedicadas à validação, sem modificar as páginas que o dono
+  utilizava; API externa continua bloqueada e armazenamento exclusivamente sintético.
+  Emulação primária **433×762, DPR ~2.81**, touch/coarse/UA mobile confirmados.
+
+  | Caso observado | Resultado |
+  |---|---|
+  | Cache antigo → atualizado em Home/Alunos/Finanças | `CACHE — …` aparece antes das respostas e passa a `ATUAL — …`; hash preservada e rótulo encerrado. |
+  | Falha em reposições nas três hashes | Batch não aplicado, conteúdo principal antigo preservado, estado aguarda evento, rótulo oculto. |
+  | Servidor vazio nas três hashes | Arrays vazios aplicados e conteúdo principal antigo removido, sem migração. |
+  | Cache vazio identificado / sessão ausente | Sem exibir dados anteriores; cache vazio é válido e login simulado libera leitura da conta correta. |
+  | Conta B com cache A / troca durante edição | Cache A oculto; B exibe seus dados; rascunho A fechado/resetado com aviso. |
+  | Edição durante B2 e botão manual | Campo/foco/modal preservados, leitura B2 cancelada; manual mostra espera e depois obtém batch novo. |
+  | Home após atualização manual | Modo Dia, data, semana e hash preservados. |
+  | Finanças após atualização manual | Mesmo container, extrato aberto e foco no summary preservados. |
+  | Verificar pendência | Retorna `verificado`, sem mudar memória/snapshot/pendência. |
+  | Cancelar / falhar / adotar recuperação | Cancelar e falha preservam pendência; adoção válida aplica novo conteúdo e remove aviso; reload não recria pendência. |
+
+  Contadores de sucesso sobre cache: Home **5 GETs de dados**; Finanças **6** (inclui um
+  financeiro, não dois); Alunos **8** (inclui financeiro e complementos reposições/consistência).
+  Ping bloqueado e POST de renovação GCal **409** contabilizados separadamente: não são
+  escrita de dados pelo B2. Manual em espera executou nova leitura após cancelamento por edição.
+- **Defeito concreto encontrado e corrigido**: com snapshot não confirmado já hidratado,
+  `carregarDados` devolvia `local-pendente` e os inicializadores de Alunos/Home encerravam
+  antes de apresentar o conteúdo. Memória estava preservada, mas tela ficava em branco.
+  Agora exibem o snapshot autorizado sem GET complementar, sem limpar pendência nem marcar
+  `__sincronizacaoInicialConcluida=true`. Guardas de conta/interação anteriores mantidas.
+- **Arquivos alterados**:
+  - `assets/js/view-alunos.js`: render da lista para retorno `local-pendente`, sem fechar
+    formulário ou buscar complementos por cima da intenção.
+  - `assets/js/view-home.js`: permite render da intenção local preservada, encerra indicador
+    transitório sem declarar atualização remota confirmada.
+  - `assets/js/app/recuperacao-dados.js` e `index.html`: mensagens principal/pós-consulta
+    encurtadas conforme aprovação explícita do dono. Confirmação de descarte **inalterada**,
+    mantendo aviso de que não desfaz gravações e uma gravação ainda pode terminar.
+  - `tests-frontend/d3-boot-integracao.test.js`: duas regressões de boot pendente Home/Alunos.
+    `tests-frontend/recuperacao-dados.test.js`: uma regressão de mensagem curta/aviso sem
+    rollback e expectativa do texto pós-consulta atualizada.
+  - Este plano e `docs/roadmap.md`: medições, matriz e lacunas, sem relatório paralelo.
+- **Redação aprovada**:
+  - Principal: “Sua alteração está guardada neste aparelho. Ela pode já ter sido salva.
+    Verifique no servidor.” **120 → 94 caracteres**, de 3 → 2 linhas em 433px.
+  - Após verificar: “Consulta concluída. Sua alteração segue guardada. Uma gravação ainda
+    pode estar em andamento.” Não equivale a certificar conclusão remota.
+- **Medições mobile**: painel principal **179 → 160,5px** na referência; texto **55,5 → 37px**.
+  Stress: 390×844 painel 216,5px/texto 37px; 320×568 painel 235px/texto 55,5px.
+  Botões **48px** nas três larguras, cabendo sem overflow; em telas menores ações quebram
+  em linhas. Navegação/layout das três telas também sem overflow em 390/320px.
+- **Suítes medidas**: frontend **318/318 antes → 321/321 depois**, zero falhas. Foco
+  integração/recuperação/ponte Home/complementos Alunos **64/64**. Backend não executado
+  nesta rodada (nenhum arquivo backend/shared/harness alterado); controle final continua E3.
+  Diagnósticos limpos e diff-check sem erro de whitespace.
+- **Mutação**: removidos temporariamente os dois caminhos de apresentação `local-pendente`
+  e restaurada mensagem longa no runtime. Testes E2: **0 passam / 3 falham**, todos por
+  assert próprio (Home render, lista Alunos, texto curto). Restaurados por edição; status/diff
+  conferidos e suíte completa **321/321** depois. Nenhuma mutação residual.
+- **Revisão**: uma revisão read-only estritamente dos fixes E2, sem auditoria ampla; nenhum
+  bloqueante introduzido identificado. Raiz emprestada e guardas de contexto/interação intactas.
+- **Interrupção e limites da validação**:
+  - Agente repetiu incorretamente chamada inválida de confirmação do browser; interrompido
+    pelo dono. Foi falha de execução da automação, não evidência de defeito do app.
+    Alterações preservadas e retomada autorizada, sem repetir a mesma tentativa inválida.
+  - Diálogo nativo não pôde ser controlado de forma confiável; tentativa alternativa indicou
+    que já não havia modal aberto. Não contar como prova de cancelamento/aceite nativo.
+    Fluxos cancelar/falhar/adotar/reload foram comprovados no browser **com `confirm`
+    controlado e restaurado somente no mock**, além do harness. Confirmação nativa pelo dono
+    permanece pendente, assim como teclado/TalkBack.
+  - Service worker causou recarga extra inicial. Para medir arquivos atuais sem misturar
+    estados, desativado/bypassed **só na página de teste**, sem editar `sw.js` ou registro
+    produtivo. Mensagens dessa desativação e GCal bloqueado não são regressões do app.
+  - Uma espera automatizada com respostas retidas consumiu timeout antes da liberação;
+    resultado descartado, caso de conta B reconferido com retomada explícita e dados corretos.
+- **Encontrado, não alterado**: complementos da lista pendente não são consultados, logo
+  seus indicadores podem continuar exibindo “Atualizando…” até recuperar; não inventar
+  confirmação financeira a partir de cache. Mock de escrita não prova regra financeira/IO
+  remoto; escrita real, Google/Mongo e conflito entre dispositivos não foram validados.
+- **Não realizado**: E3/fechamento integral da 2.4, autenticação/GCal/cascata/motor/conflitos/
+  backend, dependências, commit/push/merge/deploy ou dados reais. **B2 ligado localmente;
+  controle backend, confirmação nativa/manual e publicação continuam pendentes.**

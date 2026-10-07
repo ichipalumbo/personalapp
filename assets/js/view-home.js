@@ -263,6 +263,12 @@ async function _sincronizarDadosHome(opcoes) {
         operacao,
         contextoDados: contexto,
       });
+      if (resultado && resultado.origem === 'local-pendente' && podeAplicar()) {
+        // Hidratação da intenção preservada não confirma sincronização remota.
+        // O painel de recuperação informa a pendência; não deixar a agenda em branco.
+        sincronizada = true;
+        return true;
+      }
       if (!resultado || resultado.ok !== true) return false;
     }
     if (!podeAplicar()) return false;

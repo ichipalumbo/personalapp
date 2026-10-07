@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–D3/E1 validados; B2 ligado; E2/E3/publicação pendentes |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–E2 validados com lacunas manuais; E3/publicação pendentes |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -410,7 +410,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > decisões de recuperação e botão manual refinadas; **cartões A–C implementados/validados
 > localmente em 06/10**, ainda sem publicação. **D1–D3 validados localmente**; B2 ligado
 > no código. **E1 entrega mock isolado com cache sintético/reload e controles**;
-> E2/aceite integrado, E3/fechamento e publicação pendentes.
+> **E2 validado no mock**, com confirmação nativa/teclado/TalkBack não observados;
+> E3/controle backend, fechamento e publicação pendentes.
 > B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
 - **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
@@ -448,7 +449,11 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   **256→288**, zero falhas. E foi dividido: E1 mock seguro, E2 experiência integrada,
   E3 suites/fechamento. E1 entrega sandbox antecipado sem acessar caches reais, cenários
   B2 persistentes só em envelope sintético, sessão A/B, rede/abort/retenção/contadores.
-  Frontend E1 medido **288→318**, zero falhas; próximo cartão E2. Resultados,
+  Frontend E1 medido **288→318**; E2 medido **318→321**, zero falhas. E2 validou
+  atualização/erro/vazio, edição/manual, recuperação/reload e stress mobile; corrigiu
+  apresentação do snapshot pendente em Home/Alunos e encurtou mensagens com aprovação.
+  Confirmação nativa permanece manual (automação controlou `confirm` apenas no mock).
+  Próximo cartão E3, sem reauditar A–D3. Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,

@@ -17,6 +17,17 @@ function preservado(a, memoria, disco, tentativaId) {
     assert.equal(a.painel.hidden, false);
 }
 
+testar('E2 — mensagem curta preserva incerteza e confirmação informa ausência de rollback', async (t) => {
+    const a = await criarAmbiente(t);
+    assert.equal(a.mensagem(), 'Sua alteração está guardada neste aparelho. Ela pode já ter sido salva. Verifique no servidor.');
+    assert.ok(a.mensagem().length < 120);
+    a.aceitar = false;
+    await a.window.usarDadosServidor();
+    assert.match(a.confirmacoes[0], /não desfaz o que já foi gravado/);
+    assert.match(a.confirmacoes[0], /ainda pode terminar no servidor/);
+    assert.equal(a.contexto.obterPendencia() !== null, true);
+});
+
 // Mutações candidatas T01: ignorar lerPendencias em obterPendencia/lerPrincipal;
 // remover a guarda de dono em obterPendencia. Não executadas por este arquivo.
 testar('T01 — pendência parcial sobrevive nova página e troca de conta sem exposição', async (t) => {
@@ -79,7 +90,7 @@ testar('T02 — verificar consulta batch e alvos GET sem aplicar, limpar intenç
     assert.equal(a.window.DialogController.getStack().length, 1);
     assert.equal(a.window.document.getElementById('rascunho').value, 'Rascunho da agenda');
     assert.equal(a.verificar.disabled, false);
-    assert.match(a.mensagem(), /não comprova/);
+    assert.equal(a.mensagem(), 'Consulta concluída. Sua alteração segue guardada. Uma gravação ainda pode estar em andamento.');
 });
 
 // T03: retirar global.confirm ou ignorar sua resposta.

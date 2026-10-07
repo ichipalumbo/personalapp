@@ -901,7 +901,14 @@ window.inicializarPaginaCadastro = async function(opcoes = {}) {
             operacao,
             contextoDados: contexto
         });
-        if (!podeAplicar() || !resultado || resultado.ok !== true) return;
+        if (!podeAplicar() || !resultado) return;
+        if (resultado.origem === 'local-pendente') {
+            // Pendência é conteúdo local autorizado, não falha de hidratação.
+            // Exibir sem reinicializar formulário ou iniciar complementos remotos.
+            if (telaAlunosAtiva()) window.renderizarListaAlunos();
+            return;
+        }
+        if (resultado.ok !== true) return;
         window.__sincronizacaoInicialConcluida = true;
     }
     if (!telaAlunosAtiva()) return;

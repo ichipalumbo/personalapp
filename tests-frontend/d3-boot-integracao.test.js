@@ -399,3 +399,24 @@ testar('D3-21 — B2 offline sobre cache aguarda online sem apagar agenda', asyn
     assert.equal(a.estado().estado, 'aplicado');
     assert.equal(a.principais(), 1);
 });
+
+for (const tela of ['tela-home', 'tela-alunos']) {
+    testar(`E2 — ${tela} apresenta snapshot pendente na abertura sem GET nem confirmar sync`, async (t) => {
+        const a = ambiente(t, { tela });
+        const c = a.w.contextoDados;
+        a.w.hidratarCacheDados();
+        const op = c.iniciarOperacao({ tipo: 'dados' });
+        assert.ok(op);
+        c.marcarFalhaOperacao(op, new Error('Confirmação simulada perdida'));
+        await c.finalizarOperacao(op);
+        await a.iniciar(); await a.pintar();
+        assert.equal(a.estado().motivo, 'pendencia-local');
+        assert.equal(a.w.obterAlunos()[0].nome, 'Ana cache');
+        if (tela === 'tela-alunos') assert.match(a.w.document.getElementById('listaAlunos').textContent, /Ana cache/);
+        else assert.ok(a.rendersHome.some((nomes) => nomes[0] === 'Ana cache'));
+        assert.equal(a.chamadas.length, 0, 'nenhuma leitura principal/complementar por cima da pendência');
+        assert.notEqual(a.w.__sincronizacaoInicialConcluida, true, 'hidratação não confirma atualização remota');
+        assert.equal(c.obterPendencia().tentativaId, op.id);
+        assert.equal(a.w.__homeCarregando, false);
+    });
+}
