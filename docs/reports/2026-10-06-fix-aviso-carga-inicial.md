@@ -1,6 +1,6 @@
 # Ajuste pontual — aviso imediato de carga inicial
 
-> **Status**: Implementado; uso normal no app instalado aprovado pelo dono; publicação na main pendente · **Data**: 2026-10-06
+> **Status**: Publicado na main pelo PR #70; uso normal aprovado pelo dono, com limites registrados · **Data**: 2026-10-06
 > **Branch**: `docs/planejar-sync-boot` · **Base**: `0a081c9`
 
 ## Origem e decisão
@@ -74,8 +74,8 @@ zerada, seguida de carga normal, sem aviso imediato. Autorizou nas três telas:
   restaurado depois. Service worker bypass/desativado apenas na página de teste para
   não servir scripts antigos; nenhum arquivo de PWA/SW alterado.
 - Abertura real pelo ícone foi aprovada pelo dono no aceite posterior abaixo, não executada
-  pelo agente. Recuperação nativa não exercitada; TalkBack não testado; conferência dos
-  deploys da main continua pendente. Não ampliar esse relato para cobertura integral.
+  pelo agente. Recuperação nativa não exercitada; TalkBack não testado; aceite posterior
+  à publicação registrado abaixo. Não ampliar esse relato para cobertura integral.
 - Dono relatou uso normal aparentemente correto no deploy anterior, exceto ausência
   de aviso na primeira abertura; relato não substitui a verificação deste ajuste novo.
 - Nenhum commit, push, merge, deploy, dependência ou acesso a dados reais pelo agente.
@@ -89,5 +89,14 @@ zerada, seguida de carga normal, sem aviso imediato. Autorizou nas três telas:
 - Registro documental realizado sobre `544ff24`, na mesma branch autorizada; nenhuma
   execução nova de testes nesta rodada. URL/identificador do deploy não informados.
 
-**Fechamento**: ajuste aceito pelo dono para o PR, com limitações explícitas. Publicação
-na main e conferência dos deploys ainda pendentes; nenhum commit/push/deploy pelo agente.
+## Publicação e aceite final — 06/10
+
+- PR #70 integrado em `e3ffac8`, verificado em `main`/`origin/main`. Dono confirmou que
+  está na main, funcionando OK e testado. Aprovação posterior à publicação por relato;
+  nenhuma inspeção de deploy ou teste em produção realizado pelo agente.
+- Recuperação nativa não exercitada e TalkBack não testado permanecem limites conhecidos;
+  não foram convertidos em testes aprovados. Teclado no uso normal aprovado pelo dono.
+- Registro final diretamente na `main` por exceção documental explícita do dono;
+  nenhum código, teste, commit, push ou deploy pelo agente nesta rodada.
+
+**Fechamento**: ajuste publicado e aceito pelo dono; registro encerrado com limitações explícitas.

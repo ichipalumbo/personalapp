@@ -1,11 +1,11 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Execução encerrada — aceite do dono no uso normal/teclado registrado; publicação na main pendente (§19)
+> **Status**: Fechado — publicado na main pelo PR #70; uso normal aprovado pelo dono, com limites registrados (§20)
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
-> **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
+> **Branch de implementação**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: registro de aceite, base `544ff24`, mesma branch limpa confirmada; somente documentação, sem testes novos.
+> **Fechamento documental**: `main`, base `e3ffac8`; exceção explícita do dono para editar somente documentação, sem commit/push pelo agente.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
@@ -14,7 +14,8 @@ execução e aceite mock encerrados até E3**. O dono aprovou uso normal, abertu
 instalado e teclado no deploy da branch; recuperação não foi exercitada e TalkBack foi
 dispensado como bloqueio, sem declarar teste realizado (§19). Este mesmo documento
 conserva a execução e a checklist de publicação (§18); não se cria relatório paralelo
-nem se reabre o B1. Aceite na branch não equivale a publicação na main; a 2.4 permanece parcial.
+nem se reabre o B1. Publicação na main e teste posterior confirmados pelo dono (§20):
+item 2.4 concluído, sem ampliar o alcance dos testes de recuperação ou TalkBack.
 As decisões abaixo substituem o desenho anterior onde houver divergência. Um plano não
 substitui specs: incorporar os contratos aprovados nas specs pertinentes no cartão A,
 antes do código que os implementa.
@@ -737,12 +738,10 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Após a entrega local
 
-Nenhum cartão de implementação desta frente permanece em execução. O próximo passo é
-o dono concluir a lista de aceite manual/publicação do §18. Manter o item 2.4 parcial até
-registrar esse aceite; não publicar automaticamente nem iniciar 2.2/ETag nesta rodada.
-Este documento recebe somente a confirmação dos passos já previstos enquanto essas
-pendências estiverem abertas. Defeito novo ou ampliação de escopo exige decisão/rodada
-própria, sem reescrever a evidência de A–E3 ou criar relatório duplicado do fechamento.
+Nenhum cartão desta frente permanece em execução. Publicação e aceite posterior do dono
+registrados no §20; item 2.4 concluído. Não iniciar 2.2/ETag nesta rodada. Defeito novo ou
+ampliação de escopo exige decisão/documento próprio, sem reescrever a evidência de A–E3
+ou criar relatório duplicado deste fechamento.
 
 ## 11. Registro da execução do cartão B — 06/10
 
@@ -1276,14 +1275,13 @@ própria, sem reescrever a evidência de A–E3 ou criar relatório duplicado do
 - [x] **Teclado no uso normal**: aprovado pelo dono em 06/10, conforme relato (§19).
   Isso não certifica navegação por teclado no painel de recuperação, não exercitado.
 - **TalkBack**: não testado; dono decidiu que não bloqueia o aceite/PR (§19).
-- [ ] **Revisar/commitar a documentação E3 e publicar por PR**, nunca push direto na main.
-  Commit/push/merge/deploy são do dono. Merge na main publica nos dois projetos Vercel.
-- [ ] **Após publicação autorizada**, conferir os dois deploys, carga dos scripts/mock
-  inerte sem parâmetro, login/isolamento da própria conta e funcionamento de leitura nas
-  três hashes. Não confundir aceite do mock com Google/Mongo/estado externo reais.
-- [ ] Registrar resultado dessas verificações antes de marcar **2.4 `[x]`**. Até lá:
-  implementação/fechamento local e aceite do dono registrados; publicação pendente,
-  com recuperação não exercitada e TalkBack não testado explicitados no §19.
+- [x] **Publicar por PR**: PR #70 integrado à main em `e3ffac8`; verificado no Git local.
+  Commit/push/merge/deploy realizados pelo dono, não pelo agente.
+- [x] **Aceite após publicação**: dono informou que tudo está na main, rodando OK e
+  testado (§20). Aprovação de uso normal por relato; logs/IDs dos deploys e verificação
+  isolada de cada endpoint não foram fornecidos nem observados pelo agente.
+- [x] Resultado registrado e **2.4 `[x]`**. Recuperação nativa não exercitada e TalkBack
+  não testado permanecem limites de cobertura (§19), não testes concluídos.
 
 ### Limites e achados preservados
 
@@ -1329,3 +1327,24 @@ própria, sem reescrever a evidência de A–E3 ou criar relatório duplicado do
   continuam com o dono; a 2.4 permanece `[~]` até essa publicação ser confirmada.
 - **Testes nesta rodada**: não executados, pois só o texto dos documentos mudou. Medições
   anteriores preservadas no E3 e no relatório do ajuste, sem apresentá-las como números novos.
+
+## 20. Publicação e encerramento — 06/10
+
+- **Evidência de integração**: `main` e `origin/main` em `e3ffac8`, mensagem
+  “Merge pull request #70 from ichipalumbo/docs/planejar-sync-boot”; árvore inicialmente
+  limpa. PR #70 inclui a implementação A–E3, o aviso imediato e o registro de aceite.
+- **Aceite após publicação**: dono informou “PR feito tudo na main e tudo rodando ok,
+  já testei”. Publicação e funcionamento normal aprovados por seu relato; não houve
+  execução de testes em produção ou inspeção de deploys pelo agente.
+- **Limites mantidos**: recuperação nativa não exercitada pelo dono; validação dessa
+  lógica fica nos testes/mock já registrados. TalkBack não testado e considerado não
+  bloqueante pelo dono; teclado no uso normal aprovado. Não declarar cobertura integral
+  de acessibilidade, falhas reais ou I/O de Google/Mongo a partir desse aceite.
+- **Decisão**: item **2.4 concluído** e plano fechado. Consolidação GCal/2.2, ETag e
+  limites de transação/idempotência continuam fora desta entrega.
+- **Exceção documental autorizada**: dono solicitou atualização diretamente na `main`
+  e mudou a branch por conta própria. Agente editou somente este plano, o roadmap, o
+  cabeçalho da spec de Finanças e o relatório do aviso; nenhum código, teste, commit,
+  push, merge ou deploy executado pelo agente. Não estender essa exceção a outras rodadas.
+- **Validação documental**: diagnósticos e diff-check; suítes não repetidas por mudança
+  exclusivamente textual. Medições anteriores não são apresentadas como novos testes.

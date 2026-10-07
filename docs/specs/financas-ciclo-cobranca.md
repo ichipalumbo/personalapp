@@ -1,9 +1,9 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 14 · **Atualizado**: 2026-10-06
+> **Status**: Em produção · **Versão**: 15 · **Atualizado**: 2026-10-06
 > **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
-> execução e aceite mock encerrados. Dono aprovou uso normal e teclado no deploy da branch; recuperação nativa não exercitada e TalkBack não testado, não bloqueante por decisão do dono. Publicação na main pendente.
-> **Apresentação inicial**: aviso imediato com/sem conteúdo implementado; abertura no app instalado aprovada pelo relato do dono. Aceite na branch não certifica deploy da main ou cobertura integral.
+> publicados na main, com uso normal aprovado pelo dono após publicação. Recuperação nativa não exercitada; TalkBack não testado e não bloqueante por decisão do dono. Teclado no uso normal aprovado; cobertura integral não declarada.
+> **Apresentação inicial**: aviso imediato com/sem conteúdo publicado; abertura no app instalado aprovada pelo relato do dono.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
@@ -444,7 +444,7 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
   lazy no servidor. GETs existentes mantêm expiração, configuração padrão e cálculos atuais.
 - Coordenação e recuperação seguem 6.1.3; revalidação automática no boot segue 6.1.4.
 
-#### 6.1.3 Interação, recuperação e atualização manual (cartão C, sem publicação)
+#### 6.1.3 Interação, recuperação e atualização manual
 
 - Formulários e operações compostas protegem a intenção local. A raiz guarda dono,
   tentativa, alvos e etapas antes do envio e permanece ativa até encerrar tarefas conhecidas.
@@ -463,7 +463,7 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
   abertos. Complementos incompletos mantêm aviso com retry de leitura, sem prefetch geral.
   Nenhum cálculo financeiro é implementado no cliente; GETs lazy existentes são preservados.
 
-#### 6.1.4 Revalidação de leitura ao abrir (B2, publicação pendente)
+#### 6.1.4 Revalidação de leitura ao abrir (B2)
 
 - Hidratar cache principal autorizado antes de qualquer tela inicial; depois da apresentação
   inicial, revalidar em background. Sem cache, aproveitar carga principal válida já necessária,

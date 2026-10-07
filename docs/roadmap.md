@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | Implementação/aceite do dono concluídos com limites; publicação na main pendente |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[x]`  | PR #70 na main; uso normal aprovado pelo dono; limites de cobertura registrados |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -386,8 +386,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
 - **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
 - **Esforço**: Baixo–Médio.
-- **Nota de sequência**: o **2.4** (B2) agora está ligado e com entrega local concluída,
-  ainda aguardando aceite manual/publicação. A consolidação deste item deve incluir esse
+- **Nota de sequência**: o **2.4** (B2) está publicado e concluído, com limites de cobertura
+  registrados. A consolidação deste item deve incluir esse
   ponto e as fronteiras de coordenação implementadas, sem refazer sua leitura segura;
   manter o recorte de GCal conforme `specs/gcal-sync.md` §9.14.
 
@@ -404,19 +404,20 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [~] 2.4 Sync de leitura no boot sobre cache (B2 — stale-while-revalidate)
+### [x] 2.4 Sync de leitura no boot sobre cache (B2 — stale-while-revalidate) — CONCLUÍDO
 
 > _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30).
 > [Plano vivo](plans/2026-09-30-plan-b2-sync-boot.md) **revalidado em 2026-10-05**, com
 > decisões de recuperação e botão manual refinadas; **cartões A–C implementados/validados
-> localmente em 06/10**, ainda sem publicação. **D1–D3 validados localmente**; B2 ligado
+> localmente em 06/10**. **D1–D3 validados localmente**; B2 ligado
 > no código. **E1 entrega mock isolado com cache sintético/reload e controles**;
 > **E2 validado no mock**, com confirmação nativa/teclado/TalkBack não observados;
 > **E3 encerrou a entrega local** com controles novos frontend/backend verdes.
 > **Aceite do dono para PR registrado**: uso normal, app instalado e teclado aprovados
 > pelo relato. Recuperação nativa não exercitada; TalkBack não testado e não bloqueante
-> por sua decisão. Status `[~]` indica publicação na main/conferência dos deploys pendentes.
-> B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
+> por sua decisão. **Publicado pelo PR #70**, merge `e3ffac8`; dono confirmou funcionamento
+> OK e teste após publicação. Item concluído, com esses limites de cobertura preservados.
+> B1 foi entregue; B2 só havia sido desenhado. O mesmo plano recebeu a execução e foi fechado._
 
 - **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
   imediata, com o rótulo "Sincronizando dados..." do 5.8. Cobrir as três telas iniciais
@@ -458,8 +459,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   apresentação do snapshot pendente em Home/Alunos e encurtou mensagens com aprovação.
   Confirmação nativa permanece manual (automação controlou `confirm` apenas no mock).
   E3 mediu novamente **frontend 321/321 e backend 232/232**, zero falhas, cancelados ou
-  ignorados; entrega local encerrada, sem nova alteração de runtime. Próximo passo:
-  PR/publicação pelo dono, com limites do aceite registrados no plano. Contratos permanentes
+  ignorados; entrega local encerrada, sem nova alteração de runtime. Publicação pelo
+  PR #70 e aceite posterior do dono registrados no plano. Contratos permanentes
   em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) §6.1.1–6.1.4.
   Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
@@ -470,9 +471,10 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   falhas; mock mobile validado e uso normal no app instalado aprovado pelo dono no deploy
   da branch. Teclado testado pelo dono; recuperação não apareceu, sem teste nativo;
   TalkBack não testado, não bloqueante por decisão explícita. Nenhuma medição nova neste
-  registro de aceite; publicação na main ainda pendente.
+  registro de aceite. Ajuste incluído no PR #70, publicado na main e aprovado pelo
+  dono após publicação; nenhuma execução nova de testes nesta rodada documental.
   Registro em [`reports/2026-10-06-fix-aviso-carga-inicial.md`](reports/2026-10-06-fix-aviso-carga-inicial.md).
-  Não reabre A–E3 nem antecipa `[x]` antes da publicação e conferência dos deploys.
+  Não reabre A–E3; item encerrado com aprovação do dono e limites de cobertura registrados.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,
   cálculo financeiro ou motor. C teve autorização explícita para fronteiras de contexto/raiz
