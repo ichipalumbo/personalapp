@@ -1,17 +1,19 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Aberto — A–D3/E1/E2 validados localmente com lacunas manuais registradas; E3/publicação pendentes
+> **Status**: Execução local encerrada — A–E3 concluídos; aceite manual e publicação pendentes (§18)
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: somente E2, base `925cd7c`, mesma branch confirmada; aceite mock concluído e mensagem curta aprovada.
+> **Rodada atual**: fechamento E3, base `7bddea8`, mesma branch limpa confirmada; somente documentação após controle final.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
-**5.8 entregue**: skeletons (Parte A) e rótulo nos syncs existentes (B1). **B2 agora ligado e
-validado localmente até D3**, com aceite ampliado E e publicação pendentes. Este documento
-aberto recebe o refinamento e a execução; não se cria plano paralelo nem se reabre o B1.
+**5.8 entregue**: skeletons (Parte A) e rótulo nos syncs existentes (B1). **B2 ligado, com
+execução e aceite mock encerrados até E3**; confirmação nativa, teclado/TalkBack e publicação
+não foram validados. Este mesmo documento conserva a execução e a lista de verificação
+pendente (§18); não se cria relatório paralelo nem se reabre o B1. Fechamento local não
+equivale a publicação ou aceite integral; o item 2.4 permanece parcial no roadmap.
 As decisões abaixo substituem o desenho anterior onde houver divergência. Um plano não
 substitui specs: incorporar os contratos aprovados nas specs pertinentes no cartão A,
 antes do código que os implementa.
@@ -289,8 +291,8 @@ nem passa a ter atomicidade/idempotência só por separar o botão de atualizaç
 
 ## 5. Cartões de execução propostos
 
-Cartões A–C concluídos nos recortes abaixo, ainda sem publicação; D dividido em D1→D2→D3.
-Escopo revalidado: **Médio–Alto**, revisar após inventário do C.
+Cartões A–E3 concluídos nos recortes registrados, ainda sem publicação; D foi dividido em
+D1→D2→D3 e E em E1→E2→E3. Escopo executado: **Médio–Alto**, com limites no §18.
 Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E numa alteração única.
 
 | Cartão | Trabalho | Critério de saída |
@@ -493,8 +495,17 @@ Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E
 - **Objetivo / resultado**: suites finais medidas (backend como controle), registro único
   no plano/roadmap e separação de aceite local x validação manual/produção pelo dono.
 - **Depende de**: E2 validado; sem commit/push/deploy pelo agente.
+- **Arquivos / componentes**: este plano, roadmap e cabeçalho da spec de Finanças;
+  nenhum código de aplicação/teste/dependência alterado no E3.
+- **Inclui**: uma medição nova de cada suíte completa, consolidação do aceite mock e
+  lista explícita de confirmação nativa/teclado/TalkBack/publicação pelo dono.
 - **Não inclui**: nova auditoria geral, reimplementar A–D3 ou assumir TalkBack observado.
-- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 por falha.
+- **Critérios de aceite**: ambas as suítes verdes com números medidos; documentação distingue
+  entrega local de publicação/aceite manual; achados não corrigidos têm destino e limite.
+- **Validação / resultado**: frontend **321/321** e backend **232/232**, zero falhas,
+  cancelados ou ignorados; E3 concluído localmente, registro §18. Máximo 2 tentativas por falha.
+- **Riscos / rollback**: testes não certificam Google/Mongo real nem efeitos lazy; revisão
+  de texto no E3 não faz escrita remota. Nenhum commit/push/deploy pelo agente.
 
 ### Arquivos previstos da frente completa
 
@@ -723,20 +734,14 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 - Node/jsdom: versões instaladas executaram testes; divergência do requisito genérico do
   setup continua registrada, sem atualizar ambiente ou lock nesta rodada.
 
-## 10. Próxima rodada
+## 10. Após a entrega local
 
-Próximo **cartão E3 — consolidação e fechamento local**: confirmar branch, conferir A–E2
-entregues, medir suítes finais (backend como controle) e consolidar lacunas manuais.
-Não reabrir auditoria A–D3 nem declarar verificação de produção executada.
-B2 está ligado no código local;
-publicação/PR/deploy são do dono e não foram executados pelo agente.
-Se inventário exigir alterar autenticação,
-GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
-sem relatório paralelo por cartão.
-
-O refinamento fecha a experiência dos dois pontos discutidos, mas não declara o plano
-"100% garantido": inventário de C e testes podem revelar dependência de backend. Trazer
-essa dependência antes de seguir, sem substituir silenciosamente as decisões aprovadas.
+Nenhum cartão de implementação desta frente permanece em execução. O próximo passo é
+o dono concluir a lista de aceite manual/publicação do §18. Manter o item 2.4 parcial até
+registrar esse aceite; não publicar automaticamente nem iniciar 2.2/ETag nesta rodada.
+Este documento recebe somente a confirmação dos passos já previstos enquanto essas
+pendências estiverem abertas. Defeito novo ou ampliação de escopo exige decisão/rodada
+própria, sem reescrever a evidência de A–E3 ou criar relatório duplicado do fechamento.
 
 ## 11. Registro da execução do cartão B — 06/10
 
@@ -1225,3 +1230,77 @@ essa dependência antes de seguir, sem substituir silenciosamente as decisões a
 - **Não realizado**: E3/fechamento integral da 2.4, autenticação/GCal/cascata/motor/conflitos/
   backend, dependências, commit/push/merge/deploy ou dados reais. **B2 ligado localmente;
   controle backend, confirmação nativa/manual e publicação continuam pendentes.**
+
+## 18. Fechamento E3 — entrega local encerrada em 06/10
+
+### Controle final medido
+
+- **Branch/base**: `docs/planejar-sync-boot`, E2 commitado pelo dono em `7bddea8`, igual
+  ao remoto; árvore inicialmente limpa e upstream próprio. Continuidade confirmada antes
+  das escritas. E3 altera somente documentação, sem código, dependências ou dados externos.
+- **Frontend**: **321 testes / 321 passam / 0 falham / 0 cancelados / 0 ignorados**.
+- **Backend**: **232 testes / 232 passam / 0 falham / 0 cancelados / 0 ignorados**.
+- As duas suítes foram executadas novamente no E3, uma vez cada, com o Node real
+  `22.20.0` e `node --test`, exit code **0**. Não são contagens copiadas do E2/C; backend
+  é controle final, não evidência de alteração financeira nesta rodada. Logs em `%TEMP%`,
+  não versionados. Nenhuma falha exigiu correção ou nova auditoria.
+- Como os únicos edits posteriores são Markdown, não houve segunda execução redundante
+  das suítes; validação documental e `git diff --check` completam este fechamento.
+
+### Resultado entregue
+
+- Cache identificado da conta apresentado antes da revalidação; ausência de sessão ou
+  outra conta não autoriza exposição. Dados antigos sem dono não são migrados.
+- Batch principal somente leitura, aplicação validada, vazio válido aceito e falha
+  preservando snapshot. Edição/operação invalidam leitura anterior; retomada por eventos,
+  uma aplicação B2 por contexto, sem loop de retry por falha/fechamento de formulário.
+- Home, Alunos e Finanças preservam navegação/edição/período e evitam reinicialização
+  passiva e financeiro duplicado compatível. Manual executa batch próprio, não escreve.
+- Intenção não confirmada preservada, inclusive após reload; verificação não a abandona
+  e adoção depende de confirmação + leitura nova válida. Mensagens curtas aprovadas;
+  snapshot pendente aparece em Home/Alunos sem alegar sync remoto concluído.
+- Mock isolado com cache/persistência sintéticos, conta/rede/latência/falha/abort e
+  contadores. Aceite observado na referência **433×762/DPR2.81** e stress 390/320px;
+  evidências e limites estão no §17, sem repetir a matriz ou simular dados de produção.
+- Regras de dinheiro, competência/prazo, recorrência/conflitos e endpoints backend não
+  foram alterados por esta frente. Proteções C em OAuth/ponte/cascata ficaram no recorte
+  previamente autorizado; E3 não acrescenta autorização ou alteração sensível.
+
+### Pendências externas à entrega local — responsabilidade do dono
+
+- [ ] **Confirmação nativa no mock**, sem substituir `window.confirm`: em `b2Pendencia`,
+  cancelar “Usar dados do servidor” deve conservar intenção/painel; aceitar deve buscar
+  dados e remover a pendência só após leitura válida. Resetar apenas o envelope sintético
+  para repetir; a confirmação deve manter os avisos de não rollback e gravação em andamento.
+- [ ] **Teclado e TalkBack**: percorrer painel, mensagem, ações e modal; verificar leitura
+  do contexto/estado e retorno de foco. Automação não entregou esses eventos com confiança.
+- [ ] **Revisar/commitar a documentação E3 e publicar por PR**, nunca push direto na main.
+  Commit/push/merge/deploy são do dono. Merge na main publica nos dois projetos Vercel.
+- [ ] **Após publicação autorizada**, conferir os dois deploys, carga dos scripts/mock
+  inerte sem parâmetro, login/isolamento da própria conta e funcionamento de leitura nas
+  três hashes. Não confundir aceite do mock com Google/Mongo/estado externo reais.
+- [ ] Registrar resultado dessas verificações antes de marcar **2.4 `[x]`**. Até lá:
+  implementação e fechamento local concluídos; aceite manual/publicação pendentes.
+
+### Limites e achados preservados
+
+- `localStorage` multi-chave não é transacional; CRUD multietapas não ganhou idempotência
+  ou conciliação entre dispositivos. GET lazy/timeout não comprova término de escrita
+  remota cuja resposta se perdeu. Essas garantias exigem frente específica.
+- Recálculos/expirações lazy dos GETs backend continuam existentes; “somente leitura”
+  descreve ausência de POST/PUT/PATCH/DELETE iniciado pelo caminho B2/manual frontend.
+- Consolidação geral GCal, cache da conexão/desconexão de calendário e renovação/catch-up
+  continuam fora desta entrega, destinos **2.2**/rodada sensível própria. ETag separado.
+- Indicadores complementares da lista pendente podem mostrar “Atualizando…” enquanto
+  consultas estão bloqueadas; nenhum sucesso financeiro deduzido de cache. Não alterado
+  no E3; melhoria de redação/estado desses indicadores deve ser aprovada separadamente.
+- Mock simplifica escrita e cálculos demonstrativos; não certifica regras/API real.
+  Confirmação nativa, teclado/TalkBack e produção continuam **não observados**, não dispensados.
+
+### Encerramento desta execução
+
+- **Arquivos alterados E3**: este plano (controle/fechamento/checklist), `docs/roadmap.md`
+  (entrega local sem antecipar status concluído) e cabeçalho da spec Finanças (situação
+  do aceite/publicação). Não se cria relatório paralelo nem se duplica versão de spec.
+- **E3 concluído**. O plano conserva a checklist externa até confirmação do dono;
+  nenhum novo cartão, teste, commit, push ou deploy executado pelo agente.

@@ -1,8 +1,8 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 11 · **Atualizado**: 2026-10-06
-> **Evolução de cache**: isolamento abaixo implementado no frontend, publicação pendente;
-> leitura segura, recuperação explícita e revalidação no boot ligadas/validadas localmente; aceite ampliado e publicação pendentes.
+> **Status**: Em produção · **Versão**: 12 · **Atualizado**: 2026-10-06
+> **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
+> execução e aceite mock encerrados localmente. Confirmação nativa, teclado/TalkBack e publicação ainda pendentes; não declarados validados em produção.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >

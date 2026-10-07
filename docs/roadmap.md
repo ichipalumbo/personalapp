@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–E2 validados com lacunas manuais; E3/publicação pendentes |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–E3/entrega local concluídos; aceite manual/publicação pendentes |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -386,9 +386,10 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
 - **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
 - **Esforço**: Baixo–Médio.
-- **Nota (2026-09-30)**: se o **2.4** (B2) for executado, o boot ganha um quarto ponto de
-  leitura de dados; a consolidação deste item deve ser feita **depois** dele, já contando com esse
-  ponto (e com a spec `gcal-sync.md` §9.14 atualizada).
+- **Nota de sequência**: o **2.4** (B2) agora está ligado e com entrega local concluída,
+  ainda aguardando aceite manual/publicação. A consolidação deste item deve incluir esse
+  ponto e as fronteiras de coordenação implementadas, sem refazer sua leitura segura;
+  manter o recorte de GCal conforme `specs/gcal-sync.md` §9.14.
 
 ---
 
@@ -411,7 +412,9 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > localmente em 06/10**, ainda sem publicação. **D1–D3 validados localmente**; B2 ligado
 > no código. **E1 entrega mock isolado com cache sintético/reload e controles**;
 > **E2 validado no mock**, com confirmação nativa/teclado/TalkBack não observados;
-> E3/controle backend, fechamento e publicação pendentes.
+> **E3 encerrou a entrega local** com controles novos frontend/backend verdes.
+> Confirmação nativa, teclado/TalkBack e publicação continuam pendentes; status `[~]`
+> não significa implementação faltante, mas aceite/publicação ainda não concluídos.
 > B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
 - **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
@@ -453,7 +456,11 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   atualização/erro/vazio, edição/manual, recuperação/reload e stress mobile; corrigiu
   apresentação do snapshot pendente em Home/Alunos e encurtou mensagens com aprovação.
   Confirmação nativa permanece manual (automação controlou `confirm` apenas no mock).
-  Próximo cartão E3, sem reauditar A–D3. Resultados,
+  E3 mediu novamente **frontend 321/321 e backend 232/232**, zero falhas, cancelados ou
+  ignorados; entrega local encerrada, sem nova alteração de runtime. Próximo passo:
+  checklist manual e PR/publicação pelo dono, registrada no plano. Contratos permanentes
+  em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) §6.1.1–6.1.4.
+  Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,
