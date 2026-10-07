@@ -17,7 +17,18 @@ const {
 // Pares em que o dependente le o global do outro durante a avaliacao do script,
 // nao em runtime. Ambos falham com throw explicito se a ordem inverter.
 const DEPENDENCIAS_DE_CARGA = [
+    { antes: 'mocks/ui-runtime/sandbox.js', depois: 'assets/js/logger.js' },
+    { antes: 'mocks/ui-runtime/sandbox.js', depois: 'assets/js/app/contexto-dados.js' },
+    { antes: 'mocks/ui-runtime/sandbox.js', depois: 'assets/js/storage.js' },
+    { antes: 'mocks/ui-runtime/sandbox.js', depois: 'mocks/ui-runtime/mock-runtime.js' },
     { antes: 'assets/js/config/api-config.js', depois: 'assets/js/storage.js' },
+    { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/storage.js' },
+    { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/view-financas.js' },
+    { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/view-alunos.js' },
+    { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/settings-modal.js' },
+    { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/app/recuperacao-dados.js' },
+    { antes: 'assets/js/app/contexto-dados.js', depois: 'assets/js/app/coordenador-sync-boot.js' },
+    { antes: 'assets/js/storage.js', depois: 'assets/js/app/coordenador-sync-boot.js' },
     { antes: 'backend/shared/recurrence-helpers.js', depois: 'assets/js/calendario-engine.js' }
 ];
 

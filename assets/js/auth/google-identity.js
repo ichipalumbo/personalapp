@@ -599,7 +599,70 @@
         });
     }
 
-    async function _postCalendarCodeToBackend(code) {
+    function _exigirContextoCalendario(contexto) {
+        if (!global.contextoDados || !global.contextoDados.atual(contexto)) throw new Error('CONTEXTO_OBSOLETO');
+    }
+
+    function _exigirOperacaoCalendario(contexto, operacao) {
+        _exigirContextoCalendario(contexto);
+        if (operacao && (!global.contextoDados.operacaoAtual(operacao) || operacao.falha)) {
+            throw new Error('OPERACAO_INTERROMPIDA');
+        }
+        const pendencia = global.contextoDados.obterPendencia(contexto);
+        if (pendencia && (!operacao || pendencia.tentativaId !== operacao.id)) {
+            throw new Error('PENDENCIA_LOCAL');
+        }
+    }
+
+    function _acompanharConexaoCalendario(operacao, executar) {
+        // A tarefa cobre GIS, headers e corpo, não apenas o fetch. A raiz emprestada
+        // não pode terminar enquanto esta conexão ainda puder iniciar outra etapa.
+        const tarefa = Promise.resolve().then(executar).catch(function (error) {
+            const motivosSeguros = ['CONTEXTO_OBSOLETO', 'OPERACAO_INTERROMPIDA', 'PENDENCIA_LOCAL', 'AUTH_REQUIRED'];
+            const erroSeguro = new Error(error && motivosSeguros.includes(error.message)
+                ? error.message : 'Conexão da Google Agenda não confirmada.');
+            if (error && error.code === 'TIMEOUT') erroSeguro.code = 'TIMEOUT';
+            if (operacao) {
+                // Não persistir code, credenciais ou mensagens devolvidas pelo exchange.
+                global.contextoDados.marcarFalhaOperacao(operacao, new Error('Conexão da Google Agenda não confirmada.'));
+            }
+            // Chamadores também registram a falha na raiz: devolver somente erro seguro.
+            throw erroSeguro;
+        });
+        return operacao ? global.contextoDados.acompanharTarefa(operacao, tarefa) : tarefa;
+    }
+
+    async function _requisitarConexaoCalendario(endpoint, options) {
+        _exigirContextoCalendario(options.contextoDados);
+        if (options.operacao) _exigirOperacaoCalendario(options.contextoDados, options.operacao);
+        if (typeof global.apiFetchBackend === 'function') {
+            return global.apiFetchBackend(endpoint, options);
+        }
+
+        const { operacao, contextoDados, statusEsperados = [], ...opcoesFetch } = options;
+        const token = global.googleIdentity.getIdToken();
+        if (!token) throw new Error('AUTH_REQUIRED');
+        const etapa = operacao && options.method !== 'GET'
+            ? { url: endpoint, method: options.method, confirmada: false } : null;
+        if (etapa) global.contextoDados.registrarEtapa(operacao, etapa);
+        const tarefa = fetch(endpoint, {
+            ...opcoesFetch,
+            headers: { ...opcoesFetch.headers, Authorization: 'Bearer ' + token }
+        });
+        const resposta = await (operacao ? global.contextoDados.acompanharTarefa(operacao, tarefa) : tarefa);
+        if (etapa) {
+            etapa.status = resposta.status;
+            etapa.confirmada = resposta.ok || statusEsperados.includes(resposta.status);
+            if (!etapa.confirmada) throw new Error(`Backend retornou ${resposta.status}.`);
+            global.contextoDados.atualizarOperacao(operacao);
+        }
+        _exigirContextoCalendario(contextoDados);
+        return resposta;
+    }
+
+    async function _postCalendarCodeToBackend(code, contexto, operacao) {
+        _exigirOperacaoCalendario(contexto, operacao);
+        if (!operacao) throw new Error('OPERACAO_INTERROMPIDA');
         const ownerEmail = _getSessionSnapshot().ownerEmail;
 
         if (!ownerEmail) {
@@ -613,52 +676,47 @@
             `${API_BASE_URL}/gcal`
         ];
 
-        let ultimoErro = null;
-
         for (const endpoint of endpoints) {
+            _exigirOperacaoCalendario(contexto, operacao);
+            let resposta;
             try {
-                let resposta;
-                if (typeof global.apiFetchBackend === 'function') {
-                    resposta = await global.apiFetchBackend(endpoint, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ code, ownerEmail })
-                    });
-                } else {
-                    resposta = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...(global.googleIdentity && global.googleIdentity.getIdToken && global.googleIdentity.getIdToken()
-                                ? { Authorization: 'Bearer ' + global.googleIdentity.getIdToken() }
-                                : {})
-                        },
-                        body: JSON.stringify({ code, ownerEmail })
-                    });
-                }
-
-                if (resposta.status === 404) {
-                    continue;
-                }
-
-                if (!resposta.ok) {
-                    const detalhe = await resposta.text().catch(() => '');
-                    throw new Error(`Backend retornou ${resposta.status}: ${detalhe}`);
-                }
-
-                const dados = await resposta.json().catch(() => ({}));
-                const details = dados && typeof dados === 'object' ? dados : null;
-                _atualizarCacheConexaoCalendario(true, details);
-                return dados;
+                resposta = await _requisitarConexaoCalendario(endpoint, {
+                    method: 'POST',
+                    contextoDados: contexto,
+                    operacao,
+                    statusEsperados: [404],
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code, ownerEmail })
+                });
             } catch (error) {
-                ultimoErro = error;
+                // Sem garantia de que o envio não chegou: reenviar o mesmo code para outro
+                // endpoint pode consumir a autorização duas vezes. A tentativa para aqui.
+                _exigirContextoCalendario(contexto);
+                throw error;
             }
+
+            // Só 404 (rota inexistente neste deploy) autoriza tentar o próximo caminho.
+            // Qualquer outra resposta prova que o endpoint existe e respondeu: repetir o
+            // exchange no caminho seguinte reenviaria o mesmo code sem necessidade.
+            if (resposta.status === 404) {
+                continue;
+            }
+
+            if (!resposta.ok) {
+                throw new Error(`Backend retornou ${resposta.status}.`);
+            }
+
+            const dados = await resposta.json();
+            _exigirOperacaoCalendario(contexto, operacao);
+            const details = dados && typeof dados === 'object' ? dados : null;
+            _atualizarCacheConexaoCalendario(true, details);
+            return dados;
         }
 
-        throw ultimoErro || new Error('Não foi possível enviar o Auth Code para o backend.');
+        throw new Error('Não foi possível enviar o Auth Code para o backend.');
     }
 
-    async function _consultarConexaoCalendario() {
+    async function _consultarConexaoCalendario(contexto = global.contextoDados.capturar(), operacao = null) {
         const ownerEmail = _getSessionSnapshot().ownerEmail;
 
         if (!ownerEmail) {
@@ -672,36 +730,29 @@
         ];
 
         for (const endpoint of endpoints) {
-            try {
-                const resposta = typeof global.apiFetchBackend === 'function'
-                    ? await global.apiFetchBackend(endpoint, { method: 'GET' })
-                    : await fetch(endpoint, {
-                        method: 'GET',
-                        headers: {
-                            ...(global.googleIdentity && global.googleIdentity.getIdToken && global.googleIdentity.getIdToken()
-                                ? { Authorization: 'Bearer ' + global.googleIdentity.getIdToken() }
-                                : {})
-                        }
-                    });
+            _exigirContextoCalendario(contexto);
+            const resposta = await _requisitarConexaoCalendario(endpoint, {
+                method: 'GET', contextoDados: contexto, operacao, statusEsperados: [404]
+            });
 
-                if (resposta.status === 404) {
-                    continue;
-                }
-
-                if (!resposta.ok) {
-                    continue;
-                }
-
-                const dados = await resposta.json().catch(() => ({}));
-                const connected = !!(dados && (dados.connected === true || dados.connection));
-                const details = dados && typeof dados === 'object' ? dados : null;
-                _atualizarCacheConexaoCalendario(connected, details);
-                return { connected, details };
-            } catch (_) {
-                // tenta o próximo endpoint
+            if (resposta.status === 404) {
+                continue;
             }
+
+            if (!resposta.ok) {
+                throw new Error(`Backend retornou ${resposta.status}.`);
+            }
+
+            const dados = await resposta.json();
+            _exigirContextoCalendario(contexto);
+            if (operacao) _exigirOperacaoCalendario(contexto, operacao);
+            const connected = !!(dados && (dados.connected === true || dados.connection));
+            const details = dados && typeof dados === 'object' ? dados : null;
+            _atualizarCacheConexaoCalendario(connected, details);
+            return { connected, details };
         }
 
+        _exigirContextoCalendario(contexto);
         _atualizarCacheConexaoCalendario(false, null);
         return { connected: false };
     }
@@ -721,6 +772,10 @@
                 reject(new Error('Cliente de autorização de calendário não inicializado.'));
                 return;
             }
+            if (_pendingCalendarCodeResolver) {
+                reject(new Error('Autorização de calendário já em andamento.'));
+                return;
+            }
 
             const profile = _profile || null;
             const hint = profile && profile.email ? String(profile.email) : undefined;
@@ -728,17 +783,30 @@
             _pendingCalendarCodeResolver = resolve;
             _pendingCalendarCodeRejecter = reject;
 
-            _calendarCodeClient.requestCode({
-                hint,
-                prompt: 'consent'
-            });
+            try {
+                _calendarCodeClient.requestCode({ hint, prompt: 'consent' });
+            } catch (error) {
+                _pendingCalendarCodeResolver = null;
+                _pendingCalendarCodeRejecter = null;
+                reject(error);
+            }
         });
     }
 
     async function ensureCalendarConnection(options = {}) {
         const opts = options && typeof options === 'object' ? options : {};
+        const operacao = opts.operacao || null;
+        const contexto = opts.contextoDados || (operacao && operacao.contexto) || global.contextoDados.capturar();
+        _exigirOperacaoCalendario(contexto, operacao);
+        return _acompanharConexaoCalendario(operacao, function () {
+            return _garantirConexaoCalendario(opts, contexto, operacao);
+        });
+    }
+
+    async function _garantirConexaoCalendario(opts, contexto, operacao) {
         const interactive = opts.interactive === true;
         const force = opts.force === true;
+        _exigirOperacaoCalendario(contexto, operacao);
 
         if (!global.googleIdentity || !global.googleIdentity.isSignedIn || !global.googleIdentity.isSignedIn()) {
             throw new Error('Faça login com Google antes de conectar o calendário.');
@@ -752,7 +820,8 @@
             };
         }
 
-        const statusAtual = await _consultarConexaoCalendario();
+        const statusAtual = await _consultarConexaoCalendario(contexto, operacao);
+        _exigirOperacaoCalendario(contexto, operacao);
         if (statusAtual.connected) {
             return statusAtual;
         }
@@ -761,17 +830,26 @@
             return { connected: false, needsConsent: true };
         }
 
-        const codeResponse = await _solicitarAuthCodeCalendario();
-        if (!codeResponse || !codeResponse.code) {
-            throw new Error('Não foi possível obter o código de autorização da Google Agenda.');
-        }
+        // Só a conexão independente que realmente precisa de consentimento cria raiz.
+        // Consulta/cache não criam pendência; a conexão de uma edição usa sua mesma raiz.
+        const propria = !operacao;
+        const raiz = operacao || global.contextoDados.iniciarOperacao({ tipo: 'conexao-calendario', contexto });
+        if (!raiz) throw new Error('PENDENCIA_LOCAL');
+        try {
+            return await _acompanharConexaoCalendario(raiz, async function () {
+                _exigirOperacaoCalendario(contexto, raiz);
+                const codeResponse = await _solicitarAuthCodeCalendario();
+                _exigirOperacaoCalendario(contexto, raiz);
+                if (!codeResponse || !codeResponse.code) {
+                    throw new Error('Não foi possível obter o código de autorização da Google Agenda.');
+                }
 
-        const detalhesConexao = await _postCalendarCodeToBackend(codeResponse.code);
-        return {
-            connected: true,
-            connectedNow: true,
-            details: detalhesConexao
-        };
+                const detalhesConexao = await _postCalendarCodeToBackend(codeResponse.code, contexto, raiz);
+                return { connected: true, connectedNow: true, details: detalhesConexao };
+            });
+        } finally {
+            if (propria) await global.contextoDados.finalizarOperacao(raiz);
+        }
     }
 
     async function checkCalendarConnectionStatus() {

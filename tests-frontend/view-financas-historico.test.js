@@ -43,6 +43,7 @@ async function carregarTela(historico, opcoes = {}) {
         url: 'http://localhost'
     });
     const { window } = dom;
+    require('./setup/contexto-dados')(dom);
     const cards = criarCardComHistorico(historico);
 
     window.APP_API_CONFIG = { apiBaseUrl: 'http://api.test' };

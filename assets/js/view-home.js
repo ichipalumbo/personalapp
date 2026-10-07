@@ -24,6 +24,19 @@ window.__homeCarregando = window.__homeCarregando || false;
 // Dirty-check key for renderizarAgendaDia.
 // Set to null by window.invalidarChaveRenderAgenda() to force a re-render on next call.
 let _ultimaChaveRenderAgenda = Object.create(null);
+let _operacaoGradeHome = null;
+let _leituraHomeEmAndamento = null;
+
+window.contextoDados.aoInvalidar(() => {
+  _operacaoGradeHome = null;
+  _leituraHomeEmAndamento = null;
+  window.__homeCarregando = false;
+  const telaHome = document.getElementById('tela-home');
+  if (telaHome) telaHome.setAttribute('aria-busy', 'false');
+  const form = document.getElementById('formConfigAgenda');
+  const botao = form && form.querySelector('[type="submit"]');
+  if (botao) botao.disabled = false;
+});
 
 const DIAS_DA_SEMANA = typeof window.getNomesDiasSemana === 'function'
   ? window.getNomesDiasSemana()
@@ -174,6 +187,7 @@ function garantirHomeTabs() {
 }
 
 window.renderizarHomeDia = function () {
+  if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
   window.atualizarDataAtual('dataAtualHome', 'diaSemanaAtualHome');
   window.renderizarAgendaDia('agendaGridHomeHome');
 };
@@ -215,29 +229,69 @@ window.alternarModoHome = function (modo) {
 // ── Internal helpers for inicializarHome ─────────────────────────────────────────────────────
 
 async function _sincronizarDadosHome(opcoes) {
+  const operacao = opcoes.operacao;
+  const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+  const interacao = window.contextoDados.capturarInteracao();
+  const podeAplicar = () => window.contextoDados.atual(contexto) && window.contextoDados.podeAplicarInteracao(interacao, operacao);
+  if (!podeAplicar()) return false;
+  const leitura = {};
+  _leituraHomeEmAndamento = leitura;
+  let sincronizada = false;
   const deveMostrarLoading =
     opcoes.sincronizar === true ||
     typeof window.temDadosLocaisNoCache !== "function" ||
     !window.temDadosLocaisNoCache();
+  const elementoSemana = document.getElementById('periodoSemanaHomeLabel');
+  const elAulasHoje = document.getElementById('totalAulasHoje');
+  const rotuloAnterior = elementoSemana && elementoSemana.textContent;
+  const totalAnterior = elAulasHoje && elAulasHoje.textContent;
 
   if (deveMostrarLoading) {
     window.__homeCarregando = true;
     window.renderizarLoadingHome();
   }
 
+  const grid = document.getElementById('calendarioSemanalHomeGrid');
+  const skeleton = deveMostrarLoading && grid && grid.querySelector('.skeleton');
+  const conteudoLoading = skeleton && skeleton.parentNode;
+
   try {
     if (typeof carregarDados === "function") {
-      await carregarDados({
+      const resultado = await carregarDados({
         forcarRender: false,
         forcarRemoto: opcoes.sincronizar === true,
+        operacao,
+        contextoDados: contexto,
       });
+      if (resultado && resultado.origem === 'local-pendente' && podeAplicar()) {
+        // Hidratação da intenção preservada não confirma sincronização remota.
+        // O painel de recuperação informa a pendência; não deixar a agenda em branco.
+        sincronizada = true;
+        return true;
+      }
+      if (!resultado || resultado.ok !== true) return false;
     }
+    if (!podeAplicar()) return false;
+    sincronizada = true;
     window.__sincronizacaoInicialConcluida = true;
+    return true;
   } finally {
-    if (deveMostrarLoading) {
+    // Encerrar o indicador é distinto de aplicar dados: formulário novo invalida
+    // o snapshot, mas não pode deixar o loading preso nem limpar outra leitura.
+    if (window.contextoDados.atual(contexto) && _leituraHomeEmAndamento === leitura) {
+      _leituraHomeEmAndamento = null;
       window.__homeCarregando = false;
       const telaHome = document.getElementById("tela-home");
       if (telaHome) telaHome.setAttribute("aria-busy", "false");
+      if (!sincronizada && conteudoLoading && conteudoLoading.parentNode === grid) {
+        conteudoLoading.textContent = 'Não foi possível carregar a agenda agora. Atualize os dados para tentar novamente.';
+        if (elementoSemana) elementoSemana.textContent = 'Agenda não atualizada';
+        if (elAulasHoje) elAulasHoje.textContent = '--';
+      } else if (!sincronizada && deveMostrarLoading) {
+        // Restaurar apenas rótulos transitórios, sem reidratar ou renderizar dados.
+        if (elementoSemana && elementoSemana.textContent === 'Sincronizando agenda...') elementoSemana.textContent = rotuloAnterior;
+        if (elAulasHoje && elAulasHoje.textContent === '...') elAulasHoje.textContent = totalAnterior;
+      }
     }
   }
 }
@@ -251,6 +305,11 @@ function _renderizarHome(opcoes) {
 }
 
 window.inicializarHome = async function (opcoes = {}) {
+  const operacao = opcoes.operacao;
+  const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || window.contextoDados.capturar();
+  const interacao = window.contextoDados.capturarInteracao();
+  const podeAplicar = () => window.contextoDados.atual(contexto) && window.contextoDados.podeAplicarInteracao(interacao, operacao);
+  if (!podeAplicar()) return false;
   if (!agendaConfig) agendaConfig = { horaInicio: 7, horaFim: 21 };
   if (!aulasParaRepor) aulasParaRepor = [];
 
@@ -261,12 +320,14 @@ window.inicializarHome = async function (opcoes = {}) {
     opcoes.sincronizar === true || !window.__sincronizacaoInicialConcluida;
 
   if (deveSincronizar) {
-    await _sincronizarDadosHome(opcoes);
+    if (!await _sincronizarDadosHome(opcoes)) return false;
   }
+  if (!podeAplicar()) return false;
 
   garantirHomeTabs();
   _renderizarHome(opcoes);
   window.alternarModoHome(window.modoHomeAtivo || 'semana');
+  return true;
 };
 
 // ── Dashboard Stats ───────────────────────────────────────────────────────────────────────────
@@ -292,6 +353,7 @@ window.atualizarDataAtual = function (dataId, diaId) {
 };
 
 window.atualizarDashboardStats = function () {
+  if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
   const elAulasHoje = document.getElementById("totalAulasHoje");
 
   if (elAulasHoje && typeof aulas !== "undefined") {
@@ -321,6 +383,7 @@ window.abrirEscolhaTipoModalPorSlotHome = function (diaTexto, horaStr, elSlot) {
 };
 
 window.renderizarAgendaDia = function (gridId) {
+  if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
   const grid = document.getElementById(gridId || "agendaGridHome");
   if (!grid) return;
 
@@ -942,15 +1005,20 @@ window.invalidarChaveRenderAgenda = function () {
 };
 
 window.fecharModalConfigAgenda = function () {
+  if (_operacaoGradeHome && window.contextoDados.operacaoAtual(_operacaoGradeHome)) return;
   const modal = document.getElementById("modalConfigAgenda");
   if (modal && window.DialogController && typeof window.DialogController.close === "function") {
     window.DialogController.close(modal);
     return;
   }
-  if (modal) modal.style.display = "none";
+  if (modal) {
+    modal.style.display = "none";
+    window.contextoDados.definirFormulario(modal, false);
+  }
 };
 
 window.abrirModalConfigAgenda = function () {
+  if (_operacaoGradeHome) return;
   const selectInicio = document.getElementById("configHoraInicio");
   const selectFim = document.getElementById("configHoraFim");
   const modal = document.getElementById("modalConfigAgenda");
@@ -967,6 +1035,7 @@ window.abrirModalConfigAgenda = function () {
     return;
   }
 
+  window.contextoDados.definirFormulario(modal, true);
   modal.style.display = "flex";
 };
 
@@ -1059,8 +1128,11 @@ document.addEventListener("DOMContentLoaded", () => {
   if (document.getElementById("formConfigAgenda")) {
     document
       .getElementById("formConfigAgenda")
-      .addEventListener("submit", (e) => {
+      .addEventListener("submit", async (e) => {
         e.preventDefault();
+        if (_operacaoGradeHome) return;
+        const contexto = window.contextoDados.capturar();
+        if (!window.contextoDados.atual(contexto)) return;
         const inicio = parseInt(
           document.getElementById("configHoraInicio").value,
         );
@@ -1069,17 +1141,51 @@ document.addEventListener("DOMContentLoaded", () => {
           alert("Início deve ser menor que o fim!");
           return;
         }
-        agendaConfig.horaInicio = inicio;
-        agendaConfig.horaFim = fim;
-        if (typeof atualizarLimitesGrade === "function") {
-          atualizarLimitesGrade({
-            inicio: `${inicio.toString().padStart(2, "0")}:00`,
-            fim: `${fim.toString().padStart(2, "0")}:00`,
-          });
+        const grade = { inicio: `${inicio.toString().padStart(2, "0")}:00`, fim: `${fim.toString().padStart(2, "0")}:00` };
+        const op = window.contextoDados.iniciarOperacao({
+          tipo: 'configurar-grade', contexto,
+          alvos: { alunoIds: [], agendamentoIds: [], cicloIds: [], reposicaoIds: [] },
+          intencao: { grade }
+        });
+        if (!op) {
+          if (typeof window.abrirRecuperacaoDados === 'function') await window.abrirRecuperacaoDados();
+          return;
         }
-        if (typeof salvarDados === "function") salvarDados();
-        window.fecharModalConfigAgenda();
-        window.inicializarHome();
+        _operacaoGradeHome = op;
+        const form = document.getElementById('formConfigAgenda');
+        const botao = form && form.querySelector('[type="submit"]');
+        if (botao) botao.disabled = true;
+        let escritaConfirmada = false;
+        try {
+          if (!window.contextoDados.operacaoAtual(op)) throw new Error('CONTEXTO_OBSOLETO');
+          agendaConfig.horaInicio = inicio;
+          agendaConfig.horaFim = fim;
+          if (typeof atualizarLimitesGrade === 'function') atualizarLimitesGrade(grade);
+          if (!window.contextoDados.atualizarOperacao(op, { intencao: { grade } })) throw new Error('Não foi possível preservar a grade.');
+          if (typeof salvarDados !== 'function') throw new Error('Persistência indisponível.');
+          const resultado = await salvarDados(true, { operacao: op, contextoDados: op.contexto });
+          if (!resultado || resultado.ok !== true || op.falha) {
+            window.contextoDados.marcarFalhaOperacao(op, resultado);
+            throw new Error(resultado && resultado.motivo || 'Gravação não confirmada.');
+          }
+          escritaConfirmada = true;
+          if (!window.contextoDados.operacaoAtual(op)) return;
+          const atualizada = await window.inicializarHome({ operacao: op, contextoDados: op.contexto });
+          if (!window.contextoDados.operacaoAtual(op)) return;
+          if (!atualizada && typeof window.mostrarToast === 'function') window.mostrarToast('Grade salva. Atualize apenas os dados para atualizar a tela.', 'warning');
+        } catch (erro) {
+          if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+          if (window.contextoDados.operacaoAtual(op) && typeof window.mostrarToast === 'function') window.mostrarToast(escritaConfirmada ? 'Grade salva. Atualize apenas os dados.' : 'Grade não confirmada. Verifique os dados no servidor.', escritaConfirmada ? 'warning' : 'error');
+        } finally {
+          try { await window.contextoDados.finalizarOperacao(op); }
+          finally {
+            if (window.contextoDados.atual(op.contexto) && _operacaoGradeHome === op) {
+              _operacaoGradeHome = null;
+              if (botao) botao.disabled = false;
+              if (escritaConfirmada) window.fecharModalConfigAgenda();
+            }
+          }
+        }
       });
   }
 });

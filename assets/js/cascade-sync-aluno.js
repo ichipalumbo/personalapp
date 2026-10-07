@@ -46,10 +46,14 @@ window.enriquecerAgendamentoComDadosFrescos = enriquecerAgendamentoComDadosFresc
  * @param {string} alunoId - ID do aluno que foi atualizado
  * @param {Object} alunoNovosDados - Novos dados do aluno { nome, local, objetivo }
  */
-async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
+async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados, opcoes = {}) {
+    const propria = !opcoes.operacao;
+    const operacao = opcoes.operacao || window.contextoDados.iniciarOperacao({ tipo: 'aluno', contexto: opcoes.contextoDados });
+    if (!operacao) return { ok: false, motivo: 'falha_remota' };
     if (!alunoId || !alunoNovosDados) {
         window.log.warn('[cascade]', 'sincronizarAgendamentosDoAluno: parâmetros inválidos');
-        return;
+        if (propria) await window.contextoDados.finalizarOperacao(operacao);
+        return { ok: false, motivo: 'falha_remota' };
     }
 
     try {
@@ -84,7 +88,7 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
 
         if (agendamentosFuturos.length === 0) {
             window.log.debug('[cascade]', 'Nenhum agendamento futuro para o aluno', { id: alunoId });
-            return;
+            return { ok: true, motivo: 'sucesso' };
         }
 
         const series = agendamentosFuturos.filter(function (a) { return a.frequencia === 'semanal'; }).length;
@@ -103,7 +107,9 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
         });
 
         // 3. Persiste as mudanças no MongoDB
-        await _persistirAgendamentosNoBackend(agendamentosFuturos);
+        window.contextoDados.atualizarOperacao(operacao, { alvos: { alunoIds: [alunoId], agendamentoIds: agendamentosFuturos.map((a) => a.id) } });
+        await _persistirAgendamentosNoBackend(agendamentosFuturos, operacao);
+        if (!window.contextoDados.operacaoAtual(operacao)) return { ok: false, motivo: 'sessao_expirada' };
 
         window.log.info('[aluno]', 'Cascade concluído', {
             id: alunoId,
@@ -112,19 +118,24 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
         if (typeof mostrarToast === 'function') {
             mostrarToast(agendamentosFuturos.length + ' agendamento(s) atualizado(s) com os novos dados do aluno.', 'success');
         }
+        return { ok: true, motivo: 'sucesso' };
 
     } catch (err) {
+        window.contextoDados.marcarFalhaOperacao(operacao, err);
         if (err && (err.message === 'AUTH_REQUIRED' || err.code === 'AUTH_REQUIRED')) {
             window.log.warn('[cascade]', 'Sessão Google ausente ou expirada. Login necessário para sincronizar agendamentos.');
             if (typeof mostrarToast === 'function') {
                 mostrarToast('Faça login com Google para sincronizar os agendamentos.', 'warning');
             }
-            return;
+            return { ok: false, motivo: 'sessao_expirada' };
         }
         window.log.error('[cascade]', 'Erro ao sincronizar agendamentos do aluno', err);
         if (typeof mostrarToast === 'function') {
             mostrarToast('Não foi possível atualizar os agendamentos deste aluno. Tente novamente.', 'warning');
         }
+        return { ok: false, motivo: 'falha_remota' };
+    } finally {
+        if (propria) await window.contextoDados.finalizarOperacao(operacao);
     }
 }
 
@@ -132,7 +143,7 @@ async function sincronizarAgendamentosDoAluno(alunoId, alunoNovosDados) {
  * Persiste agendamentos atualizados no backend MongoDB
  * @param {Array} agendamentos - Array de agendamentos para atualizar
  */
-async function _persistirAgendamentosNoBackend(agendamentos) {
+async function _persistirAgendamentosNoBackend(agendamentos, operacao) {
     try {
         const aulasData = agendamentos.filter(a => a.source !== 'google_external');
 
@@ -145,15 +156,19 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
                 throw new Error('AUTH_REQUIRED');
             };
 
-        const apiBaseUrl = global.APP_API_CONFIG.apiBaseUrl;
+        const apiBaseUrl = window.APP_API_CONFIG.apiBaseUrl;
 
         const res = await executar(async function () {
             for (const agendamento of aulasData) {
+                if (!window.contextoDados.operacaoAtual(operacao)) throw new Error('CONTEXTO_OBSOLETO');
                 if (!agendamento || !agendamento.id) continue;
 
                 const rota = apiBaseUrl + '/agendamentos/' + encodeURIComponent(agendamento.id);
                 let resp = await apiFetch(rota, {
                     method: 'PUT',
+                    statusEsperados: [404],
+                    operacao,
+                    contextoDados: operacao.contexto,
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(agendamento)
                 });
@@ -161,6 +176,8 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
                 if (resp.status === 404) {
                     resp = await apiFetch(apiBaseUrl + '/agendamentos', {
                         method: 'POST',
+                        operacao,
+                        contextoDados: operacao.contexto,
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(agendamento)
                     });
@@ -172,11 +189,7 @@ async function _persistirAgendamentosNoBackend(agendamentos) {
             }
 
             return { ok: true, status: 200 };
-        }, {
-            onRetry: function () {
-                return _persistirAgendamentosNoBackend(agendamentos);
-            }
-        });
+        }, { exibirFalha: false });
 
         if (!res.ok) {
             throw new Error('Backend retornou ' + res.status);

@@ -1,8 +1,6 @@
-// 5.8 (Parte B, caminho B1 — 2026-09-30): rótulo global "Sincronizando dados..."
-// no header, visível SÓ enquanto um sync remoto roda sobre dados locais já em
-// tela (troca de login, botão "Sincronizar Dados", auto-refresh ao voltar para
-// o app). No boot com cache o rótulo NÃO aparece — o boot não dispara sync
-// remoto (decisão B1 — sem sync em background no boot).
+// Rótulo de leitura por voo: "Sincronizando dados..." com conteúdo autorizado
+// disponível, "Carregando dados..." sem cache. O indicador inicial do HTML e a
+// ligação B2 são verificados separadamente pela integração do bootstrap.
 //
 // Este teste usa REAL o state.js + storage.js (vm, como no padrão da Etapa 6)
 // e aciona a entrada pública `window.sincronizarBancoDados` (o botão manual —
@@ -37,6 +35,7 @@ function criarAmbiente({ comCache }) {
     { runScripts: 'outside-only', url: 'http://localhost' },
   );
   const { window } = dom;
+  require('./setup/contexto-dados')(dom);
 
   // Obrigatório no topo do storage.js (validação de config + ping fire-and-forget).
   window.APP_API_CONFIG = { apiBaseUrl: 'http://api.test', apiRootUrl: 'http://api.test' };
@@ -47,12 +46,13 @@ function criarAmbiente({ comCache }) {
   window.googleIdentity = {
     isSignedIn: () => true,
     getIdToken: () => 'token-de-teste',
+    getOwnerEmail: () => 'teste@example.com',
   };
 
   // Respostas por rota; latência controlada para segurar o sync no ar.
   let latenciaMs = 0;
   let modoFalha = false;
-  const corpoAlunos = [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer' }];
+  const corpoAlunos = [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer', corObjetivo: { nome: 'Tangerina', hex: '#FF887C' } }];
   window.fetch = async (url) => {
     const caminho = String(url).replace(/^https?:\/\/[^/]+/, '');
     if (latenciaMs > 0) await esperar(latenciaMs);
@@ -78,6 +78,7 @@ function criarAmbiente({ comCache }) {
 
   // Estado do app "aberto com cache local" (o que o boot deixou em localStorage).
   if (comCache) {
+    window.localStorage.setItem('personal_cache_dono', 'teste@example.com');
     window.localStorage.setItem('personal_alunos', JSON.stringify(corpoAlunos));
     window.localStorage.setItem('personal_aulas', JSON.stringify([{ id: 'aula-1', alunoId: 'aluno-1', tipo: 'aula' }]));
     window.localStorage.setItem('personal_reposicoes', '[]');
@@ -118,7 +119,7 @@ test('Parte B: sync remoto sobre cache acende o rótulo no header e apaga ao con
   assert.equal(el.hidden, true, 'rótulo apagado após a falha do sync');
 });
 
-test('Parte B: sync remoto SEM cache não acende o rótulo (B1 — rótulo só existe sobre dados locais)', async (t) => {
+test('Aviso imediato: sync remoto SEM cache informa carga e encerra ao concluir', async (t) => {
   const { dom, window, rotulo } = criarAmbiente({ comCache: false });
   t.after(() => dom.window.close());
 
@@ -128,7 +129,8 @@ test('Parte B: sync remoto SEM cache não acende o rótulo (B1 — rótulo só e
   window.__controleFetch.setLatencia(250);
   const p = window.sincronizarBancoDados();
   await esperar(40);
-  assert.equal(el.hidden, true, 'sem cache local, nada é "sobre cache" — rótulo nunca acende');
+  assert.equal(el.hidden, false, 'sem cache local, indicar que os dados estão chegando');
+  assert.equal(el.textContent, 'Carregando dados...');
   await p;
   assert.equal(el.hidden, true);
 });

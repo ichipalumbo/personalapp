@@ -17,6 +17,21 @@ window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
 
 let _submissaoEdicaoEmAndamento = false;
 
+if (window.contextoDados) window.contextoDados.aoInvalidar(() => {
+  window.idCompromissoSelecionado = '';
+  window._retornoHistoricoReposicoes = null;
+  window._reagendamentoFluxoConcluido = false;
+  window.reposicaoIdEmReagendamento = null;
+  _submissaoEdicaoEmAndamento = false;
+  atualizarEstadoSubmitEdicao(false);
+  if (typeof resolveEscolhaCobrancaReposicao === 'function') {
+    const resolver = resolveEscolhaCobrancaReposicao;
+    resolveEscolhaCobrancaReposicao = null;
+    resolver();
+  }
+  document.querySelectorAll('[data-reposicao-cobravel]').forEach((botao) => { botao.onclick = null; });
+});
+
 function obterBotaoSubmitEdicao() {
   return document.querySelector('#formEditarCompromisso button[type="submit"]');
 }
@@ -49,6 +64,42 @@ function obterCompromissoSelecionado() {
 
 function gerarIdReposicao() {
   return `repo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function iniciarOperacaoSlot(tipo, contexto, alvos, intencao) {
+  return window.contextoDados.iniciarOperacao({ tipo, contexto, alvos, intencao });
+}
+
+async function apresentarRecuperacaoSlot() {
+  if (typeof window.abrirRecuperacaoDados === "function") {
+    await window.abrirRecuperacaoDados();
+  }
+}
+
+function exigirContextoOperacaoSlot(op, contexto) {
+  const atual = op
+    ? window.contextoDados.operacaoAtual(op)
+    : window.contextoDados.atual(contexto);
+  if (!atual) throw new Error("CONTEXTO_OBSOLETO");
+}
+
+function confirmarPersistenciaSlot(op, resultado) {
+  if (!deveEnviarPatchReposicao(resultado)) {
+    window.contextoDados.marcarFalhaOperacao(op, resultado);
+    throw new Error(obterMensagemFalhaPersistencia(resultado));
+  }
+}
+
+function avisarFalhaAtualizacaoSlot() {
+  if (typeof mostrarToast === "function") {
+    mostrarToast("Alteração salva, mas não foi possível atualizar a tela. Atualize somente os dados.", "warning");
+  }
+}
+
+function exigirAtualizacaoSlot(resultado) {
+  if (resultado === false || (resultado && (resultado.ok === false || (resultado.estado && resultado.estado !== "aplicado")))) {
+    throw new Error("Não foi possível confirmar a atualização da tela.");
+  }
 }
 
 function deveEnviarPatchReposicao(resultadoPersistencia) {
@@ -145,51 +196,10 @@ function reabrirModalEdicaoComValores(idCompromisso, valores) {
   }
 }
 
-function avisarFalhaPersistencia(resultadoPersistencia) {
-  const mensagem = obterMensagemFalhaPersistencia(resultadoPersistencia);
-  if (typeof mostrarToast === "function") {
-    mostrarToast(mensagem, "error");
-  } else {
-    alert(mensagem);
-  }
-}
-
-// Desfaz no servidor o vínculo criado pelo PATCH que marcou a reposição como `agendada`.
-async function reverterVinculoReposicaoAgendada(reposicaoId) {
-  if (!reposicaoId || typeof window.apiFetchBackend !== "function") return false;
-
-  try {
-    const resposta = await window.apiFetchBackend(
-      `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(reposicaoId)}`,
-      {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: "pendente",
-          agendamentoReposicaoId: null,
-        }),
-      },
-    );
-    if (!resposta || !resposta.ok) {
-      window.log.error(
-        "[reposicao]",
-        "Não foi possível devolver a reposição para pendente",
-        { id: reposicaoId, status: resposta && resposta.status },
-      );
-      return false;
-    }
-    return true;
-  } catch (erro) {
-    window.log.error(
-      "[reposicao]",
-      "Não foi possível devolver a reposição para pendente",
-      erro,
-    );
-    return false;
-  }
-}
-
-async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
+// Resultado parcial/desconhecido exige recuperação, nunca PATCH/DELETE compensatório.
+async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel, op = null) {
+  const contexto = op ? op.contexto : window.contextoDados.capturar();
+  exigirContextoOperacaoSlot(op, contexto);
   if (!compromisso || !compromisso.alunoId) {
     throw new Error("Compromisso inválido para envio para reposição.");
   }
@@ -215,24 +225,39 @@ async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
     throw new Error("Data da aula inválida para enviar para reposição.");
   }
 
+  if (op) {
+    window.contextoDados.atualizarOperacao(op, {
+      alvos: { agendamentoIds: [compromisso.id], reposicaoIds: [payload.id], alunoIds: [payload.alunoId] },
+      intencao: { acao: "enviar-para-reposicao", reposicao: payload, agendamentoOriginal: compromisso, dataExcecao: dataAlvoISO },
+    });
+  }
+  exigirContextoOperacaoSlot(op, contexto);
   const baseUrl = window.APP_API_CONFIG.apiBaseUrl;
   const resposta = await window.apiFetchBackend(`${baseUrl}/reposicoes`, {
     method: "POST",
+    operacao: op,
+    contextoDados: contexto,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
+  exigirContextoOperacaoSlot(op, contexto);
 
   if (!resposta.ok) {
     let mensagem = "Não foi possível criar a reposição.";
     try {
       const erroJson = await resposta.json();
+      exigirContextoOperacaoSlot(op, contexto);
       mensagem = erroJson && erroJson.error ? erroJson.error : mensagem;
     } catch (_) {}
+    exigirContextoOperacaoSlot(op, contexto);
     throw new Error(mensagem);
   }
 
-  const reposicaoCriada = await resposta.json().catch(() => null);
-  const reposicaoFinal = reposicaoCriada || payload;
+  const reposicaoFinal = await resposta.json();
+  exigirContextoOperacaoSlot(op, contexto);
+  if (!reposicaoFinal || reposicaoFinal.id !== payload.id) {
+    throw new Error("Não foi possível confirmar a reposição criada no servidor.");
+  }
   window.log.info("[reposicao]", "Reposição criada", {
     id: reposicaoFinal && reposicaoFinal.id ? reposicaoFinal.id : payload.id,
     aluno: payload.alunoNome || payload.alunoId || null,
@@ -244,44 +269,66 @@ async function enviarParaReposicao(compromisso, dataAlvoISO, cobravel) {
   return reposicaoFinal;
 }
 
-async function obterReposicaoParaReabertura(reposicaoId) {
+async function obterReposicaoParaReabertura(reposicaoId, op = null) {
+  const contexto = op ? op.contexto : window.contextoDados.capturar();
+  exigirContextoOperacaoSlot(op, contexto);
   if (!reposicaoId || typeof window.apiFetchBackend !== "function") {
     throw new Error("Reposição de origem não identificada.");
   }
 
   const resposta = await window.apiFetchBackend(
     `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(reposicaoId)}`,
+    { operacao: op, contextoDados: contexto },
   );
+  exigirContextoOperacaoSlot(op, contexto);
   if (!resposta.ok) {
     throw new Error("Não foi possível carregar a reposição de origem.");
   }
 
   const reposicao = await resposta.json().catch(() => null);
+  exigirContextoOperacaoSlot(op, contexto);
   if (!reposicao || reposicao.id !== reposicaoId) {
     throw new Error("A reposição de origem não foi encontrada.");
   }
   return reposicao;
 }
 
-async function reabrirReposicao(reposicaoId, agendamentoId) {
+async function reabrirReposicao(reposicaoId, agendamentoId, op = null) {
+  const contexto = op ? op.contexto : window.contextoDados.capturar();
+  exigirContextoOperacaoSlot(op, contexto);
+  if (op) {
+    window.contextoDados.atualizarOperacao(op, {
+      alvos: { agendamentoIds: agendamentoId ? [agendamentoId] : [], reposicaoIds: [reposicaoId] },
+    });
+  }
   const resposta = await window.apiFetchBackend(
     `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(reposicaoId)}/reabrir`,
     {
       method: "POST",
+      operacao: op,
+      contextoDados: contexto,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ agendamentoId: agendamentoId || null }),
     },
   );
+  exigirContextoOperacaoSlot(op, contexto);
   if (!resposta.ok) {
     let mensagem = "Não foi possível reabrir a reposição.";
     try {
       const erroJson = await resposta.json();
+      exigirContextoOperacaoSlot(op, contexto);
       mensagem = erroJson && erroJson.error ? erroJson.error : mensagem;
     } catch (_) {}
+    exigirContextoOperacaoSlot(op, contexto);
     throw new Error(mensagem);
   }
 
-  return (await resposta.json().catch(() => null)) || { id: reposicaoId };
+  const reposicao = await resposta.json();
+  exigirContextoOperacaoSlot(op, contexto);
+  if (!reposicao || reposicao.id !== reposicaoId) {
+    throw new Error("Não foi possível confirmar a reabertura da reposição.");
+  }
+  return reposicao;
 }
 
 function obterNomesDiasSemanaModalAcao() {
@@ -1110,6 +1157,7 @@ window.abrirModalEscolhaCobrancaReposicao = function (
   callback,
   opcoes = {},
 ) {
+  const contexto = window.contextoDados ? window.contextoDados.capturar() : null;
   return new Promise((resolve) => {
     const finalizar = () => {
       if (typeof resolve === "function") {
@@ -1144,6 +1192,7 @@ window.abrirModalEscolhaCobrancaReposicao = function (
     document.getElementById("reposicaoEscolhaDataHorario").textContent = dataHora;
 
     const opcaoButtons = modal.querySelectorAll("[data-reposicao-cobravel]");
+    let escolhaConsumida = false;
     const ehReabertura = opcoes && opcoes.ehReabertura === true;
     const botaoCobravel = Array.from(opcaoButtons).find(
       (botao) => botao.dataset.reposicaoCobravel === "true",
@@ -1164,6 +1213,9 @@ window.abrirModalEscolhaCobrancaReposicao = function (
     }
     opcaoButtons.forEach((botao) => {
       botao.onclick = async () => {
+        if (contexto && !window.contextoDados.atual(contexto)) return;
+        if (escolhaConsumida) return;
+        escolhaConsumida = true;
         const cobravel = botao.dataset.reposicaoCobravel === "true";
         if (window.DialogController && typeof window.DialogController.close === "function") {
           window.DialogController.close(modal);
@@ -1390,7 +1442,9 @@ window.iniciarReagendamentoReposicao = function (id) {
   modal.style.display = "flex";
 };
 
-window.fecharReagendarAulaModal = function () {
+window.fecharReagendarAulaModal = async function (opcoes = {}) {
+  const contexto = opcoes.operacao ? opcoes.operacao.contexto : window.contextoDados.capturar();
+  if (opcoes.operacao ? !window.contextoDados.operacaoAtual(opcoes.operacao) : !window.contextoDados.atual(contexto)) return;
   const modal = document.getElementById("modalReagendarAula");
   if (modal && window.DialogController && typeof window.DialogController.close === "function") {
     window.DialogController.close(modal);
@@ -1401,13 +1455,16 @@ window.fecharReagendarAulaModal = function () {
     !window._reagendamentoFluxoConcluido &&
     typeof window.finalizarRetornoHistoricoReposicoes === "function"
   ) {
-    window.finalizarRetornoHistoricoReposicoes({ status: "cancelado" });
+    await window.finalizarRetornoHistoricoReposicoes({ status: "cancelado", operacao: opcoes.operacao });
   }
+  if (opcoes.operacao ? !window.contextoDados.operacaoAtual(opcoes.operacao) : !window.contextoDados.atual(contexto)) return;
   window._reagendamentoFluxoConcluido = false;
   window.reagendamentoDirectCardId = null;
 };
 
 window.executarExclusaoInstancia = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const compromisso = window.obterCompromissoSelecionado
     ? window.obterCompromissoSelecionado()
     : null;
@@ -1434,7 +1491,13 @@ window.executarExclusaoInstancia = async function () {
     excecoes: [...(compromisso.excecoes || [])],
   };
 
+  const op = iniciarOperacaoSlot("excluir-instancia", contextoConta,
+    { agendamentoIds: [compromisso.id] },
+    { acao: "excluir-instancia", agendamentoId: compromisso.id, dataExcecao: dataAlvoStr });
+  if (!op) { await apresentarRecuperacaoSlot(); return; }
+  let escritaConfirmada = false;
   try {
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (!compromisso.excecoes) compromisso.excecoes = [];
     if (!compromisso.excecoes.includes(dataAlvoStr)) {
       compromisso.excecoes.push(dataAlvoStr);
@@ -1460,27 +1523,30 @@ window.executarExclusaoInstancia = async function () {
       window.gcal.isSignedIn()
     ) {
       const resultadoPersistencia = await window.salvarEventoComGCal(compromisso, {
-        operacao: "atualizar",
+        operacao: op,
+        contextoDados: op.contexto,
         snapshotAnterior: _snapshot,
       });
-      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
-      }
+      confirmarPersistenciaSlot(op, resultadoPersistencia);
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
-          ? await salvarDados()
+          ? await salvarDados(false, { operacao: op, contextoDados: op.contexto })
           : { ok: false, motivo: "falha_remota" };
-      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
-      }
+      confirmarPersistenciaSlot(op, resultadoPersistencia);
     }
 
+    escritaConfirmada = true;
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      await window.inicializarHome({ sincronizar: true });
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
     }
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
   } catch (erro) {
+    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!window.contextoDados.operacaoAtual(op)) return;
+    if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1491,10 +1557,14 @@ window.executarExclusaoInstancia = async function () {
     } else {
       alert(mensagemErro);
     }
+  } finally {
+    await window.contextoDados.finalizarOperacao(op);
   }
 };
 
 window.executarExclusaoSerie = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const _serieDeletar = window.obterCompromissoSelecionado
     ? window.obterCompromissoSelecionado()
     : null;
@@ -1548,7 +1618,13 @@ window.executarExclusaoSerie = async function () {
     excecoes: Array.isArray(a.excecoes) ? [...a.excecoes] : a.excecoes,
   }));
 
+  const op = iniciarOperacaoSlot("excluir-serie", contextoConta,
+    { agendamentoIds: _resumoExclusao.ids },
+    { acao: "excluir-serie", agendamentoIds: _resumoExclusao.ids });
+  if (!op) { await apresentarRecuperacaoSlot(); return; }
+  let escritaConfirmada = false;
   try {
+    if (!window.contextoDados.operacaoAtual(op)) return;
     const ocorrenciasAfetadas = window.removerCadeiaCompletaSerie(
       _serieDeletar || window.idCompromissoSelecionado,
     );
@@ -1566,28 +1642,31 @@ window.executarExclusaoSerie = async function () {
       window.gcal.isSignedIn()
     ) {
       const resultadoPersistencia = await window.salvarEventoComGCal(_serieDeletar, {
-        operacao: "excluir",
+        operacao: op,
+        contextoDados: op.contexto,
         snapshotAnterior: _serieDeletar,
       });
-      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
-      }
+      confirmarPersistenciaSlot(op, resultadoPersistencia);
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
-          ? await salvarDados()
+          ? await salvarDados(false, { operacao: op, contextoDados: op.contexto })
           : { ok: false, motivo: "falha_remota" };
-      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
-      }
+      confirmarPersistenciaSlot(op, resultadoPersistencia);
     }
 
+    escritaConfirmada = true;
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      await window.inicializarHome({ sincronizar: true });
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
     }
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function")
       mostrarToast("Série excluída — todas as ocorrências.");
   } catch (erro) {
+    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!window.contextoDados.operacaoAtual(op)) return;
+    if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1598,10 +1677,14 @@ window.executarExclusaoSerie = async function () {
     } else {
       alert(mensagemErro);
     }
+  } finally {
+    await window.contextoDados.finalizarOperacao(op);
   }
 };
 
 window.executarExclusaoAulaAvulsa = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const _compDeletar = window.obterCompromissoSelecionado
     ? window.obterCompromissoSelecionado()
     : null;
@@ -1629,7 +1712,13 @@ window.executarExclusaoAulaAvulsa = async function () {
     (a) => a.id === window.idCompromissoSelecionado,
   );
 
+  const op = iniciarOperacaoSlot("excluir-aula-avulsa", contextoConta,
+    { agendamentoIds: [_compDeletar ? _compDeletar.id : window.idCompromissoSelecionado] },
+    { acao: "excluir", agendamentoId: _compDeletar ? _compDeletar.id : window.idCompromissoSelecionado });
+  if (!op) { await apresentarRecuperacaoSlot(); return; }
+  let escritaConfirmada = false;
   try {
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (_idxDeletar !== -1) aulas.splice(_idxDeletar, 1);
     const toastMensagem = dataParaTexto
       ? `Aula de ${dataParaTexto} excluída.`
@@ -1643,27 +1732,30 @@ window.executarExclusaoAulaAvulsa = async function () {
       window.gcal.isSignedIn()
     ) {
       const resultadoPersistencia = await window.salvarEventoComGCal(_compDeletar, {
-        operacao: "excluir",
+        operacao: op,
+        contextoDados: op.contexto,
         snapshotAnterior: _compDeletar,
       });
-      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
-      }
+      confirmarPersistenciaSlot(op, resultadoPersistencia);
     } else {
       const resultadoPersistencia =
         typeof salvarDados === "function"
-          ? await salvarDados()
+          ? await salvarDados(false, { operacao: op, contextoDados: op.contexto })
           : { ok: false, motivo: "falha_remota" };
-      if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-        throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
-      }
+      confirmarPersistenciaSlot(op, resultadoPersistencia);
     }
 
+    escritaConfirmada = true;
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      await window.inicializarHome({ sincronizar: true });
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
     }
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
   } catch (erro) {
+    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!window.contextoDados.operacaoAtual(op)) return;
+    if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1674,10 +1766,14 @@ window.executarExclusaoAulaAvulsa = async function () {
     } else {
       alert(mensagemErro);
     }
+  } finally {
+    await window.contextoDados.finalizarOperacao(op);
   }
 };
 
 window.executarExclusaoSerieAPartirDe = async function () {
+  const contextoConta = window.contextoDados.capturar();
+  if (!window.contextoDados.atual(contextoConta)) return;
   const compromisso =
     window.obterCompromissoSelecionado
       ? window.obterCompromissoSelecionado()
@@ -1701,26 +1797,36 @@ window.executarExclusaoSerieAPartirDe = async function () {
     excecoes: Array.isArray(a.excecoes) ? [...a.excecoes] : a.excecoes,
   }));
 
+  const op = iniciarOperacaoSlot("excluir-serie-a-partir-de", contextoConta,
+    { agendamentoIds: previsao.ids },
+    { acao: "excluir-a-partir-de", agendamentoId: compromisso && compromisso.id, dataCorte: dataAlvo, agendamentoIds: previsao.ids });
+  if (!op) { await apresentarRecuperacaoSlot(); return; }
+  let escritaConfirmada = false;
   try {
+    if (!window.contextoDados.operacaoAtual(op)) return;
     window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo);
     window.fecharModalAcaoSlot();
 
     const resultadoPersistencia =
       typeof salvarDados === "function"
-        ? await salvarDados()
+        ? await salvarDados(false, { operacao: op, contextoDados: op.contexto })
         : { ok: false, motivo: "falha_remota" };
 
-    if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-      throw new Error(obterMensagemFalhaPersistencia(resultadoPersistencia));
-    }
+    confirmarPersistenciaSlot(op, resultadoPersistencia);
 
+    escritaConfirmada = true;
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      await window.inicializarHome({ sincronizar: true });
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
     }
+    if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") {
       mostrarToast("Exclusão aplicada a partir de " + dataAlvo + ".");
     }
   } catch (erro) {
+    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!window.contextoDados.operacaoAtual(op)) return;
+    if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
     const mensagemErro =
       erro && erro.message
@@ -1731,6 +1837,8 @@ window.executarExclusaoSerieAPartirDe = async function () {
     } else {
       alert(mensagemErro);
     }
+  } finally {
+    await window.contextoDados.finalizarOperacao(op);
   }
 };
 
@@ -1870,6 +1978,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (formReagendarAula) {
     formReagendarAula.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const contextoConta = window.contextoDados.capturar();
+      if (!window.contextoDados.atual(contextoConta)) return;
 
       let alunoId = "";
       let repObj = null;
@@ -1960,7 +2070,13 @@ document.addEventListener("DOMContentLoaded", () => {
         reposicaoId: repObj.id,
       };
 
+      const op = iniciarOperacaoSlot("reagendar-reposicao", contextoConta,
+        { agendamentoIds: [novoCompromisso.id], reposicaoIds: [repObj.id], alunoIds: [alunoId] },
+        { acao: "reagendar-reposicao", agendamento: novoCompromisso, reposicaoId: repObj.id, status: "agendada" });
+      if (!op) { await apresentarRecuperacaoSlot(); return; }
+      let escritaConfirmada = false;
       try {
+        if (!window.contextoDados.operacaoAtual(op)) return;
         aulas.push(novoCompromisso);
         const salvar =
           typeof window.salvarDados === "function"
@@ -1968,18 +2084,17 @@ document.addEventListener("DOMContentLoaded", () => {
             : salvarDados;
         const resultadoPersistencia =
           typeof salvar === "function"
-            ? await salvar(true)
+            ? await salvar(true, { operacao: op, contextoDados: op.contexto })
             : { ok: false, motivo: "falha_remota" };
-        if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-          throw new Error(
-            obterMensagemFalhaPersistencia(resultadoPersistencia),
-          );
-        }
+        confirmarPersistenciaSlot(op, resultadoPersistencia);
+        if (!window.contextoDados.operacaoAtual(op)) return;
 
         const respostaPatch = await window.apiFetchBackend(
           `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(repObj.id)}`,
           {
             method: "PATCH",
+            operacao: op,
+            contextoDados: op.contexto,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               status: "agendada",
@@ -1988,8 +2103,10 @@ document.addEventListener("DOMContentLoaded", () => {
           },
         );
 
+        if (!window.contextoDados.operacaoAtual(op)) return;
         if (!respostaPatch.ok) {
           const erroPatch = await respostaPatch.json().catch(() => ({}));
+          exigirContextoOperacaoSlot(op);
           throw new Error(
             erroPatch.error || "Falha ao vincular a reposição ao agendamento.",
           );
@@ -2002,56 +2119,62 @@ document.addEventListener("DOMContentLoaded", () => {
         ) {
           const resultadoGCal = await window.salvarEventoComGCal(
             novoCompromisso,
-            { operacao: "criar" },
+            { operacao: op, contextoDados: op.contexto },
           );
-          if (!deveEnviarPatchReposicao(resultadoGCal)) {
-            await reverterVinculoReposicaoAgendada(repObj.id);
-            const _idxNovoCompromisso = aulas.findIndex(
-              (a) => a && a.id === novoCompromisso.id,
-            );
-            if (_idxNovoCompromisso !== -1) {
-              aulas.splice(_idxNovoCompromisso, 1);
-            }
-            if (typeof salvar === "function") {
-              await salvar(true);
-            }
-            throw new Error(obterMensagemFalhaPersistencia(resultadoGCal));
-          }
+          confirmarPersistenciaSlot(op, resultadoGCal);
         }
 
+        escritaConfirmada = true;
+        if (!window.contextoDados.operacaoAtual(op)) return;
         aulasParaRepor = aulasParaRepor.filter((r) => r.id !== repObj.id);
         window._reagendamentoFluxoConcluido = true;
-        window.fecharReagendarAulaModal();
+        await window.fecharReagendarAulaModal({ operacao: op });
+        if (!window.contextoDados.operacaoAtual(op)) return;
         if (typeof window.enriquecerAgendamentoComDadosFrescos === "function") {
           window.enriquecerAgendamentoComDadosFrescos(novoCompromisso);
         }
         if (typeof window.carregarDados === "function") {
-          await window.carregarDados({
+          exigirAtualizacaoSlot(await window.carregarDados({
             forcarRemoto: true,
             silenciosoUI: true,
-          });
+            operacao: op,
+          }));
         }
-        window.inicializarHome();
+        if (!window.contextoDados.operacaoAtual(op)) return;
+        exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+        if (!window.contextoDados.operacaoAtual(op)) return;
 
         let mensagemPrazo = "";
         try {
           const patchJson = await respostaPatch.clone().json();
+          exigirContextoOperacaoSlot(op);
           if (patchJson && patchJson.validoAte) {
             mensagemPrazo = ` Prazo: até ${window.formatarDataPtBr ? window.formatarDataPtBr(patchJson.validoAte) : patchJson.validoAte}.`;
           }
         } catch (_) {}
+        if (!window.contextoDados.operacaoAtual(op)) return;
         if (typeof mostrarToast === "function") {
           mostrarToast(`Reposição reagendada com sucesso!${mensagemPrazo}`);
         }
         if (typeof window.finalizarRetornoHistoricoReposicoes === "function") {
-          await window.finalizarRetornoHistoricoReposicoes({ status: "sucesso" });
+          await window.finalizarRetornoHistoricoReposicoes({ status: "sucesso", operacao: op });
+          if (!window.contextoDados.operacaoAtual(op)) return;
         }
       } catch (erro) {
+        if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+        if (!window.contextoDados.operacaoAtual(op)) return;
         window._reagendamentoFluxoConcluido = true;
-        window.fecharReagendarAulaModal();
+        await window.fecharReagendarAulaModal({ operacao: op });
+        if (!window.contextoDados.operacaoAtual(op)) return;
         if (typeof window.finalizarRetornoHistoricoReposicoes === "function") {
-          await window.finalizarRetornoHistoricoReposicoes({ status: "erro" });
+          try {
+            await window.finalizarRetornoHistoricoReposicoes({ status: "erro", operacao: op });
+          } catch (_) {
+            if (window.contextoDados.operacaoAtual(op)) avisarFalhaAtualizacaoSlot();
+          }
         }
+        if (!window.contextoDados.operacaoAtual(op)) return;
+        if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
         if (typeof mostrarToast === "function") {
           mostrarToast(
             erro && erro.message
@@ -2066,6 +2189,8 @@ document.addEventListener("DOMContentLoaded", () => {
               : "Falha ao reagendar reposição.",
           );
         }
+      } finally {
+        await window.contextoDados.finalizarOperacao(op);
       }
     });
   }
@@ -2074,6 +2199,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (formEditar) {
     formEditar.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const contextoConta = window.contextoDados.capturar();
+      if (!window.contextoDados.atual(contextoConta)) return;
       if (_submissaoEdicaoEmAndamento) {
         return;
       }
@@ -2081,6 +2208,11 @@ document.addEventListener("DOMContentLoaded", () => {
       _submissaoEdicaoEmAndamento = true;
       atualizarEstadoSubmitEdicao(true);
 
+      let op = null;
+      let escritaConfirmada = false;
+      let snapshotAulasEdicao = null;
+      let valoresFormularioEdicao = null;
+      let idCompromissoEdicao = null;
       try {
         const compromisso = obterCompromissoSelecionado();
         if (!compromisso) return;
@@ -2104,6 +2236,9 @@ document.addEventListener("DOMContentLoaded", () => {
             : a.excecoesDetalhadas,
         }));
         const _valoresFormularioEdicao = capturarValoresFormularioEdicao();
+        snapshotAulasEdicao = _snapshotAulasEdicao;
+        valoresFormularioEdicao = _valoresFormularioEdicao;
+        idCompromissoEdicao = _idCompromissoEdicao;
         // Captura nova ocorrência avulsa criada no escopo 'occurrence' para GCal sync duplo
         let _novaOcorrenciaSerie = null;
         // Captura nova série criada no escopo 'fromDate' para GCal sync duplo
@@ -2127,6 +2262,13 @@ document.addEventListener("DOMContentLoaded", () => {
           document.getElementById("editEscopoRecorrencia")?.value || "fromDate";
         const dataAlvoStr =
           window.dataAlvoAcaoStr || window.getDataSelecionadaPtBr();
+
+        const iniciarEdicao = () => {
+          op = iniciarOperacaoSlot("editar-agendamento", contextoConta,
+            { agendamentoIds: [compromisso.id] },
+            { acao: "editar", agendamentoId: compromisso.id, escopo: escopoRecorrencia, dataAlvo: dataAlvoStr, formulario: _valoresFormularioEdicao });
+          return op && window.contextoDados.operacaoAtual(op);
+        };
 
         if (!diaInteiro && hInicio >= hFim) {
           alert("O horário de término deve ser posterior ao início!");
@@ -2179,6 +2321,7 @@ document.addEventListener("DOMContentLoaded", () => {
               return;
             }
 
+            if (!iniciarEdicao()) { await apresentarRecuperacaoSlot(); return; }
             if (!Array.isArray(compromisso.excecoes)) compromisso.excecoes = [];
             if (!Array.isArray(compromisso.excecoesDetalhadas))
               compromisso.excecoesDetalhadas = [];
@@ -2218,6 +2361,10 @@ document.addEventListener("DOMContentLoaded", () => {
             delete novoCompromisso.recorrenciaFimCondicao;
             delete novoCompromisso.recorrenciaDataFim;
             delete novoCompromisso.recorrenciaQuantidadeOcorrencias;
+            window.contextoDados.atualizarOperacao(op, {
+              alvos: { agendamentoIds: [compromisso.id, novoId] },
+              intencao: { acao: "editar-ocorrencia", agendamento: compromisso, novaOcorrencia: novoCompromisso },
+            });
             aulas.push(novoCompromisso);
             _novaOcorrenciaSerie = novoCompromisso;
           } else if (escopoRecorrencia === "entireSeries") {
@@ -2234,6 +2381,7 @@ document.addEventListener("DOMContentLoaded", () => {
               return;
             }
 
+            if (!iniciarEdicao()) { await apresentarRecuperacaoSlot(); return; }
             compromisso.horarioInicio = hInicio;
             compromisso.horarioFim = hFim;
             compromisso.fullDay = diaInteiro;
@@ -2326,6 +2474,7 @@ document.addEventListener("DOMContentLoaded", () => {
               recorrenciaQuantidadeOcorrencias: _recorrenciaQuantidadeOcorrenciasOriginalFd,
             };
 
+            if (!iniciarEdicao()) { await apresentarRecuperacaoSlot(); return; }
             // Encerra a série original um dia antes da data clicada
             compromisso.recorrenciaFimCondicao = "untilDate";
             compromisso.recorrenciaDataFim = _ptBrAnteriorFd;
@@ -2495,6 +2644,10 @@ document.addEventListener("DOMContentLoaded", () => {
               delete _novaSerieFd.recorrenciaFimCondicao;
               delete _novaSerieFd.recorrenciaDataFim;
             }
+            window.contextoDados.atualizarOperacao(op, {
+              alvos: { agendamentoIds: [compromisso.id, _novoIdFd] },
+              intencao: { acao: "editar-a-partir-de", agendamento: compromisso, novaSerie: _novaSerieFd },
+            });
             aulas.push(_novaSerieFd);
             _novaSerieSplit = _novaSerieFd;
           } else {
@@ -2511,6 +2664,7 @@ document.addEventListener("DOMContentLoaded", () => {
               alert(`Não foi possível salvar. Existem conflitos em: ${resumo}.`);
               return;
             }
+            if (!iniciarEdicao()) { await apresentarRecuperacaoSlot(); return; }
             compromisso.horarioInicio = hInicio;
             compromisso.horarioFim = hFim;
             compromisso.fullDay = diaInteiro;
@@ -2537,6 +2691,7 @@ document.addEventListener("DOMContentLoaded", () => {
               return;
             }
           }
+          if (!iniciarEdicao()) { await apresentarRecuperacaoSlot(); return; }
           compromisso.horarioInicio = hInicio;
           compromisso.horarioFim = hFim;
           compromisso.fullDay = diaInteiro;
@@ -2579,6 +2734,11 @@ document.addEventListener("DOMContentLoaded", () => {
           window.enriquecerAgendamentoComDadosFrescos(compromisso);
         }
 
+        exigirContextoOperacaoSlot(op);
+        window.contextoDados.atualizarOperacao(op, {
+          alvos: { agendamentoIds: [compromisso.id, ...[_novaOcorrenciaSerie, _novaSerieSplit].filter(Boolean).map((item) => item.id)] },
+          intencao: { acao: "editar", escopo: escopoRecorrencia, dataAlvo: dataAlvoStr, agendamento: compromisso, novaOcorrencia: _novaOcorrenciaSerie, novaSerie: _novaSerieSplit },
+        });
         if (
           typeof window.salvarEventoComGCal === "function" &&
           window.gcal &&
@@ -2587,74 +2747,63 @@ document.addEventListener("DOMContentLoaded", () => {
           const _resultadoPrimeiraGravacao = await window.salvarEventoComGCal(
             compromisso,
             {
-              operacao: "atualizar",
+              operacao: op,
+              contextoDados: op.contexto,
               snapshotAnterior: _snapshotEdicao,
             },
           );
-
-          // FALHA NA PRIMEIRA GRAVAÇÃO — nada persistiu; a segunda não pode rodar.
-          if (!deveEnviarPatchReposicao(_resultadoPrimeiraGravacao)) {
-            aulas.splice(0, aulas.length, ..._snapshotAulasEdicao);
-            avisarFalhaPersistencia(_resultadoPrimeiraGravacao);
-            reabrirModalEdicaoComValores(
-              _idCompromissoEdicao,
-              _valoresFormularioEdicao,
-            );
-            return;
-          }
+          confirmarPersistenciaSlot(op, _resultadoPrimeiraGravacao);
+          if (!window.contextoDados.operacaoAtual(op)) return;
 
           const _alvoSegundaGravacao = _novaOcorrenciaSerie || _novaSerieSplit;
+          if (!_alvoSegundaGravacao) escritaConfirmada = true;
           if (_alvoSegundaGravacao) {
             const _resultadoSegundaGravacao = await window.salvarEventoComGCal(
               _alvoSegundaGravacao,
-              { operacao: "criar" },
+              { operacao: op, contextoDados: op.contexto },
             );
-
-            // FALHA NA SEGUNDA GRAVAÇÃO — a primeira já persistiu no servidor e precisa ser
-            // desfeita lá, não só na memória: daí a gravação de compensação com o estado restaurado.
-            if (!deveEnviarPatchReposicao(_resultadoSegundaGravacao)) {
-              aulas.splice(0, aulas.length, ..._snapshotAulasEdicao);
-              const _compromissoRestaurado = obterCompromissoPorId(
-                _idCompromissoEdicao,
-              );
-              if (_compromissoRestaurado) {
-                await window.salvarEventoComGCal(_compromissoRestaurado, {
-                  operacao: "atualizar",
-                  snapshotAnterior: compromisso,
-                });
-              }
-              avisarFalhaPersistencia(_resultadoSegundaGravacao);
-              reabrirModalEdicaoComValores(
-                _idCompromissoEdicao,
-                _valoresFormularioEdicao,
-              );
-              return;
-            }
+            confirmarPersistenciaSlot(op, _resultadoSegundaGravacao);
+            escritaConfirmada = true;
+            if (!window.contextoDados.operacaoAtual(op)) return;
           }
-          // Optimistic UI in salvarEventoComGCal already rendered the result — no inicializarHome needed.
+          // A ponte aguarda também o render interno na mesma operação.
         } else {
           const _resultadoPersistencia =
             typeof salvarDados === "function"
-              ? await salvarDados()
+              ? await salvarDados(false, { operacao: op, contextoDados: op.contexto })
               : { ok: false, motivo: "falha_remota" };
-          if (!deveEnviarPatchReposicao(_resultadoPersistencia)) {
-            aulas.splice(0, aulas.length, ..._snapshotAulasEdicao);
-            avisarFalhaPersistencia(_resultadoPersistencia);
-            reabrirModalEdicaoComValores(
-              _idCompromissoEdicao,
-              _valoresFormularioEdicao,
-            );
-            return;
-          }
+          confirmarPersistenciaSlot(op, _resultadoPersistencia);
+          escritaConfirmada = true;
+          if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof window.inicializarHome === "function") {
-            await window.inicializarHome();
+            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
           }
+          if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof mostrarToast === "function")
             mostrarToast("Alterações salvas com sucesso!");
         }
+        escritaConfirmada = true;
+      } catch (erro) {
+        if (op && !escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+        if (op ? !window.contextoDados.operacaoAtual(op) : !window.contextoDados.atual(contextoConta)) return;
+        if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
+        // Rollback somente visual: a tentativa/intenção fica preservada antes dele.
+        if (op && snapshotAulasEdicao) aulas.splice(0, aulas.length, ...snapshotAulasEdicao);
+        if (typeof mostrarToast === "function") {
+          mostrarToast(erro && erro.message ? erro.message : "Não foi possível salvar as alterações.", "error");
+        } else {
+          alert("Não foi possível salvar as alterações.");
+        }
+        if (op) reabrirModalEdicaoComValores(idCompromissoEdicao, valoresFormularioEdicao);
       } finally {
-        _submissaoEdicaoEmAndamento = false;
-        atualizarEstadoSubmitEdicao(false);
+        try {
+          if (op) await window.contextoDados.finalizarOperacao(op);
+        } finally {
+          if (window.contextoDados.atual(contextoConta)) {
+            _submissaoEdicaoEmAndamento = false;
+            atualizarEstadoSubmitEdicao(false);
+          }
+        }
       }
     });
   }
@@ -2676,6 +2825,8 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
   window.executarEnvioParaReposicao = async function () {
+    const contextoConta = window.contextoDados.capturar();
+    if (!window.contextoDados.atual(contextoConta)) return;
     const compromisso = obterCompromissoSelecionado();
     if (!compromisso) return;
     if (compromissoTemAlunoInativo(compromisso)) {
@@ -2690,34 +2841,50 @@ document.addEventListener("DOMContentLoaded", () => {
     const dataAlvoStr =
       window.dataAlvoAcaoStr || window.dataSelecionada.toLocaleDateString("pt-BR");
     const ehReabertura = Boolean(compromisso.reposicaoId);
+    let reposicaoOrigem = null;
     if (ehReabertura) {
-      await obterReposicaoParaReabertura(compromisso.reposicaoId);
+      try {
+        reposicaoOrigem = await obterReposicaoParaReabertura(compromisso.reposicaoId);
+      } catch (erro) {
+        if (!window.contextoDados.atual(contextoConta)) return;
+        if (typeof mostrarToast === "function") mostrarToast(erro.message || "Não foi possível carregar a reposição de origem.", "error");
+        return;
+      }
     }
+    if (!window.contextoDados.atual(contextoConta)) return;
     const ehSerie = compromisso.frequencia !== "uma_vez";
-    const _snapshot = ehSerie
-      ? { ...compromisso, excecoes: [...(compromisso.excecoes || [])] }
-      : null;
-    const _snapshotAulasReposicao = ehSerie
-      ? null
-      : aulas.map((a) => ({
-          ...a,
-          excecoes: Array.isArray(a.excecoes) ? [...a.excecoes] : a.excecoes,
-        }));
-    let _mutouExcecoes = false;
-
     await window.abrirModalEscolhaCobrancaReposicao(
       compromisso,
       async (cobravel) => {
-        // Fora do `try` para que o `catch` alcance a reposição já criada e possa apagá-la.
+        if (!window.contextoDados.atual(contextoConta)) return;
+        // A Promise do diálogo pode resolver na troca de conta; a raiz pertence ao callback efetivo.
+        const op = iniciarOperacaoSlot(ehReabertura ? "reabrir-reposicao" : "enviar-para-reposicao", contextoConta,
+          { agendamentoIds: [compromisso.id], reposicaoIds: ehReabertura ? [compromisso.reposicaoId] : [], alunoIds: [compromisso.alunoId] },
+          { acao: ehReabertura ? "reabrir-reposicao" : "enviar-para-reposicao", agendamentoOriginal: compromisso, reposicaoId: compromisso.reposicaoId || null, reposicaoOrigem, dataAlvo: ehSerie ? dataAlvoStr : dataAlvoISO, cobravel: ehReabertura ? reposicaoOrigem.cobravel : cobravel });
+        if (!op) { await apresentarRecuperacaoSlot(); return; }
         let reposicao = null;
+        let escritaConfirmada = false;
+        let _snapshot = null;
+        let _snapshotAulasReposicao = null;
+        let _mutouExcecoes = false;
         try {
+          if (!window.contextoDados.operacaoAtual(op)) return;
+          _snapshot = ehSerie
+            ? { ...compromisso, excecoes: [...(compromisso.excecoes || [])] }
+            : null;
+          _snapshotAulasReposicao = ehSerie ? null : aulas.map((a) => ({
+            ...a,
+            excecoes: Array.isArray(a.excecoes) ? [...a.excecoes] : a.excecoes,
+          }));
           reposicao = ehReabertura
-            ? await reabrirReposicao(compromisso.reposicaoId, compromisso.id)
+            ? await reabrirReposicao(compromisso.reposicaoId, compromisso.id, op)
             : await enviarParaReposicao(
                 compromisso,
                 ehSerie ? dataAlvoStr : dataAlvoISO,
                 cobravel,
+                op,
               );
+          if (!window.contextoDados.operacaoAtual(op)) return;
           if (!reposicao || !reposicao.id) {
             throw new Error("Reposição não foi criada no servidor.");
           }
@@ -2730,32 +2897,37 @@ document.addEventListener("DOMContentLoaded", () => {
             }
           } else {
             const _idxReposicao = aulas.findIndex(
-              (a) => a.id === window.idCompromissoSelecionado,
+              (a) => a.id === compromisso.id,
             );
             if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
           }
 
+          window.contextoDados.atualizarOperacao(op, {
+            alvos: { agendamentoIds: [compromisso.id], reposicaoIds: [reposicao.id], alunoIds: [compromisso.alunoId] },
+            intencao: { acao: ehReabertura ? "reabrir-reposicao" : "enviar-para-reposicao", reposicao, agendamentoOriginal: ehSerie ? _snapshot : compromisso, dataExcecao: ehSerie ? dataAlvoStr : null, removerAgendamento: !ehSerie },
+          });
           window.fecharModalAcaoSlot();
 
           if (ehSerie) {
             const resultadoPersistencia =
               typeof salvarDados === "function"
-                ? await salvarDados(true)
+                ? await salvarDados(true, { operacao: op, contextoDados: op.contexto })
                 : { ok: false, motivo: "falha_remota" };
-            if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-              throw new Error(
-                obterMensagemFalhaPersistencia(resultadoPersistencia),
-              );
-            }
+            confirmarPersistenciaSlot(op, resultadoPersistencia);
+            escritaConfirmada = true;
+            if (!window.contextoDados.operacaoAtual(op)) return;
             if (typeof window.carregarDados === "function") {
-              await window.carregarDados({
+              exigirAtualizacaoSlot(await window.carregarDados({
                 forcarRemoto: true,
                 silenciosoUI: true,
-              });
+                operacao: op,
+              }));
             }
+            if (!window.contextoDados.operacaoAtual(op)) return;
             if (typeof window.inicializarHome === "function") {
-              await window.inicializarHome();
+              exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
             }
+            if (!window.contextoDados.operacaoAtual(op)) return;
 
             let mensagemPrazo = "";
             if (reposicao && reposicao.validoAte) {
@@ -2775,73 +2947,59 @@ document.addEventListener("DOMContentLoaded", () => {
             const resultadoPersistencia = await window.salvarEventoComGCal(
               compromisso,
               {
-                operacao: "excluir",
+                operacao: op,
+                contextoDados: op.contexto,
                 snapshotAnterior: compromisso,
+                ehReabertura,
               },
-              { ehReabertura },
             );
-            if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-              throw new Error(
-                obterMensagemFalhaPersistencia(resultadoPersistencia),
-              );
-            }
+            confirmarPersistenciaSlot(op, resultadoPersistencia);
           } else {
             const resultadoPersistencia =
               typeof salvarDados === "function"
-                ? await salvarDados()
+                ? await salvarDados(false, { operacao: op, contextoDados: op.contexto })
                 : { ok: false, motivo: "falha_remota" };
-            if (!deveEnviarPatchReposicao(resultadoPersistencia)) {
-              throw new Error(
-                obterMensagemFalhaPersistencia(resultadoPersistencia),
-              );
-            }
+            confirmarPersistenciaSlot(op, resultadoPersistencia);
           }
 
+          escritaConfirmada = true;
+          if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof window.carregarDados === "function") {
-            await window.carregarDados({
+            exigirAtualizacaoSlot(await window.carregarDados({
               forcarRemoto: true,
               silenciosoUI: true,
-            });
+              operacao: op,
+            }));
           }
+          if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof window.inicializarHome === "function") {
-            await window.inicializarHome();
+            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
           }
+          if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof mostrarToast === "function") {
             mostrarToast("Aula enviada para reposição.", "success");
           }
           return reposicao;
         } catch (erro) {
+          if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+          if (!window.contextoDados.operacaoAtual(op)) return null;
+          if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return reposicao; }
+          // Só restaura memória; não apagar a reposição (inclusive uma reaberta) nem repetir CRUD.
           if (ehSerie && _mutouExcecoes) {
             compromisso.excecoes = [...(_snapshot.excecoes || [])];
           }
           if (!ehSerie && Array.isArray(_snapshotAulasReposicao)) {
             aulas.splice(0, aulas.length, ..._snapshotAulasReposicao);
-            window.log.warn("[reposicao]", "Rollback disparado", {
+            window.log.warn("[reposicao]", "Rollback somente local; recuperação pendente", {
               id: compromisso.id,
               motivo:
                 erro && erro.message
                   ? erro.message
                   : "falha_envio_para_reposicao",
             });
-
-            // Best-effort: a UI já foi recuperada acima e não pode ficar refém desta chamada.
-            if (reposicao && reposicao.id) {
-              try {
-                await window.apiFetchBackend(
-                  `${window.APP_API_CONFIG.apiBaseUrl}/reposicoes/${encodeURIComponent(reposicao.id)}`,
-                  { method: "DELETE" },
-                );
-              } catch (erroExclusaoReposicao) {
-                window.log.error(
-                  "[reposicao]",
-                  "Falha ao desfazer a reposição órfã após rollback da exclusão",
-                  erroExclusaoReposicao,
-                );
-              }
-            }
           }
           if (ehSerie) {
-            window.log.warn("[reposicao]", "Rollback disparado", {
+            window.log.warn("[reposicao]", "Rollback somente local; recuperação pendente", {
               id: compromisso.id,
               motivo:
                 erro && erro.message
@@ -2880,6 +3038,8 @@ document.addEventListener("DOMContentLoaded", () => {
             );
           }
           return null;
+        } finally {
+          await window.contextoDados.finalizarOperacao(op);
         }
       },
       { ehReabertura },

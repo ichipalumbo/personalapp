@@ -1,5 +1,18 @@
 (function (global) {
     'use strict';
+    const contextoDados = global.contextoDados;
+    if (!contextoDados) throw new Error('contexto-dados.js precisa carregar antes de settings-modal.js.');
+    contextoDados.aoInvalidar(() => {
+        closeUserAreaModal();
+        ['userProfileName', 'userProfileEmail'].forEach((id) => {
+            const elemento = document.getElementById(id);
+            if (elemento) elemento.textContent = '';
+        });
+        ['btnConnectGoogleCalendar', 'btnDisconnectGoogleCalendar', 'btnRenewGoogleCalendarWatch'].forEach((id) => {
+            const botao = document.getElementById(id);
+            if (botao) botao.disabled = false;
+        });
+    });
 
     function obterHelperSessaoUsuario() {
         return global.userAreaSessionHelper && typeof global.userAreaSessionHelper === 'object'
@@ -74,14 +87,15 @@
                         return fallback;
                     }
                 };
-            const aulasCache = parseSeguro(localStorage.getItem('personal_aulas'), []);
+            const snapshot = contextoDados.lerPrincipal();
+            const aulasCache = snapshot ? snapshot.aulas : [];
             if (Array.isArray(aulasCache)) {
                 const filtradasCache = aulasCache.filter(function (aula) {
                     return !(aula && aula.source === 'google_external');
                 });
 
                 if (filtradasCache.length !== aulasCache.length) {
-                    localStorage.setItem('personal_aulas', JSON.stringify(filtradasCache));
+                    contextoDados.salvarPrincipal({ ...snapshot, aulas: filtradasCache });
                     houveAlteracao = true;
                 }
             }
@@ -101,6 +115,8 @@
      * Opens the User Area Modal
      */
     function openUserAreaModal() {
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) return;
         const modal = document.getElementById('appSettingsModal');
         const backdrop = document.getElementById('appSettingsBackdrop');
 
@@ -157,9 +173,11 @@
 
             global.googleIdentity.checkCalendarConnectionStatus()
                 .then(function (status) {
+                    if (!contextoDados.atual(contexto)) return;
                     atualizarUIStatusGoogleCalendar(status);
                 })
                 .catch(function (error) {
+                    if (!contextoDados.atual(contexto)) return;
                     console.warn('[settings-modal] Erro ao verificar status do Google Calendar:', error);
                     atualizarUIStatusGoogleCalendar({
                         connected: false,
@@ -193,6 +211,8 @@
     }
 
     async function handleRenewGoogleCalendarWatch() {
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) return;
         if (!global.googleIdentity || typeof global.googleIdentity.isSignedIn !== 'function' || !global.googleIdentity.isSignedIn()) {
             if (window.log && typeof window.log.debug === 'function') {
                 window.log.debug('[gcal]', 'Sem sessão Google; botão manual de renovação ignorado.');
@@ -210,6 +230,7 @@
 
         try {
             const resultado = await global.renovarCanalGoogleCalendar();
+            if (!contextoDados.atual(contexto)) return;
             const mensagem = resultado && resultado.renewed
                 ? 'Canal do Google Agenda renovado e sincronização disparada.'
                 : (resultado && resultado.synced
@@ -220,11 +241,13 @@
                 global.mostrarToast(mensagem, 'success');
             }
         } catch (error) {
+            if (!contextoDados.atual(contexto)) return;
             console.warn('[settings-modal] Falha ao verificar/renovar o canal do Google Calendar:', error);
             if (typeof global.mostrarToast === 'function') {
                 global.mostrarToast('Não foi possível verificar o canal do Google Agenda agora.', 'warning');
             }
         } finally {
+            if (!contextoDados.atual(contexto)) return;
             if (btn) {
                 btn.disabled = false;
                 if (btn.dataset.originalHtml) {
@@ -292,6 +315,7 @@
         // Hook into auth state change to check calendar status and update modal visibility
         if (typeof global.googleIdentity === 'object' && typeof global.googleIdentity.addAuthChangeListener === 'function') {
             global.googleIdentity.addAuthChangeListener(function (session) {
+                const contexto = contextoDados.capturar();
                 if (session && session.isSignedIn) {
                     atualizarPerfilUsuarioUI(session);
 
@@ -299,9 +323,11 @@
                     if (typeof global.googleIdentity.checkCalendarConnectionStatus === 'function') {
                         global.googleIdentity.checkCalendarConnectionStatus()
                             .then(function (status) {
+                                if (!contextoDados.atual(contexto)) return;
                                 atualizarUIStatusGoogleCalendar(status);
                             })
                             .catch(function (error) {
+                                if (!contextoDados.atual(contexto)) return;
                                 console.warn('[settings-modal] Erro ao verificar status do Google Calendar no sign-in:', error);
                                 atualizarUIStatusGoogleCalendar({
                                     connected: false,
@@ -326,6 +352,8 @@
      * Handle Connect Google Calendar Button Click
      */
     async function handleConnectGoogleCalendar() {
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) return;
         const btnConnect = document.getElementById('btnConnectGoogleCalendar');
         if (!btnConnect) return;
 
@@ -350,6 +378,7 @@
             // Call ensureCalendarConnection with interactive mode
             if (typeof global.googleIdentity === 'object' && typeof global.googleIdentity.ensureCalendarConnection === 'function') {
                 const result = await global.googleIdentity.ensureCalendarConnection({ interactive: true, force: true });
+                if (!contextoDados.atual(contexto)) return;
 
                 // Optimistic update: connected state appears immediately
                 atualizarUIStatusGoogleCalendar({
@@ -362,9 +391,11 @@
                 // Background refresh to reconcile with backend without blocking UX
                 global.googleIdentity.checkCalendarConnectionStatus()
                     .then(function (status) {
+                        if (!contextoDados.atual(contexto)) return;
                         atualizarUIStatusGoogleCalendar(status);
                     })
                     .catch(function () {
+                        if (!contextoDados.atual(contexto)) return;
                         atualizarUIStatusGoogleCalendar({
                             connected: true,
                             details: result && result.details ? result.details : null,
@@ -378,6 +409,7 @@
                 }
             }
         } catch (error) {
+            if (!contextoDados.atual(contexto)) return;
             console.error('[settings-modal] Erro ao conectar Google Calendar:', error);
             const errorMsgBruto = error && error.message ? error.message : 'Falha ao conectar Google Agenda';
             const errorMsg = normalizarMensagemGoogleAgenda(errorMsgBruto);
@@ -390,6 +422,7 @@
                 global.mostrarToast(errorMsg, 'error');
             }
         } finally {
+            if (!contextoDados.atual(contexto)) return;
             btnConnect.disabled = false;
             const span = btnConnect.querySelector('span');
             if (span && originalSpan) {
@@ -402,6 +435,8 @@
      * Handle Disconnect Google Calendar Button Click
      */
     async function handleDisconnectGoogleCalendar() {
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto)) return;
         // Show confirmation dialog
         const confirmed = window.confirm('Tem certeza de que deseja desconectar a Google Agenda?');
         if (!confirmed) {
@@ -431,6 +466,7 @@
             // Call deleteCalendarConnection
             if (typeof global.googleIdentity === 'object' && typeof global.googleIdentity.deleteCalendarConnection === 'function') {
                 await global.googleIdentity.deleteCalendarConnection();
+                if (!contextoDados.atual(contexto)) return;
 
                 // Update UI
                 atualizarUIStatusGoogleCalendar({ connected: false });
@@ -443,6 +479,7 @@
                     console.log('[settings-modal] Sincronizando dados para remover blocos externos...');
                     try {
                         await window.sincronizarBancoDados();
+                        if (!contextoDados.atual(contexto)) return;
                     } catch (syncError) {
                         console.warn('[settings-modal] Aviso: Falha na sincronização após desconexão:', syncError);
                         // Don't fail the entire flow - show success anyway since disconnect succeeded
@@ -455,6 +492,7 @@
                 }
             }
         } catch (error) {
+            if (!contextoDados.atual(contexto)) return;
             console.error('[settings-modal] Erro ao desconectar Google Calendar:', error);
             const errorMsgBruto = error && error.message ? error.message : 'Falha ao desconectar Google Agenda';
             const errorMsg = normalizarMensagemGoogleAgenda(errorMsgBruto);
@@ -467,6 +505,7 @@
                 global.mostrarToast(errorMsg, 'error');
             }
         } finally {
+            if (!contextoDados.atual(contexto)) return;
             btnDisconnect.disabled = false;
             const icon = btnDisconnect.querySelector('i');
             if (icon && originalIcon) {

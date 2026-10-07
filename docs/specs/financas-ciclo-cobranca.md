@@ -1,6 +1,9 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 7 · **Atualizado**: 2026-08-25
+> **Status**: Em produção · **Versão**: 14 · **Atualizado**: 2026-10-06
+> **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
+> execução e aceite mock encerrados. Dono aprovou uso normal e teclado no deploy da branch; recuperação nativa não exercitada e TalkBack não testado, não bloqueante por decisão do dono. Publicação na main pendente.
+> **Apresentação inicial**: aviso imediato com/sem conteúdo implementado; abertura no app instalado aprovada pelo relato do dono. Aceite na branch não certifica deploy da main ou cobertura integral.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >
@@ -398,6 +401,91 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
     Durante a espera, exibir estado transitório claro (botão "Salvando...", desabilitado) e informar erro/retry em caso de falha. Nunca aplicar a mudança apenas no cache local como definitiva.
 - **Motivo**: valor financeiro e status de pagamento não podem divergir entre dispositivos nem entre local e servidor.
 
+#### 6.1.1 Isolamento do cache e do estado por conta
+
+- Cache só pode ser exibido com dono conhecido e token utilizável da mesma conta, obtidos
+  pelos getters existentes da sessão. Sem sessão válida, preservar cache identificado no
+  aparelho, mas limpar suas projeções de memória/tela. Conferir nos acessos, nas respostas
+  e no retorno de foco/visibilidade; não há polling ou alteração do login.
+- Cache principal (alunos, agenda, pendências, grade e meta) tem identificação própria;
+  cache financeiro inclui `ownerEmail`, `atualizadoEm` e `dados`, sem reatribuir dono ao
+  principal. Um snapshot vazio identificado é distinto de cache inexistente.
+- Descartar caches antigos sem dono, inclusive backup legado `personalTrainerData`. Não
+  migrar, identificar retroativamente pela conta atual ou recuperar automaticamente esse
+  conteúdo. Isso pode perder alterações locais que nunca chegaram ao servidor.
+- Toda resposta é vinculada ao dono e à geração de conta capturados antes da requisição.
+  Troca, logout ou perda de sessão invalida respostas/fallbacks antigos; A→B→A não torna
+  novamente válida uma resposta da primeira sessão de A. Renovação válida da mesma conta
+  não invalida dados só porque o token mudou.
+- Limpar também cards, resumos, históricos e contextos de ação em memória. Na troca de
+  conta fechar/descartar rascunho anterior e avisar se havia edição, sem rollback remoto.
+- Snapshot local não confirmado não é leitura confirmada. Preservar pendência identificada
+  e seu snapshot separadamente por dono antes de substituir cache ativo ao trocar de conta.
+  Isso é armazenamento de recuperação, não fila offline nem autorização para reenviar CRUD.
+  Recuperação explícita e cobertura de operações compostas são incrementos posteriores;
+  uma leitura normal ou confirmação antiga não pode apagar pendência mais recente.
+- Isolamento do cache é defesa frontend. A autoridade de autorização continua no backend
+  pelo JWT validado e `ownerEmail`; não confiar no marcador local como autorização da API.
+
+#### 6.1.2 Leitura principal segura (alunos, agenda, grade, bloqueios e reposições)
+
+- Buscar e validar os cinco conjuntos antes de atualizar qualquer projeção. Falha HTTP,
+  rede, JSON inválido ou formato incompatível de um conjunto preserva o snapshot inteiro
+  anterior. Não converter indisponibilidade de bloqueios/reposições em lista vazia.
+- Uma lista vazia válida da mesma conta representa o estado atual do servidor e deve ser
+  aplicada, sem repovoar o banco com cache. Normalização para exibição também não dispara
+  migração, reconciliação ou CRUD. Gravar continua sendo ação explícita de edição.
+- Separar obtenção/preparação da aplicação. Resultados indicam aplicação, falha, descarte
+  ou adiamento; fallback não é sucesso remoto. Falha/cancelamento não reidrata cache por
+  cima do estado em memória. A hidratação inicial autorizada permanece disponível.
+- Conferir dono/geração e pendência antes da aplicação; resposta de leitura substituída
+  não pode sobrescrever leitura mais recente. Pendência local não confirmada adia aplicação.
+- A garantia é do batch no cliente, não transação entre collections nem ausência de escrita
+  lazy no servidor. GETs existentes mantêm expiração, configuração padrão e cálculos atuais.
+- Coordenação e recuperação seguem 6.1.3; revalidação automática no boot segue 6.1.4.
+
+#### 6.1.3 Interação, recuperação e atualização manual (cartão C, sem publicação)
+
+- Formulários e operações compostas protegem a intenção local. A raiz guarda dono,
+  tentativa, alvos e etapas antes do envio e permanece ativa até encerrar tarefas conhecidas.
+  Falha parcial/desconhecida conserva pendência; não oferece replay geral nem compensação remota.
+- **Verificar no servidor** consulta dados e alvos necessários sem aplicar nem apagar a
+  intenção. **Usar dados do servidor** exige confirmação, fecha formulários, busca leitura
+  nova válida e só então abandona a pendência; invalida callbacks anteriores mesmo sem formulário.
+  Não é rollback: GET não comprova o término de escrita cuja resposta se perdeu.
+- **Sincronizar Dados** faz apenas leitura. Clique aguarda formulário/operação/batch da
+  mesma conta, depois executa batch próprio novo. Adiamento/falha não anunciam sucesso;
+  troca de conta cancela o pedido anterior. Retry desse caminho refaz somente a leitura.
+- PATCH confirmado com refresh falho continua confirmado: aviso orienta não repetir a
+  escrita. Ciclos que aguardam releitura ficam protegidos até leitura que realmente os
+  cubra; histórico não libera o ciclo vigente que seu endpoint não retorna.
+- Recuperação invalida históricos afetados em memória, recarregando imediatamente só os
+  abertos. Complementos incompletos mantêm aviso com retry de leitura, sem prefetch geral.
+  Nenhum cálculo financeiro é implementado no cliente; GETs lazy existentes são preservados.
+
+#### 6.1.4 Revalidação de leitura ao abrir (B2, publicação pendente)
+
+- Hidratar cache principal autorizado antes de qualquer tela inicial; depois da apresentação
+  inicial, revalidar em background. Sem cache, aproveitar carga principal válida já necessária,
+  sem batch duplicado. Cache vazio válido também é revalidado.
+- Uma aplicação principal por contexto da conta nessa carga da página; edição/operação
+  invalida leitura em voo e adia leitura nova. Pendência não confirmada exige recuperação.
+  Falha/401 preserva estado e só retoma por evento pertinente, sem polling/retry por fechar form.
+- Atualizar a tela ativa sem reinicializar formulário, hash, período, detalhes ou foco.
+  Finanças conserva GET próprio: só o B2 reutiliza leitura financeira bem-sucedida da mesma
+  geração/interação concluída ou em voo; vazio confirmado é válido. Cache em disco/falha não
+  são recibo de leitura. Manual/recuperação e escrita continuam exigindo suas leituras próprias.
+- Login e retorno à aba não concorrem com B2 pendente. Após sua aplicação, permanecem
+  gatilhos de atualização existentes; não consolidar GCal nem mudar regras financeiras.
+- Aviso inicial **Carregando dados...** aparece antes de aguardar sessão/dados quando
+  ainda não há conteúdo autorizado; com conteúdo disponível, a leitura indica
+  **Sincronizando dados...**. Rótulo pertence ao voo/contexto e acompanha a tela ativa,
+  inclusive Finanças já exibida enquanto o batch principal está chegando.
+- Conclusão, falha, sessão ausente/perdida ou adiamento não mantêm aviso de carregamento
+  indefinido nem reativam indicador de uma leitura invalidada por edição. O aviso não
+  confirma escrita/sucesso remoto; orientações de login/falha/pendência continuam próprias.
+- Sem migração/reconciliação/CRUD pelo frontend; GETs lazy existentes do backend intactos.
+
 ### 6.2 Histórico de ciclos sob demanda
 
 #### 6.2.1 Backend — payload enxuto
@@ -474,6 +562,9 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 | 25  | O histórico entra no cache de localStorage?                    | Não. Apenas cache em memória durante a sessão da tela (6.2.2).                                                                                                                                             |
 | 26  | A rota de consistência de agenda é um problema de performance? | Não. É **comportamento aceito** (10.1): custo fixo de 2 consultas, não escala por aluno. Não tratar como dívida técnica.                                                                                   |
 | 27  | Histórico pode ser pago ou ajustado?                          | Sim, enquanto não houver `dataPagamento`, inclusive nos status `atrasado` e `em_aberto`. A data inicia hoje, mas é editável para registrar o recebimento real; ciclo pago continua congelado.              |
+| 28 | Cache pode ser mostrado sem sessão válida ou para outra conta? | Não. Preservação em disco não autoriza exibição; descartar legado sem dono e invalidar respostas/contextos antigos conforme 6.1.1. |
+| 29 | Troca de conta pode perder pendência local identificada? | Não silenciosamente. Preservar snapshot separado por dono, sem replay automático; mecanismo de recuperação é incremental. |
+| 30 | Atualização manual ou recuperação podem repetir escrita não confirmada? | Não. Atualização é somente leitura; recuperação verifica ou abandona intenção com confirmação e leitura nova, conforme 6.1.3. |
 
 ---
 

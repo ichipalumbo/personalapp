@@ -102,6 +102,7 @@ window.irParaDiaDestaSemana = function(dataStr) {
     }
 };
 window.renderizarHomeSemana = function() {
+    if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
     const gridSemanal = document.getElementById('calendarioSemanalHomeGrid');
     const labelPeriodo = document.getElementById('periodoSemanaHomeLabel');
     if (!gridSemanal) return;

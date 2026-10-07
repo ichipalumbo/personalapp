@@ -18,6 +18,7 @@ function criarTela(alunos, opcoes = {}) {
         <div id="modalEdicaoCobrancaReposicao" style="display:none"><p id="descricaoEdicaoCobrancaReposicao"></p><select id="seletorCobrancaReposicao"><option value="true">Sim</option><option value="false">Não</option></select><button id="btnCancelarEdicaoCobrancaReposicao">Cancelar</button><button id="btnSalvarEdicaoCobrancaReposicao">Salvar</button></div>
     </body></html>`, { runScripts: 'outside-only', url: 'http://localhost' });
     const { window } = dom;
+    require('./setup/contexto-dados')(dom);
     window.alunos = alunos;
     window.aulas = [];
     window.aulasParaRepor = [];

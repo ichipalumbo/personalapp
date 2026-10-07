@@ -18,6 +18,7 @@ function criarAmbiente() {
         </div>
     </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
     const { window } = dom;
+    require('./setup/contexto-dados')(dom, 'josy@example.com');
     window.userAreaSessionHelper = {
         getSessionSnapshot: () => ({ isSignedIn: true, name: 'Josy', email: 'josy@example.com', picture: '' }),
         renderProfile: (session) => session

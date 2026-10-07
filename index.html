@@ -23,6 +23,7 @@
   </head>
   <body>
     <div class="container">
+      <script src="mocks/ui-runtime/sandbox.js"></script>
       <script src="assets/js/logger.js"></script>
       <!-- [TAG-HTML-HEADER] - Menu e Controle Global de Navegação (SPA) -->
       <header class="header">
@@ -33,9 +34,9 @@
                 ><i class="fa-solid fa-dumbbell"></i> Prô</span
               ><span class="marca-mente"> Josy</span>
             </h1>
-            <!-- 5.8 (Parte B): rotulo global de sincronização remoto sobre cache.
-                 Oculto por padrão; storage.js alterna `hidden`. Texto aprovado pelo dono: "Sincronizando dados..." -->
-            <span id="headerCacheState" class="header-cache-state" hidden>Sincronizando dados...</span>
+              <!-- Aviso imediato antes do bootstrap: storage distingue carga sem conteúdo
+                de atualização sobre dados existentes e encerra por voo/contexto. -->
+              <span id="headerCacheState" class="header-cache-state" role="status" data-carga-inicial="true">Carregando dados...</span>
           </div>
           <div class="auth-banner" id="headerSession">
             <div id="googleSignedOutState" class="header-session-state">
@@ -72,6 +73,14 @@
           </div>
         </div>
       </header>
+      <section id="recuperacaoDados" class="recuperacao-dados" tabindex="-1" aria-labelledby="recuperacaoDadosTitulo" hidden>
+        <h2 id="recuperacaoDadosTitulo">Alteração não confirmada</h2>
+        <p id="recuperacaoDadosMensagem" role="status">Sua alteração está guardada neste aparelho. Ela pode já ter sido salva. Verifique no servidor.</p>
+        <div class="recuperacao-dados-acoes">
+          <button type="button" class="btn btn-secondary" id="btnVerificarDadosServidor">Verificar no servidor</button>
+          <button type="button" class="btn btn-secondary" id="btnUsarDadosServidor">Usar dados do servidor</button>
+        </div>
+      </section>
 
       <!-- Etapa 3 (Cartão E, 2026-09-27): a navegação principal migrou para a barra
            inferior fixa (decisão donal — substitui a barra superior; título e login
@@ -1570,6 +1579,7 @@
     <!-- [1] Core State & Data -->
     <script src="assets/js/config/api-config.js"></script>
     <script src="assets/js/state.js"></script>
+    <script src="assets/js/app/contexto-dados.js"></script>
     <script src="assets/js/storage.js"></script>
     <!-- [2] Pure Utilities (no DOM) -->
     <script src="assets/js/utils-kpi.js"></script>
@@ -1613,6 +1623,8 @@
     <!-- [UI-MOCK] Ativado somente quando a URL possui ?mockScenario=... -->
     <script src="mocks/ui-runtime/scenarios.js"></script>
     <script src="mocks/ui-runtime/mock-runtime.js"></script>
+    <script src="assets/js/app/recuperacao-dados.js"></script>
+    <script src="assets/js/app/coordenador-sync-boot.js"></script>
     <!-- [7] App Shell -->
     <script src="assets/js/app/service-worker.js"></script>
     <script src="assets/js/app/router.js"></script>

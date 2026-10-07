@@ -34,16 +34,25 @@
     }
 
     const scenario = getCurrentScenario();
+    const sandbox = window.__UI_MOCK_SANDBOX;
+    if (!sandbox) throw new Error('Mock interrompido: sandbox.js precisa carregar antes dos consumidores.');
+    const copiar = (valor) => JSON.parse(JSON.stringify(valor));
 
     // Flags de validação por query string:
     //   ?mockLatencia=<ms>   atraso artificial em toda resposta /api/* (skeleton/progresso)
     //   ?mockFalha=<rotas>   ex.: reposicoes,financas → resposta 500 simulada (retry/erro)
     const params = new URLSearchParams(window.location.search);
-    const latenciaMs = Math.max(0, Number(params.get('mockLatencia')) || Number(scenario.latenciaMs) || 0);
-    const falhas = String(params.get('mockFalha') || '')
+    let latenciaMs = Math.max(0, Number(params.get('mockLatencia')) || Number(scenario.latenciaMs) || 0);
+    let falhas = String(params.get('mockFalha') || '')
       .split(',')
       .map(function (item) { return item.trim(); })
       .filter(Boolean);
+    let semRede = params.get('mockOffline') === '1';
+    let statusFalha = Math.max(400, Math.min(599, Number(params.get('mockStatus')) || 500));
+    let jsonInvalido = params.get('mockJsonInvalido') === '1';
+    let reterRespostas = params.get('mockReter') === '1';
+    const respostasRetidas = new Map();
+    Object.defineProperty(navigator, 'onLine', { configurable: true, get: () => !semRede });
 
     function chaveDaRota(pathname) {
       if (pathname === '/api/configuracao' || pathname === '/api/configuracao/grade_horarios') return 'configuracao';
@@ -64,7 +73,7 @@
     // bloqueada (409), para preservar as fixtures de demonstração/auditoria.
     const escritaLiberada = params.get('mockEscrita') === '1' && scenario.name === 'default';
 
-    const store = escritaLiberada
+    let store = escritaLiberada
       ? JSON.parse(JSON.stringify({
           configuracao: scenario.configuracao,
           alunos: scenario.alunos || [],
@@ -75,13 +84,27 @@
           consistenciaAgenda: scenario.consistenciaAgenda || []
         }))
       : null;
+    const stores = new Map([['A', store]]);
+    const baseB = copiar(scenario);
+    baseB.alunos = (baseB.alunos || []).map((aluno) => ({ ...aluno, nome: 'CONTA B — ' + aluno.nome }));
+    baseB.financas = (baseB.financas || []).map((card) => ({ ...card, aluno: { ...card.aluno, nome: 'CONTA B — ' + card.aluno.nome } }));
+    const contas = {
+      A: { ownerEmail: scenario.ownerEmail, profile: scenario.profile, dados: scenario },
+      B: { ownerEmail: 'outra@local.test', profile: { name: 'Conta B Mock', email: 'outra@local.test', picture: '' }, dados: baseB }
+    };
+    const sessaoPersistida = sandbox.lerSessao();
+    let contaAtual = sessaoPersistida ? sessaoPersistida.conta : (scenario.contaInicial === 'B' ? 'B' : 'A');
+    let autenticado = sessaoPersistida ? sessaoPersistida.autenticado === true : scenario.signedIn !== false;
+    const authListeners = new Set();
+    if (escritaLiberada && !stores.has(contaAtual)) stores.set(contaAtual, copiar(contas[contaAtual].dados));
+    store = stores.get(contaAtual) || null;
 
     let seqMock = 0;
     const novoIdMock = (prefixo) => 'mock-' + prefixo + '-' + (++seqMock);
 
     function dados(nome) {
       if (store && store[nome] !== undefined) return store[nome];
-      return scenario[nome];
+      return contas[contaAtual].dados[nome];
     }
 
     function corpoJson(init) {
@@ -100,8 +123,8 @@
     }
 
     // Mesma ideia do backend (snapshot do ciclo): por_aula = (aulas + extras) × preço.
-    function recalcularCiclo(ciclo) {
-      const aluno = store.alunos.find((a) => a.id === ciclo.alunoId) || {};
+    function recalcularCiclo(ciclo, storeAlvo) {
+      const aluno = storeAlvo.alunos.find((a) => a.id === ciclo.alunoId) || {};
       const preco = Number(aluno.preco) || 0;
       if (ciclo.metodoCobranca === 'por_aula') {
         ciclo.valorTotalCiclo = ((Number(ciclo.aulasContadas) || 0) + (Number(ciclo.aulasManuaisExtras) || 0)) * preco;
@@ -111,7 +134,7 @@
       return ciclo;
     }
 
-    function tratarEscrita(responder, url, method, init, seg) {
+    function tratarEscrita(responder, url, method, init, seg, store) {
       const recurso = seg[1];
       const id = seg[2];
       const acao = seg[3];
@@ -202,7 +225,7 @@
         } else if (acao === 'ajuste') {
           ciclo.aulasManuaisExtras = Number(payload.aulasManuaisExtras) || 0;
           if (payload.observacaoAjuste) ciclo.observacaoAjuste = payload.observacaoAjuste;
-          recalcularCiclo(ciclo);
+          recalcularCiclo(ciclo, store);
         }
         return responder({ ok: true, mock: true, ciclo });
       }
@@ -216,29 +239,24 @@
       }, { status: 409 });
     }
 
-    const originalFetch = window.fetch.bind(window);
-    const originalLocalStorageSet = Storage.prototype.setItem;
-    const originalLocalStorageRemove = Storage.prototype.removeItem;
-    const originalLocalStorageClear = Storage.prototype.clear;
-
-    [
-      'personalTrainerData',
-      'personal_alunos',
-      'personal_aulas',
-      'personal_reposicoes',
-      'personal_financas_cache',
-      'personal_limitesGrade',
-      'faturamentoMeta'
-    ].forEach(function (key) {
-      originalLocalStorageRemove.call(localStorage, key);
-    });
-
-    const autenticado = scenario.signedIn !== false;
+    const cache = scenario.cacheSintetico;
+    if (cache) {
+      const s = cache.snapshot;
+      const valores = {
+        personal_cache_dono: cache.ownerEmail,
+        personal_alunos: JSON.stringify(s.alunos), personal_aulas: JSON.stringify(s.aulas),
+        personal_reposicoes: JSON.stringify(s.reposicoes), personal_limitesGrade: JSON.stringify(s.grade),
+        faturamentoMeta: String(s.meta || 0),
+        personal_financas_cache: JSON.stringify({ ownerEmail: cache.ownerEmail, atualizadoEm: cache.atualizadoEm, dados: cache.financas })
+      };
+      if (cache.pendencia) valores.personal_cache_pendencias = JSON.stringify(cache.pendencia);
+      sandbox.semear(valores);
+    } else sandbox.semear({});
 
     function buildSession() {
       return {
-        ownerEmail: autenticado ? scenario.ownerEmail : null,
-        profile: autenticado ? scenario.profile : null,
+        ownerEmail: autenticado ? contas[contaAtual].ownerEmail : null,
+        profile: autenticado ? contas[contaAtual].profile : null,
         signedIn: autenticado,
         connected: false,
         sessionTimestamp: new Date().toISOString()
@@ -260,7 +278,8 @@
       if (signedInState) signedInState.hidden = !autenticado;
 
       if (sessionAvatar) {
-        const email = autenticado && scenario.profile ? String(scenario.profile.email || '') : '';
+        const perfil = contas[contaAtual].profile;
+        const email = autenticado && perfil ? String(perfil.email || '') : '';
         sessionAvatar.textContent = email ? email.charAt(0).toUpperCase() : 'G';
       }
     }
@@ -279,19 +298,21 @@
         return autenticado ? 'mock-ui-runtime-token' : null;
       },
       getOwnerEmail() {
-        return autenticado ? scenario.ownerEmail : null;
+        return autenticado ? contas[contaAtual].ownerEmail : null;
       },
       getProfile() {
-        return autenticado ? scenario.profile : null;
+        return autenticado ? contas[contaAtual].profile : null;
       },
       addAuthChangeListener(listener) {
         aplicarEstadoHeaderSessao();
         if (typeof listener === 'function') {
+          authListeners.add(listener);
           listener(buildSession());
         }
-        return function unsubscribe() {};
+        return function unsubscribe() { authListeners.delete(listener); };
       },
       signOut() {
+        definirSessao({ autenticado: false });
         return Promise.resolve();
       },
       checkCalendarConnectionStatus() {
@@ -311,6 +332,34 @@
       }
     };
 
+    function definirSessao(opcoes = {}) {
+      if (opcoes.conta !== undefined && !['A', 'B'].includes(opcoes.conta)) throw new Error('Conta mock deve ser A ou B.');
+      if (opcoes.conta) contaAtual = opcoes.conta;
+      if (typeof opcoes.autenticado === 'boolean') autenticado = opcoes.autenticado;
+      if (escritaLiberada && !stores.has(contaAtual)) stores.set(contaAtual, copiar(contas[contaAtual].dados));
+      store = stores.get(contaAtual) || null;
+      let persistida = true;
+      try { sandbox.salvarSessao({ conta: contaAtual, autenticado }); }
+      catch (_) { persistida = false; } // Sessão de teste em memória segue coerente.
+      const sessao = buildSession();
+      sessao.persistida = persistida;
+      window.__UI_MOCK_RUNTIME.session = sessao;
+      aplicarEstadoHeaderSessao();
+      authListeners.forEach((fn) => fn(sessao));
+      return sessao;
+    }
+    function configurarRede(opcoes = {}) {
+      if (opcoes.latenciaMs !== undefined) latenciaMs = Math.max(0, Math.min(60000, Number(opcoes.latenciaMs) || 0));
+      if (Array.isArray(opcoes.falhas)) falhas = opcoes.falhas.map(String);
+      if (opcoes.status !== undefined) statusFalha = Math.max(400, Math.min(599, Number(opcoes.status) || 500));
+      if (typeof opcoes.jsonInvalido === 'boolean') jsonInvalido = opcoes.jsonInvalido;
+      if (typeof opcoes.reter === 'boolean') reterRespostas = opcoes.reter;
+      if (typeof opcoes.offline === 'boolean') {
+        const mudou = semRede !== opcoes.offline;
+        semRede = opcoes.offline;
+        if (mudou) window.dispatchEvent(new Event(semRede ? 'offline' : 'online'));
+      }
+    }
     window.__UI_MOCK_RUNTIME = {
       scenarioName: getScenarioName(),
       scenario,
@@ -319,6 +368,15 @@
         return this;
       },
       getScenarioName,
+      definirSessao,
+      configurarRede,
+      liberarRespostas() {
+        const liberar = Array.from(respostasRetidas.values());
+        liberar.forEach((fn) => fn());
+        return liberar.length;
+      },
+      obterChamadas: sandbox.chamadas,
+      resetarCache() { sandbox.resetar(); window.location.reload(); },
       setScenario(name) {
         if (!window.__UI_MOCK_SCENARIOS || !window.__UI_MOCK_SCENARIOS[name]) {
           throw new Error('Cenário inexistente: ' + name);
@@ -326,62 +384,65 @@
 
         const params = new URLSearchParams(window.location.search);
         params.set('mockScenario', name);
-        window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+        window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}${window.location.hash}`);
         window.location.reload();
       }
     };
 
-    Storage.prototype.setItem = function (key, value) {
-      const name = String(key || '');
-      const isAppKey = /personal_|_cache|_dados|localStorage/i.test(name);
-      if (isAppKey && !name.includes('mock')) {
-        return undefined;
+    sandbox.definirHandler(function fetchMock(url, init, input, chamada, escopo) {
+      escopo = escopo || { conta: contaAtual, autenticado, store };
+      const method = init.method;
+      if (init.signal && init.signal.aborted) {
+        chamada.estado = 'cancelada';
+        return Promise.reject(new DOMException('Requisição mock cancelada antes de mutar', 'AbortError'));
       }
-      return originalLocalStorageSet.call(this, key, value);
-    };
-
-    Storage.prototype.removeItem = function (key) {
-      const name = String(key || '');
-      const isAppKey = /personal_|_cache|_dados|localStorage/i.test(name);
-      if (isAppKey && !name.includes('mock')) {
-        return undefined;
-      }
-      return originalLocalStorageRemove.call(this, key);
-    };
-
-    Storage.prototype.clear = function () {
-      return undefined;
-    };
-
-    if (navigator.serviceWorker && typeof navigator.serviceWorker.getRegistrations === 'function') {
-      navigator.serviceWorker.getRegistrations = function () {
-        return Promise.resolve([]);
-      };
-    }
-
-    window.fetch = function fetchMock(input, init = {}) {
-      const raw = typeof input === 'string' ? input : input && input.url ? input.url : String(input || '');
-      const url = new URL(raw, window.location.origin);
-      const method = (init.method || 'GET').toUpperCase();
-
-      if (!url.pathname.startsWith('/api/')) {
-        return originalFetch(input, init);
+      if (input && typeof input.clone === 'function' && init.body === undefined && method !== 'GET') {
+        const corpo = input.clone().text();
+        // Abort também encerra um corpo de Request que ainda não terminou de chegar.
+        return new Promise((resolve, reject) => {
+          const cancelar = () => { chamada.estado = 'cancelada'; reject(new DOMException('Corpo mock cancelado', 'AbortError')); };
+          if (init.signal) init.signal.addEventListener('abort', cancelar, { once: true });
+          corpo.then((body) => {
+            if (init.signal) init.signal.removeEventListener('abort', cancelar);
+            if (!init.signal || !init.signal.aborted) resolve(fetchMock(url, { ...init, body }, null, chamada, escopo));
+          }, (erro) => {
+            if (init.signal) init.signal.removeEventListener('abort', cancelar);
+            chamada.estado = 'falha-corpo'; reject(erro);
+          });
+        });
       }
 
       // Resposta mockada única — aplica a latência artificial (se configurada) antes de resolver.
       const responder = (payload, opcoes = {}) => {
-        const resposta = jsonResponse(payload, opcoes);
-        if (latenciaMs <= 0) {
-          return Promise.resolve(resposta);
-        }
-        return new Promise((resolve) => setTimeout(() => resolve(resposta), latenciaMs));
+        const resposta = jsonInvalido && method === 'GET' && (!opcoes.status || opcoes.status === 200)
+          ? new Response('{json-invalido', { status: 200, headers: { 'Content-Type': 'application/json' } })
+          : jsonResponse(payload, opcoes);
+        return new Promise((resolve, reject) => {
+          let timer;
+          const limpar = () => { clearTimeout(timer); respostasRetidas.delete(chamada.id); if (init.signal) init.signal.removeEventListener('abort', cancelar); };
+          const cancelar = () => { limpar(); chamada.estado = 'cancelada'; reject(new DOMException('Resposta mock cancelada', 'AbortError')); };
+          const finalizar = () => {
+            limpar();
+            if (semRede) { chamada.estado = 'falha-rede'; reject(new TypeError('Rede mock indisponível')); return; }
+            chamada.estado = 'respondida'; chamada.status = resposta.status; resolve(resposta);
+          };
+          if (init.signal && init.signal.aborted) { cancelar(); return; }
+          if (init.signal) init.signal.addEventListener('abort', cancelar, { once: true });
+          if (reterRespostas) respostasRetidas.set(chamada.id, finalizar);
+          else if (latenciaMs > 0) timer = setTimeout(finalizar, latenciaMs);
+          else finalizar();
+        });
       };
 
       const seg = url.pathname.split('/').filter(Boolean);
 
+      // Credencial/estado externo nunca simulados nem delegados, mesmo com opt-in.
+      if (['auth', 'gcal'].includes(seg[1])) return responder({ mock: true, reason: 'Auth/GCal bloqueados.' }, { status: 409 });
+      if (!escopo.autenticado) return responder({ mock: true, error: 'Sessão mock ausente.' }, { status: 401 });
+
       if (method !== 'GET') {
         if (escritaLiberada) {
-          return tratarEscrita(responder, url, method, init, seg);
+          return tratarEscrita(responder, url, method, init, seg, escopo.store);
         }
         return responder({
           ok: false,
@@ -397,7 +458,7 @@
           ok: false,
           mock: true,
           error: 'Falha simulada pelo mock (mockFalha=' + chave + ').'
-        }, { status: 500 });
+        }, { status: statusFalha });
       }
 
       // Rotas de dados esperadas pelo app (leem do store quando ?mockEscrita=1)
@@ -419,7 +480,7 @@
 
       // GET /api/reposicoes/:id (usado ao reabrir/reagendar uma reposição)
       if (seg[1] === 'reposicoes' && seg[2] && seg[2] !== 'reabrir') {
-        const reposicao = (dados('reposicoes') || []).find((r) => r.id === seg[2]);
+        const reposicao = (dados('reposicoes') || []).find((r) => r.id === decodeURIComponent(seg[2]));
         if (reposicao) return responder(reposicao);
         return responder({ error: 'Reposição não encontrada.' }, { status: 404 });
       }
@@ -464,18 +525,12 @@
       }
 
       return responder({ ok: true, mock: true, message: 'Endpoint mockado' });
-    };
+    });
 
     window.__UI_MOCK_RUNTIME_INSTALLED = true;
 
     // Header coerente com a sessão (ver `aplicarEstadoHeaderSessao`).
     aplicarEstadoHeaderSessao();
-
-    if (window.__appShell && window.__appShell.router && typeof window.__appShell.router.navigateTo === 'function') {
-      setTimeout(function () {
-        window.__appShell.router.navigateTo('tela-home');
-      }, 150);
-    }
 
     console.info('[mock-runtime] Modo UI mock ativo.', {
       scenario: scenario.name,

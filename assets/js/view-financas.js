@@ -2,10 +2,15 @@
 // Responsabilidade: Tela de Finanças por ciclo, leitura com cache local e escritas confirmadas pelo backend
 
 (function (global) {
+    const contextoDados = global.contextoDados;
+    if (!contextoDados) throw new Error('contexto-dados.js precisa carregar antes de view-financas.js.');
     const STATE = {
         cards: [],
         carregando: false,
         salvando: false,
+        operacao: null,
+        requestId: 0,
+        ciclosAguardandoLeitura: {},
         erro: null,
         cacheAtualizadoEm: null,
         cardAtivo: null,
@@ -18,6 +23,42 @@
         // Detalhes do extrato do ciclo atual, persistidos em memória para sobreviver a re-renders.
         extratoAberto: {}
     };
+    let leituraFinancasEmVoo = null;
+    let leituraFinancasConfirmada = null;
+
+    function telaFinancasAtiva() {
+        const router = global.__appShell && global.__appShell.router;
+        return !router || router.getCurrentViewId() === 'tela-financas';
+    }
+
+    contextoDados.aoInvalidar(() => {
+        leituraFinancasEmVoo = null;
+        leituraFinancasConfirmada = null;
+        STATE.cards = [];
+        STATE.historicoPorAluno = {};
+        STATE.historicoAberto = {};
+        STATE.extratoAberto = {};
+        STATE.cardAtivo = null;
+        STATE.cacheAtualizadoEm = null;
+        STATE.carregando = false;
+        STATE.salvando = false;
+        STATE.operacao = null;
+        STATE.requestId += 1;
+        STATE.ciclosAguardandoLeitura = {};
+        STATE.erro = null;
+        ['btnSalvarPagamento', 'btnSalvarAjuste'].forEach((id) => {
+            const botao = document.getElementById(id);
+            if (botao) botao.disabled = false;
+        });
+        const conteudo = document.getElementById('financasConteudo');
+        if (conteudo) conteudo.setAttribute('aria-busy', 'false');
+        fecharModal('pagamento');
+        fecharModal('ajuste');
+        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasAjusteResumo'].forEach((id) => {
+            const elemento = document.getElementById(id);
+            if (elemento) elemento.replaceChildren();
+        });
+    });
 
     function formatarMoeda(valor) {
         const numero = Number(valor) || 0;
@@ -436,11 +477,18 @@
     }
 
     async function carregarHistoricoAluno(alunoId, opcoes = {}) {
+        const operacao = opcoes.operacao;
+        const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        const podeAplicar = () => contextoDados.atual(contexto) && contextoDados.podeAplicarInteracao(interacao, operacao);
+        if (!podeAplicar()) return false;
         const estado = obterEstadoHistorico(alunoId);
+        // Uma nova leitura pode substituir a espera invalidada; o callback antigo não toca o estado.
+        if (estado.status === 'carregando' && estado.interacao !== interacao) estado.status = 'idle';
         const forcar = opcoes.forcar === true;
         if (!forcar && (estado.status === 'pronto' || estado.status === 'carregando')) {
             renderizarConteudoHistorico(alunoId);
-            return;
+            return estado.status === 'pronto';
         }
 
         const card = STATE.cards.find((item) => item && item.alunoId === alunoId);
@@ -449,28 +497,38 @@
             estado.dados = [];
             estado.erro = null;
             renderizarConteudoHistorico(alunoId);
-            return;
+            return true;
         }
 
         const requestId = ++estado.requestId;
+        estado.interacao = interacao;
         estado.status = 'carregando';
         estado.erro = null;
         renderizarConteudoHistorico(alunoId);
 
         try {
-            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(alunoId)}/historico`, {}, opcoes.timeoutMs || 40000);
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(alunoId)}/historico`, { operacao, contextoDados: contexto }, opcoes.timeoutMs || 40000);
             if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
             if (!resposta.ok) throw new Error(`Falha ao carregar histórico (${resposta.status})`);
             const dados = await resposta.json();
 
+            if (!podeAplicar()) return false;
+
             // Ignora respostas tardias de uma chamada já substituída por outra mais recente para o mesmo aluno.
-            if (requestId !== estado.requestId) return;
+            if (requestId !== estado.requestId) return false;
+            if (!Array.isArray(dados)) throw new Error('Histórico financeiro inválido.');
 
             estado.status = 'pronto';
             estado.dados = Array.isArray(dados) ? dados : [];
             estado.erro = null;
+            // O endpoint exclui o vigente: só destravar ciclos efetivamente relidos.
+            estado.dados.forEach((ciclo) => {
+                const trava = ciclo && STATE.ciclosAguardandoLeitura[ciclo._id];
+                if (trava && trava.alunoId === alunoId) delete STATE.ciclosAguardandoLeitura[ciclo._id];
+            });
         } catch (error) {
-            if (requestId !== estado.requestId) return;
+            if (!podeAplicar()) return false;
+            if (requestId !== estado.requestId) return false;
             estado.status = 'erro';
             estado.erro = error && error.message === 'AUTH_REQUIRED'
                 ? 'Faça login para carregar o histórico.'
@@ -478,6 +536,7 @@
         }
 
         renderizarConteudoHistorico(alunoId);
+        return estado.status === 'pronto';
     }
 
     function obterCicloParaAcao(alunoId, cicloId) {
@@ -549,9 +608,14 @@
     }
 
     function renderizarCards() {
+        if (!telaFinancasAtiva()) return;
         const conteudo = document.getElementById('financasConteudo');
         if (!conteudo) return;
 
+        const foco = document.activeElement;
+        const atributo = foco && foco.getAttributeNames().find((nome) => nome.startsWith('data-financas-'));
+        const detalheFocado = foco && foco.tagName === 'SUMMARY' ? foco.parentElement : null;
+        const idDetalhe = detalheFocado && (detalheFocado.getAttribute('data-financas-historico-details') || detalheFocado.getAttribute('data-financas-extrato-details'));
         const cards = filtrarCards(STATE.cards);
         if (cards.length === 0) {
             renderizarVazio('Nenhum aluno para exibir.');
@@ -559,9 +623,14 @@
         }
 
         conteudo.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;">${cards.map(renderizarCard).join('')}</div>`;
+        let novoFoco;
+        if (atributo) novoFoco = Array.from(conteudo.querySelectorAll(`[${atributo}]`)).find((el) => el.getAttribute(atributo) === foco.getAttribute(atributo) && el.getAttribute('data-ciclo-id') === foco.getAttribute('data-ciclo-id'));
+        else if (idDetalhe) novoFoco = Array.from(conteudo.querySelectorAll('details')).find((el) => (el.getAttribute('data-financas-historico-details') || el.getAttribute('data-financas-extrato-details')) === idDetalhe)?.querySelector('summary');
+        if (novoFoco) novoFoco.focus({ preventScroll: true });
     }
 
     function atualizarCabecalhoCache() {
+        if (!telaFinancasAtiva()) return;
         const label = document.getElementById('financasCacheLabel');
         const syncState = document.getElementById('financasSyncState');
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
@@ -584,7 +653,42 @@
         }
     }
 
-    async function carregarFinancas(opcoes = {}) {
+    function carregarFinancas(opcoes = {}) {
+        const operacao = opcoes.operacao;
+        const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        const voo = leituraFinancasEmVoo;
+        if (opcoes.reutilizarEmVoo === true && voo && contextoDados.atual(voo.contexto)
+            && voo.contexto.ownerEmail === contexto.ownerEmail && voo.contexto.geracao === contexto.geracao
+            && voo.interacao === interacao && voo.operacao === operacao
+            && voo.timeoutMs === (opcoes.timeoutMs || 40000)) return voo.promise;
+        const recibo = leituraFinancasConfirmada;
+        if (opcoes.reutilizarConcluidaBoot === true && !voo && !operacao && recibo
+            && contextoDados.atual(contexto) && contextoDados.atual(recibo.contexto)
+            && recibo.interacao === interacao && recibo.requestId === STATE.requestId) {
+            if (telaFinancasAtiva()) window.renderizarFinancas();
+            return Promise.resolve(true);
+        }
+        leituraFinancasConfirmada = null;
+        const novo = { contexto, interacao, operacao, timeoutMs: opcoes.timeoutMs || 40000 };
+        leituraFinancasEmVoo = novo;
+        novo.promise = executarLeituraFinancas({ ...opcoes, contextoDados: contexto }).finally(() => {
+            if (leituraFinancasEmVoo === novo) leituraFinancasEmVoo = null;
+        });
+        return novo.promise;
+    }
+
+    async function executarLeituraFinancas(opcoes = {}) {
+        const operacao = opcoes.operacao;
+        const contexto = opcoes.contextoDados || (operacao && operacao.contexto) || contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        if (!contextoDados.atual(contexto)) {
+            if (!operacao && telaFinancasAtiva()) renderizarVazio('Faça login para carregar o financeiro.');
+            return false;
+        }
+        if (!contextoDados.podeAplicarInteracao(interacao, operacao)) return false;
+        const requestId = ++STATE.requestId;
+        const podeAplicar = () => requestId === STATE.requestId && contextoDados.atual(contexto) && contextoDados.podeAplicarInteracao(interacao, operacao);
         const deveForcarRemoto = opcoes.forcarRemoto === true;
         const silencioso = opcoes.silencioso === true;
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
@@ -595,22 +699,26 @@
         // 5.8 (Parte A): o container do conteúdo sinaliza o estado de carga
         // enquanto a chamada estiver em voo (incluindo cache exibida + refresh
         // remoto em andamento).
-        const conteudoAgora = document.getElementById('financasConteudo');
+        const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
         if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'true');
 
-        if (cache && cache.dados && !deveForcarRemoto) {
+        if (silencioso && STATE.cards.length > 0) {
+            renderizarCards();
+        } else if (cache && cache.dados && !deveForcarRemoto) {
             STATE.cards = Array.isArray(cache.dados) ? cache.dados : [];
             renderizarCards();
         } else {
-            renderizarSkeleton();
+            if (telaFinancasAtiva()) renderizarSkeleton();
         }
 
+        const feedback = !operacao && global.leiturasDados
+            ? global.leiturasDados.iniciarFeedback(contexto, { tela: 'tela-financas', temDados: Boolean(cache) || STATE.cards.length > 0 }) : null;
         try {
             // Etapa 6 (2026-09-30): o fetch roda no mesmo mecanismo de feedback das demais
             // telas — toast de progresso só se a operação passar de 3s (limiar do wrapper).
             // A falha segue tratada pela própria tela (abaixo), por isso exibirFalha: false;
             // o refresh em background (silencioso, ex.: após pagamento/ajuste) não exibe toast.
-            const executor = () => global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas`, {}, opcoes.timeoutMs || 40000);
+            const executor = () => global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas`, { operacao, contextoDados: contexto }, opcoes.timeoutMs || 40000);
             const resposta = typeof global.executarOperacaoRemotaComFeedback === 'function'
                 ? await global.executarOperacaoRemotaComFeedback(executor, {
                     contexto: 'carregandoFinancas',
@@ -626,14 +734,22 @@
             }
 
             const dados = await resposta.json();
+            if (!podeAplicar()) return false;
+            if (!Array.isArray(dados)) throw new Error('Listagem financeira inválida.');
             STATE.cards = Array.isArray(dados) ? dados : [];
+            Object.keys(STATE.ciclosAguardandoLeitura).forEach((id) => {
+                if (!STATE.ciclosAguardandoLeitura[id].historico) delete STATE.ciclosAguardandoLeitura[id];
+            });
             if (typeof global.salvarCacheFinancas === 'function') {
-                global.salvarCacheFinancas(STATE.cards);
+                global.salvarCacheFinancas(STATE.cards, contexto);
             }
             STATE.cacheAtualizadoEm = new Date().toISOString();
             STATE.erro = null;
+            if (!operacao) leituraFinancasConfirmada = { contexto, interacao, requestId };
             renderizarCards();
+            return true;
         } catch (error) {
+            if (!podeAplicar()) return false;
             if (!cache || deveForcarRemoto) {
                 STATE.erro = error && error.message === 'AUTH_REQUIRED'
                     ? 'Faça login para carregar o financeiro.'
@@ -641,19 +757,29 @@
                 if (!silencioso && typeof global.mostrarToast === 'function') {
                     global.mostrarToast(STATE.erro, 'warning');
                 }
-                if (!cache) {
+                if (!cache && telaFinancasAtiva()) {
                     renderizarVazio(STATE.erro);
                 }
             }
+            return false;
         } finally {
-            STATE.carregando = false;
-            atualizarCabecalhoCache();
-            const conteudoAgora = document.getElementById('financasConteudo');
-            if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'false');
+            if (feedback) global.leiturasDados.finalizarFeedback(feedback);
+            // Uma leitura antiga não apaga o indicador nem o erro da operação seguinte.
+            if (podeAplicar()) {
+                STATE.carregando = false;
+                atualizarCabecalhoCache();
+                const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
+                if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'false');
+            }
         }
     }
 
     function abrirModalPagamento(cardId, cicloId) {
+        if (STATE.salvando) return;
+        if (STATE.ciclosAguardandoLeitura[cicloId]) {
+            if (typeof global.mostrarToast === 'function') global.mostrarToast('Alteração já salva. Atualize os dados antes de editar este ciclo novamente.', 'warning');
+            return;
+        }
         const alvo = obterCicloParaAcao(cardId, cicloId);
         if (!alvo || alvo.ciclo.dataPagamento) return;
 
@@ -671,6 +797,11 @@
     }
 
     function abrirModalAjuste(cardId, cicloId) {
+        if (STATE.salvando) return;
+        if (STATE.ciclosAguardandoLeitura[cicloId]) {
+            if (typeof global.mostrarToast === 'function') global.mostrarToast('Alteração já salva. Atualize os dados antes de editar este ciclo novamente.', 'warning');
+            return;
+        }
         const alvo = obterCicloParaAcao(cardId, cicloId);
         if (!alvo || alvo.ciclo.dataPagamento) return;
 
@@ -701,10 +832,12 @@
         }
         // Fallback legado: abre diretamente quando o DialogController não foi carregado.
         // Mantido porque a suíte valida o fluxo sem controlador (view-financas-historico.test.js).
+        contextoDados.definirFormulario(modal, true);
         modal.style.display = 'flex';
     }
 
     function fecharModal(tipo) {
+        if (STATE.salvando) return;
         const modal = document.getElementById(tipo === 'pagamento' ? 'modalFinancasPagamento' : 'modalFinancasAjuste');
         const naPilha = modal && global.DialogController && typeof global.DialogController.getStack === 'function'
             && global.DialogController.getStack().includes(modal);
@@ -712,97 +845,96 @@
             global.DialogController.close(modal);
         } else if (modal) {
             modal.style.display = 'none';
+            contextoDados.definirFormulario(modal, false);
         }
         STATE.cardAtivo = null;
     }
 
     async function salvarPagamento(event) {
         event.preventDefault();
-        if (!STATE.cardAtivo || !STATE.cardAtivo.cicloId) return;
-
         const dataPagamento = document.getElementById('financasDataPagamento');
         const formaPagamento = document.getElementById('financasFormaPagamento');
-        const btn = document.getElementById('btnSalvarPagamento');
-        if (btn) btn.disabled = true;
-        STATE.salvando = true;
-        atualizarCabecalhoCache();
-
-        try {
-            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(STATE.cardAtivo.cicloId)}/pagamento`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    dataPagamento: dataPagamento ? dataPagamento.value : null,
-                    formaPagamento: formaPagamento ? formaPagamento.value.trim() : ''
-                })
-            });
-
-            if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
-            if (!resposta.ok) throw new Error(`Falha ao salvar pagamento (${resposta.status})`);
-
-            const cardAtivo = STATE.cardAtivo;
-            fecharModal('pagamento');
-            if (cardAtivo.historico) {
-                await carregarHistoricoAluno(cardAtivo.cardId, { forcar: true });
-            } else {
-                await carregarFinancas({ forcarRemoto: true, silencioso: true });
-            }
-            if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast('Pagamento confirmado com sucesso!', 'success');
-            }
-        } catch (error) {
-            if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast(error && error.message === 'AUTH_REQUIRED' ? 'Faça login para salvar na nuvem.' : 'Não foi possível salvar o pagamento.', 'error');
-            }
-        } finally {
-            STATE.salvando = false;
-            if (btn) btn.disabled = false;
-            atualizarCabecalhoCache();
-        }
+        await salvarAlteracaoFinancas('pagamento', {
+            dataPagamento: dataPagamento ? dataPagamento.value : null,
+            formaPagamento: formaPagamento ? formaPagamento.value.trim() : ''
+        }, 'btnSalvarPagamento');
     }
 
     async function salvarAjuste(event) {
         event.preventDefault();
-        if (!STATE.cardAtivo || !STATE.cardAtivo.cicloId) return;
-
         const extrasInput = document.getElementById('financasAulasExtras');
         const observacaoInput = document.getElementById('financasObservacaoAjuste');
-        const btn = document.getElementById('btnSalvarAjuste');
+        await salvarAlteracaoFinancas('ajuste', {
+            aulasManuaisExtras: extrasInput ? extrasInput.value : '0',
+            observacaoAjuste: observacaoInput ? observacaoInput.value : ''
+        }, 'btnSalvarAjuste');
+    }
+
+    async function salvarAlteracaoFinancas(tipo, dados, botaoId) {
+        const contexto = contextoDados.capturar();
+        if (!contextoDados.atual(contexto) || STATE.salvando || !STATE.cardAtivo || !STATE.cardAtivo.cicloId || STATE.cardAtivo.tipo !== tipo) return;
+        const cardAtivo = { ...STATE.cardAtivo };
+        const alvos = { cicloIds: [cardAtivo.cicloId], alunoIds: [cardAtivo.cardId], agendamentoIds: [], reposicaoIds: [] };
+        const intencao = { cicloId: cardAtivo.cicloId, alunoId: cardAtivo.cardId, ...dados };
+        const op = contextoDados.iniciarOperacao({ tipo: tipo === 'pagamento' ? 'pagamento-financeiro' : 'ajuste-financeiro', contexto, alvos, intencao });
+        if (!op) {
+            if (typeof global.abrirRecuperacaoDados === 'function') await global.abrirRecuperacaoDados();
+            return;
+        }
+        STATE.operacao = op;
+        const btn = document.getElementById(botaoId);
         if (btn) btn.disabled = true;
         STATE.salvando = true;
         atualizarCabecalhoCache();
-
+        let escritaConfirmada = false;
         try {
-            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(STATE.cardAtivo.cicloId)}/ajuste`, {
+            if (!contextoDados.operacaoAtual(op)) throw new Error('CONTEXTO_OBSOLETO');
+            if (!contextoDados.atualizarOperacao(op, { alvos, intencao })) throw new Error('Não foi possível preservar a alteração.');
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(cardAtivo.cicloId)}/${tipo}`, {
                 method: 'PATCH',
+                operacao: op,
+                contextoDados: op.contexto,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    aulasManuaisExtras: extrasInput ? extrasInput.value : '0',
-                    observacaoAjuste: observacaoInput ? observacaoInput.value : ''
-                })
+                body: JSON.stringify(dados)
             });
 
             if (resposta.status === 401) throw new Error('AUTH_REQUIRED');
-            if (!resposta.ok) throw new Error(`Falha ao salvar ajuste (${resposta.status})`);
+            if (!resposta.ok) throw new Error(`Falha ao salvar ${tipo} (${resposta.status})`);
+            escritaConfirmada = true;
+            if (!contextoDados.operacaoAtual(op)) return;
+            STATE.ciclosAguardandoLeitura[cardAtivo.cicloId] = { alunoId: cardAtivo.cardId, historico: cardAtivo.historico };
 
-            const cardAtivo = STATE.cardAtivo;
-            fecharModal('ajuste');
-            if (cardAtivo.historico) {
-                await carregarHistoricoAluno(cardAtivo.cardId, { forcar: true });
-            } else {
-                await carregarFinancas({ forcarRemoto: true, silencioso: true });
-            }
+            const opcoesLeitura = { operacao: op, contextoDados: op.contexto };
+            const atualizado = cardAtivo.historico
+                ? await carregarHistoricoAluno(cardAtivo.cardId, { ...opcoesLeitura, forcar: true })
+                : await carregarFinancas({ ...opcoesLeitura, forcarRemoto: true, silencioso: true });
+            if (!contextoDados.operacaoAtual(op)) return;
             if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast('Ajuste salvo com sucesso!', 'success');
+                global.mostrarToast(atualizado
+                    ? (tipo === 'pagamento' ? 'Pagamento confirmado com sucesso!' : 'Ajuste salvo com sucesso!')
+                    : 'Alteração salva, mas a tela não foi atualizada. Tente novamente apenas a leitura.', atualizado ? 'success' : 'warning');
             }
         } catch (error) {
-            if (typeof global.mostrarToast === 'function') {
-                global.mostrarToast(error && error.message === 'AUTH_REQUIRED' ? 'Faça login para salvar na nuvem.' : 'Não foi possível salvar o ajuste.', 'error');
+            // apiFetchBackend pode confirmar o HTTP e só então detectar a troca de sessão.
+            escritaConfirmada = escritaConfirmada || op.etapas.some((etapa) => etapa.method === 'PATCH' && etapa.confirmada);
+            if (!escritaConfirmada) contextoDados.marcarFalhaOperacao(op, error);
+            if (escritaConfirmada && contextoDados.operacaoAtual(op)) STATE.ciclosAguardandoLeitura[cardAtivo.cicloId] = { alunoId: cardAtivo.cardId, historico: cardAtivo.historico };
+            if (contextoDados.operacaoAtual(op) && typeof global.mostrarToast === 'function') {
+                global.mostrarToast(escritaConfirmada
+                    ? 'Alteração salva. Atualize apenas os dados; não repita a gravação.'
+                    : (error && error.message === 'AUTH_REQUIRED' ? 'Faça login para salvar na nuvem.' : `Gravação de ${tipo} não confirmada. Verifique os dados no servidor.`), escritaConfirmada ? 'warning' : 'error');
             }
         } finally {
-            STATE.salvando = false;
-            if (btn) btn.disabled = false;
-            atualizarCabecalhoCache();
+            try { await contextoDados.finalizarOperacao(op); }
+            finally {
+                if (contextoDados.atual(op.contexto) && STATE.operacao === op) {
+                    STATE.operacao = null;
+                    STATE.salvando = false;
+                    if (btn) btn.disabled = false;
+                    if (escritaConfirmada) fecharModal(tipo);
+                    atualizarCabecalhoCache();
+                }
+            }
         }
     }
 
@@ -824,9 +956,12 @@
 
             const configurarBtn = event.target.closest('[data-financas-configurar]');
             if (configurarBtn && typeof global.prepararEdicaoAluno === 'function') {
+                const contexto = contextoDados.capturar();
+                if (!contextoDados.atual(contexto)) return;
                 const alunoId = configurarBtn.getAttribute('data-financas-configurar');
                 if (typeof global.__appShell !== 'undefined' && global.__appShell.router && typeof global.__appShell.router.navigateTo === 'function') {
                     global.__appShell.router.navigateTo('tela-alunos').then(function () {
+                        if (!contextoDados.atual(contexto)) return;
                         global.prepararEdicaoAluno(alunoId);
                     });
                 } else {
@@ -914,22 +1049,44 @@
     }
 
     window.inicializarFinancas = async function (opcoes = {}) {
+        if (!contextoDados.podeLer(opcoes.operacao)) return false;
         obterRoot();
         ensureModais();
         renderizarCabecalho();
         bindHandlers();
-        await carregarFinancas(opcoes);
+        return await carregarFinancas(opcoes);
     };
 
     window.renderizarFinancas = function () {
-        renderizarCabecalho();
+        if (!telaFinancasAtiva()) return;
+        if (!document.getElementById('financasConteudo')) renderizarCabecalho();
         bindHandlers();
         renderizarCards();
         atualizarCabecalhoCache();
     };
 
+    // Só descreve apresentação; não calcula valores nem inicia consulta.
+    window.temConteudoFinancasExibido = function () {
+        const conteudo = document.getElementById('financasConteudo');
+        return Boolean(contextoDados.atual(contextoDados.capturar()) && conteudo
+            && conteudo.childElementCount && !conteudo.querySelector('.skeleton')
+            && (leituraFinancasConfirmada || (global.obterCacheFinancas && global.obterCacheFinancas())));
+    };
+
+    // D1: leitura própria existente, compartilhada quando compatível; nunca reinicializa.
+    window.atualizarFinancasAposSync = function (opcoes = {}) {
+        if (!contextoDados.podeLer(opcoes.operacao)) return false;
+        if (telaFinancasAtiva() && !document.getElementById('financasConteudo')) {
+            renderizarCabecalho();
+            ensureModais();
+            bindHandlers();
+        }
+        return carregarFinancas({ ...opcoes, forcarRemoto: true, silencioso: true, reutilizarEmVoo: true });
+    };
+
     // Consumido pelo card do aluno (view-alunos.js) para não duplicar o cálculo de ciclo no frontend.
     window.obterResumoFinanceiroPorAluno = function () {
+        if (!contextoDados.atual(contextoDados.capturar())) return {};
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
         const fonte = STATE.cards.length > 0
             ? STATE.cards
@@ -943,10 +1100,46 @@
     };
 
     window.garantirDadosFinancas = async function (opcoes = {}) {
+        const contexto = opcoes.contextoDados || (opcoes.operacao && opcoes.operacao.contexto) || contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        const podeAplicar = () => contextoDados.atual(contexto) && contextoDados.podeAplicarInteracao(interacao, opcoes.operacao);
+        if (!podeAplicar()) throw new Error('CONTEXTO_OBSOLETO');
         if (STATE.cards.length === 0 || opcoes.forcarRemoto) {
-            await carregarFinancas({ silencioso: true, forcarRemoto: !!opcoes.forcarRemoto });
+            const atualizado = await carregarFinancas({ ...opcoes, contextoDados: contexto, silencioso: true, forcarRemoto: !!opcoes.forcarRemoto });
+            if (opcoes.forcarRemoto && !atualizado) throw new Error('Não foi possível atualizar o financeiro.');
         }
+        if (!podeAplicar()) throw new Error('CONTEXTO_OBSOLETO');
         return window.obterResumoFinanceiroPorAluno();
+    };
+
+    // Recuperação explícita: consulta dados atuais; nunca reenvia pagamento/ajuste.
+    window.atualizarFinancasAposRecuperacao = async function (alvos = {}, opcoes = {}) {
+        const contexto = opcoes.contextoDados || contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        const podeAplicar = () => contextoDados.atual(contexto) && contextoDados.podeAplicarInteracao(interacao);
+        if (!podeAplicar()) return false;
+        const alunoIds = Array.isArray(alvos.alunoIds) ? alvos.alunoIds : [];
+        const abertos = Object.keys(STATE.historicoAberto).filter((id) => STATE.historicoAberto[id] && (!alunoIds.length || alunoIds.includes(id)));
+        // Abandonar a intenção invalida também históricos fechados e callbacks em voo.
+        // A próxima expansão consulta o servidor, sem prefetch de todos os históricos.
+        Object.keys(STATE.historicoPorAluno).forEach((alunoId) => {
+            if (alunoIds.length && !alunoIds.includes(alunoId)) return;
+            const estado = STATE.historicoPorAluno[alunoId];
+            estado.requestId += 1;
+            estado.status = 'idle';
+            estado.dados = [];
+            estado.erro = null;
+        });
+        if (!await carregarFinancas({ forcarRemoto: true, silencioso: true, contextoDados: contexto, reutilizarEmVoo: false })) return false;
+        if (!podeAplicar()) return false;
+        let sucesso = true;
+        for (const alunoId of abertos) {
+            if (!podeAplicar()) return false;
+            if (!STATE.historicoAberto[alunoId]) continue;
+            const atualizado = await carregarHistoricoAluno(alunoId, { forcar: true, contextoDados: contexto });
+            sucesso = atualizado && sucesso;
+        }
+        return podeAplicar() && sucesso;
     };
 
     window.__financasState = STATE;

@@ -24,6 +24,20 @@ let rascunhoRecorrenciaTemporario = null;
 let ultimoFocoAntesModalRecorrencia = null;
 let trapFocoRecorrenciaAtivo = null;
 
+if (window.contextoDados) window.contextoDados.aoInvalidar(() => {
+    slotSelecionadoHora = '';
+    slotSelecionadoDiaTexto = '';
+    rascunhoFluxoAgendamento = null;
+    rascunhoRecorrenciaTemporario = null;
+    ultimoFocoAntesModalRecorrencia = null;
+    assinaturaAberturaAgendamento = null;
+    const modal = document.getElementById('modalAgendamento');
+    if (modal) modal.classList.remove('modal-underlay-blocked');
+    if (trapFocoRecorrenciaAtivo) document.removeEventListener('keydown', trapFocoRecorrenciaAtivo);
+    trapFocoRecorrenciaAtivo = null;
+    window.reposicaoIdEmReagendamento = null;
+});
+
 function getDataSelecionadaAtualPtBr() {
     const iso = getDataSelecionadaAtualIso();
     if (!iso) return '';
@@ -935,6 +949,8 @@ document.addEventListener('DOMContentLoaded', () => {
     if (formAgendamento) {
         formAgendamento.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const contexto = window.contextoDados.capturar();
+            if (!window.contextoDados.atual(contexto)) return;
             capturarFormularioPrincipalNoRascunho();
 
             if (typeof window.serializarRascunhoAgendamento !== 'function') {
@@ -958,52 +974,94 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            aulas.push(resultado.payload);
+            if (!window.contextoDados.atual(contexto)) return;
             const valoresFormularioAgendamento = capturarValoresFormularioAgendamento();
             const payloadCriado = resultado.payload || {};
-            const ehSerie = payloadCriado.frequencia === 'semanal' || (payloadCriado.recurrence && payloadCriado.recurrence.enabled === true);
-            const ehBloqueio = (payloadCriado.tipo || 'aula') === 'bloqueio';
-            if (ehBloqueio) {
-                window.log.info('[agenda]', 'Bloqueio criado', {
-                    id: payloadCriado.id,
-                    data: payloadCriado.data || '',
-                    horario: payloadCriado.horarioInicio || null
-                });
-            } else if (ehSerie) {
-                window.log.info('[agenda]', 'Série criada', {
-                    id: payloadCriado.id,
-                    aluno: payloadCriado.alunoId || payloadCriado.alunoNome || null,
-                    diasDaSemana: payloadCriado.diasSemana || (payloadCriado.recurrence && payloadCriado.recurrence.daysOfWeek) || [],
-                    condicaoFim: payloadCriado.recurrence && payloadCriado.recurrence.endCondition ? payloadCriado.recurrence.endCondition : 'sem_fim'
-                });
-            } else {
-                window.log.info('[agenda]', 'Aula avulsa criada', {
-                    id: payloadCriado.id,
-                    aluno: payloadCriado.alunoId || payloadCriado.alunoNome || null,
-                    data: payloadCriado.data || '',
-                    horario: payloadCriado.horarioInicio || null
-                });
+            const op = window.contextoDados.iniciarOperacao({
+                tipo: 'criar-agendamento',
+                contexto,
+                alvos: { agendamentoIds: [payloadCriado.id], alunoIds: payloadCriado.alunoId ? [payloadCriado.alunoId] : [] },
+                intencao: { acao: 'criar', agendamento: payloadCriado }
+            });
+            if (!op) {
+                if (typeof window.abrirRecuperacaoDados === 'function') await window.abrirRecuperacaoDados();
+                return;
             }
-            // Fecha o modal imediatamente; o overlay bloqueará re-interação durante o salvamento
-            window.fecharAgendamentoModal();
+            let escritaConfirmada = false;
+            try {
+                if (!window.contextoDados.operacaoAtual(op)) return;
+                aulas.push(payloadCriado);
+                const ehSerie = payloadCriado.frequencia === 'semanal' || (payloadCriado.recurrence && payloadCriado.recurrence.enabled === true);
+                const ehBloqueio = (payloadCriado.tipo || 'aula') === 'bloqueio';
+                if (ehBloqueio) {
+                    window.log.info('[agenda]', 'Bloqueio criado', {
+                        id: payloadCriado.id,
+                        data: payloadCriado.data || '',
+                        horario: payloadCriado.horarioInicio || null
+                    });
+                } else if (ehSerie) {
+                    window.log.info('[agenda]', 'Série criada', {
+                        id: payloadCriado.id,
+                        aluno: payloadCriado.alunoId || payloadCriado.alunoNome || null,
+                        diasDaSemana: payloadCriado.diasSemana || (payloadCriado.recurrence && payloadCriado.recurrence.daysOfWeek) || [],
+                        condicaoFim: payloadCriado.recurrence && payloadCriado.recurrence.endCondition ? payloadCriado.recurrence.endCondition : 'sem_fim'
+                    });
+                } else {
+                    window.log.info('[agenda]', 'Aula avulsa criada', {
+                        id: payloadCriado.id,
+                        aluno: payloadCriado.alunoId || payloadCriado.alunoNome || null,
+                        data: payloadCriado.data || '',
+                        horario: payloadCriado.horarioInicio || null
+                    });
+                }
+                // A operação permanece protegida mesmo com o formulário fechado.
+                window.fecharAgendamentoModal();
+                if (!window.contextoDados.operacaoAtual(op)) return;
+                window.contextoDados.atualizarOperacao(op, {
+                    alvos: { agendamentoIds: [payloadCriado.id] },
+                    intencao: { acao: 'criar', agendamento: payloadCriado }
+                });
 
-            if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
-                // Optimistic UI in salvarEventoComGCal renders the new event immediately.
-                const resultadoPersistencia = await window.salvarEventoComGCal(resultado.payload, { operacao: 'criar' });
-                if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
-                    reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
-                    return;
+                if (typeof window.salvarEventoComGCal === 'function' && window.gcal && window.gcal.isSignedIn()) {
+                    // A ponte aguarda persistência e render interno usando a mesma operação.
+                    const resultadoPersistencia = await window.salvarEventoComGCal(payloadCriado, { operacao: op, contextoDados: op.contexto });
+                    if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
+                        window.contextoDados.marcarFalhaOperacao(op, resultadoPersistencia);
+                        if (!window.contextoDados.operacaoAtual(op)) return;
+                        reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
+                        return;
+                    }
+                    escritaConfirmada = true;
+                    if (!window.contextoDados.operacaoAtual(op)) return;
+                } else {
+                    const resultadoPersistencia = typeof salvarDados === 'function'
+                        ? await salvarDados(false, { operacao: op, contextoDados: op.contexto })
+                        : { ok: false, motivo: 'falha_remota' };
+                    if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
+                        window.contextoDados.marcarFalhaOperacao(op, resultadoPersistencia);
+                        if (!window.contextoDados.operacaoAtual(op)) return;
+                        reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
+                        return;
+                    }
+                    escritaConfirmada = true;
+                    if (!window.contextoDados.operacaoAtual(op)) return;
+                    const atualizacao = await window.inicializarHome({ operacao: op });
+                    if (!window.contextoDados.operacaoAtual(op)) return;
+                    if (atualizacao === false || (atualizacao && (atualizacao.ok === false || (atualizacao.estado && atualizacao.estado !== 'aplicado')))) {
+                        throw new Error('Não foi possível atualizar a tela após salvar.');
+                    }
+                    if (typeof mostrarToast === 'function') mostrarToast('Horário agendado com sucesso!');
                 }
-            } else {
-                const resultadoPersistencia = typeof salvarDados === 'function'
-                    ? await salvarDados()
-                    : { ok: false, motivo: 'falha_remota' };
-                if (!persistenciaAgendamentoConcluida(resultadoPersistencia)) {
-                    reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormularioAgendamento);
-                    return;
+            } catch (erro) {
+                if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+                if (!window.contextoDados.operacaoAtual(op)) return;
+                if (!escritaConfirmada) {
+                    reverterCriacaoAgendamento(payloadCriado, { ok: false, motivo: 'falha_remota', erro }, valoresFormularioAgendamento);
+                } else if (typeof mostrarToast === 'function') {
+                    mostrarToast('Agendamento salvo, mas não foi possível atualizar a tela. Atualize somente os dados.', 'warning');
                 }
-                window.inicializarHome();
-                if (typeof mostrarToast === 'function') mostrarToast('Horário agendado com sucesso!');
+            } finally {
+                await window.contextoDados.finalizarOperacao(op);
             }
         });
     }

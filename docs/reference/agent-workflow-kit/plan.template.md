@@ -56,18 +56,39 @@
 - Reprodução do defeito: `[ADAPTAR]`
 - Condição de parada se o baseline divergir: `[ADAPTAR]`
 
-## 9. Etapas incrementais
+## 9. Cartões de tarefas
 
-### Etapa 1 — `[ADAPTAR]`
-- **Objetivo**: 
-- **Arquivos**: 
-- **Passos**: 
-- **Fora de escopo**: 
-- **Validação**: 
-- **Critério de aceite**: 
+Organize o trabalho em cartões numerados e ordenados por dependência. Cada cartão é uma
+unidade de execução incremental: representa um resultado pequeno, implementável e
+verificável por si só. A implementação deve concluir e validar um cartão antes de avançar
+para o próximo, respeitando suas dependências e registrando o resultado no plano. Agrupe
+cartões por etapa ou marco apenas quando isso ajudar a explicar a sequência; não use etapas
+como substituto dos cartões. Evite cartões que sejam apenas uma lista de arquivos ou ações
+sem resultado observável.
+
+### Cartão T01 — `[ADAPTAR: verbo + resultado]`
+- **Objetivo / resultado**: `[ADAPTAR: mudança observável]`
+- **Depende de**: `[ADAPTAR: IDs de cartões ou nenhum]`
+- **Arquivos / componentes prováveis**: `[ADAPTAR]`
+- **Inclui**: `[ADAPTAR: comportamento e ações deste cartão]`
+- **Não inclui**: `[ADAPTAR: limites específicos deste cartão]`
+- **Decisões pendentes / bloqueios**: `[ADAPTAR: decisão e responsável, ou nenhum]`
+- **Critérios de aceite**: `[ADAPTAR: condições objetivas e verificáveis]`
+- **Validação**: `[ADAPTAR: testes, medições ou verificação manual; declarar lacunas]`
+- **Riscos e rollback**: `[ADAPTAR: efeito e limite de reversão, ou não aplicável]`
 - **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
 
-### Etapa 2 — `[ADAPTAR]`
+### Cartão T02 — `[ADAPTAR: verbo + resultado]`
+- **Objetivo / resultado**: `[ADAPTAR]`
+- **Depende de**: `[ADAPTAR]`
+- **Arquivos / componentes prováveis**: `[ADAPTAR]`
+- **Inclui**: `[ADAPTAR]`
+- **Não inclui**: `[ADAPTAR]`
+- **Decisões pendentes / bloqueios**: `[ADAPTAR]`
+- **Critérios de aceite**: `[ADAPTAR]`
+- **Validação**: `[ADAPTAR]`
+- **Riscos e rollback**: `[ADAPTAR]`
+- **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
 
 ## 10. Matriz de validação
 
