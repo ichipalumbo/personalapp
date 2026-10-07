@@ -1,9 +1,9 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 13 · **Atualizado**: 2026-10-06
+> **Status**: Em produção · **Versão**: 14 · **Atualizado**: 2026-10-06
 > **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
-> execução e aceite mock encerrados localmente. Confirmação nativa, teclado/TalkBack e publicação ainda pendentes; não declarados validados em produção.
-> **Apresentação inicial**: aviso imediato com/sem conteúdo implementado e validado no mock; teste desse ajuste no app instalado ainda pendente.
+> execução e aceite mock encerrados. Dono aprovou uso normal e teclado no deploy da branch; recuperação nativa não exercitada e TalkBack não testado, não bloqueante por decisão do dono. Publicação na main pendente.
+> **Apresentação inicial**: aviso imediato com/sem conteúdo implementado; abertura no app instalado aprovada pelo relato do dono. Aceite na branch não certifica deploy da main ou cobertura integral.
 > **Defeitos em aberto**: 0
 > **Relacionada**: `docs/specs/reposicoes-e-competencia.md` — altera a regra 5.8 e introduz a collection `Reposicao`. Em caso de divergência sobre reposições, aquela spec prevalece.
 >

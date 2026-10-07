@@ -1,6 +1,6 @@
 # Ajuste pontual — aviso imediato de carga inicial
 
-> **Status**: Implementado e validado localmente; teste no app instalado/publicação pendentes · **Data**: 2026-10-06
+> **Status**: Implementado; uso normal no app instalado aprovado pelo dono; publicação na main pendente · **Data**: 2026-10-06
 > **Branch**: `docs/planejar-sync-boot` · **Base**: `0a081c9`
 
 ## Origem e decisão
@@ -19,7 +19,7 @@ zerada, seguida de carga normal, sem aviso imediato. Autorizou nas três telas:
 - Reutilizar o rótulo existente, sem nova dependência, tela ou mudança auth/GCal/SW.
 - Baseline frontend medida: **321/321**, zero falhas. Validar casos por testes/mutação
   e mock mobile; abertura instalada é representada sem alterar o caminho de bootstrap.
-- Teste real no celular/deploy do ajuste continua com o dono; não alegar PWA real validada.
+- Teste no celular/deploy do ajuste é do dono; aceite posterior pelo relato registrado abaixo.
 - Este relatório pontual não reabre a execução A–E3; atualização do status do item 2.4
   não dispensa pendências manuais/publicação registradas no plano anterior.
 
@@ -73,11 +73,21 @@ zerada, seguida de carga normal, sem aviso imediato. Autorizou nas três telas:
 - Stress **320×568**: aviso imediato visível, sem overflow; viewport de referência
   restaurado depois. Service worker bypass/desativado apenas na página de teste para
   não servir scripts antigos; nenhum arquivo de PWA/SW alterado.
-- Abertura real pelo ícone no celular, confirmação nativa, teclado/TalkBack e conferência
-  dos deploys continuam com o dono. Não declarar PWA instalada ou dados reais testados.
+- Abertura real pelo ícone foi aprovada pelo dono no aceite posterior abaixo, não executada
+  pelo agente. Recuperação nativa não exercitada; TalkBack não testado; conferência dos
+  deploys da main continua pendente. Não ampliar esse relato para cobertura integral.
 - Dono relatou uso normal aparentemente correto no deploy anterior, exceto ausência
   de aviso na primeira abertura; relato não substitui a verificação deste ajuste novo.
 - Nenhum commit, push, merge, deploy, dependência ou acesso a dados reais pelo agente.
 
-**Fechamento**: ajuste local concluído; sem novos cartões de implementação. Validar no
-app instalado após publicação autorizada, junto das pendências externas da 2.4.
+## Aceite posterior do dono — 06/10
+
+- Dono aprovou uso normal e abertura pelo app instalado no deploy da branch após o ajuste
+  e informou teste de teclado. Não relatou novo defeito; aceite para PR registrado.
+- A recuperação não apareceu durante seu teste, portanto sua confirmação nativa não foi
+  exercitada. TalkBack não foi testado e foi considerado não bloqueante pelo dono.
+- Registro documental realizado sobre `544ff24`, na mesma branch autorizada; nenhuma
+  execução nova de testes nesta rodada. URL/identificador do deploy não informados.
+
+**Fechamento**: ajuste aceito pelo dono para o PR, com limitações explícitas. Publicação
+na main e conferência dos deploys ainda pendentes; nenhum commit/push/deploy pelo agente.

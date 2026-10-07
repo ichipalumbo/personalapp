@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–E3/entrega local concluídos; aceite manual/publicação pendentes |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | Implementação/aceite do dono concluídos com limites; publicação na main pendente |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -413,8 +413,9 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > no código. **E1 entrega mock isolado com cache sintético/reload e controles**;
 > **E2 validado no mock**, com confirmação nativa/teclado/TalkBack não observados;
 > **E3 encerrou a entrega local** com controles novos frontend/backend verdes.
-> Confirmação nativa, teclado/TalkBack e publicação continuam pendentes; status `[~]`
-> não significa implementação faltante, mas aceite/publicação ainda não concluídos.
+> **Aceite do dono para PR registrado**: uso normal, app instalado e teclado aprovados
+> pelo relato. Recuperação nativa não exercitada; TalkBack não testado e não bloqueante
+> por sua decisão. Status `[~]` indica publicação na main/conferência dos deploys pendentes.
 > B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
 - **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
@@ -458,7 +459,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   Confirmação nativa permanece manual (automação controlou `confirm` apenas no mock).
   E3 mediu novamente **frontend 321/321 e backend 232/232**, zero falhas, cancelados ou
   ignorados; entrega local encerrada, sem nova alteração de runtime. Próximo passo:
-  checklist manual e PR/publicação pelo dono, registrada no plano. Contratos permanentes
+  PR/publicação pelo dono, com limites do aceite registrados no plano. Contratos permanentes
   em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) §6.1.1–6.1.4.
   Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
@@ -466,9 +467,12 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   branch, mas Home inicialmente vazia ao abrir pelo ícone, sem aviso. Implementado aviso
   imediato **Carregando dados...** antes da sessão/consulta e **Sincronizando dados...**
   sobre conteúdo autorizado existente, nas três telas. Frontend medido **321→337**, zero
-  falhas; mock mobile validado, teste desse ajuste no app instalado/deploy ainda pendente.
+  falhas; mock mobile validado e uso normal no app instalado aprovado pelo dono no deploy
+  da branch. Teclado testado pelo dono; recuperação não apareceu, sem teste nativo;
+  TalkBack não testado, não bloqueante por decisão explícita. Nenhuma medição nova neste
+  registro de aceite; publicação na main ainda pendente.
   Registro em [`reports/2026-10-06-fix-aviso-carga-inicial.md`](reports/2026-10-06-fix-aviso-carga-inicial.md).
-  Não reabre A–E3 nem antecipa `[x]` sem aceite manual/publicação.
+  Não reabre A–E3 nem antecipa `[x]` antes da publicação e conferência dos deploys.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,
   cálculo financeiro ou motor. C teve autorização explícita para fronteiras de contexto/raiz

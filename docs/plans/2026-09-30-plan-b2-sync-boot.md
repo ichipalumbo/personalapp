@@ -1,19 +1,20 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Execução local encerrada — A–E3 concluídos; aceite manual e publicação pendentes (§18)
+> **Status**: Execução encerrada — aceite do dono no uso normal/teclado registrado; publicação na main pendente (§19)
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: fechamento E3, base `7bddea8`, mesma branch limpa confirmada; somente documentação após controle final.
+> **Rodada atual**: registro de aceite, base `544ff24`, mesma branch limpa confirmada; somente documentação, sem testes novos.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
 **5.8 entregue**: skeletons (Parte A) e rótulo nos syncs existentes (B1). **B2 ligado, com
-execução e aceite mock encerrados até E3**; confirmação nativa, teclado/TalkBack e publicação
-não foram validados. Este mesmo documento conserva a execução e a lista de verificação
-pendente (§18); não se cria relatório paralelo nem se reabre o B1. Fechamento local não
-equivale a publicação ou aceite integral; o item 2.4 permanece parcial no roadmap.
+execução e aceite mock encerrados até E3**. O dono aprovou uso normal, abertura no app
+instalado e teclado no deploy da branch; recuperação não foi exercitada e TalkBack foi
+dispensado como bloqueio, sem declarar teste realizado (§19). Este mesmo documento
+conserva a execução e a checklist de publicação (§18); não se cria relatório paralelo
+nem se reabre o B1. Aceite na branch não equivale a publicação na main; a 2.4 permanece parcial.
 As decisões abaixo substituem o desenho anterior onde houver divergência. Um plano não
 substitui specs: incorporar os contratos aprovados nas specs pertinentes no cartão A,
 antes do código que os implementa.
@@ -1272,15 +1273,17 @@ própria, sem reescrever a evidência de A–E3 ou criar relatório duplicado do
   cancelar “Usar dados do servidor” deve conservar intenção/painel; aceitar deve buscar
   dados e remover a pendência só após leitura válida. Resetar apenas o envelope sintético
   para repetir; a confirmação deve manter os avisos de não rollback e gravação em andamento.
-- [ ] **Teclado e TalkBack**: percorrer painel, mensagem, ações e modal; verificar leitura
-  do contexto/estado e retorno de foco. Automação não entregou esses eventos com confiança.
+- [x] **Teclado no uso normal**: aprovado pelo dono em 06/10, conforme relato (§19).
+  Isso não certifica navegação por teclado no painel de recuperação, não exercitado.
+- **TalkBack**: não testado; dono decidiu que não bloqueia o aceite/PR (§19).
 - [ ] **Revisar/commitar a documentação E3 e publicar por PR**, nunca push direto na main.
   Commit/push/merge/deploy são do dono. Merge na main publica nos dois projetos Vercel.
 - [ ] **Após publicação autorizada**, conferir os dois deploys, carga dos scripts/mock
   inerte sem parâmetro, login/isolamento da própria conta e funcionamento de leitura nas
   três hashes. Não confundir aceite do mock com Google/Mongo/estado externo reais.
 - [ ] Registrar resultado dessas verificações antes de marcar **2.4 `[x]`**. Até lá:
-  implementação e fechamento local concluídos; aceite manual/publicação pendentes.
+  implementação/fechamento local e aceite do dono registrados; publicação pendente,
+  com recuperação não exercitada e TalkBack não testado explicitados no §19.
 
 ### Limites e achados preservados
 
@@ -1295,7 +1298,8 @@ própria, sem reescrever a evidência de A–E3 ou criar relatório duplicado do
   consultas estão bloqueadas; nenhum sucesso financeiro deduzido de cache. Não alterado
   no E3; melhoria de redação/estado desses indicadores deve ser aprovada separadamente.
 - Mock simplifica escrita e cálculos demonstrativos; não certifica regras/API real.
-  Confirmação nativa, teclado/TalkBack e produção continuam **não observados**, não dispensados.
+  No encerramento E3 esses testes manuais ainda não haviam sido relatados. O aceite
+  posterior do dono e suas limitações estão no §19; não ampliar o alcance da evidência.
 
 ### Encerramento desta execução
 
@@ -1304,3 +1308,24 @@ própria, sem reescrever a evidência de A–E3 ou criar relatório duplicado do
   do aceite/publicação). Não se cria relatório paralelo nem se duplica versão de spec.
 - **E3 concluído**. O plano conserva a checklist externa até confirmação do dono;
   nenhum novo cartão, teste, commit, push ou deploy executado pelo agente.
+
+## 19. Aceite do dono antes do PR — 06/10
+
+- **Base documental**: `544ff24`, branch `docs/planejar-sync-boot`, árvore inicialmente
+  limpa e upstream próprio. Continuidade confirmada; somente quatro documentos de aceite
+  alterados. Nenhum código, teste, dependência, commit, push ou deploy pelo agente.
+- **Evidência**: dono relatou que testou o uso normal no deploy da branch, incluindo a
+  abertura pelo app instalado após o ajuste de aviso, e considerou o resultado OK.
+  Também informou que testou teclado. Registro é de aceite pelo relato, não de execução
+  observada pelo agente. URL/identificador do deploy não foram informados.
+- **Recuperação**: o aviso não apareceu durante o uso normal; cancelar/aceitar a confirmação
+  nativa de recuperação **não foi exercitado pelo dono**. Conservam-se as evidências de
+  testes automatizados e mock com confirmação controlada, sem promover essa cobertura a
+  teste manual nativo. A checklist de confirmação continua disponível, sem impedir abrir PR.
+- **TalkBack**: **não testado**. Dono declarou que não é relevante como bloqueio neste
+  momento e autorizou considerar o aceite OK. Registrar dispensa do bloqueio, não teste aprovado.
+- **Decisão**: aceite para encaminhar o PR registrado, com esses limites. Não há nova
+  implementação solicitada. Merge/publicação na `main` e conferência dos dois deploys
+  continuam com o dono; a 2.4 permanece `[~]` até essa publicação ser confirmada.
+- **Testes nesta rodada**: não executados, pois só o texto dos documentos mudou. Medições
+  anteriores preservadas no E3 e no relatório do ajuste, sem apresentá-las como números novos.
