@@ -63,7 +63,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
-| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–D3 validados localmente; B2 ligado; E/publicação pendentes |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[~]`  | A–D3/E1 validados; B2 ligado; E2/E3/publicação pendentes |
 | 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
 | 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
 | 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
@@ -409,7 +409,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > [Plano vivo](plans/2026-09-30-plan-b2-sync-boot.md) **revalidado em 2026-10-05**, com
 > decisões de recuperação e botão manual refinadas; **cartões A–C implementados/validados
 > localmente em 06/10**, ainda sem publicação. **D1–D3 validados localmente**; B2 ligado
-> no código, com E/aceite ampliado e publicação pendentes.
+> no código. **E1 entrega mock isolado com cache sintético/reload e controles**;
+> E2/aceite integrado, E3/fechamento e publicação pendentes.
 > B1 foi entregue; B2 só havia sido desenhado. Reaproveitar esse plano aberto._
 
 - **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
@@ -444,7 +445,10 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   aguarda complementos e faz batch próprio. Frontend D2 medido **226→256**, zero falhas;
   D3 liga após apresentação, observa login cedo e serializa retorno à aba; financeiro
   válido/vazio concluído pode atender complemento B2, nunca o manual. Frontend D3 medido
-  **256→288**, zero falhas; próximo cartão E para aceite ampliado/fechamento. Resultados,
+  **256→288**, zero falhas. E foi dividido: E1 mock seguro, E2 experiência integrada,
+  E3 suites/fechamento. E1 entrega sandbox antecipado sem acessar caches reais, cenários
+  B2 persistentes só em envelope sintético, sessão A/B, rede/abort/retenção/contadores.
+  Frontend E1 medido **288→318**, zero falhas; próximo cartão E2. Resultados,
   testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
 - **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
   e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,

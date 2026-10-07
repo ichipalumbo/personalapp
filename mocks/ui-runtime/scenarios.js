@@ -507,4 +507,50 @@ window.__UI_MOCK_SCENARIOS.desconectado = Object.assign({}, window.__UI_MOCK_SCE
   signedIn: false
 });
 
+// E1: cache sintético com nomes visualmente distintos do resultado remoto.
+// Persistência desses cenários fica exclusivamente no envelope ui_mock_runtime_v1.
+(function () {
+  const copiar = (valor) => JSON.parse(JSON.stringify(valor));
+  const base = copiar(window.__UI_MOCK_SCENARIOS.default);
+  const snapshot = {
+    alunos: base.alunos.map((aluno) => ({ ...aluno, nome: 'CACHE — ' + aluno.nome })),
+    aulas: base.agendamentos,
+    reposicoes: [],
+    grade: { inicio: '07:00', fim: '21:00' },
+    meta: 500
+  };
+  const financeiroCache = base.financas.map((card) => ({ ...card, aluno: { ...card.aluno, nome: 'CACHE — ' + card.aluno.nome } }));
+  const antigo = {
+    ownerEmail: base.ownerEmail, snapshot, financas: financeiroCache,
+    atualizadoEm: '2026-09-01T12:00:00.000Z'
+  };
+  function criar(nome, label, extra = {}) {
+    window.__UI_MOCK_SCENARIOS[nome] = {
+      ...copiar(base), name: nome, label, latenciaMs: 1800,
+      alunos: base.alunos.map((aluno) => ({ ...aluno, nome: 'ATUAL — ' + aluno.nome })),
+      financas: base.financas.map((card) => ({ ...card, aluno: { ...card.aluno, nome: 'ATUAL — ' + card.aluno.nome } })),
+      cacheSintetico: copiar(antigo), ...extra
+    };
+  }
+  criar('b2CacheAntigo', 'B2 — cache antigo → servidor atualizado');
+  criar('b2CacheVazio', 'B2 — cache vazio identificado → servidor com dados', {
+    cacheSintetico: { ...copiar(antigo), snapshot: { ...copiar(snapshot), alunos: [], aulas: [], reposicoes: [] }, financas: [] }
+  });
+  criar('b2ServidorVazio', 'B2 — cache antigo → servidor vazio', {
+    alunos: [], agendamentos: [], reposicoes: [], bloqueiosExternos: [], financas: [], consistenciaAgenda: []
+  });
+  criar('b2SemSessao', 'B2 — cache identificado oculto até login simulado', { signedIn: false });
+  criar('b2OutraConta', 'B2 — conta B não recebe cache A', { contaInicial: 'B' });
+  criar('b2Pendencia', 'B2 — intenção não confirmada preservada após reload', {
+    cacheSintetico: {
+      ...copiar(antigo), pendencia: {
+        versao: 1, itens: [{ ownerEmail: base.ownerEmail, tentativaId: 'mock-pendencia-e1',
+          criadoEm: '2026-10-06T12:00:00.000Z', tipo: 'dados', estado: 'desconhecida',
+          alvos: { alunoIds: ['a1'] }, intencao: { descricao: 'Edição sintética cuja confirmação se perdeu' },
+          etapas: [{ method: 'PUT', url: '/api/alunos/a1', confirmada: false }], snapshot: copiar(snapshot) }]
+      }
+    }
+  });
+})();
+
 window.__UI_MOCK_SCENARIO_NAMES = Object.keys(window.__UI_MOCK_SCENARIOS);

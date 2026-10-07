@@ -1,11 +1,11 @@
 # Plano vivo — 2.4: sincronização de leitura no boot sobre cache (B2)
 
-> **Status**: Aberto — A–D3 validados localmente; B2 ligado no código; E/publicação pendentes
+> **Status**: Aberto — A–D3 e E1 validados localmente; B2 ligado; E2/E3/publicação pendentes
 > **Criado**: 2026-09-30 · **Atualizado**: 2026-10-06
 > **Item**: 2.4 do [roadmap](../roadmap.md)
 > **Branch desta rodada**: `docs/planejar-sync-boot`, criada de `origin/main` com `--no-track`
 > **Base revalidada**: `f3fe4f2dfc56835d140b80d0b0a917544cab5d45`
-> **Rodada atual**: somente D3, base `60c46c7`, mesma branch limpa explicitamente autorizada; ligação B2 validada localmente.
+> **Rodada atual**: somente E1, base `a42cb54`, mesma branch limpa explicitamente autorizada; preparar mock sem alterar regras/app.
 
 Este é o mesmo plano aberto de 30/09, revalidado após a Etapa 7. O B1 está fechado em
 [`2026-09-30-plan-skeletons-cache.md`](2026-09-30-plan-skeletons-cache.md) e não será refeito.
@@ -438,6 +438,53 @@ Concluir, validar e registrar cada cartão antes de avançar; não agrupar A–E
   cálculo, auth, GCal ou cascata; não publicar nem acessar dados reais. Reversão de código
   não desfaz estado remoto. Máximo 2 tentativas por falha; segunda bloqueia dependentes.
 
+### Cartão E1 — Preparar mock isolado para aceite integrado
+
+- **Objetivo / resultado**: simular cache antigo/vazio/pendente e reload, sessão/conta,
+  latência/falha/401/JSON/abort, com contadores e liberação de respostas sem dados reais.
+- **Depende de**: A–D3; dono aprovou divisão E1→E2→E3 e mesma branch nesta rodada.
+- **Arquivos / componentes**: `mocks/ui-runtime/`, ordem antecipada do sandbox em
+  `index.html`, testes do mock e documentação; não editar auth/backend/views.
+- **Inclui**: facade de localStorage antes dos consumidores, namespace nativo reservado
+  exclusivamente sintético para cenários B2 e reload; cache ausente distinto de vazio;
+  sementes/persistência de pendência usando formatos reais; sessão A/B mockada, listeners;
+  interceptação antecipada API/ping, Request+init normalizados; métodos/rotas contados;
+  controles de rede em runtime, respostas retidas liberáveis e abort observável.
+- **Não inclui**: E2/aceite completo, novas regras, refatoração de auth/Google/CRUD,
+  dependências, real Mongo/Google ou publicação. Escrita default opt-in permanece só simulada.
+- **Invariantes**: nunca ler/copiar/apagar chaves normais; nunca delegar API para rede;
+  bloquear auth/GCal mesmo com opt-in; não persistir token/credencial nem payload externo;
+  mock inerte fora do host/parâmetro; cenário default mantém cache efêmero.
+- **Critérios de aceite**: reload conserva apenas envelope sintético; conta errada não
+  autoriza cache; pending aparece após reload; sessões disparam eventos; falhas/latência/
+  retenção/abort e contadores corretos; rede real/storage normal intactos; seeds não
+  voltam após adoção/aplicação; cenários antigos e modo de escrita default não quebram.
+- **Resultado**: infraestrutura implementada/validada localmente; registro §16 abaixo.
+- **Validação**: baseline frontend **288/288**, testes VM/JSDOM do mock+formatos reais,
+  mutações restauradas, suíte final e smoke de infraestrutura no mobile de referência.
+  Não reauditar A–D3; backend controle final permanece E3.
+- **Riscos / rollback**: envelope mock pode ficar na origem dedicada até reset explícito;
+  não é backup real. Alteração de ordem exige teste. Falha ao isolar deve bloquear
+  instalação, não continuar com rede/storage normais.
+- **Limite de tentativas**: máximo 2 por falha, segunda bloqueia avanço para E2.
+
+### Cartão E2 — Validar experiência completa no mock
+
+- **Objetivo / resultado**: observar os contratos juntos nas três hashes, viewport de
+  referência e stress, com cache/reload/erro/vazio/edição/manual/recuperação.
+- **Depende de**: E1 validado; branch e matriz confirmadas antes da rodada.
+- **Inclui**: aceite visual/funcional e correções pontuais evidenciadas; registrar lacunas.
+- **Não inclui**: ampliar features/Google/backend ou considerar mock prova de produção.
+- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 por falha.
+
+### Cartão E3 — Consolidar verificações e fechar entrega local
+
+- **Objetivo / resultado**: suites finais medidas (backend como controle), registro único
+  no plano/roadmap e separação de aceite local x validação manual/produção pelo dono.
+- **Depende de**: E2 validado; sem commit/push/deploy pelo agente.
+- **Não inclui**: nova auditoria geral, reimplementar A–D3 ou assumir TalkBack observado.
+- **Validação / riscos / limite**: detalhar antes de executar; máximo 2 por falha.
+
 ### Arquivos previstos da frente completa
 
 - `assets/js/storage.js`: cache, leitura, contexto das requisições, resultado e sync manual.
@@ -518,8 +565,10 @@ as rodadas de planejamento de 05/10 não executaram suítes.
 
 ### UI: exclusivamente mock local seguro
 
-Mock atual não conserva cache: estender com cache **sintético separado**, sessão/conta
-controlável, latência/falha/401/abort e contador de rotas/métodos. APIs reais permanecem bloqueadas.
+E1 entrega cache **sintético separado** persistente nos cenários B2, sessão/conta
+controlável, latência/falha/401/JSON/abort, retenção/liberação e contador de rotas/métodos.
+Dados nativos normais intocados e API/ping/Google bloqueados desde o sandbox antecipado.
+Matriz visual integrada abaixo permanece para E2; E1 não é seu aceite.
 Não usar a aba de produção nem URL sem `mockScenario` para aceite.
 
 Validar `http://127.0.0.2:5500/index.html?mockScenario=<cenário>` nas três hashes:
@@ -665,8 +714,9 @@ Nenhum ETag/backend/CORS no B2-puro. Depois, dono decide a ordem entre ETag e **
 
 ## 10. Próxima rodada
 
-Próximo **cartão E — aceite e fechamento integrado**: confirmar branch, conferir A–D3
-entregues e definir matriz de mock/aceite antes de editar. B2 está ligado no código local;
+Próximo **cartão E2 — aceite integrado**: confirmar branch, conferir A–D3/E1
+entregues e definir matriz de mock/aceite antes de editar. E3 consolida fechamento/suites.
+B2 está ligado no código local;
 publicação/PR/deploy são do dono e não foram executados pelo agente.
 Se inventário exigir alterar autenticação,
 GCal ou cascata, confirmar antes. Registrar execução/medições **neste mesmo arquivo**,
@@ -1010,3 +1060,72 @@ essa dependência antes de seguir, sem substituir silenciosamente as decisões a
   TalkBack/teclado e aceite E ainda pendentes. Não considerar smoke prova de Google/Mongo real.
 - **Não realizado**: E/fechamento integral da 2.4, mudança auth/GCal/cascata/motor/conflitos/
   backend, dependências, commit/push/merge/deploy. **B2 ligado no código local; publicação pendente.**
+
+## 16. Registro da execução do cartão E1 — 06/10
+
+- **Branch/base**: `docs/planejar-sync-boot`, D3 commitado em `a42cb54`, árvore inicialmente
+  limpa/upstream próprio. Dono autorizou mesma branch e somente E1; pode testar mock local
+  enquanto se prepara infraestrutura, não produção.
+- **Arquivos alterados**:
+  - `mocks/ui-runtime/sandbox.js` (novo): instala facade `localStorage` antes dos consumidores
+    e barreira de `fetch` antes de acessar disco. Não lê/apaga/copía cache real; backing nativo
+    apenas no namespace `ui_mock_runtime_v1:<cenário>`, com whitelist de dados sintéticos.
+    Cenários B2 persistem envelope/dono/pendência e sessão A/B; cenários antigos por padrão
+    só memória. Não persistir token/código/credencial, não mudar Storage.prototype/sessionStorage.
+    API/ping/Google nunca delegam; somente recursos não-API externos seguem fetch normal.
+  - `mocks/ui-runtime/mock-runtime.js`: substituído patch/limpeza nativos pelo sandbox;
+    seeds uma única vez, reload respeita aplicação/adoção/clear. Sessão mutável A/B e listeners
+    com unsubscribe/header/logout; falha ao persistir sessão não deixa UI incoerente em memória.
+    Normaliza Request/method/body, captura store antes de await e respeita abort antes de
+    mutação; escrita opt-in continua somente default/store memória. Auth/GCal sempre 409.
+    Offline/online, HTTP 400–599, JSON inválido, latência, retenção/liberação e abort com
+    contagem `{id, rota, method, estado, status}`, sem headers/query/corpo. Alteração de cenário
+    preserva hash; retirado desvio artificial à Home quando runtime instalado com shell existente.
+  - `mocks/ui-runtime/scenarios.js`: seis cenários B2 com cache `CACHE — …` distinto de
+    resposta `ATUAL — …`; cache vazio, servidor vazio, sem sessão, outra conta e pendência
+    não confirmada sintética. Fixtures default não alteradas nem lógica financeira reescrita.
+  - `index.html`: sandbox antes do logger e dos consumidores de storage/identidade.
+    `tests-frontend/index-html-ordem.test.js`: pares explícitos sandbox→logger/contexto/storage/runtime.
+  - `tests-frontend/e1-mock-runtime.test.js` (novo): 30 regressões com sandbox/runtime reais,
+    backing fake de JSDOM e fetch nativo stub; nenhuma rede real. Formatos de cache/pendência
+    consumidos por contexto/storage reais. Abrange isolamento/inércia, reload/seed/sessão,
+    Request/conta/abort, controles de rede, store opt-in e contadores sem credenciais.
+  - `mocks/ui-runtime/README.md`: URLs, flags, cenários, controles/runtime e limites. Plano
+    e roadmap recebem a divisão E1→E2→E3 e este registro; sem relatório paralelo.
+- **Suítes medidas**: frontend **288/288 antes → 318/318 depois**, zero falhas. Foco mock
+  inicial 28/28 (23 novos+5 carga), revisão 33/33; final inclui 30 novos. **Backend não
+  executado**: nenhuma regra/backend/shared/harness mudou, controle final previsto E3.
+  Diagnósticos e diff-check limpos. Duas comparações iniciais entre arrays de realms VM
+  falharam por identidade de protótipo; normalizadas somente no harness, sem afrouxar produção.
+- **Revisão**: uma exploração curta e uma revisão read-only, sem reauditar A–D3. Corrigidos
+  Request assíncrono escrevendo store da conta seguinte, conta persistida restaurando default
+  incorreto e transição de sessão interrompida por QuotaExceededError. Acrescentados testes
+  específicos; abort também encerra stream de corpo Request ainda pendente.
+- **Provas por mutação**, seis mudanças contadas por asserts e restauradas:
+
+  | Mutação | Assert que falhou | Resultado do grupo | Restaurada |
+  |---|---|---|---|
+  | Fallback de facade ler storage normal | E1-02 | 22 passam / 7 falham | sim |
+  | Whitelist permitir gis_session_cache | E1-03/E1-23 | mesmo grupo | sim |
+  | Reseed ignorar envelope já semeado | E1-05/E1-07/E1-10 | mesmo grupo | sim |
+  | Request perder store capturado após troca | E1-24 | 0 passam / 1 falha | sim |
+  | Barreira API/Google delegar fetch nativo | E1-11 | 0 passam / 2 falham | sim |
+  | Retirar listener abort durante latência | E1-30 | mesmo grupo | sim |
+
+  Mutações de rede executadas exclusivamente no harness com fetch nativo stubado; browser
+  aberto somente após restauração integral. Busca/status/diff conferidos e suíte final
+  **318/318**, sem mutações residuais. Listener abort retirado preliminarmente também foi
+  restaurado sem contá-lo como prova antes do E1-30 (evitar teste retido sem término).
+- **Smoke de infraestrutura mock**: página própria (sem navegar a página que o dono testava),
+  `b2CacheAntigo&mockReter=1#tela-alunos`, **433×762, DPR ~2.81**, touch/coarse confirmados.
+  Cache sintético apresentado; contador mostrou ping bloqueado e GETs retidos; liberar
+  respostas avançou para `ATUAL — …`, estado aplicado/sem pendentes. Reload conservou dados
+  atualizados e hash, sem reseed/overflow. GCal 409 permanece simulado; nenhum ping backend
+  real enviado nesta abertura. Não declarar matriz E2 ou teclado/TalkBack completos.
+- **Encontrado, não alterado**: mock usa payloads financeiros demonstrativos, não regra real;
+  store remoto de escrita default não persiste no reload e abort pós-mudança simulada não
+  desfaz gravação. Controles de rede runtime não persistem (query flags reaplicam no reload).
+  Envelope por cenário precisa reset explícito para repetir seed; não é backup de dados reais.
+  E2 deve medir contagem/campos/foco/viewport nas três hashes e E3 medir controle backend.
+- **Não realizado**: E2/E3/fechamento da 2.4, alteração de regras/app/auth/GCal/backend,
+  novas dependências, commit/push/merge/deploy ou acesso a dados reais. B2 local continua ligado.
