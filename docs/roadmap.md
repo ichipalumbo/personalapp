@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-10-06
+> **Status**: Documento vivo · **Atualizado**: 2026-10-09
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -21,13 +21,15 @@ Cada item traz:
 
 **Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
 
-**Grupo 5 — concluído**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não foi
+**Grupo 5 — concluído, com um resíduo aberto**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não foi
 executado em sequência única — rodou em paralelo, por rodadas. Os oito itens (5.1–5.8) estão
 fechados. Os últimos: **5.8** (2026-09-30 — PR #68, skeletons padronizados + rótulo de cache B1;
 validação visual do dono aprovada em 2026-10-01), **5.6** (2026-09-30 — PR #66, unificação +
 textos, e PR #67, tela de finanças) e **5.7** (2026-10-01 — cartões A–D da Etapa 7, branch
 `feat/etapa-7-consistencia-acessibilidade`). Com isso o documento-mãe do grupo
-(`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`) não tem mais achado em aberto.
+(`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`) não tem mais achado em aberto — exceto o
+resíduo do **achado 4.5** (alvos de toque do cabeçalho/toolbar), validado no código em 2026-10-09 e
+registrado como item **5.9** abaixo.
 
 ---
 
@@ -86,6 +88,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 5     | 5.6 Erros e toasts (Etapa 6)                     | `[x]`  | —                                                                |
 | 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[x]`  | 5.1 a 5.6                                                        |
 | 5     | 5.8 Estados de carregamento: skeletons + cache   | `[x]`  | 5.6 (validado 2026-10-01)                                        |
+| 5     | 5.9 Alvos de toque do cabeçalho/toolbar (resíduo 4.5) | `[ ]`  | —                                                                |
 
 ---
 
@@ -698,7 +701,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **O que foi entregue**: escala tipográfica mínima aplicada (zero texto <12px), alvos de toque
   ampliados para 48px nos grupos 1 (Finanças) e 2 (grade de horários) — grupo 3
   (cabeçalho/toolbar) ficou <44px por decisão do dono, registrado como candidato a rodada
-  futura —, `:focus-visible` dourado padronizado e `aria-label` em 13/13 botões ícone-only.
+  futura (**virou o item 5.9 em 2026-10-09**) —, `:focus-visible` dourado padronizado e `aria-label` em 13/13 botões ícone-only.
 - **Resolve**: achados 4.4 (tipografia pequena), 4.5 (alvos de toque) e a parte inicial de 4.6
   (foco/teclado básico) do diagnóstico.
 - **Relatório**: [`plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`](plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md).
@@ -882,5 +885,44 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   [`reports/2026-09-30-hotfix-fab-home-troca-tela.md`](reports/2026-09-30-hotfix-fab-home-troca-tela.md).
 - **Depende de**: 5.6 (concluído). Independente de 5.7 — a execução ficou **antes** dele por
   ordem do dono, e os dois estão concluídos.
+
+---
+
+### [ ] 5.9 Alvos de toque do cabeçalho/toolbar — resíduo do achado 4.5
+
+- **O que é**: o resíduo deliberado do achado 4.5. Na Etapa 2, os grupos 1 (ações de Finanças →
+  48px) e 2 (grade de horários → 48px) foram corrigidos; o grupo 3 (cabeçalho/toolbar) ficou
+  <44px **por decisão do dono** — forçar 44px esticaria o header. Inventário completo no report
+  [`plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`](plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md).
+- **Validação no código (2026-10-09)**: o resíduo **segue pendente** — a varredura de
+  `min-height`/`height` ≥44px no `style.css` não encontrou nenhum acréscimo aplicado a estes
+  elementos nas rodadas posteriores (Etapas 3–7). Um item do inventário original saiu da lista: a
+  antiga navegação superior `.nav-link` **não existe mais** — a Etapa 3 a substituiu pela barra
+  inferior `.nav-link-inferior` (`min-height: 44px`; alvos 134×52 medidos no report da Etapa 3).
+- **Elementos ainda abaixo de 44px** (altura pela regra CSS atual de 2026-10-09; reconfirmar por
+  medição de runtime na execução):
+  - `.tab-btn` (~30px) — abas Semana/Dia da Home (`#tabHomeSemana`/`#tabHomeDia`) e abas do modal
+    de agendamento (Aula/Deslocamento/Bloquear); regra única `.tab-tipo-agendamento .tab-btn`,
+    sem `min-height`.
+  - `#btnSemanaHomeAnterior` / `#btnSemanaHomeProxima` (~26px) — setas da topbar da Home.
+  - `#btnSemanaHomeHoje` (~24–26px) — botão "Hoje" (override mobile `padding: 5px 12px`).
+  - `#custom-google-login` (`.btn-google-custom`: 30px; ~26px no mobile com `padding: 7px 10px` e
+    fonte de 12px).
+  - `#btnSyncBanco` (~37px) — hoje no modal Área do usuário como `.btn` base (a Etapa 3 o tirou do
+    topo); o "Configurar Grade Horária" ao lado segue o mesmo padrão.
+  - `.semana-dia-header` (~34px de altura) — cabeçalho clicável de cada dia na visão Semana.
+  - `.btn-dia-pill` (42px, valor explícito no CSS) — pills de dia da semana no formulário de
+    recorrência.
+- **Onde mexer**: `assets/css/style.css` (regras base + overrides mobile; atenção ao breakpoint de
+  430px) e `index.html` se a estrutura precisar mudar. Sem mudança de lógica/JS.
+- **Cuidado de layout**: não esticar o header de volta (reduzido de 122px para 68px em 433px na
+  Etapa 3) e não quebrar 320×568; abordagem alternativa ao `min-height` puro (área de toque
+  ampliada sem redesenhar) fica à decisão do dono na rodada.
+- **Como validar**: medição no mock em 433×762 DPR 2.81 (referência; seção 7 do documento-mãe da
+  auditoria), com 320×568 e 390×844 de stress. Os alvos dentro de modais (`btn-dia-pill`,
+  `#btnSyncBanco`) e o login deslogado exigem abrir o estado certo no mock.
+- **Esforço**: Baixo (CSS, arquivo único) — com atenção ao layout do topo.
+- **Referência cruzada**: é o único 🟡 restante da tabela mestra de
+  [`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`](diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md) (linha 4.5).
 
 _Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir._
