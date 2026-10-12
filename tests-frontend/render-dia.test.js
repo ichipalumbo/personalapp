@@ -76,6 +76,12 @@ function aulaUnica(overrides = {}) {
     };
 }
 
+function cardPorId(grid, id) {
+    return Array.from(grid.querySelectorAll('.agenda-dia-aula')).find(
+        (el) => el.getAttribute('onclick') === `abrirModalAcaoSlot('${id}')`,
+    );
+}
+
 test('T02 — renderizarAgendaDia desenha a grade e posiciona o card da aula única', (t) => {
     const { dom, window } = criarAmbiente(t);
     injetarEstado(dom, {
@@ -107,4 +113,131 @@ test('T02 — renderizarAgendaDia desenha a grade e posiciona o card da aula ún
     assert.match(estilo, /height:\s*96px/, 'height = 1h × 96px/h');
     assert.match(estilo, /left:\s*0/, 'sem banda: alinhado à esquerda');
     assert.match(estilo, /width:\s*calc\(100% - 4px\)/, 'sem banda: largura total com o inset original de 4px');
+});
+
+test('T03 — dupla com sobreposição parcial vira duas colunas Outlook', (t) => {
+    const { dom, window } = criarAmbiente(t);
+    injetarEstado(dom, {
+        alunos: [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer' }],
+        aulas: [
+            aulaUnica({ id: 'dup-a', horarioInicio: '09:00', horarioFim: '10:00' }),
+            aulaUnica({ id: 'dup-b', horarioInicio: '09:30', horarioFim: '10:30' }),
+        ],
+    });
+
+    window.renderizarAgendaDia('agendaGridHomeHome');
+    const grid = window.document.getElementById('agendaGridHomeHome');
+
+    assert.equal(grid.querySelectorAll('.formato-outlook').length, 2, 'a dupla usa o formato Outlook');
+    assert.equal(grid.querySelectorAll('.agenda-banda-grupo').length, 0, 'banda de 2 não vira contêiner de linhas');
+    assert.equal(grid.querySelectorAll('.formato-linha').length, 0);
+
+    const cardA = cardPorId(grid, 'dup-a');
+    const cardB = cardPorId(grid, 'dup-b');
+    assert.ok(cardA && cardB, 'os dois cards precisam existir');
+    assert.match(cardA.getAttribute('style'), /left:\s*0%/, 'primeira coluna à esquerda');
+    assert.match(cardA.getAttribute('style'), /top:\s*288px/);
+    assert.match(cardA.getAttribute('style'), /width:\s*calc\(50% - 4px\)/);
+    assert.match(cardB.getAttribute('style'), /left:\s*50%/, 'segunda coluna à direita');
+    assert.match(cardB.getAttribute('style'), /top:\s*336px/);
+    assert.match(cardB.getAttribute('style'), /width:\s*calc\(50% - 4px\)/);
+});
+
+test('T03 — par com início igual fica em colunas, não vira linha', (t) => {
+    const { dom, window } = criarAmbiente(t);
+    injetarEstado(dom, {
+        alunos: [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer' }],
+        aulas: [
+            aulaUnica({ id: 'eq-a', horarioInicio: '09:00', horarioFim: '10:00' }),
+            aulaUnica({ id: 'eq-b', horarioInicio: '09:00', horarioFim: '09:30' }),
+        ],
+    });
+
+    window.renderizarAgendaDia('agendaGridHomeHome');
+    const grid = window.document.getElementById('agendaGridHomeHome');
+
+    assert.equal(grid.querySelectorAll('.formato-outlook').length, 2);
+    assert.equal(grid.querySelectorAll('.formato-linha').length, 0, 'início igual continua em colunas');
+    assert.equal(grid.querySelectorAll('.agenda-banda-grupo').length, 0);
+
+    const cardA = cardPorId(grid, 'eq-a');
+    const cardB = cardPorId(grid, 'eq-b');
+    assert.ok(cardA && cardB);
+    assert.match(cardA.getAttribute('style'), /left:\s*0%/);
+    assert.match(cardB.getAttribute('style'), /left:\s*50%/);
+    assert.match(cardB.getAttribute('style'), /height:\s*48px/, 'a aula de 30min ocupa meia hora da timeline');
+});
+
+test('T03 — tripla encadeada vira um contêiner único, em linhas na ordem início/fim', (t) => {
+    const { dom, window } = criarAmbiente(t);
+    injetarEstado(dom, {
+        alunos: [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer' }],
+        aulas: [
+            aulaUnica({ id: 'tri-a', horarioInicio: '09:00', horarioFim: '11:00' }),
+            aulaUnica({ id: 'tri-b', horarioInicio: '09:00', horarioFim: '10:00' }),
+            aulaUnica({ id: 'tri-c', horarioInicio: '10:30', horarioFim: '11:30' }),
+        ],
+    });
+
+    window.renderizarAgendaDia('agendaGridHomeHome');
+    const grid = window.document.getElementById('agendaGridHomeHome');
+
+    const grupos = grid.querySelectorAll('.agenda-banda-grupo');
+    assert.equal(grupos.length, 1, 'uma banda de 3 gera exatamente um contêiner');
+    assert.equal(grid.querySelectorAll('.formato-outlook').length, 0, 'banda de 3+ não usa Outlook');
+
+    assert.match(grupos[0].getAttribute('style'), /top:\s*288px/, 'contêiner começa no menor início (09:00)');
+    assert.match(grupos[0].getAttribute('style'), /height:\s*240px/, 'contêiner cobre o span até o maior fim (11:30)');
+
+    const linhas = Array.from(grid.querySelectorAll('.agenda-banda-grupo .formato-linha'));
+    assert.equal(linhas.length, 3, 'as três aulas da banda viram linhas');
+    assert.deepEqual(
+        linhas.map((el) => el.getAttribute('onclick')),
+        ["abrirModalAcaoSlot('tri-b')", "abrirModalAcaoSlot('tri-a')", "abrirModalAcaoSlot('tri-c')"],
+        'ordem por início; empate desempata por fim (tri-b termina antes de tri-a)',
+    );
+    assert.match(linhas[2].textContent, /10:30/, 'a linha mostra a hora comprimida de início');
+});
+
+test('T03 — bloqueio de dia inteiro fica fora do grafo: largura total, sem formato de banda', (t) => {
+    const { dom, window } = criarAmbiente(t);
+    injetarEstado(dom, {
+        alunos: [{ id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer' }],
+        aulas: [
+            aulaUnica({ id: 'aula-nb', horarioInicio: '09:00', horarioFim: '10:00' }),
+            {
+                id: 'bloco-1',
+                tipo: 'bloqueio',
+                descricao: 'Feriado',
+                frequencia: 'uma_vez',
+                data: '31/08/2026',
+                excecoes: [],
+                horarioInicio: '00:00',
+                horarioFim: '23:59',
+            },
+        ],
+    });
+
+    window.renderizarAgendaDia('agendaGridHomeHome');
+    const grid = window.document.getElementById('agendaGridHomeHome');
+
+    assert.equal(grid.querySelectorAll('.agenda-dia-aula').length, 2, 'aula + bloqueio');
+    assert.equal(grid.querySelectorAll('.agenda-banda-grupo').length, 0);
+
+    const bloco = cardPorId(grid, 'bloco-1');
+    assert.ok(bloco, 'o card do bloqueio precisa existir');
+    assert.equal(bloco.tagName, 'BUTTON');
+    assert.equal(bloco.classList.contains('formato-outlook'), false, 'dia inteiro não entra em colunas da banda');
+    assert.equal(bloco.classList.contains('formato-linha'), false);
+    assert.equal(bloco.closest('.agenda-banda-grupo'), null, 'dia inteiro fica fora do contêiner');
+    assert.match(bloco.getAttribute('style'), /top:\s*0px/, 'clamp começa no topo da grade');
+    assert.match(bloco.getAttribute('style'), /height:\s*1536px/, 'cobre o dia útil inteiro (06:00–22:00 = 16h × 96px/h)');
+    assert.match(bloco.getAttribute('style'), /left:\s*0/);
+    assert.match(bloco.getAttribute('style'), /width:\s*calc\(100% - 4px\)/);
+    assert.match(bloco.textContent, /Dia bloqueado/);
+
+    const aula = cardPorId(grid, 'aula-nb');
+    assert.ok(aula);
+    assert.equal(aula.classList.contains('formato-outlook'), false, 'aula não ganha banda por causa do dia inteiro');
+    assert.match(aula.getAttribute('style'), /top:\s*288px/);
 });

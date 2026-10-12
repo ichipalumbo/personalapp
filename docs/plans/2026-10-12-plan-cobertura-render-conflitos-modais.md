@@ -1,6 +1,6 @@
 # Plano — Cobertura automatizada do render do Dia + lacunas vizinhas (item 0.12)
 
-> **Status**: aberto — T01 e T02 executados (2026-10-12); T03–T07 pendentes
+> **Status**: aberto — T01–T03 executados (2026-10-12); T04–T07 pendentes
 > **Abertura**: 2026-10-12
 > **Responsável**: dono do repositório + agente
 > **Branch**: `feat/cobertura-render-conflitos-modais`
@@ -210,10 +210,10 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 | Mutação aplicada | Teste que deve falhar | Resultado observado | Restaurado? |
 |---|---|---|---|
 | Suprimir a emissão do card no ramo sem banda | T02 — fumaça | falhou como esperado (0 cards; esperado 1) | sim |
-| Limiar de banda `>= 3` → `>= 2` | T03 — dupla vira linha | — | — |
-| Remover o dedup `gruposVistos` | T03 — contêiner único por banda | — | — |
-| Remover o tie-break `|| a.end - b.end` | T03 — ordem das linhas | — | — |
-| Incluir dia inteiro no grafo de sobreposição | T03 — dia inteiro | — | — |
+| Limiar de banda `>= 3` → `>= 2` | T03 — dupla vira linha | falhou como esperado (dupla/início-igual sem Outlook: 0 ≠ 2) | sim |
+| Remover o dedup `gruposVistos` | T03 — contêiner único por banda | falhou como esperado (3 contêineres; esperado 1) | sim |
+| Remover o tie-break `|| a.end - b.end` | T03 — ordem das linhas | falhou como esperado (tri-a antes de tri-b) | sim |
+| Incluir dia inteiro no grafo de sobreposição | T03 — dia inteiro | falhou como esperado (bloqueio ganhou formato Outlook) | sim |
 | Pular eventos no loop das linhas | T04 — unicidade/contagem | — | — |
 | Inverter `inicioA < fimB && inicioB < fimA` | T05 — colisão | — | — |
 | Limite 6 → 5 em `gerarResumoConflitosDatas` | T05 — resumo | — | — |
@@ -246,6 +246,13 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 - **Suíte antes/depois**: frontend **337/337 → 338/338** (medidos em 2026-10-12); pós-reversão da mutação reconfirmado 338/338.
 - **Desvio do plano**: nenhum.
 - **Decisão adicional tomada**: fixture usa `agendaConfig` 06:00–22:00 (≠ padrão 07–21) para provar que o estado injetado dirige o render.
+
+### 2026-10-12 — T03 executado (regras das bandas)
+- **Arquivos alterados**: `tests-frontend/render-dia.test.js` (+4 testes); quatro mutações temporárias em `assets/js/view-home.js`, todas revertidas (arquivo sem alteração final — conferido no git).
+- **Resultado**: bandas travadas — dupla parcial e par com início igual em colunas Outlook (`left` 0%/50%, `width` `calc(50% - 4px)`, sem contêiner); tripla em contêiner único com 3 linhas na ordem início/desempate-por-fim e hora comprimida; dia inteiro fora do grafo, largura total e sem formato. Um assert do próprio teste foi corrigido na execução (altura do dia inteiro: 1536px, não 960px — confusão minutos×px do teste, não do render).
+- **Suíte antes/depois**: frontend **338/338 → 342/342** (medidos em 2026-10-12); pós-reversão das mutações reconfirmado 342/342.
+- **Desvio do plano**: nenhum.
+- **Decisão adicional tomada**: —
 
 ## 13. Achados não alterados
 
