@@ -110,7 +110,7 @@ async function ambiente(t) {
         if (a.somenteGet) assert.equal(chamada.method, 'GET', `Manual reenviou escrita: ${chamada.rota}`);
         return a.responder(chamada);
     };
-    ['assets/js/state.js', 'assets/js/app/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
+    ['assets/js/state.js', 'assets/js/app-shell/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
     a.contexto = window.contextoDados;
     a.contexto.iniciar();
     assert.equal(a.contexto.salvarPrincipal(snapshot()), true);

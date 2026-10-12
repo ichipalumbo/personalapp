@@ -447,7 +447,7 @@ tela — e o caminho da recarga é justamente o que o 4.17.6 existe para resolve
 `assets/js/app/router.js` (`jaEscreveuNaUrl` passou a marcar "o boot já passou", e não "a URL foi
 escrita"), com caso novo em `tests-frontend/router-historico.test.js` e prova por mutação.
 Medições, provas e o registro da validação inteira em
-[`plans/2026-10-05-validacao-etapa-7-branch.md`](2026-10-05-validacao-etapa-7-branch.md).
+[`plans/2026-10-05-plan-validacao-etapa-7-branch.md`](2026-10-05-plan-validacao-etapa-7-branch.md).
 Suítes após o fix: frontend **92/92**, backend **232/232**.
 
 **A ressalva do teclado caiu nesta rodada**: a validação no aparelho confirmou os 7 itens de

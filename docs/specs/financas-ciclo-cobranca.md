@@ -50,7 +50,7 @@ A feature **removeu** o dashboard de KPI antigo (baseado em mês calendário) e 
 ### 2.3 Aba "Calendário" → Aba "Finanças"
 
 - A aba antes chamada "Calendário" é substituída pela aba **"Finanças"**.
-- O dashboard de KPI antigo (`utils-kpi.js`: `calcularKPIsAluno`, `calcularKPIsTodosAlunos`; `kpiService.js`: `calcularProjecaoMensalCompleta`, `calcularProjecaoRealizadaAteHoje`, `calcularProjecaoAproximada`, `contarReposicoesPorAluno`) **foi removido e substituído** pela lógica de ciclo (seção 5). Não deixar os dois sistemas convivendo — decisão explícita de produto: substituir, não somar. A única função preservada é `calcularAulasFaltamAgendar` (seção 10).
+- O dashboard de KPI antigo (`utils-ui.js`: `calcularKPIsAluno`, `calcularKPIsTodosAlunos`; `kpiService.js`: `calcularProjecaoMensalCompleta`, `calcularProjecaoRealizadaAteHoje`, `calcularProjecaoAproximada`, `contarReposicoesPorAluno`) **foi removido e substituído** pela lógica de ciclo (seção 5). Não deixar os dois sistemas convivendo — decisão explícita de produto: substituir, não somar. A única função preservada é `calcularAulasFaltamAgendar` (seção 10).
 
 ### 2.4 Módulo isomórfico de recorrência (requisito obrigatório)
 
@@ -60,7 +60,7 @@ O cálculo de "aulas válidas dentro do ciclo" (5.3) depende da mesma lógica de
 
 **Solução exigida**: um **módulo JS isomórfico** (sem dependência de `window`, DOM ou API exclusiva de browser), importável tanto pelo frontend quanto pelo backend. Ambos consomem a mesma implementação, não cópias.
 
-**Contexto de deploy (relevante para a dívida técnica 12.1)**: existem **dois projetos Vercel distintos** — o da API com _Root Directory_ = `backend/`, e o do app apontando para a raiz do repositório. Hoje o módulo vive em `assets/js/shared/` e o backend o alcança via `require` relativo que atravessa para fora da pasta `backend/`. Funciona porque o repositório é clonado inteiro e o tracing do `@vercel/node` resolve o caminho, mas isso depende de configuração de projeto que não está versionada.
+**Contexto de deploy (ver 12.1, resolvida)**: existem **dois projetos Vercel distintos** — o da API com _Root Directory_ = `backend/`, e o do app apontando para a raiz do repositório. O módulo vive em `backend/shared/` (item 0.2 do roadmap): o backend o alcança com `require` relativo dentro do próprio `backend/` e o frontend o consome por tag `<script>`; a dependência de configuração de projeto não versionada deixou de existir.
 
 ### 2.5 Estrutura final de navegação
 
@@ -599,7 +599,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 
 **Módulo compartilhado**
 
-- `assets/js/shared/recurrence-helpers.js`: `parseDataFlex`, `resolverCompromissoRecorrenteNaData`, `checarCompromissoNaData`, `getDiasNoMes`. Consumido por frontend e backend. Ver dívida técnica 12.1.
+- `backend/shared/recurrence-helpers.js`: `parseDataFlex`, `resolverCompromissoRecorrenteNaData`, `checarCompromissoNaData`, `getDiasNoMes`. Consumido por frontend e backend. Ver dívida técnica 12.1 (resolvida).
 
 **Frontend**
 
@@ -607,7 +607,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 - `view-alunos.js` — card "Cobrança por ciclo" (3.1.2), validação de `preco` (3.1.1), indicadores do card do aluno (seção 11). Consome apenas `cicloAtual` e `configuracaoPendente` da listagem.
 - `view-home.js` — sub-abas Semana/Dia; `abrirModalConfigAgenda`.
 - `view-calendario.js` — reduzido às funções ainda usadas pela Home.
-- `utils-kpi.js` — apenas utilidades genéricas (toast, overlays de sync).
+- `utils-ui.js` — apenas utilidades genéricas (toast unificado, overlays de sync).
 - `router.js`, `index.html` — navegação e limpeza.
 
 ---
@@ -654,7 +654,7 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 
 **Restrições**:
 
-- Nenhuma dessas informações pode depender de `kpiService.js` ou das funções antigas de `utils-kpi.js`.
+- Nenhuma dessas informações pode depender de `kpiService.js` ou das funções antigas de `utils-ui.js`.
 - Falha nas chamadas complementares (Finanças ou consistência) deve degradar silenciosamente: o card continua exibindo os dados do aluno, sem as caixinhas.
 
 ---
@@ -663,13 +663,11 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 
 Itens identificados, avaliados e **deliberadamente adiados**. Não implementar sem decisão explícita. Espelhados no [`../roadmap.md`](../roadmap.md) (Grupo 0) para entrarem junto com uma próxima feature.
 
-### 12.1 Localização do módulo isomórfico de recorrência
+### 12.1 Localização do módulo isomórfico de recorrência — RESOLVIDO (item 0.2 do roadmap)
 
-O módulo vive em `assets/js/shared/recurrence-helpers.js` e o backend o alcança via `require` relativo que atravessa para fora de `backend/`. Funciona em produção porque o repositório é clonado inteiro e o tracing do `@vercel/node` resolve o caminho — mas depende de configuração de projeto não versionada.
+A dívida original: o módulo vivia em `assets/js/shared/recurrence-helpers.js` e o backend o alcançava por `require` relativo que atravessava para fora de `backend/`, dependendo de configuração de projeto não versionada.
 
-Existe assimetria a favor da solução inversa: o projeto do **app** tem a raiz do repositório como root e serviria normalmente um arquivo localizado dentro de `backend/`, enquanto o projeto da **API** só garante o que está dentro de `backend/`. Portanto, **mover o módulo para `backend/src/shared/`** (com o frontend consumindo-o de lá) é a direção mais robusta.
-
-Status: **adiado**. É melhoria de robustez, não correção de defeito — o comportamento atual está validado em produção.
+O módulo foi movido para `backend/shared/recurrence-helpers.js`: o backend o importa dentro do próprio `backend/` (`require('../../shared/recurrence-helpers')` a partir de `src/services`) e o frontend o consome por tag `<script src="backend/shared/recurrence-helpers.js">` no `index.html`. O ponto que dependia de configuração não versionada deixou de existir.
 
 ### 12.2 CSS órfão da visão mensal
 

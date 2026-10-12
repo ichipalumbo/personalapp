@@ -4,7 +4,7 @@
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
-> **Contexto importante**: a feature **"Finanças — Ciclo de Cobrança por Aluno"** está em produção. Ela **entregou o item 1.1** e **substituiu** o antigo sistema de KPI financeiro (`backend/src/services/kpiService.js` e os cálculos de projeção em `assets/js/utils-kpi.js`), que **não existem mais no código**. Especificação completa em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
+> **Contexto importante**: a feature **"Finanças — Ciclo de Cobrança por Aluno"** está em produção. Ela **entregou o item 1.1** e **substituiu** o antigo sistema de KPI financeiro (`backend/src/services/kpiService.js` e os cálculos de projeção em `assets/js/utils-ui.js`), que **não existem mais no código**. Especificação completa em [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
 >
 > Regras permanentes para agentes de IA: `.github/copilot-instructions.md`.
 
@@ -269,7 +269,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que é**: Botão "Gerar relatório do período" com faturamento por aluno, total, aulas cobradas e status de pagamento.
 - **Por que importa**: Prestar contas ao contador e ter controle pessoal do que foi efetivamente recebido no período. Hoje a informação existe na tela de Finanças, mas não sai do app.
-- **Onde mexer**: ⚠️ _Base técnica revisada._ As funções que este item citava (`exportarDados()` em `utils-kpi.js` e os cálculos de `kpiService.js`) **foram removidas**. A fonte correta agora é a collection `CicloFinanceiro` e o serviço `backend/src/services/financasService.js` — os valores já vêm calculados e congelados por ciclo, o que na prática **simplifica** este item: é quase só formatação e exportação, sem recalcular nada.
+- **Onde mexer**: ⚠️ _Base técnica revisada._ As funções que este item citava (`exportarDados()` em `utils-ui.js` e os cálculos de `kpiService.js`) **foram removidas**. A fonte correta agora é a collection `CicloFinanceiro` e o serviço `backend/src/services/financasService.js` — os valores já vêm calculados e congelados por ciclo, o que na prática **simplifica** este item: é quase só formatação e exportação, sem recalcular nada.
 - **Sugestão de escopo mínimo (V1)**: Exportar CSV/Excel dos ciclos de um intervalo de datas, com colunas: aluno, período do ciclo, método de cobrança, aulas cobradas, valor, status, data de pagamento.
 - **Ponto de atenção**: decidir se o relatório exporta o **ciclo vigente** também (que ainda pode mudar enquanto não estiver pago) ou apenas ciclos fechados/pagos. Evitar dependência nova: CSV se resolve sem biblioteca.
 - **Esforço**: Baixo (a lógica de cálculo já está pronta e persistida; falta só a camada de exportação).
@@ -373,7 +373,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
 - **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
-- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app-shell/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
 - **Histórico de correção (29/08/2026)**: uma auditoria do mês encontrou defeitos de sincronização (duplicata de série na edição, `EXDATE` do primeiro dia, `DTSTART` desalinhado do `BYDAY`, teto de pendência no lado errado, série truncada sem aulas, dia da semana sem acento e ordem invertida no `DELETE`). As rodadas A–H trataram esse conjunto; o estado final ficou registrado em [`specs/gcal-sync.md`](specs/gcal-sync.md) §9.
 - **Esforço**: Médio. O custo que ficou aberto continua sendo o gatilho automático no boot, porque a validação executada foi por clique manual do botão de renovação e não por observação isolada do bootstrap; isso foi registrado como ressalva da entrega, não como regressão funcional visível.
 - **Validação concluída**: em 31/08/2026, o botão manual de renovação do canal foi executado e a expiração avançou para a semana seguinte, comprovando a cadeia completa de encerramento do canal antigo, registro do novo e sincronização de recuperação. A ressalva fica no boot: o disparo automático não foi observado isoladamente, mas o caminho da renovação foi validado em produção.
@@ -387,7 +387,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
 - **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
-- **Onde mexer**: `assets/js/app/bootstrap.js`, listeners de autenticação e auto-refresh.
+- **Onde mexer**: `assets/js/app-shell/bootstrap.js`, listeners de autenticação e auto-refresh.
 - **Esforço**: Baixo–Médio.
 - **Nota de sequência**: o **2.4** (B2) está publicado e concluído, com limites de cobertura
   registrados. A consolidação deste item deve incluir esse
@@ -593,7 +593,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 - **O que é**: Notificar o PT e/ou o aluno automaticamente (push notification ou WhatsApp) antes da aula, ou quando um pagamento está para vencer.
 - **Por que importa**: Reduz faltas e esquecimentos, dos dois lados.
-- **Complexidade**: O app já é PWA com Service Worker registrado (`assets/js/app/service-worker.js`, `sw.js`), o que ajuda como base, mas hoje as notificações são só "toasts" internos (`mostrarToast`). Seria necessário Web Push (VAPID + subscription por usuário) **ou** WhatsApp Business API, mais um scheduler/cron no backend.
+- **Complexidade**: O app já é PWA com Service Worker registrado (`assets/js/app-shell/service-worker.js`, `sw.js`), o que ajuda como base, mas hoje as notificações são só "toasts" internos (`mostrarToast`). Seria necessário Web Push (VAPID + subscription por usuário) **ou** WhatsApp Business API, mais um scheduler/cron no backend.
 - **Sinergia com Finanças**: o `diaVencimento` e o `cicloFim` de cada aluno já dão exatamente a data de disparo do lembrete de cobrança — a informação necessária já está modelada.
 - **Esforço**: Alto.
 
@@ -832,13 +832,13 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   Suítes: frontend 91/91, backend 232/232.
 - **Validação em deploy (2026-10-05)**: o dono validou a branch num deploy provisório do Vercel,
   com checklist próprio —
-  [`plans/2026-10-05-validacao-etapa-7-branch.md`](plans/2026-10-05-validacao-etapa-7-branch.md).
+  [`plans/2026-10-05-plan-validacao-etapa-7-branch.md`](plans/2026-10-05-plan-validacao-etapa-7-branch.md).
   **A seção de teclado e TalkBack passou inteira** (7 itens): era a ressalva "a ativação por
   teclado não pôde ser observada neste ambiente", registrada desde o Cartão B, e agora tem
   observação real no aparelho. Um defeito apareceu no item de Voltar/Avançar: **após recarregar,
   a primeira navegação usava `replaceState` em vez de `pushState`** e o Voltar pulava uma tela —
   e o caminho da recarga é justamente o que este item existe para resolver. Corrigido em
-  `assets/js/app/router.js` (`jaEscreveuNaUrl` passou a marcar "o boot já passou", e não "a URL
+  `assets/js/app-shell/router.js` (`jaEscreveuNaUrl` passou a marcar "o boot já passou", e não "a URL
   foi escrita"), com caso novo em `tests-frontend/router-historico.test.js` e prova por mutação;
   re-testado e aprovado. Suítes finais: **frontend 92/92, backend 232/232**.
 
@@ -880,7 +880,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   "Sincronizando dados..." sob o título) e boot com cache (nada aparece — comportamento B1).
 - **Bug achado antes da execução (2026-09-30, resolvido na branch)**: o FAB "Novo agendamento"
   da Home persistia sobre as demais telas até o carregamento da tela destino terminar (router só
-  reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app/router.js` + teste
+  reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app-shell/router.js` + teste
   (`tests-frontend/router-fab-tela.test.js`, prova de mutação):
   [`reports/2026-09-30-hotfix-fab-home-troca-tela.md`](reports/2026-09-30-hotfix-fab-home-troca-tela.md).
 - **Depende de**: 5.6 (concluído). Independente de 5.7 — a execução ficou **antes** dele por

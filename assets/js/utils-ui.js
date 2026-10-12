@@ -1,4 +1,4 @@
-// [TAG-UTILS-KPI] utils-kpi.js
+// [TAG-UTILS-UI] utils-ui.js
 // Responsabilidade: componente único de feedback assíncrono (toast) e seus estados
 // Expõe: mostrarToast, mostrarOverlaySinc, mostrarOverlaySleepMode, mostrarOverlayErroConexao,
 //        ocultarOverlayConexao, ocultarOverlaySinc, mostrarIndicadorSyncBackground,

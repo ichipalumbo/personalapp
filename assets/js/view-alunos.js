@@ -1,6 +1,6 @@
 // [TAG-VIEW-ALUNOS] view-alunos.js
-// Responsabilidade: View da aba Alunos — listagem com KPIs, formulário de cadastro/edição e exclusão
-// Depende de: state.js, storage.js, utils-kpi.js (calcular*), view-home.js (atualizarDashboardStats — em runtime) - Lógica de Alunos na SPA (Prô Josy)
+// Responsabilidade: View da aba Alunos — listagem com indicadores do card do aluno, formulário de cadastro/edição e exclusão
+// Depende de: state.js, storage.js, utils-ui.js (mostrarToast), view-home.js (atualizarDashboardStats — em runtime) - Lógica de Alunos na SPA (Prô Josy)
 
 // Dirty-check key for renderizarListaAlunos — null forces a render on the next call.
 let _ultimaChaveRenderAlunos = null;

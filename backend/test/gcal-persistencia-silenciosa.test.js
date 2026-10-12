@@ -57,7 +57,7 @@ function carregarGoogleCalendarHarness(opcoes = {}) {
 
   context.window = context;
   context.addEventListener = () => {};
-  const contextoPath = path.resolve(__dirname, '../../assets/js/app/contexto-dados.js');
+  const contextoPath = path.resolve(__dirname, '../../assets/js/app-shell/contexto-dados.js');
   vm.runInNewContext(fs.readFileSync(contextoPath, 'utf8'), context, { filename: contextoPath });
   context.contextoDados.capturar();
   const salvar = opcoes.salvarDados || context.salvarDados;

@@ -1,7 +1,7 @@
 // Bug (achado do dono, 2026-09-30): ao trocar de Home para Finanças, o FAB
 // "Novo agendamento" da Home (#fabNovoHome) persistia sobre a Finanças até o
 // fetch da tela terminar. Causa: o router só chamava trocarFABNovoHome() DEPOIS
-// do await do initializer da tela destino (assets/js/app/router.js).
+// do await do initializer da tela destino (assets/js/app-shell/router.js).
 // Este teste trava a ordem: o FAB é tratado/removido assim que a Home sai de
 // tela, independentemente do carregamento do destino.
 const fs = require('fs');
@@ -11,7 +11,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { JSDOM } = require('jsdom');
 
-const CAMINHO_ROUTER = path.resolve(__dirname, '..', 'assets', 'js', 'app', 'router.js');
+const CAMINHO_ROUTER = path.resolve(__dirname, '..', 'assets', 'js', 'app-shell', 'router.js');
 
 function criarAmbiente() {
     const dom = new JSDOM(`<!doctype html><html><body>

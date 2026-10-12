@@ -52,7 +52,7 @@ function ambiente(t, opcoes = {}) {
   };
   if (opcoes.runtime !== false && w.__UI_MOCK_SANDBOX) a.instalarRuntime();
   a.carregarDados = () => {
-    ['assets/js/state.js', 'assets/js/app/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
+    ['assets/js/state.js', 'assets/js/app-shell/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
     w.contextoDados.iniciar();
   };
   a.get = (rota, init = {}) => w.fetch(`http://localhost:5000/api/${rota}`, init);

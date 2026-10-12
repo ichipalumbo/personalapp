@@ -70,7 +70,7 @@ function ambiente(t, opcoes = {}) {
         assert.equal(init.headers.get('Authorization'), 'Bearer token-d3');
         return a.responder(chamada);
     };
-    ['assets/js/state.js', 'assets/js/app/contexto-dados.js', 'assets/js/storage.js', 'assets/js/view-home.js', 'assets/js/view-financas.js', 'assets/js/view-alunos.js'].forEach((arquivo) => carregar(dom, arquivo));
+    ['assets/js/state.js', 'assets/js/app-shell/contexto-dados.js', 'assets/js/storage.js', 'assets/js/view-home.js', 'assets/js/view-financas.js', 'assets/js/view-alunos.js'].forEach((arquivo) => carregar(dom, arquivo));
     // Renderização complexa da grade é fronteira da fixture; inicializador Home/carga são reais.
     w.renderizarHomeSemana = () => { a.rendersHome.push(w.obterAlunos().map((item) => item.nome)); };
     w.renderizarHomeDia = w.renderizarHomeSemana;
@@ -88,7 +88,7 @@ function ambiente(t, opcoes = {}) {
     if (opcoes.cache === 'outra-conta') email = 'bia-d3@example.com';
     if (opcoes.sessao === false) { token = null; email = null; }
     if (opcoes.online === false) conectado = false;
-    ['assets/js/app/coordenador-sync-boot.js', 'assets/js/app/router.js', 'assets/js/app/bootstrap.js'].forEach((arquivo) => carregar(dom, arquivo));
+    ['assets/js/app-shell/coordenador-sync-boot.js', 'assets/js/app-shell/router.js', 'assets/js/app-shell/bootstrap.js'].forEach((arquivo) => carregar(dom, arquivo));
     a.iniciar = () => w.__appBootstrap.initialize();
     a.pintar = async () => { const fns = frames.splice(0); fns.forEach((fn) => fn()); await eventos(); };
     a.estado = () => w.syncBootDados.obterEstado();

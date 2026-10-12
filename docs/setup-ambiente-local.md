@@ -253,8 +253,8 @@ Ambas usam `node --test`, o runner nativo do Node. Não há Jest, Vitest nem wat
 | `index-html-ordem.test.js` | A ordem das tags `<script>` em `index.html` (ver seção 8) |
 | `dialog-controller.test.js` | `assets/js/features/modals/dialog-controller.js` — foco no contexto, Escape, underlay e a declaração de cada `modal-overlay` do `index.html` |
 | `settings-modal-dialog.test.js` | `assets/js/settings-modal.js` no `DialogController` — área do usuário e política de fechar pelo fundo |
-| `router-fab-tela.test.js` | `assets/js/app/router.js` — ordem de remoção do FAB da Home na troca de tela (o FAB não pode esperar o carregamento do destino) |
-| `router-historico.test.js` | `assets/js/app/router.js` — tela inicial vinda da URL, `replaceState` no boot, `pushState` na navegação e ausência de escrita quando a URL muda por fora |
+| `router-fab-tela.test.js` | `assets/js/app-shell/router.js` — ordem de remoção do FAB da Home na troca de tela (o FAB não pode esperar o carregamento do destino) |
+| `router-historico.test.js` | `assets/js/app-shell/router.js` — tela inicial vinda da URL, `replaceState` no boot, `pushState` na navegação e ausência de escrita quando a URL muda por fora |
 | `view-alunos-observacoes.test.js` | `assets/js/view-alunos.js` — observação escapada no card, edição e a pilha de diálogos do aluno |
 | `view-financas-carregamento-toast.test.js` | `assets/js/view-financas.js` — toast unificado no carregamento lento, silêncio abaixo do limiar e refresh em background |
 | `view-financas-historico.test.js` | `assets/js/view-financas.js` — ciclos anteriores: ações só no não pago, pagamento no `DialogController` e falha HTTP mantendo o modal |

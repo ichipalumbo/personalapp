@@ -26,7 +26,7 @@ function ambiente(t, { storage = false, html = '' } = {}) {
     window.mostrarToast = () => {};
     window.fetch = async () => resposta({});
     carregar(dom, 'assets/js/state.js');
-    carregar(dom, 'assets/js/app/contexto-dados.js');
+    carregar(dom, 'assets/js/app-shell/contexto-dados.js');
     if (storage) carregar(dom, 'assets/js/storage.js');
     window.contextoDados.iniciar();
     return {

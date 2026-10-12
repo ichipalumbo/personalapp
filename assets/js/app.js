@@ -1,6 +1,6 @@
 // [TAG-APP-ROUTER] app.js
 // Responsabilidade: manter o ponto de entrada estável enquanto o bootstrap SPA
-// é migrado para assets/js/app/* de forma incremental.
+// é migrado para assets/js/app-shell/* de forma incremental.
 
 (function () {
     async function initializeApp() {

@@ -18,7 +18,7 @@
 ### 1.1 Precedência divergente da data base entre os dois lados da recorrência — sem dono
 
 `backend/src/services/gcalSyncService.js` resolve a data base como
-`recorrenciaDataInicio || data || dataCriacao`. `assets/js/shared/recurrence-helpers.js`
+`recorrenciaDataInicio || data || dataCriacao`. `backend/shared/recurrence-helpers.js`
 resolve como `dataCriacao || recorrenciaDataInicio || data`. São duas implementações da
 mesma noção, com ordens diferentes.
 

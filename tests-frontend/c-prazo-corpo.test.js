@@ -106,7 +106,7 @@ async function ambiente(t) {
     };
     // Fonte de produção intacta: apiFetchBackend, _limitarCorpoResposta,
     // CRUD, batch e contextoDados não são substituídos nem transformados.
-    ['assets/js/state.js', 'assets/js/app/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => {
+    ['assets/js/state.js', 'assets/js/app-shell/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => {
         vm.runInContext(fs.readFileSync(path.join(RAIZ, arquivo), 'utf8'), dom.getInternalVMContext(), { filename: arquivo });
     });
     a.contexto = window.contextoDados;

@@ -58,7 +58,7 @@ que permite gravar campos não declarados. Isso facilita evolução, mas também
 significa que **um typo em nome de campo não gera erro** — confira nomes contra
 o schema.
 
-**PWA** — service worker registrado (`sw.js`, `assets/js/app/service-worker.js`).
+**PWA** — service worker registrado (`sw.js`, `assets/js/app-shell/service-worker.js`).
 
 ---
 

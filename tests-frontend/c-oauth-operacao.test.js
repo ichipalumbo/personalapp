@@ -74,7 +74,7 @@ async function ambiente(t) {
         return a.responder(chamada);
     };
     [
-        'assets/js/state.js', 'assets/js/app/contexto-dados.js',
+        'assets/js/state.js', 'assets/js/app-shell/contexto-dados.js',
         'assets/js/storage.js', 'assets/js/auth/google-identity.js'
     ].forEach((arquivo) => carregar(dom, arquivo));
     await window.googleIdentity.initialize();

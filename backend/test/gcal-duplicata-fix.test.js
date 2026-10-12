@@ -195,7 +195,7 @@ function carregarStorageHarness() {
   context.window = context;
   context.addEventListener = () => {};
   context.googleIdentity = { getOwnerEmail: () => 'teste@example.com', getIdToken: () => 'token-de-teste' };
-  const contextoDadosPath = path.resolve(__dirname, '../../assets/js/app/contexto-dados.js');
+  const contextoDadosPath = path.resolve(__dirname, '../../assets/js/app-shell/contexto-dados.js');
   vm.runInNewContext(fs.readFileSync(contextoDadosPath, 'utf8'), context, { filename: contextoDadosPath });
   context.contextoDados.capturar();
   context.APP_API_CONFIG = {
@@ -449,7 +449,7 @@ function criarHarnessModalAcaoSlot({ aulas, compromisso, dataAlvoStr = '30/08/20
   context.window = context;
   context.addEventListener = () => {};
   context.googleIdentity = { getOwnerEmail: () => 'teste@example.com', getIdToken: () => 'token-de-teste' };
-  const contextoDadosPath = path.resolve(__dirname, '../../assets/js/app/contexto-dados.js');
+  const contextoDadosPath = path.resolve(__dirname, '../../assets/js/app-shell/contexto-dados.js');
   vm.runInNewContext(fs.readFileSync(contextoDadosPath, 'utf8'), context, { filename: contextoDadosPath });
   context.contextoDados.capturar();
   context.salvarDados = criarSalvamentoFixture(context);

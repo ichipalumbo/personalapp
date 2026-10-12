@@ -28,7 +28,7 @@ Este README foi estruturado para facilitar onboarding tecnico e navegacao rapida
 
 - Ponto de entrada da interface: `index.html`
 - Entrada SPA compativel: `assets/js/app.js`
-- App shell da interface: `assets/js/app/bootstrap.js`, `assets/js/app/router.js`, `assets/js/app/service-worker.js`
+- App shell da interface: `assets/js/app-shell/bootstrap.js`, `assets/js/app-shell/router.js`, `assets/js/app-shell/service-worker.js`
 - Estado global compartilhado: `assets/js/state.js`
 - Sincronizacao e persistencia (API + localStorage): `assets/js/storage.js`
 - Autenticacao Google (token JWT): `assets/js/auth/google-identity.js`
@@ -38,14 +38,14 @@ Este README foi estruturado para facilitar onboarding tecnico e navegacao rapida
 Se o objetivo for:
 
 - Ajustar navegacao/UX entre telas: comecar em `assets/js/app.js` e `index.html`
-- Ajustar inicializacao da SPA ou ordem de bootstrap: comecar em `assets/js/app.js`, `assets/js/app/bootstrap.js` e `assets/js/app/router.js`
+- Ajustar inicializacao da SPA ou ordem de bootstrap: comecar em `assets/js/app.js`, `assets/js/app-shell/bootstrap.js` e `assets/js/app-shell/router.js`
 - Ajustar a agenda diaria (Home): comecar em `assets/js/view-home.js`
 - Ajustar modais de criacao de agendamento: comecar em `assets/js/modal-agendamento.js`
 - Ajustar edicao/cancelamento/reagendamento: comecar em `assets/js/modal-acao-slot.js`
 - Ajustar regras de recorrencia ou grid mensal: comecar em `assets/js/calendario-engine.js`
 - Ajustar view do calendario (semanal): comecar em `assets/js/view-calendario.js`
 - Ajustar cadastro de alunos: comecar em `assets/js/view-alunos.js`
-- Ajustar utilidades genericas (toast/overlays de sync): comecar em `assets/js/utils-kpi.js`
+- Ajustar utilidades genericas (toast/overlays de sync): comecar em `assets/js/utils-ui.js`
 - Ajustar persistencia/sincronizacao: comecar em `assets/js/storage.js`, `backend/server.js` e `backend/src/`
 - Ajustar autenticacao Google (login/logout/token): comecar em `assets/js/auth/google-identity.js` e `backend/src/middleware/requireAuth.js`
 - Ajustar integracao com Google Calendar: comecar em `assets/js/google-calendar.js`
@@ -102,7 +102,7 @@ personalapp/
 |  |  |- state.js                  <- estado global (alunos, aulas, constantes)
 |  |  |- storage.js                <- sync API + fallback localStorage
 |  |  |  --- [3] Pure Utilities ---
-|  |  |- utils-kpi.js              <- utilidades genericas (toast, overlays de sync)
+|  |  |- utils-ui.js               <- toast unificado + overlays de sync
 |  |  |- utils-datetime.js         <- helpers de data e hora
 |  |  |- utils-formatters.js       <- formatadores de texto e numero
 |  |  |  --- [4] Domain Helpers ---
@@ -133,7 +133,10 @@ personalapp/
 |  |  |- view-alunos.js            <- aba Alunos: CRM de cadastro/edicao
 |  |  |- google-calendar.js        <- integracao Google Calendar (leitura/escrita de eventos)
 |  |  |  --- [8] App Shell ---
-|  |  |- app/
+|  |  |- app-shell/
+|  |  |  |- contexto-dados.js      <- isolamento de estado/cache por sessao (sem credenciais)
+|  |  |  |- recuperacao-dados.js   <- saida explicita para intencao local nao confirmada
+|  |  |  |- coordenador-sync-boot.js <- coordenacao do sync de boot (B2) sobre o cache
 |  |  |  |- bootstrap.js           <- inicializacao da SPA e ordem de startup
 |  |  |  |- router.js              <- navegacao entre abas Home/Financas/Alunos + tela ativa na URL
 |  |  |  |- service-worker.js      <- registro do service worker
@@ -169,10 +172,12 @@ personalapp/
 |  |- test/                        <- suite do backend (node --test)
 |- tests-frontend/                 <- suite do frontend (node --test); pasta separada por causa do
 |  |                                  Root Directory da Vercel (ver .vercelignore)
-|  |- setup/carregar-frontend.js   <- carrega assets/js em contexto vm para os testes
+|  |- setup/                       <- carregar-frontend.js (contexto vm para os testes)
+|  |                                  + harnesses contexto-dados.js e recuperacao-dados.js
 |  |- *.test.js
 |- mocks/
 |  |- ui-runtime/                  <- mock de /api: valida tela sem backend nem Mongo
+|  |  |- sandbox.js                <- fronteira antecipada de mock (rede/storage)
 |  |  |- mock-runtime.js
 |  |  |- scenarios.js
 |  |  |- README.md
@@ -193,14 +198,14 @@ Os arquivos seguem prefixos que indicam sua camada:
 | ------------- | ------------------------------- | ----------------------------------- |
 | `state`       | Estado global                   | `state.js`                          |
 | `storage`     | Persistencia                    | `storage.js`                        |
-| `utils-`      | Utilitarios puros (sem DOM)     | `utils-kpi.js`, `utils-datetime.js` |
+| `utils-`      | Utilitarios puros (sem DOM)     | `utils-ui.js`, `utils-datetime.js` |
 | `alunos-`     | Helpers de dominio (alunos)     | `alunos-helpers.js`                 |
 | `calendario-` | Motor de calendario/recorrencia | `calendario-engine.js`              |
 | `agenda-`     | Logica de agenda                | `agenda-conflitos.js`               |
 | `widget-`     | Componentes UI reutilizaveis    | `widget-stepper-duracao.js`         |
 | `modal-`      | Controladores de modais         | `modal-agendamento.js`              |
 | `view-`       | Views de paginas (abas SPA)     | `view-home.js`                      |
-| `app/`        | App shell SPA                   | `app/bootstrap.js`, `app/router.js` |
+| `app-shell/`  | App shell SPA                   | `app-shell/bootstrap.js`, `app-shell/router.js` |
 | `app`         | Entrada SPA compativel          | `app.js`                            |
 
 ## Ordem de Carregamento dos Scripts (index.html)
@@ -209,58 +214,64 @@ A lista abaixo espelha o `index.html` — a ordem real e a do arquivo, nao a des
 si. Caminhos relativos a `index.html`.
 
 ```
- 0. assets/js/logger.js                                  <- sem dependencias
- 1. assets/js/config/api-config.js                       <- sem dependencias; window.APP_API_CONFIG e lido no TOPO de storage.js (ordem obrigatoria)
- 2. assets/js/state.js                                   <- sem dependencias
- 3. assets/js/storage.js                                 <- depende de config/api-config.js (topo)  // window.sincronizarBancoDados, window.apiFetchBackend
- 4. assets/js/utils-kpi.js                               <- runtime
- 5. assets/js/utils-datetime.js                          <- runtime
- 6. assets/js/utils-formatters.js                        <- runtime
- 7. backend/shared/recurrence-helpers.js                 <- sem dependencias (modulo isomorfico, sem DOM)  // window.recurrenceHelpers
- 8. backend/shared/reposicao-flow-helpers.js             <- sem dependencias (modulo isomorfico, sem DOM)
- 9. assets/js/alunos-helpers.js                          <- runtime
-10. assets/js/calendario-engine.js                       <- depende de recurrence-helpers.js (topo)  // lanca erro se o global nao existir
-11. assets/js/agenda-conflitos.js                        <- runtime
-12. assets/js/widget-stepper-duracao.js                  <- runtime
-13. assets/js/widget-bloqueio.js                         <- runtime
-14. assets/js/widget-swipe-periodo.js                    <- runtime
-15. assets/js/features/modals/scheduling-flow-state.js   <- runtime
-16. assets/js/features/modals/scheduling-serializer.js   <- runtime
-17. assets/js/features/modals/dialog-controller.js       <- runtime
-18. assets/js/modal-agendamento.js                       <- runtime
-19. assets/js/modal-acao-slot.js                         <- runtime
-20. assets/js/agenda-card-template.js                    <- runtime
-21. assets/js/view-home.js                               <- runtime  // window.inicializarHome, window.dataSelecionada
-22. assets/js/view-financas.js                           <- runtime  // window.inicializarFinancas
-23. assets/js/view-calendario.js                         <- runtime
-24. assets/js/cascade-sync-aluno.js                      <- runtime
-25. assets/js/view-alunos.js                             <- runtime  // window.inicializarAlunos
-26. assets/js/auth/google-identity.js                    <- runtime  // window.googleIdentity (isSignedIn, getIdToken, getOwnerEmail)
-27. assets/js/features/user/user-area-session-helper.js  <- runtime
-28. assets/js/settings-modal.js                          <- runtime
-29. assets/js/google-calendar.js                         <- runtime  // window.gcal
-30. mocks/ui-runtime/scenarios.js                        <- sem efeito sem ?mockScenario=<cenario>
-31. mocks/ui-runtime/mock-runtime.js                     <- sem efeito sem ?mockScenario=<cenario>
-32. assets/js/app/service-worker.js                      <- registro do service worker
-33. assets/js/app/router.js                              <- depende dos inicializadores globais das views  // window.__appRouter
-34. assets/js/app/bootstrap.js                           <- orquestra o boot; usa o router
-35. assets/js/app.js                                     <- ultimo (ponto de entrada)
+ 0. mocks/ui-runtime/sandbox.js                          <- fronteira de mock; inerte fora de 127.0.0.2 / ?mockScenario
+ 1. assets/js/logger.js                                  <- sem dependencias
+ 2. assets/js/config/api-config.js                       <- sem dependencias; window.APP_API_CONFIG e lido no TOPO de storage.js (ordem obrigatoria)
+ 3. assets/js/state.js                                   <- sem dependencias
+ 4. assets/js/app-shell/contexto-dados.js                <- consumido no TOPO de storage.js e das views (ordem obrigatoria)
+ 5. assets/js/storage.js                                 <- depende de config/api-config.js e app-shell/contexto-dados.js (topo)  // window.sincronizarBancoDados, window.apiFetchBackend
+ 6. assets/js/utils-ui.js                                <- runtime
+ 7. assets/js/utils-datetime.js                          <- runtime
+ 8. assets/js/utils-formatters.js                        <- runtime
+ 9. backend/shared/recurrence-helpers.js                 <- sem dependencias (modulo isomorfico, sem DOM)  // window.recurrenceHelpers
+10. backend/shared/reposicao-flow-helpers.js             <- sem dependencias (modulo isomorfico, sem DOM)
+11. assets/js/alunos-helpers.js                          <- runtime
+12. assets/js/calendario-engine.js                       <- depende de recurrence-helpers.js (topo)  // lanca erro se o global nao existir
+13. assets/js/agenda-conflitos.js                        <- runtime
+14. assets/js/widget-stepper-duracao.js                  <- runtime
+15. assets/js/widget-bloqueio.js                         <- runtime
+16. assets/js/widget-swipe-periodo.js                    <- runtime
+17. assets/js/features/modals/scheduling-flow-state.js   <- runtime
+18. assets/js/features/modals/scheduling-serializer.js   <- runtime
+19. assets/js/features/modals/dialog-controller.js       <- runtime
+20. assets/js/modal-agendamento.js                       <- runtime
+21. assets/js/modal-acao-slot.js                         <- runtime
+22. assets/js/agenda-card-template.js                    <- runtime
+23. assets/js/view-home.js                               <- runtime  // window.inicializarHome, window.dataSelecionada
+24. assets/js/view-financas.js                           <- runtime  // window.inicializarFinancas
+25. assets/js/view-calendario.js                         <- runtime
+26. assets/js/cascade-sync-aluno.js                      <- runtime
+27. assets/js/view-alunos.js                             <- runtime  // window.inicializarAlunos
+28. assets/js/auth/google-identity.js                    <- runtime  // window.googleIdentity (isSignedIn, getIdToken, getOwnerEmail)
+29. assets/js/features/user/user-area-session-helper.js  <- runtime
+30. assets/js/settings-modal.js                          <- runtime
+31. assets/js/google-calendar.js                         <- runtime  // window.gcal
+32. mocks/ui-runtime/scenarios.js                        <- sem efeito sem ?mockScenario=<cenario>
+33. mocks/ui-runtime/mock-runtime.js                     <- sem efeito sem ?mockScenario=<cenario>
+34. assets/js/app-shell/recuperacao-dados.js             <- runtime  // recuperacao de dados nao confirmados
+35. assets/js/app-shell/coordenador-sync-boot.js         <- depende de contexto-dados.js e storage.js (topo); inerte ate iniciar()
+36. assets/js/app-shell/service-worker.js                <- registro do service worker
+37. assets/js/app-shell/router.js                        <- depende dos inicializadores globais das views  // window.__appRouter
+38. assets/js/app-shell/bootstrap.js                     <- orquestra o boot; usa o router
+39. assets/js/app.js                                     <- ultimo (ponto de entrada)
 ```
 
 **Dependencia de runtime nao governa ordem de carga.** O cabecalho `// Depende de:` de cada
 arquivo descreve o que a funcao precisa **quando executa**, e a maioria nao impoe ordem:
 `agenda-conflitos.js`, por exemplo, declara depender de `view-home.js`, que carrega depois dele.
-So o que e lido **durante a avaliacao do script** exige ordem — hoje sao dois pares, ambos
-protegidos por `throw` explicito no proprio codigo:
+So o que e lido **durante a avaliacao do script** exige ordem — os pares estao catalogados em
+`DEPENDENCIAS_DE_CARGA`, dentro de `tests-frontend/index-html-ordem.test.js`. Estes casos, por
+exemplo, falham com `throw` explicito no proprio codigo se a ordem inverter:
 
 | Precisa vir antes | Dependente | Global lido |
 | --- | --- | --- |
 | `assets/js/config/api-config.js` | `assets/js/storage.js` | `window.APP_API_CONFIG` |
+| `assets/js/app-shell/contexto-dados.js` | `assets/js/storage.js` | `window.contextoDados` |
 | `backend/shared/recurrence-helpers.js` | `assets/js/calendario-engine.js` | `window.recurrenceHelpers` |
 
-`tests-frontend/index-html-ordem.test.js` protege esses pares (secao 8 de
+`tests-frontend/index-html-ordem.test.js` protege **todos** os pares de carga (secao 8 de
 `docs/setup-ambiente-local.md`). Ao adicionar um script novo em `index.html` que leia um global
-no topo do arquivo, acrescente o par la.
+no topo do arquivo, acrescente o par em `DEPENDENCIAS_DE_CARGA`.
 
 ## Papel dos Arquivos Principais
 
@@ -269,13 +280,16 @@ Frontend:
 - `index.html`: estrutura da SPA, containers das telas e modais.
 - `assets/css/style.css`: estilos globais e responsividade.
 - `assets/js/app.js` [TAG-APP-ROUTER]: ponto de entrada estavel que delega a inicializacao para o app shell.
-- `assets/js/app/bootstrap.js`: orquestra startup, bind de navegacao e inicializacao da Home.
-- `assets/js/app/router.js`: controla navegacao entre abas Home / Financas / Alunos e chama os inicializadores globais das views.
-- `assets/js/app/service-worker.js`: centraliza o registro do service worker.
+- `assets/js/app-shell/contexto-dados.js`: isolamento de estado/cache por sessao consumidora; nao emite nem renova credenciais.
+- `assets/js/app-shell/recuperacao-dados.js`: saida explicita para intencao local nao confirmada — nunca reenvia escrita nem desfaz remoto.
+- `assets/js/app-shell/coordenador-sync-boot.js`: coordenacao do sync de boot (B2) sobre o cache; inerte ate `iniciar()`.
+- `assets/js/app-shell/bootstrap.js`: orquestra startup, bind de navegacao e inicializacao da Home.
+- `assets/js/app-shell/router.js`: controla navegacao entre abas Home / Financas / Alunos e chama os inicializadores globais das views.
+- `assets/js/app-shell/service-worker.js`: centraliza o registro do service worker.
 - `assets/js/auth/google-identity.js`: modulo de autenticacao Google (GIS). Expoe `window.googleIdentity` com `initialize()`, `isSignedIn()`, `getIdToken()`, `getOwnerEmail()`, `addAuthChangeListener()`. Deve ser carregado antes de qualquer script que precise do token.
 - `assets/js/state.js` [TAG-STATE]: variaveis de estado global (alunos, aulas, agendaConfig, constantes).
 - `assets/js/storage.js` [TAG-STORAGE]: GET/POST na API e fallback para localStorage. Toda requisicao remota passa por `apiFetchBackend` que injeta o JWT do `window.googleIdentity`.
-- `assets/js/utils-kpi.js` [TAG-UTILS-KPI]: utilidades genericas (toast, overlays de sync) sem calculos de KPI nem exportacao.
+- `assets/js/utils-ui.js` [TAG-UTILS-UI]: componente unico de feedback assincrono (toast unificado + overlays de sync), sem calculos de KPI nem exportacao.
 - `assets/js/utils-datetime.js` [TAG-UTILS-DATETIME]: formatacao, conversao e calculo de datas e horas.
 - `assets/js/alunos-helpers.js` [TAG-ALUNOS-HELPERS]: lookup de aluno por ID, HTML de selects.
 - `assets/js/calendario-engine.js` [TAG-CALENDARIO-ENGINE]: math de recorrencia (diaria/semanal/mensal/anual) + grid mensal.
@@ -290,7 +304,7 @@ Frontend:
 - `assets/js/view-home.js` [TAG-VIEW-HOME]: aba Home — agenda diaria, dashboard e navegacao de datas.
 - `assets/js/view-financas.js` [TAG-VIEW-FINANCAS]: aba Financas — ciclo financeiro e cobrancas.
 - `assets/js/view-calendario.js` [TAG-VIEW-CALENDARIO]: aba Calendario — visao semanal, sem mensal e sem KPI dashboard.
-- `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com KPIs, cadastro e edicao.
+- `assets/js/view-alunos.js` [TAG-VIEW-ALUNOS]: aba Alunos — listagem com indicadores do card do aluno, cadastro e edicao.
 - `assets/js/google-calendar.js`: ponte frontend → backend para a integracao com Google Calendar. Ela nao chama a API do Google; o sync real acontece em `backend/src/services/gcalSyncService.js` e nos controllers do backend. `salvarEventoComGCal` ignora os argumentos que recebe (`_agendamento`, `opcoes`) e apenas garante a conexao antes de disparar `salvarDados`.
 
 ## Contrato de Camadas (Calendario > Dia)
@@ -374,14 +388,26 @@ Payload de escrita — `POST`/`PUT /agendamentos[/:id]`:
 
 ## Testes
 
-Ha 86 testes no projeto, executados com `node --test` via `npm test` dentro de `backend/`.
+Duas suites independentes, ambas com `node --test` via `npm test` (cada uma com seu
+`package.json`). A contagem de cada suite sai da propria execucao — nao copie numero de
+documentacao: ele envelhece.
 
-Comando exato:
+- `backend/` — regras de negocio, financas, reposicoes e sincronizacao com o Google Calendar.
+- `tests-frontend/` — logica pura do frontend e a ordem das tags `<script>` do `index.html`.
+
+Comandos exatos:
 
 ```bash
 cd backend
 npm test
 ```
+
+```bash
+cd tests-frontend
+npm test
+```
+
+Passo a passo do ambiente, viewport de referencia do mobile e armadilhas: `docs/setup-ambiente-local.md`.
 
 ## Como Executar Localmente
 

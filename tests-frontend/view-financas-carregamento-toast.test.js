@@ -5,7 +5,7 @@
 // executarOperacaoRemotaComFeedback (contexto "carregandoFinancas",
 // exibirFalha: false, silenciosoUI respeitando o refresh em background).
 //
-// Este teste usa REAL o wrapper de storage.js e REAL o toast de utils-kpi.js
+// Este teste usa REAL o wrapper de storage.js e REAL o toast de utils-ui.js
 // (não são stubs) — o que permite validar o limiar de 3s de verdade.
 const fs = require('fs');
 const path = require('path');
@@ -72,8 +72,8 @@ async function carregarAmbiente() {
   };
   window.formatarMoeda = (valor) => `R$ ${Number(valor).toFixed(2)}`;
 
-  // Ordem de carregamento real da página: utils-kpi (toast) antes de storage (wrapper).
-  vm.runInContext(lerArquivo('utils-kpi.js'), dom.getInternalVMContext());
+  // Ordem de carregamento real da página: utils-ui (toast) antes de storage (wrapper).
+  vm.runInContext(lerArquivo('utils-ui.js'), dom.getInternalVMContext());
   vm.runInContext(lerArquivo('storage.js'), dom.getInternalVMContext());
   vm.runInContext(lerArquivo('view-financas.js'), dom.getInternalVMContext());
 

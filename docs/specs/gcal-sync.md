@@ -126,7 +126,7 @@ A decisão acima é coerente com a API do Google e com a RFC 5545.
   `recorrenciaDataFim` como inclusiva.
 - `COUNT` limita o conjunto gerado pela `RRULE`, e o `EXDATE` remove **depois** da expansão.
   Logo, a ocorrência cancelada continua consumindo uma vaga do `COUNT`. A regra foi
-  implementada em `contarOcorrenciasAteData` (`assets/js/shared/recurrence-helpers.js`) de
+  implementada em `contarOcorrenciasAteData` (`backend/shared/recurrence-helpers.js`) de
   propósito; quem “corrigir” para descontar exceções reintroduz divergência entre app e Google.
 
 > **Observação de confirmação**: as armadilhas acima foram confirmadas na RFC 5545 e no
@@ -250,7 +250,7 @@ agora são a entrada para o mapeamento do item 3, não um conjunto de eventos av
 ## 4.3 Mapeamento do modelo local para `RRULE`
 
 A tabela abaixo é o mapa de implementação da Rodada C e foi montada a partir do motor local
-em `assets/js/shared/recurrence-helpers.js` e do serializador em
+em `backend/shared/recurrence-helpers.js` e do serializador em
 `assets/js/features/modals/scheduling-serializer.js`.
 
 | Nosso campo | Valor | `RRULE` |
@@ -267,16 +267,16 @@ em `assets/js/shared/recurrence-helpers.js` e do serializador em
 | `excecoes[]` | datas em `pt-BR` | `EXDATE` |
 
 A lista de nomes de dia em pt-BR vem da fonte já usada no engine: `DEFAULT_DIAS_SEMANA` em
-`assets/js/shared/recurrence-helpers.js:12` e `window.getNomesDiasSemana` em
+`backend/shared/recurrence-helpers.js:12` e `window.getNomesDiasSemana` em
 `assets/js/utils-datetime.js:26-28`. O mapa é: `Domingo, Segunda, Terça, Quarta, Quinta,
 Sexta, Sábado`, que correspondem aos códigos RFC `SU, MO, TU, WE, TH, FR, SA`.
 
 Pontos em que o engine local já coincide com a RFC e não precisam de trabalho:
 
 - A semana é deslocada para segunda-feira em `resolverCompromissoRecorrenteNaData`
-  (`assets/js/shared/recurrence-helpers.js:65-74`), equivalente ao `WKST=MO` default da RFC.
+  (`backend/shared/recurrence-helpers.js:65-74`), equivalente ao `WKST=MO` default da RFC.
 - No caso mensal por dia do mês, o motor exige `dataRef.getDate() === dataCriacao.getDate()`
-  (`assets/js/shared/recurrence-helpers.js:77-85`), o que reproduce o comportamento de
+  (`backend/shared/recurrence-helpers.js:77-85`), o que reproduce o comportamento de
   `BYMONTHDAY`: meses sem esse dia são simplesmente ignorados.
 
 > **Fonte da serialização**: o payload canônico nasce em `aplicarRecorrenciaLegada`
@@ -292,7 +292,7 @@ Pontos em que o engine local já coincide com a RFC e não precisam de trabalho:
 ### 5.1 Gatilhos
 
 - **Webhook**: `gcalWebhookController` → `syncConnectionByWebhookHeaders(channelId, resourceId)`.
-- **Boot**: `assets/js/app/bootstrap.js` dispara `renovarCanalGoogleCalendar()` logo após a navegação inicial, com guarda `gcalWatchCheckDisparado` e `setTimeout(..., 0)`. A navegação inicial é `router.navigateTo(router.getTelaInicial())` — desde a Etapa 7 a tela vem da URL (`#tela-home` por padrão), não de um literal fixo.
+- **Boot**: `assets/js/app-shell/bootstrap.js` dispara `renovarCanalGoogleCalendar()` logo após a navegação inicial, com guarda `gcalWatchCheckDisparado` e `setTimeout(..., 0)`. A navegação inicial é `router.navigateTo(router.getTelaInicial())` — desde a Etapa 7 a tela vem da URL (`#tela-home` por padrão), não de um literal fixo.
 - **Manual**: botão `btnRenewGoogleCalendarWatch` no modal de configurações chama o mesmo endpoint de renovação e também dispara o catch-up simultâneo.
 - **Manual/automático**: `iniciarSyncGoogleCalendar` no bootstrap, quando há conexão.
 
@@ -349,7 +349,7 @@ Esse comportamento corrige o defeito anterior em que o full sync apagava bloquei
 
 ### 5.1.3 Gatilho no boot e escape hatch
 
-A verificação do canal no boot está ancorada em `assets/js/app/bootstrap.js`, logo após a
+A verificação do canal no boot está ancorada em `assets/js/app-shell/bootstrap.js`, logo após a
  navegação inicial, protegida por `gcalWatchCheckDisparado` e disparada com
  `setTimeout(..., 0)` para não bloquear o primeiro render. A navegação inicial é
  `router.navigateTo(router.getTelaInicial())`: desde a Etapa 7 a tela vem da URL
@@ -631,7 +631,7 @@ mudança na regra de cálculo do app.
 
 **Problema**: nossas `excecoes` são strings de data em `pt-BR` e o engine trata exclusão por
 `dataStr = dataAlvo.toLocaleDateString('pt-BR')` em `checarCompromissoNaData`
-(`assets/js/shared/recurrence-helpers.js:109-115`). Isso funciona para recorrência sem hora,
+(`backend/shared/recurrence-helpers.js:144-147`). Isso funciona para recorrência sem hora,
 mas não é confiável quando o evento tem horário: `EXDATE` precisa casar com o valor do
 `DTSTART`, inclusive hora e `TZID`.
 
@@ -657,7 +657,7 @@ como defeito funcional, fica registrado como observação, não como pendência 
 
 A sincronização de leitura do Google Calendar é disparada em três pontos do boot:
 
-- `assets/js/app/bootstrap.js` (gatilho de renovação + sincronização);
+- `assets/js/app-shell/bootstrap.js` (gatilho de renovação + sincronização);
 - listener de auth-change (`googleIdentity.addAuthChangeListener`);
 - `visibilitychange` com auto-refresh silencioso.
 
@@ -680,7 +680,7 @@ assume tudo a partir da data editada.
 fica finita e não produz nenhuma ocorrência válida, a remoção não pode depender de uma
 comparação de datas invertidas. A regra correta é verificar se sobrou alguma ocorrência real, e
 isso deve ser decidido por `checarCompromissoNaData` e pelos helpers de
-`assets/js/shared/recurrence-helpers.js`. A herança de término no split também cobre o caso em
+`backend/shared/recurrence-helpers.js`. A herança de término no split também cobre o caso em
 que a mãe fica vazia: a filha herda quando o fim original é posterior ou igual à data do corte.
 Na rodada de 2026-08-31, a herança de término passou a cobrir a mãe finita por contagem de
 ocorrências, calculando o fim efetivo a partir da data de início original e usando como saída

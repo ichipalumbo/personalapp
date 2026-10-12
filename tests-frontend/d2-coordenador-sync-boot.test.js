@@ -64,13 +64,13 @@ function ambiente(t, opcoes = {}) {
         assert.equal(init.headers.get('Authorization'), 'Bearer token-d2');
         return a.responder(chamada);
     };
-    ['assets/js/state.js', 'assets/js/app/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
+    ['assets/js/state.js', 'assets/js/app-shell/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
     const c = w.contextoDados;
     c.iniciar();
     if (opcoes.cache !== 'ausente') c.salvarPrincipal(snapshot(opcoes.cache === 'vazio'));
     w.hidratarCacheDados();
     if (opcoes.sessao === false) token = null;
-    carregar(dom, 'assets/js/app/coordenador-sync-boot.js');
+    carregar(dom, 'assets/js/app-shell/coordenador-sync-boot.js');
     const b2 = w.syncBootDados;
     w.atualizarViewAtualAposSync = async (contexto) => { a.renders.push(contexto); return true; };
     a.c = c;

@@ -71,7 +71,7 @@ function ambiente(t, opcoes = {}) {
         if (rota === 'configuracao/grade_horarios') return resposta({ horaInicio: '06:00', horaFim: '22:00' });
         return resposta([]);
     };
-    ['assets/js/state.js', 'assets/js/app/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
+    ['assets/js/state.js', 'assets/js/app-shell/contexto-dados.js', 'assets/js/storage.js'].forEach((arquivo) => carregar(dom, arquivo));
     window.contextoDados.iniciar();
     if (opcoes.cache !== 'ausente') window.contextoDados.salvarPrincipal(snapshot(opcoes.cache === 'vazio'));
     if (opcoes.cache === 'outra-conta') conta = 'bia-d1@example.com';
@@ -83,8 +83,8 @@ function ambiente(t, opcoes = {}) {
         await Promise.all(listeners.map((fn) => fn({ ownerEmail: conta })));
     };
     a.iniciarShell = async () => {
-        carregar(dom, 'assets/js/app/router.js');
-        carregar(dom, 'assets/js/app/bootstrap.js');
+        carregar(dom, 'assets/js/app-shell/router.js');
+        carregar(dom, 'assets/js/app-shell/bootstrap.js');
         await window.__appBootstrap.initialize();
     };
     a.tela = (nome) => { a.atual = nome; };

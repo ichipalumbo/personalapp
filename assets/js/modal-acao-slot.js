@@ -5,7 +5,7 @@
 //             widget-stepper-duracao.js (aplicarLimitesDuracaoPorContexto, sincronizarSteppersDuracao),
 //             widget-bloqueio.js (ehBloqueioDiaInteiroCompromisso, atualizarEstadoBloqueioDiaInteiroEdicao),
 //             agenda-conflitos.js (getCompromissoSerializadoParaConflito, getConflitosNoDia, getDatasConflitoRecorrencia, getConflitosRecorrenciaEmDatas, gerarResumoConflitosDatas),
-//             utils-kpi.js (mostrarToast), view-home.js (inicializarHome, dataSelecionada, dataAlvoAcaoStr — em runtime)
+//             utils-ui.js (mostrarToast), view-home.js (inicializarHome, dataSelecionada, dataAlvoAcaoStr — em runtime)
 // Expõe: window.idCompromissoSelecionado, window.abrirModalAcaoSlot, window.fecharModalAcaoSlot,
 //         window.atualizarAvisoConflitoEdicao, window.getLabelEscopoRecorrencia,
 //         window.getResumoEscopoRecorrencia, window.atualizarResumoEscopoRecorrencia,

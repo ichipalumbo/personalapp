@@ -14,7 +14,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { JSDOM } = require('jsdom');
 
-const CAMINHO_ROUTER = path.resolve(__dirname, '..', 'assets', 'js', 'app', 'router.js');
+const CAMINHO_ROUTER = path.resolve(__dirname, '..', 'assets', 'js', 'app-shell', 'router.js');
 
 const HTML = `<!doctype html><html><body>
     <main>

@@ -6,7 +6,7 @@
 //             widget-bloqueio.js (atualizarEstadoBloqueioDiaInteiro*),
 //             agenda-conflitos.js (getDatasConflitoRecorrencia, getConflitosRecorrenciaEmDatas, gerarResumoConflitosDatas),
 //             scheduling-serializer.js (serializarRascunhoAgendamento),
-//             utils-kpi.js (mostrarToast), view-home.js (inicializarHome — em runtime),
+//             utils-ui.js (mostrarToast), view-home.js (inicializarHome — em runtime),
 //             modal-acao-slot.js (abrirReagendarAulaModalSlot — em runtime)
 // Expõe: window.abrirNovoAgendamento, window.abrirEscolhaTipoModal, window.fecharEscolhaTipoModal,
 //         window.abrirAgendamentoModal, window.selecionarTipoAgendamento,

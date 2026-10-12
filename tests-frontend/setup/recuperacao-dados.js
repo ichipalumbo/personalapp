@@ -103,7 +103,7 @@ async function criarAmbiente(t, { discoInicial, criarPendencia = true } = {}) {
     t.after(() => assert.ok(chamadas.every((c) => c.method === 'GET'), 'Todos os caminhos devem ser somente leitura'));
     if (discoInicial) Object.entries(discoInicial).forEach(([chave, valor]) => window.localStorage.setItem(chave, valor));
     carregar(dom, 'assets/js/state.js');
-    carregar(dom, 'assets/js/app/contexto-dados.js');
+    carregar(dom, 'assets/js/app-shell/contexto-dados.js');
     carregar(dom, 'assets/js/storage.js');
     const contexto = window.contextoDados;
     contexto.iniciar();
@@ -128,7 +128,7 @@ async function criarAmbiente(t, { discoInicial, criarPendencia = true } = {}) {
     [
         'assets/js/features/modals/dialog-controller.js',
         'assets/js/view-financas.js', 'assets/js/view-alunos.js',
-        'assets/js/app/recuperacao-dados.js'
+        'assets/js/app-shell/recuperacao-dados.js'
     ].forEach((arquivo) => carregar(dom, arquivo));
     // Cabeçalho e handlers reais; não inicia leitura complementar implicitamente.
     window.renderizarFinancas();

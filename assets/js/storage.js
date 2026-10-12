@@ -1,6 +1,6 @@
 // [TAG-STORAGE] storage.js
 // Responsabilidade: Persistencia de dados — sync com API REST (Vercel/MongoDB) e fallback localStorage
-// Depende de: config/api-config.js, state.js (alunos, aulas, agendaConfig), utils-kpi.js (mostrarToast)
+// Depende de: config/api-config.js, state.js (alunos, aulas, agendaConfig), utils-ui.js (mostrarToast)
 // Expõe: carregarDados, salvarDados, obterAlunos, obterAulas, obterReposicoes,
 //         obterLimitesGrade, atualizarAlunos, atualizarAulas, atualizarReposicoes,
 //         atualizarLimitesGrade, window.faturamentoMeta
@@ -8,7 +8,7 @@ const APP_API_CONFIG = window.APP_API_CONFIG;
 const CONTEXTO_DADOS = window.contextoDados;
 
 if (!CONTEXTO_DADOS) {
-    throw new Error('assets/js/app/contexto-dados.js precisa ser carregado antes de assets/js/storage.js.');
+    throw new Error('assets/js/app-shell/contexto-dados.js precisa ser carregado antes de assets/js/storage.js.');
 }
 
 if (!APP_API_CONFIG || typeof APP_API_CONFIG.apiBaseUrl !== 'string' || typeof APP_API_CONFIG.apiRootUrl !== 'string') {

@@ -81,7 +81,7 @@ Valores possíveis de **Status**: `Rascunho` · `Aprovada, não implementada` ·
 
 - Sempre passe o **caminho completo** da spec no prompt (ex.: `docs/specs/financas-ciclo-cobranca.md`). Referência solta pelo nome faz o agente procurar no lugar errado — e ele costuma seguir em frente sem avisar.
 - A spec deve resolver explicitamente os casos de borda. O que estiver fora dela deve estar na seção "Fora de escopo" da própria spec, para o agente não inventar solução.
-- Instruções permanentes para o agente de código ficam em `.github/copilot-instructions.md`, não aqui; skills vendorizadas ficam em `.agents/skills/`.
+- Instruções permanentes para o agente de código ficam em `.github/copilot-instructions.md`, não aqui; skills vendorizadas ficam em `.agents/skills/`. Agentes customizados do VS Code ficam em `.github/agents/` (ex.: `arquiteto-software.agent.md`, que planeja diagnóstico/plano e não implementa código).
 
 ---
 
