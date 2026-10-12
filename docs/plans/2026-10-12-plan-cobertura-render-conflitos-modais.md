@@ -1,6 +1,6 @@
 # Plano — Cobertura automatizada do render do Dia + lacunas vizinhas (item 0.12)
 
-> **Status**: aberto — T01–T03 executados (2026-10-12); T04–T07 pendentes
+> **Status**: aberto — T01–T04 executados (2026-10-12); T05–T07 pendentes
 > **Abertura**: 2026-10-12
 > **Responsável**: dono do repositório + agente
 > **Branch**: `feat/cobertura-render-conflitos-modais`
@@ -214,7 +214,7 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 | Remover o dedup `gruposVistos` | T03 — contêiner único por banda | falhou como esperado (3 contêineres; esperado 1) | sim |
 | Remover o tie-break `|| a.end - b.end` | T03 — ordem das linhas | falhou como esperado (tri-a antes de tri-b) | sim |
 | Incluir dia inteiro no grafo de sobreposição | T03 — dia inteiro | falhou como esperado (bloqueio ganhou formato Outlook) | sim |
-| Pular eventos no loop das linhas | T04 — unicidade/contagem | — | — |
+| Pular eventos no loop das linhas | T04 — unicidade/contagem | falhou como esperado (6 linhas em vez de 7; e 2 em vez de 3 na banda com externo) | sim |
 | Inverter `inicioA < fimB && inicioB < fimA` | T05 — colisão | — | — |
 | Limite 6 → 5 em `gerarResumoConflitosDatas` | T05 — resumo | — | — |
 | Omitir um campo do payload no `serializarRascunhoAgendamento` | T06 — fluxo feliz | — | — |
@@ -252,6 +252,13 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 - **Resultado**: bandas travadas — dupla parcial e par com início igual em colunas Outlook (`left` 0%/50%, `width` `calc(50% - 4px)`, sem contêiner); tripla em contêiner único com 3 linhas na ordem início/desempate-por-fim e hora comprimida; dia inteiro fora do grafo, largura total e sem formato. Um assert do próprio teste foi corrigido na execução (altura do dia inteiro: 1536px, não 960px — confusão minutos×px do teste, não do render).
 - **Suíte antes/depois**: frontend **338/338 → 342/342** (medidos em 2026-10-12); pós-reversão das mutações reconfirmado 342/342.
 - **Desvio do plano**: nenhum.
+- **Decisão adicional tomada**: —
+
+### 2026-10-12 — T04 executado (bordas do render)
+- **Arquivos alterados**: `tests-frontend/render-dia.test.js` (+4 testes); uma mutação temporária em `assets/js/view-home.js`, revertida (arquivo sem alteração final — conferido no git).
+- **Resultado**: bordas travadas — dia vazio monta a grade (32 slots de 30min em 06:00–22:00) sem nenhum card; 7 aulas de 30min no mesmo span viram um contêiner `top 288px / height 48px` com 7 linhas, cada id exatamente uma vez (sem perda/duplicata); evento `google_external` na banda sai como `<div class="card-bloqueio-externo formato-linha">` sem `onclick` e com `title`, enquanto as aulas da mesma banda seguem `<button>`; deslocamento e bloqueio interno seguem `<button>` com `onclick` de ação.
+- **Suíte antes/depois**: frontend **342/342 → 346/346** (medidos em 2026-10-12); pós-reversão da mutação reconfirmado 346/346.
+- **Desvio do plano**: nenhum. O clipping visual de 7 linhas em 48px não é observável em jsdom — comentário no teste remete aos residuais da §10.
 - **Decisão adicional tomada**: —
 
 ## 13. Achados não alterados
