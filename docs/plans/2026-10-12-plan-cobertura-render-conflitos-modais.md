@@ -1,6 +1,6 @@
 # Plano — Cobertura automatizada do render do Dia + lacunas vizinhas (item 0.12)
 
-> **Status**: aberto — T01 executado (2026-10-12); T02–T07 pendentes
+> **Status**: aberto — T01 e T02 executados (2026-10-12); T03–T07 pendentes
 > **Abertura**: 2026-10-12
 > **Responsável**: dono do repositório + agente
 > **Branch**: `feat/cobertura-render-conflitos-modais`
@@ -209,7 +209,7 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 
 | Mutação aplicada | Teste que deve falhar | Resultado observado | Restaurado? |
 |---|---|---|---|
-| Suprimir a emissão do card no ramo sem banda | T02 — fumaça | — | — |
+| Suprimir a emissão do card no ramo sem banda | T02 — fumaça | falhou como esperado (0 cards; esperado 1) | sim |
 | Limiar de banda `>= 3` → `>= 2` | T03 — dupla vira linha | — | — |
 | Remover o dedup `gruposVistos` | T03 — contêiner único por banda | — | — |
 | Remover o tie-break `|| a.end - b.end` | T03 — ordem das linhas | — | — |
@@ -239,6 +239,13 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 - **Suíte antes/depois**: não se aplica (somente leitura + este plano).
 - **Desvio do plano**: nenhum.
 - **Decisão adicional tomada**: split/reposição ficam fora do T07 (já cobertos no backend); fluxo completo de criação recorrente e escolha inicial de tipo/FAB declarados fora da frente (§10).
+
+### 2026-10-12 — T02 executado (fumaça do render)
+- **Arquivos alterados**: `tests-frontend/render-dia.test.js` (novo); mutação temporária revertida em `assets/js/view-home.js` (arquivo sem alteração final — conferido no git).
+- **Resultado**: primeiro teste executando `renderizarAgendaDia('agendaGridHomeHome')` em jsdom com módulos reais — grade montada (altura 1536px em grade 06:00–22:00 injetada), card único `<button>` posicionado (top 288px / height 96px), `onclick` de ação e ausência de formato de banda verificados. Prova por mutação: a supressão do card no ramo sem banda derruba exatamente o assert do card (0 ≠ 1).
+- **Suíte antes/depois**: frontend **337/337 → 338/338** (medidos em 2026-10-12); pós-reversão da mutação reconfirmado 338/338.
+- **Desvio do plano**: nenhum.
+- **Decisão adicional tomada**: fixture usa `agendaConfig` 06:00–22:00 (≠ padrão 07–21) para provar que o estado injetado dirige o render.
 
 ## 13. Achados não alterados
 
