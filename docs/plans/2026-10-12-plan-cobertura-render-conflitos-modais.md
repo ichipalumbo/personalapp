@@ -1,6 +1,6 @@
 # Plano — Cobertura automatizada do render do Dia + lacunas vizinhas (item 0.12)
 
-> **Status**: aberto — T01–T07 executados (2026-10-12); T08 pendente
+> **Status**: fechado — T01–T08 executados (2026-10-12)
 > **Abertura**: 2026-10-12
 > **Responsável**: dono do repositório + agente
 > **Branch**: `feat/cobertura-render-conflitos-modais`
@@ -17,12 +17,12 @@ Cobrir com testes automatizados, na suíte de frontend (`node --test` + `jsdom`)
 
 ## 2. Critérios de aceite
 
-- [ ] Render do Dia coberto no jsdom: fumaça (grade + card) e regras de banda (T02–T04).
-- [ ] `agenda-conflitos.js`: coberto o que o inventário (T01) apontar como descoberto, **sem duplicar** a suíte de backend existente.
-- [ ] Modais: fluxos principais + um caminho de erro/validação por modal (decisão 1 = B) (T06–T07).
-- [ ] Cada teste novo provado por mutação — tabela da §11 preenchida com resultado observado e restauração conferida.
-- [ ] Nenhum arquivo de produção alterado; se um alvo se provar intestável sem mudar produção, parar e escalar decisão (não refatorar por conta própria).
-- [ ] Números de suíte medidos antes/depois registrados na §12; lacunas residuais declaradas na §10.
+- [x] Render do Dia coberto no jsdom: fumaça (grade + card) e regras de banda (T02–T04).
+- [x] `agenda-conflitos.js`: coberto o que o inventário (T01) apontar como descoberto, **sem duplicar** a suíte de backend existente.
+- [x] Modais: fluxos principais + um caminho de erro/validação por modal (decisão 1 = B) (T06–T07).
+- [x] Cada teste novo provado por mutação — tabela da §11 preenchida com resultado observado e restauração conferida.
+- [x] Nenhum arquivo de produção alterado; se um alvo se provar intestável sem mudar produção, parar e escalar decisão (não refatorar por conta própria).
+- [x] Números de suíte medidos antes/depois registrados na §12; lacunas residuais declaradas na §10.
 
 ## 3. Decisões fechadas
 
@@ -282,12 +282,19 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 - **Desvio do plano**: nenhum. Ajuste de execução no próprio teste: o jsdom com `runScripts: 'outside-only'` não compila atributos `onclick` (isso exige `'dangerously'`), então o teste de fechar verifica a fiação do botão Voltar (atributo `onclick="fecharModalAcaoSlot()"`) e chama a mesma função do atributo.
 - **Decisão adicional tomada**: —
 
+### 2026-10-12 — T08 executado (fechamento)
+- **Arquivos alterados**: este plano (§2 — critérios marcados; §13 — achado do resumo anotado como tratado; §15 — fechamento) e `docs/roadmap.md` (0.12 → `[x]` na tabela e na seção, com nota de encerramento).
+- **Resultado**: frente fechada com as duas suítes medidas em 2026-10-12 — frontend **360/360** e backend **232/232** (EXIT=0 nas duas). §11 completa: 12 mutações com resultado observado e restauração conferida; nenhum arquivo de produção alterado em nenhuma rodada (conferido no git rodada a rodada). Critérios da §2 todos atendidos.
+- **Suíte antes/depois**: não se aplica (somente documentação + medição final; os números acima são as medições de fechamento).
+- **Desvio do plano**: nenhum.
+- **Decisão adicional tomada**: —
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
 |---|---|---|---|
 | Cobertura **parcial** de `agenda-conflitos.js` e dos modais já existe na suíte de backend (harnesses `vm` de GCal) — a declaração "segue sem cobertura" do item 3.1/instruções precisa de releitura quando o 3.1 for executado | verificado na abertura; fora do escopo desta frente corrigir a redação do 3.1 | roadmap 3.1 (na execução dele) | dono |
-| `gerarResumoConflitosDatas` sem cobertura — **confirmado no T01** (0 testes) | levantamento inicial | este plano (T05) | — |
+| `gerarResumoConflitosDatas` sem cobertura — **confirmado no T01** (0 testes) | levantamento inicial | este plano (T05 — tratado) | — |
 | Escolha inicial de tipo/FAB (`abrirEscolhaTipoModal`/`abrirNovoAgendamento`) e fluxo completo de criação recorrente sem cobertura | fora do escopo contido de T06/T07 (decisão 1 = B cobre erro/validação, não variantes de abertura) | declarado na §10; avaliar em rodada futura | dono |
 
 ## 14. Deploy e rollback
@@ -299,7 +306,7 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: —
-- **Pendências**: —
-- **Riscos aceitos**: —
-- **Data de fechamento**: —
+- **Critérios atendidos**: os 6 critérios da §2 — render do Dia coberto no jsdom (T02–T04); lacunas de `agenda-conflitos.js` cobertas sem duplicar o backend (T05); fluxos principais + erro/validação dos dois modais (T06–T07); 12 mutações da §11 provadas com restauração conferida; nenhum arquivo de produção alterado; números medidos antes/depois na §12.
+- **Pendências**: nenhuma bloqueante — residuais declarados na §10 (CSS/layout real, animações, modo Semana, Finanças, telas `view-*`, GCal real/backend) e na §13 (escolha inicial de tipo/FAB e recorrência completa seguem fora, para avaliação futura).
+- **Riscos aceitos**: clipping visual de bandas não é observável em jsdom (declarado no T04); asserts são sobre classes/estilo inline (contrato do render), não sobre pixels; validação de UI continua manual fora do escopo coberto.
+- **Data de fechamento**: 2026-10-12

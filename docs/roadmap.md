@@ -50,7 +50,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[x]`  | 0.2                                                              |
 | 0     | 0.10 Deduplicação de `calcularPrazoReposicao`    | `[x]`  | —                                                                |
 | 0     | 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica cobrança | `[x]`  | —                                                                |
-| 0     | 0.12 Cobertura automática do render do Dia       | `[~]`  | —                                                                |
+| 0     | 0.12 Cobertura automática do render do Dia       | `[x]`  | plano 2026-10-12 encerrado; frontend 360/360                     |
 | 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
 | 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
 | 1     | 1.3 Observações por aula ou por aluno            | `[x]`  | —                                                                |
@@ -236,14 +236,15 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ---
 
-### [~] 0.12 Cobertura automatizada do render do Dia
+### [x] 0.12 Cobertura automatizada do render do Dia
 
-- **O que é**: testes automatizados para a camada de render da visão do Dia (`view-home.js` / `agenda-card-template.js`), que hoje segue sem cobrir — a validação é manual em browser, como previsto na seção 10 das instruções do repositório.
+- **O que é**: testes automatizados para a camada de render da visão do Dia (`view-home.js` / `agenda-card-template.js`), que até 2026-10-12 seguia sem cobertura automatizada — a validação era manual em browser, como previsto na seção 10 das instruções do repositório.
 - **Como a lacuna apareceu**: a Etapa 5 (achado 4.12 — eventos simultâneos) mudou o desenhamento das bandas sobrepostas em agosto/setembro de 2026 (colunas para duplas, linhas para 3+, fundo nivelado e grade esticada). Enquanto a suíte de frontend não cobre o render, a nova regra de bandas (banda ≥ 3 vira linhas; o par de início igual fica em colunas; o dedup de componentes da banda) só pode ser validada de forma manual e visual, nos viewports de referência 433/390/320.
 - **Lacunas vizinhas** que cabem no mesmo item, se a cobertura for construída por lá: `agenda-conflitos.js` e os modais (ambos já listados no 3.1/3.5).
 - **Por que importa**: o motor `calcularColisoes` é sensível (área §7 das instruções) e alimenta agenda e financeiro; um bug de layout que não muda geometria do motor pode passar despercebido sem rede de proteção na camada de desenhamento.
 - **Caminho**: o `jsdom` já está instalado em `tests-frontend/` como `devDependency` e já é usado por testes de DOM existentes; o setup `tests-frontend/setup/carregar-frontend.js` resolve o carregamento dos scripts via contexto `vm`.
 - **Plano (ampliado em 2026-10-12)**: [`plans/2026-10-12-plan-cobertura-render-conflitos-modais.md`](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) — inclui as lacunas vizinhas (`agenda-conflitos.js` e os modais) por decisão do dono; branch `feat/cobertura-render-conflitos-modais`. Inventário de abertura: conflitos e modais já têm cobertura parcial na suíte de backend (harnesses `vm` de GCal); o render do Dia não tem nenhuma execução automatizada.
+- **Encerrado em 2026-10-12**: plano executado de ponta a ponta (T01–T08) — render do Dia (fumaça, regras de banda e bordas), lacunas de `agenda-conflitos.js` e fluxos principais + caminho de erro/validação dos dois modais cobertos na suíte de frontend; 12 mutações provadas com restauração conferida; frontend 337 → **360/360** e backend **232/232** (medidos em 2026-10-12); nenhum arquivo de produção alterado. Residuais declarados na §10/§13 do plano (CSS/layout real, animações, modo Semana, telas `view-*`, GCal real/backend, split/reposição de modal, escolha inicial de tipo/FAB e recorrência completa).
 - **Esforço**: Baixo–Médio (a infraestrutura de carregamento já existe e o `jsdom` já é usado por outros testes; falta a cobertura do render do Dia).
 - **Referências**: [`2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md`](reports/2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md) e seção 5.3/6.4/9.3 da spec de reposições.
 
