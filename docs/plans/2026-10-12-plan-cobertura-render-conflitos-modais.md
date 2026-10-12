@@ -1,6 +1,6 @@
 # Plano — Cobertura automatizada do render do Dia + lacunas vizinhas (item 0.12)
 
-> **Status**: aberto — T01–T06 executados (2026-10-12); T07–T08 pendentes
+> **Status**: aberto — T01–T07 executados (2026-10-12); T08 pendente
 > **Abertura**: 2026-10-12
 > **Responsável**: dono do repositório + agente
 > **Branch**: `feat/cobertura-render-conflitos-modais`
@@ -219,8 +219,8 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 | Limite 6 → 5 em `gerarResumoConflitosDatas` | T05 — resumo | falhou como esperado (resumo com "e mais 4" em vez de "e mais 3") | sim |
 | Omitir um campo do payload no `serializarRascunhoAgendamento` | T06 — fluxo feliz | falhou como esperado (fluxo feliz derrubado; erro/validação seguiu verde) | sim |
 | Suprimir a validação de submissão inválida (sem aluno) | T06 — erro/validação (decisão 1 = B) | falhou como esperado (submissão sem aluno passou a gravar; teste de erro derrubado) | sim |
-| Descartar o novo horário no salvar da edição avulsa | T07 — fluxo feliz | — | — |
-| Suprimir o aviso de conflito na edição avulsa | T07 — erro/validação (decisão 1 = B) | — | — |
+| Descartar o novo horário no salvar da edição avulsa | T07 — fluxo feliz | falhou como esperado (fluxo feliz derrubado; os demais seguiram verdes) | sim |
+| Suprimir o aviso de conflito na edição avulsa | T07 — erro/validação (decisão 1 = B) | falhou como esperado (edição passou a gravar; teste de conflito derrubado) | sim |
 
 *Mutações dos modais: o ponto exato (função/ramo) é localizado no início de T06/T07; se o mecanismo no código for outro, o ajuste é registrado na §12.*
 
@@ -273,6 +273,13 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 - **Resultado**: fluxo principal coberto com DOM real — markup extraído do `index.html` (sem reconstruir o formulário à mão), módulos reais na ordem do index.html e stubs registrados de escrita (`salvarDados`), `gcal.isSignedIn`, `mostrarToast`/`alert` (captura), `confirm`, `inicializarHome`, `log` e `fetch` (guarda contra rede). Felicidade: abertura via `abrirAgendamentoModal` (DialogController real), submit dispara a operação real do `contextoDados`, payload do serializer idêntico ao gravado (`alunoId`/`data`/`dia`/`horários`/`frequencia`), aula permanece no estado, modal fecha, toast de sucesso e sem pendência. Erro/validação: submissão sem aluno → alert 'Selecione um aluno para agendar a aula.', zero gravação e modal aberto. Prova por mutação: omitir `alunoId` do payload derruba o fluxo feliz; suprimir a validação sem aluno derruba o teste de erro.
 - **Suíte antes/depois**: frontend **355/355 → 357/357** (medidos em 2026-10-12); pós-reversão das mutações reconfirmado 357/357.
 - **Desvio do plano**: nenhum. Dois ajustes de execução no próprio teste: (1) o harness aguarda o `DOMContentLoaded` nativo do jsdom em vez de disparar evento manual — dispatch manual somado ao evento nativo anexaria o submit duas vezes (verificado empiricamente); (2) o estado entra mutando os arrays em vigor de `window.alunos`/`window.aulas` — o invalidador do `storage.js` esvazia os lexicais dentro de `iniciar()` e os expõe como referência viva, e trocar o lexical por um array novo deixava o `window` apontando para o array vazio antigo.
+- **Decisão adicional tomada**: —
+
+### 2026-10-12 — T07 executado (modal-acao-slot: edição avulsa)
+- **Arquivos alterados**: `tests-frontend/modal-acao-slot.test.js` (novo, +3 testes); duas mutações temporárias em `assets/js/modal-acao-slot.js`, ambas revertidas (arquivo sem alteração final — conferido no git).
+- **Resultado**: edição avulsa coberta com DOM real — abertura por `abrirModalAcaoSlot` (pré-preenchimento de horário/duração/aluno assertado), alteração de horário gravada com operação `editar-agendamento` (intenção com o novo horário, estado atualizado, campos não editados preservados, modal fechado e toast); conflito de horário na edição → alert `Conflito detectado com Ana (11:00 - 12:00).` sem gravação e modal aberto; fechar pelo botão Voltar → zero escrita e estado intacto. Prova por mutação: descartar o novo horário no ramo avulso derruba o fluxo feliz; suprimir o gate de conflito derruba o teste de conflito.
+- **Suíte antes/depois**: frontend **357/357 → 360/360** (medidos em 2026-10-12); pós-reversão das mutações reconfirmado 360/360.
+- **Desvio do plano**: nenhum. Ajuste de execução no próprio teste: o jsdom com `runScripts: 'outside-only'` não compila atributos `onclick` (isso exige `'dangerously'`), então o teste de fechar verifica a fiação do botão Voltar (atributo `onclick="fecharModalAcaoSlot()"`) e chama a mesma função do atributo.
 - **Decisão adicional tomada**: —
 
 ## 13. Achados não alterados
