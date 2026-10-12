@@ -1,6 +1,6 @@
 # Plano — Cobertura automatizada do render do Dia + lacunas vizinhas (item 0.12)
 
-> **Status**: aberto — T01–T04 executados (2026-10-12); T05–T07 pendentes
+> **Status**: aberto — T01–T05 executados (2026-10-12); T06–T07 pendentes
 > **Abertura**: 2026-10-12
 > **Responsável**: dono do repositório + agente
 > **Branch**: `feat/cobertura-render-conflitos-modais`
@@ -215,8 +215,8 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 | Remover o tie-break `|| a.end - b.end` | T03 — ordem das linhas | falhou como esperado (tri-a antes de tri-b) | sim |
 | Incluir dia inteiro no grafo de sobreposição | T03 — dia inteiro | falhou como esperado (bloqueio ganhou formato Outlook) | sim |
 | Pular eventos no loop das linhas | T04 — unicidade/contagem | falhou como esperado (6 linhas em vez de 7; e 2 em vez de 3 na banda com externo) | sim |
-| Inverter `inicioA < fimB && inicioB < fimA` | T05 — colisão | — | — |
-| Limite 6 → 5 em `gerarResumoConflitosDatas` | T05 — resumo | — | — |
+| Inverter `inicioA < fimB && inicioB < fimA` | T05 — colisão | falhou como esperado (4 derrubados: colisão, ignorarIds, labels e recorrência; a inversão passa a selecionar os não sobrepostos) | sim |
+| Limite 6 → 5 em `gerarResumoConflitosDatas` | T05 — resumo | falhou como esperado (resumo com "e mais 4" em vez de "e mais 3") | sim |
 | Omitir um campo do payload no `serializarRascunhoAgendamento` | T06 — fluxo feliz | — | — |
 | Suprimir a validação de submissão inválida (sem aluno) | T06 — erro/validação (decisão 1 = B) | — | — |
 | Descartar o novo horário no salvar da edição avulsa | T07 — fluxo feliz | — | — |
@@ -259,6 +259,13 @@ Levantado por leitura da suíte e do código; nenhum teste novo executado neste 
 - **Resultado**: bordas travadas — dia vazio monta a grade (32 slots de 30min em 06:00–22:00) sem nenhum card; 7 aulas de 30min no mesmo span viram um contêiner `top 288px / height 48px` com 7 linhas, cada id exatamente uma vez (sem perda/duplicata); evento `google_external` na banda sai como `<div class="card-bloqueio-externo formato-linha">` sem `onclick` e com `title`, enquanto as aulas da mesma banda seguem `<button>`; deslocamento e bloqueio interno seguem `<button>` com `onclick` de ação.
 - **Suíte antes/depois**: frontend **342/342 → 346/346** (medidos em 2026-10-12); pós-reversão da mutação reconfirmado 346/346.
 - **Desvio do plano**: nenhum. O clipping visual de 7 linhas em 48px não é observável em jsdom — comentário no teste remete aos residuais da §10.
+- **Decisão adicional tomada**: —
+
+### 2026-10-12 — T05 executado (conflitos: lacunas do T01)
+- **Arquivos alterados**: `tests-frontend/agenda-conflitos.test.js` (novo, +9 testes); duas mutações temporárias em `assets/js/agenda-conflitos.js`, ambas revertidas (arquivo sem alteração final — conferido no git). Suíte de backend intocada.
+- **Resultado**: lacunas fechadas sem duplicar os 5 testes do backend — colisão parcial/total vs adjacente (fim == início não conflita) + shape do objeto retornado; `ignorarIds` simples; labels (nome do aluno, "Aula", `[Google Agenda]` com e sem descrição, descrição de bloqueio e "Compromisso"); `aulas` não-array → `[]`; `gerarResumoConflitosDatas` (dedupe com ordem, limite 6 + "e mais 3", entradas vazias/sem data → `''`); dedupe de datas em `getConflitosRecorrenciaEmDatas`; escopo legado `monthOfDate` (corte no fim do mês de início vs `fromDate` atravessando o mês). Ajuste de teste na execução: 4 asserts comparavam arrays/objetos do contexto `vm` com valores do host — `deepStrictEqual` exige mesmo protótipo; convertido com `Array.from`/spread no próprio teste (nada em produção).
+- **Suíte antes/depois**: frontend **346/346 → 355/355** (medidos em 2026-10-12); pós-reversão das mutações reconfirmado 355/355. Formatação pt-BR do resumo fixada por literal (`seg., 31/08, ter., 01/09`).
+- **Desvio do plano**: nenhum.
 - **Decisão adicional tomada**: —
 
 ## 13. Achados não alterados
