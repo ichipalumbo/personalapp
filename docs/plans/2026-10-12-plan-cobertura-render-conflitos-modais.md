@@ -1,6 +1,6 @@
 # Plano — Cobertura automatizada do render do Dia + lacunas vizinhas (item 0.12)
 
-> **Status**: aberto — proposta registrada; implementação não iniciada
+> **Status**: aberto — T01 executado (2026-10-12); T02–T07 pendentes
 > **Abertura**: 2026-10-12
 > **Responsável**: dono do repositório + agente
 > **Branch**: `feat/cobertura-render-conflitos-modais`
@@ -19,7 +19,7 @@ Cobrir com testes automatizados, na suíte de frontend (`node --test` + `jsdom`)
 
 - [ ] Render do Dia coberto no jsdom: fumaça (grade + card) e regras de banda (T02–T04).
 - [ ] `agenda-conflitos.js`: coberto o que o inventário (T01) apontar como descoberto, **sem duplicar** a suíte de backend existente.
-- [ ] Modais: fluxos principais cobertos conforme profundidade decidida no T01 (T06–T07).
+- [ ] Modais: fluxos principais + um caminho de erro/validação por modal (decisão 1 = B) (T06–T07).
 - [ ] Cada teste novo provado por mutação — tabela da §11 preenchida com resultado observado e restauração conferida.
 - [ ] Nenhum arquivo de produção alterado; se um alvo se provar intestável sem mudar produção, parar e escalar decisão (não refatorar por conta própria).
 - [ ] Números de suíte medidos antes/depois registrados na §12; lacunas residuais declaradas na §10.
@@ -36,12 +36,12 @@ Cobrir com testes automatizados, na suíte de frontend (`node --test` + `jsdom`)
 
 | # | Pergunta | Opções | Bloqueante? |
 |---|---|---|---|
-| 1 | Profundidade dos modais | A: fluxos principais (abrir → preencher → salvar/cancelar); B: incluir também caminhos de erro/validação | não — decidir ao fim do T01 |
+| 1 | Profundidade dos modais | **Resolvida no T01 (2026-10-12)**: **B** — fluxos principais + um caminho de erro/validação por modal | — |
 | 2 | Se um teste revelar defeito real de produção | A: corrigir nesta frente (com aprovação); B: registrar na §13 e virar item novo | não — só se ocorrer |
 
 ## 5. Escopo
 
-- **Arquivos novos prováveis**: `tests-frontend/render-dia.test.js`, `tests-frontend/agenda-conflitos.test.js`, `tests-frontend/modal-agendamento.test.js`, `tests-frontend/modal-acao-slot.test.js`; `tests-frontend/setup/` **apenas se** houver reuso entre os novos arquivos.
+- **Arquivos novos** (confirmados no T01): `tests-frontend/render-dia.test.js`, `tests-frontend/agenda-conflitos.test.js`, `tests-frontend/modal-agendamento.test.js`, `tests-frontend/modal-acao-slot.test.js`; `tests-frontend/setup/` **apenas se** houver reuso entre os novos arquivos.
 - **Documentos**: este plano; `docs/roadmap.md` (link/status).
 - **Comportamentos que podem mudar**: nenhum em tela ou regra; passa a existir rede de proteção no render/conflitos/modais.
 
@@ -86,7 +86,7 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 ### Cartão T02 — Fumaça: `renderizarAgendaDia` desenha a grade com um card
 - **Objetivo / resultado**: primeiro teste executando o render ponta a ponta em jsdom: grade montada + card de aula posicionado.
 - **Depende de**: T01.
-- **Arquivos / componentes prováveis**: `tests-frontend/render-dia.test.js` (nome provisório; confirmar no T01).
+- **Arquivos / componentes prováveis**: `tests-frontend/render-dia.test.js` (nome confirmado no T01).
 - **Inclui**: ambiente jsdom com scripts na ordem do `index.html` (módulos reais: `recurrence-helpers`, `calendario-engine`, `utils-datetime`, `widget-bloqueio`, `agenda-card-template`, `view-home`) e stubs explícitos e registrados para o resto; fixture com `agendaConfig` explícito, `dataSelecionada` em data passada e 1 aula; asserts: `.time-grid-wrapper` presente; exatamente 1 `.agenda-dia-aula`; `style` com `top`/`height` coerentes com a grade da fixture; ausência de `.formato-outlook`/`.formato-linha`; `onclick="abrirModalAcaoSlot('id')"` preservado.
 - **Não inclui**: bandas (T03), bordas (T04), tipos não-aula.
 - **Decisões pendentes / bloqueios**: nenhum.
@@ -122,7 +122,7 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 ### Cartão T05 — `agenda-conflitos.js`: cobrir o descoberto sem duplicar
 - **Objetivo / resultado**: fechar as lacunas do módulo apontadas no T01 (previsão: `gerarResumoConflitosDatas` e caminhos não cobertos de `getConflitosNoDia`).
 - **Depende de**: T01.
-- **Arquivos / componentes prováveis**: `tests-frontend/agenda-conflitos.test.js` novo **ou** ampliação de `backend/test/agenda-conflitos.test.js` — o T01 decide o melhor lugar; duplicar teste existente é proibido.
+- **Arquivos / componentes prováveis**: `tests-frontend/agenda-conflitos.test.js` (novo — decidido no T01; suíte de backend intocada); duplicar teste existente é proibido.
 - **Inclui**: colisão parcial/total/adjacente, `ignorarIds`, label de evento externo (`[Google Agenda]`), resumo com limite 6 + "e mais N" e dedupe de datas.
 - **Não inclui**: reescrever cobertura já existente.
 - **Decisões pendentes / bloqueios**: T01 decide o arquivo-alvo.
@@ -134,11 +134,11 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 ### Cartão T06 — `modal-agendamento.js`: fluxo principal de criação
 - **Objetivo / resultado**: cobrir abertura e submissão do agendamento único com o serializer real.
 - **Depende de**: T01.
-- **Arquivos / componentes prováveis**: `tests-frontend/modal-agendamento.test.js` (novo), aproveitando a técnica do harness de `backend/test/gcal-persistencia-criacao-agendamento.test.js` (que já carrega o modal via `vm`) — sem tocar o arquivo do backend.
-- **Inclui**: abrir pelo caminho decidido no T01; preencher campos mínimos; submeter com `salvarDados` stubado; assert do payload serializado e do fechamento; caminho de validação principal conforme profundidade da decisão 1.
-- **Não inclui**: recorrência completa (vira T06b se o T01 indicar) e GCal.
-- **Decisões pendentes / bloqueios**: profundidade (decisão 1) é resolvida no T01.
-- **Critérios de aceite**: fluxo feliz coberto; mutação definida no T01 (candidata: alterar campo emitido no payload) derruba.
+- **Arquivos / componentes prováveis**: `tests-frontend/modal-agendamento.test.js` (novo), em jsdom com DOM real (decidido no T01); o harness de `backend/test/gcal-persistencia-criacao-agendamento.test.js` serve de referência de cenários e mapa de dependências — arquivos do backend intocados.
+- **Inclui**: abrir via `abrirAgendamentoModal(dia, hora, tipo)` (entrada decidida no T01; escolha inicial de tipo/FAB ficam fora — §10); preencher campos mínimos; submeter com `salvarDados` stubado; assert do payload serializado e do fechamento; um caminho de erro/validação (decisão 1 = **B**): submissão inválida não grava e dá feedback.
+- **Não inclui**: recorrência completa (fora pelo T01 — declarada na §10) e GCal.
+- **Decisões pendentes / bloqueios**: nenhum (profundidade resolvida no T01: **B**).
+- **Critérios de aceite**: fluxo feliz e caminho de erro/validação cobertos; as mutações da §11 (linhas de T06) derrubam os testes correspondentes.
 - **Validação**: `node --test` antes/depois; stub registrado; mutação revertida.
 - **Riscos e rollback**: superfície de dependências grande (state/storage/widgets/conflitos/serializer) — harness carrega módulos reais e documenta os stubs; rollback é apagar o teste.
 - **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
@@ -147,10 +147,10 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 - **Objetivo / resultado**: cobrir abrir → editar → salvar e cancelar/fechar sem escrita.
 - **Depende de**: T01; T06 (harness pode ser compartilhado).
 - **Arquivos / componentes prováveis**: `tests-frontend/modal-acao-slot.test.js` (novo).
-- **Inclui**: `abrirModalAcaoSlot(id)` com aula avulsa; alteração de campo simples (ex.: horário/descrição) com `salvarDados` stub e payload assertado; confirmações stubadas; fechar/cancelar sem chamada de escrita.
-- **Não inclui**: split de série e fluxo de reposição/reagendamento (avaliar T07b no T01 — a corrente de reposição tem suíte de backend própria).
-- **Decisões pendentes / bloqueios**: T01 decide se split/reposição entram.
-- **Critérios de aceite**: mutação "salvar sem a etapa de confirmação/condição de escrita" derruba; nenhum modal empilhado no caminho de cancelamento.
+- **Inclui**: `abrirModalAcaoSlot(id)` com aula avulsa; alteração de campo simples (ex.: horário/descrição) com `salvarDados` stub e payload assertado; um caminho de erro/validação (decisão 1 = **B**): aviso de conflito na edição (mecânica exata a confirmar na execução); confirmações stubadas; fechar/cancelar sem chamada de escrita.
+- **Não inclui**: split de série e fluxo de reposição/reagendamento (decidido no T01: já cobertos pela suíte de backend; sem duplicar).
+- **Decisões pendentes / bloqueios**: nenhum — T01 decidiu que split/reposição ficam fora.
+- **Critérios de aceite**: as mutações da §11 (linhas de T07) derrubam os testes; nenhum modal empilhado no caminho de cancelamento.
 - **Validação**: `node --test` antes/depois; mutação revertida.
 - **Riscos e rollback**: mesmo perfil do T06; residuais declarados se fora pelo T01.
 - **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
@@ -167,6 +167,33 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 - **Riscos e rollback**: nenhum.
 - **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
 
+### Inventário T01 — cobertura existente × descoberta (2026-10-12)
+
+Levantado por leitura da suíte e do código; nenhum teste novo executado neste cartão. Fatos verificados no código atual.
+
+**Alvo 1 — Render do Dia (`view-home.js` + `agenda-card-template.js`)**
+
+- **Coberto hoje**: nada. `renderizarAgendaDia` não aparece em `tests-frontend/`; nenhum teste executa o render.
+- **Descoberto**: tudo — grade (horas, labels, linhas, slots), posicionamento absoluto dos cards, bandas 2 vs 3+, dedup de banda (`gruposVistos`), dia inteiro fora do grafo, tipos (`<button>` interno vs `<div>` GCal externo), unicidade de ids, indicador de hora atual, dirty-check (`_ultimaChaveRenderAgenda`).
+- **Dependências reais do render** (verificado no código): `contextoDados.atual/capturar` (early-return), `getDiaTextoSelecionado` (`utils-datetime`), `agendaConfig` e `aulas` (lexicais do `state.js`), `checarCompromissoNaData` (`calendario-engine`), `getAluno` (`alunos-helpers`, opcional), `ehBloqueioDiaInteiroCompromisso` (`widget-bloqueio`), `criarCardAgendamento` (`agenda-card-template`), `dataSelecionada` (declarado em `view-home.js:15`), `grid.clientWidth`/`innerWidth` (heurística de densidade — em jsdom: 0 → fallbacks determinísticos).
+- **Harness decidido**: JSDOM + `vm.runInContext` via `dom.getInternalVMContext()` (padrão do `d1-hidratacao-render.test.js`), com módulos reais na ordem do `index.html` — `state` → `app-shell/contexto-dados` (pelo `tests-frontend/setup/contexto-dados.js`) → `utils-datetime` → `recurrence-helpers` → `alunos-helpers` → `calendario-engine` → `widget-bloqueio` → `agenda-card-template` → `view-home` (conjunto mínimo exato validado na prática do T02). Stubs apenas de `googleIdentity` (pelo setup); sem rede. Data fixa no passado (indicador de hora atual e scroll ficam fora do caminho); grid com id `agendaGridHomeHome` (call site `view-home.js:192`); escritas nos lexicais (`aulas`, `agendaConfig`) por script no contexto.
+
+**Alvo 2 — `agenda-conflitos.js`**
+
+- **Coberto hoje (parcial)** — 5 testes em `backend/test/agenda-conflitos.test.js`: `getCompromissoSerializadoParaConflito` (fim de série/UNTIL/quantidade), série aparada não conflita com a própria continuação (via `getDatasConflitoRecorrencia` + `getConflitosRecorrenciaEmDatas`), `ignorarIds` de família preservando conflito real com outro aluno (`getConflitosNoDia`).
+- **Descoberto**: `gerarResumoConflitosDatas` (0 testes: dedupe de datas, limite 6 + "e mais N"); labels de `getConflitosNoDia` (nome do aluno, fallback "Aula", `[Google Agenda]` para `google_external`, descrição genérica); adjacência (fim == início NÃO conflita) e sobreposição parcial/total; `aulas` ausente/não-array → `[]`; escopo legado `monthOfDate` (corte de 40 dias) em `getDatasConflitoRecorrencia`; dedupe de datas de entrada em `getConflitosRecorrenciaEmDatas`.
+- **Harness decidido**: `tests-frontend/agenda-conflitos.test.js` **novo** (lógica é de frontend pura — seção 10 das instruções), reusando `tests-frontend/setup/carregar-frontend.js` (`criarAmbiente` + `carregarScripts`) com `recurrence-helpers` → `state` → `utils-datetime` → `alunos-helpers` → `calendario-engine` → `agenda-conflitos`; `aulas`/`alunos` por script no contexto. Backend intocado; os 5 testes existentes não são duplicados.
+
+**Alvo 3 — Modais (`modal-agendamento.js`, `modal-acao-slot.js`)**
+
+- **Coberto hoje (parcial, suíte do backend, harness `vm` com DOM falso)**:
+  - `gcal-persistencia-criacao-agendamento.test.js` (8 testes): criação feliz via `abrirAgendamentoModal` → submit (operação real do `contextoDados` + serializer real `scheduling-serializer.js`); fechar pelo botão (`DialogController` stubado); cancelar sem/com alteração (confirmação); clique no fundo da recorrência; falha de gravação com/sem GCal (rollback + toast + reabre preenchido + pendência).
+  - `gcal-duplicata-fix.test.js`: harness `criarHarnessModalAcaoSlot` (linha 217) usado por dezenas de testes (linhas 1483–2592+) — abrir/fechar `modalAcaoSlot` com `DialogController` stubado e submits de edição (splits `fromDate`, reagendamento, reposição) com conflitos **stubados** (registram `ignorarIds` recebidos).
+- **Descoberto**: qualquer execução com **DOM real** (classList, foco, visibilidade verdadeiros), integração com o `agenda-conflitos` real (aviso de conflito na tela), pré-preenchimento dos campos nos elementos, steppers/limites reais (`widget-stepper-duracao`), validação de formulário, `DialogController` real, edição avulsa "salvar" com payload pelo serializer real; e, sem cobertura em nenhuma das duas suítes, a escolha inicial de tipo (`abrirEscolhaTipoModal`/`selecionarTipoAgendamento`) e o FAB de novo agendamento (`abrirNovoAgendamento`) — verificados por busca.
+- **Harness decidido**: JSDOM padrão D1 (DOM real) + módulos reais na ordem do `index.html` (inclui `storage`, `utils-ui`, widgets, `features/modals/scheduling-flow-state`, `features/modals/scheduling-serializer`, `features/modals/dialog-controller`); stubs registrados apenas de: escrita (`window.salvarDados` assignado), `gcal.isSignedIn → false`, `mostrarToast` (captura), `confirm` (não implementado no jsdom), `inicializarHome`. Cenários do harness do backend servem de referência; arquivos do backend intocados.
+
+**Decisões tomadas no T01**: profundidade dos modais = **B** (fluxos principais + um caminho de erro/validação por modal); T05 na suíte de frontend (arquivo novo); split/reposição ficam fora dos testes de frontend do T07 (já cobertos pela suíte de backend); mutações dos modais definidas na §11.
+
 ## 10. Matriz de validação
 
 | Tipo | O que cobre | Onde | Observação |
@@ -176,7 +203,7 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 | Manual | Pixels, ellipsis, clipping, contraste nos viewports 433×762 / 390×844 / 320×568 | Browser (mock) | **permanece manual** — não reproduzível em jsdom |
 | Negativos | Dia vazio; unicidade de cards; payload inválido nos modais | `tests-frontend/` | parte dos cartões |
 
-**Não coberto por esta validação**: CSS computado e layout real, animações, modo Semana, Finanças, telas `view-*`, GCal real e backend.
+**Não coberto por esta validação**: CSS computado e layout real, animações, modo Semana, Finanças, telas `view-*`, GCal real e backend; ficam fora desta frente a escolha inicial de tipo/FAB (`abrirEscolhaTipoModal`/`abrirNovoAgendamento`) e o fluxo completo de criação recorrente (parcialmente coberto no backend).
 
 ## 11. Prova por mutação
 
@@ -190,7 +217,12 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 | Pular eventos no loop das linhas | T04 — unicidade/contagem | — | — |
 | Inverter `inicioA < fimB && inicioB < fimA` | T05 — colisão | — | — |
 | Limite 6 → 5 em `gerarResumoConflitosDatas` | T05 — resumo | — | — |
-| A definir no T01 (modais) | T06/T07 | — | — |
+| Omitir um campo do payload no `serializarRascunhoAgendamento` | T06 — fluxo feliz | — | — |
+| Suprimir a validação de submissão inválida (sem aluno) | T06 — erro/validação (decisão 1 = B) | — | — |
+| Descartar o novo horário no salvar da edição avulsa | T07 — fluxo feliz | — | — |
+| Suprimir o aviso de conflito na edição avulsa | T07 — erro/validação (decisão 1 = B) | — | — |
+
+*Mutações dos modais: o ponto exato (função/ramo) é localizado no início de T06/T07; se o mecanismo no código for outro, o ajuste é registrado na §12.*
 
 ## 12. Registro da execução
 
@@ -201,12 +233,20 @@ A implementação deve **concluir, validar e registrar um cartão antes de avan�
 - **Desvio do plano**: —
 - **Decisão adicional tomada**: —
 
+### 2026-10-12 — T01 executado (inventário)
+- **Arquivos alterados**: este plano (inventário na §9; decisão 1 na §4; mutações na §11; achados na §13).
+- **Resultado**: inventário dos 3 alvos registrado — render sem nenhuma execução automatizada; conflitos com cobertura parcial (5 testes no backend) e lacunas listadas; modais com cobertura parcial via harnesses `vm` de DOM falso. Harnesses decididos por alvo; decisão pendente 1 resolvida (**B** — fluxos principais + um caminho de erro/validação por modal); T05 na suíte de frontend (arquivo novo; backend intocado).
+- **Suíte antes/depois**: não se aplica (somente leitura + este plano).
+- **Desvio do plano**: nenhum.
+- **Decisão adicional tomada**: split/reposição ficam fora do T07 (já cobertos no backend); fluxo completo de criação recorrente e escolha inicial de tipo/FAB declarados fora da frente (§10).
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
 |---|---|---|---|
 | Cobertura **parcial** de `agenda-conflitos.js` e dos modais já existe na suíte de backend (harnesses `vm` de GCal) — a declaração "segue sem cobertura" do item 3.1/instruções precisa de releitura quando o 3.1 for executado | verificado na abertura; fora do escopo desta frente corrigir a redação do 3.1 | roadmap 3.1 (na execução dele) | dono |
-| `gerarResumoConflitosDatas` aparentemente sem cobertura (a confirmar no T01) | levantamento inicial | este plano (T05) | — |
+| `gerarResumoConflitosDatas` sem cobertura — **confirmado no T01** (0 testes) | levantamento inicial | este plano (T05) | — |
+| Escolha inicial de tipo/FAB (`abrirEscolhaTipoModal`/`abrirNovoAgendamento`) e fluxo completo de criação recorrente sem cobertura | fora do escopo contido de T06/T07 (decisão 1 = B cobre erro/validação, não variantes de abertura) | declarado na §10; avaliar em rodada futura | dono |
 
 ## 14. Deploy e rollback
 
