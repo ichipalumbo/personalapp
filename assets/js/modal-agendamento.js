@@ -175,8 +175,8 @@ function atualizarResumoRecorrenciaAgendamentoPrincipal() {
 
     resumo.textContent = recurrence.summaryText || 'Não se repete';
     resumoAux.textContent = recurrence.enabled
-        ? 'A configuração detalhada será refinada no próximo passo do fluxo.'
-        : 'A configuração detalhada da repetição será conectada no próximo passo.';
+        ? 'Toque para ajustar a repetição.'
+        : 'Toque para configurar a repetição.';
 }
 
 function atualizarRascunhoPrincipalAgendamento(partialMainForm) {

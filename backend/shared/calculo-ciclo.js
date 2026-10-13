@@ -1,5 +1,17 @@
 (function (root, factory) {
-    const helpers = factory(require('./recurrence-helpers'));
+    // UMD: no Node, require('./recurrence-helpers'); no browser (tag <script>),
+    // lê o global definido por recurrence-helpers.js — que precisa vir antes.
+    // Falha explícita na carga (e não só no primeiro uso) se a ordem inverter.
+    const dependencia =
+        typeof require === 'function'
+            ? require('./recurrence-helpers')
+            : root && root.recurrenceHelpers;
+
+    if (!dependencia) {
+        throw new Error('calculo-ciclo.js exige recurrence-helpers.js carregado antes.');
+    }
+
+    const helpers = factory(dependencia);
 
     if (typeof module === 'object' && module.exports) {
         module.exports = helpers;

@@ -616,9 +616,13 @@ window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso, hojeReferenc
    ate = formatarDataPtBr(ate);
  }
 
- const mensagem = ate
-   ? `Período: desde ${formatarDataPtBr(desde) || desde} até ${ate}`
-   : `Período: desde ${formatarDataPtBr(desde) || desde} até sem data de término`;
+ // T05: a linha "Período" também sai no formato legível e sem capitalizar
+ // ("desde sáb., 26/09", texto corrido) — o detalhe acima é que capitaliza.
+ const desdePeriodo = formatarDataSerieExibicao(desde) || desde || "";
+ const atePeriodo = ate ? formatarDataSerieExibicao(ate) || ate : "";
+ const mensagem = atePeriodo
+   ? `Período: desde ${desdePeriodo} até ${atePeriodo}`
+   : `Período: desde ${desdePeriodo} até sem data de término`;
 
  return {
    total: ids.length,
@@ -652,13 +656,36 @@ window.removerCadeiaCompletaSerie = function (idOuCompromisso) {
  return antes - aulas.length;
 };
 
+// T05 (D11): datas de série nos textos de exclusão em formato legível ("sáb., 26/09").
+function formatarDataSerieExibicao(valor) {
+ if (!valor) return "";
+ if (typeof window.formatarDataPtBrLegivel !== "function") return String(valor);
+ return window.formatarDataPtBrLegivel(valor) || String(valor);
+}
+
+// T05 (D11): nos rótulos e detalhes a data sai capitalizada ("Só Sáb., 17/10 sai");
+// sem data, mantém "início".
+function formatarDesdeSerieExibicao(desde) {
+ const legivel = formatarDataSerieExibicao(desde);
+ return legivel ? `${legivel.charAt(0).toUpperCase()}${legivel.slice(1)}` : "início";
+}
+
 window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeReferencia) {
  if (!compromisso) return [];
 
- const dataExibicao =
+ // T05 (D11=A): a data exibida nos rótulos é a do dia em gerenciamento
+ // (dataAlvoAcaoStr → dia selecionado → raiz, resolvida pelo chamador) em
+ // formato legível — "sáb., 17/10" com a inicial maiúscula, como no T01.
+ const dataBase =
    dataAlvoStr ||
-   (compromisso.data ? compromisso.data : "esta data") ||
-   "esta data";
+   (compromisso.data ? compromisso.data : "");
+ const dataLegivel =
+   dataBase && typeof window.formatarDataPtBrLegivel === "function"
+     ? window.formatarDataPtBrLegivel(dataBase)
+     : dataBase;
+ const dataExibicao = dataLegivel
+   ? `${dataLegivel.charAt(0).toUpperCase()}${dataLegivel.slice(1)}`
+   : "esta data";
 
  if (compromisso.frequencia === "uma_vez") {
    return [
@@ -676,14 +703,15 @@ window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeRefere
  const ocorrenciasPassadas = Number(resumo && Number.isFinite(resumo.ocorrenciasPassadas) ? resumo.ocorrenciasPassadas : 0);
  const temAulaFutura = !!(resumo && resumo.temAulaFutura);
  const unidadePassada = ocorrenciasPassadas === 1 ? "aula" : "aulas";
+ const desdeExibicao = formatarDesdeSerieExibicao(resumo && resumo.desde);
 
  let detalheSerie = "Nenhuma aula restante nesta série.";
  if (ocorrenciasPassadas > 0 && temAulaFutura) {
-   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${resumo.desde || "início"}.`;
+   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${desdeExibicao}.`;
  } else if (ocorrenciasPassadas === 0 && temAulaFutura) {
-   detalheSerie = `Todas as aulas, a partir de hoje. Desde ${resumo.desde || "início"}.`;
+   detalheSerie = `Todas as aulas, a partir de hoje. Desde ${desdeExibicao}.`;
  } else if (ocorrenciasPassadas > 0 && !temAulaFutura) {
-   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${resumo.desde || "início"}.`;
+   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${desdeExibicao}.`;
  }
 
  const opcoes = [
@@ -1092,8 +1120,16 @@ window.abrirModalAcaoSlot = function (id) {
     badge.className = "modal-badge badge-desloc";
 
     containerDiaSemana.style.display = "none";
+    // T05 (D11=A): data da avulsa em formato legível (T01/D9), sem ISO cru.
+    const dataAgendadaBruta = compromisso.data || compromisso.dia || "";
+    const dataAgendadaLegivel =
+      dataAgendadaBruta && typeof window.formatarDataPtBrLegivel === "function"
+        ? window.formatarDataPtBrLegivel(dataAgendadaBruta)
+        : dataAgendadaBruta;
     document.getElementById("editInfoDia").textContent =
-      `Agendado para: ${compromisso.data || compromisso.dia}`;
+      dataAgendadaLegivel
+        ? `Agendado para: ${dataAgendadaLegivel.charAt(0).toUpperCase()}${dataAgendadaLegivel.slice(1)}`
+        : "";
     if (containerEscopo) containerEscopo.style.display = "none";
     if (impactoEscopo) impactoEscopo.textContent = "";
     if (acoesUnico) acoesUnico.style.display = "grid";
@@ -1219,6 +1255,47 @@ window.abrirModalEscolhaCobrancaReposicao = function (
       contextoExibicao.nomeAluno;
     document.getElementById("reposicaoEscolhaDataHorario").textContent =
       contextoExibicao.dataHora;
+
+    // T05 (D5=B): linha de prazo do modal de escolha — calculada pelo módulo
+    // compartilhado calculo-ciclo.js (mesma regra do envio, §6.2), a partir da
+    // mesma data original usada em `executarEnvioParaReposicao`; o valor
+    // exibido é idêntico ao `validoAte` que a API devolve no envio.
+    const linhaPrazo = document.getElementById("reposicaoEscolhaPrazo");
+    if (linhaPrazo) {
+      let textoPrazo = "";
+      const alunoPrazo =
+        typeof window.getAluno === "function"
+          ? window.getAluno(compromisso.alunoId)
+          : null;
+      const moduloPrazo = window.calculoCiclo;
+      if (
+        alunoPrazo &&
+        moduloPrazo &&
+        typeof moduloPrazo.calcularPrazoReposicao === "function"
+      ) {
+        const dataOriginal =
+          compromisso.frequencia !== "uma_vez"
+            ? window.dataAlvoAcaoStr ||
+              (window.dataSelecionada
+                ? window.dataSelecionada.toLocaleDateString("pt-BR")
+                : "")
+            : compromisso.data ||
+              (window.getDataSelecionadaPtBr
+                ? window.getDataSelecionadaPtBr()
+                : "");
+        const resultadoPrazo = moduloPrazo.calcularPrazoReposicao(
+          alunoPrazo,
+          dataOriginal,
+        );
+        const validoAte = resultadoPrazo && resultadoPrazo.validoAte;
+        if (validoAte && /^\d{4}-\d{2}-\d{2}$/.test(validoAte)) {
+          const [, mes, dia] = validoAte.split("-");
+          textoPrazo = `Prazo para reposição: até ${dia}/${mes}.`;
+        }
+      }
+      linhaPrazo.textContent = textoPrazo;
+      linhaPrazo.style.display = textoPrazo ? "" : "none";
+    }
 
     const opcaoButtons = modal.querySelectorAll("[data-reposicao-cobravel]");
     let escolhaConsumida = false;
@@ -1611,13 +1688,15 @@ window.executarExclusaoSerie = async function () {
   );
   const temAulaFutura = !!(_resumoExclusao && _resumoExclusao.temAulaFutura);
   const unidadePassada = ocorrenciasPassadas === 1 ? "aula" : "aulas";
+  // T05 (D11): mesma data legível do modal, na confirmação da execução.
+  const desdeExibicao = formatarDesdeSerieExibicao(_resumoExclusao && _resumoExclusao.desde);
   let detalheConfirmacaoSerie = "Nenhuma aula restante nesta série.";
   if (ocorrenciasPassadas > 0 && temAulaFutura) {
-    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${_resumoExclusao.desde || "início"}.`;
+    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${desdeExibicao}.`;
   } else if (ocorrenciasPassadas === 0 && temAulaFutura) {
-    detalheConfirmacaoSerie = `Todas as aulas, a partir de hoje. Desde ${_resumoExclusao.desde || "início"}.`;
+    detalheConfirmacaoSerie = `Todas as aulas, a partir de hoje. Desde ${desdeExibicao}.`;
   } else if (ocorrenciasPassadas > 0 && !temAulaFutura) {
-    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${_resumoExclusao.desde || "início"}.`;
+    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${desdeExibicao}.`;
   }
   const mensagemConfirmacaoSerie =
     _resumoExclusao.total > 0
@@ -1807,10 +1886,13 @@ window.executarExclusaoSerieAPartirDe = async function () {
     window.obterCompromissoSelecionado
       ? window.obterCompromissoSelecionado()
       : null;
+  // T05 (D11=A): "daqui pra frente" corta a partir do dia em gerenciamento —
+  // dataAlvoAcaoStr → dia selecionado → raiz (mesma ordem da edição/instância).
+  // Sem isso, o modo Dia cortava na raiz da série (removeria a série inteira).
   const dataAlvo =
     window.dataAlvoAcaoStr ||
-    (compromisso && compromisso.data) ||
     (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+    (compromisso && compromisso.data) ||
     "";
   const previsao = window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo, {
     simular: true,
@@ -1984,10 +2066,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnExcluirSlot) {
     btnExcluirSlot.addEventListener("click", () => {
       const compromisso = obterCompromissoSelecionado();
+      // T05 (D11=A): dia em gerenciamento — dataAlvoAcaoStr → dia selecionado →
+      // raiz, a mesma ordem da edição/instância; alimenta rótulos e modais.
       const dataAlvo =
         window.dataAlvoAcaoStr ||
-        (compromisso && compromisso.data) ||
         (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+        (compromisso && compromisso.data) ||
         "";
       const opcoes = window.montarOpcoesExclusaoSlot(compromisso, dataAlvo);
 

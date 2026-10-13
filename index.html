@@ -892,8 +892,7 @@
               <span class="modal-recorrencia-trigger-texto">
                 <span id="agendaResumoRecorrencia">Não se repete</span>
                 <small id="agendaResumoRecorrenciaAux"
-                  >A configuração detalhada da repetição será conectada no
-                  próximo passo.</small
+                  >Toque para configurar a repetição.</small
                 >
               </span>
               <span class="modal-recorrencia-trigger-icone"
@@ -1461,7 +1460,7 @@
         <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.875rem;"></p>
 
         <p style="margin: 0 0 12px; color: #d9d9d9; font-size: 0.875rem; line-height: 1.5;">
-          A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, na aba Reposições.
+          A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, no card do aluno.
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
@@ -1478,6 +1477,7 @@
 
         <div style="border-top: 1px solid #222; padding-top: 12px; color: #d9d9d9; font-size: 0.875rem; text-align: center; line-height: 1.5;">
           <div>Não pode ser alterado depois.</div>
+          <div id="reposicaoEscolhaPrazo" style="display: none"></div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
@@ -1586,6 +1586,7 @@
     <script src="assets/js/utils-datetime.js"></script>
     <script src="assets/js/utils-formatters.js"></script>
     <script src="backend/shared/recurrence-helpers.js"></script>
+    <script src="backend/shared/calculo-ciclo.js"></script>
     <script src="backend/shared/reposicao-flow-helpers.js"></script>
     <!-- [3] Domain Helpers -->
     <script src="assets/js/alunos-helpers.js"></script>

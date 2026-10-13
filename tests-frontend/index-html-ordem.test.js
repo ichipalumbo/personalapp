@@ -29,7 +29,8 @@ const DEPENDENCIAS_DE_CARGA = [
     { antes: 'assets/js/app-shell/contexto-dados.js', depois: 'assets/js/app-shell/recuperacao-dados.js' },
     { antes: 'assets/js/app-shell/contexto-dados.js', depois: 'assets/js/app-shell/coordenador-sync-boot.js' },
     { antes: 'assets/js/storage.js', depois: 'assets/js/app-shell/coordenador-sync-boot.js' },
-    { antes: 'backend/shared/recurrence-helpers.js', depois: 'assets/js/calendario-engine.js' }
+    { antes: 'backend/shared/recurrence-helpers.js', depois: 'assets/js/calendario-engine.js' },
+    { antes: 'backend/shared/recurrence-helpers.js', depois: 'backend/shared/calculo-ciclo.js' }
 ];
 
 test('index.html declara pelo menos os scripts locais conhecidos', () => {

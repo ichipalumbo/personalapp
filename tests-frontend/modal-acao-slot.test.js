@@ -24,6 +24,7 @@ const SCRIPTS = [
     'assets/js/utils-datetime.js',
     'assets/js/utils-formatters.js',
     'backend/shared/recurrence-helpers.js',
+    'backend/shared/calculo-ciclo.js',
     'backend/shared/reposicao-flow-helpers.js',
     'assets/js/alunos-helpers.js',
     'assets/js/calendario-engine.js',
@@ -52,6 +53,7 @@ const HTML_MODAIS = (() => {
 
 const ALUNO_ANA = { id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer', status: 'ativo' };
 const ALUNO_MARIA = { id: 'aluno-maria', nome: 'Maria Silva', objetivo: 'Personal Trainer', status: 'ativo' };
+const ALUNO_PRAZO = { id: 'aluno-prazo', nome: 'Paula', objetivo: 'Personal Trainer', status: 'ativo', diaVencimento: 10, fechamentoMesCheio: false };
 
 function aulaAvulsa(overrides = {}) {
     return {
@@ -323,4 +325,133 @@ test('T01 — modal de exclusão exibe nome do aluno e data da ocorrência', asy
         'Maria Silva · Sáb., 17/10 · 18:00',
     );
     window.fecharModalEscolhaExclusao();
+});
+
+// ── T05 (plano 2026-10-13): textos e achados do T01 (D11=A, F5c) ─────────────
+
+test('T05 — rótulos da exclusão exibem a data em formato legível (D11)', async (t) => {
+    const { window } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
+
+    // Como em produção: o handler resolve o dia em gerenciamento e passa adiante.
+    const opcoes = window.montarOpcoesExclusaoSlot(window.aulas[0], '17/10/2026');
+    const instancia = opcoes.find((opcao) => opcao.acao === 'instancia');
+    const daqui = opcoes.find((opcao) => opcao.acao === 'daqui');
+
+    assert.equal(instancia.detalhe, 'Só Sáb., 17/10 sai. A série continua.');
+    assert.equal(daqui.detalhe, 'Sáb., 17/10 em diante. O histórico anterior fica.');
+
+    // A raiz da série no texto da "série toda" também sai legível (sem ano).
+    assert.match(
+        opcoes.find((opcao) => opcao.acao === 'serie').detalhe,
+        /Desde Sáb\., 26\/09\.$/,
+    );
+
+    // Sem data resolvida pelo chamador, o fallback interno usa a raiz da série.
+    const semData = window.montarOpcoesExclusaoSlot(window.aulas[0]);
+    assert.equal(semData.find((opcao) => opcao.acao === 'daqui').detalhe, 'Sáb., 26/09 em diante. O histórico anterior fica.');
+});
+
+test('T05 — daqui pra frente ancora no dia selecionado no modo Dia (D11)', async (t) => {
+    const { window, capturado, dom } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
+    window.dataAlvoAcaoStr = null;
+    window.idCompromissoSelecionado = 'serie-1';
+    window.dataSelecionada = new window.Date(2026, 9, 17, 12, 0, 0); // 17/10/2026, sábado
+
+    await window.executarExclusaoSerieAPartirDe();
+    await barreira();
+
+    assert.equal(capturado.confirmacoes.length, 1, 'a previsão pede confirmação uma única vez');
+    const aulasDepois = JSON.parse(vm.runInContext('JSON.stringify(aulas)', dom.getInternalVMContext()));
+    assert.equal(aulasDepois.length, 1, 'a série continua (aparada no dia selecionado, não removida pela raiz)');
+    assert.equal(aulasDepois[0].recorrenciaFimCondicao, 'untilDate');
+    assert.equal(aulasDepois[0].recorrenciaDataFim, '16/10/2026', 'véspera do dia selecionado — a raiz (26/09) não é a âncora');
+    assert.equal(capturado.toasts.at(-1)[0], 'Exclusão aplicada a partir de 17/10/2026.');
+    assert.equal(window.contextoDados.obterPendencia(), null);
+});
+
+test('T05 — avulsa exibe "Agendado para" em formato legível (D11)', async (t) => {
+    const { window } = await criarAmbiente(t, { alunos: [ALUNO_ANA], aulas: [aulaAvulsa()] });
+
+    window.abrirModalAcaoSlot('aula-1');
+
+    assert.equal(
+        window.document.getElementById('editInfoDia').textContent,
+        'Agendado para: Seg., 31/08',
+        'sem ISO cru nem pt-BR com ano',
+    );
+    window.fecharModalAcaoSlot();
+});
+
+test('T05 — modal de escolha mostra o prazo calculado pelo módulo compartilhado (F5c)', async (t) => {
+    const { window } = await criarAmbiente(t, { alunos: [ALUNO_PRAZO], aulas: [serieSabado({ alunoId: 'aluno-prazo' })] });
+    window.dataAlvoAcaoStr = '17/10/2026';
+
+    const promessa = window.abrirModalEscolhaCobrancaReposicao(window.aulas[0], () => {});
+    const linha = window.document.getElementById('reposicaoEscolhaPrazo');
+
+    assert.equal(linha.textContent, 'Prazo para reposição: até 10/11.');
+    assert.notEqual(linha.style.display, 'none', 'com prazo, a linha aparece no rodapé');
+
+    window.fecharModalEscolhaCobrancaReposicao();
+    await promessa;
+});
+
+test('T05 — a linha de prazo é limpa entre aberturas sem prazo (F5c)', async (t) => {
+    const { window } = await criarAmbiente(t, {
+        alunos: [ALUNO_PRAZO, ALUNO_MARIA],
+        aulas: [serieSabado({ alunoId: 'aluno-prazo' }), serieSabado({ id: 'serie-2', alunoId: 'aluno-maria' })],
+    });
+    window.dataAlvoAcaoStr = '17/10/2026';
+    const linha = window.document.getElementById('reposicaoEscolhaPrazo');
+
+    const comPrazo = window.abrirModalEscolhaCobrancaReposicao(window.aulas[0], () => {});
+    assert.equal(linha.textContent, 'Prazo para reposição: até 10/11.');
+    window.fecharModalEscolhaCobrancaReposicao();
+    await comPrazo;
+    await barreira();
+
+    // Aluno sem configuração de vencimento: prazo não calculável → linha escondida.
+    const semPrazo = window.abrirModalEscolhaCobrancaReposicao(window.aulas[1], () => {});
+    assert.equal(linha.textContent, '');
+    assert.equal(linha.style.display, 'none');
+    window.fecharModalEscolhaCobrancaReposicao();
+    await semPrazo;
+});
+
+test('T05 — confirmação da execução da série toda usa a data legível (D11)', async (t) => {
+    const { window, capturado } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
+    window.idCompromissoSelecionado = 'serie-1';
+
+    await window.executarExclusaoSerie();
+    await barreira();
+
+    assert.equal(capturado.confirmacoes.length, 1, 'uma única confirmação para a série inteira');
+    assert.match(capturado.confirmacoes[0], /Desde Sáb\., 26\/09\./, 'raiz da série legível, sem ano');
+    assert.match(
+        capturado.confirmacoes[0],
+        /Período: desde sáb\., 26\/09 até sem data de término\./,
+        'linha "Período" no formato legível, sem ano',
+    );
+    assert.equal(
+        capturado.toasts.at(-1)[0],
+        'Série excluída — todas as ocorrências.',
+        'fluxo concluiu após a confirmação',
+    );
+});
+
+test('T05 — período da série com data final também sai no formato legível', async (t) => {
+    const { window, capturado } = await criarAmbiente(t, {
+        alunos: [ALUNO_MARIA],
+        aulas: [serieSabado({ recorrenciaDataFim: '2026-12-19' })],
+    });
+    window.idCompromissoSelecionado = 'serie-1';
+
+    await window.executarExclusaoSerie();
+    await barreira();
+
+    assert.match(
+        capturado.confirmacoes[0],
+        /Período: desde sáb\., 26\/09 até sáb\., 19\/12\./,
+        'as duas pontas do período em formato legível',
+    );
 });

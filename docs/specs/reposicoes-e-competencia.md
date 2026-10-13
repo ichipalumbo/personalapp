@@ -1,6 +1,6 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Em produção · **Versão**: 14 · **Atualizado**: 2026-10-06
+> **Status**: Em produção · **Versão**: 15 · **Atualizado**: 2026-10-13
 > **Situação**: histórico contextual e edição protegida da cobrança implementados; correção de
 > dados duplicados em produção concluída pelo dono em 2026-09-23.
 >
@@ -151,7 +151,9 @@ também seguem o isolamento de `financas-ciclo-cobranca.md` §6.1.1: exibição 
 utilizável do mesmo dono; respostas da conta anterior não reaplicam dados nem reabrem
 modais. Rascunhos são descartados na troca, sem desfazer operações remotas. Pendência
 identificada é preservada separadamente, sem repetir criação/reabertura ou PATCH por esse
-armazenamento. Prazo, expiração lazy, competência e cobrança continuam exclusivos do backend.
+armazenamento. Prazo, expiração lazy, competência e cobrança continuam exclusivos do backend —
+única exceção: a pré-visualização de prazo do modal de escolha (§9.3), que reusa o módulo
+compartilhado, sem reimplementar a regra (D5=B).
 
 Recuperação da intenção não confirmada segue `financas-ciclo-cobranca.md` §6.1.3
 (cartão C validado localmente, sem publicação): verificar não aplica; usar servidor
@@ -486,7 +488,8 @@ Segundo passo, após o clique em "Enviar para reposição". Modal pequeno, conte
 - A data e o horário da aula em questão.
 - **Duas opções explícitas, sem default pré-selecionado** — as duas são legítimas.
 - Um disclaimer curto por opção, explicando a consequência.
-- O prazo mostrado no modal de escolha vem do campo retornado pela API (`validoAte`).
+- O prazo exibido no modal de escolha é calculado pelo **módulo compartilhado** (`calculo-ciclo.js`, 6.2) a partir da mesma `dataOriginal` usada no envio — mesma implementação dos dois lados, então o valor é idêntico ao `validoAte` que o backend devolverá no envio (D5=B, 2026-10-13; substitui a redação anterior, que atribuía o valor ao retorno da API — impossível antes do envio).
+- A linha só aparece quando há prazo calculável; `window.calculoCiclo.calcularPrazoReposicao` é a fonte única no frontend.
 
 **Cabeçalho**
 
@@ -711,7 +714,7 @@ no reagendamento via modal, mas não no envio para reposição de instância rec
 | 18  | Contrato de `salvarDados`       | `{ ok, motivo }`, com quatro motivos estáveis (`sucesso`, `falha_remota`, `nao_autenticado`, `sessao_expirada`) |
 | 19  | Ordem do reagendamento          | Inserir em memória → `salvarDados(true)` → PATCH → GCal      |
 | 20  | Reagendar cria nova reposição?  | **Não.** Reagendar consome pendente via PATCH; POST só no envio para fila |
-| 21  | Prazo é calculado no frontend?  | **Não.** Frontend apenas exibe `validoAte` retornado pela API |
+| 21  | Prazo é calculado no frontend?  | **No envio, não** — o backend calcula e devolve `validoAte`. Fora do envio, o frontend só pré-visualiza no modal de escolha (§9.3), reusando o módulo compartilhado `calculo-ciclo.js` (mesma implementação dos dois lados; D5=B, 2026-10-13) |
 | 22  | Dedupe de pendente no POST      | `409` e nenhum segundo documento quando o id pendente já existe |
 | 23  | Onde a PT gerencia reposições?  | **No card do aluno**, por modal de histórico; não há aba dedicada na V1 |
 
@@ -781,15 +784,12 @@ como pendência de fechamento da spec.
 
 ## 13. Débitos técnicos criados por esta spec
 
-- **Divergência de implementação em `calcularPrazoReposicao`.** `backend/src/services/financasService.js`
-  declara a função duas vezes no mesmo escopo de módulo: uma por volta da linha 132, outra por volta da
-  linha 704. Em JavaScript, a segunda declaração sobrescreve a primeira, então a versão efetiva é a de
-  baixo. As implementações não são equivalentes: a versão morta usa `Math.floor`, a ativa usa `Math.round`,
-  e a morta tem um guard extra que devolve `validoAte: null` em função de `aluno.objetivo` e da ausência de
-  `fechamentoMesCheio`/`diaVencimento`.
-  O comportamento em produção é o da segunda declaração. O risco é de manutenção: editar a de cima não
-  produz efeito, e uma reordenação do arquivo trocaria o comportamento silenciosamente; a correção fica para
-  uma rodada de código própria.
+- **Divergência de implementação em `calcularPrazoReposicao` — RESOLVIDO (`e4bab3f`, 2026-08-25; `57381e0`, 2026-09-18).**
+  O serviço declarava a função duas vezes no mesmo escopo de módulo: a segunda (`Math.round`) sobrescrevia
+  a primeira (morta, com `Math.floor` e guard extra por `aluno.objetivo`). A declaração redundante foi
+  removida em `e4bab3f`; o cálculo restante foi extraído em `57381e0` para `backend/shared/calculo-ciclo.js`
+  como fonte única, com o comportamento efetivo preservado (`Math.round`). Hoje `financasService` apenas
+  importa e reexporta, sem declarações duplicadas.
 - **Duas fontes no cálculo financeiro.** `financasService` passa a depender de
   `Agendamento` **e** `Reposicao` para fechar um ciclo. É o preço da collection separada.
   Mitigado pela regra 5.3, que torna as parcelas mutuamente exclusivas por construção.
