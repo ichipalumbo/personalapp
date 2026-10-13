@@ -19,12 +19,12 @@ Tratar os sete pontos de atrito do diagnóstico (cabeçalho com data errada nos 
 
 Os critérios de implementação se aplicam aos cartões liberados e à opção aprovada. **Corrigido** significa atender integralmente ao achado; **parcialmente tratado** exige registrar o que permanece; **adiado** não autoriza implementação nem conta como correção. Toda decisão de não alterar deve ser registrada nas §12/§13.
 
-- [x] F1 conforme D1/D9 (T01 executado em 2026-10-13 — provas na §11 e registro na §12): modais de escolha exibem **data e horário da ocorrência clicada** e **nome do aluno**; formatação aprovada aplicada (“Sáb., 17/10 · 18:00”); sem limitações remanescentes no cabeçalho.
+- [x] F1 conforme D1/D9 (T01 executado em 2026-10-13 — provas na §11 e registro na §12): modais de escolha exibem **data e horário da ocorrência clicada** e **nome do aluno**; formatação aplicada (“sáb., 17/10 · 18:00”; revisão D13 de 2026-10-13: tudo minúsculo); sem limitações remanescentes no cabeçalho.
 - [x] F2 (T03 executado em 2026-10-13 — medições na §12): D3=A — o modal "Marcar como pago" exibe o valor do ciclo selecionado (R$ 220,00 no `default`; R$ 180,00 em `valor_fixo`; histórico não pago com fixture controlada: R$ 300,00 ≠ R$ 400,00 do ciclo atual) e o aviso de congelamento; sem tratamento parcial.
 - [x] F3 (T04 executado em 2026-10-13 — medições na §12): D4=B com contrato aprovado — prévia somente leitura no backend (`GET /api/financas/:cicloId/simulacao-ajuste`), paridade prévia × ajuste oficial provada em 8 testes de backend; a UI exibe a linha de substituição e o novo total (debounce de 400 ms na alteração), “Cobrança fixa” no `valor_fixo`, piso zero e falha sem bloquear o Salvar. Nenhum cálculo no frontend (regra 4.3 do repo).
 - [x] F4 (T02 executado em 2026-10-13 — medições na §12): fechar o modal não re-renderiza mais a agenda (D2=A; gancho instalado uma única vez) e a posição de rolagem é preservada; validado no mock em 3 ciclos (516→516). **T02 estendido (D12=C)**: a âncora "hoje" fica suprimida em todos os renders pós-ação (edição, exclusões, reagendar, reposição e criação), inclusive nos disparados pela ponte do GCal; mock: edição 516→516, exclusão 516→508 (reflow do card removido) e abrir/fechar 508→508.
 - [x] F5 conforme D5=B (T05 executado em 2026-10-13 — provas na §11 e registro na §12): F5a/F5b aplicam as redações aprovadas; F5c entrou nesta frente com o prazo do modal de escolha pré-visualizado pelo módulo compartilhado `calculo-ciclo.js` (mesmo valor do envio) e a spec de reposições reconciliada (v15 — §9.3, decisão 21 e §4.3). Nenhuma decisão de não alterar remanescente.
-- [x] Achados absorvidos no T05 (D11=A — T05 executado em 2026-10-13): rótulos legíveis no modo Dia (“Só Sáb., 17/10 sai…”), corte do "daqui pra frente" ancorado no dia selecionado (confirm "1 aulas serão aparadas e 0 removidas"; série preservada até 16/10) e "Agendado para: Sex., 25/09" sem ISO cru — provas na §11 e registro na §12.
+- [x] Achados absorvidos no T05 (D11=A — T05 executado em 2026-10-13): rótulos legíveis no modo Dia (“Só sáb., 17/10 sai…” — D13), corte do "daqui pra frente" ancorado no dia selecionado (confirm "1 aulas serão aparadas e 0 removidas"; série preservada até 16/10) e "Agendado para: sex., 25/09" sem ISO cru — provas na §11 e registro na §12.
 - [ ] F6/F7: falha do financeiro oferece recuperação direta sem recarregar a página; histórico de reposições não afirma "nenhuma" durante o carregamento.
 - [ ] Regressão: suíte frontend medida antes/depois de cada cartão que a afete; suíte backend também quando houver mudança em `backend/`, inclusive na exceção D4=B. Números medidos registrados na §12, sem regressões.
 - [ ] Nenhuma regra de negócio alterada; arquivos do backend somente nas exceções aprovadas (D4=B no endpoint de prévia; D5=B no UMD do módulo compartilhado, sem mudança de cálculo). Nenhuma escrita em produção; validação de UI no mock (433×762, DPR 2.81 e emulação mobile completa; 320×568 e 390×844 como stress).
@@ -41,7 +41,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | Continuar na branch `diag/auditoria-fluxos-ux` nesta revisão | 2026-10-13 | dono | Preservar os dois documentos não commitados; upstream aponta para a própria branch, não para `main` |
 | D1 = B — corrigir cabeçalho pelo contexto passado pelo chamador | 2026-10-13 | dono | Helper `montarContextoExibicaoOcorrencia`; os dois chamadores passam nome + data/hora da ocorrência; modais só consomem |
 | D9 = Sim — normalizar a exibição ISO | 2026-10-13 | dono | `formatarDataPtBrLegivel` passa a usar `normalizarDataParaISO`; ISO deixa de sair cru em qualquer chamador |
-| Formato aprovado da linha de data/hora: `Sáb., 17/10 · 18:00` | 2026-10-13 | dono | Capitalização aplicada no contexto de exibição; o formato global do app (minúsculo) permanece |
+| Formato da linha de data/hora: `sáb., 17/10 · 18:00` (revisado em 2026-10-13 — ver D13) | 2026-10-13 | dono | Capitalização abandonada: tudo minúsculo, como o formato global do app |
 | Continuar na branch `diag/auditoria-fluxos-ux` nesta rodada (registro documental) | 2026-10-13 | dono | Working tree do T01 preservado; nenhuma escrita de código nesta rodada |
 | D11 = A — achados do T01 absorvidos no T05 (exibição + âncora de execução) | 2026-10-13 | dono | T05 passa a corrigir também o corte do "daqui pra frente" no modo Dia; validação de escrita no mock e teste automatizado entram no cartão |
 | D2 = A — fechar o modal não re-renderiza a agenda | 2026-10-13 | dono | Gancho único de fechamento (limpa estado, sem re-render); o wrapper empilhável foi extinto; ações continuam atualizando via `inicializarHome` |
@@ -49,6 +49,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D3 = A — modal de pagamento com valor do ciclo + aviso de congelamento | 2026-10-13 | dono | Valor vem de `alvo.ciclo.valorTotalCiclo` (dados da API — listagem ou histórico; sem cálculo no frontend); redação do aviso encurtada pelo dono na confirmação: “Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.” |
 | D4 = B — prévia do ajuste calculada pelo backend | 2026-10-13 | dono | Contrato aprovado e implementado: `GET /api/financas/:cicloId/simulacao-ajuste?aulasManuaisExtras=<int>` (somente leitura; 404/409; reusa o cálculo oficial); UI consome na abertura + a cada alteração (debounce ~400 ms); spec atualizada (v16) e mock com handler + falha `simulacao` |
 | D5 = B — F5c nesta frente, com o prazo pré-visualizado pelo módulo compartilhado | 2026-10-13 | dono | `calculo-ciclo.js` passa a rodar também no browser (UMD com fallback de global + erro explícito na ordem invertida; tag em `index.html` após `recurrence-helpers.js`); o modal de escolha exibe `validoAte` idêntico ao do envio; spec de reposições reconciliada (v15 — §9.3, decisão 21 e §4.3) |
+| D13 — datas legíveis uniformizadas em **minúsculo** em todos os pontos | 2026-10-13 | dono | Revisa a capitalização do T01/T05: cabeçalhos (“sáb., 17/10 · 18:00”), rótulos (“Só sáb., 17/10 sai…”), detalhes (“Desde sáb., 26/09.”) e “Agendado para” deixam de capitalizar; `formatarDataPtBrLegivel` (minúsculo) é a única forma |
 
 ## 4. Decisões pendentes
 
@@ -228,6 +229,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | M17 — UMD de `calculo-ciclo.js` revertido (require direto no topo, sem fallback de global) | 2 testes de `calculo-ciclo-browser.test.js` | Falharam: `require is not defined` na carga via tag `<script>` | Sim — restaurado; 14/14 focados verdes |
 | M18 — `formatarDesdeSerieExibicao` volta à data crua (`return desde \|\| "início"`) | `T05 — rótulos da exclusão exibem a data em formato legível (D11)` e `T05 — confirmação da execução da série toda usa a data legível (D11)` em `modal-acao-slot.test.js` | Falharam: `Desde 26/09/2026.` em vez de `Desde Sáb., 26/09.` (11 pass / 2 fail) | Sim — restaurado; 13/13 focados verdes e suíte 387/387 |
 | M19 — linha "Período" da mensagem volta a dd/mm/aaaa (`formatarDataPtBr` em `montarResumoExclusaoCadeiaSerie`) | `T05 — confirmação da execução da série toda usa a data legível (D11)` e `T05 — período da série com data final também sai no formato legível` | Falharam (12 pass / 2 fail): `Período: desde 26/09/2026 até sem data de término.` (e `até 19/12/2026.`) | Sim — restaurado; 14/14 focados verdes e suíte 388/388 |
+| M20 — capitalização de volta nos rótulos de exclusão (`dataExibicao` volta a `charAt(0).toUpperCase()`) | `T05 — rótulos da exclusão exibem a data em formato legível (D11)` | Falhou (13 pass / 1 fail): “Só Sáb., 17/10 sai…” em vez de “Só sáb., 17/10 sai…” | Sim — restaurado; 14/14 focados e suíte 388/388 |
 
 ## 12. Registro da execução
 
@@ -372,6 +374,16 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Validação manual no mock** (`default`+`mockEscrita=1`, 433×762; `confirm` interceptado com aborto, sem escrita): mensagem “As 3 aulas do passado mais todas as aulas futuras. Desde Sáb., 26/09.\n\nPeríodo: desde sáb., 26/09 até sem data de término. Reposições continuam preservadas no app.”; série intacta no estado.
 - **Desvios do plano**: nenhum.
 - **Decisão adicional tomada**: nenhuma.
+
+### 2026-10-13 — T05 complemento 3 (datas legíveis uniformizadas em minúsculo — D13, revisão do dono)
+- **Base**: continuação na branch `diag/auditoria-fluxos-ux`. O dono revisou a coexistência registrada no complemento 2 (detalhe “Desde Sáb., 26/09.” × período “desde sáb., 26/09”) e decidiu uniformizar **tudo minúsculo** (D13).
+- **Mudança**: removidas as 4 capitalizações de data legível em `modal-acao-slot.js` — cabeçalho dos modais de escolha (T01), `dataExibicao` dos rótulos, detalhe “Desde …” (`formatarDesdeSerieExibicao` agora só delega + fallback “início”) e “Agendado para”. Resultado: “sáb., 17/10 · 18:00”, “Só sáb., 17/10 sai…”, “Desde sáb., 26/09.”, “Agendado para: seg., 31/08”. Nenhum ponto capitaliza mais data legível.
+- **Arquivos alterados**: `assets/js/modal-acao-slot.js`, `tests-frontend/modal-acao-slot.test.js` (asserts ajustados para minúsculo) e este plano.
+- **Suíte frontend antes/depois**: **388/388 → 388/388** (medido; nenhum teste novo, asserts atualizados, 0 falhas).
+- **Prova por mutação**: M20 (§11) — capitalização reintroduzida nos rótulos derrubou o teste correspondente; restauração conferida com `git status` + 16/16 focados.
+- **Validação manual no mock**: não repetida nesta rodada (ajuste de formato; a pedido do dono — “ajuste simples”; a suíte cobre os textos).
+- **Desvios do plano**: nenhum.
+- **Decisão adicional tomada**: D13 (registrada na §3) — revisa a decisão de capitalização do T01/T05.
 
 ## 13. Achados não alterados
 

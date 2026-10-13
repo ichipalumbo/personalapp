@@ -90,9 +90,7 @@ window.montarContextoExibicaoOcorrencia = function (compromisso) {
     typeof window.formatarDataPtBrLegivel === "function"
       ? window.formatarDataPtBrLegivel(dataOcorrencia)
       : dataOcorrencia;
-  const dataHora = dataLegivel
-    ? `${dataLegivel.charAt(0).toUpperCase()}${dataLegivel.slice(1)} · ${horario}`
-    : horario;
+  const dataHora = dataLegivel ? `${dataLegivel} · ${horario}` : horario;
   return { nomeAluno, dataHora };
 };
 
@@ -663,11 +661,9 @@ function formatarDataSerieExibicao(valor) {
  return window.formatarDataPtBrLegivel(valor) || String(valor);
 }
 
-// T05 (D11): nos rótulos e detalhes a data sai capitalizada ("Só Sáb., 17/10 sai");
-// sem data, mantém "início".
+// T05 (D11): data-raiz da série nos textos de exclusão; sem data, mantém "início".
 function formatarDesdeSerieExibicao(desde) {
- const legivel = formatarDataSerieExibicao(desde);
- return legivel ? `${legivel.charAt(0).toUpperCase()}${legivel.slice(1)}` : "início";
+ return formatarDataSerieExibicao(desde) || "início";
 }
 
 window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeReferencia) {
@@ -675,7 +671,7 @@ window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeRefere
 
  // T05 (D11=A): a data exibida nos rótulos é a do dia em gerenciamento
  // (dataAlvoAcaoStr → dia selecionado → raiz, resolvida pelo chamador) em
- // formato legível — "sáb., 17/10" com a inicial maiúscula, como no T01.
+ // formato legível minúsculo — "sáb., 17/10" (revisão de 2026-10-13).
  const dataBase =
    dataAlvoStr ||
    (compromisso.data ? compromisso.data : "");
@@ -683,9 +679,7 @@ window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeRefere
    dataBase && typeof window.formatarDataPtBrLegivel === "function"
      ? window.formatarDataPtBrLegivel(dataBase)
      : dataBase;
- const dataExibicao = dataLegivel
-   ? `${dataLegivel.charAt(0).toUpperCase()}${dataLegivel.slice(1)}`
-   : "esta data";
+ const dataExibicao = dataLegivel || "esta data";
 
  if (compromisso.frequencia === "uma_vez") {
    return [
@@ -1127,9 +1121,7 @@ window.abrirModalAcaoSlot = function (id) {
         ? window.formatarDataPtBrLegivel(dataAgendadaBruta)
         : dataAgendadaBruta;
     document.getElementById("editInfoDia").textContent =
-      dataAgendadaLegivel
-        ? `Agendado para: ${dataAgendadaLegivel.charAt(0).toUpperCase()}${dataAgendadaLegivel.slice(1)}`
-        : "";
+      dataAgendadaLegivel ? `Agendado para: ${dataAgendadaLegivel}` : "";
     if (containerEscopo) containerEscopo.style.display = "none";
     if (impactoEscopo) impactoEscopo.textContent = "";
     if (acoesUnico) acoesUnico.style.display = "grid";

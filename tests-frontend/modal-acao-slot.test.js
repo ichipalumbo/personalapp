@@ -268,7 +268,7 @@ test('T01 — contexto de exibição usa a ocorrência clicada, não a raiz da s
     const exibicao = window.montarContextoExibicaoOcorrencia(window.aulas[0]);
 
     assert.equal(exibicao.nomeAluno, 'Maria Silva');
-    assert.equal(exibicao.dataHora, 'Sáb., 17/10 · 18:00');
+    assert.equal(exibicao.dataHora, 'sáb., 17/10 · 18:00');
 });
 
 test('T01 — sem clique na Semana, contexto usa o dia selecionado (modo Dia)', async (t) => {
@@ -279,7 +279,7 @@ test('T01 — sem clique na Semana, contexto usa o dia selecionado (modo Dia)', 
     const exibicao = window.montarContextoExibicaoOcorrencia(window.aulas[0]);
 
     assert.equal(exibicao.nomeAluno, 'Maria Silva');
-    assert.equal(exibicao.dataHora, 'Sáb., 17/10 · 18:00');
+    assert.equal(exibicao.dataHora, 'sáb., 17/10 · 18:00');
 });
 
 test('T01 — modal de cobrança exibe nome e data da ocorrência passados pelo chamador', async (t) => {
@@ -292,7 +292,7 @@ test('T01 — modal de cobrança exibe nome e data da ocorrência passados pelo 
     });
 
     assert.equal(window.document.getElementById('reposicaoEscolhaAluno').textContent, 'Maria Silva');
-    assert.equal(window.document.getElementById('reposicaoEscolhaDataHorario').textContent, 'Sáb., 17/10 · 18:00');
+    assert.equal(window.document.getElementById('reposicaoEscolhaDataHorario').textContent, 'sáb., 17/10 · 18:00');
 
     window.fecharModalEscolhaCobrancaReposicao();
     await promessa;
@@ -314,7 +314,7 @@ test('T01 — modal de exclusão exibe nome do aluno e data da ocorrência', asy
     });
     assert.equal(
         window.document.getElementById('infoEscolhaExclusao').textContent,
-        'Maria Silva · Sáb., 17/10 · 18:00',
+        'Maria Silva · sáb., 17/10 · 18:00',
     );
     window.fecharModalEscolhaExclusao();
 
@@ -322,7 +322,7 @@ test('T01 — modal de exclusão exibe nome do aluno e data da ocorrência', asy
     window.abrirModalEscolhaExclusao(opcoes);
     assert.equal(
         window.document.getElementById('infoEscolhaExclusao').textContent,
-        'Maria Silva · Sáb., 17/10 · 18:00',
+        'Maria Silva · sáb., 17/10 · 18:00',
     );
     window.fecharModalEscolhaExclusao();
 });
@@ -337,18 +337,18 @@ test('T05 — rótulos da exclusão exibem a data em formato legível (D11)', as
     const instancia = opcoes.find((opcao) => opcao.acao === 'instancia');
     const daqui = opcoes.find((opcao) => opcao.acao === 'daqui');
 
-    assert.equal(instancia.detalhe, 'Só Sáb., 17/10 sai. A série continua.');
-    assert.equal(daqui.detalhe, 'Sáb., 17/10 em diante. O histórico anterior fica.');
+    assert.equal(instancia.detalhe, 'Só sáb., 17/10 sai. A série continua.');
+    assert.equal(daqui.detalhe, 'sáb., 17/10 em diante. O histórico anterior fica.');
 
     // A raiz da série no texto da "série toda" também sai legível (sem ano).
     assert.match(
         opcoes.find((opcao) => opcao.acao === 'serie').detalhe,
-        /Desde Sáb\., 26\/09\.$/,
+        /Desde sáb\., 26\/09\.$/,
     );
 
     // Sem data resolvida pelo chamador, o fallback interno usa a raiz da série.
     const semData = window.montarOpcoesExclusaoSlot(window.aulas[0]);
-    assert.equal(semData.find((opcao) => opcao.acao === 'daqui').detalhe, 'Sáb., 26/09 em diante. O histórico anterior fica.');
+    assert.equal(semData.find((opcao) => opcao.acao === 'daqui').detalhe, 'sáb., 26/09 em diante. O histórico anterior fica.');
 });
 
 test('T05 — daqui pra frente ancora no dia selecionado no modo Dia (D11)', async (t) => {
@@ -376,7 +376,7 @@ test('T05 — avulsa exibe "Agendado para" em formato legível (D11)', async (t)
 
     assert.equal(
         window.document.getElementById('editInfoDia').textContent,
-        'Agendado para: Seg., 31/08',
+        'Agendado para: seg., 31/08',
         'sem ISO cru nem pt-BR com ano',
     );
     window.fecharModalAcaoSlot();
@@ -426,7 +426,7 @@ test('T05 — confirmação da execução da série toda usa a data legível (D1
     await barreira();
 
     assert.equal(capturado.confirmacoes.length, 1, 'uma única confirmação para a série inteira');
-    assert.match(capturado.confirmacoes[0], /Desde Sáb\., 26\/09\./, 'raiz da série legível, sem ano');
+    assert.match(capturado.confirmacoes[0], /Desde sáb\., 26\/09\./, 'raiz da série legível, sem ano');
     assert.match(
         capturado.confirmacoes[0],
         /Período: desde sáb\., 26\/09 até sem data de término\./,
