@@ -40,7 +40,7 @@ const SCRIPTS = [
 // Markup real dos modais, extraído do index.html uma única vez.
 const HTML_MODAIS = (() => {
     const fonte = new JSDOM(fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8'));
-    const html = ['modalAgendamento', 'modalAcaoSlot']
+    const html = ['modalAgendamento', 'modalAcaoSlot', 'modalEscolhaCobrancaReposicao', 'modalEscolhaExclusao']
         .map((id) => {
             const elemento = fonte.window.document.getElementById(id);
             return elemento ? elemento.outerHTML : '';
@@ -51,6 +51,7 @@ const HTML_MODAIS = (() => {
 })();
 
 const ALUNO_ANA = { id: 'aluno-1', nome: 'Ana', objetivo: 'Personal Trainer', status: 'ativo' };
+const ALUNO_MARIA = { id: 'aluno-maria', nome: 'Maria Silva', objetivo: 'Personal Trainer', status: 'ativo' };
 
 function aulaAvulsa(overrides = {}) {
     return {
@@ -62,6 +63,23 @@ function aulaAvulsa(overrides = {}) {
         excecoes: [],
         horarioInicio: '09:00',
         horarioFim: '10:00',
+        ...overrides,
+    };
+}
+
+function serieSabado(overrides = {}) {
+    return {
+        id: 'serie-1',
+        tipo: 'aula',
+        alunoId: 'aluno-maria',
+        frequencia: 'semanal',
+        tipoRecorrencia: 'semanal',
+        recorrenciaDataInicio: '2026-09-26',
+        diasSemana: ['Sábado'],
+        data: '2026-09-26',
+        excecoes: [],
+        horarioInicio: '18:00',
+        horarioFim: '19:00',
         ...overrides,
     };
 }
@@ -237,4 +255,72 @@ test('T07 — fechar pelo botão Voltar não grava nada', async (t) => {
     assert.equal(aulasGravadas[0].horarioInicio, '09:00', 'estado intacto');
     assert.equal(aulasGravadas[0].horarioFim, '10:00');
     assert.equal(window.contextoDados.obterPendencia(), null);
+});
+
+// ── T01 (plano 2026-10-13): cabeçalho dos modais de escolha ──────────────────
+
+test('T01 — contexto de exibição usa a ocorrência clicada, não a raiz da série', async (t) => {
+    const { window } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
+    window.dataAlvoAcaoStr = '17/10/2026';
+
+    const exibicao = window.montarContextoExibicaoOcorrencia(window.aulas[0]);
+
+    assert.equal(exibicao.nomeAluno, 'Maria Silva');
+    assert.equal(exibicao.dataHora, 'Sáb., 17/10 · 18:00');
+});
+
+test('T01 — sem clique na Semana, contexto usa o dia selecionado (modo Dia)', async (t) => {
+    const { window } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
+    window.dataAlvoAcaoStr = null;
+    window.dataSelecionada = new window.Date(2026, 9, 17, 12, 0, 0); // 17/10/2026, sábado
+
+    const exibicao = window.montarContextoExibicaoOcorrencia(window.aulas[0]);
+
+    assert.equal(exibicao.nomeAluno, 'Maria Silva');
+    assert.equal(exibicao.dataHora, 'Sáb., 17/10 · 18:00');
+});
+
+test('T01 — modal de cobrança exibe nome e data da ocorrência passados pelo chamador', async (t) => {
+    const { window } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
+    window.dataAlvoAcaoStr = '17/10/2026';
+    const aula = window.aulas[0];
+
+    const promessa = window.abrirModalEscolhaCobrancaReposicao(aula, () => {}, {
+        contextoExibicao: window.montarContextoExibicaoOcorrencia(aula),
+    });
+
+    assert.equal(window.document.getElementById('reposicaoEscolhaAluno').textContent, 'Maria Silva');
+    assert.equal(window.document.getElementById('reposicaoEscolhaDataHorario').textContent, 'Sáb., 17/10 · 18:00');
+
+    window.fecharModalEscolhaCobrancaReposicao();
+    await promessa;
+});
+
+test('T01 — modal de exclusão exibe nome do aluno e data da ocorrência', async (t) => {
+    const { window } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
+    window.dataAlvoAcaoStr = '17/10/2026';
+    window.idCompromissoSelecionado = 'serie-1';
+    const opcoes = [
+        { acao: 'instancia', titulo: 'Excluir esta aula', detalhe: 'Só 17/10/2026 sai. A série continua.' },
+        { acao: 'daqui', titulo: 'Excluir daqui para frente', detalhe: '17/10/2026 em diante.' },
+    ];
+
+    // Produção: o chamador passa o contexto de exibição.
+    window.abrirModalEscolhaExclusao(opcoes, {
+        compromisso: window.aulas[0],
+        exibicao: window.montarContextoExibicaoOcorrencia(window.aulas[0]),
+    });
+    assert.equal(
+        window.document.getElementById('infoEscolhaExclusao').textContent,
+        'Maria Silva · Sáb., 17/10 · 18:00',
+    );
+    window.fecharModalEscolhaExclusao();
+
+    // Fallback do modal (chamador sem contexto) — mesmo resultado, sem "Aluno".
+    window.abrirModalEscolhaExclusao(opcoes);
+    assert.equal(
+        window.document.getElementById('infoEscolhaExclusao').textContent,
+        'Maria Silva · Sáb., 17/10 · 18:00',
+    );
+    window.fecharModalEscolhaExclusao();
 });

@@ -19,11 +19,12 @@ Tratar os sete pontos de atrito do diagnóstico (cabeçalho com data errada nos 
 
 Os critérios de implementação se aplicam aos cartões liberados e à opção aprovada. **Corrigido** significa atender integralmente ao achado; **parcialmente tratado** exige registrar o que permanece; **adiado** não autoriza implementação nem conta como correção. Toda decisão de não alterar deve ser registrada nas §12/§13.
 
-- [ ] F1 conforme D1/D9: modais de escolha exibem **data e horário da ocorrência clicada** e **nome do aluno**; a formatação segue a escolha aprovada, com limitações remanescentes registradas.
+- [x] F1 conforme D1/D9 (T01 executado em 2026-10-13 — provas na §11 e registro na §12): modais de escolha exibem **data e horário da ocorrência clicada** e **nome do aluno**; formatação aprovada aplicada (“Sáb., 17/10 · 18:00”); sem limitações remanescentes no cabeçalho.
 - [ ] F2 conforme D3: opção A mostra valor e aviso de congelamento; opção B mostra só o aviso e deixa a ausência do valor registrada como tratamento parcial.
 - [ ] F3 conforme D4: A explica o ajuste com dados existentes; B apresenta prévia oficial do backend; C deixa o cartão adiado. Nenhuma opção reimplementa cálculo no frontend (regra 4.3 do repo).
 - [ ] F4: fechar o modal de ação preserva a posição de rolagem da Semana, inclusive após os callbacks e a rolagem assíncronos terminarem.
 - [ ] F5 conforme D5: textos aprovados alinhados ao fluxo real; F5c e qualquer decisão de não alterar ficam registrados separadamente.
+- [ ] Achados absorvidos no T05 (D11=A): rótulos das opções de exclusão no modo Dia exibem o dia selecionado em formato legível; o corte do "daqui pra frente" parte do dia selecionado, não da raiz; "Agendado para" do modal de ação sem ISO cru.
 - [ ] F6/F7: falha do financeiro oferece recuperação direta sem recarregar a página; histórico de reposições não afirma "nenhuma" durante o carregamento.
 - [ ] Regressão: suíte frontend medida antes/depois de cada cartão que a afete; suíte backend também quando houver mudança em `backend/`, inclusive na exceção D4=B. Números medidos registrados na §12, sem regressões.
 - [ ] Nenhuma regra de negócio alterada; arquivos do backend somente na exceção aprovada D4=B, reutilizando o cálculo oficial. Nenhuma escrita em produção; validação de UI no mock (433×762, DPR 2.81 e emulação mobile completa; 320×568 e 390×844 como stress).
@@ -38,12 +39,17 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | Validação de UI exclusivamente no mock (`?mockScenario=`, `?mockEscrita=1` só no `default`) | 2026-10-13 | agente + dono | Nenhuma escrita toca rede/banco real |
 | Revisão dos seis pontos identificados no plano, sem implementar os cartões | 2026-10-13 | dono | Apenas este plano é atualizado; as escolhas de produto da §4 continuam pendentes |
 | Continuar na branch `diag/auditoria-fluxos-ux` nesta revisão | 2026-10-13 | dono | Preservar os dois documentos não commitados; upstream aponta para a própria branch, não para `main` |
+| D1 = B — corrigir cabeçalho pelo contexto passado pelo chamador | 2026-10-13 | dono | Helper `montarContextoExibicaoOcorrencia`; os dois chamadores passam nome + data/hora da ocorrência; modais só consomem |
+| D9 = Sim — normalizar a exibição ISO | 2026-10-13 | dono | `formatarDataPtBrLegivel` passa a usar `normalizarDataParaISO`; ISO deixa de sair cru em qualquer chamador |
+| Formato aprovado da linha de data/hora: `Sáb., 17/10 · 18:00` | 2026-10-13 | dono | Capitalização aplicada no contexto de exibição; o formato global do app (minúsculo) permanece |
+| Continuar na branch `diag/auditoria-fluxos-ux` nesta rodada (registro documental) | 2026-10-13 | dono | Working tree do T01 preservado; nenhuma escrita de código nesta rodada |
+| D11 = A — achados do T01 absorvidos no T05 (exibição + âncora de execução) | 2026-10-13 | dono | T05 passa a corrigir também o corte do "daqui pra frente" no modo Dia; validação de escrita no mock e teste automatizado entram no cartão |
 
 ## 4. Decisões pendentes
 
 | # | Pergunta | Opções | Bloqueante? |
 |---|---|---|---|
-| D1 | F1: corrigir cabeçalho dos modais? Formato do subtítulo | A: corrigir com `dataAlvoAcaoStr` + `getAluno`, formato da spec (`Sáb., 17/10 · 18:00`) / B: corrigir via contexto passado pelo chamador / C: não alterar | **sim (T01)** |
+| D1 | F1: corrigir cabeçalho dos modais? Formato do subtítulo | **Resolvida (2026-10-13): B** — contexto passado pelo chamador; formato aprovado `Sáb., 17/10 · 18:00` | — (executada no T01) |
 | D2 | F4: preservar rolagem | A: não re-renderizar no fechamento (validar dependências do re-render) / B: re-renderizar e restaurar `scrollTop` capturado | **sim (T02)** |
 | D3 | F2: conteúdo do modal de pagamento | A: valor do ciclo + aviso de congelamento / B: só o aviso | **sim (T03)** |
 | D4 | F3: efeito do ajuste | A: texto + valores já visíveis na tela / B: prévia calculada pelo backend / C: não alterar | **sim (T04)** |
@@ -51,21 +57,22 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D6 | F6: recuperação do financeiro | A: absorver roadmap 1.11 (botão Atualizar) cobrindo o estado de erro / B: só "Tentar novamente" no erro | **sim (T06)** |
 | D7 | F7: corrigir resumo em carregamento | A: "Atualizando…"/esqueleto conforme §9.4.3 / B: ocultar resumo no load | **sim (T07)** — baixo risco não dispensa a escolha do dono |
 | D8 | Pré-pago (mês futuro) | Spec nova / roadmap / adiar | não — fora desta frente |
-| D9 | F1 formato legível: ISO atual ("2026-09-26") aparece por fallback do formatador — corrigir junto? | Sim: normalizar a exibição / Não: manter a formatação e registrar a limitação remanescente | **sim (T01)** |
+| D9 | F1 formato legível: ISO atual ("2026-09-26") aparece por fallback do formatador — corrigir junto? | **Resolvida (2026-10-13): Sim** — normalizar a exibição no formatador | — (executada no T01) |
 | D10 | Ordem de execução, ainda não aprovada | A: por risco, conforme a auditoria (§11) / B: por tema, conforme a sugestão anterior / C: outra ordem definida pelo dono | **sim (ordem da execução)** |
+| D11 | Achados do T01 (opções de exclusão no modo Dia + "Agendado para"): destino | A: T05 absorve exibição + âncora de execução / B: T05 só exibição / C: cartão novo | **Resolvida (2026-10-13): A** | — (executada no T05) |
 
 Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B resulta em tratamento parcial de F2; D1=C, D4=C e D5=C deixam os respectivos trabalhos adiados. A ordem da §9 é uma proposta, não uma decisão fechada.
 
 ## 5. Escopo
 
-- **Arquivos prováveis**: `assets/js/modal-acao-slot.js` (T01), `assets/js/view-calendario.js` (T02), `assets/js/view-financas.js` (T03, T04, T06), `index.html` (T05, textos), `assets/js/modal-agendamento.js` (T05), `assets/js/view-alunos.js` (T07); testes em `tests-frontend/` quando aplicável (ex.: `modal-acao-slot.test.js`, `view-financas-*.test.js`, `c-alunos-complementos.test.js`).
+- **Arquivos prováveis**: `assets/js/modal-acao-slot.js` (T01; T05 — rótulos, âncora do "daqui pra frente" e "Agendado para", D11), `assets/js/view-calendario.js` (T02), `assets/js/view-financas.js` (T03, T04, T06), `index.html` (T05, textos), `assets/js/modal-agendamento.js` (T05), `assets/js/view-alunos.js` (T07); testes em `tests-frontend/` quando aplicável (ex.: `modal-acao-slot.test.js`, `view-financas-*.test.js`, `c-alunos-complementos.test.js`).
 - **Exceção condicionada a D4=B**: serviço/rota de prévia no backend, testes em `backend/test/` e respostas/cenários em `mocks/ui-runtime/`. Definir e registrar o contrato da API na spec de finanças antes de implementar; não escolher rota ou nomes de campos implicitamente.
 - **Documentos**: este plano; `docs/roadmap.md` (item 1.11 e itens relacionados); spec de finanças se D3 exigir registrar o texto e obrigatoriamente se D4=B introduzir o contrato de prévia.
-- **Comportamentos que podem mudar**: cabeçalho dos modais de escolha; modal de pagamento; modal de ajuste; rolagem ao fechar modal; textos; estado de falha do financeiro; resumo de reposições no carregamento. Nenhuma regra de valor, status ou persistência muda; a prévia D4=B é somente leitura.
+- **Comportamentos que podem mudar**: cabeçalho dos modais de escolha; modal de pagamento; modal de ajuste; rolagem ao fechar modal; textos; estado de falha do financeiro; resumo de reposições no carregamento; exibição das opções de exclusão no modo Dia e âncora do corte do "daqui pra frente" (T05/D11); formatação da linha "Agendado para". Nenhuma regra de valor, status ou persistência muda; a prévia D4=B é somente leitura.
 
 ## 6. Fora de escopo
 
-- Alterar regras de negócio, cálculo, prazo, ciclo, reposição ou sincronização GCal. D4=B pode expor o cálculo existente como prévia, nunca substituí-lo ou duplicá-lo.
+- Alterar regras de negócio, cálculo, prazo, ciclo, reposição ou sincronização GCal. D4=B pode expor o cálculo existente como prévia, nunca substituí-lo ou duplicá-lo. A âncora do corte no modo Dia (T05/D11=A) não incorre nesta restrição: alinha a exclusão ao dia em gerenciamento, como nos fluxos de edição e de exclusão de instância, sem tocar cálculo, prazo, ciclo, reposição ou GCal.
 - Pagamento antecipado (D8) — decisão de produto em spec separada.
 - Alvos de toque do topo (roadmap 5.9) exceto se o dono decidir puxar para cá.
 - Refatorações amplas de `view-*` ou mudança de arquitetura do DialogController.
@@ -81,6 +88,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - Se D4=B: prévia reutiliza o cálculo oficial, não grava dados, não cria ciclo e não confirma pagamento/ajuste. Simulação no mock serve apenas para UI; a paridade financeira é provada no backend.
 - Ordem das tags `<script>` do `index.html` preservada; qualquer par novo entra em `DEPENDENCIAS_DE_CARGA` de `tests-frontend/index-html-ordem.test.js`.
 - `requireAuth` e o filtro de `ownerEmail` seguem obrigatórios em qualquer rota/query, inclusive na eventual prévia D4=B. Nenhuma alteração nos módulos de autenticação está autorizada.
+- Exclusão no modo Dia (T05/D11=A): "só esta" e "daqui pra frente" tomam o dia selecionado como âncora — mesma fonte do cabeçalho "Gerenciando dia".
 
 ## 8. Baseline
 
@@ -142,16 +150,16 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Riscos e rollback**: médio se D4=B (superfície de API — dinheiro); alto cuidado com a seção "Código que calcula dinheiro" das instruções do repo. Rollback: revert; nenhuma migração de dados.
 - **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
 
-### Cartão T05 — Textos de produto alinhados (F5a, F5b; F5c conforme decisão)
-- **Objetivo / resultado**: nenhum texto promete "aba Reposições" ou "próximo passo"; F5c (linha de prazo §9.3) endereçado conforme D5.
-- **Depende de**: D5.
-- **Arquivos / componentes prováveis**: `index.html` (linha ~1464 do modal de escolha; verificar se há outros trechos com o mesmo texto), `assets/js/modal-agendamento.js` (linhas 178-179).
-- **Inclui**: redação aprovada; busca por outras ocorrências de textos desatualizados ("aba Reposições", "próximo passo") antes de fechar o cartão.
-- **Não inclui**: mudar comportamento dos modais; se D5 decidir por F5c, a linha de prazo só entra com decisão explícita sobre a origem do dado (hoje o prazo nasce no envio — §6.1; "vem do campo retornado pela API" — §9.3 — precisa de confirmação).
+### Cartão T05 — Textos de produto alinhados e achados do T01 (F5a, F5b; F5c conforme D5; D11=A)
+- **Objetivo / resultado**: nenhum texto promete "aba Reposições" ou "próximo passo"; F5c (linha de prazo §9.3) endereçado conforme D5; achados absorvidos do T01 (D11=A): rótulos das opções de exclusão no modo Dia legíveis e coerentes com a execução, corte do "daqui pra frente" ancorado no dia selecionado (não na raiz) e linha "Agendado para" do modal de ação sem ISO cru.
+- **Depende de**: D5; D11 (resolvida: A).
+- **Arquivos / componentes prováveis**: `index.html` (linha ~1464 do modal de escolha; verificar se há outros trechos com o mesmo texto), `assets/js/modal-agendamento.js` (linhas 178-179), `assets/js/modal-acao-slot.js` (rótulos em `montarOpcoesExclusaoSlot` e âncora do handler de `btnExcluirSlot`; `executarExclusaoSerieAPartirDe`; linha "Agendado para" do modal de ação ~1096), `tests-frontend/modal-acao-slot.test.js` (casos novos — hoje os rótulos não têm cobertura).
+- **Inclui**: redação aprovada; busca por outras ocorrências de textos desatualizados ("aba Reposições", "próximo passo") antes de fechar o cartão; dos achados D11=A: (i) exibir nos rótulos a data do dia selecionado em formato legível, com a mesma ordem de fallback dos fluxos de edição/instância (`dataAlvoAcaoStr` → dia selecionado → raiz); (ii) fazer o corte do "daqui pra frente" partir do dia selecionado no modo Dia; (iii) formatar "Agendado para" com o formatador existente (D9).
+- **Não inclui**: alterar `montarResumoExclusaoCadeiaSerie`, `aparaCadeiaSerieAPartirDe` ou os demais fluxos de exclusão; mudar comportamento dos modais além dos itens de D11; se D5 decidir por F5c, a linha de prazo só entra com decisão explícita sobre a origem do dado (hoje o prazo nasce no envio — §6.1; "vem do campo retornado pela API" — §9.3 — precisa de confirmação).
 - **Decisões pendentes / bloqueios**: D5 (dono).
-- **Critérios de aceite**: textos aprovados aplicados; nenhuma promessa de caminho inexistente restante; se F5c entrar, dado correto exibido no momento correto.
-- **Validação**: inspeção no mock em 433×762 e 320×568 (textos longos); se algum teste automatizado verifica os textos, atualizar e provar por mutação; suíte frontend antes/depois.
-- **Riscos e rollback**: baixo. Revert simples.
+- **Critérios de aceite**: textos aprovados aplicados; nenhuma promessa de caminho inexistente restante; se F5c entrar, dado correto exibido no momento correto; no modo Dia (série `ag2`, 17/10): rótulos exibem o dia selecionado em formato legível, "daqui pra frente" remove de 17/10 em diante (não a série inteira a partir da raiz) e "Agendado para" (avulsa João, 25/09) exibe data legível.
+- **Validação**: inspeção no mock em 433×762 e 320×568 (textos longos); se algum teste automatizado verifica os textos, atualizar e provar por mutação; suíte frontend antes/depois. Achados D11=A: mock `default`+`mockEscrita=1` no modo Dia sobre `ag2` — conferir rótulos, contagens do confirm e resultado do corte (a raiz não pode ser a âncora); avulsa para "Agendado para"; automatizar rótulos/âncora nos testes (`montarOpcoesExclusaoSlot` é função pura) com prova por mutação e declarar a lacuna visual restante.
+- **Riscos e rollback**: baixo-médio — a âncora altera a execução da exclusão no modo Dia (validar com escrita no mock e teste). Revert simples.
 - **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
 
 ### Cartão T06 — Recuperação direta na falha do financeiro (F6; 1.11 somente se D6=A)
@@ -186,7 +194,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 |---|---|---|---|
 | Automatizada | Resumos, dados de ciclo selecionado e transições de estado tocados pelos cartões; nenhum cálculo novo no frontend | `tests-frontend/` (`node --test`) | Rodar antes/depois de cada cartão que a afete e registrar na §12; cobertura nova com mutação |
 | Automatizada (backend) | Se D4=B: paridade prévia × ajuste oficial, snapshot, piso zero, métodos de cobrança, isolamento e ausência de escrita | `backend/` (`node --test`) | Medir antes/depois de qualquer mudança no backend; mock não prova a regra financeira |
-| Manual (obrigatória) | Cabeçalhos nos caminhos de série/avulsa; rolagem após callback/rolagem suave; pagamento vigente/histórico e `por_aula`/`valor_fixo`; erro → tentativa → sucesso sem reload | Mock: `index.html?mockScenario=default`, com a emulação acima | `?mockEscrita=1` só no `default`; `mockFalha`/`configurarRede` para T06; `mockLatencia` para T07; fixtures controladas quando necessário |
+| Manual (obrigatória) | Cabeçalhos nos caminhos de série/avulsa; exclusão no modo Dia (rótulos + corte — T05/D11); rolagem após callback/rolagem suave; pagamento vigente/histórico e `por_aula`/`valor_fixo`; erro → tentativa → sucesso sem reload | Mock: `index.html?mockScenario=default`, com a emulação acima | `?mockEscrita=1` só no `default`; `mockFalha`/`configurarRede` para T06; `mockLatencia` para T07; fixtures controladas quando necessário |
 | Negativos | Ação de escrita com falha simulada continua bloqueando/revertendo como hoje (T02, T03) | Mock `mockFalha`/retenção | Não introduzir regressão nos guardas de contexto (A→B→A) |
 
 **Não coberto por esta validação**: pixels, contraste e tipografia fina (permanecem manuais, como já registrado no repo); comportamento real de rede; dados de produção.
@@ -195,7 +203,9 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 
 | Mutação aplicada | Teste que deve falhar | Resultado observado | Restaurado? |
 |---|---|---|---|
-| (preenchido durante a execução, por cartão com teste) | | | |
+| M1 — `montarContextoExibicaoOcorrencia` ignora `dataAlvoAcaoStr` (volta a usar só o dia selecionado) | 3 testes T01 de `modal-acao-slot.test.js` (contexto, cobrança, exclusão) | Falharam: esperado `Sáb., 17/10 · 18:00`, obtido `Seg., 31/08 · 18:00` | Sim — suíte 367/367 após restaurar |
+| M2 — nome do aluno sem `getAluno` (fallback "Aluno") | 4 testes T01 de `modal-acao-slot.test.js` | Falharam: obtido `Aluno · Sáb., 17/10 · 18:00`, esperado `Maria Silva ...` | Sim — suíte 367/367 após restaurar |
+| M3 — `formatarDataPtBrLegivel` volta a `converterPtBrParaISO` (sem normalização ISO) | `formatarDataPtBrLegivel normaliza entrada ISO (T01/D9)` em `utils-datetime.test.js` | Falhou: obtido `2026-09-26` cru, esperado `sáb., 26/09` | Sim — suíte 367/367 após restaurar |
 
 ## 12. Registro da execução
 
@@ -214,6 +224,29 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Desvio do plano**: a ordem por tema deixou de figurar como decisão fechada; o dono ainda precisa escolher a sequência em D10.
 - **Decisão adicional tomada**: autorização apenas para ajustar o documento e continuar na branch atual; nenhuma opção de implementação foi aprovada nesta revisão.
 
+### 2026-10-13 — T01 executado (cabeçalho dos modais de escolha — F1)
+- **Base**: `diag/auditoria-fluxos-ux`, HEAD `a4f3654` (documentos commitados pelo dono) + mudanças desta rodada no working tree. D10 segue pendente; esta execução seguiu a ordem proposta na §9.
+- **Decisões aplicadas**: D1=B (contexto pelo chamador), D9=Sim (normalizar ISO) e formato aprovado `Sáb., 17/10 · 18:00`.
+- **Arquivos alterados**: `assets/js/modal-acao-slot.js` (helper `montarContextoExibicaoOcorrencia`; consumo nos modais de cobrança e de exclusão; contexto nos dois chamadores), `assets/js/utils-datetime.js` (formatter normaliza ISO), `tests-frontend/modal-acao-slot.test.js` (+4 testes T01; modais de escolha no harness) e `tests-frontend/utils-datetime.test.js` (novo; +3 testes).
+- **Suíte frontend antes/depois**: **360/360 → 367/367** (medido; +7 testes novos, 0 falhas).
+- **Suíte backend antes/depois**: **232/232 → 232/232** (medido depois; nenhum arquivo de backend alterado).
+- **Prova por mutação**: 3 mutações (M1–M3) derrubaram os testes correspondentes; restauração conferida com `git status` + suítes verdes (§11).
+- **Validação manual no mock** (`default`, 433×762, DPR 2.81, toque/UA mobile):
+  - Semana, série ag2 na ocorrência 17/10 (raiz 26/09): cobrança exibe "Maria Silva / Sáb., 17/10 · 18:00"; exclusão exibe "Maria Silva · Sáb., 17/10 · 18:00" e opções com 17/10 — antes: "Aluno" e "2026-09-26" cru.
+  - Modo Dia (17/10; `dataAlvoAcaoStr` nulo): fallback pelo dia selecionado; cobrança e exclusão corretas.
+  - Avulsa (João, 25/09, `btnMandarParaReposicao`): "João Pereira / Sex., 25/09 · 19:00".
+- **Achados observados no mock (não alterados — §13)**: opções do modal de exclusão em modo Dia usam a data-raiz crua ("Só 2026-09-26 sai"); modal de ação mostra "Agendado para: 2026-09-25" (ISO cru).
+- **Desvio do plano**: nenhum.
+- **Decisão adicional tomada**: nenhuma.
+
+### 2026-10-13 — Absorção dos achados do T01 no T05 (revisão documental)
+- **Branch usada**: `diag/auditoria-fluxos-ux`, continuidade confirmada pelo dono; working tree do T01 preservado (sem commit novo nesta rodada).
+- **Arquivos alterados nesta revisão**: somente este plano.
+- **Decisão tomada**: D11=A — os dois achados do T01 são absorvidos no T05: exibição das opções de exclusão no modo Dia, âncora de execução do "daqui pra frente" (dia selecionado) e formatação da linha "Agendado para" do modal de ação.
+- **Leitura de código que fundamentou a decisão**: no modo Dia (`dataAlvoAcaoStr` nulo), o handler de `btnExcluirSlot` e `executarExclusaoSerieAPartirDe` usam `compromisso.data` (raiz) antes do dia selecionado, enquanto edição e exclusão de instância usam o dia selecionado; com a raiz, "daqui pra frente" removeria a série inteira — inferência de código, ainda não observada em execução no mock (a validar no T05).
+- **Suíte antes/depois nesta revisão**: não reexecutadas (nenhum código alterado); última medição — frontend **367/367**, backend **232/232** (T01, 2026-10-13).
+- **Desvio do plano**: nenhum.
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
@@ -224,6 +257,8 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | F5c — linha de prazo §9.3 no modal de escolha | Depende de D5; origem do dado precisa de confirmação (prazo nasce no envio) | este plano, T05 / spec | dono |
 | F2 — valor ausente no modal, se D3=B | A opção B trata apenas o aviso; ausência do valor continua pendente | registrar tratamento parcial nas §12/§13 | dono |
 | Achados adiados por D1=C, D4=C ou D5=C; formatação mantida por D9=Não | Não declarar corrigido o que o dono decidir não implementar | registrar decisão e remanescente nas §12/§13 | dono |
+| Exclusão em modo Dia: rótulos usam a data-raiz crua e o corte do "daqui pra frente" ancora na raiz (removeria a série inteira; inferência de código) | Absorvido no T05 por D11=A (exibição + âncora de execução); execução pendente | este plano, T05 | agente |
+| Modal de ação: linha "Agendado para: 2026-09-25" exibe ISO cru | Absorvido no T05 por D11=A (exibição); execução pendente | este plano, T05 | agente |
 
 ## 14. Deploy e rollback
 
@@ -235,7 +270,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 ## 15. Fechamento
 
 - **Critérios atendidos**: pendente.
-- **Pendências**: decisões de implementação D1–D7 e D9; ordem de execução D10; contrato aprovado se D4=B. D8 permanece fora da frente. Executar e validar somente os cartões liberados.
+- **Pendências**: decisões de implementação D2–D7 (D1, D9 e D11 resolvidas); ordem de execução D10; contrato aprovado se D4=B. D8 permanece fora da frente. Executar e validar somente os cartões liberados.
 - **Registro obrigatório**: classificar F1–F7 como corrigido, parcialmente tratado ou adiado conforme os resultados e decisões, com os remanescentes na §13; nenhum achado adiado/parcial deve aparecer como integralmente corrigido.
 - **Riscos aceitos**: pendente.
 - **Data de fechamento**: pendente.

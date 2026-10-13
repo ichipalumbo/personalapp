@@ -10,7 +10,8 @@
 //         window.atualizarAvisoConflitoEdicao, window.getLabelEscopoRecorrencia,
 //         window.getResumoEscopoRecorrencia, window.atualizarResumoEscopoRecorrencia,
 //         window.configurarEscopoRecorrenciaEdicao, window.abrirReagendarAulaModalSlot,
-//         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal
+//         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal,
+//         window.montarContextoExibicaoOcorrencia
 
 // Exposto em window para acesso cross-módulo (widget-stepper-duracao usa para edicao)
 window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
@@ -61,6 +62,39 @@ function obterCompromissoPorId(id) {
 function obterCompromissoSelecionado() {
   return obterCompromissoPorId(window.idCompromissoSelecionado);
 }
+
+/**
+ * Contexto de exibição da ocorrência para os modais de escolha (T01/D1-B):
+ * resolve nome do aluno e a data/hora da aula em questão — ocorrência clicada
+ * no modo Semana (dataAlvoAcaoStr) ou dia selecionado no modo Dia — e o modal
+ * apenas consome. Formato aprovado: "Sáb., 17/10 · 18:00".
+ */
+window.montarContextoExibicaoOcorrencia = function (compromisso) {
+  const aluno =
+    typeof window.getAluno === "function" && compromisso
+      ? window.getAluno(compromisso.alunoId)
+      : null;
+  const nomeAluno =
+    (aluno && aluno.nome ? String(aluno.nome) : "") ||
+    (compromisso && (compromisso.alunoNome || compromisso.aluno)) ||
+    "Aluno";
+  const dataOcorrencia =
+    window.dataAlvoAcaoStr ||
+    (typeof window.getDataSelecionadaPtBr === "function"
+      ? window.getDataSelecionadaPtBr()
+      : "") ||
+    (compromisso && typeof compromisso.data === "string" ? compromisso.data : "");
+  const horario =
+    (compromisso && (compromisso.horarioInicio || compromisso.horario)) || "--:--";
+  const dataLegivel =
+    typeof window.formatarDataPtBrLegivel === "function"
+      ? window.formatarDataPtBrLegivel(dataOcorrencia)
+      : dataOcorrencia;
+  const dataHora = dataLegivel
+    ? `${dataLegivel.charAt(0).toUpperCase()}${dataLegivel.slice(1)} · ${horario}`
+    : horario;
+  return { nomeAluno, dataHora };
+};
 
 function gerarIdReposicao() {
   return `repo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -1175,21 +1209,16 @@ window.abrirModalEscolhaCobrancaReposicao = function (
       return;
     }
 
-    const aluno =
-      typeof window.getAluno === "function"
-        ? window.getAluno(compromisso.alunoId)
-        : null;
-    const dataOriginal =
-      compromisso.data && typeof compromisso.data === "string"
-        ? compromisso.data
-        : window.getDataSelecionadaPtBr
-          ? window.getDataSelecionadaPtBr()
-          : "";
-    const nomeAluno = aluno && aluno.nome ? String(aluno.nome) : "Aluno";
-    const dataHora = `${window.formatarDataPtBrLegivel ? window.formatarDataPtBrLegivel(dataOriginal) : dataOriginal} · ${compromisso.horarioInicio || "00:00"}`;
+    // T01 (D1=B): o chamador passa o contexto de exibição (nome + data/hora da
+    // ocorrência); sem contexto, o módulo resolve pelo mesmo helper.
+    const contextoExibicao =
+      (opcoes && opcoes.contextoExibicao) ||
+      window.montarContextoExibicaoOcorrencia(compromisso);
 
-    document.getElementById("reposicaoEscolhaAluno").textContent = nomeAluno;
-    document.getElementById("reposicaoEscolhaDataHorario").textContent = dataHora;
+    document.getElementById("reposicaoEscolhaAluno").textContent =
+      contextoExibicao.nomeAluno;
+    document.getElementById("reposicaoEscolhaDataHorario").textContent =
+      contextoExibicao.dataHora;
 
     const opcaoButtons = modal.querySelectorAll("[data-reposicao-cobravel]");
     let escolhaConsumida = false;
@@ -1862,10 +1891,12 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
         : null;
 
   if (info && compromisso) {
-    const nomeAluno = compromisso.alunoNome || compromisso.aluno || "Aluno";
-    const dia = compromisso.data || compromisso.dataInicio || "esta data";
-    const horario = compromisso.horario || compromisso.horarioInicio || "--:--";
-    info.textContent = `${nomeAluno} · ${dia} · ${horario}`;
+    // T01 (D1=B): contexto de exibição vem do chamador; sem ele, resolve pelo
+    // mesmo helper — nome via getAluno e data da ocorrência clicada.
+    const contextoExibicao =
+      (contexto && contexto.exibicao) ||
+      window.montarContextoExibicaoOcorrencia(compromisso);
+    info.textContent = `${contextoExibicao.nomeAluno} · ${contextoExibicao.dataHora}`;
   }
 
   if (badge) {
@@ -1970,7 +2001,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      window.abrirModalEscolhaExclusao(opcoes);
+      window.abrirModalEscolhaExclusao(opcoes, {
+        compromisso,
+        exibicao: window.montarContextoExibicaoOcorrencia(compromisso),
+      });
     });
   }
 
@@ -3042,7 +3076,10 @@ document.addEventListener("DOMContentLoaded", () => {
           await window.contextoDados.finalizarOperacao(op);
         }
       },
-      { ehReabertura },
+      {
+        ehReabertura,
+        contextoExibicao: window.montarContextoExibicaoOcorrencia(compromisso),
+      },
     );
   };
 

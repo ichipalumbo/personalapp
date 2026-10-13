@@ -81,13 +81,13 @@ window.converterPtBrParaISO = function(dataPtBr) {
     return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 };
 
-/** @param {string} dataPtBr - Ex: "15/07/2025" @returns {string} Ex: "ter., 15/07" */
-window.formatarDataPtBrLegivel = function(dataPtBr) {
-    if (!dataPtBr) return '';
-    const iso = window.converterPtBrParaISO(dataPtBr);
-    if (!iso) return dataPtBr;
+/** @param {string} dataPtBrOuIso - Ex: "15/07/2025" ou "2025-07-15" @returns {string} Ex: "ter., 15/07" */
+window.formatarDataPtBrLegivel = function(dataPtBrOuIso) {
+    if (!dataPtBrOuIso) return '';
+    const iso = window.normalizarDataParaISO(dataPtBrOuIso);
+    if (!iso) return dataPtBrOuIso;
     const data = new Date(`${iso}T12:00:00`);
-    if (Number.isNaN(data.getTime())) return dataPtBr;
+    if (Number.isNaN(data.getTime())) return dataPtBrOuIso;
     return data.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
 };
 
