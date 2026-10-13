@@ -20,7 +20,7 @@ Tratar os sete pontos de atrito do diagnóstico (cabeçalho com data errada nos 
 Os critérios de implementação se aplicam aos cartões liberados e à opção aprovada. **Corrigido** significa atender integralmente ao achado; **parcialmente tratado** exige registrar o que permanece; **adiado** não autoriza implementação nem conta como correção. Toda decisão de não alterar deve ser registrada nas §12/§13.
 
 - [x] F1 conforme D1/D9 (T01 executado em 2026-10-13 — provas na §11 e registro na §12): modais de escolha exibem **data e horário da ocorrência clicada** e **nome do aluno**; formatação aprovada aplicada (“Sáb., 17/10 · 18:00”); sem limitações remanescentes no cabeçalho.
-- [ ] F2 conforme D3: opção A mostra valor e aviso de congelamento; opção B mostra só o aviso e deixa a ausência do valor registrada como tratamento parcial.
+- [x] F2 (T03 executado em 2026-10-13 — medições na §12): D3=A — o modal "Marcar como pago" exibe o valor do ciclo selecionado (R$ 220,00 no `default`; R$ 180,00 em `valor_fixo`; histórico não pago com fixture controlada: R$ 300,00 ≠ R$ 400,00 do ciclo atual) e o aviso de congelamento; sem tratamento parcial.
 - [ ] F3 conforme D4: A explica o ajuste com dados existentes; B apresenta prévia oficial do backend; C deixa o cartão adiado. Nenhuma opção reimplementa cálculo no frontend (regra 4.3 do repo).
 - [x] F4 (T02 executado em 2026-10-13 — medições na §12): fechar o modal não re-renderiza mais a agenda (D2=A; gancho instalado uma única vez) e a posição de rolagem é preservada; validado no mock em 3 ciclos (516→516). **T02 estendido (D12=C)**: a âncora "hoje" fica suprimida em todos os renders pós-ação (edição, exclusões, reagendar, reposição e criação), inclusive nos disparados pela ponte do GCal; mock: edição 516→516, exclusão 516→508 (reflow do card removido) e abrir/fechar 508→508.
 - [ ] F5 conforme D5: textos aprovados alinhados ao fluxo real; F5c e qualquer decisão de não alterar ficam registrados separadamente.
@@ -46,6 +46,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D11 = A — achados do T01 absorvidos no T05 (exibição + âncora de execução) | 2026-10-13 | dono | T05 passa a corrigir também o corte do "daqui pra frente" no modo Dia; validação de escrita no mock e teste automatizado entram no cartão |
 | D2 = A — fechar o modal não re-renderiza a agenda | 2026-10-13 | dono | Gancho único de fechamento (limpa estado, sem re-render); o wrapper empilhável foi extinto; ações continuam atualizando via `inicializarHome` |
 | D12 = C — suprimir a âncora "hoje" em todos os fluxos de ação do usuário | 2026-10-13 | dono | T02 estendido: os 9 call sites passam `semAncoraHoje: true` e o mecanismo central deriva a supressão de `opcoes.operacao` (cobre também os renders internos da ponte do GCal e da grade); flag global `__homeSemAncoraHoje` com clear em `finally` |
+| D3 = A — modal de pagamento com valor do ciclo + aviso de congelamento | 2026-10-13 | dono | Valor vem de `alvo.ciclo.valorTotalCiclo` (dados da API — listagem ou histórico; sem cálculo no frontend); redação do aviso encurtada pelo dono na confirmação: “Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.” |
 
 ## 4. Decisões pendentes
 
@@ -53,7 +54,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 |---|---|---|---|
 | D1 | F1: corrigir cabeçalho dos modais? Formato do subtítulo | **Resolvida (2026-10-13): B** — contexto passado pelo chamador; formato aprovado `Sáb., 17/10 · 18:00` | — (executada no T01) |
 | D2 | F4: preservar rolagem | **Resolvida (2026-10-13): A** — não re-renderizar no fechamento; dependências validadas (ações re-renderizam via `inicializarHome`) | — (executada no T02) |
-| D3 | F2: conteúdo do modal de pagamento | A: valor do ciclo + aviso de congelamento / B: só o aviso | **sim (T03)** |
+| D3 | F2: conteúdo do modal de pagamento | A: valor do ciclo + aviso de congelamento / B: só o aviso | **Resolvida (2026-10-13): A**, com redação encurtada pelo dono | — (executada no T03) |
 | D4 | F3: efeito do ajuste | A: texto + valores já visíveis na tela / B: prévia calculada pelo backend / C: não alterar | **sim (T04)** |
 | D5 | F5: redação final + F5c (linha de prazo §9.3) | A: ajustar textos aprovados nesta frente + F5c fica para spec própria / B: tudo nesta frente / C: só registrar | **sim (T05)** |
 | D6 | F6: recuperação do financeiro | A: absorver roadmap 1.11 (botão Atualizar) cobrindo o estado de erro / B: só "Tentar novamente" no erro | **sim (T06)** |
@@ -135,7 +136,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Arquivos / componentes prováveis**: `assets/js/view-financas.js` (`abrirModalPagamento`/`ensureModais` — resumo do modal); texto em `index.html` se o modal for montado lá; `tests-frontend/view-financas-*.test.js` se a montagem do resumo for testável.
 - **Inclui**: conteúdo aprovado em D3. Na opção A, valor do ciclo selecionado no resumo, vindo da API (listagem ou histórico), sem cálculo novo; redação do aviso aprovada; registrar na spec de finanças se o dono decidir que é contrato.
 - **Não inclui**: alterar PATCH de pagamento, extrato, congelamento, badge/status do card.
-- **Decisões pendentes / bloqueios**: D3 (dono) — conteúdo e redação.
+- **Decisões pendentes / bloqueios**: D3 resolvida (2026-10-13): A, com redação encurtada pelo dono.
 - **Critérios de aceite**: em ambas as opções, aviso presente antes de salvar. Se D3=A, valor corresponde ao mesmo ciclo que será pago (vigente ou histórico não pago), nunca ao preço atual do aluno ou a outro ciclo; ex.: R$ 220,00 no cenário `default`. Se D3=B, registrar o valor ausente como pendência na §13, sem declarar F2 integralmente corrigido.
 - **Validação**: mock `default`, com a emulação da §10; validar obrigatoriamente `por_aula`, `valor_fixo` e ciclo histórico não pago. Usar respostas/fixtures de histórico controladas se o cenário não cobrir o caso. Para D3=A, conferir valores distintos entre ciclos e snapshot diferente do preço atual do aluno. Suíte frontend antes/depois; pagamento no mock somente com `mockEscrita=1`, conferindo PATCH 200 → `PAGO` e preservação do modal em falha. A montagem do resumo e o valor selecionado devem ter teste automatizado quando viável, com mutação.
 - **Riscos e rollback**: baixo — exibição. Revert simples.
@@ -213,6 +214,8 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | M5 — guard de instalação única removido de `instalarGanchoLimpezaFechamentoAcaoSlot` | `o gancho de fechamento é instalado uma única vez, sem reassinar a cada abertura` em `view-calendario-fechamento.test.js` | Falhou: referência de função trocada a cada abertura | Sim — 2/2 verdes após restaurar |
 | M6 — gate `if (!ancorarHoje) return;` removido de `renderizarHomeSemana` | `render da semana ancora "hoje" por padrão e respeita a supressão pós-ação (T02 estendido)` em `view-calendario-fechamento.test.js` | Falhou: obtido `['semana-dia-hoje-elemento']` no caso suprimido (esperado `[]`) | Sim — 5/5 verdes após restaurar |
 | M7 — derivação removida: `semAncoraHoje` volta a considerar só o parâmetro explícito | `inicializarHome suprime a âncora quando há operação, mesmo sem o parâmetro (T02 estendido — ponte do GCal)` em `view-calendario-fechamento.test.js` | Falhou: flags de render gravadas com `semAncora: false` | Sim — 5/5 verdes após restaurar; suíte 372/372 |
+| M8 — preenchimento do valor removido de `abrirModalPagamento` | 3 testes de `view-financas-pagamento.test.js` | Falharam: valor vazio em vez de R$ 400.00 / R$ 300.00 / R$ 250.00 | Sim — 3/3 verdes após restaurar |
+| M9 — valor trocado para o do ciclo atual (`alvo.card.cicloAtual.valorTotalCiclo`) | `modal de pagamento do histórico exibe o valor do próprio ciclo, nunca o do ciclo atual (T03/D3=A)` em `view-financas-pagamento.test.js` | Falhou: obtido R$ 400.00 (ciclo atual), esperado R$ 300.00 (histórico) | Sim — 3/3 verdes após restaurar; suíte 375/375 |
 
 ## 12. Registro da execução
 
@@ -286,6 +289,22 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Desvio do plano**: a extensão foi além do critério original de F4 (que cobria só o fechamento) por decisão explícita do dono (D12=C), registrada no card T02 e nas §2/§3.
 - **Decisão adicional tomada**: a supressão cobre também criação, reagendar e reposição (todos os fluxos de ação do usuário); os renders fora de fluxos de ação (pós-sincronização/bootstrap) mantêm a âncora — registrado na §13.
 
+### 2026-10-13 — T03 executado (modal de pagamento: valor e congelamento — F2)
+- **Base**: `diag/auditoria-fluxos-ux`, HEAD `6bc515a` (T02 commitado pelo dono; working tree limpo na abertura); continuidade na branch confirmada pelo dono.
+- **Decisão aplicada**: D3=A — valor do ciclo + aviso de congelamento; redação encurtada pelo dono na confirmação: “Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.”
+- **Arquivos alterados**: `assets/js/view-financas.js` (novos elementos `financasPagamentoValor` — valor de `alvo.ciclo.valorTotalCiclo`, dados da API, sem cálculo — e `financasPagamentoCongelamento` (aviso estático) em `ensureModais`; preenchimento em `abrirModalPagamento`; `aria-describedby` cobre os três textos; `financasPagamentoValor` entra na limpeza de `resetarTelaFinancas`; o aviso não é limpo por ser estático) e `tests-frontend/view-financas-pagamento.test.js` (novo; +3 testes no harness de finanças: por_aula do ciclo atual, histórico não pago ≠ ciclo atual e valor_fixo).
+- **Suíte frontend antes/depois**: **372/372 → 375/375** (medido; +3 testes novos, 0 falhas).
+- **Suíte backend**: não reexecutada (nenhum arquivo de backend alterado); última medição **232/232** (T01).
+- **Prova por mutação**: M8 e M9 (§11) derrubaram os testes correspondentes; restaurações conferidas com `git status` + 3/3 verdes.
+- **Validação manual no mock** (`default`+`mockEscrita=1`, 433×762, emulação mobile):
+  - Maria (por_aula, atrasado): modal exibe resumo + **R$ 220,00** + aviso de congelamento — antes (F2 do diagnóstico): sem valor e sem menção ao congelamento.
+  - João (valor_fixo, em aberto): **R$ 180,00** + aviso.
+  - Salvar (mockEscrita=1): PATCH 200 → modal fecha, card vira “Pago” com botões desabilitados, toast “Pagamento confirmado com sucesso!”.
+  - Falha do PATCH: modal permanece aberto com valor/aviso visíveis, botão reabilitado e toast “Gravação de pagamento não confirmada. Verifique os dados no servidor.”; região de recuperação de dados exibida.
+  - Ciclo histórico não pago: o fixture do mock responde histórico apenas com ciclo pago; o caso foi coberto pelo teste automatizado com fixture controlada (R$ 300,00 ≠ R$ 400,00 do ciclo atual) — lacuna do mock declarada na §13.
+- **Desvio do plano**: a redação do aviso foi encurtada pelo dono na confirmação (em vez da sugerida no cartão); a falha de PATCH no mock foi simulada em runtime apenas na rota PATCH (`mockFalha=financas` derruba também a listagem, inviabilizando a validação de preservação do modal).
+- **Decisão adicional tomada**: nenhuma.
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
@@ -300,6 +319,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | Achados adiados por D1=C, D4=C ou D5=C; formatação mantida por D9=Não | Não declarar corrigido o que o dono decidir não implementar | registrar decisão e remanescente nas §12/§13 | dono |
 | Exclusão em modo Dia: rótulos usam a data-raiz crua e o corte do "daqui pra frente" ancora na raiz (removeria a série inteira; inferência de código) | Absorvido no T05 por D11=A (exibição + âncora de execução); execução pendente | este plano, T05 | agente |
 | Modal de ação: linha "Agendado para: 2026-09-25" exibe ISO cru | Absorvido no T05 por D11=A (exibição); execução pendente | este plano, T05 | agente |
+| Fixture de histórico do mock (`/api/financas/:id/historico`) responde sempre um ciclo pago (R$ 180) | Não permite validar "histórico não pago" na UI; o caso do T03 está coberto por teste automatizado com fixture controlada | mock — quando a UI precisar de histórico não pago | dono |
 
 ## 14. Deploy e rollback
 
@@ -311,7 +331,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 ## 15. Fechamento
 
 - **Critérios atendidos**: pendente.
-- **Pendências**: decisões de implementação D3–D7 (D1, D2, D9, D11 e D12 resolvidas); ordem de execução D10; contrato aprovado se D4=B. D8 permanece fora da frente. Executar e validar somente os cartões liberados.
+- **Pendências**: decisões de implementação D4–D7 (D1, D2, D3, D9, D11 e D12 resolvidas); ordem de execução D10; contrato aprovado se D4=B. D8 permanece fora da frente. Executar e validar somente os cartões liberados.
 - **Registro obrigatório**: classificar F1–F7 como corrigido, parcialmente tratado ou adiado conforme os resultados e decisões, com os remanescentes na §13; nenhum achado adiado/parcial deve aparecer como integralmente corrigido.
 - **Riscos aceitos**: pendente.
 - **Data de fechamento**: pendente.

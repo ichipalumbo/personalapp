@@ -54,7 +54,7 @@
         if (conteudo) conteudo.setAttribute('aria-busy', 'false');
         fecharModal('pagamento');
         fecharModal('ajuste');
-        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasAjusteResumo'].forEach((id) => {
+        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasPagamentoValor', 'financasAjusteResumo'].forEach((id) => {
             const elemento = document.getElementById(id);
             if (elemento) elemento.replaceChildren();
         });
@@ -121,11 +121,13 @@
             pagamentoModal.style.display = 'none';
             pagamentoModal.setAttribute('role', 'dialog');
             pagamentoModal.setAttribute('aria-labelledby', 'financasPagamentoTitulo');
-            pagamentoModal.setAttribute('aria-describedby', 'financasPagamentoResumo');
+            pagamentoModal.setAttribute('aria-describedby', 'financasPagamentoResumo financasPagamentoValor financasPagamentoCongelamento');
             pagamentoModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
                 <h3 id="financasPagamentoTitulo"><i class="fa-solid fa-circle-check" style="color:#ffd700;margin-right:8px"></i>Marcar como pago</h3>
-                <p id="financasPagamentoResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
+                <p id="financasPagamentoResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:6px;font-weight:500;"></p>
+                <p id="financasPagamentoValor" style="font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:8px;"></p>
+                <p id="financasPagamentoCongelamento" style="font-size:0.8rem;color:#b8b8b8;margin-bottom:14px;line-height:1.35;">Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.</p>
                 <form id="formFinancasPagamento">
                   <div class="form-grupo-spa">
                     <label for="financasDataPagamento">Data do pagamento *</label>
@@ -788,9 +790,11 @@
 
         const modal = document.getElementById('modalFinancasPagamento');
         const resumo = document.getElementById('financasPagamentoResumo');
+        const valorEl = document.getElementById('financasPagamentoValor');
         const dataInput = document.getElementById('financasDataPagamento');
         const formaInput = document.getElementById('financasFormaPagamento');
         if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
+        if (valorEl) valorEl.textContent = formatarMoeda(alvo.ciclo.valorTotalCiclo);
         if (dataInput) dataInput.value = new Date().toISOString().slice(0, 10);
         if (formaInput) formaInput.value = '';
         abrirDialogFinancas(modal, 'pagamento');
