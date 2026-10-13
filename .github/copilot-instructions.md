@@ -235,10 +235,8 @@ que pareçam pequenas:
 - `README.md` (raiz) — visão geral e onboarding. **A árvore de arquivos pode
   estar desatualizada**; o código é sempre a referência. Se notar divergência,
   reporte.
-- `.agents/skills/` — skills de agente, versionados. O `anti-ui-slop` é
-  **vendorizado** de `github/awesome-copilot` (veja o `github-tree-sha` no
-  frontmatter): **não edite**, pois alterações locais se perdem na próxima
-  atualização. Regras próprias vão neste arquivo.
+- `.agents/skills/` — skills de agente versionadas no repositório. Regras
+  próprias vão neste arquivo.
 - Ferramentas de análise que gerem artefatos (grafo de dependências, etc.)
   produzem material **gerado**: não é fonte de verdade, não deve ser editado à
   mão e, se estiver desatualizado, deve ser regenerado.
