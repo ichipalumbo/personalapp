@@ -21,7 +21,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 
 - [x] F1 conforme D1/D9 (T01 executado em 2026-10-13 — provas na §11 e registro na §12): modais de escolha exibem **data e horário da ocorrência clicada** e **nome do aluno**; formatação aprovada aplicada (“Sáb., 17/10 · 18:00”); sem limitações remanescentes no cabeçalho.
 - [x] F2 (T03 executado em 2026-10-13 — medições na §12): D3=A — o modal "Marcar como pago" exibe o valor do ciclo selecionado (R$ 220,00 no `default`; R$ 180,00 em `valor_fixo`; histórico não pago com fixture controlada: R$ 300,00 ≠ R$ 400,00 do ciclo atual) e o aviso de congelamento; sem tratamento parcial.
-- [ ] F3 conforme D4: A explica o ajuste com dados existentes; B apresenta prévia oficial do backend; C deixa o cartão adiado. Nenhuma opção reimplementa cálculo no frontend (regra 4.3 do repo).
+- [x] F3 (T04 executado em 2026-10-13 — medições na §12): D4=B com contrato aprovado — prévia somente leitura no backend (`GET /api/financas/:cicloId/simulacao-ajuste`), paridade prévia × ajuste oficial provada em 8 testes de backend; a UI exibe a linha de substituição e o novo total (debounce de 400 ms na alteração), “Cobrança fixa” no `valor_fixo`, piso zero e falha sem bloquear o Salvar. Nenhum cálculo no frontend (regra 4.3 do repo).
 - [x] F4 (T02 executado em 2026-10-13 — medições na §12): fechar o modal não re-renderiza mais a agenda (D2=A; gancho instalado uma única vez) e a posição de rolagem é preservada; validado no mock em 3 ciclos (516→516). **T02 estendido (D12=C)**: a âncora "hoje" fica suprimida em todos os renders pós-ação (edição, exclusões, reagendar, reposição e criação), inclusive nos disparados pela ponte do GCal; mock: edição 516→516, exclusão 516→508 (reflow do card removido) e abrir/fechar 508→508.
 - [ ] F5 conforme D5: textos aprovados alinhados ao fluxo real; F5c e qualquer decisão de não alterar ficam registrados separadamente.
 - [ ] Achados absorvidos no T05 (D11=A): rótulos das opções de exclusão no modo Dia exibem o dia selecionado em formato legível; o corte do "daqui pra frente" parte do dia selecionado, não da raiz; "Agendado para" do modal de ação sem ISO cru.
@@ -47,6 +47,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D2 = A — fechar o modal não re-renderiza a agenda | 2026-10-13 | dono | Gancho único de fechamento (limpa estado, sem re-render); o wrapper empilhável foi extinto; ações continuam atualizando via `inicializarHome` |
 | D12 = C — suprimir a âncora "hoje" em todos os fluxos de ação do usuário | 2026-10-13 | dono | T02 estendido: os 9 call sites passam `semAncoraHoje: true` e o mecanismo central deriva a supressão de `opcoes.operacao` (cobre também os renders internos da ponte do GCal e da grade); flag global `__homeSemAncoraHoje` com clear em `finally` |
 | D3 = A — modal de pagamento com valor do ciclo + aviso de congelamento | 2026-10-13 | dono | Valor vem de `alvo.ciclo.valorTotalCiclo` (dados da API — listagem ou histórico; sem cálculo no frontend); redação do aviso encurtada pelo dono na confirmação: “Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.” |
+| D4 = B — prévia do ajuste calculada pelo backend | 2026-10-13 | dono | Contrato aprovado e implementado: `GET /api/financas/:cicloId/simulacao-ajuste?aulasManuaisExtras=<int>` (somente leitura; 404/409; reusa o cálculo oficial); UI consome na abertura + a cada alteração (debounce ~400 ms); spec atualizada (v16) e mock com handler + falha `simulacao` |
 
 ## 4. Decisões pendentes
 
@@ -55,7 +56,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D1 | F1: corrigir cabeçalho dos modais? Formato do subtítulo | **Resolvida (2026-10-13): B** — contexto passado pelo chamador; formato aprovado `Sáb., 17/10 · 18:00` | — (executada no T01) |
 | D2 | F4: preservar rolagem | **Resolvida (2026-10-13): A** — não re-renderizar no fechamento; dependências validadas (ações re-renderizam via `inicializarHome`) | — (executada no T02) |
 | D3 | F2: conteúdo do modal de pagamento | A: valor do ciclo + aviso de congelamento / B: só o aviso | **Resolvida (2026-10-13): A**, com redação encurtada pelo dono | — (executada no T03) |
-| D4 | F3: efeito do ajuste | A: texto + valores já visíveis na tela / B: prévia calculada pelo backend / C: não alterar | **sim (T04)** |
+| D4 | F3: efeito do ajuste | A: texto + valores já visíveis na tela / B: prévia calculada pelo backend / C: não alterar | **Resolvida (2026-10-13): B** — contrato aprovado e executado no T04 | — |
 | D5 | F5: redação final + F5c (linha de prazo §9.3) | A: ajustar textos aprovados nesta frente + F5c fica para spec própria / B: tudo nesta frente / C: só registrar | **sim (T05)** |
 | D6 | F6: recuperação do financeiro | A: absorver roadmap 1.11 (botão Atualizar) cobrindo o estado de erro / B: só "Tentar novamente" no erro | **sim (T06)** |
 | D7 | F7: corrigir resumo em carregamento | A: "Atualizando…"/esqueleto conforme §9.4.3 / B: ocultar resumo no load | **sim (T07)** — baixo risco não dispensa a escolha do dono |
@@ -148,7 +149,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Arquivos / componentes prováveis**: `assets/js/view-financas.js` (`abrirModalAjuste`); somente se D4=B, serviço/rota no backend reutilizando o cálculo de `financasService.js`, testes em `backend/test/`, contrato na spec de finanças e respostas/cenários em `mocks/ui-runtime/`.
 - **Inclui**: explicação textual de que o valor substitui o ajuste atual e dados pertinentes já devolvidos pela API. Para D4=B, definir o contrato antes de implementar: identificação de um ciclo existente e ajuste proposto como entrada; resultado da simulação como saída, com rota e nomes de campos registrados na spec. A prévia é autenticada, isolada por `ownerEmail`, somente leitura e reutiliza o cálculo oficial, sem gravar ajuste/pagamento nem criar ciclo.
 - **Não inclui**: alterar a regra de ajuste (piso zero, substituição, snapshot), nem exibir total calculado no frontend.
-- **Decisões pendentes / bloqueios**: D4 (dono) — A/B/C; B também exige contrato registrado e aprovado antes da implementação.
+- **Decisões pendentes / bloqueios**: D4 resolvida (2026-10-13): B, com contrato aprovado (rota/resposta como proposto) e momento da prévia definido — abertura + alteração do campo, debounce ~400 ms.
 - **Critérios de aceite**: A/B explicam que o campo substitui o ajuste atual, sem cálculo no frontend. Na opção B, testes do backend comprovam que a prévia coincide com o resultado do ajuste oficial para o mesmo ciclo, snapshot e ajuste proposto, preservando todas as regras existentes e sem escrita durante a simulação. Na opção C, nenhuma implementação; registrar o adiamento.
 - **Validação**: suíte frontend antes/depois e UI no mock com a emulação da §10 (campo pré-preenchido `1`). Se D4=B, medir a suíte backend antes/depois; provar paridade prévia × ajuste oficial nos testes do backend para ajuste positivo/negativo, piso zero, `por_aula`, `valor_fixo` e snapshot diferente do preço atual do aluno; verificar isolamento por dono, restrições de ciclo pago e ausência de gravações/criação de ciclo. Atualizar o mock para testar consumo da resposta, carregamento e falha da prévia, sem usá-lo como prova de paridade financeira; toda cobertura nova exige mutação.
 - **Riscos e rollback**: médio se D4=B (superfície de API — dinheiro); alto cuidado com a seção "Código que calcula dinheiro" das instruções do repo. Rollback: revert; nenhuma migração de dados.
@@ -216,6 +217,10 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | M7 — derivação removida: `semAncoraHoje` volta a considerar só o parâmetro explícito | `inicializarHome suprime a âncora quando há operação, mesmo sem o parâmetro (T02 estendido — ponte do GCal)` em `view-calendario-fechamento.test.js` | Falhou: flags de render gravadas com `semAncora: false` | Sim — 5/5 verdes após restaurar; suíte 372/372 |
 | M8 — preenchimento do valor removido de `abrirModalPagamento` | 3 testes de `view-financas-pagamento.test.js` | Falharam: valor vazio em vez de R$ 400.00 / R$ 300.00 / R$ 250.00 | Sim — 3/3 verdes após restaurar |
 | M9 — valor trocado para o do ciclo atual (`alvo.card.cicloAtual.valorTotalCiclo`) | `modal de pagamento do histórico exibe o valor do próprio ciclo, nunca o do ciclo atual (T03/D3=A)` em `view-financas-pagamento.test.js` | Falhou: obtido R$ 400.00 (ciclo atual), esperado R$ 300.00 (histórico) | Sim — 3/3 verdes após restaurar; suíte 375/375 |
+| M10 — simulação troca o snapshot pelo preço atual do aluno (`precoAulaSnapshot: aluno && aluno.preco`) | `simulação usa o snapshot do ciclo, nunca o preço atual do aluno` em `financas-simulacao-ajuste.test.js` | Falhou: obtido 999, esperado 60 (e valor zerado no caso sem preço) | Sim — 8/8 verdes após restaurar |
+| M11 — piso zero removido da simulação (`aulasContadas + ajusteSimulado`) | `simulação coincide com o ajuste oficial em por_aula com ajuste negativo e piso zero` em `financas-simulacao-ajuste.test.js` | Falhou: obtido -6, esperado 0 | Sim — 8/8 verdes após restaurar; suíte 240/240 |
+| M12 — disparo da prévia na abertura removido de `abrirModalAjuste` | 4 testes de `view-financas-ajuste.test.js` | Falharam: 0 chamadas de prévia | Sim — 4/4 verdes após restaurar |
+| M13 — texto da prévia usa `aulasContadas` em vez de `totalAulasCobradas` | `abrir o ajuste dispara a prévia...` e `alterar o campo refaz a prévia...` em `view-financas-ajuste.test.js` | Falharam: “4 aula(s)” em vez de “5”/“7” | Sim — 4/4 verdes após restaurar; suíte 379/379 |
 
 ## 12. Registro da execução
 
@@ -305,6 +310,22 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Desvio do plano**: a redação do aviso foi encurtada pelo dono na confirmação (em vez da sugerida no cartão); a falha de PATCH no mock foi simulada em runtime apenas na rota PATCH (`mockFalha=financas` derruba também a listagem, inviabilizando a validação de preservação do modal).
 - **Decisão adicional tomada**: nenhuma.
 
+### 2026-10-13 — T04 executado (ajuste manual com prévia do backend — F3, D4=B)
+- **Base**: `diag/auditoria-fluxos-ux`, HEAD `15458f6` (T03 commitado pelo dono; working tree limpo na abertura); continuidade na branch confirmada pelo dono.
+- **Decisão aplicada**: D4=B, com contrato aprovado pelo dono nesta rodada: `GET /api/financas/:cicloId/simulacao-ajuste?aulasManuaisExtras=<inteiro>`; resposta `{ metodoCobranca, precoAula, valorFixoCiclo, aulasContadas, aulasManuaisExtras, totalAulasCobradas, valorTotalCiclo }`; 409 pago / 404 inexistente ou de outro dono; ausente/inválido → 0; somente leitura. Momento aprovado: abertura + alteração do campo com debounce (~400 ms). Redações aprovadas: “O valor informado substitui o ajuste atual do ciclo.” e prévia “Novo total: N aula(s) × R$ X → R$ Y” / “Cobrança fixa: total permanece R$ Z.”; na falha, o Salvar continua funcionando.
+- **Arquivos alterados**: backend — `financasService.js` (`simularAjusteCiclo`: somente leitura; reusa `resolverSnapshotParaRecalculo` + `calcularTotalAulasCobradas` + `calcularValorTotalCiclo` sobre um clone, sem persistir fallback de legado), `financasController.js` (`simularAjuste`), `financasRoutes.js` (GET antes dos PATCHs); `backend/test/financas-simulacao-ajuste.test.js` (novo; 8 testes: paridade × oficial em por_aula positivo/negativo, piso zero, valor_fixo, snapshot ≠ preço atual, somente leitura/sem fallback persistido/sem criação de ciclo, filtro por dono + 404, 409 sem carregar aluno, normalização 0). Frontend — `assets/js/view-financas.js` (linha de substituição + `financasAjustePrevia` com `role=status`; disparo na abertura e no `input` com debounce de 400 ms + sequência anti-fora-de-ordem; cancelamento no fechamento; limpeza do elemento), `tests-frontend/view-financas-ajuste.test.js` (novo; 4 testes). Mock — `mocks/ui-runtime/mock-runtime.js` (handler da simulação com 404/409/piso zero, declarado antes do handler genérico de “/ajuste”; chave de falha `simulacao`; `recalcularCiclo` alinhado ao snapshot implícito do fixture — regra 5.9) e `mocks/ui-runtime/README.md` (rota de falha + recurso). Spec — `docs/specs/financas-ciclo-cobranca.md` (contrato nas §5.5 e §6; Versão 15 → 16).
+- **Suíte backend antes/depois**: **232/232 → 240/240** (medido; +8 testes, 0 falhas; exit code real 0 — o “exit 1” observado em pipes do PowerShell era artefato do pipeline de filtro, não da suíte).
+- **Suíte frontend antes/depois**: **375/375 → 379/379** (medido; +4 testes, 0 falhas).
+- **Prova por mutação**: M10–M13 (§11) derrubaram os testes correspondentes; restaurações conferidas com `git status` + suítes focadas verdes.
+- **Validação manual no mock** (`default`+`mockEscrita=1`, 433×762, emulação mobile):
+  - Maria (por_aula, atrasado; campo pré-preenchido 1): abertura exibe “O valor informado substitui o ajuste atual do ciclo.” + “Novo total: 5 aula(s) × R$ 44,00 → R$ 220,00”.
+  - Campo 3 → debounce → “Novo total: 7 aula(s) × R$ 44,00 → R$ 308,00”; campo -6 → “Novo total: 0 aula(s) × R$ 44,00 → R$ 0,00” (piso zero, sem negativos).
+  - Salvar (PATCH 200): card vira “7 aula(s) cobrada(s) / R$ 308,00”; toast “Ajuste salvo com sucesso!” — prévia e resultado coincidem no mock.
+  - João (valor_fixo): “Cobrança fixa: total permanece R$ 180,00.”
+  - Carregamento (latência de 1,5 s em runtime): “Calculando prévia…” → valor; falha (`configurarRede({ falhas: ['simulacao'] })`): “Não foi possível calcular a prévia agora.” com Salvar habilitado.
+- **Desvio do plano**: nenhum na feature. No mock, o `recalcularCiclo` do modo de escrita usava o preço ATUAL do aluno (fixture a1: R$ 50) e faria o card divergir da prévia (R$ 308 vs R$ 350); foi alinhado ao snapshot implícito do ciclo (R$ 44) dentro do escopo “atualizar o mock para a prévia”. O README do mock registra que a derivação não é prova de paridade financeira.
+- **Decisão adicional tomada**: nenhuma.
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
@@ -323,15 +344,15 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 
 ## 14. Deploy e rollback
 
-- **Efeito externo**: frontend estático (PWA); se D4=B, também contrato de prévia somente leitura no backend. Nenhuma migração ou escrita de teste em Mongo/GCal; nenhum cartão de produto foi executado nesta revisão.
-- **Ordem de publicação**: PR do dono para a `main` → deploy automático nos dois projetos Vercel. Push é sempre do dono (`git push -u origin <branch>` na primeira vez). Se D4=B, definir compatibilidade entre os deploys independentes e verificar disponibilidade do contrato do backend antes de validar a UI dependente.
-- **Verificação pós-deploy**: aceite visual pelo dono/Josy no app publicado (não há staging); validação de escritas permanece no mock. Se D4=B, conferir a prévia somente leitura e sua compatibilidade com a UI.
-- **Limite do rollback**: realizado pelo dono; reversão do código cobre estas mudanças sem migração/estado remoto de teste. Se D4=B, avaliar compatibilidade UI/API separadamente; não presumir que ambos os deploys revertem juntos.
+- **Efeito externo**: frontend estático (PWA) **e novo endpoint somente leitura no backend** (`simulacao-ajuste`; T04/D4=B). T01–T04 executados; sem migração ou escrita de teste em Mongo/GCal.
+- **Ordem de publicação**: PR do dono para a `main` → deploy automático nos dois projetos Vercel. Push é sempre do dono (`git push -u origin <branch>` na primeira vez). Os dois projetos deployam do mesmo commit; a UI da prévia degrada com mensagem se o endpoint não estiver disponível (Salvar continua) — conferir `personal-app-api` antes de validar a prévia no app publicado.
+- **Verificação pós-deploy**: aceite visual pelo dono/Josy no app publicado (não há staging); validação de escritas permanece no mock. Conferir a prévia do ajuste no app publicado (abrir “Editar ajuste” e verificar valor e aviso).
+- **Limite do rollback**: realizado pelo dono; reversão do código cobre estas mudanças; se a API reverter antes da UI, a falha da prévia é tratada com mensagem e não bloqueia o Salvar.
 
 ## 15. Fechamento
 
 - **Critérios atendidos**: pendente.
-- **Pendências**: decisões de implementação D4–D7 (D1, D2, D3, D9, D11 e D12 resolvidas); ordem de execução D10; contrato aprovado se D4=B. D8 permanece fora da frente. Executar e validar somente os cartões liberados.
+- **Pendências**: decisões de implementação D5–D7 (D1, D2, D3, D4, D9, D11 e D12 resolvidas — D4 com contrato aprovado e executado no T04); ordem de execução D10; D8 permanece fora da frente. Executar e validar somente os cartões liberados.
 - **Registro obrigatório**: classificar F1–F7 como corrigido, parcialmente tratado ou adiado conforme os resultados e decisões, com os remanescentes na §13; nenhum achado adiado/parcial deve aparecer como integralmente corrigido.
 - **Riscos aceitos**: pendente.
 - **Data de fechamento**: pendente.

@@ -62,6 +62,7 @@
       if (pathname === '/api/reposicoes' || pathname === '/api/reposicoes/') return 'reposicoes';
       if (pathname === '/api/bloqueios-externos' || pathname === '/api/bloqueios-externos/') return 'bloqueios-externos';
       if (pathname === '/api/financas' || pathname === '/api/financas/') return 'financas';
+      if (pathname.indexOf('/api/financas/') === 0 && pathname.indexOf('/simulacao-ajuste') > 0) return 'simulacao';
       return null;
     }
 
@@ -123,13 +124,17 @@
     }
 
     // Mesma ideia do backend (snapshot do ciclo): por_aula = (aulas + extras) × preço.
-    function recalcularCiclo(ciclo, storeAlvo) {
+    // T04: recálculo fiel à regra 5.9 (snapshot, nunca o preço atual do aluno).
+    // O fixture não traz `precoAulaSnapshot` explícito, então o preço efetivo do
+    // ciclo é derivado por quem chama (valorTotalCiclo ÷ aulas cobradas do estado
+    // ANTERIOR à mudança) e passado em `precoSnapshotDerivado`.
+    function recalcularCiclo(ciclo, storeAlvo, precoSnapshotDerivado) {
       const aluno = storeAlvo.alunos.find((a) => a.id === ciclo.alunoId) || {};
-      const preco = Number(aluno.preco) || 0;
       if (ciclo.metodoCobranca === 'por_aula') {
+        const preco = Number(ciclo.precoAulaSnapshot) || Number(precoSnapshotDerivado) || Number(aluno.preco) || 0;
         ciclo.valorTotalCiclo = ((Number(ciclo.aulasContadas) || 0) + (Number(ciclo.aulasManuaisExtras) || 0)) * preco;
       } else {
-        ciclo.valorTotalCiclo = Number(aluno.valorFixoCiclo) || Number(ciclo.valorTotalCiclo) || 0;
+        ciclo.valorTotalCiclo = Number(ciclo.valorFixoSnapshot) || Number(aluno.valorFixoCiclo) || Number(ciclo.valorTotalCiclo) || 0;
       }
       return ciclo;
     }
@@ -223,9 +228,11 @@
           ciclo.dataPagamento = payload.dataPagamento || ciclo.dataPagamento;
           if (payload.formaPagamento) ciclo.formaPagamento = payload.formaPagamento;
         } else if (acao === 'ajuste') {
+          const baseAnterior = Math.max(0, (Number(ciclo.aulasContadas) || 0) + (Number(ciclo.aulasManuaisExtras) || 0));
+          const precoSnapshotDerivado = baseAnterior > 0 ? (Number(ciclo.valorTotalCiclo) || 0) / baseAnterior : 0;
           ciclo.aulasManuaisExtras = Number(payload.aulasManuaisExtras) || 0;
           if (payload.observacaoAjuste) ciclo.observacaoAjuste = payload.observacaoAjuste;
-          recalcularCiclo(ciclo, store);
+          recalcularCiclo(ciclo, store, precoSnapshotDerivado);
         }
         return responder({ ok: true, mock: true, ciclo });
       }
@@ -514,6 +521,29 @@
           }
         ];
         return responder(historico);
+      }
+
+      if (url.pathname.includes('/api/financas/') && url.pathname.includes('/simulacao-ajuste')) {
+        // T04 (D4=B): prévia do ajuste — somente leitura e com a mesma semântica
+        // do backend real (404/409, ausente/inválido → 0, piso zero). Preço por
+        // aula derivado do próprio fixture (valorTotalCiclo ÷ aulas cobradas).
+        // Declarada ANTES do handler genérico de "/ajuste" (substring).
+        const cicloId = seg[2];
+        const card = (dados('financas') || []).find((item) => item && item.cicloAtual && item.cicloAtual._id === cicloId);
+        const ciclo = card ? card.cicloAtual : null;
+        if (!ciclo) return responder({ error: 'Ciclo financeiro não encontrado.' }, { status: 404 });
+        if (ciclo.dataPagamento) return responder({ error: 'Este ciclo já foi pago e não pode mais ser ajustado.' }, { status: 409 });
+        const extrasBruto = parseInt(url.searchParams.get('aulasManuaisExtras'), 10);
+        const ajuste = Number.isNaN(extrasBruto) ? 0 : extrasBruto;
+        const contadas = Number(ciclo.aulasContadas) || 0;
+        const total = Math.max(0, contadas + ajuste);
+        if ((ciclo.metodoCobranca || 'por_aula') === 'valor_fixo') {
+          const valorFixo = Number(ciclo.valorTotalCiclo) || 0;
+          return responder({ metodoCobranca: 'valor_fixo', precoAula: null, valorFixoCiclo: valorFixo, aulasContadas: contadas, aulasManuaisExtras: ajuste, totalAulasCobradas: total, valorTotalCiclo: valorFixo });
+        }
+        const base = Math.max(0, contadas + (Number(ciclo.aulasManuaisExtras) || 0));
+        const preco = base > 0 ? (Number(ciclo.valorTotalCiclo) || 0) / base : 0;
+        return responder({ metodoCobranca: 'por_aula', precoAula: preco, valorFixoCiclo: null, aulasContadas: contadas, aulasManuaisExtras: ajuste, totalAulasCobradas: total, valorTotalCiclo: Math.round(total * preco * 100) / 100 });
       }
 
       if (url.pathname.includes('/api/financas/') && url.pathname.includes('/pagamento')) {

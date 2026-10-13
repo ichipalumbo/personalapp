@@ -39,7 +39,7 @@ Esta pasta reúne um conjunto de fixtures e um bootstrap para simular o app em q
   progresso. Ex.: `?mockScenario=default&mockLatencia=4000`.
 - `?mockFalha=<rotas>` — devolve HTTP 500 nas rotas listadas (para auditar retry/erro).
   Rotas: `configuracao`, `alunos`, `agendamentos`, `reposicoes`, `bloqueios-externos`,
-  `financas`, `consistencia-agenda`. Ex.: `?mockScenario=default&mockFalha=reposicoes,financas`.
+  `financas`, `consistencia-agenda`, `simulacao` (prévia do ajuste). Ex.: `?mockScenario=default&mockFalha=reposicoes,financas`.
 - `?mockEscrita=1` — **somente no cenário `default`**: libera escrita em um store em memória
   (ver abaixo). Nos demais cenários a escrita continua bloqueada.
 - `?mockStatus=401` — muda o status das rotas de `mockFalha` (400–599; padrão 500).
@@ -98,7 +98,9 @@ Abre-se `http://127.0.0.2:5500/index.html?mockScenario=default&mockEscrita=1`.
 - **Nada sai para a rede** — o `fetch` já é interceptado antes disso, então não há risco de tocar
   produção. O store **é descartado ao recarregar a página** (não persiste).
 - Recursos simulados: `alunos`, `agendamentos`, `reposicoes` (inclusive `/:id/reabrir`),
-  `configuracao/grade_horarios` e os PATCHs de finanças (`/pagamento` e `/ajuste`).
+  `configuracao/grade_horarios`, os PATCHs de finanças (`/pagamento` e `/ajuste`) e a
+  prévia do ajuste `GET /financas/:cicloId/simulacao-ajuste` (somente leitura; 404/409 no
+  contrato; preço derivado do fixture — não é prova de paridade financeira).
 - **Segue bloqueado** mesmo aqui: `auth/*` e `gcal/*` (envolvem credencial e estado externo).
 - Fora do `default` (ex.: `vitrineEstados`, cenários de auditoria), a flag é ignorada e a escrita
   continua retornando 409 — para preservar as fixtures de demonstração.

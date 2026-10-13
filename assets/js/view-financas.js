@@ -54,7 +54,7 @@
         if (conteudo) conteudo.setAttribute('aria-busy', 'false');
         fecharModal('pagamento');
         fecharModal('ajuste');
-        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasPagamentoValor', 'financasAjusteResumo'].forEach((id) => {
+        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasPagamentoValor', 'financasAjusteResumo', 'financasAjustePrevia'].forEach((id) => {
             const elemento = document.getElementById(id);
             if (elemento) elemento.replaceChildren();
         });
@@ -153,16 +153,18 @@
             ajusteModal.style.display = 'none';
             ajusteModal.setAttribute('role', 'dialog');
             ajusteModal.setAttribute('aria-labelledby', 'financasAjusteTitulo');
-            ajusteModal.setAttribute('aria-describedby', 'financasAjusteResumo');
+            ajusteModal.setAttribute('aria-describedby', 'financasAjusteResumo financasAjusteSubstituicao financasAjustePrevia');
             ajusteModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
                 <h3 id="financasAjusteTitulo"><i class="fa-solid fa-sliders" style="color:#ffd700;margin-right:8px"></i>Ajuste manual</h3>
-                <p id="financasAjusteResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
+                <p id="financasAjusteResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:6px;font-weight:500;"></p>
+                <p id="financasAjusteSubstituicao" style="font-size:0.8rem;color:#b8b8b8;margin-bottom:14px;line-height:1.35;">O valor informado substitui o ajuste atual do ciclo.</p>
                 <form id="formFinancasAjuste">
                   <div class="form-grupo-spa">
                     <label for="financasAulasExtras">Ajuste de aulas (pode ser negativo)</label>
                     <input type="number" id="financasAulasExtras" step="1" required />
                   </div>
+                  <p id="financasAjustePrevia" role="status" style="font-size:0.85rem;color:#d8d8d8;margin:0 0 12px;line-height:1.35;"></p>
                   <div class="form-grupo-spa">
                     <label for="financasObservacaoAjuste">Observação</label>
                     <textarea id="financasObservacaoAjuste" rows="4" style="resize:vertical;"></textarea>
@@ -174,6 +176,8 @@
                 </form>
               </div>`;
             document.body.appendChild(ajusteModal);
+            const campoExtras = ajusteModal.querySelector('#financasAulasExtras');
+            if (campoExtras) campoExtras.addEventListener('input', agendarPreviaAjuste);
         }
     }
 
@@ -819,6 +823,7 @@
         if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
         if (extrasInput) extrasInput.value = String(alvo.ciclo.aulasManuaisExtras || 0);
         if (observacaoInput) observacaoInput.value = alvo.ciclo.observacaoAjuste || '';
+        atualizarPreviaAjuste();
         abrirDialogFinancas(modal, 'ajuste');
     }
 
@@ -842,6 +847,7 @@
 
     function fecharModal(tipo) {
         if (STATE.salvando) return;
+        if (tipo === 'ajuste') cancelarPreviaAjustePendente();
         const modal = document.getElementById(tipo === 'pagamento' ? 'modalFinancasPagamento' : 'modalFinancasAjuste');
         const naPilha = modal && global.DialogController && typeof global.DialogController.getStack === 'function'
             && global.DialogController.getStack().includes(modal);
@@ -852,6 +858,59 @@
             contextoDados.definirFormulario(modal, false);
         }
         STATE.cardAtivo = null;
+    }
+
+    // T04 (D4=B): prévia do ajuste calculada pelo backend — GET
+    // /financas/:cicloId/simulacao-ajuste (somente leitura). A sequência descarta
+    // respostas fora de ordem; o fechamento do modal cancela pendências.
+    let previaAjusteTimer = null;
+    let previaAjusteSeq = 0;
+
+    function cancelarPreviaAjustePendente() {
+        if (previaAjusteTimer) {
+            clearTimeout(previaAjusteTimer);
+            previaAjusteTimer = null;
+        }
+        previaAjusteSeq += 1;
+    }
+
+    function agendarPreviaAjuste() {
+        if (previaAjusteTimer) clearTimeout(previaAjusteTimer);
+        previaAjusteTimer = setTimeout(() => {
+            previaAjusteTimer = null;
+            atualizarPreviaAjuste();
+        }, 400);
+    }
+
+    function montarTextoPreviaAjuste(dados) {
+        const total = Number(dados.totalAulasCobradas) || 0;
+        const valor = formatarMoeda(dados.valorTotalCiclo);
+        if (dados.metodoCobranca === 'valor_fixo') {
+            return `Cobrança fixa: total permanece ${valor}.`;
+        }
+        return `Novo total: ${total} aula(s) × ${formatarMoeda(dados.precoAula)} → ${valor}`;
+    }
+
+    async function atualizarPreviaAjuste() {
+        const alvo = STATE.cardAtivo;
+        if (!alvo || alvo.tipo !== 'ajuste' || !alvo.cicloId) return;
+        const campo = document.getElementById('financasAulasExtras');
+        const previaEl = document.getElementById('financasAjustePrevia');
+        if (!previaEl) return;
+        const seq = ++previaAjusteSeq;
+        previaEl.textContent = 'Calculando prévia…';
+        const valor = campo ? campo.value : '';
+        try {
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(alvo.cicloId)}/simulacao-ajuste?aulasManuaisExtras=${encodeURIComponent(valor)}`);
+            if (seq !== previaAjusteSeq) return;
+            if (!resposta || !resposta.ok) throw new Error('FALHA_PREVIA_AJUSTE');
+            const dados = await resposta.json();
+            if (seq !== previaAjusteSeq) return;
+            previaEl.textContent = montarTextoPreviaAjuste(dados);
+        } catch (_) {
+            if (seq !== previaAjusteSeq) return;
+            previaEl.textContent = 'Não foi possível calcular a prévia agora.';
+        }
     }
 
     async function salvarPagamento(event) {

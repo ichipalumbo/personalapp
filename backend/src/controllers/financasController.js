@@ -49,9 +49,21 @@ async function atualizarAjuste(req, res) {
   }
 }
 
+async function simularAjuste(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    const { cicloId } = req.params;
+    const simulacao = await financasService.simularAjusteCiclo(ownerEmail, cicloId, req.query ? req.query.aulasManuaisExtras : undefined);
+    res.json(simulacao);
+  } catch (err) {
+    responderErroFinancas(res, err, 'simular ajuste financeiro');
+  }
+}
+
 module.exports = {
   listarFinancas,
   obterHistorico,
   marcarPagamento,
-  atualizarAjuste
+  atualizarAjuste,
+  simularAjuste
 };
