@@ -1568,7 +1568,7 @@ window.executarExclusaoInstancia = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
@@ -1687,7 +1687,7 @@ window.executarExclusaoSerie = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function")
@@ -1777,7 +1777,7 @@ window.executarExclusaoAulaAvulsa = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
@@ -1846,7 +1846,7 @@ window.executarExclusaoSerieAPartirDe = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") {
@@ -2175,7 +2175,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }));
         }
         if (!window.contextoDados.operacaoAtual(op)) return;
-        exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+        exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
         if (!window.contextoDados.operacaoAtual(op)) return;
 
         let mensagemPrazo = "";
@@ -2810,7 +2810,7 @@ document.addEventListener("DOMContentLoaded", () => {
           escritaConfirmada = true;
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof window.inicializarHome === "function") {
-            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
           }
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof mostrarToast === "function")
@@ -2959,7 +2959,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (!window.contextoDados.operacaoAtual(op)) return;
             if (typeof window.inicializarHome === "function") {
-              exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+              exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
             }
             if (!window.contextoDados.operacaoAtual(op)) return;
 
@@ -3007,7 +3007,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof window.inicializarHome === "function") {
-            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
           }
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof mostrarToast === "function") {

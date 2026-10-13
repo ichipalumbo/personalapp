@@ -325,8 +325,18 @@ window.inicializarHome = async function (opcoes = {}) {
   if (!podeAplicar()) return false;
 
   garantirHomeTabs();
-  _renderizarHome(opcoes);
-  window.alternarModoHome(window.modoHomeAtivo || 'semana');
+  // T02 estendido: fluxos de ação não reposicionam a agenda em "hoje" nos
+  // renders disparados pela própria ação. Cobre os fluxos que passam
+  // semAncoraHoje: true e qualquer render com operação — inclusive os internos
+  // da ponte do GCal e da grade, que re-renderizam dentro da persistência.
+  const semAncoraHoje = opcoes.semAncoraHoje === true || Boolean(opcoes.operacao);
+  if (semAncoraHoje) window.__homeSemAncoraHoje = true;
+  try {
+    _renderizarHome(opcoes);
+    window.alternarModoHome(window.modoHomeAtivo || 'semana');
+  } finally {
+    if (semAncoraHoje) window.__homeSemAncoraHoje = false;
+  }
   return true;
 };
 

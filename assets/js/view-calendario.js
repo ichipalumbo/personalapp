@@ -198,7 +198,11 @@ window.renderizarHomeSemana = function() {
     }
 
     gridSemanal.innerHTML = html;
+    // T02 estendido: renders disparados por ações (semAncoraHoje) não reposicionam
+    // a agenda em "hoje" — a âncora continua nos renders de carga e navegação.
+    const ancorarHoje = !window.__homeSemAncoraHoje;
     setTimeout(() => {
+        if (!ancorarHoje) return;
         const hojeEl = document.getElementById('semana-dia-hoje-elemento');
         if (hojeEl) {
             hojeEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -230,6 +234,23 @@ window.abrirNovoAgendamentoSemana = function(dataIso, horaPadrao) {
         hora: horaPadrao || `${String(agendaConfig?.horaInicio || 8).padStart(2, '0')}:00`
     });
 };
+// T02 (D2=A): o fechamento do modal não re-renderiza mais a agenda — o re-render
+// no fechamento existia para refletir ações, mas todos os fluxos que alteram
+// dados chamam inicializarHome e atualizam a tela por conta própria. O gancho é
+// instalado uma única vez (antes, cada abertura empilhava um wrapper novo) e
+// apenas limpa o estado de navegação da ocorrência.
+let _ganchoFechamentoAcaoSlotInstalado = false;
+function instalarGanchoLimpezaFechamentoAcaoSlot() {
+    if (_ganchoFechamentoAcaoSlotInstalado) return;
+    const fecharOriginal = window.fecharModalAcaoSlot;
+    if (typeof fecharOriginal !== 'function') return;
+    window.fecharModalAcaoSlot = function() {
+        window.dataAlvoAcaoStr = null; // Limpa o estado de navegação da ocorrência
+        fecharOriginal();
+    };
+    _ganchoFechamentoAcaoSlotInstalado = true;
+}
+
 window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     window.dataAlvoAcaoStr = dataStr;
 
@@ -240,13 +261,7 @@ window.abrirCalendarioAcaoSlot = function(id, dataStr) {
     if (typeof abrirModalAcaoSlot === 'function') {
         abrirModalAcaoSlot(id);
     }
-    const originalFecharModalAcaoSlot = window.fecharModalAcaoSlot;
-    window.fecharModalAcaoSlot = function() {
-        window.dataAlvoAcaoStr = null; // Limpa o estado
-        if (originalFecharModalAcaoSlot) originalFecharModalAcaoSlot();
-        if (typeof window.renderizarHomeSemana === 'function') window.renderizarHomeSemana();
-        if (typeof window.renderizarHomeDia === 'function') window.renderizarHomeDia();
-    };
+    instalarGanchoLimpezaFechamentoAcaoSlot();
 };
 
 document.addEventListener('DOMContentLoaded', () => {

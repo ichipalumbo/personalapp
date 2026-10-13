@@ -22,7 +22,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 - [x] F1 conforme D1/D9 (T01 executado em 2026-10-13 — provas na §11 e registro na §12): modais de escolha exibem **data e horário da ocorrência clicada** e **nome do aluno**; formatação aprovada aplicada (“Sáb., 17/10 · 18:00”); sem limitações remanescentes no cabeçalho.
 - [ ] F2 conforme D3: opção A mostra valor e aviso de congelamento; opção B mostra só o aviso e deixa a ausência do valor registrada como tratamento parcial.
 - [ ] F3 conforme D4: A explica o ajuste com dados existentes; B apresenta prévia oficial do backend; C deixa o cartão adiado. Nenhuma opção reimplementa cálculo no frontend (regra 4.3 do repo).
-- [ ] F4: fechar o modal de ação preserva a posição de rolagem da Semana, inclusive após os callbacks e a rolagem assíncronos terminarem.
+- [x] F4 (T02 executado em 2026-10-13 — medições na §12): fechar o modal não re-renderiza mais a agenda (D2=A; gancho instalado uma única vez) e a posição de rolagem é preservada; validado no mock em 3 ciclos (516→516). **T02 estendido (D12=C)**: a âncora "hoje" fica suprimida em todos os renders pós-ação (edição, exclusões, reagendar, reposição e criação), inclusive nos disparados pela ponte do GCal; mock: edição 516→516, exclusão 516→508 (reflow do card removido) e abrir/fechar 508→508.
 - [ ] F5 conforme D5: textos aprovados alinhados ao fluxo real; F5c e qualquer decisão de não alterar ficam registrados separadamente.
 - [ ] Achados absorvidos no T05 (D11=A): rótulos das opções de exclusão no modo Dia exibem o dia selecionado em formato legível; o corte do "daqui pra frente" parte do dia selecionado, não da raiz; "Agendado para" do modal de ação sem ISO cru.
 - [ ] F6/F7: falha do financeiro oferece recuperação direta sem recarregar a página; histórico de reposições não afirma "nenhuma" durante o carregamento.
@@ -44,13 +44,15 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | Formato aprovado da linha de data/hora: `Sáb., 17/10 · 18:00` | 2026-10-13 | dono | Capitalização aplicada no contexto de exibição; o formato global do app (minúsculo) permanece |
 | Continuar na branch `diag/auditoria-fluxos-ux` nesta rodada (registro documental) | 2026-10-13 | dono | Working tree do T01 preservado; nenhuma escrita de código nesta rodada |
 | D11 = A — achados do T01 absorvidos no T05 (exibição + âncora de execução) | 2026-10-13 | dono | T05 passa a corrigir também o corte do "daqui pra frente" no modo Dia; validação de escrita no mock e teste automatizado entram no cartão |
+| D2 = A — fechar o modal não re-renderiza a agenda | 2026-10-13 | dono | Gancho único de fechamento (limpa estado, sem re-render); o wrapper empilhável foi extinto; ações continuam atualizando via `inicializarHome` |
+| D12 = C — suprimir a âncora "hoje" em todos os fluxos de ação do usuário | 2026-10-13 | dono | T02 estendido: os 9 call sites passam `semAncoraHoje: true` e o mecanismo central deriva a supressão de `opcoes.operacao` (cobre também os renders internos da ponte do GCal e da grade); flag global `__homeSemAncoraHoje` com clear em `finally` |
 
 ## 4. Decisões pendentes
 
 | # | Pergunta | Opções | Bloqueante? |
 |---|---|---|---|
 | D1 | F1: corrigir cabeçalho dos modais? Formato do subtítulo | **Resolvida (2026-10-13): B** — contexto passado pelo chamador; formato aprovado `Sáb., 17/10 · 18:00` | — (executada no T01) |
-| D2 | F4: preservar rolagem | A: não re-renderizar no fechamento (validar dependências do re-render) / B: re-renderizar e restaurar `scrollTop` capturado | **sim (T02)** |
+| D2 | F4: preservar rolagem | **Resolvida (2026-10-13): A** — não re-renderizar no fechamento; dependências validadas (ações re-renderizam via `inicializarHome`) | — (executada no T02) |
 | D3 | F2: conteúdo do modal de pagamento | A: valor do ciclo + aviso de congelamento / B: só o aviso | **sim (T03)** |
 | D4 | F3: efeito do ajuste | A: texto + valores já visíveis na tela / B: prévia calculada pelo backend / C: não alterar | **sim (T04)** |
 | D5 | F5: redação final + F5c (linha de prazo §9.3) | A: ajustar textos aprovados nesta frente + F5c fica para spec própria / B: tudo nesta frente / C: só registrar | **sim (T05)** |
@@ -60,15 +62,16 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D9 | F1 formato legível: ISO atual ("2026-09-26") aparece por fallback do formatador — corrigir junto? | **Resolvida (2026-10-13): Sim** — normalizar a exibição no formatador | — (executada no T01) |
 | D10 | Ordem de execução, ainda não aprovada | A: por risco, conforme a auditoria (§11) / B: por tema, conforme a sugestão anterior / C: outra ordem definida pelo dono | **sim (ordem da execução)** |
 | D11 | Achados do T01 (opções de exclusão no modo Dia + "Agendado para"): destino | A: T05 absorve exibição + âncora de execução / B: T05 só exibição / C: cartão novo | **Resolvida (2026-10-13): A** | — (executada no T05) |
+| D12 | Pós-ação: render após edição/exclusão rola a agenda para "hoje" | A: manter (pré-existente, fora do T02) / B: suprimir apenas nos call sites dos modais / C: suprimir em todos os fluxos de ação + derivar da operação no mecanismo central | **Resolvida (2026-10-13): C** | — (executada no T02 estendido) |
 
 Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B resulta em tratamento parcial de F2; D1=C, D4=C e D5=C deixam os respectivos trabalhos adiados. A ordem da §9 é uma proposta, não uma decisão fechada.
 
 ## 5. Escopo
 
-- **Arquivos prováveis**: `assets/js/modal-acao-slot.js` (T01; T05 — rótulos, âncora do "daqui pra frente" e "Agendado para", D11), `assets/js/view-calendario.js` (T02), `assets/js/view-financas.js` (T03, T04, T06), `index.html` (T05, textos), `assets/js/modal-agendamento.js` (T05), `assets/js/view-alunos.js` (T07); testes em `tests-frontend/` quando aplicável (ex.: `modal-acao-slot.test.js`, `view-financas-*.test.js`, `c-alunos-complementos.test.js`).
+- **Arquivos prováveis**: `assets/js/modal-acao-slot.js` (T01; T05 — rótulos, âncora do "daqui pra frente" e "Agendado para", D11; T02 estendido — 8 call sites), `assets/js/view-calendario.js` (T02), `assets/js/view-home.js` (T02 estendido — mecanismo central), `assets/js/modal-agendamento.js` (T02 estendido — criação; T05), `assets/js/view-financas.js` (T03, T04, T06), `index.html` (T05, textos), `assets/js/view-alunos.js` (T07); testes em `tests-frontend/` quando aplicável (ex.: `modal-acao-slot.test.js`, `view-financas-*.test.js`, `c-alunos-complementos.test.js`).
 - **Exceção condicionada a D4=B**: serviço/rota de prévia no backend, testes em `backend/test/` e respostas/cenários em `mocks/ui-runtime/`. Definir e registrar o contrato da API na spec de finanças antes de implementar; não escolher rota ou nomes de campos implicitamente.
 - **Documentos**: este plano; `docs/roadmap.md` (item 1.11 e itens relacionados); spec de finanças se D3 exigir registrar o texto e obrigatoriamente se D4=B introduzir o contrato de prévia.
-- **Comportamentos que podem mudar**: cabeçalho dos modais de escolha; modal de pagamento; modal de ajuste; rolagem ao fechar modal; textos; estado de falha do financeiro; resumo de reposições no carregamento; exibição das opções de exclusão no modo Dia e âncora do corte do "daqui pra frente" (T05/D11); formatação da linha "Agendado para". Nenhuma regra de valor, status ou persistência muda; a prévia D4=B é somente leitura.
+- **Comportamentos que podem mudar**: cabeçalho dos modais de escolha; modal de pagamento; modal de ajuste; rolagem ao fechar modal e após ações (T02 estendido/D12); textos; estado de falha do financeiro; resumo de reposições no carregamento; exibição das opções de exclusão no modo Dia e âncora do corte do "daqui pra frente" (T05/D11); formatação da linha "Agendado para". Nenhuma regra de valor, status ou persistência muda; a prévia D4=B é somente leitura.
 
 ## 6. Fora de escopo
 
@@ -114,17 +117,17 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Riscos e rollback**: baixo — exibição. Rollback trivial (revert).
 - **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
 
-### Cartão T02 — Fechar o modal preserva a posição da Semana (F4)
-- **Objetivo / resultado**: após fechar o modal de ação de uma aula em dia distante, a Semana permanece na mesma posição de rolagem (nenhum salto para "hoje").
-- **Depende de**: D2.
-- **Arquivos / componentes prováveis**: `assets/js/view-calendario.js` (`abrirCalendarioAcaoSlot`: wrapper de fechamento; `renderizarHomeSemana`: `scrollIntoView` pós-render); possível teste em `tests-frontend/` se a lógica for extraída, **sem** refatorar por testabilidade sem necessidade.
-- **Inclui**: garantir que o fechamento não reposicione indevidamente; se D2=B, capturar/restaurar `scrollTop`; validar que ações com sucesso continuam atualizando os cards; sanar o empilhamento de wrappers (inferência do diagnóstico) se confirmado.
-- **Não inclui**: remover a rolagem inicial legítima ao abrir a tela (`hoje` como âncora de primeira carga); mudar `renderizarHomeDia` além do necessário.
-- **Decisões pendentes / bloqueios**: D2 (dono).
-- **Critérios de aceite**: em uma semana que contenha "Hoje", abrir o modal de um dia distante e fechar sem salto de rolagem, inclusive depois dos callbacks atrasados e da rolagem suave terminarem. Ações que alteram o card continuam refletindo a mudança; a rolagem inicial legítima permanece.
-- **Validação**: mock `default`+`mockEscrita=1`, com a emulação da §10. Registrar o relógio/data usados e garantir que a semana contém "Hoje"; controlar o relógio apenas nos testes se necessário. Medir a posição do contêiner que realmente rola (`scrollY` da janela ou `scrollTop` do contêiner) antes de abrir e depois de fechar, após o callback atual de 120ms e qualquer rolagem suave terminarem. Repetir abrir/fechar 3× e conferir exclusão/edição no mock; suíte frontend antes/depois. Uma medição imediatamente após fechar não comprova o aceite.
-- **Riscos e rollback**: médio — o re-render no fechamento pode ter dependência oculta; validar com o fluxo de exclusão e edição no mock. Revert simples.
-- **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir.
+### Cartão T02 — Fechar o modal preserva a posição da Semana (F4; T02 estendido: pós-ação)
+- **Objetivo / resultado**: após fechar o modal de ação de uma aula em dia distante, a Semana permanece na mesma posição de rolagem (nenhum salto para "hoje"). **T02 estendido (D12=C)**: a posição também é preservada depois das ações ("salvar" na edição, exclusões, reagendar, reposição e criação), que antes re-ancoravam em "hoje" no render pós-escrita.
+- **Depende de**: D2; D12 (estendido).
+- **Arquivos / componentes prováveis**: `assets/js/view-calendario.js` (`abrirCalendarioAcaoSlot`: gancho de fechamento; `renderizarHomeSemana`: `scrollIntoView` pós-render + gate da supressão), `assets/js/view-home.js` (T02 estendido — `inicializarHome` liga/limpa a supressão), `assets/js/modal-acao-slot.js` e `assets/js/modal-agendamento.js` (T02 estendido — call sites com `semAncoraHoje`); testes em `tests-frontend/view-calendario-fechamento.test.js`, **sem** refatorar por testabilidade sem necessidade.
+- **Inclui**: garantir que o fechamento não reposicione indevidamente; se D2=B, capturar/restaurar `scrollTop`; validar que ações com sucesso continuam atualizando os cards; sanar o empilhamento de wrappers (inferência do diagnóstico) se confirmado. T02 estendido (D12=C): flag `__homeSemAncoraHoje` suprimindo a âncora em todos os renders do fluxo de ação — derivada de `opcoes.operacao` no mecanismo central (cobre os renders internos da ponte do GCal) e marcada explicitamente nos 9 call sites.
+- **Não inclui**: remover a rolagem inicial legítima ao abrir a tela (`hoje` como âncora de primeira carga) nem a âncora dos renders fora de fluxos de ação (pós-sincronização/bootstrap); mudar `renderizarHomeDia` além do necessário; editar `google-calendar.js` (a derivação por `operacao` evita tocar a ponte).
+- **Decisões pendentes / bloqueios**: D2 e D12 (ambas resolvidas em 2026-10-13: A e C).
+- **Critérios de aceite**: em uma semana que contenha "Hoje", abrir o modal de um dia distante e fechar sem salto de rolagem, inclusive depois dos callbacks atrasados e da rolagem suave terminarem. Ações que alteram o card continuam refletindo a mudança; a rolagem inicial legítima permanece. T02 estendido: depois de salvar a edição ou concluir a exclusão, a rolagem também permanece (sem re-âncora em "hoje").
+- **Validação**: mock `default`+`mockEscrita=1`, com a emulação da §10. Registrar o relógio/data usados e garantir que a semana contém "Hoje"; controlar o relógio apenas nos testes se necessário. Medir a posição do contêiner que realmente rola (`scrollY` da janela ou `scrollTop` do contêiner) antes de abrir e depois de fechar, após o callback atual de 120ms e qualquer rolagem suave terminarem. Repetir abrir/fechar 3× e conferir exclusão/edição no mock; suíte frontend antes/depois. Para o T02 estendido, medir também no salvar da edição e na exclusão (com espera pós-callback); automatizar o gate do render e a derivação da operação em `tests-frontend/` com prova por mutação. Uma medição imediatamente após fechar não comprova o aceite.
+- **Riscos e rollback**: médio — o re-render no fechamento pode ter dependência oculta; validar com o fluxo de exclusão e edição no mock. No estendido, o risco de o render pós-ação não passar pela mesma via do fechamento se confirmou no mock (ponte do GCal); mitigado pela derivação no mecanismo central. Revert simples.
+- **Limite de tentativas**: no máximo 2. Na segunda falha, registrar a falha e seguir. (O estendido consumiu 1 iteração extra — v1 parametrizada falhou no mock; corrigida com a derivação v2, registrada na §12.)
 
 ### Cartão T03 — Modal "Marcar como pago": valor e congelamento (F2)
 - **Objetivo / resultado**: se D3=A, exibir o valor do ciclo e o aviso de congelamento; se D3=B, exibir somente o aviso e registrar F2 como parcialmente tratado, com a ausência do valor ainda pendente.
@@ -206,6 +209,10 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | M1 — `montarContextoExibicaoOcorrencia` ignora `dataAlvoAcaoStr` (volta a usar só o dia selecionado) | 3 testes T01 de `modal-acao-slot.test.js` (contexto, cobrança, exclusão) | Falharam: esperado `Sáb., 17/10 · 18:00`, obtido `Seg., 31/08 · 18:00` | Sim — suíte 367/367 após restaurar |
 | M2 — nome do aluno sem `getAluno` (fallback "Aluno") | 4 testes T01 de `modal-acao-slot.test.js` | Falharam: obtido `Aluno · Sáb., 17/10 · 18:00`, esperado `Maria Silva ...` | Sim — suíte 367/367 após restaurar |
 | M3 — `formatarDataPtBrLegivel` volta a `converterPtBrParaISO` (sem normalização ISO) | `formatarDataPtBrLegivel normaliza entrada ISO (T01/D9)` em `utils-datetime.test.js` | Falhou: obtido `2026-09-26` cru, esperado `sáb., 26/09` | Sim — suíte 367/367 após restaurar |
+| M4 — gancho de fechamento volta a re-renderizar a semana | `fechar o modal não re-renderiza a agenda e limpa o estado da ocorrência (D2=A)` em `view-calendario-fechamento.test.js` | Falhou: rendersSemana 1 ≠ 0 | Sim — 2/2 verdes após restaurar |
+| M5 — guard de instalação única removido de `instalarGanchoLimpezaFechamentoAcaoSlot` | `o gancho de fechamento é instalado uma única vez, sem reassinar a cada abertura` em `view-calendario-fechamento.test.js` | Falhou: referência de função trocada a cada abertura | Sim — 2/2 verdes após restaurar |
+| M6 — gate `if (!ancorarHoje) return;` removido de `renderizarHomeSemana` | `render da semana ancora "hoje" por padrão e respeita a supressão pós-ação (T02 estendido)` em `view-calendario-fechamento.test.js` | Falhou: obtido `['semana-dia-hoje-elemento']` no caso suprimido (esperado `[]`) | Sim — 5/5 verdes após restaurar |
+| M7 — derivação removida: `semAncoraHoje` volta a considerar só o parâmetro explícito | `inicializarHome suprime a âncora quando há operação, mesmo sem o parâmetro (T02 estendido — ponte do GCal)` em `view-calendario-fechamento.test.js` | Falhou: flags de render gravadas com `semAncora: false` | Sim — 5/5 verdes após restaurar; suíte 372/372 |
 
 ## 12. Registro da execução
 
@@ -247,13 +254,47 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Suíte antes/depois nesta revisão**: não reexecutadas (nenhum código alterado); última medição — frontend **367/367**, backend **232/232** (T01, 2026-10-13).
 - **Desvio do plano**: nenhum.
 
+### 2026-10-13 — T02 executado (rolagem preservada ao fechar o modal — F4)
+- **Base**: `diag/auditoria-fluxos-ux`, HEAD `2fb9666` (T01 commitado pelo dono; working tree limpo na abertura). D10 segue pendente — o dono escolheu executar T02 nesta rodada (o próximo da ordem por risco proposta era T03).
+- **Decisão aplicada**: D2=A — fechar o modal não re-renderiza a agenda; o gancho único substitui o wrapper empilhável e apenas limpa `dataAlvoAcaoStr` antes de fechar.
+- **Arquivos alterados**: `assets/js/view-calendario.js` (gancho `instalarGanchoLimpezaFechamentoAcaoSlot`, instalado uma única vez) e `tests-frontend/view-calendario-fechamento.test.js` (novo; +2 testes).
+- **Suíte frontend antes/depois**: **367/367 → 369/369** (medido; +2 testes novos, 0 falhas).
+- **Suíte backend**: não reexecutada (nenhum arquivo de backend alterado); última medição **232/232** (T01).
+- **Prova por mutação**: M4 e M5 derrubaram os testes correspondentes; restaurações conferidas com `git status` + 2/2 verdes (§11).
+- **Nota de teste (iteração registrada)**: a primeira versão do teste de empilhamento contava chegadas ao fechar original e **não pegou M5** — sem re-render, encadear wrappers chega ao stub uma única vez; foi reformulado para provar a identidade do gancho (reabrir não reassina). O teste "sem abertura pela Semana o fechamento segue sendo o original" foi removido por passar no código antigo (não é cobertura do fix).
+- **Validação manual no mock** (`default`+`mockEscrita=1`, 433×762, DPR 2.81, toque/UA mobile):
+  - Reprodução antes do fix (mesmo método do aceite): rolagem **516 → 87** ao fechar, sábado fora da tela (diagnóstico: 516 → 96).
+  - Pós-fix, abrir/fechar 3× no sábado 17/10: rolagem **516 → 516** em antes/aberto/depois nos 3 ciclos (após o callback de 120 ms e a rolagem suave); sábado permanece na viewport (top ≈409).
+  - Edição no mock: horário 18:00 → 17:00 no sábado; card passou a "Maria Silva 17:00 - 18:00"; quinta 15/10 intacta; toast "Alterações salvas na nuvem!".
+  - Exclusão no mock: opções com "Só 17/10/2026 sai"; confirm aceito; escrita `PUT /api/agendamentos/… → 200`; sábado 17/10 ficou "Sem agendamentos para este dia"; quinta e domingo intactos; toast "Aula de 17/10/2026 excluída. A série continua nos outros dias.".
+  - Observação registrada (§13): após ações, o render do `inicializarHome` mantém o salto para "hoje" (`scrollY` 87) — pré-existente, fora do escopo do T02.
+- **Desvio do plano**: nenhum.
+
+### 2026-10-13 — T02 estendido executado (rolagem preservada também após ações — D12=C, pedido do dono)
+- **Base**: `diag/auditoria-fluxos-ux`, working tree do T02 preservado (sem commit novo); pedido do dono: "Pode corrigir o comportamento para edição/exclusão também? inclua essa tarefa no card atual e etapa atual".
+- **Decisão aplicada**: D12=C — supressão da âncora "hoje" em todos os fluxos de ação do usuário.
+- **Arquivos alterados**: `assets/js/view-calendario.js` (flag `__homeSemAncoraHoje` capturada no início de `renderizarHomeSemana`; gate `if (!ancorarHoje) return;` no `setTimeout` de 120 ms), `assets/js/view-home.js` (`inicializarHome` liga a flag com `opcoes.semAncoraHoje === true || Boolean(opcoes.operacao)` e limpa em `finally`), `assets/js/modal-acao-slot.js` (8 sites com `semAncoraHoje: true`: edição, 4 exclusões, reagendar, reposição série/avulsa), `assets/js/modal-agendamento.js` (criação, 1 site), `tests-frontend/view-calendario-fechamento.test.js` (+3 testes: gate do render, derivação por operação e casos sem operação/explícito).
+- **Iteração de correção (registrada)**: a primeira versão — só parametrizar os call sites — **falhou no mock** (edição ainda saltava 516→87). A instrumentação em execução mostrou que as edições gravam pela **ponte do GCal** (`salvarEventoComGCal` → `_persistirDadosComBackend`, 2 gravações por edição de série): os renders internos dessa ponte chamam `inicializarHome` sem o parâmetro, e o ramo dos call sites não executa quando `gcal.isSignedIn()` é verdadeiro. A v2 deriva a supressão de `opcoes.operacao` no mecanismo central — como toda escrita carrega `operacao`, a ponte, a grade e os call sites ficam cobertos sem editar `google-calendar.js`.
+- **Suíte frontend antes/depois**: **369/369 → 372/372** (medido; +3 testes novos, 0 falhas; uma rodada intermediária registrou timeout de 5 s em `c-financas-recuperacao.test.js` sob carga — o teste passou isolado e na re-execução da suíte, tratado como flake do ambiente).
+- **Suíte backend**: não reexecutada (nenhum arquivo de backend alterado); última medição **232/232** (T01).
+- **Prova por mutação**: M6 e M7 (§11) derrubaram os testes correspondentes; restauração conferida com `git status` + 5/5 verdes no arquivo focado; suíte completa 372/372 após restaurar.
+- **Validação manual no mock** (`default`+`mockEscrita=1`, 433×762, emulação mobile; relógio real 13/10/2026, semana 12–18/10; série ag2 — sábado 17/10):
+  - Edição "Daqui pra frente" (18:00 → 14:00): rolagem **516 → 516** (imediato) **→ 516** (+1,5 s); card do sábado atualizado para "14:00 - 15:00"; toast "Alterações salvas na nuvem!". Antes da correção: 516 → 87.
+  - Exclusão "Excluir esta aula" (confirm aceito): rolagem **516 → 508 → 508** — preservada sem salto para o topo; a diferença de 8 px é o reflow do card removido do container. Sábado ficou "Sem agendamentos para este dia"; toast "Aula de 17/10/2026 excluída. A série continua nos outros dias.".
+  - Regressão do fechamento (T02 base): abrir/fechar "Voltar" 2× — rolagem **508 → 508** nos 2 ciclos.
+- **Observação de método**: a validação usou cliques via DOM (`evaluate`), porque a fila de eventos de mouse/toque do CDP ficou presa em sessões anteriores; o comportamento observado é o mesmo caminho de código (handlers de `click`).
+- **Desvio do plano**: a extensão foi além do critério original de F4 (que cobria só o fechamento) por decisão explícita do dono (D12=C), registrada no card T02 e nas §2/§3.
+- **Decisão adicional tomada**: a supressão cobre também criação, reagendar e reposição (todos os fluxos de ação do usuário); os renders fora de fluxos de ação (pós-sincronização/bootstrap) mantêm a âncora — registrado na §13.
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
 |---|---|---|---|
 | Pagamento antecipado (mês futuro, "recebido em X cobre Y") | Exige decisão de produto e spec nova — não é defeito | roadmap + spec futura | dono |
 | Alvos de toque do topo (26–34px; roadmap 5.9) | Já mapeado; fora do escopo desta frente | roadmap 5.9 | dono |
-| Empilhamento de wrappers de `fecharModalAcaoSlot` (inferência) | Será sanado (ou registrado) no T02 | este plano, T02 | agente |
+| Empilhamento de wrappers de `fecharModalAcaoSlot` (inferência do diagnóstico, confirmada por leitura) | Sanado no T02 (D2=A): gancho instalado uma única vez, provado por teste de identidade (M5) | resolvido (T02) | agente |
+| Pós-ação (edição/exclusão): o render do `inicializarHome` ainda rola a agenda para "hoje" (`scrollY` 87 no mock), mesmo com o fechamento corrigido | Resolvido no T02 estendido (D12=C): supressão derivada da operação no mecanismo central + call sites; mock sem salto (edição 516→516; exclusão 516→508, reflow) | resolvido (T02 estendido) | agente |
+| Pós-sincronização/bootstrap: os renders fora de fluxos de ação (ex.: `atualizarViewAtualAposSync`, primeira carga) mantêm a âncora "hoje" | Não são ação do usuário; a âncora nesses renders é o comportamento esperado (entrada na Home) | mantido por decisão de escopo (D12=C) | agente |
 | F5c — linha de prazo §9.3 no modal de escolha | Depende de D5; origem do dado precisa de confirmação (prazo nasce no envio) | este plano, T05 / spec | dono |
 | F2 — valor ausente no modal, se D3=B | A opção B trata apenas o aviso; ausência do valor continua pendente | registrar tratamento parcial nas §12/§13 | dono |
 | Achados adiados por D1=C, D4=C ou D5=C; formatação mantida por D9=Não | Não declarar corrigido o que o dono decidir não implementar | registrar decisão e remanescente nas §12/§13 | dono |
@@ -270,7 +311,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 ## 15. Fechamento
 
 - **Critérios atendidos**: pendente.
-- **Pendências**: decisões de implementação D2–D7 (D1, D9 e D11 resolvidas); ordem de execução D10; contrato aprovado se D4=B. D8 permanece fora da frente. Executar e validar somente os cartões liberados.
+- **Pendências**: decisões de implementação D3–D7 (D1, D2, D9, D11 e D12 resolvidas); ordem de execução D10; contrato aprovado se D4=B. D8 permanece fora da frente. Executar e validar somente os cartões liberados.
 - **Registro obrigatório**: classificar F1–F7 como corrigido, parcialmente tratado ou adiado conforme os resultados e decisões, com os remanescentes na §13; nenhum achado adiado/parcial deve aparecer como integralmente corrigido.
 - **Riscos aceitos**: pendente.
 - **Data de fechamento**: pendente.
