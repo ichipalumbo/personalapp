@@ -1,11 +1,11 @@
 # Plano — Melhorias de clareza e fluidez: Semana, Reposições e Financeiro
 
-> **Status**: aberto
+> **Status**: concluído — branch validada pelo dono em deploy específico; integração à `main` permanece com o dono
 > **Abertura**: 2026-10-13
 > **Responsável**: dono do repositório + agente
 > **Branch**: `diag/auditoria-fluxos-ux`
 > **Diagnóstico de origem**: [`docs/diagnostics/2026-10-13-diag-auditoria-fluxos-ux.md`](../diagnostics/2026-10-13-diag-auditoria-fluxos-ux.md)
-> **Válido contra**: `2041d08` (branch `diag/auditoria-fluxos-ux`; working tree limpo)
+> **Válido contra**: `8a2187f` (branch `diag/auditoria-fluxos-ux`; base de código validada antes deste fechamento documental)
 
 > **Este arquivo é vivo.** Enquanto o item estiver aberto, ele recebe decisões, execução, medições e desvios. Não crie relatório separado para "o depois". Depois de fechado, não é reescrito: trabalho posterior gera documento novo.
 
@@ -259,6 +259,10 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | M37 — sombra específica de Alunos reintroduzida por ID | `FAB tem uma única fonte CSS de aparência, sem overrides por ID ou classes antigas` | 2 pass / 1 fail: regra `#btnFlutuanteAdicionar` detectada | Sim — 3/3 após restaurar + git status/diff conferidos |
 | M38 — hover volta à classe antiga da Home | Testes de fonte única e estados compartilhados | 1 pass / 2 fail: classe antiga detectada e regra `.fab-adicionar:hover` ausente | Sim — 3/3 após restaurar + git status/diff conferidos |
 | M39 — reduced-motion continua apontando para a classe antiga | Testes de fonte única e movimento reduzido | 1 pass / 2 fail: classe antiga detectada e regra de movimento reduzido ausente para o componente | Sim — 9/9 componente/router/ordem HTML após restaurar + git status/diff conferidos; suíte final 406/406 |
+| M40 — progresso inline ignora `atualizacaoManual` e reaparece em toda leitura | `feedback de carregamento — texto inline só aparece no refresh manual...` | Falhou na carga inicial: progresso visível quando os esqueletos já são o indicador | Sim — condição restaurada; testes focados e suíte completa verdes |
+| M41 — supressão do aviso global em Finanças removida | `Aviso global fica oculto em Finanças...` | Falhou durante a leitura no estado de Finanças | Sim — filtro restaurado; teardown do teste aguarda a leitura pendente |
+| M42 — wrapper volta a mostrar toast genérico na carga financeira | `carregamento lento das finanças mantém skeleton sem toast...` | Falhou: toast apareceu sobre os esqueletos | Sim — wrapper restaurado como silencioso para Finanças |
+| M43 — bootstrap deixa de ocultar aviso no deep link inicial de Finanças | `Carga inicial — tela-financas sem dados anuncia desde sessão até fim da leitura` | Falhou antes de `whenReady`: aviso global continuou visível | Sim — condição restaurada; teste D3 focado passou |
 
 ## 12. Registro da execução
 
@@ -502,6 +506,13 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Acessibilidade/navegação**: Enter no FAB de Alunos abre cadastro; Enter na Home Semana/Dia abre a escolha de tipo com rótulo correto; Escape fecha sem escrita. Finanças continua sem FAB; IDs e mecanismos de criação/remoção intactos. `prefers-reduced-motion: reduce` nos dois: `transition:none`, duração 0 s, feedback final preservado. Pseudoestados CDP restaurados e preferência de movimento devolvida ao padrão ao final.
 - **Resultado/limites**: aparência integralmente centralizada, sem aliases de classes locais ou CSS por ID; nomes antigos permanecem somente em registros históricos e asserções negativas. T07, ocultação de barra, cache, regras e limitação conhecida do mock preservados. Sem dependências novas; Firefox/Safari, gestos físicos, TalkBack e deploy não validados. Servidor local encerrado ao final; sem commit/push ou relatório paralelo. Publicação/aceite continuam do dono.
 
+### 2026-10-14 — Feedback sem duplicidade em Finanças e aceite em deploy de branch
+- **Base**: branch `diag/auditoria-fluxos-ux`, commit `8a2187f`; atualização documental autorizada pelo dono. O dono confirmou teste em celular e validação em produção por deploy específico da branch.
+- **Decisão de apresentação**: skeletons são o único feedback da carga inicial; “Carregando...” junto ao botão fica exclusivo do refresh manual, que preserva os cards em tela. Em Finanças, o aviso global e o toast genérico ficam ocultos para evitar mensagens duplicadas. O boot por deep link oculta o aviso antes de aguardar a sessão.
+- **Código/testes correspondentes**: `view-financas.js`, `storage.js` e `bootstrap.js`; regressões em `view-financas-atualizar.test.js`, `header-cache-state.test.js`, `view-financas-carregamento-toast.test.js` e `d3-boot-integracao.test.js`.
+- **Validação**: suite completa frontend **420/420**, exit code 0; focados finais **21/21**. M40–M43 falharam com as regressões correspondentes e foram restauradas. Browser no mock confirmou carga inicial sem overlay e refresh manual com progresso inline e cards preservados. O dono relatou aceite mobile em produção via deploy específico desta branch.
+- **Resultado/limites**: F1–F7 permanecem resolvidos; nenhum backend, cálculo, autenticação ou sync remoto alterado nesta rodada. Merge/PR para `main` permanece com o dono. TalkBack e navegadores além do Chromium não foram validados.
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
@@ -517,26 +528,29 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | Pós-ação (edição/exclusão): o render do `inicializarHome` ainda rola a agenda para "hoje" (`scrollY` 87 no mock), mesmo com o fechamento corrigido | Resolvido no T02 estendido (D12=C): supressão derivada da operação no mecanismo central + call sites; mock sem salto (edição 516→516; exclusão 516→508, reflow) | resolvido (T02 estendido) | agente |
 | Pós-sincronização/bootstrap: os renders fora de fluxos de ação (ex.: `atualizarViewAtualAposSync`, primeira carga) mantêm a âncora "hoje" | Não são ação do usuário; a âncora nesses renders é o comportamento esperado (entrada na Home) | mantido por decisão de escopo (D12=C) | agente |
 | F5c — linha de prazo §9.3 no modal de escolha | Resolvido no T05 (D5=B): prazo pré-visualizado pelo módulo compartilhado, valor idêntico ao do envio; spec v15 reconciliada (§9.3, decisão 21, §4.3) | resolvido (T05) | agente |
-| F2 — valor ausente no modal, se D3=B | A opção B trata apenas o aviso; ausência do valor continua pendente | registrar tratamento parcial nas §12/§13 | dono |
-| Achados adiados por D1=C, D4=C ou D5=C; formatação mantida por D9=Não | Não declarar corrigido o que o dono decidir não implementar | registrar decisão e remanescente nas §12/§13 | dono |
+| F2 — valor ausente no modal, se D3=B | Não se aplica: D3=A foi aprovada e implementada; modal mostra valor do ciclo e aviso de congelamento | resolvido (T03) | agente |
+| Decisões D1/D4/D5 eventualmente adiadas | Não se aplica: D1/D4/D5 foram resolvidas e T01/T04/T05 executados conforme as opções aprovadas | sem adiamento remanescente de F1–F7 | agente |
 | Exclusão em modo Dia: rótulos com data-raiz crua e corte ancorado na raiz | Resolvido no T05 (D11=A): rótulos legíveis e âncora no dia selecionado; mock confirmou o aparo a partir de 17/10 (10/10 mantido; 24/10 vazio) | resolvido (T05) | agente |
 | Modal de ação: linha "Agendado para: 2026-09-25" exibe ISO cru | Resolvido no T05 (D11=A): "Agendado para: Sex., 25/09" | resolvido (T05) | agente |
 | Fixture de histórico do mock (`/api/financas/:id/historico`) responde sempre um ciclo pago (R$ 180) | Não permite validar "histórico não pago" na UI; o caso do T03 está coberto por teste automatizado com fixture controlada | mock — quando a UI precisar de histórico não pago | dono |
 | Débito da spec §13 (reposições): `calcularPrazoReposicao` declarada duas vezes em `financasService.js` | Resolvido no T05 complemento: declaração redundante removida em `e4bab3f` (2026-08-25) e extração para o módulo compartilhado em `57381e0` (2026-09-18); spec §13 atualizada | resolvido (T05 complemento) | agente |
-| Mock `GET /api/reposicoes?alunoId=...` ignora a query e devolve todos os alunos | Preexistente e fora do T07; causa falso não-vazio no corpo e duplicação de outros alunos no cache nas releituras. Backend filtra corretamente; validação por aluno usou wrapper temporário filtrado, restaurado | mock — corrigir em rodada própria após autorização | dono |
+| Mock `GET /api/reposicoes?alunoId=...` ignorava a query | Corrigido em `43b9e29`: GET específico filtra pelo aluno; sem parâmetro mantém a lista completa. Três testes provaram filtro e ausência de duplicação no cache; reversão falhou nos três e foi restaurada | resolvido em rodada própria | agente |
 
 ## 14. Deploy e rollback
 
-- **Efeito externo**: frontend estático (PWA) **e novo endpoint somente leitura no backend** (`simulacao-ajuste`; T04/D4=B). T01–T07 executados e validados localmente; sem migração ou escrita de teste em Mongo/GCal. O T05 faz a webpage carregar `backend/shared/calculo-ciclo.js` por tag `<script>` — mesmo caminho já usado pelo `recurrence-helpers.js`; a validação no mock local não prova o deploy, então conferir que o arquivo é servido no app publicado.
+- **Efeito externo**: frontend estático (PWA) **e endpoint somente leitura no backend** (`simulacao-ajuste`; T04/D4=B). T01–T07 executados localmente; o dono relata ter validado esta branch por deploy específico em produção e aprovado a experiência mobile. Nenhuma escrita de teste em Mongo/GCal foi realizada pelo agente. O T05 faz a webpage carregar `backend/shared/calculo-ciclo.js` por tag `<script>` — mesmo caminho já usado pelo `recurrence-helpers.js`.
 - **Ordem de publicação**: PR do dono para a `main` → deploy automático nos dois projetos Vercel. Push é sempre do dono (`git push -u origin <branch>` na primeira vez). Os dois projetos deployam do mesmo commit; a UI da prévia degrada com mensagem se o endpoint não estiver disponível (Salvar continua) — conferir `personal-app-api` antes de validar a prévia no app publicado.
-- **Verificação pós-deploy**: aceite visual pelo dono/Josy no app publicado (não há staging); validação de escritas permanece no mock. Conferir a prévia do ajuste no app publicado (abrir “Editar ajuste” e verificar valor e aviso). No T05, conferir também o modal “Cobrar esta aula?” (texto “no card do aluno” + linha de prazo) e os rótulos de exclusão no modo Dia. No T06, conferir o botão “Atualizar” no cabeçalho de Finanças (leitura forçada e recuperação de erro sem reload). No T07, conferir “Atualizando…” ao abrir/reabrir o histórico, contagens somente após a leitura e erro sem falso vazio.
+- **Verificação por branch relatada pelo dono**: teste no deploy específico da branch em produção, com aceite da experiência no celular. A validação de escritas continua restrita ao mock.
+- **Integração à `main`**: abrir/atualizar o PR e fazer merge são ações do dono. O deploy específico validado não substitui revisão e integração.
 - **Limite do rollback**: realizado pelo dono; reversão do código cobre estas mudanças; se a API reverter antes da UI, a falha da prévia é tratada com mensagem e não bloqueia o Salvar.
 
 ## 15. Fechamento
+> **Atualização 2026-10-14**: o dono confirmou o teste em celular e o aceite em produção por deploy específico desta branch. F1–F7 estão fechados; referências abaixo a aceite pendente são históricas. Resta apenas PR/merge para `main` pelo dono.
 
-- **Critérios atendidos localmente**: F1–F7 integralmente corrigidos conforme D1–D7/D9/D11–D14; todos T01–T07 executados, testes novos provados por mutação e suítes afetadas sem regressão (§2/§11/§12). T07 final frontend 403/403; complemento de componente FAB único final **406/406**. Backend não reexecutado nas rodadas de 14/10; último número medido permanece 240/240.
+- **Critérios atendidos**: F1–F7 integralmente corrigidos conforme as decisões aprovadas; T01–T07 e complementos visuais executados; testes novos provados por mutação. Suíte frontend final **420/420**, exit code 0; backend permanece na última medição **240/240** (nenhum arquivo backend alterado na última rodada). O dono relata aceite em celular no deploy específico desta branch.
 - **Pendências**: revisão, publicação por PR e aceite no app publicado pelo dono (§14). D7/T07 resolvidos; D10 registra a ordem efetivamente autorizada rodada a rodada, sem sequência única aprovada. D8 continua fora da frente. Limitações dos mocks (§13), TalkBack e rede real não constituem prova de aceite desta rodada.
 - **Registro obrigatório**: classificar F1–F7 como corrigido, parcialmente tratado ou adiado conforme os resultados e decisões, com os remanescentes na §13; nenhum achado adiado/parcial deve aparecer como integralmente corrigido.
 - **Riscos/limites preservados**: sem nova decisão de produto. Arquivos dos mocks e fluxos de cache não ampliados pelo T07; lacunas de UI real/TalkBack/deploy declaradas, não confundidas com aprovação do dono.
 - **Data de conclusão local dos cartões**: 2026-10-14.
-- **Data de fechamento da frente**: pendente de publicação/aceite do dono; plano aberto para registrar esse resultado.
+- **Situação vigente**: o dono confirmou o aceite em celular e em produção por deploy específico. Nenhum cartão F1–F7 aguarda implementação; somente PR/merge para `main` permanece pendente do dono.
+- **Data de fechamento da frente**: 2026-10-14 (branch validada; integração à `main` pendente do dono).
