@@ -23,6 +23,12 @@ Essas quantidades descrevem a operação de organização, não contadores vivos
 outros índices. O [catálogo da auditoria](diagnostics/2026-10-14-diag-arquitetura-documentacao.md)
 permite localizar cada registro pelo seu objetivo original; é uma fotografia daquela base.
 
+## Consolidações posteriores
+
+As [specs anteriores à consolidação](spec-history/README.md) foram preservadas por autorização
+específica do dono. São cópias históricas, não uma segunda coleção de contratos ativos.
+Relatos e medições extraídos das fontes vigentes permanecem nessas cópias para consulta.
+
 ## Como interpretar os registros
 
 - Arquivar não declara que um defeito foi corrigido, uma feature publicada ou uma pendência encerrada.

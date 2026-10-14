@@ -24,6 +24,11 @@ Incorporar conhecimento útil ainda ausente nas fontes vivas apropriadas e recon
 | Arquivar a cópia com o nome antigo `APRENDIZADOS.md` | Confirmação do dono nesta continuação | Preservar como referência histórica, mantendo `lessons-learned.md` como a única fonte viva |
 | Manter fora de archive as fontes em manutenção | Conjunto confirmado pelo dono | Specs vigentes, roadmap v3, plano aberto, guias, referência viva e kit permanecem ativos |
 | Arquivar também investigações antigas e o plano inicial de reposições com estado ambíguo | Confirmação do dono nesta continuação | Preservar como históricos com ressalva no índice do arquivo; arquivamento não certifica conclusão de suas pendências |
+| Continuar na branch atual após o commit da organização histórica | Confirmação do dono na retomada de 2026-10-14 | Retomar os recortes pendentes deste plano, sem reabrir os históricos |
+| Preservar cópias das três specs antes de separar histórico e contrato | Confirmação do dono nesta retomada | Cópias históricas em `archive/spec-history/`; `docs/specs/` permanece a única fonte vigente. Não alterar regra, código ou dados por inferência |
+| Cobrança da reposição editável enquanto o ciclo responsável não estiver pago | Decisão do dono nesta retomada, 2026-10-14 | Manter a edição existente e o bloqueio após pagamento; não apresentar a escolha como irreversível desde o envio |
+| Falha parcial/desconhecida conserva pendência para recuperação explícita | Decisão do dono nesta retomada, 2026-10-14 | Manter política de Finanças/B2, sem replay geral ou compensação remota cega; não implementar novo rollback automático |
+| Reconciliar o plano de fluxos UX reaparecido com a cópia arquivada | Confirmação do dono nesta retomada | Comparar conteúdo antes de agir; preservar a versão histórica canônica e não reabrir seus cartões. A comparação confirmou equivalência descontando links/caminhos |
 
 O [roadmap oficial](../roadmap-v3.md) continua como índice. Não usar este plano como depósito de todo o texto retirado de fontes anteriores: históricos e duplicações podem permanecer apenas na origem preservada.
 
@@ -40,9 +45,9 @@ O [roadmap oficial](../roadmap-v3.md) continua como índice. Não usar este plan
 
 | Cartão | Resultado esperado | Estado |
 |---|---|---|
-| T01 | Comparar trechos do roadmap com as fontes vivas e registrar a matriz de transferência | Parcial: MIG-01–MIG-08 classificados; demais trechos ainda não encerrados |
+| T01 | Comparar trechos do roadmap com as fontes vivas e registrar a matriz de transferência | Parcial: MIG-01–MIG-18 classificados; os limites de revalidação funcional continuam explícitos |
 | T02 | Incorporar conhecimento técnico pertinente em referência/manual, conciliando descrições antigas | Primeiro incremento realizado e validado; outros recortes podem exigir nova triagem |
-| T03 | Reconciliar e migrar trechos de contrato/spec apenas com fundamento suficiente e sem mudança de regra | Observações e contratos transversais de interface consolidados; rótulos/debitos editoriais reconciliados. Demais trechos mistos não foram declarados encerrados |
+| T03 | Reconciliar e migrar trechos de contrato/spec apenas com fundamento suficiente e sem mudança de regra | Trechos finais de Finanças/Reposições e seção 9 de GCal consolidados, com cópias históricas e decisões confirmadas. Revalidação funcional e outros trechos não examinados não foram declarados encerrados |
 | T04 | Atualizar navegação e referências afetadas e declarar o que resta migrar | Concluído neste incremento: fontes vivas e arquivo histórico navegáveis, sem links locais ausentes |
 | T05 | Validar cada incremento e registrar preservação e resultado | Incremento validado: links, contratos preservados, diagnósticos, diff e ausência de temporários |
 | T06 | Arquivar o conjunto confirmado e corrigir navegação | 40 movimentos executados e verificados; conteúdo preservado descontando caminhos; casos ambíguos identificados no índice histórico |
@@ -66,6 +71,11 @@ Usar uma linha por trecho significativo, não por arquivo inteiro. Classificaç�
 | MIG-11 | Finanças §12.2/§12.4 versus entregas 0.3/0.4 e fonte viva | Reconciliação editorial | [Spec de Finanças](../specs/financas-ciclo-cobranca.md) | Limpeza entregue distinguida dos candidatos preservados; nota de árvore antiga substituída pela condição vigente e pela cautela com artefatos gerados |
 | MIG-12 | Etapas mobile 5.1–5.8 e contratos registrados nos planos anteriores | Contrato durável antes disperso | [Spec de interface](../specs/interface-e-navegacao.md) | Consolidados navegação/hash, diálogos/foco, cards/bandas, acessibilidade e feedback; exceções de publicação e resíduo 5.9 preservados; sem criar regra nova ou depender de plano como fonte normativa |
 | MIG-13 | Planos/diagnósticos anteriores, reports, roadmaps v1/v2 e referência antiga | Arquivamento autorizado, não conclusão de pendências | [Índice histórico](../archive/README.md) | 40 arquivos movidos; 77 históricos no conjunto, além do novo índice; links/caminhos atualizados mecanicamente e corpo comparado antes/depois descontando apenas esses caminhos |
+| MIG-14 | Três specs na base da retomada após o commit | Preservação anterior à extração | [Histórico das specs](../archive/spec-history/README.md) | Cópias conferidas byte a byte antes das mudanças; depois somente dois destinos de links de Finanças foram ajustados. Corpo histórico comparado descontando links |
+| MIG-15 | GCal §9, cronologia de correções e medições, mais enquadramento antigo de objetivo/prioridade | Separação entre contrato, histórico e limite de evidência | [Spec GCal](../specs/gcal-sync.md) e cópia histórica | 26 subseções preservadas sem duplicação; retirados relatos de rodadas, contagens e amostra de execução. Mantidos COUNT/EXDATE, propriedade, cortes, confirmação, idempotência/best-effort, pendência de boot e limite de I/O |
+| MIG-16 | Rodapé e §11.2–§11.3/§13 de Reposições | Decisão confirmada e consolidação de limites | [Spec de Reposições](../specs/reposicoes-e-competencia.md) | Cobrança editável até pagamento e recuperação explícita confirmadas pelo dono; cobertura/cronologia preservadas no histórico. Regras centrais de prazo/competência inalteradas; texto antigo da UI sinalizado |
+| MIG-17 | Finanças §12, relatos de dívida/correção versus requisitos de arquitetura/expansão | Consolidação do contrato e cautelas | [Spec de Finanças](../specs/financas-ciclo-cobranca.md) | Requisitos do compartilhamento e expansão preservados; retirado enquadramento de cronologia/backlog. Regras financeiras e contratos de rede centrais idênticos à entrada |
+| MIG-18 | Plano UX reaparecido fora do archive | Reconciliação de duplicata autorizada | [Plano histórico canônico](../archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) | 556 linhas equivalentes após normalizar links e caminhos históricos, sem conteúdo novo. Duplicata retirada da área ativa e cópia arquivada preservada; nenhum cartão reaberto |
 
 ## 6. Validação
 
@@ -138,3 +148,25 @@ Frente em execução. O primeiro incremento técnico não conclui M01–M03 para
 - **Estado da frente**: o incremento solicitado de consolidação/arquivamento está entregue localmente. A frente permanece em execução apenas para os recortes pendentes abaixo; não se declara migração normativa completa ou conclusão de débitos antigos. Revisão e integração por PR ficam com o dono.
 
 **Pendências que continuam ativas**: revalidar riscos antigos quando houver frente de intervenção; distinguir e, se necessário, extrair outros trechos mistos da spec de GCal e de Reposições sem perder contratos; reconciliar divergências funcionais somente com evidência/decisão apropriadas. O arquivamento e as consolidações desta rodada não são declaração de que todo o texto histórico virou requisito vigente.
+
+### 2026-10-14 — Retomada após commit: extração dos trechos mistos
+
+- Working tree limpo em `docs/auditoria-roadmap` na abertura; continuidade confirmada pelo dono. Instruções/índice atuais relidos; mudanças anteriores em governança e ambiente não foram revertidas.
+- Criado `archive/spec-history/` por autorização específica, com as três cópias de entrada e um índice que declara sua autoridade histórica. As três cópias foram verificadas byte a byte antes de qualquer extração; a versão histórica de Finanças recebeu depois apenas dois destinos de link relativos corrigidos.
+- O dono preferiu decidir as divergências antes da consolidação. Confirmou **edição de cobrança enquanto o ciclo responsável não estiver pago** e **pendência/recuperação explícita para falha parcial/desconhecida**. Essas decisões foram registradas e incorporadas aos contratos, sem alteração de runtime.
+- A leitura do reagendamento distinguiu a gravação anterior ao PATCH da confirmação adicional pela ponte posterior ao PATCH. A hipótese inicial de simples inversão de ordem não foi usada como fato; a política de recuperação de Finanças §6.1.3 prevalece sobre relatos antigos de compensação.
+- Consolidada a seção 9 de GCal: 26 IDs preservados e contratos centrais (RFC e blocos 3–8) idênticos à entrada. A seção não é mais saga ou contador de testes; pendência funcional do boot e limite de I/O real permanecem explícitos. A política de recuperação não executa nem autoriza compensação remota cega.
+- Consolidado o final das specs de Reposições e Finanças; requisitos de prazo/competência, cálculos, rede e expansão preservados. Versões documentais atualizadas somente nos cabeçalhos das fontes; o índice não mantém um mapa duplicado de versões.
+- **Iteração corrigida e provada**: a primeira substituição extensa de GCal duplicou seções e deslocou blocos. A validação detectou o problema antes de aceitação. O arquivo foi recomposto a partir da cópia íntegra e apenas trechos delimitados foram substituídos por automação temporária, validada em prévia e depois aplicada. O mesmo teste de numeração/contrato passou; o temporário foi removido.
+- **Plano reaparecido**: a primeira varredura ampla encontrou link inválido no plano UX fora do archive. Após autorização do dono, as duas versões foram comparadas; diferenças eram apenas links e caminhos históricos. Preservado o arquivo canônico, retirada a duplicata, sem reescrever resultado ou criar fechamento retroativo.
+- **Portões medidos até esta etapa**: 143 arquivos de produto/testes monitorados inalterados; cópias históricas preservadas descontando apenas links; 385 links locais de docs válidos antes de acrescentar esta rastreabilidade; área ativa com somente este plano. Suítes, UI real, Mongo, GCal e produção não executados nesta rodada documental.
+- **Validação final da retomada**: 18 registros MIG e 390 destinos de links locais de docs válidos; nenhum diagnóstico nas fontes editadas e `git diff --check` sem erro de whitespace, apenas avisos CRLF/LF. Cópias históricas e blocos centrais conferidos; temporário removido. A frente permanece aberta para as pendências específicas abaixo, sem declarar correção de UI/runtime nem revalidação completa do produto.
+
+#### Pendências específicas preservadas
+
+| Pendência | Evidência/limite | Tratamento |
+|---|---|---|
+| Rodapé do modal ainda afirma irreversibilidade | `index.html` mantém `Não pode ser alterado depois.`; backend permite edição antes de ciclo pago | Contrato e divergência sinalizados. Alteração de UI/código e prova de teste ficam para intervenção autorizada |
+| Recuperação de todos os ramos legados não foi recertificada | Conferidos controller de cobrança, reagendamento e contrato B2; não executado todo fluxo composto | Não afirmar que todo ramo implementa a política em todas as falhas; revalidar em frente funcional |
+| Regra genérica de nunca deletar versus limpeza excepcional de órfã | Reposições decisão 15 e contrato de limpeza GCal coexistem | Não ampliar DELETE nem apagar registro de negócio por inferência; esclarecer exceção em decisão específica se esse recorte for trabalhado |
+| Medições antigas e riscos datados | As cópias e demais históricos preservam evidência de época | Não converter relato em validação atual nem encerrar risco só por extrair texto |

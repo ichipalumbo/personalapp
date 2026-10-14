@@ -1,6 +1,6 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 17 · **Atualizado**: 2026-10-13
+> **Status**: Em produção · **Versão**: 18 · **Atualizado**: 2026-10-14
 > **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
 > publicados na main, com uso normal aprovado pelo dono após publicação. Recuperação nativa não exercitada; TalkBack não testado e não bloqueante por decisão do dono. Teclado no uso normal aprovado; cobertura integral não declarada.
 > **Apresentação inicial**: aviso imediato com/sem conteúdo publicado; abertura no app instalado aprovada pelo relato do dono.
@@ -678,15 +678,16 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 
 ---
 
-## 12. Defeitos Conhecidos e Dívidas Técnicas Aceitas
+## 12. Fronteiras e limites aceitos
 
-Itens identificados e avaliados, incluindo registros de correções e limites aceitos. Não implementar pendências sem decisão explícita. Prioridade e situação resumida das entregas ficam no [roadmap oficial](../roadmap-v3.md), pelos IDs preservados.
+Esta seção conserva requisitos e cautelas, não uma cronologia de correções ou fila de
+prioridades. Intervenções adicionais exigem decisão e frente próprias.
 
-### 12.1 Localização do módulo isomórfico de recorrência — RESOLVIDO (item 0.2 do roadmap)
+### 12.1 Localização do módulo compartilhado
 
-A dívida original: o módulo vivia em `assets/js/shared/recurrence-helpers.js` e o backend o alcançava por `require` relativo que atravessava para fora de `backend/`, dependendo de configuração de projeto não versionada.
-
-O módulo foi movido para `backend/shared/recurrence-helpers.js`: o backend o importa dentro do próprio `backend/` (`require('../../shared/recurrence-helpers')` a partir de `src/services`) e o frontend o consome por tag `<script src="backend/shared/recurrence-helpers.js">` no `index.html`. O ponto que dependia de configuração não versionada deixou de existir.
+O módulo de recorrência reside em `backend/shared/recurrence-helpers.js`. O backend o
+importa dentro do próprio diretório, e o frontend o carrega antes dos consumidores por
+tag de script. Não recriar a dependência de caminho externo ao root do backend.
 
 ### 12.2 CSS órfão da visão mensal
 
@@ -697,9 +698,11 @@ estivessem mortos sem validar Dia/Semana. Não tratar esses candidatos como remo
 aprovada nem reabrir a limpeza já entregue. Uma intervenção adicional exige escopo e
 validação próprios.
 
-### 12.3 Defeito corrigido — o bloco "Ver ciclos anteriores" persiste aberto em re-render
+### 12.3 Persistência da expansão em re-render
 
-**Estado atual**: o bug foi corrigido em `view-financas.js` persistindo o estado de expansão em `STATE` em vez de depender apenas do DOM. O comportamento atual é o seguinte:
+Histórico e extrato conservam a escolha de abertura/fechamento no estado da tela, não
+apenas no DOM. Re-render por pagamento, ajuste ou atualização não fecha um bloco que
+o usuário abriu. A implementação mantém os seguintes requisitos:
 
 1. o histórico mantém o estado em `STATE.historicoAberto`;
 2. o listener de `toggle` continua em fase de captura e grava **abertura e fechamento** da chave;
@@ -708,15 +711,13 @@ validação próprios.
 
 Esse mesmo padrão foi estendido ao extrato do ciclo: `STATE.extratoAberto` guarda a chave por identificador do ciclo (`extrato-atual-...`, `extrato-historico-...`), e a renderização reabre quando a opção estiver marcada. O guard do listener continua isolado por `data-financas-historico-details` versus `data-financas-extrato-details`, evitando que um bloco altere o outro.
 
-**Impacto**: apenas visual/estado. Não há perda de dados nem chamada de rede duplicada, e o conteúdo carregado sobrevive ao re-render do card. O bloco permanece expandido quando o usuário o abriu, mesmo depois de filtro, pagamento, ajuste ou refresh.
+Esse estado de apresentação não altera valor, confirmação de escrita ou contrato de
+cache. Não introduzir chamada de rede redundante apenas para reaplicar a expansão.
 
-**Correção documentada**: persistência do estado em `STATE`, com `open` condicionando o `<details>` e o `toggle` do histórico/extrato gravando e apagando a chave correspondente. Não requer mudança de backend.
+### 12.4 Referências e artefatos de apoio
 
-### 12.4 Documentação de apoio desatualizada
-
-A divergência original da árvore do README foi tratada na organização documental;
-o mapa atual inclui `CicloFinanceiro` e remete ao índice de documentação. O mapa não
-substitui inspeção do código nem certifica a presença de cada serviço na árvore resumida.
+O mapa do README não substitui inspeção do código nem certifica a presença de cada
+serviço na árvore resumida.
 
 Artefatos de ferramenta, como `graphify-out/`, não são fonte de verdade: quando necessários,
 devem ser regenerados, nunca corrigidos à mão. Não supor que uma saída histórica ainda
