@@ -33,7 +33,7 @@ correspondente em `docs/specs/`.
 - Cada spec tem uma seção "Decisões e Casos de Borda" com as ambiguidades já
   resolvidas, e uma seção "Fora de Escopo" com o que foi deliberadamente
   deixado de fora. Consulte as duas antes de propor solução.
-- Backlog, priorização e débitos técnicos conhecidos: `docs/roadmap.md`.
+- Backlog, priorização e débitos técnicos conhecidos: `docs/roadmap-v3.md`.
 - Índice da documentação: `docs/README.md`.
 
 Spec ativa: `docs/specs/financas-ciclo-cobranca.md`. A spec complementar `docs/specs/reposicoes-e-competencia.md` redefine a regra 5.8 e prevalece em caso de divergência sobre reposições. A spec `docs/specs/gcal-sync.md` detalha a integração com Google Calendar e a renovação ativa do webhook.
@@ -226,12 +226,31 @@ que pareçam pequenas:
 
 - `docs/specs/` — specs de feature, uma por arquivo, versionadas no cabeçalho.
   Fonte de verdade de regra de negócio.
-- `docs/roadmap.md` — documento vivo, único. Não duplicar nem versionar por data.
-- `docs/diagnostics/` (análise antes de agir), `docs/plans/` (plano vivo: decisões,
-  passos e **registro da execução no mesmo arquivo**) e `docs/reports/` (relatório
-  curto de mudança pontual). O trabalho **não gera relatório final por rodada**:
-  atualize o plano e o roadmap. `docs/archive/` é histórico do processo antigo,
-  só para consulta. Ciclo e nomes completos: `docs/README.md`.
+- `docs/roadmap-v3.md` — roadmap oficial, único e vivo. Substituição autorizada
+  pelo dono em 2026-10-14; `docs/roadmap.md` permanece somente como registro
+  anterior, sem alterações. Não criar novas versões paralelas nem versionar
+  por data. O roadmap resume resultado, status, esforço e dependências; testes,
+  mutações e registros de execução ficam no plano da frente.
+- `docs/README.md` — índice e governança documental: finalidade, autoridade,
+  conteúdo e ciclo de vida de cada tipo. Consultar antes de criar documentação.
+- **Spec** (`docs/specs/`) define o contrato aprovado e durável da feature;
+  **diagnóstico** (`docs/diagnostics/`) investiga uma base datada, separando
+  evidência e hipótese; **plano** (`docs/plans/`) organiza a frente e recebe
+  **o registro da execução no mesmo arquivo**. Plano e diagnóstico não
+  sobrescrevem regras de produto. Promover decisão durável aprovada para a
+  fonte permanente, sem deixar a spec depender de registros de processo.
+- Não exigir diagnóstico + spec + plano para toda mudança. Causa conhecida
+  pode dispensar diagnóstico; contrato já definido pode dispensar spec nova.
+  Dentro de frente aberta, registrar no plano existente; correção isolada usa
+  plano enxuto; melhoria curta de contrato atualiza spec e síntese no roadmap,
+  sem documentos redundantes quando não forem necessários.
+- **`docs/reports/` e `docs/archive/` estão congelados** por confirmação do dono
+  em 2026-10-14: somente consulta, sem novos arquivos, exclusões ou migração.
+  O trabalho não gera relatório final paralelo. Plano encerrado não é reescrito;
+  correção posterior gera continuação ou plano novo. Publicação/aceite e limites
+  ficam explícitos, sem confundir investigação concluída com correção entregue.
+- `docs/reference/` contém apoio e material exportável, não regra de negócio
+  nem backlog paralelo. Kit/templates para outro projeto não governam este app.
 - `README.md` (raiz) — visão geral e onboarding. **A árvore de arquivos pode
   estar desatualizada**; o código é sempre a referência. Se notar divergência,
   reporte.

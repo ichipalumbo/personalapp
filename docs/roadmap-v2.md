@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-10-13
+> **Status**: Documento vivo · **Atualizado**: 2026-10-14
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -19,9 +19,11 @@ Cada item traz:
 - **Onde mexer**: arquivos/áreas do código já existentes que servem de ponto de partida.
 - **Esforço estimado**: relativo, não é estimativa de horas fechada.
 
-**Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
+**Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento vem logo abaixo.
 
+**Itens concluídos**: ficam com uma linha e o link para a spec ou o plano onde está o registro da execução. Testes, mutações e histórico de rodadas não entram aqui.
 
+---
 
 ## Tabela de acompanhamento
 
@@ -80,22 +82,6 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 5     | 5.8 Estados de carregamento: skeletons + cache   | `[x]`  | 5.6 (validado 2026-10-01)                                        |
 | 5     | 5.9 Alvos de toque do cabeçalho/toolbar (resíduo 4.5) | `[ ]`  | —                                                                |
 
----
-
----------- | ----------- | -------------------------------------------- |
-| 2.10          | **2.2**     | Consolidação da sincronização tripla no boot |
-| 2.11          | **2.3**     | Alargamento da janela do full sync           |
-| 2.2           | **4.1**     | Cobrança automatizada                        |
-| 2.3           | **4.2**     | Notificações automáticas                     |
-| 2.4           | **4.3**     | Portal/app do aluno                          |
-| 2.5           | **4.4**     | Avaliação física / anamnese                  |
-| 2.6           | **4.5**     | Multi-personal / gestão de equipe            |
-| 2.7           | **4.6**     | Auditoria / histórico de alterações          |
-| 2.8           | **4.7**     | Precisão financeira avançada                 |
-| 2.9           | **4.8**     | Contrato / assinatura digital                |
-
-Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
-
 ⚠️ **Atenção ao validar specs**: nem toda referência a "2.x" é item de roadmap. As specs têm numeração própria de seções — por exemplo, "seção 2.4 da spec" (módulo isomórfico) e "regra 5.8" são seções de `specs/financas-ciclo-cobranca.md`, não itens deste documento. Só renumere referências que apontem explicitamente para itens do roadmap.
 
 ---
@@ -106,62 +92,62 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > Detalhamento técnico completo na seção 12 de [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
 
 ### [x] 0.1 Bug: bloco "Ver ciclos anteriores" fecha sozinho no re-render
-- **Resolvido**. Detalhado no plano correspondente.
+- **Concluído**. Estado de expansão do histórico persistido no `STATE`.
 
 ---
 
 ### [x] 0.2 Consolidar módulos compartilhados em `backend/shared/`
-- **Concluído**. Detalhes preservados no histórico.
+- **Concluído**. Regras de consumo na seção 4.2 de `.github/copilot-instructions.md`.
 
 ---
 
 ### [x] 0.3 Limpar CSS órfão da visão mensal
-- **Concluído.
+- **Concluído**.
 
 ---
 
 ### [x] 0.4 Organização da documentação
-- **Concluído.
+- **Concluído**. Índice em [`README.md`](README.md).
 
 ---
 
-### [x] 0.5 Collection Reposicao + modelo de competência
-- **Em Produção.
+### [x] 0.5 Collection `Reposicao` + modelo de competência
+- **Concluído**. Spec: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md).
 
 ---
 
 ### [x] 0.6 Extrato do ciclo
-- **Entregue.
+- **Concluído**. Spec: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md).
 
 ---
 
 ### [x] 0.7 Prazo de validade + expiração lazy
-- **Entregue.
+- **Concluído**. Spec: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md).
 
 ---
 
 ### [x] 0.8 Avisos in-app de reposição a vencer
-- **Entregue.
+- **Concluído**. Regra única em `backend/shared/reposicao-flow-helpers.js` (limite de 5 dias).
 
 ---
 
-### [x] 0.9 Expor calcularPrazoReposicao em módulo compartilhado
-- **Entregue.
+### [x] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado
+- **Concluído**. Mora em `backend/shared/calculo-ciclo.js`.
 
 ---
 
-### [x] 0.10 Deduplicação de calcularPrazoReposicao`r
-- **Concluído.
+### [x] 0.10 Deduplicação de `calcularPrazoReposicao`
+- **Concluído**.
 
 ---
 
 ### [x] 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica a cobrança
-- **Concluído.
+- **Concluído** (código e dados). Diagnóstico: [`diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
 
 ---
 
 ### [x] 0.12 Cobertura automatizada do render do Dia
-- **Entregue.
+- **Concluído**. Plano e residuais: [`plans/2026-10-12-plan-cobertura-render-conflitos-modais.md`](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md).
 
 ---
 
@@ -174,7 +160,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ## 🟢 Grupo 1 — Coisas fáceis de fazer (baixo esforço, alto ganho percebido)
 
 ### [x] 1.1 Controle de pagamento / inadimplência
-- **Entregue. Detalhes em specs/financas-ciclo-cobranca.md
+- **Concluído**. Spec: [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md).
 
 ---
 
@@ -190,7 +176,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ---
 
 ### [x] 1.3 Campo de observações/anotações por aula ou por aluno
-- **Entregue.
+- **Concluído**. Campo `observacoes` no cadastro do aluno.
 
 ---
 
@@ -240,30 +226,28 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ---
 
 ### [x] 1.9 Pagar/ajustar ciclo anterior (do histórico)
-- **Entregue.
+- **Concluído**. Spec: [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md), seção 6.3.
 
 ---
 
 ### [x] 1.10 Histórico de reposições no card do aluno
-- **Entregue.
+- **Concluído**. Spec: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seção 9.4. Plano: [`plans/2026-10-13-plan-melhorias-fluxos-ux.md`](plans/2026-10-13-plan-melhorias-fluxos-ux.md).
 
 ---
 
 ### [x] 1.11 Botão "Atualizar" na tela de Finanças
-- **Entregue.
+- **Concluído**. Somente bypass de cache de leitura. Contrato: [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) §6.1.3.
 
 ---
 
 ## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
 
-### [x] 2.1 Google Calendar (RRULE + EXDATE + renovação ativa do canal)
-- **Entregue. Documentado em specs/gcal-sync.md.
+### [x] 2.1 Google Calendar (`RRULE` + `EXDATE` + renovação ativa do canal)
+- **Concluído, com ressalva**: o disparo automático da renovação no boot não foi observado isoladamente (validação por clique manual). Spec: [`specs/gcal-sync.md`](specs/gcal-sync.md) §9.
 
 ---
 
 ### [ ] 2.2 Consolidação da sincronização tripla no boot
-
-> _Numerado como 2.10 até 2026-08-26._
 
 - **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
 - **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
@@ -278,8 +262,6 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [ ] 2.3 Alargamento da janela do full sync
 
-> _Numerado como 2.11 até 2026-08-26._
-
 - **O que é**: ampliar a janela de rebusca do full sync além do atual `−1 mês a +2 meses` para cobrir mais casos de bloqueios externos fora da janela ativa.
 - **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
 - **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
@@ -288,7 +270,7 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ---
 
 ### [x] 2.4 Sync de leitura no boot sobre cache (B2 — stale-while-revalidate)
-- **Concluído.
+- **Concluído** (PR #70). Contratos: [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) §6.1.1–6.1.4. Plano e limites de cobertura: [`plans/2026-09-30-plan-b2-sync-boot.md`](plans/2026-09-30-plan-b2-sync-boot.md). ETag/304 fica como rodada separada, a desenhar.
 
 ---
 
@@ -315,32 +297,28 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ---
 
 ### [x] 3.2 Rodar o backend localmente
-- **Concluído.
+- **Concluído**. Setup: [`setup-ambiente-local.md`](setup-ambiente-local.md).
 
 ---
 
 ### [x] 3.3 Frontend local falando com backend local
-- **Concluído.
+- **Concluído**. URL da API decidida por hostname em `assets/js/config/api-config.js`.
 
 ---
 
 ### [x] 3.4 Banco de desenvolvimento separado
-- **Concluído.
+- **Concluído**. Banco `personalapp_dev`; setup: [`setup-ambiente-local.md`](setup-ambiente-local.md).
 
 ---
 
 ### [x] 3.5 Suíte de testes de frontend
-- **Concluído.
+- **Concluído**. Em `tests-frontend/`; como rodar: [`setup-ambiente-local.md`](setup-ambiente-local.md).
 
 ---
 
 ## 🔴 Grupo 4 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
 
-> _Este grupo era numerado como "Grupo 2" até 2026-08-26, em conflito com o Grupo 2 de Google Calendar. Ver o mapa de equivalência no início do documento._
-
 ### [ ] 4.1 Cobrança automatizada (Pix, boleto, cartão recorrente)
-
-> _Numerado como 2.2 até 2026-08-26._
 
 - **O que é**: Gerar cobranças automáticas para os alunos e receber confirmação de pagamento sem o PT precisar fazer nada manualmente.
 - **Por que importa**: Elimina de vez o trabalho manual de cobrar e reconciliar pagamentos, indo além do registro manual entregue no item 1.1.
@@ -354,8 +332,6 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [ ] 4.2 Notificações automáticas (lembrete de aula, cobrança, etc.)
 
-> _Numerado como 2.3 até 2026-08-26._
-
 - **O que é**: Notificar o PT e/ou o aluno automaticamente (push notification ou WhatsApp) antes da aula, ou quando um pagamento está para vencer.
 - **Por que importa**: Reduz faltas e esquecimentos, dos dois lados.
 - **Complexidade**: O app já é PWA com Service Worker registrado (`assets/js/app-shell/service-worker.js`, `sw.js`), o que ajuda como base, mas hoje as notificações são só "toasts" internos (`mostrarToast`). Seria necessário Web Push (VAPID + subscription por usuário) **ou** WhatsApp Business API, mais um scheduler/cron no backend.
@@ -366,8 +342,6 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [ ] 4.3 Portal/app do aluno
 
-> _Numerado como 2.4 até 2026-08-26._
-
 - **O que é**: Um espaço onde o próprio aluno acessa sua agenda, seu histórico de pagamento e talvez sua evolução física.
 - **Por que importa**: Hoje o sistema é 100% voltado ao personal trainer — o aluno não tem visibilidade própria, o que gera trocas de mensagem desnecessárias ("qual meu horário de amanhã?", "já paguei esse mês?").
 - **Complexidade**: O modelo de dados segrega tudo por `ownerEmail` (uma conta Google = uma base isolada, ver `backend/src/utils/ownerScope.js` e `requireAuth.js`). Não existe o conceito de múltiplos papéis (PT vs. aluno) sobre o mesmo conjunto de dados. Exigiria desenhar um modelo de autorização (RBAC) do zero.
@@ -376,8 +350,6 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ---
 
 ### [ ] 4.4 Avaliação física / anamnese / evolução do aluno
-
-> _Numerado como 2.5 até 2026-08-26._
 
 - **O que é**: Registro de medidas corporais, peso, fotos de progresso, PAR-Q, histórico de lesões.
 - **Por que importa**: É expectativa comum de alunos de personal trainer mais estruturados, e ajuda o PT a justificar/ajustar treinos.
@@ -388,8 +360,6 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 
 ### [ ] 4.5 Multi-personal / gestão de equipe (para academias/estúdios)
 
-> _Numerado como 2.6 até 2026-08-26._
-
 - **O que é**: Permitir que uma academia tenha vários personal trainers cadastrados, com alunos vinculados a mais de um profissional.
 - **Por que importa**: Hoje o app só atende o modelo "PT autônomo solo". Para vender a estúdios/academias, seria necessário suportar equipes.
 - **Complexidade**: O isolamento por `ownerEmail` é rígido (1 conta = 1 base). Hierarquia (dono → PTs → alunos compartilhados) exige redesenhar o esquema de permissões inteiro.
@@ -398,8 +368,6 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ---
 
 ### [ ] 4.6 Auditoria / histórico de alterações
-
-> _Numerado como 2.7 até 2026-08-26._
 
 - **O que é**: Registrar quem alterou o quê e quando (ex.: mudança de valor combinado, remarcação de aula), para resolver disputas com o aluno.
 - **Por que importa**: Não há rastro de mudança — se o valor combinado for editado, o valor anterior se perde.
@@ -410,13 +378,11 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ---
 
 ### [x] 4.7 Precisão financeira avançada (calendário real em vez de aproximação)
-- **Entregue.
+- **Concluído**. Feriados não são tratados; faltas dependem do item 1.5.
 
 ---
 
 ### [ ] 4.8 Contrato / termo de responsabilidade / assinatura digital
-
-> _Numerado como 2.9 até 2026-08-26._
 
 - **O que é**: Aluno assina digitalmente um termo de responsabilidade ou atestado médico dentro do próprio app.
 - **Por que importa**: Reduz risco jurídico do PT (comum em contratos de prestação de serviço de educação física).
@@ -445,42 +411,42 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 > "Etapa" desse diagnóstico; a numeração de Etapa não muda, só o item de roadmap é novo.
 
 ### [x] 5.1 Formulários e diálogos mobile (Etapa 1)
-- **Concluído.
+- **Concluído**. Plano: [`plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md`](plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md).
 
 ---
 
 ### [x] 5.2 Legibilidade e área de toque (Etapa 2)
-- **Concluído.
+- **Concluído**; resíduo do cabeçalho/toolbar virou o item 5.9. Plano: [`plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`](plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md).
 
 ---
 
 ### [x] 5.3 Navegação e topo operacional (Etapa 3)
-- **Concluído.
+- **Concluído**. Plano: [`plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`](plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md). Unificação dos FABs (`.fab-adicionar`, 2026-10-14) em [`plans/2026-10-13-plan-melhorias-fluxos-ux.md`](plans/2026-10-13-plan-melhorias-fluxos-ux.md) §12.
 
 ---
 
 ### [x] 5.4 Densidade de cards (Etapa 4)
-- **Concluído.
+- **Concluído**. Plano: [`plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md`](plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md).
 
 ---
 
 ### [x] 5.5 Eventos simultâneos na agenda diária (Etapa 5)
-- **Concluído.
+- **Concluído**. Plano: [`plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md`](plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md).
 
 ---
 
 ### [x] 5.6 Erros e toasts (Etapa 6)
-- **Concluído.
+- **Concluído** (PRs #66 e #67). Plano: [`plans/2026-09-29-plan-etapa-6-toast-unificado.md`](plans/2026-09-29-plan-etapa-6-toast-unificado.md).
 
 ---
 
 ### [x] 5.7 Consistência e acessibilidade final (Etapa 7)
-- **Concluído.
+- **Concluído**. Plano: [`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md); validação em deploy: [`plans/2026-10-05-plan-validacao-etapa-7-branch.md`](plans/2026-10-05-plan-validacao-etapa-7-branch.md).
 
 ---
 
 ### [x] 5.8 Estados de carregamento: skeletons + cache
-- **Concluído.
+- **Concluído** (PR #68). Plano: [`plans/2026-09-30-plan-skeletons-cache.md`](plans/2026-09-30-plan-skeletons-cache.md).
 
 ---
 
