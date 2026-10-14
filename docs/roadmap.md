@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-10-12
+> **Status**: Documento vivo · **Atualizado**: 2026-10-13
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -61,7 +61,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
 | 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[x]`  | —                                                                |
 | 1     | 1.10 Histórico de reposições no card do aluno    | `[x]`  | gestão contextual; sem aba dedicada na V1                         |
-| 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[x]`  | entregue em 2026-10-13 (T06 do plano de fluxos UX, D6=A)          |
+| 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[x]`  | T06 + correções A1–A4/R1 validados localmente em 2026-10-13 |
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
@@ -363,6 +363,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 ### [x] 1.11 Botão "Atualizar" na tela de Finanças
 
 - **Entregue em 2026-10-13** (T06/D6=A do plano de melhorias de fluxos UX): botão no cabeçalho com leitura forçada (`forcarRemoto`), bloqueio durante o voo e falha preservando o conteúdo visível; suíte frontend 388→391; mock validado (recuperação sem reload, sem escrita).
+- **Auditoria posterior (`9d75cb7`, 2026-10-13)**: suíte frontend 391/391, fluxo principal confirmado, porém cache vazio + falha mantém skeleton (A1) e formulário aberto durante o voo mantém botão bloqueado após descarte (A2). Alvo de toque de 40 px (A3) e foco perdido após atualização por teclado (A4) também registrados. Nenhuma correção nesta revisão. Evidências e risco preexistente de integração com pendência (R1) no [plano vivo, §12/§13](plans/2026-10-13-plan-melhorias-fluxos-ux.md).
+- **Correções da auditoria (2026-10-13)**: A1–A4 resolvidos e R1 tratado por decisão explícita do dono: botão bloqueado enquanto houver intenção não confirmada, com orientação de recuperação; fluxo financeiro ordinário permanece preexistente. Suíte **391→399**, 0 falhas; M24–M30 provadas/restauradas; mock confirmou vazio sem skeleton, liberação após fechar formulário, alvo de 44 px, foco sem roubo e recuperação explícita. Contrato na [spec de Finanças §6.1.3](specs/financas-ciclo-cobranca.md). Concluído localmente; publicação e aceite real do dono não são prova desta rodada.
 - **O que é**: botão no cabeçalho de `assets/js/view-financas.js`, ao lado do rótulo de cache, que dispara `carregarFinancas({ forcarRemoto: true })` — a mesma função já usada após salvar pagamento/ajuste — ignorando o cache local e buscando o estado atual direto do backend.
 - **Escopo deliberadamente restrito**: apenas bypass de cache de leitura (`GET /api/financas`). **Não** é um botão de recálculo/criação manual de ciclo — a decisão #23 da spec (seção 7) já rejeita esse caso, porque o recálculo do ciclo vigente já é automático a cada leitura. Este item não reabre aquela decisão.
 - **Onde mexer**: `assets/js/view-financas.js` (`renderizarCabecalho`, `bindHandlers`, `atualizarCabecalhoCache`). Sem mudança de backend.
@@ -489,7 +491,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   da cascata; não presumir autorização pela ampliação do plano.
 - **Sequência**: B2-puro antes do **2.2**. ETag/304 separado, não bloqueia 2.2 e exige novo
   desenho de invalidação (collections + passagem do dia). Dono decide ordem entre essas
-  rodadas posteriores. **1.11** foi entregue em 2026-10-13 (T06 do plano de fluxos UX).
+  rodadas posteriores. **1.11** foi concluído localmente em 2026-10-13 após corrigir
+  e validar A1–A4/R1 do T06 (plano de fluxos UX).
 - **Esforço**: Médio–Alto (B2-puro, revisar após inventário de operações); ETag a estimar
   separadamente. Sem dependências novas previstas.
 - **Numeração**: "2.4" foi o número antigo do Portal do aluno (hoje 4.3, ver mapa de

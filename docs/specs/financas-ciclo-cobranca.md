@@ -1,6 +1,6 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 16 · **Atualizado**: 2026-10-13
+> **Status**: Em produção · **Versão**: 17 · **Atualizado**: 2026-10-13
 > **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
 > publicados na main, com uso normal aprovado pelo dono após publicação. Recuperação nativa não exercitada; TalkBack não testado e não bloqueante por decisão do dono. Teclado no uso normal aprovado; cobertura integral não declarada.
 > **Apresentação inicial**: aviso imediato com/sem conteúdo publicado; abertura no app instalado aprovada pelo relato do dono.
@@ -458,6 +458,22 @@ Seguir o padrão existente de `routes`/`controllers`, com `requireAuth` e isolam
 - **Sincronizar Dados** faz apenas leitura. Clique aguarda formulário/operação/batch da
   mesma conta, depois executa batch próprio novo. Adiamento/falha não anunciam sucesso;
   troca de conta cancela o pedido anterior. Retry desse caminho refaz somente a leitura.
+- **Atualizar**, no cabeçalho de Finanças, refaz apenas `GET /api/financas`, ignorando o
+  cache, sem recarregar a página nem iniciar escrita pelo frontend. O botão fica bloqueado
+  durante sua leitura ou enquanto houver formulário/operação que impeça a leitura.
+  Com pendência não confirmada, também fica bloqueado e orienta usar a área de recuperação
+  existente; nem clique sintético pode iniciar a consulta. A restrição por pendência é
+  específica a essa ação manual, sem mudar o fluxo financeiro ordinário ou os efeitos lazy.
+  Se uma pendência surgir durante a consulta manual, sua resposta não é aplicada.
+- Falha da atualização preserva a apresentação anterior, inclusive lista vazia confirmada;
+  não deixa skeleton indefinido. Interação nova descarta a resposta antiga, mas o término
+  limpa o indicador do voo ainda vigente da mesma conta. Não limpa indicador de leitura
+  mais recente e não aplica dados obsoletos; após encerrar o formulário, uma nova consulta
+  depende de novo clique, sem retry automático introduzido por esse botão.
+- O alvo de toque de **Atualizar** tem pelo menos 44 px. O foco retorna ao disparador após
+  sucesso ou falha somente se ele tinha foco e o usuário não mudou de alvo, tela, conta ou
+  interação; o retorno não reposiciona a rolagem. A descrição acessível de recuperação só
+  é vinculada ao botão enquanto há pendência.
 - PATCH confirmado com refresh falho continua confirmado: aviso orienta não repetir a
   escrita. Ciclos que aguardam releitura ficam protegidos até leitura que realmente os
   cubra; histórico não libera o ciclo vigente que seu endpoint não retorna.
@@ -567,6 +583,7 @@ O carregamento sob demanda não pode degradar a experiência. Assumir **rede len
 | 28 | Cache pode ser mostrado sem sessão válida ou para outra conta? | Não. Preservação em disco não autoriza exibição; descartar legado sem dono e invalidar respostas/contextos antigos conforme 6.1.1. |
 | 29 | Troca de conta pode perder pendência local identificada? | Não silenciosamente. Preservar snapshot separado por dono, sem replay automático; mecanismo de recuperação é incremental. |
 | 30 | Atualização manual ou recuperação podem repetir escrita não confirmada? | Não. Atualização é somente leitura; recuperação verifica ou abandona intenção com confirmação e leitura nova, conforme 6.1.3. |
+| 31 | O botão Atualizar pode consultar/aplicar finanças com pendência não confirmada? | Não. Bloquear a ação e orientar a recuperação existente, preservando intenção e snapshot; leitura financeira ordinária permanece no fluxo preexistente (6.1.3). |
 
 ---
 

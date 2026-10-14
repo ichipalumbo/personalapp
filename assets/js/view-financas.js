@@ -58,7 +58,9 @@
             const elemento = document.getElementById(id);
             if (elemento) elemento.replaceChildren();
         });
+        atualizarEstadoBotaoAtualizar();
     });
+    contextoDados.aoMudarInteracao(atualizarEstadoBotaoAtualizar);
 
     function formatarMoeda(valor) {
         const numero = Number(valor) || 0;
@@ -201,12 +203,14 @@
               <div style="text-align:right;">
                 <div id="financasCacheLabel" style="font-size:0.75rem;color:#909090;">${cacheLabel}</div>
                 <div id="financasSyncState" style="font-size:0.75rem;color:#909090;margin-top:4px;"></div>
-                <button type="button" class="btn btn-secondary" id="financasAtualizar" data-financas-atualizar style="margin-top:8px;">Atualizar</button>
+                                <button type="button" class="btn btn-secondary" id="financasAtualizar" data-financas-atualizar style="margin-top:8px;min-height:44px;">Atualizar</button>
+                                <p id="financasAtualizarOrientacao" role="status" hidden style="margin:8px 0 0;color:#b8b8b8;font-size:0.75rem;line-height:1.4;">Resolva a alteração não confirmada na área de recuperação acima antes de atualizar.</p>
               </div>
             </div>
           </section>
           <section id="financasConteudo"></section>
         `;
+                atualizarEstadoBotaoAtualizar();
     }
 
     function renderizarSkeleton() {
@@ -660,10 +664,53 @@
                 syncState.textContent = '';
             }
         }
-        // T06 (D6=A/roadmap 1.11): uma leitura por vez — o botão bloqueia durante
-        // o voo; o guard do handler cobre clique sintético/estado atrasado.
-        const botaoAtualizar = document.getElementById('financasAtualizar');
-        if (botaoAtualizar) botaoAtualizar.disabled = STATE.carregando;
+        atualizarEstadoBotaoAtualizar();
+    }
+
+    function atualizarEstadoBotaoAtualizar() {
+        if (!telaFinancasAtiva()) return;
+        const botao = document.getElementById('financasAtualizar');
+        if (!botao) return;
+        const contexto = contextoDados.capturar();
+        const pendencia = contextoDados.obterPendencia(contexto);
+        botao.disabled = STATE.carregando || !contextoDados.atual(contexto)
+            || !contextoDados.podeLer() || Boolean(pendencia);
+        const orientacao = document.getElementById('financasAtualizarOrientacao');
+        if (orientacao) orientacao.hidden = !pendencia;
+        if (pendencia) botao.setAttribute('aria-describedby', 'financasAtualizarOrientacao');
+        else botao.removeAttribute('aria-describedby');
+    }
+
+    async function atualizarFinancasManualmente(botao) {
+        const contexto = contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        if (!contextoDados.atual(contexto) || STATE.carregando) return;
+        // R1: a saída de recuperação existente resolve a intenção; este botão
+        // não consulta/aplica dados por cima dela, nem reenvia escrita.
+        if (contextoDados.obterPendencia(contexto)) {
+            atualizarEstadoBotaoAtualizar();
+            if (typeof global.abrirRecuperacaoDados === 'function') global.abrirRecuperacaoDados();
+            return;
+        }
+        if (!contextoDados.podeLer()) return;
+
+        const tinhaFoco = document.activeElement === botao;
+        let focoMovido = false;
+        const observarFoco = (event) => {
+            if (event.target !== botao && event.target !== document.body) focoMovido = true;
+        };
+        if (tinhaFoco) document.addEventListener('focusin', observarFoco);
+        try {
+            await carregarFinancas({ forcarRemoto: true, atualizacaoManual: true });
+        } finally {
+            if (tinhaFoco) document.removeEventListener('focusin', observarFoco);
+            const focoNeutro = document.activeElement === document.body || document.activeElement === botao;
+            if (tinhaFoco && !focoMovido && focoNeutro && botao.isConnected && !botao.disabled
+                && telaFinancasAtiva() && contextoDados.atual(contexto)
+                && contextoDados.podeAplicarInteracao(interacao)) {
+                botao.focus({ preventScroll: true });
+            }
+        }
     }
 
     function carregarFinancas(opcoes = {}) {
@@ -701,7 +748,9 @@
         }
         if (!contextoDados.podeAplicarInteracao(interacao, operacao)) return false;
         const requestId = ++STATE.requestId;
-        const podeAplicar = () => requestId === STATE.requestId && contextoDados.atual(contexto) && contextoDados.podeAplicarInteracao(interacao, operacao);
+        const leituraAindaAtual = () => requestId === STATE.requestId && contextoDados.atual(contexto);
+        const podeAplicar = () => leituraAindaAtual() && contextoDados.podeAplicarInteracao(interacao, operacao)
+            && (!opcoes.atualizacaoManual || !contextoDados.obterPendencia(contexto));
         const deveForcarRemoto = opcoes.forcarRemoto === true;
         const silencioso = opcoes.silencioso === true;
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
@@ -770,22 +819,30 @@
                 if (!silencioso && typeof global.mostrarToast === 'function') {
                     global.mostrarToast(STATE.erro, 'warning');
                 }
-                if (!cache && STATE.cards.length === 0 && telaFinancasAtiva()) {
-                    renderizarVazio(STATE.erro);
-                }
             }
-            // T06 (D6=A): falha de leitura manual não deixa o skeleton preso nem
-            // apaga o que estava visível — o conteúdo anterior volta à tela, com o
-            // erro exposto no cabeçalho (e no toast, quando não silencioso).
-            if (!silencioso && telaFinancasAtiva() && STATE.cards.length > 0) {
-                renderizarCards();
+            // A1: um snapshot vazio válido também precisa substituir o skeleton.
+            // Não reidratar cache não aplicado por cima da memória em uma falha.
+            if (telaFinancasAtiva() && (!silencioso || document.querySelector('#financasConteudo .skeleton'))) {
+                if (STATE.cards.length > 0 || (cache && Array.isArray(cache.dados) && cache.dados.length === 0)) {
+                    renderizarCards();
+                } else {
+                    renderizarVazio(STATE.erro || 'Não foi possível atualizar agora.');
+                }
             }
             return false;
         } finally {
             if (feedback) global.leiturasDados.finalizarFeedback(feedback);
-            // Uma leitura antiga não apaga o indicador nem o erro da operação seguinte.
-            if (podeAplicar()) {
+            // A2: encerrar o voo não exige aplicar sua resposta. Somente o request
+            // ainda vigente da mesma conta pode limpar o indicador da leitura.
+            if (leituraAindaAtual()) {
                 STATE.carregando = false;
+                if (!podeAplicar() && telaFinancasAtiva() && document.querySelector('#financasConteudo .skeleton')) {
+                    if (STATE.cards.length > 0 || (cache && Array.isArray(cache.dados) && cache.dados.length === 0)) {
+                        renderizarCards();
+                    } else {
+                        renderizarVazio('Atualização interrompida. Tente novamente.');
+                    }
+                }
                 atualizarCabecalhoCache();
                 const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
                 if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'false');
@@ -1049,8 +1106,7 @@
             const atualizarBtn = event.target.closest('[data-financas-atualizar]');
             if (atualizarBtn) {
                 // T06 (D6=A/roadmap 1.11): leitura manual que ignora o cache — nunca escrita.
-                if (STATE.carregando) return;
-                carregarFinancas({ forcarRemoto: true });
+                void atualizarFinancasManualmente(atualizarBtn);
                 return;
             }
 
