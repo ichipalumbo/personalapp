@@ -1,15 +1,14 @@
 # Aprendizados consolidados dos relatórios
 
-> Extraído das seções "Defeitos encontrados e não corrigidos", "O que encontrei e não
-> alterei" e "Riscos" de todos os relatórios em `docs/archive/agent-reports/` e `docs/reports/`.
+> **Finalidade**: referência de riscos, limites e armadilhas · **Atualizado**: 2026-10-14
+> Consolida relatos históricos e conhecimento útil do roadmap/planos, com a fonte de cada complemento. A atualização não recertifica todos os riscos antigos.
 >
 > **Este arquivo não é fonte de verdade de regra de negócio** — as specs em `docs/specs/`
 > são. O que está aqui é o inventário de riscos, limites e decisões que os relatórios
 > registraram e que se perderiam numa poda futura.
 >
 > **Como usar**: antes de abrir uma rodada numa área sensível, procure a área aqui.
-> Item marcado como **sem dono** não está no `roadmap.md` nem na seção 9 de nenhuma spec —
-> ou seja, ninguém vai tropeçar nele por acaso.
+> **Sem dono** indica ausência de frente atribuída no registro de origem; confira o [roadmap oficial](../roadmap-v3.md) e as fontes atuais antes de propor trabalho. Não inferir prioridade nem encerrar risco sem revalidá-lo.
 
 ---
 
@@ -58,13 +57,20 @@ não quebrar código legado sem cobertura.
 
 Registrado em: `2026-08-29-fix-global-e-mock-teto-gcal`.
 
-### 1.5 Versões de spec divergentes entre documentos — sem dono
+### 1.5 Versões de spec copiadas em outras fontes — controle aplicado
 
-Estado real hoje: `gcal-sync` v11, `financas-ciclo-cobranca` v7, `reposicoes-e-competencia` v6.
-`.github/copilot-instructions.md` e `docs/README.md` citam versões antigas. Um agente que
-confie no número citado assume que a spec está congelada num estado que não existe mais.
+A divergência foi registrada quando índice e instruções repetiam números de versão que
+já não acompanhavam a spec. Esse não deve ser tratado como contador atual nem nova dívida
+sem verificar as fontes: a [governança vigente](../README.md) mantém versão/status da spec
+somente no seu próprio cabeçalho, e as [instruções](../../.github/copilot-instructions.md)
+apontam os caminhos, sem reproduzir os números.
 
-Registrado em: `2026-08-31-fix-heranca-mae-vazia-split`.
+**Lição**: consultar a spec pelo caminho e ler seu cabeçalho; não manter um segundo mapa
+de versões nesta referência. Citações datadas em registros históricos não representam
+o estado vigente. Os outros riscos da seção 1 não foram encerrados por esta reconciliação.
+
+Origem do risco: `2026-08-31-fix-heranca-mae-vazia-split`; controle documental conferido em
+2026-10-14, sem mudança de regra de produto.
 
 ---
 
@@ -120,9 +126,21 @@ numa próxima varredura:
   `.objetivo-Outro`
 - `.agenda-card-density-compact`, `.agenda-card-density-tight`
 
-### 3.2 CSS órfão real, já mapeado e não removido
+### 3.2 Candidatos a CSS órfão não são autorização de remoção
 
-- Seletores sem correspondência no DOM atual: `#containerCalendarioDia`,
+O [item 0.3 do roadmap anterior](../roadmap-v1.md) registra a limpeza da visão mensal, mas
+também uma decisão de **preservar `#tela-calendario` e `#containerCalendarioDia` por segurança**:
+faltava evidência suficiente para classificá-los como mortos sem validar Dia/Semana.
+Essa ressalva não deve desaparecer quando o resultado da limpeza vira uma linha no roadmap.
+
+Busca estática, inclusive por ferramenta, não demonstra ausência de uso dinâmico ou de
+efeito de layout. Antes de remover outro candidato, reproduzir o estado relevante e
+conferir o seletor no render; as classes dinâmicas da seção 3.1 continuam exigindo esse cuidado.
+
+Os pontos abaixo vieram de varreduras anteriores e precisam de revalidação antes de ação;
+não são uma certificação do DOM/CSS atual:
+
+- Candidatos registrados sem correspondência estática: `#containerCalendarioDia`,
   `#tela-calendario > .calendario-tabs-sticky`, `#containerCalendarioDia .agenda-sticky-container`.
 - `--tabs-height`: mecanismo abandonado. `atualizarAlturaTabsCalendario` só faz
   `removeProperty`; o CSS que consome a variável cai sempre no fallback `0px`.
@@ -132,12 +150,19 @@ numa próxima varredura:
   `TAG-STYLE-HEADER-NAV` cresceu além do que o nome descreve e
   `TAG-STYLE-FILTRO-ALUNO-CALENDARIO` guarda bloco de tela já removida.
 
-### 3.3 Animações sem `prefers-reduced-motion`
+### 3.3 Movimento reduzido: não repetir o diagnóstico antigo
 
-`halterBounce`, `pulseAgora`, `homeShimmer` e `girar-sinc` não têm cobertura de
-`prefers-reduced-motion`. Também: com `animation: none`, o browser pode não disparar
-`animationend`, o que deixaria a classe presa — mitigado hoje porque o `classList.remove`
-roda antes de cada nova chamada.
+O alerta original nomeava `halterBounce`, `pulseAgora`, `homeShimmer` e `girar-sinc`.
+O [registro da Etapa 7](../plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md),
+também resumido no item 5.7 do roadmap anterior, registra a consolidação do movimento
+reduzido: os três primeiros eram nomes residuais removidos, e o CSS passou a ter um bloco
+final de `prefers-reduced-motion`, incluindo o spinner. A fonte atual confirma esse bloco;
+não reapresentar a lista antiga como ausência de proteção vigente.
+
+**Lição que permanece**: ao adicionar animação ou transição, conferir se a regra de redução
+continua prevalecendo na cascata. Com `animation: none`, não depender de `animationend`
+para liberar uma classe/estado. Conferir também o caminho JS e o comportamento sem movimento;
+a presença do bloco CSS não prova sozinha toda a experiência ou animações adicionadas depois.
 
 ### 3.4 `renderizarHomeSemana()` sobrescreve o grid com `innerHTML`
 
@@ -192,11 +217,16 @@ na prática — mas o código que as gerou pode não ter mudado.
   `.github/copilot-instructions.md` prescrevia o comando armadilhado e foi corrigida na mesma
   data.
 - **Cobertura de frontend existe, mas é parcial.** Desde 2026-09-03 há uma suíte em
-  `tests-frontend/` cobrindo `shared/recurrence-helpers.js`, `calendario-engine.js` e a ordem
-  das tags `<script>` do `index.html`. **Tela continua sem cobertura**: `view-*.js`, modais e
-  `agenda-conflitos.js` são validados manualmente. A prova por mutação agora vale para
-  `backend/` e para o que está em `tests-frontend/` — para o resto de `assets/js/**`, não.
-  _Este item dizia "não há teste de frontend" até 2026-09-03._
+  `tests-frontend/`. O item 0.12 do roadmap e o [plano de cobertura](../plans/2026-10-12-plan-cobertura-render-conflitos-modais.md)
+  registram proteção de render do Dia no jsdom, bandas e bordas, conflitos e fluxos principais
+  de criação/edição avulsa dos modais; os arquivos atuais executam os scripts reais.
+  Isso substitui a afirmação genérica de que views, conflitos e modais não têm teste.
+  **Lógica/DOM não é cobertura visual completa**: pixels, CSS/layout real, animações,
+  gestos físicos, modo Semana, integrações reais e variantes não exercitadas continuam
+  exigindo validação específica. Não usar o nome de um arquivo testado como prova de todos
+  os seus fluxos, nem contagem histórica como total atual. Recortes e execução das suítes
+  ficam no [manual de ambiente](../setup-ambiente-local.md); provas de execução/mutação
+  permanecem nos planos, sem serem apresentadas como medição nova aqui.
 - **Prova de mutação em guarda de frontend não fechou.** Na etapa de split, as guardas E/F/G
   não falharam no harness real. O impedimento não estava na correção, estava na prova.
 - **Dublê observacional não é correção.** Um espião de `getConflitosNoDia` prova que o

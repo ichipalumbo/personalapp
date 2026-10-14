@@ -147,8 +147,8 @@ O módulo financeiro (`backend/src/services/financasService.js`, collection
   `backend/`, via `node --test`). Toda alteração em `financasService.js` exige
   rodar a suíte **antes e depois** da mudança, e reportar os dois números
   medidos — não confie em contagem escrita em documentação, que envelhece.
-  A suíte de frontend (`tests-frontend/`) **não cobre tela**: validação de UI
-  continua manual. Ver seção 10.
+  A suíte de frontend (`tests-frontend/`) cobre recortes de lógica/DOM, não
+  apresentação visual completa: validação de UI continua no mock. Ver seção 10.
 - **Recálculo usa sempre o snapshot do ciclo** (`precoAulaSnapshot`,
   `valorFixoSnapshot`, `metodoCobranca`), nunca o preço atual do aluno. Um
   reajuste vale a partir do próximo ciclo, jamais retroativamente.
@@ -227,8 +227,8 @@ que pareçam pequenas:
 - `docs/specs/` — specs de feature, uma por arquivo, versionadas no cabeçalho.
   Fonte de verdade de regra de negócio.
 - `docs/roadmap-v3.md` — roadmap oficial, único e vivo. Substituição autorizada
-  pelo dono em 2026-10-14; `docs/roadmap.md` permanece somente como registro
-  anterior, sem alterações. Não criar novas versões paralelas nem versionar
+  pelo dono em 2026-10-14; `docs/roadmap-v1.md`, renomeado pelo dono, permanece
+  somente como registro anterior. Não criar novas versões paralelas nem versionar
   por data. O roadmap resume resultado, status, esforço e dependências; testes,
   mutações e registros de execução ficam no plano da frente.
 - `docs/README.md` — índice e governança documental: finalidade, autoridade,
@@ -281,7 +281,7 @@ que pareçam pequenas:
   português. Mantenha o padrão do arquivo que estiver editando.
 - **Sem dependências novas sem confirmar.** O projeto é deliberadamente enxuto:
   o frontend não tem nenhuma, o backend tem seis, e `tests-frontend/` tem uma
-  (`jsdom`, devDependency, ainda sem teste consumindo). Se algo exigir uma
+  (`jsdom`, devDependency utilizada nos testes de DOM). Se algo exigir uma
   biblioteca nova, levante a questão antes.
 - **Sem build step no frontend.** Não introduza bundler, transpilador ou
   sintaxe que dependa deles.
@@ -298,10 +298,12 @@ que pareçam pequenas:
 - **Duas suítes independentes**, ambas com `node --test` e `npm test`, cada uma
   com seu `package.json` e seu próprio número:
   - `backend/` — regras de negócio, finanças, reposições e sync do GCal.
-  - `tests-frontend/` — lógica pura do frontend e a ordem das tags `<script>`
-    do `index.html`.
-- **`tests-frontend/` não cobre tela.** `view-*.js`, modais e
-  `agenda-conflitos.js` seguem sem cobertura; a validação de UI é manual.
+  - `tests-frontend/` — lógica pura, recortes de DOM/render e modais, conflitos
+    e a ordem das tags `<script>` do `index.html`.
+- **Cobertura de lógica/DOM não é prova visual completa.** Há testes de views,
+  modais e `agenda-conflitos.js`, mas eles não certificam todos os fluxos,
+  pixels, layout, gestos ou integrações reais. Conferir o recorte no teste;
+  validação visual continua no mock, conforme `docs/setup-ambiente-local.md`.
 - Rode a suíte afetada antes e depois da mudança e **reporte os números que você
   mediu**, nunca os que leu em documentação.
 - Teste novo precisa ser provado por mutação: se o fix for revertido, o teste deve

@@ -11,13 +11,13 @@
 | Documento | O que é | Quando ler |
 |---|---|---|
 | [`roadmap-v3.md`](roadmap-v3.md) | Roadmap oficial: backlog, entregas, dependências e decisões pendentes | Antes de escolher a próxima feature |
-| [`roadmap.md`](roadmap.md) | Roadmap anterior, preservado sem alterações; não recebe novas atualizações | Somente para consultar o registro anterior à substituição de 2026-10-14 |
+| [`roadmap-v1.md`](roadmap-v1.md) | Roadmap anterior, renomeado pelo dono; preservado como registro, sem atualização de backlog | Somente para consultar o registro anterior à substituição de 2026-10-14 |
 | [`roadmap-v2.md`](roadmap-v2.md) | Variante comparativa, não oficial; não é segundo backlog ativo | Para comparar as propostas de organização anteriores ao v3 |
 | [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
 | [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md) | Fila de reposições, competência de cobrança, prazo de validade e extrato do ciclo | Antes de definir como aulas enviadas para reposição entram no cálculo e no histórico financeiro |
 | [`specs/gcal-sync.md`](specs/gcal-sync.md) | Sincronização com Google Calendar | Antes de mexer em recorrência, `EXDATE`, webhook, renovação do canal ou conflitos de sincronização |
 | [`setup-ambiente-local.md`](setup-ambiente-local.md) | Passo a passo para deixar uma máquina nova rodando frontend, backend e banco de dev, como rodar as duas suítes de teste, e o viewport de referência do mobile (433×762) | Ao configurar um computador novo, quando o ambiente local parar de funcionar, antes de escrever teste novo, ou ao validar UI mobile |
-| [`reference/APRENDIZADOS.md`](reference/APRENDIZADOS.md) | Referência de riscos, limites aceitos e armadilhas; não substitui spec nem priorização | Antes de abrir uma rodada sensível, conferindo a vigência do item consultado |
+| [`reference/lessons-learned.md`](reference/lessons-learned.md) | Referência de riscos, limites aceitos e armadilhas; não substitui spec nem priorização | Antes de abrir uma rodada sensível, conferindo a vigência do item consultado |
 | [`reference/agent-workflow-kit/`](reference/agent-workflow-kit/README.md) | Kit reutilizável de boas práticas para trabalhar com agentes: guia, contrato permanente, template de diagnóstico e template de plano vivo. Feito para copiar em outro projeto — não é documentação deste app | Ao iniciar um projeto novo, ou ao padronizar o trabalho com agentes |
 | [`diagnostics/`](diagnostics/) | Investigações datadas: pergunta, fatos, hipóteses, causas, impacto e alternativas | Quando é preciso entender um problema ou auditar uma área antes de escolher a intervenção |
 | [`plans/`](plans/) | Plano vivo da frente: execução proposta/autorizada, critérios de aceite, validação e registro da execução | Para preparar, retomar ou verificar a entrega de uma mudança |
@@ -26,12 +26,13 @@
 | [`reference/`](reference/) | Referências do app e material exportável, com finalidade e vigência explicitadas | Para consultar conhecimento de apoio ou adaptar práticas em outro projeto |
 | [Auditoria documental](diagnostics/2026-10-14-diag-arquitetura-documentacao.md) | Inventário individual e achados da pasta; fotografia da auditoria, não segundo manual de governança | Para revisar as misturas de função e preparar uma futura redistribuição |
 | [Plano da governança](plans/2026-10-14-plan-governanca-documental.md) | Escopo, decisões, execução e validação desta reorganização documental | Para conferir o que foi feito e o que permanece fora da rodada |
+| [Migração documental](plans/2026-10-14-plan-migracao-documental.md) | Matriz por trecho: origem, destino, conteúdo incorporado, duplicações e pendências | Para retomar as transferências incrementais sem reabrir a auditoria encerrada |
 
 ---
 
 ## Como estes documentos se relacionam
 
-- O **roadmap oficial** é [`roadmap-v3.md`](roadmap-v3.md), único documento vivo de planejamento. A substituição foi autorizada pelo dono em 2026-10-14; [`roadmap.md`](roadmap.md) permanece apenas como registro anterior, sem novas atualizações. Não criar outras versões paralelas nem versionar por data.
+- O **roadmap oficial** é [`roadmap-v3.md`](roadmap-v3.md), único documento vivo de planejamento. A substituição foi autorizada pelo dono em 2026-10-14; [`roadmap-v1.md`](roadmap-v1.md) é o registro anterior, renomeado pelo dono e sem novas atualizações de backlog. Referências ao nome antigo em documentos encerrados são históricas. Não criar outras versões paralelas nem versionar por data.
 - As **specs** são **uma por feature** e mantêm o contrato aprovado vigente. São evolutivas: mudança de comportamento exige decisão explícita e atualização do contrato, sem reescrever o passado como se a nova regra sempre tivesse existido. O histórico fica no Git, não em arquivos paralelos (`v1.md`, `v2.md`).
 - **Versão e status de uma spec existem em um lugar só: o cabeçalho da própria spec.** Nenhum outro documento — nem este índice, nem o roadmap, nem `.github/copilot-instructions.md` — repete o número. Repetir cria drift silencioso: já aconteceu de uma spec andar cinco versões com o índice parado, e um agente confiar no número errado.
 - Quando uma feature é entregue, o item correspondente no roadmap é marcado como concluído e passa a **apontar para a spec**, em vez de repetir o conteúdo dela.

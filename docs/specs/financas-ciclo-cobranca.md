@@ -10,7 +10,7 @@
 > Projeto: Agenda Personal Trainer (Prô Josy) — frontend JS vanilla + backend Node/Express/MongoDB.
 > Este documento é a **fonte de verdade** das decisões de produto desta feature. Não infira regras de negócio além do que está descrito aqui — onde houver dúvida, ela está explicitamente resolvida na seção 7 ("Decisões e Casos de Borda"). Qualquer regra não coberta aqui deve ser tratada como "Fora de Escopo" (seção 8) e não implementada sem confirmação humana.
 >
-> Backlog e débitos técnicos relacionados: [`../roadmap.md`](../roadmap.md).
+> Backlog e débitos técnicos relacionados: [roadmap oficial](../roadmap-v3.md).
 
 ---
 
@@ -680,7 +680,7 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 
 ## 12. Defeitos Conhecidos e Dívidas Técnicas Aceitas
 
-Itens identificados, avaliados e **deliberadamente adiados**. Não implementar sem decisão explícita. Espelhados no [`../roadmap.md`](../roadmap.md) (Grupo 0) para entrarem junto com uma próxima feature.
+Itens identificados e avaliados, incluindo registros de correções e limites aceitos. Não implementar pendências sem decisão explícita. Prioridade e situação resumida das entregas ficam no [roadmap oficial](../roadmap-v3.md), pelos IDs preservados.
 
 ### 12.1 Localização do módulo isomórfico de recorrência — RESOLVIDO (item 0.2 do roadmap)
 

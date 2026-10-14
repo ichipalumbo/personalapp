@@ -2,7 +2,7 @@
 
 > **Status**: Roadmap oficial · **Atualizado**: 2026-10-14
 > Índice de evolução do produto: problemas a resolver, entregas, dependências e decisões pendentes.
-> Substitui o [roadmap anterior](roadmap.md), preservado sem alterações para consulta histórica por decisão do dono.
+> Substitui o [roadmap anterior](roadmap-v1.md), renomeado pelo dono e preservado como registro para consulta histórica.
 
 ## Como usar
 
@@ -104,7 +104,7 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Resultado esperado**: reduzir esquecimentos de aulas e cobranças com lembretes para o personal trainer e/ou aluno.
 - **Decidir antes**: destinatários, eventos, canal (Web Push ou WhatsApp) e mecanismo de agendamento no backend.
 - **Esforço**: alto.
-- **Referência**: [contexto e alternativas anteriores](roadmap.md); a infraestrutura PWA existente não representa uma integração de notificações entregue.
+- **Referência**: [contexto e alternativas anteriores](roadmap-v1.md); a infraestrutura PWA existente não representa uma integração de notificações entregue.
 
 ### [ ] 4.3 Portal ou app do aluno
 
@@ -112,14 +112,14 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: escopo inicial e autorização entre os papéis de personal trainer e aluno sobre os mesmos dados.
 - **Risco**: o isolamento atual por conta não implementa esse compartilhamento; não ampliar acesso por inferência.
 - **Esforço**: muito alto.
-- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](roadmap.md); exige desenho próprio.
+- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](roadmap-v1.md); exige desenho próprio.
 
 ### [ ] 4.4 Avaliação física, anamnese e evolução
 
 - **Resultado esperado**: acompanhar avaliações e evolução do aluno em um histórico próprio.
 - **Decidir antes**: dados da primeira entrega, inclusão de fotos, privacidade e armazenamento/upload.
 - **Esforço**: alto.
-- **Referência**: [contexto e escopo exploratório anteriores](roadmap.md); ainda não existe spec desta iniciativa.
+- **Referência**: [contexto e escopo exploratório anteriores](roadmap-v1.md); ainda não existe spec desta iniciativa.
 
 ### [ ] 4.5 Multi-personal e gestão de equipe
 
@@ -127,7 +127,7 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: demanda por esse modelo, hierarquia de equipe, vínculos e permissões.
 - **Risco**: exige revisar a autorização atual; não é uma extensão pequena do isolamento por conta.
 - **Esforço**: muito alto.
-- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](roadmap.md); exige desenho próprio.
+- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](roadmap-v1.md); exige desenho próprio.
 
 ### [ ] 4.6 Auditoria de alterações
 
@@ -135,14 +135,14 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: eventos cobertos e desenho do registro de auditoria.
 - **Situação atual**: snapshots financeiros preservam preços por ciclo, mas não substituem um histórico geral de alterações.
 - **Esforço**: médio–alto.
-- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md) para os snapshots e [contexto anterior](roadmap.md) para a proposta transversal.
+- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md) para os snapshots e [contexto anterior](roadmap-v1.md) para a proposta transversal.
 
 ### [ ] 4.8 Contrato e assinatura digital
 
 - **Resultado esperado**: formalizar termos e documentos assinados pelo aluno.
 - **Decidir antes**: documentos, fluxo de assinatura, serviço externo e armazenamento seguro.
 - **Esforço**: alto.
-- **Referência**: [contexto e alternativas anteriores](roadmap.md); ainda não existe spec desta iniciativa.
+- **Referência**: [contexto e alternativas anteriores](roadmap-v1.md); ainda não existe spec desta iniciativa.
 
 ### [ ] 4.9 Persistência de login com sessão própria do backend
 
@@ -150,7 +150,7 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: duração, renovação, revogação/logout e transição compatível. Sessão própria é a proposta técnica registrada, não uma implementação aprovada por este índice.
 - **Risco**: autenticação é área sensível; confirmar o desenho e a autorização antes de alterar tokens ou armazenamento.
 - **Esforço**: médio.
-- **Referência**: [regras para autenticação](../.github/copilot-instructions.md) e [proposta anterior](roadmap.md); exige contrato próprio.
+- **Referência**: [regras para autenticação](../.github/copilot-instructions.md) e [proposta anterior](roadmap-v1.md); exige contrato próprio.
 
 ## Entregas concluídas
 
@@ -158,9 +158,9 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 
 | ID | Estado | Resultado entregue | Referência |
 |---|---|---|---|
-| 0.1 | `[x]` | Histórico de ciclos e extrato preservam expansão no re-render | [Registro anterior](roadmap.md) |
+| 0.1 | `[x]` | Histórico de ciclos e extrato preservam expansão no re-render | [Registro anterior](roadmap-v1.md) |
 | 0.2 | `[x]` | Módulos compartilhados consolidados dentro do backend | [Arquitetura](../.github/copilot-instructions.md) |
-| 0.3 | `[x]` | CSS órfão da visão mensal e do KPI removido | [Registro anterior](roadmap.md) |
+| 0.3 | `[x]` | CSS órfão da visão mensal e do KPI removido | [Aprendizados e cuidados preservados](reference/lessons-learned.md) |
 | 0.4 | `[x]` | Documentação organizada em fontes com funções distintas | [Índice documental](README.md) |
 | 0.5 | `[x]` | Collection de reposições e cobrança por competência | [Spec de Reposições](specs/reposicoes-e-competencia.md) |
 | 0.6 | `[x]` | Extrato explica a composição da cobrança do ciclo | [Spec de Reposições](specs/reposicoes-e-competencia.md) |
@@ -171,7 +171,7 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 0.11 | `[x]` | Reenvio reabre a reposição original sem duplicar cobrança; correção dos dados concluída pelo dono | [Diagnóstico e registro](diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md) |
 | 0.12 | `[x]` | Cobertura de render do Dia, conflitos e fluxos principais dos modais | [Plano encerrado e limites](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) |
 | 1.1 | `[x]` | Pagamentos, inadimplência e cobrança por ciclo | [Spec de Finanças](specs/financas-ciclo-cobranca.md) |
-| 1.3 | `[x]` | Observações no cadastro e card do aluno; não representa anotação por aula | [Registro anterior](roadmap.md) |
+| 1.3 | `[x]` | Observações no cadastro e card do aluno; não representa anotação por aula | [Registro anterior](roadmap-v1.md) |
 | 1.8 | `[→]` | Avisos de aulas a repor consolidados no item 0.8 | [Regra de reposições](specs/reposicoes-e-competencia.md) |
 | 1.9 | `[x]` | Pagamento e ajuste de ciclo histórico ainda não pago | [Spec de Finanças, seção 6.3](specs/financas-ciclo-cobranca.md) |
 | 1.10 | `[x]` | Histórico de reposições e reagendamento contextual no card do aluno | [Contrato](specs/reposicoes-e-competencia.md) e [complementos recentes](plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
@@ -198,8 +198,8 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 - **Google Calendar**: o item 2.1 preserva a ressalva de que o gatilho automático de renovação no boot não foi observado isoladamente. Defeitos e limites de I/O real permanecem na [spec de GCal](specs/gcal-sync.md).
 - **Validação visual**: testes de lógica/DOM não comprovam pixels, gestos físicos ou todos os fluxos. Usar o [mock e os viewports de referência](setup-ambiente-local.md), com limites registrados em cada plano.
 - **Regras de produto**: consultar [Finanças](specs/financas-ciclo-cobranca.md), [Reposições](specs/reposicoes-e-competencia.md) e [GCal](specs/gcal-sync.md). A regra antiga de alerta do item 0.8 não prevalece sobre a spec vigente.
-- **Riscos conhecidos**: consultar [Aprendizados](reference/APRENDIZADOS.md); seu inventário não foi revalidado integralmente nesta reorganização nem convertido automaticamente em novos itens.
-- **Reconciliação documental ainda necessária**: a seção 9.4 da spec de Reposições conserva o título “PENDENTE”, apesar da entrega 1.10 registrada acima; Aprendizados e outras instruções mantêm descrições antigas de cobertura. Esses arquivos não foram corrigidos nesta rodada, salvo os ponteiros oficiais autorizados.
+- **Riscos conhecidos**: consultar [Aprendizados](reference/lessons-learned.md); seu inventário não foi revalidado integralmente nesta reorganização nem convertido automaticamente em novos itens.
+- **Migração em andamento**: conhecimento técnico de CSS, cobertura e ambiente está sendo incorporado às fontes responsáveis, com origem/destino no [plano de migração](plans/2026-10-14-plan-migracao-documental.md). Isso não significa migração completa do v1. A seção 9.4 da spec de Reposições conserva o título “PENDENTE” e ainda exige reconciliação; os demais riscos não foram revalidados integralmente.
 
 ## Compatibilidade de IDs
 

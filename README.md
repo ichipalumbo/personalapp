@@ -185,7 +185,8 @@ personalapp/
 |  |- servir-local.js              <- servidor estatico local do frontend
 |  |- auditar-css-morto.js
 |- docs/                           <- indice completo em docs/README.md
-|  |- roadmap.md
+|  |- roadmap-v3.md                 <- roadmap oficial
+|  |- roadmap-v1.md  roadmap-v2.md   <- registro anterior / comparativo
 |  |- setup-ambiente-local.md
 |  |- specs/  diagnostics/  plans/  reports/  reference/  archive/
 ```

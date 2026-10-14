@@ -267,4 +267,4 @@ foi validado — preencher ou remover a seção.
 
 Este arquivo é o registro da rodada. O resultado entra no roadmap (item 5.7) e o arquivo pode ser
 **podado** depois — a poda é exceção autorizada para peso morto, e conclusão/defeito registrado
-migra antes para o roadmap ou para `reference/APRENDIZADOS.md`.
+migra antes para o roadmap ou para `reference/lessons-learned.md`.

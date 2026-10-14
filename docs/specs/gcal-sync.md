@@ -915,7 +915,7 @@ Os itens da Rodada C já foram resolvidos e saem do backlog desta spec. O que pe
 é apenas o que ainda exige trabalho real ou observação de custos/escala:
 
    1. **9.14** — gatilho triplo de sincronização no boot. É o único item funcional realmente
-      pendente, e corresponde ao item **2.2** do `docs/roadmap.md`.
+    pendente, e corresponde ao item **2.2** do `docs/roadmap-v3.md`.
    2. **9.8** — cobertura parcial de I/O real. Continuamos com validação parcial e não com
       garantia de regra de negócio, porque depende de ambiente/Google e da execução real do
       fluxo externo.
