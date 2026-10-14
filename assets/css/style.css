@@ -217,18 +217,16 @@ body {
   gap: 10px;
 }
 
-/* 5.8 (Parte B): rótulo global de sync sobre cache. Fica na 2ª linha do brand
-   (a linha do título nunca muda de altura — o --header-height medido em
-   runtime só é alterado na mudança de tela, não é problema de 14px por vez).
-   Cor cinza neutro #909090 (achado 4.13 — amarelo não, já sobrecarregado). */
-.header-cache-state {
-  font-size: 11px;
-  line-height: 1;
+/* Aviso discreto da leitura na área de conteúdo, sem disputar espaço com a marca/login. */
+.aviso-carregamento-dados {
+  margin: 6px 12px 10px;
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: #909090;
-  white-space: nowrap;
-  flex-shrink: 0;
-  align-self: flex-end;
-  padding-bottom: 1px;
+  text-align: right;
+}
+.aviso-carregamento-dados[hidden] {
+  display: none;
 }
 
 .marca-titulo {
@@ -766,6 +764,28 @@ body {
 .btn-sm {
   padding: 6px 12px;
   font-size: 0.75rem;
+}
+/* Ação secundária compacta: ícone discreto, alvo de toque e foco preservados. */
+.btn-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #b8b8b8;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.btn-icone:hover {
+  color: #ffd700;
 }
 /* Etapa 2 (Cartão B, 2026-09-26): alvo de toque — ações do card de Finanças
    (Marcar como pago / Editar ajuste / Configurar agora / Tentar novamente):
@@ -1327,6 +1347,66 @@ body {
   border-bottom-right-radius: 18px;
   box-shadow: none;
   padding: 12px;
+}
+.financas-cabecalho {
+  margin-top: 0;
+}
+.financas-cabecalho-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.financas-cabecalho-titulo {
+  margin: 0;
+  color: #ffd700;
+  font-size: 1.125rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.financas-cabecalho-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.financas-cabecalho-progresso {
+  color: #b8b8b8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.financas-cabecalho-progresso[hidden],
+.financas-cabecalho-mensagem[hidden] {
+  display: none;
+}
+.financas-cabecalho-descricao {
+  margin: 4px 0 0;
+  color: #9a9a9a;
+  font-size: 0.875rem;
+}
+.financas-cabecalho-cache {
+  margin-top: 8px;
+  color: #909090;
+  font-size: 0.75rem;
+}
+.financas-cabecalho-cache:empty {
+  display: none;
+}
+.financas-cabecalho-mensagem {
+  margin: 8px 0 0;
+  color: #b8b8b8;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.home-agenda-carregando {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+.home-agenda-carregando > .skeleton {
+  height: 112px;
 }
 .home-weekly-topbar {
   position: sticky;

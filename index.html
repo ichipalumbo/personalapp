@@ -34,9 +34,6 @@
                 ><i class="fa-solid fa-dumbbell"></i> Prô</span
               ><span class="marca-mente"> Josy</span>
             </h1>
-              <!-- Aviso imediato antes do bootstrap: storage distingue carga sem conteúdo
-                de atualização sobre dados existentes e encerra por voo/contexto. -->
-              <span id="headerCacheState" class="header-cache-state" role="status" data-carga-inicial="true">Carregando dados...</span>
           </div>
           <div class="auth-banner" id="headerSession">
             <div id="googleSignedOutState" class="header-session-state">
@@ -73,6 +70,8 @@
           </div>
         </div>
       </header>
+      <!-- Aviso de dados fora da marca; o ID existente preserva o controle por voo/contexto. -->
+      <p id="headerCacheState" class="aviso-carregamento-dados" role="status" data-carga-inicial="true">Carregando dados...</p>
       <section id="recuperacaoDados" class="recuperacao-dados" tabindex="-1" aria-labelledby="recuperacaoDadosTitulo" hidden>
         <h2 id="recuperacaoDadosTitulo">Alteração não confirmada</h2>
         <p id="recuperacaoDadosMensagem" role="status">Sua alteração está guardada neste aparelho. Ela pode já ter sido salva. Verifique no servidor.</p>
@@ -87,7 +86,7 @@
            permanecem no topo). A barra fica logo antes do fim do container. -->
 
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
-      <main id="tela-home" class="view-section">
+      <main id="tela-home" class="view-section" aria-busy="true">
         <div class="home-weekly-topbar">
           <div class="home-sticky-header">
             <div
@@ -176,6 +175,12 @@
           role="tabpanel"
           aria-labelledby="tabHomeSemana"
         >
+          <!-- Silhueta neutra antes da sessão; não representa dados de nenhum aluno. -->
+          <div id="homeSkeletonInicial" class="home-agenda-carregando" aria-hidden="true">
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+          </div>
           <div
             id="calendarioSemanalHomeGrid"
             class="calendario-semanal-home-grid"

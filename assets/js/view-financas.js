@@ -7,6 +7,7 @@
     const STATE = {
         cards: [],
         carregando: false,
+        atualizacaoManual: false,
         salvando: false,
         operacao: null,
         requestId: 0,
@@ -41,6 +42,7 @@
         STATE.cardAtivo = null;
         STATE.cacheAtualizadoEm = null;
         STATE.carregando = false;
+        STATE.atualizacaoManual = false;
         STATE.salvando = false;
         STATE.operacao = null;
         STATE.requestId += 1;
@@ -54,9 +56,13 @@
         if (conteudo) conteudo.setAttribute('aria-busy', 'false');
         fecharModal('pagamento');
         fecharModal('ajuste');
-        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasPagamentoValor', 'financasAjusteResumo', 'financasAjustePrevia'].forEach((id) => {
+        ['financasConteudo', 'financasCacheLabel', 'financasProgresso', 'financasSyncState', 'financasPagamentoResumo', 'financasPagamentoValor', 'financasAjusteResumo', 'financasAjustePrevia'].forEach((id) => {
             const elemento = document.getElementById(id);
             if (elemento) elemento.replaceChildren();
+        });
+        ['financasProgresso', 'financasSyncState'].forEach((id) => {
+            const elemento = document.getElementById(id);
+            if (elemento) elemento.hidden = true;
         });
         atualizarEstadoBotaoAtualizar();
     });
@@ -194,23 +200,25 @@
         const cacheLabel = cache && cache.atualizadoEm ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}` : '';
 
         root.innerHTML = `
-          <section class="agenda-panel topbar-sem-cantos" style="margin-top: 0;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-              <div>
-                <h2 style="margin:0;color:#ffd700;font-size:1.125rem;font-weight:800;">💰 Finanças</h2>
-                <p style="margin:4px 0 0;color:#9a9a9a;font-size:0.875rem;">Ciclo, valor e status de cobrança por aluno.</p>
-              </div>
-              <div style="text-align:right;">
-                <div id="financasCacheLabel" style="font-size:0.75rem;color:#909090;">${cacheLabel}</div>
-                <div id="financasSyncState" style="font-size:0.75rem;color:#909090;margin-top:4px;"></div>
-                                <button type="button" class="btn btn-secondary" id="financasAtualizar" data-financas-atualizar style="margin-top:8px;min-height:44px;">Atualizar</button>
-                                <p id="financasAtualizarOrientacao" role="status" hidden style="margin:8px 0 0;color:#b8b8b8;font-size:0.75rem;line-height:1.4;">Resolva a alteração não confirmada na área de recuperação acima antes de atualizar.</p>
+                    <section class="agenda-panel topbar-sem-cantos financas-cabecalho">
+                        <div class="financas-cabecalho-linha">
+                            <h2 class="financas-cabecalho-titulo">💰 Finanças</h2>
+                            <div class="financas-cabecalho-acoes">
+                                <span id="financasProgresso" class="financas-cabecalho-progresso" role="status" hidden></span>
+                                <button type="button" class="btn-icone" id="financasAtualizar" data-financas-atualizar aria-label="Atualizar finanças" title="Atualizar finanças">
+                                    <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                                    <span class="sr-only">Atualizar</span>
+                                </button>
               </div>
             </div>
+                        <p class="financas-cabecalho-descricao">Ciclo, valor e status de cobrança por aluno.</p>
+                        <div id="financasCacheLabel" class="financas-cabecalho-cache">${cacheLabel}</div>
+                        <p id="financasSyncState" class="financas-cabecalho-mensagem" role="status" hidden></p>
+                        <p id="financasAtualizarOrientacao" class="financas-cabecalho-mensagem" role="status" hidden>Resolva a alteração não confirmada na área de recuperação acima antes de atualizar.</p>
           </section>
           <section id="financasConteudo"></section>
         `;
-                atualizarEstadoBotaoAtualizar();
+                atualizarCabecalhoCache();
     }
 
     function renderizarSkeleton() {
@@ -645,6 +653,7 @@
     function atualizarCabecalhoCache() {
         if (!telaFinancasAtiva()) return;
         const label = document.getElementById('financasCacheLabel');
+        const progresso = document.getElementById('financasProgresso');
         const syncState = document.getElementById('financasSyncState');
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
 
@@ -653,16 +662,13 @@
                 ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}`
                 : '';
         }
+        if (progresso) {
+            progresso.textContent = STATE.carregando && STATE.atualizacaoManual ? 'Carregando...' : (STATE.salvando ? 'Salvando...' : '');
+            progresso.hidden = !progresso.textContent;
+        }
         if (syncState) {
-            if (STATE.carregando) {
-                syncState.textContent = 'Carregando...';
-            } else if (STATE.salvando) {
-                syncState.textContent = 'Salvando...';
-            } else if (STATE.erro) {
-                syncState.textContent = STATE.erro;
-            } else {
-                syncState.textContent = '';
-            }
+            syncState.textContent = !STATE.carregando && !STATE.salvando && STATE.erro ? STATE.erro : '';
+            syncState.hidden = !syncState.textContent;
         }
         atualizarEstadoBotaoAtualizar();
     }
@@ -756,6 +762,7 @@
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
 
         STATE.carregando = true;
+        STATE.atualizacaoManual = opcoes.atualizacaoManual === true;
         STATE.erro = null;
         atualizarCabecalhoCache();
         // 5.8 (Parte A): o container do conteúdo sinaliza o estado de carga
@@ -764,7 +771,7 @@
         const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
         if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'true');
 
-        if (silencioso && STATE.cards.length > 0) {
+        if ((silencioso || opcoes.atualizacaoManual) && STATE.cards.length > 0) {
             renderizarCards();
         } else if (cache && cache.dados && !deveForcarRemoto) {
             STATE.cards = Array.isArray(cache.dados) ? cache.dados : [];
@@ -785,7 +792,7 @@
                 ? await global.executarOperacaoRemotaComFeedback(executor, {
                     contexto: 'carregandoFinancas',
                     exibirFalha: false,
-                    silenciosoUI: silencioso
+                    silenciosoUI: true
                 })
                 : await executor();
             if (resposta.status === 401) {
@@ -836,6 +843,7 @@
             // ainda vigente da mesma conta pode limpar o indicador da leitura.
             if (leituraAindaAtual()) {
                 STATE.carregando = false;
+                STATE.atualizacaoManual = false;
                 if (!podeAplicar() && telaFinancasAtiva() && document.querySelector('#financasConteudo .skeleton')) {
                     if (STATE.cards.length > 0 || (cache && Array.isArray(cache.dados) && cache.dados.length === 0)) {
                         renderizarCards();

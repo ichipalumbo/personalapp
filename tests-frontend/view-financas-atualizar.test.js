@@ -60,6 +60,9 @@ async function carregarAmbiente() {
     );
     const { window } = dom;
     require('./setup/contexto-dados')(dom);
+    const estilo = window.document.createElement('style');
+    estilo.textContent = fs.readFileSync(path.join(DIR_ASSETS, '..', 'css', 'style.css'), 'utf8');
+    window.document.head.appendChild(estilo);
 
     window.APP_API_CONFIG = { apiBaseUrl: 'http://api.test', apiRootUrl: 'http://api.test' };
     // O storage.js dispara um ping fire-and-forget ao ser carregado; jsdom não tem fetch.
@@ -302,7 +305,148 @@ test('A3 — botão Atualizar tem alvo mínimo de 44 px sem alterar os botões g
     t.after(() => dom.window.close());
     instalarFetch(criarResposta(200, []));
     await window.inicializarFinancas({});
-    assert.equal(window.document.getElementById('financasAtualizar').style.minHeight, '44px');
+    const estilo = window.getComputedStyle(window.document.getElementById('financasAtualizar'));
+    assert.equal(estilo.minHeight, '44px');
+    assert.equal(estilo.minWidth, '44px');
+});
+
+test('cabeçalho compacto — ícone acessível e progresso ficam na linha do título, erro permanece legível', async (t) => {
+    const { dom, window, chamadas, instalarFetch } = await carregarAmbiente();
+    const adiada = respostaAdiada();
+    t.after(async () => {
+        adiada.resolver(criarResposta(200, []));
+        await barreira();
+        dom.window.close();
+    });
+    instalarFetch(criarResposta(200, [criarCard(400)]));
+    await window.inicializarFinancas({});
+    const doc = window.document;
+    const botao = doc.getElementById('financasAtualizar');
+    const progresso = doc.getElementById('financasProgresso');
+    const mensagem = doc.getElementById('financasSyncState');
+    const linha = doc.querySelector('.financas-cabecalho-linha');
+    assert.equal(botao.getAttribute('aria-label'), 'Atualizar finanças');
+    assert.equal(botao.title, 'Atualizar finanças');
+    assert.equal(botao.querySelector('i').className, 'fa-solid fa-arrows-rotate');
+    assert.equal(botao.querySelector('i').getAttribute('aria-hidden'), 'true');
+    assert.equal(botao.querySelector('.sr-only').textContent, 'Atualizar');
+    assert.equal(botao.className, 'btn-icone');
+    assert.ok(linha.contains(doc.querySelector('#tela-financas h2')));
+    assert.ok(linha.contains(botao));
+    assert.equal(progresso.parentElement, botao.parentElement);
+    assert.equal(progresso.nextElementSibling, botao);
+    assert.equal(progresso.getAttribute('role'), 'status');
+    assert.equal(progresso.hidden, true);
+
+    instalarFetch(() => adiada.promise);
+    botao.querySelector('i').dispatchEvent(new window.Event('click', { bubbles: true }));
+    assert.equal(progresso.textContent, 'Carregando...');
+    assert.equal(progresso.hidden, false);
+    assert.equal(botao.disabled, true);
+    assert.equal(mensagem.hidden, true);
+    assert.equal(linha.contains(progresso), true);
+    assert.equal(window.getComputedStyle(progresso).whiteSpace, 'nowrap');
+    adiada.resolver(criarResposta(500, {}));
+    await barreira();
+    assert.equal(progresso.hidden, true);
+    assert.equal(progresso.textContent, '');
+    assert.equal(mensagem.hidden, false);
+    assert.match(mensagem.textContent, /Não foi possível atualizar agora/);
+    assert.equal(linha.contains(mensagem), false, 'erro não ocupa a linha compacta nem deve ser truncado');
+    assert.equal(botao.disabled, false);
+    assert.equal(chamadas.length, 2);
+    assert.ok(chamadas.every((chamada) => chamada.metodo === 'GET'));
+
+    instalarFetch(criarResposta(200, [criarCard(500)]));
+    clicarAtualizar(window);
+    await barreira();
+    assert.equal(progresso.hidden, true);
+    assert.equal(mensagem.hidden, true);
+    assert.equal(mensagem.textContent, '');
+});
+
+test('cabeçalho compacto — indicadores acompanham salvamento e são limpos ao trocar a conta', async (t) => {
+    const { dom, window, instalarFetch } = await carregarAmbiente();
+    const adiada = respostaAdiada();
+    t.after(async () => {
+        adiada.resolver(criarResposta(200, []));
+        await barreira();
+        dom.window.close();
+    });
+    instalarFetch(criarResposta(200, []));
+    await window.inicializarFinancas({});
+    const progresso = window.document.getElementById('financasProgresso');
+    const mensagem = window.document.getElementById('financasSyncState');
+    window.__financasState.salvando = true;
+    window.renderizarFinancas();
+    assert.equal(progresso.textContent, 'Salvando...');
+    assert.equal(progresso.hidden, false);
+    assert.equal(mensagem.hidden, true);
+    window.__financasState.salvando = false;
+    window.renderizarFinancas();
+    assert.equal(progresso.hidden, true);
+    assert.equal(progresso.textContent, '');
+
+    instalarFetch(() => adiada.promise);
+    clicarAtualizar(window);
+    assert.equal(progresso.hidden, false);
+    window.googleIdentity.getOwnerEmail = () => 'nova-conta@example.com';
+    window.contextoDados.capturar();
+    assert.equal(progresso.hidden, true);
+    assert.equal(progresso.textContent, '');
+    assert.equal(mensagem.hidden, true);
+    adiada.resolver(criarResposta(500, {}));
+    await barreira();
+    assert.equal(progresso.hidden, true, 'callback antigo não reativa progresso da conta anterior');
+    assert.equal(mensagem.textContent, '');
+});
+
+test('feedback de carregamento — texto inline só aparece no refresh manual; outras leituras usam o conteúdo', async (t) => {
+    const { dom, window, instalarFetch } = await carregarAmbiente();
+    const chamadasFeedback = [];
+    window.executarOperacaoRemotaComFeedback = async (executor, opcoes) => {
+        chamadasFeedback.push(opcoes);
+        return executor();
+    };
+    const cargaInicial = respostaAdiada();
+    t.after(async () => {
+        cargaInicial.resolver(criarResposta(200, []));
+        await barreira();
+        dom.window.close();
+    });
+
+    instalarFetch(() => cargaInicial.promise);
+    const inicializacao = window.inicializarFinancas({});
+    const progresso = window.document.getElementById('financasProgresso');
+    assert.equal(window.__financasState.carregando, true);
+    assert.equal(window.__financasState.atualizacaoManual, false);
+    assert.equal(progresso.hidden, true, 'o esqueleto já representa a carga inicial');
+    assert.equal(chamadasFeedback[0].silenciosoUI, true, 'não exibe o overlay global sobre os esqueletos');
+    cargaInicial.resolver(criarResposta(200, [criarCard(400)]));
+    await inicializacao;
+
+    const atualizacaoSegundoPlano = respostaAdiada();
+    instalarFetch(() => atualizacaoSegundoPlano.promise);
+    const sincronizacao = window.atualizarFinancasAposSync();
+    assert.equal(progresso.hidden, true, 'não mostra progresso junto ao botão durante B2');
+    assert.ok(window.document.querySelector('[data-financas-card-id="aluno-1"]'), 'preserva os dados em tela');
+    assert.equal(chamadasFeedback[1].silenciosoUI, true);
+    atualizacaoSegundoPlano.resolver(criarResposta(200, [criarCard(450)]));
+    await sincronizacao;
+
+    const atualizacaoManual = respostaAdiada();
+    instalarFetch(() => atualizacaoManual.promise);
+    clicarAtualizar(window);
+    assert.equal(window.__financasState.atualizacaoManual, true);
+    assert.equal(progresso.textContent, 'Carregando...');
+    assert.equal(progresso.hidden, false, 'o clique manual recebe feedback junto ao botão');
+    assert.ok(window.document.querySelector('[data-financas-card-id="aluno-1"]'), 'o refresh manual mantém os dados anteriores em tela');
+    assert.equal(window.document.querySelectorAll('#financasConteudo .skeleton').length, 0);
+    assert.equal(chamadasFeedback[2].silenciosoUI, true, 'o progresso inline substitui o overlay global');
+    atualizacaoManual.resolver(criarResposta(200, [criarCard(500)]));
+    await barreira();
+    assert.equal(window.__financasState.atualizacaoManual, false);
+    assert.equal(progresso.hidden, true);
 });
 
 test('A4 — atualização devolve foco ao disparador após sucesso ou falha sem rolar a tela', async (t) => {

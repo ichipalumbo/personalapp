@@ -24,7 +24,11 @@ function ambiente(t, opcoes = {}) {
     const tela = opcoes.tela || 'tela-home';
     const dom = new JSDOM(`<!doctype html><html><body><div class="container">
         <nav class="nav-inferior">${['home', 'alunos', 'financas'].map((nome) => `<a class="nav-link-inferior" data-target="tela-${nome}"></a>`).join('')}</nav>
-        <main class="view-section" id="tela-home"><div id="homeDayPanel"></div><div id="calendarioSemanalHomeGrid"></div></main>
+        <main class="view-section" id="tela-home" ${opcoes.skeletonInicialHome ? 'aria-busy="true"' : ''}>
+            <div id="homeDayPanel"></div>
+            ${opcoes.skeletonInicialHome ? '<div id="homeSkeletonInicial" class="home-agenda-carregando" aria-hidden="true"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div>' : ''}
+            <div id="calendarioSemanalHomeGrid"></div>
+        </main>
         <main class="view-section" id="tela-alunos"><div id="listaAlunos"></div></main>
         <main class="view-section" id="tela-financas"></main>
         <div class="modal-overlay" id="modalFormAluno" style="display:none"><form id="formNovoAluno"><input id="alunoNome"><textarea id="alunoObservacoes"></textarea></form></div>
@@ -434,6 +438,102 @@ testar('Carga inicial — HTML anuncia carregamento antes de executar o bootstra
     assert.equal(manifest.start_url, '/index.html', 'ícone instalado entra pelo mesmo HTML');
 });
 
+testar('Carga inicial — HTML mostra aviso fora da marca e skeleton neutro antes dos scripts', (t) => {
+    const html = fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8');
+    const dom = new JSDOM(html);
+    t.after(() => dom.window.close());
+    const doc = dom.window.document;
+    const aviso = doc.getElementById('headerCacheState');
+    assert.equal(aviso.className, 'aviso-carregamento-dados');
+    assert.equal(aviso.closest('.header'), null);
+    assert.equal(aviso.previousElementSibling.tagName, 'HEADER');
+    const inicial = doc.getElementById('homeSkeletonInicial');
+    assert.ok(inicial);
+    assert.equal(inicial.closest('main').id, 'tela-home');
+    assert.equal(inicial.querySelectorAll('.skeleton').length, 3);
+    assert.equal(inicial.getAttribute('aria-hidden'), 'true');
+    assert.equal(inicial.textContent.trim(), '', 'silhueta não contém aluno nem afirma ausência de aulas');
+    assert.equal(doc.getElementById('tela-home').getAttribute('aria-busy'), 'true');
+});
+
+testar('Carga inicial — Home tem skeleton durante a sessão pendente e transfere a apresentação para a leitura real', async (t) => {
+    const a = ambiente(t, { cache: 'ausente', financeiroCache: false, cargaInicial: true, skeletonInicialHome: true });
+    const doc = a.w.document;
+    const grid = doc.getElementById('calendarioSemanalHomeGrid');
+    a.w.renderizarHomeSemana = () => { a.rendersHome.push(a.w.obterAlunos().map((item) => item.nome)); grid.textContent = 'Agenda confirmada'; };
+    a.sessaoPronta = adiada();
+    const gate = a.segurar('alunos');
+    const inicio = a.iniciar();
+    assert.equal(doc.querySelectorAll('#homeSkeletonInicial .skeleton').length, 3);
+    assert.equal(doc.getElementById('tela-home').getAttribute('aria-busy'), 'true');
+    assert.equal(a.chamadas.length, 0, 'apresentação antecipada não inicia consultas antes da sessão');
+    a.sessaoPronta.resolver();
+    await eventos();
+    assert.equal(doc.getElementById('homeSkeletonInicial'), null, 'não empilha duas silhuetas');
+    assert.equal(grid.querySelectorAll('.skeleton').length, 3);
+    assert.equal(a.w.__homeCarregando, true);
+    gate.liberar();
+    await inicio;
+    assert.equal(grid.querySelector('.skeleton'), null);
+    assert.equal(grid.textContent, 'Agenda confirmada');
+    assert.equal(doc.getElementById('tela-home').getAttribute('aria-busy'), 'false');
+    assert.equal(doc.getElementById('headerCacheState').hidden, true);
+    assert.equal(a.principais(), 1);
+});
+
+for (const tela of ['tela-alunos', 'tela-financas']) {
+    testar(`Carga inicial — ${tela} remove a silhueta da Home antes de aguardar sessão`, async (t) => {
+        const a = ambiente(t, { tela, cache: 'ausente', financeiroCache: false, cargaInicial: true, skeletonInicialHome: true });
+        a.sessaoPronta = adiada();
+        const inicio = a.iniciar();
+        assert.equal(a.w.document.getElementById('homeSkeletonInicial'), null);
+        assert.equal(a.chamadas.length, 0);
+        a.sessaoPronta.resolver();
+        await inicio;
+        assert.equal(a.w.location.hash, `#${tela}`);
+        assert.equal(a.w.document.getElementById('homeSkeletonInicial'), null);
+    });
+}
+
+testar('Carga inicial — Home sem sessão encerra skeleton neutro sem exibir dados ou consultar API', async (t) => {
+    const a = ambiente(t, { sessao: false, cache: 'ausente', financeiroCache: false, cargaInicial: true, skeletonInicialHome: true });
+    await a.iniciar();
+    assert.equal(a.w.document.getElementById('homeSkeletonInicial'), null);
+    assert.equal(a.w.document.getElementById('tela-home').getAttribute('aria-busy'), 'false');
+    assert.equal(a.w.document.querySelector('#tela-home .skeleton'), null);
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    assert.equal(a.chamadas.length, 0);
+    assert.equal(a.w.obterAlunos().length, 0);
+});
+
+testar('Carga inicial — falha da Home substitui skeleton por erro sem o finalizador apagar a orientação', async (t) => {
+    const a = ambiente(t, { cache: 'ausente', financeiroCache: false, cargaInicial: true, skeletonInicialHome: true });
+    a.responder = () => resposta({}, 500);
+    await a.iniciar();
+    assert.equal(a.w.document.getElementById('homeSkeletonInicial'), null);
+    const grid = a.w.document.getElementById('calendarioSemanalHomeGrid');
+    assert.equal(grid.querySelector('.skeleton'), null);
+    assert.match(grid.textContent, /Não foi possível carregar a agenda/);
+    assert.equal(grid.firstElementChild.hasAttribute('aria-hidden'), false, 'mensagem de falha não fica escondida de leitores de tela');
+    assert.equal(a.w.document.getElementById('tela-home').getAttribute('aria-busy'), 'false');
+});
+
+testar('Carga inicial — cache da Home substitui só a silhueta inicial e conserva o conteúdo durante B2', async (t) => {
+    const a = ambiente(t, { cargaInicial: true, skeletonInicialHome: true });
+    const grid = a.w.document.getElementById('calendarioSemanalHomeGrid');
+    a.w.renderizarHomeSemana = () => { a.rendersHome.push(a.w.obterAlunos().map((item) => item.nome)); grid.textContent = a.w.obterAlunos()[0].nome; };
+    const gate = a.segurar('alunos');
+    await a.iniciar();
+    assert.equal(a.w.document.getElementById('homeSkeletonInicial'), null);
+    assert.equal(grid.textContent, 'Ana cache');
+    await a.pintar();
+    assert.equal(grid.textContent, 'Ana cache');
+    assert.equal(grid.querySelector('.skeleton'), null);
+    assert.equal(a.w.document.getElementById('headerCacheState').textContent, 'Sincronizando dados...');
+    gate.liberar();
+    await eventos();
+});
+
 for (const tela of ['tela-home', 'tela-alunos', 'tela-financas']) {
     testar(`Carga inicial — ${tela} sem dados anuncia desde sessão até fim da leitura`, async (t) => {
         const a = ambiente(t, { tela, cache: 'ausente', financeiroCache: false, cargaInicial: true });
@@ -441,11 +541,14 @@ for (const tela of ['tela-home', 'tela-alunos', 'tela-financas']) {
         a.sessaoPronta = adiada();
         const gate = a.segurar(tela === 'tela-financas' ? 'financas' : 'alunos');
         const inicial = a.iniciar();
-        assert.equal(aviso.hidden, false, 'visível antes de whenReady resolver');
-        assert.equal(aviso.textContent, 'Carregando dados...');
+        assert.equal(aviso.hidden, tela === 'tela-financas', 'Finanças usa o estado local; as outras telas anunciam no conteúdo');
+        if (tela !== 'tela-financas') assert.equal(aviso.textContent, 'Carregando dados...');
         a.sessaoPronta.resolver(); await eventos();
-        assert.equal(aviso.hidden, false, 'não espera timer de 3s');
-        assert.equal(aviso.textContent, 'Carregando dados...');
+        assert.equal(aviso.hidden, tela === 'tela-financas', 'não ativa aviso global ao liberar a sessão');
+        if (tela === 'tela-financas') {
+            assert.equal(a.w.document.getElementById('financasConteudo').getAttribute('aria-busy'), 'true');
+            assert.ok(a.w.document.querySelectorAll('#financasConteudo .skeleton').length > 0);
+        }
         gate.liberar(); await inicial; await a.pintar();
         assert.equal(aviso.hidden, true, 'fim de carga não deixa aviso preso');
         assert.equal(a.principais(), 1);
@@ -494,12 +597,12 @@ testar('Carga inicial — finanças em voo continua anunciada após término do 
     const gate = a.segurar('financas');
     const navegacao = a.w.__appShell.router.navigateTo('tela-financas'); await eventos();
     const aviso = a.w.document.getElementById('headerCacheState');
-    assert.equal(aviso.hidden, false);
-    assert.equal(aviso.textContent, 'Carregando dados...');
+    assert.equal(aviso.hidden, true, 'Finanças não repete o aviso global');
+    assert.equal(a.w.document.getElementById('financasConteudo').getAttribute('aria-busy'), 'true');
+    assert.ok(a.w.document.querySelectorAll('#financasConteudo .skeleton').length > 0);
     const principal = await a.w.carregarDados({ forcarRender: false, forcarRemoto: true });
     assert.equal(principal.estado, 'aplicado');
-    assert.equal(aviso.hidden, false, 'finally principal não apaga financeiro');
-    assert.equal(aviso.textContent, 'Carregando dados...');
+    assert.equal(aviso.hidden, true, 'a conclusão do batch principal não reativa o aviso global');
     gate.liberar(); await navegacao;
     assert.equal(aviso.hidden, true);
 });
@@ -508,23 +611,28 @@ testar('Carga inicial — edição descarta aviso financeiro e resposta antiga n
     const a = ambiente(t, { tela: 'tela-financas', cache: 'ausente', financeiroCache: false, cargaInicial: true });
     const gate = a.segurar('financas');
     const inicial = a.iniciar(); await eventos();
-    assert.equal(a.w.document.getElementById('headerCacheState').hidden, false);
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    assert.equal(a.w.document.getElementById('financasConteudo').getAttribute('aria-busy'), 'true');
     a.w.contextoDados.definirFormulario('carga', true);
     assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    assert.equal(a.w.document.getElementById('financasConteudo').getAttribute('aria-busy'), 'true', 'a requisição antiga ainda está em voo');
+    assert.equal(a.w.document.getElementById('financasProgresso').hidden, true);
     a.w.contextoDados.definirFormulario('carga', false);
     assert.equal(a.w.document.getElementById('headerCacheState').hidden, true, 'fechar não reativa apresentação inicial invalidada');
     // A resposta financeira velha foi invalidada pela edição; não ressuscitar seu aviso.
     gate.liberar(); await inicial;
     assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    assert.equal(a.w.document.getElementById('financasConteudo').getAttribute('aria-busy'), 'false');
 });
 
 testar('Carga inicial — perda de sessão durante await encerra imediatamente o aviso', async (t) => {
     const a = ambiente(t, { tela: 'tela-financas', cache: 'ausente', financeiroCache: false, cargaInicial: true });
     const gate = a.segurar('financas');
     const inicial = a.iniciar(); await eventos();
-    assert.equal(a.w.document.getElementById('headerCacheState').hidden, false);
+    assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
     await a.sessao(null);
     assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
+    assert.equal(a.w.document.getElementById('financasConteudo').getAttribute('aria-busy'), 'false');
     gate.liberar(); await inicial;
     assert.equal(a.w.document.getElementById('headerCacheState').hidden, true);
 });
@@ -535,8 +643,7 @@ testar('Carga inicial — B2 sem cache principal sincroniza sobre financeiro já
     const gate = a.segurar('alunos');
     await a.pintar();
     const aviso = a.w.document.getElementById('headerCacheState');
-    assert.equal(aviso.hidden, false);
-    assert.equal(aviso.textContent, 'Sincronizando dados...');
+    assert.equal(aviso.hidden, true, 'B2 não mostra um segundo aviso global em Finanças');
     assert.equal(a.financas(), 1, 'indicador não cria GET financeiro');
     gate.liberar(); await eventos();
     assert.equal(aviso.hidden, true);
