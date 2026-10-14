@@ -78,16 +78,51 @@ window.__UI_MOCK_SCENARIOS = {
         valorFixoCiclo: 0,
         observacoes: 'Novo cadastro aguardando configuração financeira.',
         corObjetivo: { nome: 'Roxo', hex: '#ab47bc' }
+      },
+      {
+        id: 'a5',
+        nome: 'Fernando Silva',
+        email: 'fernando@example.com',
+        telefone: '(11) 95555-5555',
+        local: 'Online',
+        preco: 0,
+        frequenciaSemanal: 2,
+        objetivo: 'Hipertrofia',
+        status: 'ativo',
+        diaVencimento: 5,
+        fechamentoMesCheio: false,
+        metodoCobranca: 'valor_fixo',
+        valorFixoCiclo: 200,
+        observacoes: 'Mensalidade fixa com vencimento no dia 5 do ciclo.',
+        corObjetivo: { nome: 'Azul', hex: '#64b5f6' }
+      },
+      {
+        id: 'a6',
+        nome: 'Eduardo Santos',
+        email: 'eduardo@example.com',
+        telefone: '(11) 94444-6666',
+        local: 'Online',
+        preco: 0,
+        frequenciaSemanal: 0,
+        objetivo: 'Consultoria Online',
+        status: 'ativo',
+        diaVencimento: null,
+        fechamentoMesCheio: false,
+        metodoCobranca: 'por_aula',
+        valorFixoCiclo: 0,
+        observacoes: 'Aluno exclusivo de consultoria. Bloco financeiro desabilitado.',
+        corObjetivo: { nome: 'Cinza', hex: '#9e9e9e' }
       }
     ],
     agendamentos: [
-      { id: 'ag1', alunoId: 'a1', tipo: 'aula', frequencia: 'semanal', tipoRecorrencia: 'semanal', recorrenciaDataInicio: '2026-09-24', diasSemana: ['Quinta'], intervaloRecorrencia: 1, recorrenciaEscopo: 'fromDate', data: '2026-09-24', horarioInicio: '08:00', horarioFim: '09:00', descricao: 'Treino resistido' },
+      { id: 'ag1', alunoId: 'a1', tipo: 'aula', frequencia: 'semanal', tipoRecorrencia: 'semanal', recorrenciaDataInicio: '2026-09-24', diasSemana: ['Quinta'], intervaloRecorrencia: 1, recorrenciaEscopo: 'fromDate', data: '2026-09-24', horarioInicio: '08:00', horarioFim: '09:00', descricao: 'Treino resistido', excecoesDetalhadas: [{ data: '2026-09-24', gerouReposicao: true, reposicaoId: 'r4' }, { data: '2026-10-01', gerouReposicao: false, cancelada: true }] },
       { id: 'ag2', alunoId: 'a1', tipo: 'aula', frequencia: 'semanal', tipoRecorrencia: 'semanal', recorrenciaDataInicio: '2026-09-26', diasSemana: ['Sábado'], intervaloRecorrencia: 1, recorrenciaEscopo: 'fromDate', data: '2026-09-26', horarioInicio: '18:00', horarioFim: '19:00', descricao: 'Treino funcional' },
       { id: 'ag3', alunoId: 'a2', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-25', horarioInicio: '19:00', horarioFim: '20:00', descricao: 'Consulta inicial' },
       { id: 'ag4', alunoId: 'a3', tipo: 'aula', frequencia: 'semanal', tipoRecorrencia: 'semanal', recorrenciaDataInicio: '2026-09-27', diasSemana: ['Domingo'], intervaloRecorrencia: 1, recorrenciaEscopo: 'fromDate', data: '2026-09-27', horarioInicio: '07:00', horarioFim: '08:00', descricao: 'Rotina de mobilidade' },
       { id: 'ag5', alunoId: 'a4', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-26', horarioInicio: '10:00', horarioFim: '11:00', descricao: 'Avaliação de performance' }
       ,{ id: 'ag6', alunoId: 'a2', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-26', horarioInicio: '17:00', horarioFim: '18:00', descricao: 'Reposição de consulta', isReposicao: true, reposicaoId: 'r2' }
       ,{ id: 'ag7', alunoId: 'a1', tipo: 'aula', frequencia: 'uma_vez', data: '2026-09-23', horarioInicio: '17:00', horarioFim: '18:00', descricao: 'Reposição concluída', isReposicao: true, reposicaoId: 'r3' }
+      ,{ id: 'ag8', alunoId: 'a5', tipo: 'aula', frequencia: 'semanal', tipoRecorrencia: 'semanal', recorrenciaDataInicio: '2026-09-21', recorrenciaDataFim: '2026-10-21', diasSemana: ['Segunda'], intervaloRecorrencia: 1, recorrenciaEscopo: 'fromDate', data: '2026-09-21', horarioInicio: '10:00', horarioFim: '11:00', descricao: 'Treino com data de fim na recorrência' }
     ],
     bloqueiosExternos: [
       { id: 'gcal1', googleCalendarEventId: 'gcal-mock-1', titulo: 'Reunião com fornecedor', data: '2026-09-24', horarioInicio: '12:00', horarioFim: '13:00', fullDay: false },
@@ -122,6 +157,24 @@ window.__UI_MOCK_SCENARIOS = {
         cobravel: true,
         validoAte: '2026-09-23',
         agendamentoReposicaoId: 'ag7'
+      },
+      {
+        id: 'r4',
+        alunoId: 'a1',
+        dataOriginal: '2026-09-24',
+        horarioOriginal: '08:00',
+        status: 'expirada',
+        cobravel: true,
+        validoAte: '2026-09-30'
+      },
+      {
+        id: 'r5',
+        alunoId: 'a5',
+        dataOriginal: '2026-10-03',
+        horarioOriginal: '10:00',
+        status: 'pendente',
+        cobravel: false,
+        validoAte: '2026-10-17'
       }
     ],
     financas: [
@@ -191,19 +244,46 @@ window.__UI_MOCK_SCENARIOS = {
         configuracaoPendente: true,
         cicloAtual: null,
         historicoDisponivel: false
+      },
+      {
+        alunoId: 'a5',
+        aluno: { id: 'a5', nome: 'Fernando Silva' },
+        configuracaoPendente: false,
+        cicloAtual: {
+          _id: 'c5',
+          alunoId: 'a5',
+          cicloInicio: '2026-09-05',
+          cicloFim: '2026-10-04',
+          status: 'em_aberto',
+          metodoCobranca: 'valor_fixo',
+          aulasContadas: 0,
+          aulasManuaisExtras: 0,
+          valorTotalCiclo: 200,
+          extrato: []
+        },
+        historicoDisponivel: false
+      },
+      {
+        alunoId: 'a6',
+        aluno: { id: 'a6', nome: 'Eduardo Santos' },
+        configuracaoPendente: false,
+        cicloAtual: null,
+        historicoDisponivel: false
       }
     ],
     consistenciaAgenda: [
       { alunoId: 'a1', aulasSemanaisContrato: 3, aulasFaltamAgendar: 1 },
       { alunoId: 'a2', aulasSemanaisContrato: 1, aulasFaltamAgendar: 0 },
       { alunoId: 'a3', aulasSemanaisContrato: 2, aulasFaltamAgendar: 2 },
-      { alunoId: 'a4', aulasSemanaisContrato: 1, aulasFaltamAgendar: 0 }
+      { alunoId: 'a4', aulasSemanaisContrato: 1, aulasFaltamAgendar: 0 },
+      { alunoId: 'a5', aulasSemanaisContrato: 2, aulasFaltamAgendar: 1 },
+      { alunoId: 'a6', aulasSemanaisContrato: 0, aulasFaltamAgendar: 0 }
     ],
     homeSummary: {
       proximoCompromisso: '2026-09-24 08:00',
-      totalAtivos: 3,
+      totalAtivos: 5,
       totalPendentes: 1,
-      totalSemana: 5
+      totalSemana: 6
     }
   },
   agendaLotada: {
