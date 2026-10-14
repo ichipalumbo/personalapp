@@ -355,6 +355,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Dados e escopo V1**: o modal consulta todos os status via `GET /api/reposicoes?alunoId=...`; `aulasParaRepor` continua exclusivamente com pendências. Um cache separado da lista completa alimenta os resumos dos cards. Não inclui visão global, busca, filtro por período/status/a vencer, criação, cancelamento ou mudança de regra financeira.
 - **Onde mexer**: `assets/js/view-alunos.js`, `index.html` (modal de histórico), `assets/css/style.css`, `assets/js/modal-acao-slot.js` e, se necessário para o cache separado, `assets/js/storage.js`. A API atual já atende a leitura; não há mudança de backend prevista.
 - **Referência**: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seção 9.4.
+- **Correção de carregamento (T07/D7=A, 2026-10-14)**: resumo nome + “Atualizando…” preparado antes de abrir/focar, três skeletons e anúncio existente; contagens/vazio só após confirmação, erro sem falso vazio. Frontend medido **399→403**, 0 falhas; M31–M34 provadas/restauradas, mock em 433×762/DPR 2.81 e stress 320×568/390×844 sem overflow. GET/cache/grupos e regras de negócio preservados. [Plano de fluxos UX, §12/§15](plans/2026-10-13-plan-melhorias-fluxos-ux.md): T01–T07 concluídos localmente, publicação/aceite do dono pendentes. Mock ignora `alunoId` no GET específico; limite registrado, não corrigido neste cartão.
+- **Complemento visual solicitado (2026-10-14)**: barra lateral do corpo do histórico oculta com o padrão CSS dos demais modais, preservando rolagem interna e acesso por teclado à última seção. Mock validado nos três viewports; frontend **403/403 → 403/403**, zero falhas. Ajuste localizado registrado no mesmo plano, sem mudança de regra ou cache.
 - **Esforço**: Médio.
 - **Validação final**: validação visual do modal e do fluxo de reagendamento aprovada pelo dono em 2026-09-23; suítes frontend e backend verdes.
 
@@ -722,6 +724,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Resolve**: achados 4.2 (topo consome altura excessiva), 4.3 (navegação compete com conteúdo),
   4.14 (safe areas) e parte de 4.16 (ARIA de navegação) do diagnóstico.
 - **Relatório**: [`plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`](plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md).
+- **Complemento visual solicitado (2026-10-14)**: FABs de Home e Alunos padronizados em **60×60 px**, ícone de **24 px** e escala **0,90** ao pressionar (54×54 px), com regras CSS compartilhadas. Posição sobre a barra inferior, sombras/hover próprios e ações preservados; mock validado em 433×762/DPR 2.81 e stress 320×568/390×844; frontend **403/403 → 403/403**, zero falhas. Registro no [plano vivo de fluxos UX, §12](plans/2026-10-13-plan-melhorias-fluxos-ux.md); publicação/aceite do dono pendentes.
+- **Unificação completa solicitada depois (2026-10-14)**: `.fab-adicionar` é a única classe de aparência dos FABs; substitui nomes ligados à tela no CSS, HTML de Alunos e criação dinâmica da Home. Mantidos 60 px/24 px/escala 0,90, com sombra/hover/transições/camada da Home nos dois; IDs usados somente para ações. Três testes de contrato protegem marcação real, fonte CSS única e estados, com M35–M39 provadas/restauradas; frontend **403→406**, zero falhas. Mock nos três viewports confirmou zero diferenças em repouso/hover/active/foco, movimento reduzido, teclado e Finanças sem FAB. Sem regra ou dependência nova; execução no mesmo plano, publicação/aceite pendentes.
 
 ---
 

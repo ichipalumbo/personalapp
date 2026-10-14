@@ -1073,7 +1073,7 @@ window.trocarFABNovoHome = function () {
     fab.type = 'button';
     document.body.appendChild(fab);
   }
-  fab.className = 'btn-weekly-add fab-novo-home';
+  fab.className = 'fab-adicionar';
   const diaModo = window.modoHomeAtivo === 'dia';
   const rotulo = diaModo
     ? 'Novo agendamento para o dia selecionado'
