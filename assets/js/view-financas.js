@@ -187,6 +187,8 @@
         // Info de sistema no header: só aparece quando relevante (cache real ou sync
         // em andamento). "Sem cache local" em repouso virou ruído visual (decisão do
         // dono, Etapa 4, 2026-09-27) — o estado sem cache é o normal fora do app.
+        // T06 (D6=A/roadmap 1.11): o botão "Atualizar" força leitura remota manual
+        // (ignora o cache e expõe falha mesmo com conteúdo em tela).
         const cacheLabel = cache && cache.atualizadoEm ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}` : '';
 
         root.innerHTML = `
@@ -199,6 +201,7 @@
               <div style="text-align:right;">
                 <div id="financasCacheLabel" style="font-size:0.75rem;color:#909090;">${cacheLabel}</div>
                 <div id="financasSyncState" style="font-size:0.75rem;color:#909090;margin-top:4px;"></div>
+                <button type="button" class="btn btn-secondary" id="financasAtualizar" data-financas-atualizar style="margin-top:8px;">Atualizar</button>
               </div>
             </div>
           </section>
@@ -657,6 +660,10 @@
                 syncState.textContent = '';
             }
         }
+        // T06 (D6=A/roadmap 1.11): uma leitura por vez — o botão bloqueia durante
+        // o voo; o guard do handler cobre clique sintético/estado atrasado.
+        const botaoAtualizar = document.getElementById('financasAtualizar');
+        if (botaoAtualizar) botaoAtualizar.disabled = STATE.carregando;
     }
 
     function carregarFinancas(opcoes = {}) {
@@ -763,9 +770,15 @@
                 if (!silencioso && typeof global.mostrarToast === 'function') {
                     global.mostrarToast(STATE.erro, 'warning');
                 }
-                if (!cache && telaFinancasAtiva()) {
+                if (!cache && STATE.cards.length === 0 && telaFinancasAtiva()) {
                     renderizarVazio(STATE.erro);
                 }
+            }
+            // T06 (D6=A): falha de leitura manual não deixa o skeleton preso nem
+            // apaga o que estava visível — o conteúdo anterior volta à tela, com o
+            // erro exposto no cabeçalho (e no toast, quando não silencioso).
+            if (!silencioso && telaFinancasAtiva() && STATE.cards.length > 0) {
+                renderizarCards();
             }
             return false;
         } finally {
@@ -1030,6 +1043,14 @@
                 } else {
                     global.prepararEdicaoAluno(alunoId);
                 }
+                return;
+            }
+
+            const atualizarBtn = event.target.closest('[data-financas-atualizar]');
+            if (atualizarBtn) {
+                // T06 (D6=A/roadmap 1.11): leitura manual que ignora o cache — nunca escrita.
+                if (STATE.carregando) return;
+                carregarFinancas({ forcarRemoto: true });
                 return;
             }
 

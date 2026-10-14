@@ -25,7 +25,8 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 - [x] F4 (T02 executado em 2026-10-13 — medições na §12): fechar o modal não re-renderiza mais a agenda (D2=A; gancho instalado uma única vez) e a posição de rolagem é preservada; validado no mock em 3 ciclos (516→516). **T02 estendido (D12=C)**: a âncora "hoje" fica suprimida em todos os renders pós-ação (edição, exclusões, reagendar, reposição e criação), inclusive nos disparados pela ponte do GCal; mock: edição 516→516, exclusão 516→508 (reflow do card removido) e abrir/fechar 508→508.
 - [x] F5 conforme D5=B (T05 executado em 2026-10-13 — provas na §11 e registro na §12): F5a/F5b aplicam as redações aprovadas; F5c entrou nesta frente com o prazo do modal de escolha pré-visualizado pelo módulo compartilhado `calculo-ciclo.js` (mesmo valor do envio) e a spec de reposições reconciliada (v15 — §9.3, decisão 21 e §4.3). Nenhuma decisão de não alterar remanescente.
 - [x] Achados absorvidos no T05 (D11=A — T05 executado em 2026-10-13): rótulos legíveis no modo Dia (“Só sáb., 17/10 sai…” — D13), corte do "daqui pra frente" ancorado no dia selecionado (confirm "1 aulas serão aparadas e 0 removidas"; série preservada até 16/10) e "Agendado para: sex., 25/09" sem ISO cru — provas na §11 e registro na §12.
-- [ ] F6/F7: falha do financeiro oferece recuperação direta sem recarregar a página; histórico de reposições não afirma "nenhuma" durante o carregamento.
+- [x] F6 (T06 executado em 2026-10-13 — medições na §12): D6=A — botão "Atualizar" no cabeçalho dispara leitura forçada (bypass de cache), com dados visíveis ou em erro; falha preserva o conteúdo em tela; sem reload, sem escrita e sem cliques duplicados. Roadmap 1.11 concluído.
+- [ ] F7: histórico de reposições não afirma "nenhuma" durante o carregamento — bloqueado por D7 (T07).
 - [ ] Regressão: suíte frontend medida antes/depois de cada cartão que a afete; suíte backend também quando houver mudança em `backend/`, inclusive na exceção D4=B. Números medidos registrados na §12, sem regressões.
 - [ ] Nenhuma regra de negócio alterada; arquivos do backend somente nas exceções aprovadas (D4=B no endpoint de prévia; D5=B no UMD do módulo compartilhado, sem mudança de cálculo). Nenhuma escrita em produção; validação de UI no mock (433×762, DPR 2.81 e emulação mobile completa; 320×568 e 390×844 como stress).
 - [ ] Todo teste novo provado por mutação (§11); onde não houver teste possível (só visual), lacuna declarada na §10.
@@ -50,6 +51,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D4 = B — prévia do ajuste calculada pelo backend | 2026-10-13 | dono | Contrato aprovado e implementado: `GET /api/financas/:cicloId/simulacao-ajuste?aulasManuaisExtras=<int>` (somente leitura; 404/409; reusa o cálculo oficial); UI consome na abertura + a cada alteração (debounce ~400 ms); spec atualizada (v16) e mock com handler + falha `simulacao` |
 | D5 = B — F5c nesta frente, com o prazo pré-visualizado pelo módulo compartilhado | 2026-10-13 | dono | `calculo-ciclo.js` passa a rodar também no browser (UMD com fallback de global + erro explícito na ordem invertida; tag em `index.html` após `recurrence-helpers.js`); o modal de escolha exibe `validoAte` idêntico ao do envio; spec de reposições reconciliada (v15 — §9.3, decisão 21 e §4.3) |
 | D13 — datas legíveis uniformizadas em **minúsculo** em todos os pontos | 2026-10-13 | dono | Revisa a capitalização do T01/T05: cabeçalhos (“sáb., 17/10 · 18:00”), rótulos (“Só sáb., 17/10 sai…”), detalhes (“Desde sáb., 26/09.”) e “Agendado para” deixam de capitalizar; `formatarDataPtBrLegivel` (minúsculo) é a única forma |
+| D6 = A — botão "Atualizar" no cabeçalho de Finanças (absorve o roadmap 1.11) | 2026-10-13 | dono | Leitura forçada via `carregarFinancas({ forcarRemoto: true })` com dados visíveis ou em erro; guard no handler + `disabled` durante o voo; falha preserva o conteúdo e expõe o erro; roadmap 1.11 concluído |
 
 ## 4. Decisões pendentes
 
@@ -60,7 +62,7 @@ Os critérios de implementação se aplicam aos cartões liberados e à opção 
 | D3 | F2: conteúdo do modal de pagamento | A: valor do ciclo + aviso de congelamento / B: só o aviso | **Resolvida (2026-10-13): A**, com redação encurtada pelo dono | — (executada no T03) |
 | D4 | F3: efeito do ajuste | A: texto + valores já visíveis na tela / B: prévia calculada pelo backend / C: não alterar | **Resolvida (2026-10-13): B** — contrato aprovado e executado no T04 | — |
 | D5 | F5: redação final + F5c (linha de prazo §9.3) | A: ajustar textos aprovados nesta frente + F5c fica para spec própria / B: tudo nesta frente / C: só registrar | **Resolvida (2026-10-13): B** — F5c via módulo compartilhado `calculo-ciclo.js`; redações aprovadas (F5a/F5b/D11) | — (executada no T05) |
-| D6 | F6: recuperação do financeiro | A: absorver roadmap 1.11 (botão Atualizar) cobrindo o estado de erro / B: só "Tentar novamente" no erro | **sim (T06)** |
+| D6 | F6: recuperação do financeiro | A: absorver roadmap 1.11 (botão Atualizar) cobrindo o estado de erro / B: só "Tentar novamente" no erro | **Resolvida (2026-10-13): A** — botão "Atualizar" no cabeçalho; roadmap 1.11 concluído | — (executada no T06) |
 | D7 | F7: corrigir resumo em carregamento | A: "Atualizando…"/esqueleto conforme §9.4.3 / B: ocultar resumo no load | **sim (T07)** — baixo risco não dispensa a escolha do dono |
 | D8 | Pré-pago (mês futuro) | Spec nova / roadmap / adiar | não — fora desta frente |
 | D9 | F1 formato legível: ISO atual ("2026-09-26") aparece por fallback do formatador — corrigir junto? | **Resolvida (2026-10-13): Sim** — normalizar a exibição no formatador | — (executada no T01) |
@@ -175,7 +177,7 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Arquivos / componentes prováveis**: `assets/js/view-financas.js` (estado de erro/vazio; cabeçalho); `tests-frontend/view-financas-carregamento-toast.test.js` ou novo teste.
 - **Inclui**: ação de nova leitura no estado de erro, sem recarregar a página. Se D6=A, botão no cabeçalho conforme 1.11, chamando `carregarFinancas({ forcarRemoto: true })` para ignorar cache, tanto com dados visíveis quanto em erro; foco/aria e bloqueio de cliques duplicados durante a leitura. D6=B trata apenas o erro e mantém 1.11 pendente.
 - **Não inclui**: alterar a lógica de cache/fila de leitura/contextos (`leiturasDados`, `contextoDados`) — apenas a superfície de recuperação.
-- **Decisões pendentes / bloqueios**: D6 (dono).
+- **Decisões pendentes / bloqueios**: D6 resolvida (2026-10-13): A — botão "Atualizar" no cabeçalho absorvendo o roadmap 1.11. Executado em 2026-10-13 (§12).
 - **Critérios de aceite**: após falha de GET, mudar a resposta para sucesso e acionar o botão restaura a tela **na mesma sessão, sem reload**, com nova leitura remota e sem escrita. Se D6=A, bypass de cache comprovado mesmo com cache válido/visível. Cliques repetidos durante o voo não geram leituras concorrentes extras; nenhum retry automático novo.
 - **Validação**: mock falha → sucesso na mesma página, com a emulação da §10: começar com `mockFalha=financas`, retirar a falha via `__UI_MOCK_RUNTIME.configurarRede` (sem recarga) e acionar o botão. Conferir as chamadas: novo GET, sem POST/PATCH/PUT/DELETE e sem duplicação por clique repetido; validar também cache presente e nova falha preservando dados existentes. Suíte frontend antes/depois; automatizar o fluxo quando viável, com prova por mutação. Registrar na §12 a opção escolhida; somente D6=A permite concluir o roadmap 1.11 após seus critérios passarem.
 - **Riscos e rollback**: baixo-médio — encostar em estado de leitura pede cuidado com os guardas de contexto (A→B→A dos testes existentes); não alterar esses guardas. Revert simples.
@@ -230,6 +232,9 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 | M18 — `formatarDesdeSerieExibicao` volta à data crua (`return desde \|\| "início"`) | `T05 — rótulos da exclusão exibem a data em formato legível (D11)` e `T05 — confirmação da execução da série toda usa a data legível (D11)` em `modal-acao-slot.test.js` | Falharam: `Desde 26/09/2026.` em vez de `Desde Sáb., 26/09.` (11 pass / 2 fail) | Sim — restaurado; 13/13 focados verdes e suíte 387/387 |
 | M19 — linha "Período" da mensagem volta a dd/mm/aaaa (`formatarDataPtBr` em `montarResumoExclusaoCadeiaSerie`) | `T05 — confirmação da execução da série toda usa a data legível (D11)` e `T05 — período da série com data final também sai no formato legível` | Falharam (12 pass / 2 fail): `Período: desde 26/09/2026 até sem data de término.` (e `até 19/12/2026.`) | Sim — restaurado; 14/14 focados verdes e suíte 388/388 |
 | M20 — capitalização de volta nos rótulos de exclusão (`dataExibicao` volta a `charAt(0).toUpperCase()`) | `T05 — rótulos da exclusão exibem a data em formato legível (D11)` | Falhou (13 pass / 1 fail): “Só Sáb., 17/10 sai…” em vez de “Só sáb., 17/10 sai…” | Sim — restaurado; 14/14 focados e suíte 388/388 |
+| M21 — handler do "Atualizar" sem `forcarRemoto` (`carregarFinancas({})`) | `T06 — "Atualizar" força leitura remota e expõe falha mesmo com cache; sucesso restaura sem reload` | Falhou (2 pass / 1 fail): leitura não forçada — erro não exposto | Sim — restaurado; 3/3 focados e suíte 391/391 |
+| M22 — guard de voo removido do handler (`if (STATE.carregando) return;`) | `T06 — clique repetido durante o voo não gera leitura extra e o botão fica bloqueado` | Falhou (2 pass / 1 fail): leitura concorrente extra no clique repetido | Sim — restaurado; 3/3 focados |
+| M23 — restauração do conteúdo removida do catch (skeleton preso na falha manual) | `T06 — "Atualizar" força leitura remota e expõe falha mesmo com cache; sucesso restaura sem reload` | Falhou (2 pass / 1 fail): conteúdo não preservado após falha manual | Sim — restaurado; 3/3 focados e suíte 391/391 |
 
 ## 12. Registro da execução
 
@@ -385,6 +390,22 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 - **Desvios do plano**: nenhum.
 - **Decisão adicional tomada**: D13 (registrada na §3) — revisa a decisão de capitalização do T01/T05.
 
+### 2026-10-13 — T06 executado (recuperação no financeiro — F6, D6=A; roadmap 1.11 concluído)
+- **Base**: continuação na branch `diag/auditoria-fluxos-ux` confirmada pelo dono; working tree limpo na abertura (T05 commitado em `639aee4`).
+- **Decisão aplicada**: D6=A — botão "Atualizar" no cabeçalho de Finanças chamando `carregarFinancas({ forcarRemoto: true })`, cobrindo o estado de erro e a atualização manual com dados visíveis.
+- **Arquivos alterados**: `assets/js/view-financas.js` (botão `#financasAtualizar` em `renderizarCabecalho`; `disabled` durante a leitura em `atualizarCabecalhoCache`; handler delegado com guard de voo + `forcarRemoto: true` em `bindHandlers`; catch de `executarLeituraFinancas` restaura o conteúdo visível quando a falha é manual), `tests-frontend/view-financas-atualizar.test.js` (novo; 3 testes), `docs/roadmap.md` (1.11 marcado entregue) e este plano.
+- **Suíte frontend antes/depois**: **388/388 → 391/391** (medido; +3 testes, 0 falhas).
+- **Suíte backend**: não reexecutada (nenhum arquivo de backend alterado); última medição **240/240**.
+- **Prova por mutação**: M21–M23 (§11) derrubaram os testes correspondentes; restaurações conferidas com `git status` + 3/3 focados verdes.
+- **Validação manual no mock** (`default`+`mockEscrita=1`+`mockFalha=financas`, 433×762):
+  - Reprodução (F6): falha sem cache → vazio + "Não foi possível atualizar agora." no cabeçalho; sem ação direta antes do T06.
+  - Recuperação sem reload: `configurarRede({ falhas: [] })` em runtime → clique em "Atualizar" → chamadas 9 → 10 (última: `GET /api/financas` → 200); 4 cards renderizados; cabeçalho limpo; **sem escrita** (todas as chamadas GET).
+  - Bloqueio: latência de 900 ms → `disabled` durante o voo ("Carregando..."); clique real + sintético repetidos não geraram leitura extra (10 → 11, estabiliza); botão reabilitado ao fim.
+  - Falha com dados em tela: nova falha manual preserva os 4 cards com o erro exposto no cabeçalho e no toast (após a correção da iteração abaixo).
+- **Iteração de correção (registrada)**: na primeira validação no mock, a falha manual com dados em tela deixava o **skeleton preso** (cards somem, conteúdo não volta) — o critério do cartão exige preservar os dados existentes. Corrigido no catch de `executarLeituraFinancas` (restaura `renderizarCards()` quando não silencioso e há conteúdo), com asserção nova no teste 1 e prova por mutação M23.
+- **Desvios do plano**: nenhum. Roadmap 1.11 concluído — critérios passaram (bypass de cache comprovado, nova leitura remota, sem escrita, sem cliques duplicados).
+- **Decisão adicional tomada**: nenhuma.
+
 ## 13. Achados não alterados
 
 | Risco/achado | Por que não foi tratado | Destino | Dono |
@@ -404,15 +425,15 @@ Responder uma decisão libera apenas o respectivo cartão, não os demais. D3=B 
 
 ## 14. Deploy e rollback
 
-- **Efeito externo**: frontend estático (PWA) **e novo endpoint somente leitura no backend** (`simulacao-ajuste`; T04/D4=B). T01–T05 executados; sem migração ou escrita de teste em Mongo/GCal. O T05 faz a webpage carregar `backend/shared/calculo-ciclo.js` por tag `<script>` — mesmo caminho já usado pelo `recurrence-helpers.js`; a validação no mock local não prova o deploy, então conferir que o arquivo é servido no app publicado.
+- **Efeito externo**: frontend estático (PWA) **e novo endpoint somente leitura no backend** (`simulacao-ajuste`; T04/D4=B). T01–T06 executados; sem migração ou escrita de teste em Mongo/GCal. O T05 faz a webpage carregar `backend/shared/calculo-ciclo.js` por tag `<script>` — mesmo caminho já usado pelo `recurrence-helpers.js`; a validação no mock local não prova o deploy, então conferir que o arquivo é servido no app publicado.
 - **Ordem de publicação**: PR do dono para a `main` → deploy automático nos dois projetos Vercel. Push é sempre do dono (`git push -u origin <branch>` na primeira vez). Os dois projetos deployam do mesmo commit; a UI da prévia degrada com mensagem se o endpoint não estiver disponível (Salvar continua) — conferir `personal-app-api` antes de validar a prévia no app publicado.
-- **Verificação pós-deploy**: aceite visual pelo dono/Josy no app publicado (não há staging); validação de escritas permanece no mock. Conferir a prévia do ajuste no app publicado (abrir “Editar ajuste” e verificar valor e aviso). No T05, conferir também o modal “Cobrar esta aula?” (texto “no card do aluno” + linha de prazo) e os rótulos de exclusão no modo Dia.
+- **Verificação pós-deploy**: aceite visual pelo dono/Josy no app publicado (não há staging); validação de escritas permanece no mock. Conferir a prévia do ajuste no app publicado (abrir “Editar ajuste” e verificar valor e aviso). No T05, conferir também o modal “Cobrar esta aula?” (texto “no card do aluno” + linha de prazo) e os rótulos de exclusão no modo Dia. No T06, conferir o botão “Atualizar” no cabeçalho de Finanças (leitura forçada e recuperação de erro sem reload).
 - **Limite do rollback**: realizado pelo dono; reversão do código cobre estas mudanças; se a API reverter antes da UI, a falha da prévia é tratada com mensagem e não bloqueia o Salvar.
 
 ## 15. Fechamento
 
 - **Critérios atendidos**: pendente.
-- **Pendências**: decisões de implementação D6/D7 (D1–D5, D9, D11 e D12 resolvidas e executadas — D4 no T04, D5 no T05); ordem de execução D10; D8 permanece fora da frente. Executar e validar somente os cartões liberados.
+- **Pendências**: decisão de implementação D7 (D1–D6, D9, D11 e D12 resolvidas e executadas — D4 no T04, D5 no T05, D6 no T06); ordem de execução D10; D8 permanece fora da frente. Executar e validar somente os cartões liberados.
 - **Registro obrigatório**: classificar F1–F7 como corrigido, parcialmente tratado ou adiado conforme os resultados e decisões, com os remanescentes na §13; nenhum achado adiado/parcial deve aparecer como integralmente corrigido.
 - **Riscos aceitos**: pendente.
 - **Data de fechamento**: pendente.
