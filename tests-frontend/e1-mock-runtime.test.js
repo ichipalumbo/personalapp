@@ -379,3 +379,103 @@ test('E1-30 — resposta cancelada não volta como sucesso quando latência term
   assert.equal(await resultado, 'AbortError');
   assert.equal(a.chamadas()[0].estado, 'cancelada');
 });
+
+// Mutação: remover o filtro alunoId e voltar a responder a lista completa.
+test('mock de reposições filtra por aluno sem alterar a listagem completa ou os controles de rede', async (t) => {
+  for (const flags of ['', '&mockEscrita=1']) {
+    const a = ambiente(t, { nome: 'default', flags });
+    const inicial = await (await a.get('reposicoes')).json();
+    assert.deepEqual(inicial, copiar(a.w.__UI_MOCK_SCENARIOS.default.reposicoes));
+    for (const rota of ['reposicoes', 'reposicoes/']) {
+      for (const alunoId of ['a1', 'a2', 'a3', 'a4', 'a5', 'a6', 'sem-historico']) {
+        const resposta = await a.get(`${rota}?alunoId=${encodeURIComponent(alunoId)}`);
+        assert.equal(resposta.status, 200);
+        assert.deepEqual(await resposta.json(), inicial.filter((item) => item.alunoId === alunoId), `${flags} / ${rota} / ${alunoId}`);
+      }
+      assert.deepEqual(await (await a.get(`${rota}?alunoId=`)).json(), inicial, 'filtro vazio segue a semântica do backend');
+    }
+    assert.deepEqual(await (await a.get('reposicoes')).json(), inicial, 'leitura filtrada não remove dados da fonte');
+
+    a.runtime.configurarRede({ latenciaMs: 600 });
+    const lenta = a.get('reposicoes?alunoId=a1');
+    assert.equal(a.chamadas().at(-1).estado, 'pendente');
+    assert.equal(a.timers.size, 1);
+    a.avancarTimers();
+    assert.deepEqual(await (await lenta).json(), inicial.filter((item) => item.alunoId === 'a1'));
+    a.runtime.configurarRede({ latenciaMs: 0, falhas: ['reposicoes'], status: 500 });
+    assert.equal((await a.get('reposicoes?alunoId=a1')).status, 500);
+    a.runtime.configurarRede({ falhas: [], jsonInvalido: true });
+    await assert.rejects((await a.get('reposicoes?alunoId=a1')).json(), SyntaxError);
+    assert.equal(a.externas.length, 0);
+    assert.deepEqual(a.normais(), a.normalInicial);
+    assert.ok(a.chamadas().every((chamada) => chamada.method === 'GET'));
+  }
+});
+
+test('mock de reposições filtra o store atualizado e decodifica alunoId em Request sem misturar contas', async (t) => {
+  const a = ambiente(t, { nome: 'default', flags: '&mockEscrita=1' });
+  const alunoId = 'aluno / João +&';
+  const criadas = [];
+  for (const status of ['pendente', 'agendada', 'realizada', 'expirada']) {
+    const resposta = await a.get('reposicoes', {
+      method: 'POST', body: JSON.stringify({ id: `reposicao-${status}`, alunoId, status, dataOriginal: '2026-10-14', cobravel: true })
+    });
+    assert.equal(resposta.status, 201);
+    criadas.push(await resposta.json());
+  }
+  const request = new Request(`http://localhost:5000/api/reposicoes/?alunoId=${encodeURIComponent(alunoId)}`);
+  assert.deepEqual(await (await a.w.fetch(request)).json(), criadas, 'todos os status e a ordem original são preservados');
+  const patch = await a.get(`reposicoes/${criadas[0].id}`, { method: 'PATCH', body: '{"cobravel":false}' });
+  assert.equal(patch.status, 200);
+  criadas[0] = await patch.json();
+  assert.deepEqual(await (await a.w.fetch(request.clone())).json(), criadas, 'GET lê o store atual, não apenas as fixtures');
+  assert.deepEqual(await (await a.get(`reposicoes/${criadas[0].id}`)).json(), criadas[0], 'rota por id não muda');
+
+  a.runtime.definirSessao({ conta: 'B', autenticado: true });
+  assert.deepEqual(await (await a.w.fetch(request.clone())).json(), []);
+  a.runtime.definirSessao({ conta: 'A', autenticado: true });
+  assert.deepEqual(await (await a.w.fetch(request.clone())).json(), criadas);
+  assert.equal(a.externas.length, 0);
+  assert.deepEqual(a.normais(), a.normalInicial);
+});
+
+test('mock com a view real mantém o cache sem duplicar outros alunos ao reabrir históricos', async (t) => {
+  const a = ambiente(t, { nome: 'default' });
+  a.carregarDados();
+  a.w.document.body.insertAdjacentHTML('beforeend', `
+    <div id="modalHistoricoReposicoes" style="display:none">
+      <p id="resumoHistoricoReposicoes"></p><div id="conteudoHistoricoReposicoes"></div>
+    </div>
+  `);
+  a.w.garantirDadosFinancas = async () => ({});
+  a.w.formatarMoedaFinanceira = (valor) => `R$ ${Number(valor || 0).toFixed(2)}`;
+  carregar(a.dom, 'backend/shared/reposicao-flow-helpers.js');
+  carregar(a.dom, 'assets/js/features/modals/dialog-controller.js');
+  carregar(a.dom, 'assets/js/view-alunos.js');
+  const contextoVM = a.dom.getInternalVMContext();
+  vm.runInContext(`
+    alunos = JSON.parse(JSON.stringify(__UI_MOCK_SCENARIOS.default.alunos));
+    aulas = JSON.parse(JSON.stringify(__UI_MOCK_SCENARIOS.default.agendamentos));
+    aulasParaRepor = JSON.parse(JSON.stringify(__UI_MOCK_SCENARIOS.default.reposicoes.filter((item) => item.status === 'pendente')));
+  `, contextoVM);
+  const inicial = copiar(a.w.__UI_MOCK_SCENARIOS.default.reposicoes);
+  assert.equal(await a.w.carregarDadosComplementaresAlunos(), true);
+  const cache = () => copiar(vm.runInContext('_reposicoesHistorico', contextoVM));
+  assert.deepEqual(cache(), inicial);
+  const ids = (lista) => lista.map((item) => item.id).sort();
+
+  for (const alunoId of ['a1', 'a1', 'a2', 'a4', 'a5', 'a1']) {
+    const origem = a.w.document.querySelector(`[data-historico-aluno="${alunoId}"]`);
+    assert.ok(origem);
+    assert.equal(await a.w.abrirHistoricoReposicoes(alunoId, origem), true);
+    assert.deepEqual(ids(cache()), ids(inicial), 'cada releitura mantém um registro por reposição, sem duplicar outros alunos');
+    assert.deepEqual(cache().filter((item) => item.alunoId === alunoId), inicial.filter((item) => item.alunoId === alunoId));
+    const conteudo = a.w.document.getElementById('conteudoHistoricoReposicoes');
+    assert.equal(Boolean(conteudo.querySelector('.historico-reposicoes-vazio')), alunoId === 'a4');
+    assert.equal(conteudo.querySelectorAll('.historico-reposicao-linha').length, inicial.filter((item) => item.alunoId === alunoId).length);
+    a.w.fecharHistoricoReposicoes();
+  }
+  assert.equal(a.externas.length, 0);
+  assert.ok(a.chamadas().every((chamada) => chamada.method === 'GET'));
+  assert.deepEqual(a.normais(), a.normalInicial);
+});

@@ -482,7 +482,11 @@
       }
 
       if (url.pathname === '/api/reposicoes' || url.pathname === '/api/reposicoes/') {
-        return responder(dados('reposicoes') || []);
+        const reposicoes = dados('reposicoes') || [];
+        const alunoId = url.searchParams.get('alunoId');
+        return responder(alunoId
+          ? reposicoes.filter((reposicao) => reposicao && reposicao.alunoId === alunoId)
+          : reposicoes);
       }
 
       // GET /api/reposicoes/:id (usado ao reabrir/reagendar uma reposição)
