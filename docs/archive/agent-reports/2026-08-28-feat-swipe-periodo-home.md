@@ -102,4 +102,4 @@ O `DOMContentLoaded` dispara uma única vez por carregamento de página. A guard
 - **`renderizarHomeSemana()` sobrescreve `#calendarioSemanalHomeGrid` com `innerHTML`.** Confirma a decisão de ancorar no `.agenda-panel-semana` externo. Sem risco novo.
 - **Sem testes automatizados de frontend.** A validação dos itens acima é estática. Itens 2, 3 e 6 devem ser confirmados com toque real no dispositivo.
 - **`widget-bloqueio.js` e `widget-stepper-duracao.js`** não foram lidos — não eram necessários para esta tarefa.
-- **`docs/roadmap.md`** não foi alterado conforme instrução do prompt.
+- **`docs/archive/roadmaps/roadmap-v1.md`** não foi alterado conforme instrução do prompt.

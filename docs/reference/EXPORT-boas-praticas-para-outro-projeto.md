@@ -1,7 +1,7 @@
 # Boas práticas extraídas do `personalapp` — para adaptar em outro projeto
 
 > Gerado em 2026-09-30 a partir de uma varredura do repositório `personalapp`
-> (`.github/copilot-instructions.md`, `docs/README.md`, `docs/roadmap.md`,
+> (`.github/copilot-instructions.md`, `docs/README.md`, `docs/archive/roadmaps/roadmap-v1.md`,
 > `docs/_reports/`, `docs/setup-ambiente-local.md`,
 > `docs/TEMPLATE-prompt-etapa-personalapp.md`,
 > `docs/contexto-personalapp-para-novas-conversas.md`).
@@ -98,7 +98,7 @@ implementar — nunca inferir regra de negócio.
 
 - `docs/README.md` — índice: uma tabela "documento → o que é → quando ler". Serve para o
   agente (e o humano) saber por onde começar sem ler tudo.
-- `docs/roadmap.md` — **documento único e vivo**. Nunca duplicado por data
+- `docs/archive/roadmaps/roadmap-v1.md` — **documento único e vivo**. Nunca duplicado por data
   (`roadmap-v2.md` é proibido implicitamente). Tem uma tabela de acompanhamento no topo com
   legenda (`[x]` concluído, `[ ]` pendente, `[~]` parcial, `[→]` consolidado em outro item) e
   os detalhes de cada item abaixo, organizados em grupos numerados. Quando um item é

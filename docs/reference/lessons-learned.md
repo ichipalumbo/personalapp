@@ -128,7 +128,7 @@ numa próxima varredura:
 
 ### 3.2 Candidatos a CSS órfão não são autorização de remoção
 
-O [item 0.3 do roadmap anterior](../roadmap-v1.md) registra a limpeza da visão mensal, mas
+O [item 0.3 do roadmap anterior](../archive/roadmaps/roadmap-v1.md) registra a limpeza da visão mensal, mas
 também uma decisão de **preservar `#tela-calendario` e `#containerCalendarioDia` por segurança**:
 faltava evidência suficiente para classificá-los como mortos sem validar Dia/Semana.
 Essa ressalva não deve desaparecer quando o resultado da limpeza vira uma linha no roadmap.
@@ -153,7 +153,7 @@ não são uma certificação do DOM/CSS atual:
 ### 3.3 Movimento reduzido: não repetir o diagnóstico antigo
 
 O alerta original nomeava `halterBounce`, `pulseAgora`, `homeShimmer` e `girar-sinc`.
-O [registro da Etapa 7](../plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md),
+O [registro da Etapa 7](../archive/plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md),
 também resumido no item 5.7 do roadmap anterior, registra a consolidação do movimento
 reduzido: os três primeiros eram nomes residuais removidos, e o CSS passou a ter um bloco
 final de `prefers-reduced-motion`, incluindo o spinner. A fonte atual confirma esse bloco;
@@ -217,7 +217,7 @@ na prática — mas o código que as gerou pode não ter mudado.
   `.github/copilot-instructions.md` prescrevia o comando armadilhado e foi corrigida na mesma
   data.
 - **Cobertura de frontend existe, mas é parcial.** Desde 2026-09-03 há uma suíte em
-  `tests-frontend/`. O item 0.12 do roadmap e o [plano de cobertura](../plans/2026-10-12-plan-cobertura-render-conflitos-modais.md)
+  `tests-frontend/`. O item 0.12 do roadmap e o [plano de cobertura](../archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md)
   registram proteção de render do Dia no jsdom, bandas e bordas, conflitos e fluxos principais
   de criação/edição avulsa dos modais; os arquivos atuais executam os scripts reais.
   Isso substitui a afirmação genérica de que views, conflitos e modais não têm teste.
@@ -233,7 +233,7 @@ na prática — mas o código que as gerou pode não ter mudado.
   `ignorarIds` chegou, não que o motor de conflito está certo.
 - **Remoção de bloco em arquivo grande via edição em massa arrastou ~250 linhas não
   relacionadas sem quebrar a sintaxe.** Em 2026-09-18, a remoção do painel de reposições
-  pendentes (`docs/reports/2026-09-18-chore-remove-painel-pendentes.md`) apagou por engano um
+  pendentes (`docs/archive/reports/2026-09-18-chore-remove-painel-pendentes.md`) apagou por engano um
   bloco de funções auxiliares de `assets/js/modal-acao-slot.js` (`obterCompromissoSelecionado`,
   `enviarParaReposicao`, `capturarValoresFormularioEdicao`, `reabrirModalEdicaoComValores`,
   `avisarFalhaPersistencia`, entre outras) e uma função inteira (`executarExclusaoAulaAvulsa`),
@@ -241,7 +241,7 @@ na prática — mas o código que as gerou pode não ter mudado.
   ao abrir o modal — a suíte `backend/test/gcal-duplicata-fix.test.js`, que carrega o arquivo
   via harness de `vm`, teria pego na hora, mas não foi rodada de ponta a ponta logo após o
   commit da remoção. Causa raiz e correção completa em
-  `docs/reports/2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`. **Regra a aplicar**:
+  `docs/archive/reports/2026-09-18-fix-restaurar-funcoes-modal-acao-slot.md`. **Regra a aplicar**:
   depois de qualquer remoção de bloco de código (não só edição pontual), rodar a suíte que
   carrega o arquivo afetado antes de prosseguir para a próxima tarefa — ausência de erro de
   sintaxe não é prova de que nada quebrou.

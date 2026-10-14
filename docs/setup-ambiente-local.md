@@ -4,7 +4,7 @@
 > Passo a passo para deixar uma máquina nova rodando o app inteiro localmente:
 > frontend em `localhost:5500`, backend em `localhost:5000`, banco `personalapp_dev`.
 >
-> Reconstruído a partir das rodadas 3.2–3.5 do [roadmap anterior](roadmap-v1.md), com os recortes de cobertura entregues no item 0.12 incorporados. Contagens e resultados datados permanecem nos planos.
+> Reconstruído a partir das rodadas 3.2–3.5 do [roadmap anterior](archive/roadmaps/roadmap-v1.md), com os recortes de cobertura entregues no item 0.12 incorporados. Contagens e resultados datados permanecem nos planos.
 > Se um procedimento divergir do código, confira a execução real e reporte a divergência; isso não autoriza mudar regra de produto.
 
 ---
@@ -284,7 +284,7 @@ original não cobriu integralmente Semana, animações, escolha inicial de tipo/
 recorrente ou split/reposição dos modais. Recortes acrescentados depois podem exercitar
 alguns desses caminhos; sua existência não prova o fluxo inteiro. Nas bandas densas, por
 exemplo, contar linhas no DOM não demonstra ausência de clipping visual. As provas e os
-limites daquela entrega permanecem no [plano de cobertura](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md).
+limites daquela entrega permanecem no [plano de cobertura](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md).
 
 ### Por que a pasta é separada da raiz
 

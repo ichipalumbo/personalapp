@@ -186,9 +186,9 @@ personalapp/
 |  |- auditar-css-morto.js
 |- docs/                           <- indice completo em docs/README.md
 |  |- roadmap-v3.md                 <- roadmap oficial
-|  |- roadmap-v1.md  roadmap-v2.md   <- registro anterior / comparativo
 |  |- setup-ambiente-local.md
-|  |- specs/  diagnostics/  plans/  reports/  reference/  archive/
+|  |- specs/  reference/  plans/     <- contratos, apoio e frente ativa
+|  |- archive/                     <- roadmaps anteriores e historicos
 ```
 
 ## Convencao de Nomes dos Arquivos JS

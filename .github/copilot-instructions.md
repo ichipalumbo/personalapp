@@ -227,7 +227,7 @@ que pareçam pequenas:
 - `docs/specs/` — specs de feature, uma por arquivo, versionadas no cabeçalho.
   Fonte de verdade de regra de negócio.
 - `docs/roadmap-v3.md` — roadmap oficial, único e vivo. Substituição autorizada
-  pelo dono em 2026-10-14; `docs/roadmap-v1.md`, renomeado pelo dono, permanece
+  pelo dono em 2026-10-14; `docs/archive/roadmaps/roadmap-v1.md`, renomeado pelo dono, permanece
   somente como registro anterior. Não criar novas versões paralelas nem versionar
   por data. O roadmap resume resultado, status, esforço e dependências; testes,
   mutações e registros de execução ficam no plano da frente.
@@ -244,11 +244,13 @@ que pareçam pequenas:
   Dentro de frente aberta, registrar no plano existente; correção isolada usa
   plano enxuto; melhoria curta de contrato atualiza spec e síntese no roadmap,
   sem documentos redundantes quando não forem necessários.
-- **`docs/reports/` e `docs/archive/` estão congelados** por confirmação do dono
-  em 2026-10-14: somente consulta, sem novos arquivos, exclusões ou migração.
-  O trabalho não gera relatório final paralelo. Plano encerrado não é reescrito;
-  correção posterior gera continuação ou plano novo. Publicação/aceite e limites
-  ficam explícitos, sem confundir investigação concluída com correção entregue.
+- **Históricos em `docs/archive/`**: o dono autorizou em 2026-10-14 mover planos,
+  diagnósticos, reports, roadmaps anteriores e a referência substituída, com ajuste
+  de caminhos e preservação do conteúdo. A exceção não autoriza poda, exclusão ou
+  reescrita de conclusões. Consultar `docs/archive/README.md`; novos conjuntos
+  exigem autorização específica. Não gerar relatórios de rodada nem novos sagas.
+  Plano encerrado não é reescrito; correção posterior gera continuação/plano novo.
+  Arquivar não significa corrigir defeito, concluir pendência ou publicar código.
 - `docs/reference/` contém apoio e material exportável, não regra de negócio
   nem backlog paralelo. Kit/templates para outro projeto não governam este app.
 - `README.md` (raiz) — visão geral e onboarding. **A árvore de arquivos pode

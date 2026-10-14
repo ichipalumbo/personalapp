@@ -3,7 +3,7 @@
 > **Status**: Em execução · **Criado**: 2026-10-14 · **Atualizado**: 2026-10-14
 > **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
 > **Branch**: `docs/auditoria-roadmap`; working tree limpo na abertura.
-> **Origem**: [auditoria documental](../diagnostics/2026-10-14-diag-arquitetura-documentacao.md) e [governança vigente](../README.md).
+> **Origem**: [auditoria documental](../archive/diagnostics/2026-10-14-diag-arquitetura-documentacao.md) e [governança vigente](../README.md).
 
 ## 1. Objetivo
 
@@ -19,6 +19,11 @@ Incorporar conhecimento útil ainda ausente nas fontes vivas apropriadas e recon
 | Não alterar regras de produto nem código | Resposta do dono em 2026-10-14 | Divergência que exija decisão de comportamento será registrada como bloqueio, não resolvida por inferência |
 | Adotar `roadmap-v1.md` após a renomeação feita pelo dono | Confirmação durante o primeiro incremento, 2026-10-14 | Ajustar os ponteiros vivos, sem restaurar `roadmap.md` nem sobrescrever o conteúdo atual |
 | Adotar `lessons-learned.md` após a renomeação feita pelo dono | Confirmação durante o primeiro incremento, 2026-10-14 | Preservar a transferência já incorporada e ajustar referências vivas; alterações paralelas em registros antigos não são trabalho do agente |
+| Continuar a migração e depois arquivar o material sem manutenção | Pedido e confirmação do dono na continuação de 2026-10-14 | Executar primeiro as transferências/reconciliações comprovadas e depois a organização histórica |
+| Arquivar planos encerrados, diagnósticos concluídos, reports e roadmaps v1/v2 | Confirmação do dono nesta continuação | Exceção controlada ao congelamento anterior: mover os arquivos e ajustar caminhos de links sem reescrever conclusões históricas; não presumir fechamento de caso ambíguo |
+| Arquivar a cópia com o nome antigo `APRENDIZADOS.md` | Confirmação do dono nesta continuação | Preservar como referência histórica, mantendo `lessons-learned.md` como a única fonte viva |
+| Manter fora de archive as fontes em manutenção | Conjunto confirmado pelo dono | Specs vigentes, roadmap v3, plano aberto, guias, referência viva e kit permanecem ativos |
+| Arquivar também investigações antigas e o plano inicial de reposições com estado ambíguo | Confirmação do dono nesta continuação | Preservar como históricos com ressalva no índice do arquivo; arquivamento não certifica conclusão de suas pendências |
 
 O [roadmap oficial](../roadmap-v3.md) continua como índice. Não usar este plano como depósito de todo o texto retirado de fontes anteriores: históricos e duplicações podem permanecer apenas na origem preservada.
 
@@ -37,9 +42,10 @@ O [roadmap oficial](../roadmap-v3.md) continua como índice. Não usar este plan
 |---|---|---|
 | T01 | Comparar trechos do roadmap com as fontes vivas e registrar a matriz de transferência | Parcial: MIG-01–MIG-08 classificados; demais trechos ainda não encerrados |
 | T02 | Incorporar conhecimento técnico pertinente em referência/manual, conciliando descrições antigas | Primeiro incremento realizado e validado; outros recortes podem exigir nova triagem |
-| T03 | Reconciliar e migrar trechos de contrato/spec apenas com fundamento suficiente e sem mudança de regra | Pendente; nesta rodada as specs receberam somente ajuste de ponteiros/apresentação do backlog |
-| T04 | Atualizar navegação e referências afetadas e declarar o que resta migrar | Ponteiros vivos atualizados; registros encerrados não foram reescritos pelo agente |
-| T05 | Validar cada incremento e registrar preservação e resultado | Primeiro incremento validado e registrado; repetir o portão para cada próximo recorte |
+| T03 | Reconciliar e migrar trechos de contrato/spec apenas com fundamento suficiente e sem mudança de regra | Observações e contratos transversais de interface consolidados; rótulos/debitos editoriais reconciliados. Demais trechos mistos não foram declarados encerrados |
+| T04 | Atualizar navegação e referências afetadas e declarar o que resta migrar | Concluído neste incremento: fontes vivas e arquivo histórico navegáveis, sem links locais ausentes |
+| T05 | Validar cada incremento e registrar preservação e resultado | Incremento validado: links, contratos preservados, diagnósticos, diff e ausência de temporários |
+| T06 | Arquivar o conjunto confirmado e corrigir navegação | 40 movimentos executados e verificados; conteúdo preservado descontando caminhos; casos ambíguos identificados no índice histórico |
 
 ## 5. Matriz de transferência
 
@@ -47,14 +53,19 @@ Usar uma linha por trecho significativo, não por arquivo inteiro. Classificaç�
 
 | ID | Origem / trecho | Classificação | Destino responsável | Resultado e prova |
 |---|---|---|---|---|
-| MIG-01 | [Roadmap v1, 0.12/3.5](../roadmap-v1.md): recortes de cobertura e seus limites | Procedimento/aprendizado | [Manual §7](../setup-ambiente-local.md) e [Aprendizados §5](../reference/lessons-learned.md) | Incorporados testes de render do Dia, bandas/bordas, conflitos e modais; preservados limites de pixels, clipping, variantes e integração. Quatro arquivos de teste conferidos; sem nova contagem de suíte |
-| MIG-02 | [Roadmap v1, 0.3](../roadmap-v1.md): seletores preservados e uso dinâmico | Aprendizado | [Aprendizados §3.1–§3.2](../reference/lessons-learned.md) | Uso dinâmico já existia na §3.1; não duplicado. Incorporada a decisão de preservar os dois seletores por falta de evidência, retirando a classificação categórica de “CSS órfão real” |
+| MIG-01 | [Roadmap v1, 0.12/3.5](../archive/roadmaps/roadmap-v1.md): recortes de cobertura e seus limites | Procedimento/aprendizado | [Manual §7](../setup-ambiente-local.md) e [Aprendizados §5](../reference/lessons-learned.md) | Incorporados testes de render do Dia, bandas/bordas, conflitos e modais; preservados limites de pixels, clipping, variantes e integração. Quatro arquivos de teste conferidos; sem nova contagem de suíte |
+| MIG-02 | [Roadmap v1, 0.3](../archive/roadmaps/roadmap-v1.md): seletores preservados e uso dinâmico | Aprendizado | [Aprendizados §3.1–§3.2](../reference/lessons-learned.md) | Uso dinâmico já existia na §3.1; não duplicado. Incorporada a decisão de preservar os dois seletores por falta de evidência, retirando a classificação categórica de “CSS órfão real” |
 | MIG-03 | Aprendizados 1.5 e governança: versões copiadas em outras fontes | Reconciliação documental | [Aprendizados §1.5](../reference/lessons-learned.md) | Retirados números copiados e a alegação de risco atual sem verificar índice/instruções. Registrado o controle vigente, sem encerrar os demais riscos |
-| MIG-04 | [Roadmap v1, 3.2–3.4](../roadmap-v1.md), manual e configuração real | Procedimento/reconciliação | [Manual, abertura e §7–§8](../setup-ambiente-local.md) | A execução de backend/banco já estava documentada, não foi copiada. Reconciliados hostname versus `.env`, separação API/banco e os dois links; configuração dos quatro hosts conferida no código, sem acessar banco/GCal |
-| MIG-05 | [Roadmap v1, 5.7](../roadmap-v1.md), registro da Etapa 7 e fonte atual | Aprendizado/reconciliação | [Aprendizados §3.3](../reference/lessons-learned.md) | Substituído o alerta antigo de animações pela lição vigente de cascata e liberação sem `animationend`; bloco CSS e caminho JS conferidos, sem declarar novo aceite visual |
-| MIG-06 | [Roadmap v1, 3.5](../roadmap-v1.md): loader `vm`, `window === globalThis` e pasta separada | Duplicação já coberta | [Manual §7](../setup-ambiente-local.md) | O procedimento já existia no destino e o carregador atual o confirma. Mantido sem nova cópia; retiradas apenas as contagens/listas de cobertura obsoletas |
+| MIG-04 | [Roadmap v1, 3.2–3.4](../archive/roadmaps/roadmap-v1.md), manual e configuração real | Procedimento/reconciliação | [Manual, abertura e §7–§8](../setup-ambiente-local.md) | A execução de backend/banco já estava documentada, não foi copiada. Reconciliados hostname versus `.env`, separação API/banco e os dois links; configuração dos quatro hosts conferida no código, sem acessar banco/GCal |
+| MIG-05 | [Roadmap v1, 5.7](../archive/roadmaps/roadmap-v1.md), registro da Etapa 7 e fonte atual | Aprendizado/reconciliação | [Aprendizados §3.3](../reference/lessons-learned.md) | Substituído o alerta antigo de animações pela lição vigente de cascata e liberação sem `animationend`; bloco CSS e caminho JS conferidos, sem declarar novo aceite visual |
+| MIG-06 | [Roadmap v1, 3.5](../archive/roadmaps/roadmap-v1.md): loader `vm`, `window === globalThis` e pasta separada | Duplicação já coberta | [Manual §7](../setup-ambiente-local.md) | O procedimento já existia no destino e o carregador atual o confirma. Mantido sem nova cópia; retiradas apenas as contagens/listas de cobertura obsoletas |
 | MIG-07 | Renomeações do dono: roadmap histórico e referência de aprendizados | Roteamento, não migração de conteúdo | [Índice](../README.md), [v3](../roadmap-v3.md), manual, instruções e mapa da raiz | Nomes adotados após confirmação; specs apontam ao backlog oficial v3, não ao histórico v1. Nenhum registro encerrado foi reescrito pelo agente |
-| MIG-08 | Instruções §5/§9/§10 versus testes existentes e [roadmap v1, 0.12](../roadmap-v1.md) | Reconciliação documental | [Instruções permanentes](../../.github/copilot-instructions.md) | Corrigidas as alegações de `jsdom` ocioso e ausência genérica de testes de views/modais/conflitos; mantida a exigência de validação visual e de prova dos recortes efetivamente exercitados |
+| MIG-08 | Instruções §5/§9/§10 versus testes existentes e [roadmap v1, 0.12](../archive/roadmaps/roadmap-v1.md) | Reconciliação documental | [Instruções permanentes](../../.github/copilot-instructions.md) | Corrigidas as alegações de `jsdom` ocioso e ausência genérica de testes de views/modais/conflitos; mantida a exigência de validação visual e de prova dos recortes efetivamente exercitados |
+| MIG-09 | Roadmap 1.3, plano inicial de reposições/observações e testes existentes | Contrato durável antes disperso | [Spec de observações](../specs/alunos-observacoes.md) | Consolidado comportamento opcional por aluno, edição/persistência, bloco condicional e texto escapado; três casos de teste existentes conferidos, sem implementação nova |
+| MIG-10 | Reposições §9.4 e referência de notificações no fora de escopo | Reconciliação editorial | [Spec de Reposições](../specs/reposicoes-e-competencia.md) | Removido “PENDENTE” do contrato já entregue, sem alterar os requisitos; notificações apontam ao ID 4.2, sem mudança de escopo |
+| MIG-11 | Finanças §12.2/§12.4 versus entregas 0.3/0.4 e fonte viva | Reconciliação editorial | [Spec de Finanças](../specs/financas-ciclo-cobranca.md) | Limpeza entregue distinguida dos candidatos preservados; nota de árvore antiga substituída pela condição vigente e pela cautela com artefatos gerados |
+| MIG-12 | Etapas mobile 5.1–5.8 e contratos registrados nos planos anteriores | Contrato durável antes disperso | [Spec de interface](../specs/interface-e-navegacao.md) | Consolidados navegação/hash, diálogos/foco, cards/bandas, acessibilidade e feedback; exceções de publicação e resíduo 5.9 preservados; sem criar regra nova ou depender de plano como fonte normativa |
+| MIG-13 | Planos/diagnósticos anteriores, reports, roadmaps v1/v2 e referência antiga | Arquivamento autorizado, não conclusão de pendências | [Índice histórico](../archive/README.md) | 40 arquivos movidos; 77 históricos no conjunto, além do novo índice; links/caminhos atualizados mecanicamente e corpo comparado antes/depois descontando apenas esses caminhos |
 
 ## 6. Validação
 
@@ -94,13 +105,36 @@ Usar uma linha por trecho significativo, não por arquivo inteiro. Classificaç�
 - Verificação dos nove artefatos editados/criados pelo agente com `get_errors`: nenhum diagnóstico. `git diff --check` passou; Git informou avisos de normalização CRLF/LF, sem erro de whitespace.
 - Revisão do diff das specs: somente ponteiros de backlog, contextualização do registro financeiro e indentação normalizada de uma continuação Markdown; nenhum contrato ou cabeçalho de versão alterado. A continuação de lista em GCal foi conferida com os quatro espaços efetivamente mantidos pelo editor.
 - Varredura documental de encerramento: **349 links locais verificados**, **2 destinos ausentes** em registros encerrados — diagnóstico da arquitetura documental, linha 92, e plano B2, linha 5, ainda apontando ao nome antigo do roadmap. Permanecem registrados, sem edição retroativa pelo agente.
-- O arquivo com o nome anterior `docs/reference/APRENDIZADOS.md` reapareceu no working tree durante as validações. Não foi apagado pelo agente. A referência viva adotada por confirmação do dono continua sendo `docs/reference/lessons-learned.md`; o reaparecimento não foi tratado como autorização para uma nova poda.
+- O arquivo com o nome anterior `docs/archive/reference/APRENDIZADOS.md` reapareceu no working tree durante as validações. Não foi apagado pelo agente. A referência viva adotada por confirmação do dono continua sendo `docs/reference/lessons-learned.md`; o reaparecimento não foi tratado como autorização para uma nova poda.
 - **Resultado deste incremento**: MIG-01/MIG-02 incorporam conhecimento que faltava no destino; MIG-03/MIG-04/MIG-05/MIG-08 reconciliam descrições com evidência; MIG-06 evita duplicação; MIG-07 mantém o roteamento dos nomes adotados. Revisão e integração continuam com o dono, sem commit/push pelo agente.
 
 ## 8. Pendências e fechamento
 
 Frente em execução. O primeiro incremento técnico não conclui M01–M03 para toda a documentação. Permanecem pendentes a triagem dos demais trechos do roadmap e das specs, a reconciliação de estados como o título “PENDENTE” de Reposições §9.4 e a confirmação de riscos antigos não revalidados. Nenhum desses itens foi marcado como migrado apenas por apontar a uma fonte.
 
-Material exportável (M04 da auditoria), planos/diagnósticos encerrados, reports/archive e código permanecem fora da edição pelo agente. As alterações paralelas do dono ficam registradas acima, sem serem apagadas nem usadas para afirmar uma migração completa. O roadmap histórico adotado é preservado, não um novo backlog vivo.
+**Autorização posterior para organização histórica**: o dono confirmou a movimentação dos planos encerrados, diagnósticos concluídos, reports, roadmaps v1/v2 e referência antiga para `archive/`, com ajustes de links. Essa exceção substitui o impedimento anterior de movimentar esse conjunto; não autoriza reescrever conclusões, podar evidências ou encerrar trabalho sem prova. Código, kit e demais exportáveis continuam fora da edição de conteúdo. As alterações anteriores do dono serão preservadas.
 
 **Próximo recorte**: triagem de conteúdo durável e estados documentais nas specs, separando o que já está coberto, o que falta incorporar e o que depende de decisão/evidência adicional. Não corrigir o título ou copiar uma regra antiga apenas para fazer fontes concordarem; a spec vigente e a decisão aprovada continuam prevalecendo.
+
+### 2026-10-14 — Consolidação de contratos e organização histórica
+
+- **Decisões novas do dono**: continuar na mesma branch; autorizar movimentação de históricos com ajuste de caminhos; incluir a cópia antiga de Aprendizados e os casos antigos de status ambíguo, sem afirmar conclusão de suas pendências. A autorização superou o bloqueio de movimentação, não o compromisso de preservar conteúdo.
+- **Contratos promovidos**: nova spec de observações por aluno, confrontada com três casos de teste existentes; nova spec transversal de interface/navegação, consolidando decisões já aprovadas. Specs não dependem de planos/históricos para definir comportamento; provas e origem das decisões permanecem nesta matriz e no arquivo.
+- **Reconciliação editorial**: retirado o rótulo “PENDENTE” de Reposições §9.4 e corrigido o ID de notificações; em Finanças, limpeza de CSS entregue foi distinguida de seletores preservados e a nota de documentação antiga foi contextualizada. Nenhuma regra nova de produto ou implementação.
+- **Proteção de dinheiro**: seção 5 de Finanças conferida contra o HEAD por leitura UTF-8 explícita, com **8.879 caracteres de regras idênticos**. A primeira comparação via decodificação do terminal não foi usada como evidência; não se alterou regra para satisfazer um validador.
+- **Arquivamento executado depois desses incrementos**: 10 reports → `archive/reports/`; 15 planos → `archive/plans/`; 12 diagnósticos → `archive/diagnostics/`; 2 roadmaps → `archive/roadmaps/`; 1 referência substituída → `archive/reference/`. Os 37 históricos já em archive permaneceram no conjunto.
+- **Preservação**: automação temporária criou uma prévia sem escrita e depois moveu os 40 arquivos, ajustando destinos de links e referências de caminho. Comparação de conteúdo antes/depois descontando esses caminhos passou para todos os documentos processados. Não foram apagados resultados, hipóteses, decisões ou limitações; a movimentação não certifica os fechamentos ambíguos.
+- **Portão imediato**: 40 destinos confirmados, origens ausentes e 355 links locais de docs válidos após a operação; 143 arquivos de produto/teste monitorados permaneceram com os hashes de entrada. Foram corrigidos também os dois links antigos pendentes pela nova resolução para o v1 arquivado.
+- **Navegação/governança**: criado `archive/README.md`, atualizado o índice ativo, mapa da raiz e seção documental das instruções. Fora do arquivo permanecem contratos vigentes, guias, referência viva, kit e somente este plano de execução. Novos diagnósticos usam a pasta ativa quando necessários.
+- **Publicação e limite**: a rodada não faz commit/push/merge, não executa suíte de produto ou validação visual/produção e não conclui débitos antigos apenas porque seus documentos foram arquivados. A automação temporária será removida após o uso; não entra como ferramenta permanente.
+
+### 2026-10-14 — Validação final do incremento de archive
+
+- **Estrutura medida**: 93 documentos Markdown em `docs/`; 77 históricos mais o novo índice em archive; 3 arquivos na raiz de docs e somente o plano de migração na área ativa de planos. Specs, guias, referência viva e kit permanecem fora do arquivo.
+- **Links**: 374 destinos locais de docs verificados, sem ausências. Esta checagem não recertifica URLs externas nem o destino de cada âncora de seção.
+- **Conteúdo e produto**: os 40 movimentos e o corpo descontando caminhos foram validados na operação; hashes dos 143 arquivos de produto/teste monitorados permanecem iguais à entrada. Os 50 IDs do roadmap foram preservados. Regra financeira da seção 5 idêntica à base, sem alteração de código ou dinheiro.
+- **Diagnósticos/diff**: nenhum erro apontado nas fontes vivas criadas/alteradas; `git diff --check` passou com avisos de normalização CRLF/LF, não erros. A automação temporária foi removida e não há dependência nova.
+- **Rastreabilidade**: 13 entradas MIG distinguem transferência de contrato, reconciliação, duplicação já coberta e movimentação de arquivo. O histórico foi preservado, não convertido integralmente em regra vigente.
+- **Estado da frente**: o incremento solicitado de consolidação/arquivamento está entregue localmente. A frente permanece em execução apenas para os recortes pendentes abaixo; não se declara migração normativa completa ou conclusão de débitos antigos. Revisão e integração por PR ficam com o dono.
+
+**Pendências que continuam ativas**: revalidar riscos antigos quando houver frente de intervenção; distinguir e, se necessário, extrair outros trechos mistos da spec de GCal e de Reposições sem perder contratos; reconciliar divergências funcionais somente com evidência/decisão apropriadas. O arquivamento e as consolidações desta rodada não são declaração de que todo o texto histórico virou requisito vigente.

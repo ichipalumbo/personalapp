@@ -520,13 +520,13 @@ Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o 
 - Texto fixo: `Não pode ser alterado depois.`
 - Quando houver prazo (6.2), acrescentar: `Prazo para reposição: até dd/mm.`
 
-### 9.4 Histórico de reposições no card do aluno — PENDENTE
+### 9.4 Histórico de reposições no card do aluno
 
 O painel de pendências da Home foi removido em 2026-09-18. A frase histórica de que a gestão
 ocorria em uma aba específica de Reposições está incorreta: essa aba não existe e **não será
 criada nesta V1**. A gestão passa a acontecer no contexto do aluno, na tela `Alunos`.
 
-Cada card terá um bloco permanente e acionável de Reposições. Ele abre um modal com o
+Cada card tem um bloco permanente e acionável de Reposições. Ele abre um modal com o
 histórico daquele aluno e permite reagendar uma pendência. Não existe uma visão global de
 todos os alunos nesta V1; se ela for necessária no futuro, será um relatório/filtro separado,
 sem substituir este acesso contextual.
@@ -769,7 +769,7 @@ como pendência de fechamento da spec.
 ## 12. Fora de escopo
 
 - **Notificação push / WhatsApp** ("sua reposição vence em 3 dias"). Exige disparo sem
-  ninguém abrir o app — Web Push com VAPID ou WhatsApp API, mais scheduler. É o item 2.2
+  ninguém abrir o app — Web Push com VAPID ou WhatsApp API, mais scheduler. É o item 4.2
   do roadmap. Esta spec entrega apenas **aviso in-app**.
 - **Visão global de reposições**, com busca e filtros por período/status/a vencer. A gestão
   contextual no card do aluno é entregue pela seção 9.4; uma visão global, se necessária,

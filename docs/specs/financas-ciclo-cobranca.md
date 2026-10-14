@@ -690,7 +690,12 @@ O módulo foi movido para `backend/shared/recurrence-helpers.js`: o backend o im
 
 ### 12.2 CSS órfão da visão mensal
 
-Regras da visão mensal removida (`.calendario-mensal`, `.calendario-grid`, `.dia-cell`, `.kpi-dashboard`, `#tela-calendario`) permanecem em `assets/css/style.css`. Não removidas para evitar risco de afetar seletores compartilhados com as visões de dia/semana. Requer verificação cuidadosa antes de limpar.
+A limpeza da visão mensal e do KPI removidos foi entregue no item 0.3 do roadmap. Isso
+não significa que todo seletor antigo foi eliminado: `#tela-calendario` e
+`#containerCalendarioDia` foram preservados por falta de evidência suficiente de que
+estivessem mortos sem validar Dia/Semana. Não tratar esses candidatos como remoção
+aprovada nem reabrir a limpeza já entregue. Uma intervenção adicional exige escopo e
+validação próprios.
 
 ### 12.3 Defeito corrigido — o bloco "Ver ciclos anteriores" persiste aberto em re-render
 
@@ -709,6 +714,11 @@ Esse mesmo padrão foi estendido ao extrato do ciclo: `STATE.extratoAberto` guar
 
 ### 12.4 Documentação de apoio desatualizada
 
-- `README.md` da raiz: a árvore de arquivos ainda lista `backend/src/services/kpiService.js` (removido) e não menciona `agendaConsistencyService.js` nem `CicloFinanceiro.js`.
-- Os artefatos em `graphify-out/` refletem o estado anterior do código (referenciam `kpiService.js`, `exportarDados()`, `assets/js/recurrence-helpers.js`). Presumidamente gerados automaticamente — devem ser regenerados, não editados à mão. Quando desatualizados, poluem buscas por código com referências a arquivos inexistentes.
-- O roadmap foi atualizado junto com esta versão da spec e **não** faz parte desta dívida.
+A divergência original da árvore do README foi tratada na organização documental;
+o mapa atual inclui `CicloFinanceiro` e remete ao índice de documentação. O mapa não
+substitui inspeção do código nem certifica a presença de cada serviço na árvore resumida.
+
+Artefatos de ferramenta, como `graphify-out/`, não são fonte de verdade: quando necessários,
+devem ser regenerados, nunca corrigidos à mão. Não supor que uma saída histórica ainda
+corresponda ao estado atual. Backlog e priorização pertencem ao roadmap oficial, não a
+esta nota de manutenção documental.

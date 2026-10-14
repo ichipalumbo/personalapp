@@ -1,0 +1,941 @@
+# Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
+
+> **Status**: Documento vivo · **Atualizado**: 2026-10-13
+> Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
+> Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
+>
+> **Contexto importante**: a feature **"Finanças — Ciclo de Cobrança por Aluno"** está em produção. Ela **entregou o item 1.1** e **substituiu** o antigo sistema de KPI financeiro (`backend/src/services/kpiService.js` e os cálculos de projeção em `assets/js/utils-ui.js`), que **não existem mais no código**. Especificação completa em [`specs/financas-ciclo-cobranca.md`](../../specs/financas-ciclo-cobranca.md).
+>
+> Regras permanentes para agentes de IA: `.github/copilot-instructions.md`.
+
+---
+
+## Como usar este documento
+
+Cada item traz:
+
+- **O que é**: descrição da feature/regra/tela.
+- **Por que importa**: a dor real do PT que ela resolve.
+- **Onde mexer**: arquivos/áreas do código já existentes que servem de ponto de partida.
+- **Esforço estimado**: relativo, não é estimativa de horas fechada.
+
+**Sobre a ordem**: os grupos estão em ordem numérica (0 → 1 → 2 → 3 → 4 → 5) e é essa a ordem sugerida de execução. Não há tabela de prioridades: a priorização é decidida caso a caso, e o que o documento garante é apenas **o que está feito** e **o que depende de quê**. A tabela de acompanhamento fica no fim.
+
+**Grupo 5 — concluído, com um resíduo aberto**: diferente dos demais, o Grupo 5 (auditoria de UI/UX mobile) não foi
+executado em sequência única — rodou em paralelo, por rodadas. Os oito itens (5.1–5.8) estão
+fechados. Os últimos: **5.8** (2026-09-30 — PR #68, skeletons padronizados + rótulo de cache B1;
+validação visual do dono aprovada em 2026-10-01), **5.6** (2026-09-30 — PR #66, unificação +
+textos, e PR #67, tela de finanças) e **5.7** (2026-10-01 — cartões A–D da Etapa 7, branch
+`feat/etapa-7-consistencia-acessibilidade`). Com isso o documento-mãe do grupo
+(`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`) não tem mais achado em aberto — exceto o
+resíduo do **achado 4.5** (alvos de toque do cabeçalho/toolbar), validado no código em 2026-10-09 e
+registrado como item **5.9** abaixo.
+
+---
+
+## Tabela de acompanhamento
+
+Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolidado em outro item
+
+| Grupo | Item                                             | Status | Depende de                                                       |
+| ----- | ------------------------------------------------ | ------ | ---------------------------------------------------------------- |
+| 0     | 0.1 Bug "Ver ciclos anteriores" fecha sozinho    | `[x]`  | —                                                                |
+| 0     | 0.2 Consolidar módulos compartilhados            | `[x]`  | —                                                                |
+| 0     | 0.3 Limpar CSS órfão da visão mensal             | `[x]`  | —                                                                |
+| 0     | 0.4 Organização da documentação                  | `[x]`  | —                                                                |
+| 0     | 0.5 Collection `Reposicao` + competência         | `[x]`  | —                                                                |
+| 0     | 0.6 Extrato do ciclo                             | `[x]`  | —                                                                |
+| 0     | 0.7 Prazo de validade + expiração lazy           | `[x]`  | —                                                                |
+| 0     | 0.8 Avisos in-app de reposição a vencer          | `[x]`  | 0.7 `[x]`                                                        |
+| 0     | 0.9 Expor `calcularPrazoReposicao` compartilhado | `[x]`  | 0.2                                                              |
+| 0     | 0.10 Deduplicação de `calcularPrazoReposicao`    | `[x]`  | —                                                                |
+| 0     | 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica cobrança | `[x]`  | —                                                                |
+| 0     | 0.12 Cobertura automática do render do Dia       | `[x]`  | plano 2026-10-12 encerrado; frontend 360/360                     |
+| 1     | 1.1 Controle de pagamento / inadimplência        | `[x]`  | —                                                                |
+| 1     | 1.2 Relatório de faturamento exportável          | `[ ]`  | —                                                                |
+| 1     | 1.3 Observações por aula ou por aluno            | `[x]`  | —                                                                |
+| 1     | 1.4 Contato rápido via WhatsApp                  | `[ ]`  | —                                                                |
+| 1     | 1.5 Status de no-show / cancelamento             | `[ ]`  | pré-requisito da regra 5.8 (spec Finanças); recomendado após 3.1 |
+| 1     | 1.6 Lembrete de aniversário do aluno             | `[ ]`  | —                                                                |
+| 1     | 1.7 Filtro e busca na lista de alunos            | `[~]`  | —                                                                |
+| 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
+| 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[x]`  | —                                                                |
+| 1     | 1.10 Histórico de reposições no card do aluno    | `[x]`  | gestão contextual; sem aba dedicada na V1                         |
+| 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[x]`  | T06 + correções A1–A4/R1 validados localmente em 2026-10-13 |
+| 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
+| 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
+| 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
+| 2     | 2.4 Sync de leitura no boot sobre cache (B2)     | `[x]`  | PR #70 na main; uso normal aprovado pelo dono; limites de cobertura registrados |
+| 3     | 3.1 Ampliar cobertura das regras financeiras     | `[ ]`  | —                                                                |
+| 3     | 3.2 Rodar o backend localmente                   | `[x]`  | —                                                                |
+| 3     | 3.3 Frontend local falando com backend local     | `[x]`  | 3.2                                                              |
+| 3     | 3.4 Banco de desenvolvimento separado            | `[x]`  | 3.2                                                              |
+| 3     | 3.5 Suíte de testes de frontend                   | `[x]`  | —                                                                |
+| 4     | 4.1 Cobrança automatizada                        | `[ ]`  | 3.1 a 3.4                                                        |
+| 4     | 4.2 Notificações automáticas                     | `[ ]`  | —                                                                |
+| 4     | 4.3 Portal/app do aluno                          | `[ ]`  | —                                                                |
+| 4     | 4.4 Avaliação física / anamnese                  | `[ ]`  | —                                                                |
+| 4     | 4.5 Multi-personal / gestão de equipe            | `[ ]`  | —                                                                |
+| 4     | 4.6 Auditoria / histórico de alterações          | `[ ]`  | —                                                                |
+| 4     | 4.7 Precisão financeira avançada                 | `[x]`  | —                                                                |
+| 4     | 4.8 Contrato / assinatura digital                | `[ ]`  | —                                                                |
+| 4     | 4.9 Sessão própria do backend (Opção 1)          | `[ ]`  | —                                                                |
+| 5     | 5.1 Formulários e diálogos mobile (Etapa 1)      | `[x]`  | —                                                                |
+| 5     | 5.2 Legibilidade e área de toque (Etapa 2)       | `[x]`  | 5.1                                                               |
+| 5     | 5.3 Navegação e topo operacional (Etapa 3)       | `[x]`  | —                                                                |
+| 5     | 5.4 Densidade de cards (Etapa 4)                 | `[x]`  | —                                                                |
+| 5     | 5.5 Eventos simultâneos na agenda diária (Etapa 5) | `[x]`  | —                                                             |
+| 5     | 5.6 Erros e toasts (Etapa 6)                     | `[x]`  | —                                                                |
+| 5     | 5.7 Consistência e acessibilidade final (Etapa 7) | `[x]`  | 5.1 a 5.6                                                        |
+| 5     | 5.8 Estados de carregamento: skeletons + cache   | `[x]`  | 5.6 (validado 2026-10-01)                                        |
+| 5     | 5.9 Alvos de toque do cabeçalho/toolbar (resíduo 4.5) | `[ ]`  | —                                                                |
+
+---
+
+## Renumeração de 2026-08-26 — mapa de equivalência
+
+Havia **dois grupos numerados como 2** (Google Calendar e Coisas complexas), o que tornava ambígua qualquer referência a "Grupo 2". Os complexos passaram a ser o **Grupo 4** e os itens de sincronização foram renumerados em sequência.
+
+| Número antigo | Número novo | Item                                         |
+| ------------- | ----------- | -------------------------------------------- |
+| 2.10          | **2.2**     | Consolidação da sincronização tripla no boot |
+| 2.11          | **2.3**     | Alargamento da janela do full sync           |
+| 2.2           | **4.1**     | Cobrança automatizada                        |
+| 2.3           | **4.2**     | Notificações automáticas                     |
+| 2.4           | **4.3**     | Portal/app do aluno                          |
+| 2.5           | **4.4**     | Avaliação física / anamnese                  |
+| 2.6           | **4.5**     | Multi-personal / gestão de equipe            |
+| 2.7           | **4.6**     | Auditoria / histórico de alterações          |
+| 2.8           | **4.7**     | Precisão financeira avançada                 |
+| 2.9           | **4.8**     | Contrato / assinatura digital                |
+
+Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
+
+⚠️ **Atenção ao validar specs**: nem toda referência a "2.x" é item de roadmap. As specs têm numeração própria de seções — por exemplo, "seção 2.4 da spec" (módulo isomórfico) e "regra 5.8" são seções de `specs/financas-ciclo-cobranca.md`, não itens deste documento. Só renumere referências que apontem explicitamente para itens do roadmap.
+
+---
+
+## 🔧 Grupo 0 — Débitos técnicos mapeados (entrar junto com a próxima feature)
+
+> Itens herdados da entrega de Finanças. Nenhum é urgente: o app está funcionando em produção com todos eles. A ideia é resolvê-los "de carona" na próxima feature que tocar as mesmas áreas, evitando uma rodada de manutenção isolada.
+> Detalhamento técnico completo na seção 12 de [`specs/financas-ciclo-cobranca.md`](../../specs/financas-ciclo-cobranca.md).
+
+### [x] 0.1 Bug: bloco "Ver ciclos anteriores" fecha sozinho no re-render — **RESOLVIDO**
+
+- **O que foi entregue**: o estado de expansão do histórico foi persistido no `STATE` e reaplicado em `renderizarCard()`, com o listener de `toggle` gravando abertura e fechamento em fase de captura. O mesmo padrão foi estendido ao extrato do ciclo.
+- **Por que importa**: o defeito era visual e fazia o bloco fechar ao re-renderizar a tela, mesmo com os dados já carregados.
+- **Onde mexer**: `assets/js/view-financas.js` (arquivo único). Não requer backend.
+- **Esforço**: Muito baixo (arquivo único, correção focada).
+
+---
+
+### [x] 0.2 Consolidar módulos compartilhados em `backend/shared/` — **CONCLUÍDO**
+
+- **O que foi entregue**: os dois módulos compartilhados saíram de `assets/js/shared/` e agora moram em `backend/shared/`, via `git mv` (histórico preservado). Nenhum `require` do backend sobe mais para fora da pasta `backend/`:
+  - produção: `require("../../shared/recurrence-helpers")` em `financasService.js` e `gcalSyncService.js`;
+  - testes: caminhos atualizados em `gcal-sync.test.js`, `reposicao-c4-regressao.test.js`, `agenda-conflitos.test.js`, `gcal-duplicata-fix.test.js` e `gcal-persistencia-criacao-agendamento.test.js`.
+- **Como o frontend consome**: tag `<script src="backend/shared/...">` no `index.html` (mesma posição relativa de antes). Funciona porque o projeto Vercel da webpage tem _Root Directory_ na raiz do repositório e o `.vercelignore` não exclui `backend/`. `sw.js` não precarrega os módulos, então não há cache a invalidar.
+- **O que acompanhou**: suíte de frontend atualizada (`recurrence-helpers.test.js`, `calendario-engine.test.js`, o par de carga do `index-html-ordem.test.js`) e a mensagem de erro de `calendario-engine.js`. A regra de que "mudança na estrutura exige validar os dois deploys" continua valendo — registrar essa ressalva no deploy correspondente.
+- **Validação**: suítes verdes nos dois lados e carga da ordem do `index.html` conferida; a validação em produção segue no deploy dessa mudança (com `backend/shared/` servido estático pelo projeto da webpage).
+- **Esforço**: Baixo–Médio.
+- **Dependência desbloqueada**: item 0.9.
+
+---
+
+### [x] 0.3 Limpar CSS órfão da visão mensal removida — **CONCLUÍDO**
+
+- **O que foi entregue**: limpeza dos blocos da visão mensal removida e do KPI mensal em `assets/css/style.css`, com **20 seletores removidos** (23 ocorrências no arquivo, incluindo sobrescritas em `@media`) e **152 linhas excluídas**.
+- **Verificação crítica**: o grupo `.objetivo-*` foi verificado e **mantido** por uso dinâmico em `assets/js/agenda-card-template.js` (`classes.push(\`objetivo-\${normalizarObjetivo(objetivo)}\`)`) e`assets/js/view-alunos.js`(`class="objetivo-\${objetivoClass}"`).
+- **Veredito de risco (mantidos por segurança)**: `#tela-calendario` e `#containerCalendarioDia` foram investigados e **mantidos**; sem evidência suficiente para provar que estão mortos sem validação visual de dia/semana.
+- **Candidatos fora do escopo 0.3**: mantidos para rodada dedicada (não incluídos nesta limpeza).
+
+---
+
+### [x] 0.4 Organização da documentação — **CONCLUÍDO**
+
+- **O que foi feito**: Documentação reunida em `docs/` (`docs/README.md` como índice, `docs/archive/roadmaps/roadmap-v1.md`, `docs/specs/`), com os arquivos movidos via `git mv` para preservar histórico. A árvore de arquivos do `README.md` da raiz foi corrigida nos dois lados (frontend e backend). A linha `.agents/` foi removida do `.gitignore`, passando a versionar os skills de forma coerente com o que já estava rastreado. Foi criado `.github/copilot-instructions.md` com as regras permanentes para agentes.
+- **Sobre `graphify-out/`**: já estava no `.gitignore` desde sempre — apareceu em varreduras anteriores apenas porque o pacote de análise foi montado por pasta, não por `git archive`. A pasta foi removida localmente por ora; a ferramenta pode voltar quando houver um uso definido. Artefato gerado nunca é fonte de verdade nem deve ser editado à mão.
+- **Manutenção contínua**: quando uma feature mudar a estrutura de arquivos, atualizar a árvore do README no mesmo commit. Documentação defasada foi o que fez este roadmap começar errado uma vez.
+
+---
+
+### [x] 0.5 Collection `Reposicao` + modelo de competência — **EM PRODUÇÃO**
+
+- **Status real**: implementação mergeada na `main` e validada em produção; backend e frontend em produção.
+- **O que já existe**: collection `Reposicao`, integração no financeiro por competência, fluxo de envio/reagendamento com vínculo `reposicaoId` / `agendamentoReposicaoId`.
+- **Pendências**: a seção 9.5 do card do aluno continua pendente (contador de reposições no card), e a caixinha de avisos de reposição a vencer ficou no item 0.8.
+- **Esforço restante**: baixo (fechamento do card do aluno e documentação de rollout), sem mudança conceitual de regra.
+
+---
+
+### [x] 0.6 Extrato do ciclo — **ENTREGUE**
+
+- **O que foi entregue**: cada ciclo exibe o que foi cobrado, o que foi coberto por reposição e o que ficou pendente/expirado, com os 11 tipos de linha documentados em `docs/specs/reposicoes-e-competencia.md`.
+- **Por que importa**: dá previsibilidade e auditoria para o PT, sem depender de memória nem de contagem ad hoc na agenda.
+- **Onde mexer**: `backend/src/services/financasService.js`, `assets/js/view-financas.js` e a spec complementar de reposições.
+- **Esforço**: Médio.
+
+---
+
+### [x] 0.7 Prazo de validade + expiração lazy — **ENTREGUE**
+
+- **O que foi entregue**: a expiração agora é aplicada de forma **lazy** na leitura, com persistência via `findOneAndUpdate` quando o status muda; não há job em background.
+- **Por que importa**: evita que a fila fique viva indefinidamente e deixa a regra de validade explícita para o usuário e para o cálculo de cobrança.
+- **Onde mexer**: `backend/src/services/reposicaoService.js`, `backend/src/controllers/reposicaoController.js` e a spec complementar.
+- **Implementação atual**: `validoAte` é derivado no servidor por `calcularPrazoReposicao`, com piso de 7 dias (`PRAZO_MINIMO_REPOSICAO_DIAS`), e o controller rejeita qualquer valor vindo do cliente. O status passa para `expirada` quando a leitura detecta que a data já venceu.
+- **Cobertura**: há testes automatizados em `backend/test/reposicao-prazo.test.js` e `backend/test/reposicao-extrato-prazo.test.js` cobrindo a regra de expiração e o comportamento de prazo.
+- **Última ponta solta fechada**: a correção desta rodada também aplica a expiração lazy no `GET /api/reposicoes/:id`, deixando a mesma regra consistente entre listagem e leitura individual.
+- **Esforço**: Médio.
+
+---
+
+### [x] 0.8 Avisos in-app de reposição a vencer — **ENTREGUE**
+
+- **O que foi entregue**: os dois avisos prometidos aqui, usando `validoAte` que o boot já traz em memória (`storage.js`):
+  - **Card do aluno** (`view-alunos.js`): terceira caixinha `montarCaixinhaReposicaoAluno` no grid `auto-fit` — conta as pendentes do aluno e mostra o prazo da próxima validade, com a classe `aluno-card-indicador--alerta` (laranja) quando falta ≤ 5 dias. Fica oculta quando não há pendência com prazo.
+  - **Painel de pendentes** (`modal-acao-slot.js`, `renderizarListaReposicoes`): cada item ganhou a linha "Vence até <data> (<quando>)", destacada e com ⚠️ quando falta ≤ 5 dias.
+- **Regra única**: o limite de 5 dias (`DIAS_ALERTA_REPOSICAO`), o cálculo de dias (`diasAteDataISO`) e o resumo por aluno (`resumoReposicoesAluno`) moram em `backend/shared/reposicao-flow-helpers.js`, consumido pelas duas telas — sem cópias divergentes (regra 4.3).
+- **Decisão de produto registrada**: "a vencer" = faltam **5 dias** ou menos da validade; alerta também cobre prazo já vencido (status ainda `pendente`). Definição do dono, em 2026-09-18.
+- **Cobertura**: `tests-frontend/reposicao-flow.test.js` (8 testes) cobre o módulo compartilhado, **provado por mutação** (limite 5→4 faz a suíte falhar). Telas seguem sem cobertura automatizada — a validação de UI continua manual.
+- **O que não mudou**: nenhuma API; `contarReposicoesPorAluno` continua fora de uso; o botão Reagendar do painel se mantém como está.
+- **Esforço**: Baixo–Médio.
+
+---
+
+### [x] 0.9 Expor `calcularPrazoReposicao` em módulo compartilhado — **ENTREGUE**
+
+- **O que foi entregue**: o cálculo de prazo de reposição e as regras puras de ciclo que ele consome saíram do `financasService.js` para o módulo compartilhado `backend/shared/calculo-ciclo.js` (UMD, sem `window`/DOM, padrão dos demais compartilhados do item 0.2):
+  - `calcularPrazoReposicao`, `calcularCicloVigente`, a constante `PRAZO_MINIMO_REPOSICAO_DIAS` (piso de 7 dias) e os helpers de data que o conjunto usa (`normalizarDateOnly`, `toISODateOnly`, `inicioDoMes`, `fimDoMes`, `diaSeguinte`, `ajustarDiaParaMesValido`, `dataEmJanela`).
+- **Sem duplicação**: `financasService.js` agora importa o conjunto do módulo e reexporta `calcularPrazoReposicao` e `calcularCicloVigente` para os testes e o controller (`reposicaoController.js`) sem tocar — a identidade por referência foi conferida (o service reexporta a mesma função). Não há segunda declaração viva em `backend/`.
+- **Como foi garantido**: extração verificada byte a byte contra a versão original — as 9 funções vieram idênticas (uma transcrição errada do cálculo do ano seguinte em dezembro foi pega pelo diff e corrigida antes de rodar a suíte). Suíte do backend verde nos dois momentos (linha de base 218 → pós-mudança 218, 0 falhas).
+- **Prova de mutação**: corromper o piso no módulo (7→8 dias) faz `reposicao-prazo.test.js` falhar no caso "exatamente 7 dias não aplica piso" — a suíte executa o código no local novo, não um re-export morto.
+- **Dependência**: item 0.2 — resolvido na mesma rodada (o módulo foi criado dentro de `backend/shared/`).
+- **Esforço**: Médio.
+
+---
+
+### [x] 0.10 Deduplicação de `calcularPrazoReposicao`
+
+- **O que foi entregue**: a primeira declaração (código morto) foi removida; a ativa foi preservada.
+- **Sem mudança de comportamento**: o guard de ciclo não configurado que existia só na versão morta já era coberto por `calcularCicloVigente`, que devolve `null` para aluno sem `fechamentoMesCheio` e sem `diaVencimento`.
+- **Suíte**: a suíte permaneceu em 86 testes, 0 falhas.
+
+---
+
+### [x] 0.11 Bug: reenviar aula já cobrada por reposição anterior duplica a cobrança
+
+- **Já aconteceu em produção** — não é risco teórico. Exigia fix de código **e** correção dos registros `Reposicao` duplicados já gravados no banco.
+- **Dados existentes**: correção manual **concluída pelo dono em 2026-09-23**, separadamente do fix de código. Essa operação não foi executada pelo agente. Com ela, o item fica integralmente fechado — código e dados.
+- **Diagnóstico completo e plano de correção**: [`diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md`](../diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md).
+- **Comportamento correto, para não confundir com o item errado**: uma aula pode ser enviada para reposição e reenviada quantas vezes for preciso enquanto ainda estiver dentro do prazo de validade — isso é fluxo normal, não bug. O botão "Enviar para reposição" **não deve** ser ocultado nem desabilitado de forma geral.
+- **O que é o bug de verdade**: ao reagendar uma reposição (`formReagendarAula`), o compromisso criado recebe `isReposicao: true` e `reposicaoId` apontando para o registro original (`assets/js/modal-acao-slot.js`). Se essa aula for enviada para reposição de novo e a prof escolher **"Cobrar neste ciclo"** no modal de escolha, `enviarParaReposicao` cria um **segundo registro `Reposicao` independente**, sem vínculo com o primeiro. Se o registro **original** já estava com `cobravel: true` (ou seja, já contribuiu para o cálculo de algum ciclo), agora dois registros cobráveis representam a mesma aula de origem — ambos podem entrar na parcela (B) de `calcularAulasContadasDoCiclo`, dobrando a cobrança. Quando o original é `cobravel: false` (ainda não foi cobrado), reenviar não duplica nada — é o caso comum e deve continuar sem nenhum aviso.
+- **Correção escolhida**: em vez de criar um registro novo do zero, o modal de escolha "Cobrar neste ciclo / Cobrar na reposição" passa a **reabrir o mesmo registro `Reposicao` de origem** quando a aula reenviada tiver `reposicaoId` — volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, e registra o evento no array `historico` do próprio documento. Decisão explícita do dono do repo: isso é preferível a criar-registro-novo-com-aviso porque **mantém o histórico de quantas vezes aquela reposição já foi remarcada em um único documento**, em vez de espalhar em vários registros desconectados.
+- **Implementação concluída**: `POST /api/reposicoes/:id/reabrir` reabre o documento original, volta para `status: 'pendente'`, zera `agendamentoReposicaoId`, registra `reaberta_por_reenvio` e preserva a decisão de cobrança, `validoAte` e `cicloCobrancaResolvido`.
+- **Modal**: compromissos com `reposicaoId` consultam a reposição original e usam uma única ação de reabertura; a opção "Cobrar neste ciclo" fica oculta para evitar nova cobrança.
+- **Testes**: suíte backend completa em 224/224; regressões específicas cobrem a operação atômica, preservação do prazo e ausência de novo documento. A suíte frontend continua com a dependência pré-existente `jsdom` ausente no ambiente.
+
+---
+
+### [x] 0.12 Cobertura automatizada do render do Dia
+
+- **O que é**: testes automatizados para a camada de render da visão do Dia (`view-home.js` / `agenda-card-template.js`), que até 2026-10-12 seguia sem cobertura automatizada — a validação era manual em browser, como previsto na seção 10 das instruções do repositório.
+- **Como a lacuna apareceu**: a Etapa 5 (achado 4.12 — eventos simultâneos) mudou o desenhamento das bandas sobrepostas em agosto/setembro de 2026 (colunas para duplas, linhas para 3+, fundo nivelado e grade esticada). Enquanto a suíte de frontend não cobre o render, a nova regra de bandas (banda ≥ 3 vira linhas; o par de início igual fica em colunas; o dedup de componentes da banda) só pode ser validada de forma manual e visual, nos viewports de referência 433/390/320.
+- **Lacunas vizinhas** que cabem no mesmo item, se a cobertura for construída por lá: `agenda-conflitos.js` e os modais (ambos já listados no 3.1/3.5).
+- **Por que importa**: o motor `calcularColisoes` é sensível (área §7 das instruções) e alimenta agenda e financeiro; um bug de layout que não muda geometria do motor pode passar despercebido sem rede de proteção na camada de desenhamento.
+- **Caminho**: o `jsdom` já está instalado em `tests-frontend/` como `devDependency` e já é usado por testes de DOM existentes; o setup `tests-frontend/setup/carregar-frontend.js` resolve o carregamento dos scripts via contexto `vm`.
+- **Plano (ampliado em 2026-10-12)**: [`plans/2026-10-12-plan-cobertura-render-conflitos-modais.md`](../plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) — inclui as lacunas vizinhas (`agenda-conflitos.js` e os modais) por decisão do dono; branch `feat/cobertura-render-conflitos-modais`. Inventário de abertura: conflitos e modais já têm cobertura parcial na suíte de backend (harnesses `vm` de GCal); o render do Dia não tem nenhuma execução automatizada.
+- **Encerrado em 2026-10-12**: plano executado de ponta a ponta (T01–T08) — render do Dia (fumaça, regras de banda e bordas), lacunas de `agenda-conflitos.js` e fluxos principais + caminho de erro/validação dos dois modais cobertos na suíte de frontend; 12 mutações provadas com restauração conferida; frontend 337 → **360/360** e backend **232/232** (medidos em 2026-10-12); nenhum arquivo de produção alterado. Residuais declarados na §10/§13 do plano (CSS/layout real, animações, modo Semana, telas `view-*`, GCal real/backend, split/reposição de modal, escolha inicial de tipo/FAB e recorrência completa).
+- **Esforço**: Baixo–Médio (a infraestrutura de carregamento já existe e o `jsdom` já é usado por outros testes; falta a cobertura do render do Dia).
+- **Referências**: [`2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md`](../reports/2026-09-21-fix-duplicata-cobranca-reenvio-reposicao.md) e seção 5.3/6.4/9.3 da spec de reposições.
+
+---
+
+### ✅ Não é débito: custo da rota de consistência de agenda
+
+`GET /api/alunos/consistencia-agenda` faz 2 consultas de custo **fixo** (alunos + agendamentos) e resolve o resto em memória — não escala por aluno. Chegou a ser levantada como possível dívida, mas foi **reclassificada como comportamento aceito** (seção 10.1 da spec). Não otimizar preventivamente. Se um dia a aba Alunos ficar lenta, o ponto a investigar é o volume de dados trafegado (filtrar `tipo`/`frequencia` já na consulta, ou unificar com a rota de Finanças), não a lógica do indicador.
+
+---
+
+## 🟢 Grupo 1 — Coisas fáceis de fazer (baixo esforço, alto ganho percebido)
+
+### [x] 1.1 Controle de pagamento / inadimplência — **ENTREGUE**
+
+- **O que foi entregue**: Muito além do escopo mínimo previsto aqui. Em vez do controle por mês calendário, foi implementado um modelo de **ciclo de cobrança configurável por aluno** (vencimento móvel, ex.: todo dia 17), com registro de pagamento persistente, status automático (em aberto / atrasado / pago), ajuste manual por ciclo (positivo ou negativo) e histórico de ciclos anteriores.
+- **Onde ficou**: Nova collection `backend/src/models/CicloFinanceiro.js`, serviço `backend/src/services/financasService.js`, aba dedicada "Finanças" (`assets/js/view-financas.js`) e badge no card do aluno em `view-alunos.js`.
+- **Observação**: o campo `historicoPagamentos` do `Aluno.js` — que este item propunha destravar — foi **aposentado** (marcado como `DEPRECATED`) em favor da nova collection. Não usar em lógica nova.
+- **Referência**: [`specs/financas-ciclo-cobranca.md`](../../specs/financas-ciclo-cobranca.md).
+
+---
+
+### [ ] 1.2 Relatório de faturamento exportável (PDF/Excel)
+
+- **O que é**: Botão "Gerar relatório do período" com faturamento por aluno, total, aulas cobradas e status de pagamento.
+- **Por que importa**: Prestar contas ao contador e ter controle pessoal do que foi efetivamente recebido no período. Hoje a informação existe na tela de Finanças, mas não sai do app.
+- **Onde mexer**: ⚠️ _Base técnica revisada._ As funções que este item citava (`exportarDados()` em `utils-ui.js` e os cálculos de `kpiService.js`) **foram removidas**. A fonte correta agora é a collection `CicloFinanceiro` e o serviço `backend/src/services/financasService.js` — os valores já vêm calculados e congelados por ciclo, o que na prática **simplifica** este item: é quase só formatação e exportação, sem recalcular nada.
+- **Sugestão de escopo mínimo (V1)**: Exportar CSV/Excel dos ciclos de um intervalo de datas, com colunas: aluno, período do ciclo, método de cobrança, aulas cobradas, valor, status, data de pagamento.
+- **Ponto de atenção**: decidir se o relatório exporta o **ciclo vigente** também (que ainda pode mudar enquanto não estiver pago) ou apenas ciclos fechados/pagos. Evitar dependência nova: CSV se resolve sem biblioteca.
+- **Esforço**: Baixo (a lógica de cálculo já está pronta e persistida; falta só a camada de exportação).
+
+---
+
+### [x] 1.3 Campo de observações/anotações por aula ou por aluno — **ENTREGUE**
+
+- **O que foi entregue**: textarea opcional no cadastro/edição do aluno, persistência no campo `observacoes` e exibição segura no card quando preenchida. Conteúdo livre é escapado antes de entrar no HTML.
+- **Por que importa**: Hoje não existe nenhum campo de anotação livre nem no modelo `Aluno.js` nem no `Agendamento.js` (que usam `{ strict: false }`, mas nenhuma tela expõe esse campo).
+- **Onde mexer**: Adicionar campo `observacoes` no formulário de `view-alunos.js` e/ou `modal-acao-slot.js` (edição de agendamento). O `{ strict: false }` do schema já aceita esse campo sem migração — mas atenção: por isso mesmo, um typo no nome do campo grava silenciosamente e não gera erro.
+- **Nota**: não confundir com `observacaoAjuste` do `CicloFinanceiro`, que é específico do ajuste manual de um ciclo.
+- **Validação**: testes frontend cobrem exibição escapada, carregamento na edição e persistência ao salvar.
+- **Esforço**: Baixo.
+
+---
+
+### [ ] 1.4 Botão de contato rápido via WhatsApp
+
+- **O que é**: Ícone/botão na ficha do aluno que abre uma conversa de WhatsApp direto com o número cadastrado.
+- **Por que importa**: O campo `telefone` já existe no cadastro (`AlunoSchema` em `Aluno.js`), mas não há nenhum atalho de contato — hoje o PT precisa copiar o número manualmente.
+- **Onde mexer**: `view-alunos.js`, adicionando um link `https://wa.me/<telefone>` na renderização do card do aluno.
+- **Ideia de sinergia**: combinado com o status de cobrança do card (que já existe hoje), vira um atalho natural de "cobrar aluno atrasado".
+- **Esforço**: Muito baixo (link estático, sem mudança de backend).
+
+---
+
+### [ ] 1.5 Status de "não compareceu" (no-show) / cancelamento pelo aluno
+
+- **O que é**: Além do status `confirmado` (default atual em `Agendamento.js`), adicionar estados como `cancelado_pelo_aluno` e `faltou`, para diferenciar de cancelamento feito pelo próprio PT.
+- **Por que importa**: Sem diferenciar falta do aluno, fica difícil cobrar reposição de forma justa ou identificar alunos com muita falta.
+- **⚠️ Dependência crítica do financeiro**: este item é **pré-requisito** para evoluir a regra 5.8 da spec de Finanças. Quando existir, a escolha cobrável/não cobrável pode passar a ser derivada de _quem cancelou_. Hoje o financeiro conta simplesmente "o que existe na agenda" — se a aula for excluída de um ciclo não pago, ela some da cobrança. Quando existir status de presença, a contagem deve passar a considerar _realizada / falta cobrável / cancelada sem cobrança_, em vez da mera existência do compromisso. Registrado como revisão futura nas seções 5.8 e 8 da spec.
+- **Onde mexer**: `backend/src/models/Agendamento.js` (ajustar enum/valores aceitos), `modal-acao-slot.js` (ações de cancelar/faltou) e, em seguida, `backend/src/services/financasService.js` (regra de contagem). ⚠️ A antiga `contarReposicoesPorAluno` de `kpiService.js`, que este item citava, **não existe mais**.
+- **Recomendação**: por mexer em valor cobrado, é o candidato natural para entrar **depois** do item 3.1 (testes). Assim a mudança na contagem entra com rede.
+- **Esforço**: Médio (a parte de UI é simples; a integração com o financeiro exige cuidado).
+
+---
+
+### [ ] 1.6 Lembrete de aniversário do aluno
+
+- **O que é**: Campo de data de nascimento no cadastro + card no dashboard "aniversariantes da semana/mês".
+- **Por que importa**: É um toque de relacionamento simples que ajuda na retenção do aluno, sem exigir integração externa.
+- **Onde mexer**: Novo campo `dataNascimento` em `Aluno.js` (schema `{ strict: false }` aceita sem migração forçada) + widget novo em `view-home.js`.
+- **Esforço**: Baixo.
+
+---
+
+### [~] 1.7 Filtro e busca na lista de alunos — **parcialmente entregue**
+
+- **Já existe hoje**: filtros por **status** (ativo/inativo) e por **objetivo** (Personal Trainer / Consultoria Online) em `view-alunos.js`, com dirty-check de renderização.
+- **O que falta**: **busca por nome** (campo de texto) e, se fizer sentido, filtro por dia da semana em que o aluno treina.
+- **Onde mexer**: `view-alunos.js` — os dados já estão todos em memória (`window.alunos`), então é filtragem client-side. Atenção: a chave de dirty-check (`_ultimaChaveRenderAlunos`) precisa incluir o novo termo de busca, senão a lista não re-renderiza ao digitar.
+- **Esforço**: Muito baixo.
+
+---
+
+### [→] 1.8 Visão de "aulas a repor" no card do aluno
+
+- **Consolidado no item 0.8.**
+
+---
+
+### [x] 1.9 Pagar/ajustar ciclo anterior (do histórico) — **ENTREGUE**
+
+- **O que foi entregue**: ciclos históricos sem `dataPagamento`, tanto `atrasado` quanto `em_aberto`, agora exibem "Marcar como pago" e "Editar ajuste" dentro de "Ver ciclos anteriores". Ciclos pagos permanecem somente leitura.
+- **Data de pagamento**: o formulário inicia com a data atual, mas permite alterar para registrar a data real de recebimento, inclusive fora da janela original do ciclo.
+- **Reuso seguro**: os modais e rotas existentes por `cicloId` foram reutilizados. Depois de uma escrita confirmada, a UI recarrega somente o histórico aberto daquele aluno, preservando extrato, status e ajuste calculados pelo backend.
+- **Ciclo encurtado**: segue o ajuste manual normal, sem confirmação adicional; o período exibido já representa a janela efetiva.
+- **Cobertura**: testes de serviço para pagamento/ajuste histórico, escopo por `ownerEmail` e bloqueio de ciclo pago; teste de frontend do histórico não pago/pago, com prova por mutação. Suítes finais: backend 222/222 e frontend 47/47.
+- **Referência**: [`specs/financas-ciclo-cobranca.md`](../../specs/financas-ciclo-cobranca.md), seção 6.3.
+
+---
+
+### [x] 1.10 Histórico de reposições no card do aluno — **ENTREGUE**
+
+- **O que é**: um botão permanente `Reposições` em todos os cards de `view-alunos.js`, inclusive quando o aluno não tem registros. Ele mostra o resumo de pendências/urgência e abre um modal com o histórico completo daquele aluno, agrupado em pendentes, agendadas, realizadas e expiradas.
+- **Por que importa**: o Painel de Pendentes da Home foi removido em 2026-09-18 (`docs/archive/reports/2026-09-18-chore-remove-painel-pendentes.md`) e a PT ficou sem um caminho navegável para agir sobre pendências. A gestão volta no contexto em que ela já encontra o aluno, sem criar uma quarta aba.
+- **Convivência com o card atual**: o botão é um controle semântico próprio e interrompe a propagação do clique. Clicar na área livre continua abrindo a edição do aluno; o toggle Ativo/Inativo continua independente. Financeiro e Consistência não mudam.
+- **Reagendamento das pendentes**: no modal, cada `pendente` de aluno ativo oferece `Reagendar`, reaproveitando `window.iniciarReagendamentoReposicao` (`assets/js/modal-acao-slot.js`). O histórico fecha antes de abrir o modal existente, evitando empilhar modais; após sucesso, atualiza a badge e reabre o mesmo histórico.
+- **Ajuste necessário no modal reaproveitado**: fora da Home, `modalReagendarAula` calcula a próxima ocorrência a partir de hoje, e não de `window.dataSelecionada` ausente ou antiga. Não criar segundo modal de reagendamento.
+- **Dados e escopo V1**: o modal consulta todos os status via `GET /api/reposicoes?alunoId=...`; `aulasParaRepor` continua exclusivamente com pendências. Um cache separado da lista completa alimenta os resumos dos cards. Não inclui visão global, busca, filtro por período/status/a vencer, criação, cancelamento ou mudança de regra financeira.
+- **Onde mexer**: `assets/js/view-alunos.js`, `index.html` (modal de histórico), `assets/css/style.css`, `assets/js/modal-acao-slot.js` e, se necessário para o cache separado, `assets/js/storage.js`. A API atual já atende a leitura; não há mudança de backend prevista.
+- **Referência**: [`specs/reposicoes-e-competencia.md`](../../specs/reposicoes-e-competencia.md), seção 9.4.
+- **Correção de carregamento (T07/D7=A, 2026-10-14)**: resumo nome + “Atualizando…” preparado antes de abrir/focar, três skeletons e anúncio existente; contagens/vazio só após confirmação, erro sem falso vazio. Frontend medido **399→403**, 0 falhas; M31–M34 provadas/restauradas, mock nos três viewports sem overflow. GET/cache/grupos e regras preservados.
+- **Filtro `alunoId` do mock corrigido (commit `43b9e29`)**: GET específico retorna somente as reposições do aluno; sem parâmetro mantém a lista completa. Três testes provaram filtro e ausência de duplicação no cache, e falharam ao reverter a correção. Frontend medido **406→409**, zero falhas.
+- **Aceite**: o dono relata validação mobile bem-sucedida em produção por deploy específico desta branch. T01–T07 e F1–F7 estão concluídos; PR/integração à `main` continuam com o dono. [Plano de fluxos UX, §12–§15](../plans/2026-10-13-plan-melhorias-fluxos-ux.md).
+- **Complemento visual solicitado (2026-10-14)**: barra lateral do corpo do histórico oculta com o padrão CSS dos demais modais, preservando rolagem interna e acesso por teclado à última seção. Mock validado nos três viewports; frontend **403/403 → 403/403**, zero falhas. Ajuste localizado registrado no mesmo plano, sem mudança de regra ou cache.
+- **Esforço**: Médio.
+- **Validação final**: validação visual do modal e do fluxo de reagendamento aprovada pelo dono em 2026-09-23; suítes frontend e backend verdes.
+
+---
+
+### [x] 1.11 Botão "Atualizar" na tela de Finanças
+
+- **Entregue em 2026-10-13** (T06/D6=A do plano de melhorias de fluxos UX): botão no cabeçalho com leitura forçada (`forcarRemoto`), bloqueio durante o voo e falha preservando o conteúdo visível; suíte frontend 388→391; mock validado (recuperação sem reload, sem escrita).
+- **Auditoria posterior (`9d75cb7`, 2026-10-13)**: suíte frontend 391/391, fluxo principal confirmado, porém cache vazio + falha mantém skeleton (A1) e formulário aberto durante o voo mantém botão bloqueado após descarte (A2). Alvo de toque de 40 px (A3) e foco perdido após atualização por teclado (A4) também registrados. Nenhuma correção nesta revisão. Evidências e risco preexistente de integração com pendência (R1) no [plano vivo, §12/§13](../plans/2026-10-13-plan-melhorias-fluxos-ux.md).
+- **Correções da auditoria (2026-10-13)**: A1–A4 resolvidos e R1 tratado por decisão explícita do dono: botão bloqueado enquanto houver intenção não confirmada, com orientação de recuperação; fluxo financeiro ordinário permanece preexistente. Suíte **391→399**, 0 falhas; M24–M30 provadas/restauradas; mock confirmou vazio sem skeleton, liberação após fechar formulário, alvo de 44 px, foco sem roubo e recuperação explícita. Contrato na [spec de Finanças §6.1.3](../../specs/financas-ciclo-cobranca.md). Concluído localmente; publicação e aceite real do dono não são prova desta rodada.
+- **O que é**: botão no cabeçalho de `assets/js/view-financas.js`, ao lado do rótulo de cache, que dispara `carregarFinancas({ forcarRemoto: true })` — a mesma função já usada após salvar pagamento/ajuste — ignorando o cache local e buscando o estado atual direto do backend.
+- **Feedback sem duplicidade (2026-10-14)**: skeletons são o único sinal da carga inicial; “Carregando...” junto ao botão aparece só no refresh manual, mantendo os cards em tela. Em Finanças, o aviso global e o toast genérico são suprimidos. Suíte frontend final **420/420**; mutações dos contratos de apresentação falharam como esperado e foram restauradas. O dono relata aceite mobile no deploy específico da branch.
+- **Escopo deliberadamente restrito**: apenas bypass de cache de leitura (`GET /api/financas`). **Não** é um botão de recálculo/criação manual de ciclo — a decisão #23 da spec (seção 7) já rejeita esse caso, porque o recálculo do ciclo vigente já é automático a cada leitura. Este item não reabre aquela decisão.
+- **Onde mexer**: `assets/js/view-financas.js` (`renderizarCabecalho`, `bindHandlers`, `atualizarCabecalhoCache`). Sem mudança de backend.
+- **Esforço**: Muito baixo.
+
+---
+
+## 🟡 Grupo 2 — Integração com Google Calendar e sincronização
+
+### [x] 2.1 Google Calendar (`RRULE` + `EXDATE` + renovação ativa do canal) — **ENTREGUE COM RESSALVA**
+
+- **O que foi entregue**: a série recorrente passou a ser publicada no Google como um evento pai com `recurrence` + `RRULE`, as exceções do app são convertidas em `EXDATE`, e a renovação ativa do canal webhook foi implementada para evitar a perda silenciosa de notificações.
+- **Por que importa**: remove a necessidade de janela de publicação, deixa a expansão de instâncias no Google e evita que o webhook morra silenciosamente quando o canal expira.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js`, `backend/src/controllers/gcalAuthController.js`, `assets/js/app-shell/bootstrap.js` e a spec `docs/specs/gcal-sync.md`.
+- **Histórico de correção (29/08/2026)**: uma auditoria do mês encontrou defeitos de sincronização (duplicata de série na edição, `EXDATE` do primeiro dia, `DTSTART` desalinhado do `BYDAY`, teto de pendência no lado errado, série truncada sem aulas, dia da semana sem acento e ordem invertida no `DELETE`). As rodadas A–H trataram esse conjunto; o estado final ficou registrado em [`specs/gcal-sync.md`](../../specs/gcal-sync.md) §9.
+- **Esforço**: Médio. O custo que ficou aberto continua sendo o gatilho automático no boot, porque a validação executada foi por clique manual do botão de renovação e não por observação isolada do bootstrap; isso foi registrado como ressalva da entrega, não como regressão funcional visível.
+- **Validação concluída**: em 31/08/2026, o botão manual de renovação do canal foi executado e a expiração avançou para a semana seguinte, comprovando a cadeia completa de encerramento do canal antigo, registro do novo e sincronização de recuperação. A ressalva fica no boot: o disparo automático não foi observado isoladamente, mas o caminho da renovação foi validado em produção.
+- **Referência**: [`specs/gcal-sync.md`](../../specs/gcal-sync.md).
+
+---
+
+### [ ] 2.2 Consolidação da sincronização tripla no boot
+
+> _Numerado como 2.10 até 2026-08-26._
+
+- **O que é**: unificar os três disparos independentes de sincronização que hoje existem no boot (`bootstrap`, `auth-change`, `visibilitychange`).
+- **Por que importa**: evita chamadas redundantes sem erro visível e deixa a sequência de sincronização previsível.
+- **Onde mexer**: `assets/js/app-shell/bootstrap.js`, listeners de autenticação e auto-refresh.
+- **Esforço**: Baixo–Médio.
+- **Nota de sequência**: o **2.4** (B2) está publicado e concluído, com limites de cobertura
+  registrados. A consolidação deste item deve incluir esse
+  ponto e as fronteiras de coordenação implementadas, sem refazer sua leitura segura;
+  manter o recorte de GCal conforme `specs/gcal-sync.md` §9.14.
+
+---
+
+### [ ] 2.3 Alargamento da janela do full sync
+
+> _Numerado como 2.11 até 2026-08-26._
+
+- **O que é**: ampliar a janela de rebusca do full sync além do atual `−1 mês a +2 meses` para cobrir mais casos de bloqueios externos fora da janela ativa.
+- **Por que importa**: reduz a chance de perda permanente de dados externos quando a collection foi apagada e o incremental não traz a linha de volta.
+- **Onde mexer**: `backend/src/services/gcalSyncService.js` em `listCalendarEvents` / `persistSyncResults`.
+- **Esforço**: Médio.
+
+---
+
+### [x] 2.4 Sync de leitura no boot sobre cache (B2 — stale-while-revalidate) — CONCLUÍDO
+
+> _Nasceu do 5.8: era o "caminho B2", deixado de fora na execução (2026-09-30).
+> [Plano vivo](../plans/2026-09-30-plan-b2-sync-boot.md) **revalidado em 2026-10-05**, com
+> decisões de recuperação e botão manual refinadas; **cartões A–C implementados/validados
+> localmente em 06/10**. **D1–D3 validados localmente**; B2 ligado
+> no código. **E1 entrega mock isolado com cache sintético/reload e controles**;
+> **E2 validado no mock**, com confirmação nativa/teclado/TalkBack não observados;
+> **E3 encerrou a entrega local** com controles novos frontend/backend verdes.
+> **Aceite do dono para PR registrado**: uso normal, app instalado e teclado aprovados
+> pelo relato. Recuperação nativa não exercitada; TalkBack não testado e não bloqueante
+> por sua decisão. **Publicado pelo PR #70**, merge `e3ffac8`; dono confirmou funcionamento
+> OK e teste após publicação. Item concluído, com esses limites de cobertura preservados.
+> B1 foi entregue; B2 só havia sido desenhado. O mesmo plano recebeu a execução e foi fechado._
+
+- **O que é**: revalidar em background o cache principal autorizado da conta, após exibição
+  imediata, com o rótulo "Sincronizando dados..." do 5.8. Cobrir as três telas iniciais
+  preservadas pela hash, não apenas Home. D3 liga coordenador após apresentação inicial;
+  carga principal já concluída pode atender B2. Finanças conserva seu próprio GET sem duplicar
+  leitura válida concluída/em voo por render B2.
+- **Por que importa**: reduzir dados antigos sem sobrescrever rascunhos/gravações ou expor
+  cache de outra conta. Tema do Grupo 2, vizinho da consolidação 2.2.
+- **Decisões de 05/10**: descartar caches sem dono, inclusive backup legado; preservar cache
+  identificado sem sessão válida **sem exibi-lo**; aceitar vazio válido da mesma conta;
+  falha em qualquer dataset do batch B2 preserva esse batch inteiro. B2 não dispara migração/CRUD frontend;
+  efeitos lazy dos GETs existentes no backend permanecem inalterados.
+- **Interação**: formulário/gravação descarta B2 e adia nova leitura até ficar livre; estado
+  local de gravação falha fica preservado e suspende B2 até resolução. Troca de conta
+  fecha/descarta rascunho anterior e avisa se havia edição. Botão manual durante B2 dá
+  feedback imediato e executa **seu próprio sync depois**. Falha real só retoma por novo
+  evento de sessão/conexão ou gatilho existente, não por fechar formulário. Sem polling;
+  dono/gerações protegem respostas tardias e indicadores.
+- **Refinamento aprovado (05/10)**: pendência tem saídas explícitas **Verificar no servidor**
+  e **Usar dados do servidor**, sem replay cego após timeout/falha parcial. Usar servidor
+  exige confirmação + leitura nova válida antes de abandonar intenção local; não desfaz
+  estado remoto. **Todo botão Sincronizar Dados passa a somente leitura**, sem migração,
+  reconciliação CRUD ou diff de snapshot antigo; salvar fica nas ações de edição.
+- **Execução proposta**: A — contratos nas specs e isolamento; B — leitura segura; C —
+  fronteiras de formulários/gravações e recuperação explícita; **D1 — hidratação/render
+  neutro**, **D2 — coordenador sem ligação**, **D3 — ligação/ativação**; E — mock seguro,
+  testes e aceite mobile. D1 hidrata local antes das três hashes e atualiza sem reinicializar,
+  compartilhando só voo complementar passivo compatível; manual/recuperação exigem leitura
+  nova. D2 entrega coordenador inerte, cota por contexto, retomadas por eventos/recibos e
+  rótulo por voo; falha espera conexão/sessão, sem retry por fechar formulário. Manual
+  aguarda complementos e faz batch próprio. Frontend D2 medido **226→256**, zero falhas;
+  D3 liga após apresentação, observa login cedo e serializa retorno à aba; financeiro
+  válido/vazio concluído pode atender complemento B2, nunca o manual. Frontend D3 medido
+  **256→288**, zero falhas. E foi dividido: E1 mock seguro, E2 experiência integrada,
+  E3 suites/fechamento. E1 entrega sandbox antecipado sem acessar caches reais, cenários
+  B2 persistentes só em envelope sintético, sessão A/B, rede/abort/retenção/contadores.
+  Frontend E1 medido **288→318**; E2 medido **318→321**, zero falhas. E2 validou
+  atualização/erro/vazio, edição/manual, recuperação/reload e stress mobile; corrigiu
+  apresentação do snapshot pendente em Home/Alunos e encurtou mensagens com aprovação.
+  Confirmação nativa permanece manual (automação controlou `confirm` apenas no mock).
+  E3 mediu novamente **frontend 321/321 e backend 232/232**, zero falhas, cancelados ou
+  ignorados; entrega local encerrada, sem nova alteração de runtime. Publicação pelo
+  PR #70 e aceite posterior do dono registrados no plano. Contratos permanentes
+  em [`specs/financas-ciclo-cobranca.md`](../../specs/financas-ciclo-cobranca.md) §6.1.1–6.1.4.
+  Resultados,
+  testes, mutações e limites dos fluxos internos sensíveis constam no registro do plano.
+- **Ajuste pontual após E3**: dono relatou uso normal aparentemente correto no deploy da
+  branch, mas Home inicialmente vazia ao abrir pelo ícone, sem aviso. Implementado aviso
+  imediato **Carregando dados...** antes da sessão/consulta e **Sincronizando dados...**
+  sobre conteúdo autorizado existente, nas três telas. Frontend medido **321→337**, zero
+  falhas; mock mobile validado e uso normal no app instalado aprovado pelo dono no deploy
+  da branch. Teclado testado pelo dono; recuperação não apareceu, sem teste nativo;
+  TalkBack não testado, não bloqueante por decisão explícita. Nenhuma medição nova neste
+  registro de aceite. Ajuste incluído no PR #70, publicado na main e aprovado pelo
+  dono após publicação; nenhuma execução nova de testes nesta rodada documental.
+  Registro em [`reports/2026-10-06-fix-aviso-carga-inicial.md`](../reports/2026-10-06-fix-aviso-carga-inicial.md).
+  Não reabre A–E3; item encerrado com aprovação do dono e limites de cobertura registrados.
+- **Onde mexer**: storage/bootstrap, views Home/Alunos/Finanças, fronteiras de modais, mocks
+  e testes frontend. Ampliação autorizada para planejamento. Sem mudança de backend,
+  cálculo financeiro ou motor. C teve autorização explícita para fronteiras de contexto/raiz
+  na ponte GCal, conexão OAuth e cascata; não mudou tokens, endpoints ou algoritmo de recorrência.
+- **Área sensível**: confirmar antes se execução exigir tocar autenticação, GCal ou algoritmo
+  da cascata; não presumir autorização pela ampliação do plano.
+- **Sequência**: B2-puro antes do **2.2**. ETag/304 separado, não bloqueia 2.2 e exige novo
+  desenho de invalidação (collections + passagem do dia). Dono decide ordem entre essas
+  rodadas posteriores. **1.11** foi concluído localmente em 2026-10-13 após corrigir
+  e validar A1–A4/R1 do T06 (plano de fluxos UX).
+- **Esforço**: Médio–Alto (B2-puro, revisar após inventário de operações); ETag a estimar
+  separadamente. Sem dependências novas previstas.
+- **Numeração**: "2.4" foi o número antigo do Portal do aluno (hoje 4.3, ver mapa de
+  2026-08-26). Referências anteriores a essa data que digam "2.4" se referem ao Portal, não a
+  este item.
+
+---
+
+## 🧪 Grupo 3 — Ambiente de desenvolvimento e rede de proteção
+
+> **Histórico**: o projeto nasceu com apoio de IA, sem que ninguém definisse ambiente local nem testes. O resultado é que **toda validação sempre foi feita em produção**. Isso funcionou por um bom tempo porque o app é de usuário único conhecido, mas já custou dois bugs financeiros que chegaram ao usuário real.
+>
+> **Estado atual**: o backend local já é executável (`npm start` em `backend/`), o frontend local já percebe o hostname e aponta para `http://localhost:5000/api` quando servido em `localhost`, e o banco de desenvolvimento já existe em `personalapp_dev` separado do banco de produção em `test`. **Atualizado em 2026-09-03**: passaram a existir duas suítes automatizadas — backend (`backend/`, 218 testes) e frontend (`tests-frontend/`, 37 testes, item 3.5). O que **continua não existindo** são watch mode, `npm run dev`, seed automático de dados, ambiente de preview e cobertura automatizada de tela.
+>
+> **Consequência a ter clara**: hoje o frontend local não grava em produção quando o ambiente está corretamente configurado; o risco real que sobrou é usar um `.env` local sem `GOOGLE_CLIENT_ID` ou apontar a URI errada. A dificuldade restante não é "gravar em produção", e sim acertar a configuração do ambiente local.
+>
+> _Havia aqui uma segunda "Consequência a ter clara" dizendo que o Live Server gravava no banco de produção. **Removida em 2026-09-03**: era anterior aos itens 3.3 e 3.4 e contradizia o parágrafo acima._
+>
+> **Por que este grupo está separado**: a intuição de que "arrumar isso mexe muito na estrutura" vale para **um** dos quatro itens abaixo. Os outros três são pequenos e independentes, e não precisam esperar pelo grande.
+
+### [ ] 3.1 Ampliar cobertura das regras financeiras
+
+- **O que é**: ampliar a suíte automatizada das regras de cálculo de `financasService.js` e do fluxo de reposição que já está em `backend/test/`.
+- **O que já existe hoje**: a suíte do backend roda em `node --test` com **218 testes, 0 falhas** (medido em 2026-09-03). Os arquivos `backend/test/financas-pure.test.js` e `backend/test/financas-competencia.test.js` cobrem funções como `calcularCicloVigente`, `calcularTotalAulasCobradas`, `calcularValorTotalCiclo`, `filtrarHistoricoExcluindoCicloAtual`, `encerrarCicloSobrepostoSeNecessario`, `calcularAulasContadasDoCiclo`, `montarExtratoDoCiclo` e `calcularPrazoReposicao`. Os testes de reposição em `backend/test/reposicao-api.test.js`, `reposicao-prazo.test.js`, `reposicao-extrato-prazo.test.js` e `reposicao-c4-regressao.test.js` cobrem o fluxo de criação/expiração e o prazo de validade.
+- **Lacunas verificadas**: do lado do frontend, o item 3.5 cobriu o módulo isomórfico de recorrência e a ordem de carga do `index.html`. Continuam **sem cobertura** as telas (`view-financas.js`, `view-alunos.js`, `view-home.js`), os modais e `agenda-conflitos.js`.
+- **Por que importa**: a suíte já cobre as regras puras e de negócio mais sensíveis do backend, e a expansão continua sendo a forma correta de reforçar o cálculo financeiro sem inventar uma lacuna de UI que ainda não existe.
+- **Esforço**: Baixo. **Não depende de nenhum outro item deste grupo.**
+
+---
+
+### [x] 3.2 Rodar o backend localmente
+
+- **O que foi entregue**: `.gitignore` da raiz passou a ignorar `.env`/`*.env` com exceção explícita para `.env.example`, e foi criado `backend/.env.example` com todas as chaves de ambiente usadas pelo backend.
+- **Complemento técnico**: o `backend/server.js` inclui override de DNS local-only para execução local, preservando o resolvedor padrão da plataforma em serverless (Vercel).
+- **Documentação**: o `README.md` agora descreve o fluxo completo para copiar `.env.example`, preencher credenciais pelo painel da Vercel e subir a API local com `npm start`.
+- **Resultado prático**: a API pode ser iniciada localmente sem alterar código JavaScript e sem depender de deploy prévio para validar mudanças de backend.
+
+---
+
+### [x] 3.3 Frontend local falando com backend local
+
+- **O que e**: Fazer o frontend servido localmente detectar o hostname e apontar automaticamente para a API local quando estiver em `localhost`, `127.0.0.1` ou `::1`.
+- **Por que importa**: Era o ponto que ainda deixava o desenvolvimento local partido entre backend local e servicos em producao. Tambem impedia validar mudancas de backend com o frontend antes de publicar.
+- **Onde mexeu de verdade**: a descricao anterior estava incompleta e subestimou o alcance. O item 3.3 centralizou a configuracao, mas a correcao residual mostrou que restaram 10 ocorrencias em 5 arquivos consumidores (`view-financas.js`, `modal-acao-slot.js`, `cascade-sync-aluno.js`, `view-alunos.js` e `google-calendar.js`) com URL fixa em producao. A correcao desta rodada fechou o restante sem reintroduzir fallback silencioso para `production`.
+- **Entrega incluida**: falha alta quando a configuracao nao carrega antes dos consumidores, tarja visual discreta de ambiente local para evitar confusao durante a validacao e fechamento das chamadas residuais que ainda escreviam em producao.
+- **Ponto de atencao**: o backend local precisa continuar rodando na porta `5000`, e as origens `http://localhost` e `http://localhost:5500` precisam estar liberadas no OAuth do Google para evitar `origin_mismatch`.
+- **Dependência**: só faz sentido junto com o 3.2.
+- **Esforco**: Baixo, mas maior que a descricao original sugeria porque a base de URL foi descoberta em varios pontos diferentes do frontend e a entrega precisou cobrir todos eles de forma consistente.
+
+---
+
+### [x] 3.4 Banco de desenvolvimento separado
+
+- **O que foi entregue**: foi criado o banco `personalapp_dev` no mesmo cluster M0 do banco de produção, a partir de um clone via `mongodump` / `mongorestore` com remapeamento de namespace (`test.*` → `personalapp_dev.*`). Não houve cluster novo e não houve mudança de arquitetura: o nome do banco fica na própria `MONGODB_URI` local, que continua fora do repositório.
+- **Por que importa**: a base de desenvolvimento agora vive separada da produção, sem tocar em `test`, e o app local pode testar leitura/escrita em um ambiente isolado sem riscos ao dado real do usuário.
+- **Produção e dev**: a produção continua em `test` por decisão histórica da Vercel, e o dev existe apenas no `.env` local; isso é intencional e não é pendência. O banco de produção foi mantido intacto e a Vercel não teve `MONGODB_URI` alterada.
+- **ownerEmail e isolamento do Google Calendar**: `ownerEmail` não exigiu seed nem configuração extra porque vem do `Google ID token` via `requireAuth`. O isolamento do Google Calendar veio da ausência da collection `googlecalendarconnections` no clone local, sem mudança de código — a ausência do documento de conexão impede o bootstrap de disparar a sincronização do calendário real.
+- **Dado real e escopo**: os agendamentos clonados carregam referência a eventos de calendário reais do ambiente do usuário; conectar o GCal localmente exigiria uma decisão separada de conta e sincronização, e ficou fora de escopo desta rodada.
+- **Consequência prática**: o que antes era uma restrição de "somente leitura" vira hoje um ambiente funcional de desenvolvimento. Escrever localmente agora atinge `personalapp_dev` e não `test`.
+- **Como reproduzir**: ver [`docs/setup-ambiente-local.md`](../../setup-ambiente-local.md).
+
+---
+
+### [x] 3.5 Suíte de testes de frontend
+
+- **O que foi entregue**: primeira suíte automatizada do frontend, em `tests-frontend/`. Roda com `node --test`, o mesmo runner do backend, e tem `package.json` próprio — as duas suítes são independentes e têm números separados. **Atualizado em 2026-09-18**: a suíte tem **45 testes, 0 falhas** (37 originais + 8 do item 0.8).
+- **Por que a pasta é isolada**: o projeto Vercel `personal-app-webpage` tem _Root Directory_ na raiz do repositório. Um `package.json` na raiz mudaria o que a Vercel detecta no build do frontend estático. A pasta separada, mais um `.vercelignore` que a exclui, mantém o deploy intocado.
+- **O que é coberto**:
+  - `backend/shared/recurrence-helpers.js` (24 testes) — `parseDataFlex` nos três formatos aceitos, recorrência diária/semanal/mensal/anual, escopo `monthOfDate`, exceções e as duas condições de fim (`untilDate` e `occurrences`). É o módulo isomórfico da seção 2.4 da spec de Finanças: divergência aqui faz o app cobrar valor diferente do que a agenda mostra.
+  - `backend/shared/reposicao-flow-helpers.js` (8 testes) — a regra de alerta "a vencer" (limite de 5 dias, dias até a validade e resumo por aluno) entregue no item 0.8.
+  - `assets/js/calendario-engine.js` (8 testes) — guard de ordem de carga, fidelidade dos repasses para `recurrenceHelpers` (por identidade de função, não por `typeof`) e fallback do `diasSemanaMap`.
+  - **Ordem das tags `<script>` do `index.html`** (5 testes) — ver abaixo.
+- **Guard de ordem do `index.html`**: sem bundler, a ordem das tags **é** a resolução de dependências. O teste valida que todo `src` local existe no disco, que nenhum é declarado duas vezes, que as dependências de tempo de carga vêm antes dos dependentes, e que carregar o par na ordem inversa realmente lança.
+- **Dependências de tempo de carga mapeadas**: a varredura encontrou exatamente duas leituras de global durante a avaliação do script, ambas já protegidas por `throw` explícito — `calendario-engine.js` lendo `window.recurrenceHelpers` e `storage.js` lendo `window.APP_API_CONFIG`. As demais dependências declaradas nos cabeçalhos `// Depende de:` são de runtime, não de carga, e ficaram fora do guard de propósito: `agenda-conflitos.js` declara depender de `view-home.js`, que carrega **depois** dele.
+- **Como os scripts rodam em Node**: os arquivos do frontend não exportam nada, apenas registram em `window`. `tests-frontend/setup/carregar-frontend.js` executa cada um num contexto `vm` novo, começando por `globalThis.window = globalThis` — no browser os dois são o mesmo objeto, no `vm` não, e sem essa linha o UMD de `recurrence-helpers` registra num lugar onde `calendario-engine` não enxerga. Contexto novo por carga também elimina redeclaração de `const` entre testes.
+- **Prova de mutação**: três mutações aplicadas e revertidas, conforme a seção 10 de `.github/copilot-instructions.md` — neutralizar o guard e o fallback do `calendario-engine` (3 falhas), remover o `T12:00:00` do parse ISO (1 falha) e inverter a ordem das tags no `index.html` (2 falhas).
+- **jsdom**: instalado como `devDependency`, mas **ainda sem nenhum teste consumindo**. Foi decisão deliberada para deixar pronto o caminho da cobertura de DOM. Enquanto não houver teste usando, é dependência ociosa.
+- **O que continua sem cobertura**: telas, modais e `agenda-conflitos.js`. Ver item 3.1.
+- **Como rodar**: ver [`docs/setup-ambiente-local.md`](../../setup-ambiente-local.md).
+
+---
+
+## 🔴 Grupo 4 — Coisas complexas de fazer (exigem nova arquitetura, serviço externo ou mudança estrutural)
+
+> _Este grupo era numerado como "Grupo 2" até 2026-08-26, em conflito com o Grupo 2 de Google Calendar. Ver o mapa de equivalência no início do documento._
+
+### [ ] 4.1 Cobrança automatizada (Pix, boleto, cartão recorrente)
+
+> _Numerado como 2.2 até 2026-08-26._
+
+- **O que é**: Gerar cobranças automáticas para os alunos e receber confirmação de pagamento sem o PT precisar fazer nada manualmente.
+- **Por que importa**: Elimina de vez o trabalho manual de cobrar e reconciliar pagamentos, indo além do registro manual entregue no item 1.1.
+- **Complexidade**: Exige integração com gateway de pagamento (ex.: Mercado Pago, Asaas, Stripe), webhooks de confirmação (o padrão já usado para o Google Calendar em `gcalWebhookController.js` serve de referência arquitetural) e tratamento de falha/estorno.
+- **Base já pronta**: diferente de antes, **a entidade de cobrança já existe** — a collection `CicloFinanceiro` tem período, valor, status e data de pagamento. Um gateway plugaria em cima dela, sem precisar criar um modelo de "faturas" do zero.
+- **Pré-requisito prático**: integrar gateway sem ambiente de teste (Grupo 3) e sem testes automatizados é pedir para errar com dinheiro real. Os itens 3.1 a 3.4 deixam de ser opcionais aqui.
+- **Ponto de atenção**: estorno/reabertura de ciclo pago está hoje **fora de escopo** e sem implementação (ciclo pago é congelado permanentemente). Cobrança automatizada torna isso obrigatório.
+- **Esforço**: Alto.
+
+---
+
+### [ ] 4.2 Notificações automáticas (lembrete de aula, cobrança, etc.)
+
+> _Numerado como 2.3 até 2026-08-26._
+
+- **O que é**: Notificar o PT e/ou o aluno automaticamente (push notification ou WhatsApp) antes da aula, ou quando um pagamento está para vencer.
+- **Por que importa**: Reduz faltas e esquecimentos, dos dois lados.
+- **Complexidade**: O app já é PWA com Service Worker registrado (`assets/js/app-shell/service-worker.js`, `sw.js`), o que ajuda como base, mas hoje as notificações são só "toasts" internos (`mostrarToast`). Seria necessário Web Push (VAPID + subscription por usuário) **ou** WhatsApp Business API, mais um scheduler/cron no backend.
+- **Sinergia com Finanças**: o `diaVencimento` e o `cicloFim` de cada aluno já dão exatamente a data de disparo do lembrete de cobrança — a informação necessária já está modelada.
+- **Esforço**: Alto.
+
+---
+
+### [ ] 4.3 Portal/app do aluno
+
+> _Numerado como 2.4 até 2026-08-26._
+
+- **O que é**: Um espaço onde o próprio aluno acessa sua agenda, seu histórico de pagamento e talvez sua evolução física.
+- **Por que importa**: Hoje o sistema é 100% voltado ao personal trainer — o aluno não tem visibilidade própria, o que gera trocas de mensagem desnecessárias ("qual meu horário de amanhã?", "já paguei esse mês?").
+- **Complexidade**: O modelo de dados segrega tudo por `ownerEmail` (uma conta Google = uma base isolada, ver `backend/src/utils/ownerScope.js` e `requireAuth.js`). Não existe o conceito de múltiplos papéis (PT vs. aluno) sobre o mesmo conjunto de dados. Exigiria desenhar um modelo de autorização (RBAC) do zero.
+- **Esforço**: Muito alto (mudança estrutural, não incremental).
+
+---
+
+### [ ] 4.4 Avaliação física / anamnese / evolução do aluno
+
+> _Numerado como 2.5 até 2026-08-26._
+
+- **O que é**: Registro de medidas corporais, peso, fotos de progresso, PAR-Q, histórico de lesões.
+- **Por que importa**: É expectativa comum de alunos de personal trainer mais estruturados, e ajuda o PT a justificar/ajustar treinos.
+- **Complexidade**: Não existe entidade parecida no modelo atual. Exigiria nova collection com histórico temporal, upload/armazenamento de imagens (hoje só há ícones estáticos em `assets/images/`, sem pipeline de upload) e uma tela de linha do tempo.
+- **Esforço**: Alto.
+
+---
+
+### [ ] 4.5 Multi-personal / gestão de equipe (para academias/estúdios)
+
+> _Numerado como 2.6 até 2026-08-26._
+
+- **O que é**: Permitir que uma academia tenha vários personal trainers cadastrados, com alunos vinculados a mais de um profissional.
+- **Por que importa**: Hoje o app só atende o modelo "PT autônomo solo". Para vender a estúdios/academias, seria necessário suportar equipes.
+- **Complexidade**: O isolamento por `ownerEmail` é rígido (1 conta = 1 base). Hierarquia (dono → PTs → alunos compartilhados) exige redesenhar o esquema de permissões inteiro.
+- **Esforço**: Muito alto.
+
+---
+
+### [ ] 4.6 Auditoria / histórico de alterações
+
+> _Numerado como 2.7 até 2026-08-26._
+
+- **O que é**: Registrar quem alterou o quê e quando (ex.: mudança de valor combinado, remarcação de aula), para resolver disputas com o aluno.
+- **Por que importa**: Não há rastro de mudança — se o valor combinado for editado, o valor anterior se perde.
+- **Nota**: a feature de Finanças resolveu **parcialmente** esse problema no recorte financeiro, via os campos de snapshot (`precoAulaSnapshot`, `valorFixoSnapshot`) do `CicloFinanceiro`: o preço vigente na criação de cada ciclo fica congelado, então um reajuste não reescreve o passado. Mas isso é preservação de valor, **não** log de auditoria — não há registro de _quando_ nem de _o que_ mudou no cadastro.
+- **Complexidade**: Exigiria um padrão de auditoria (coleção paralela de eventos ou versionamento) aplicado a todos os `findOneAndUpdate` espalhados pelos controllers — mudança transversal.
+- **Esforço**: Médio–Alto (mais pela abrangência do que pela dificuldade isolada).
+
+---
+
+### [x] 4.7 Precisão financeira avançada (calendário real em vez de aproximação) — **ENTREGUE**
+
+> _Numerado como 2.8 até 2026-08-26._
+
+- **O que foi entregue**: A fórmula fixa `frequência semanal × 4 × valor` foi **eliminada**. O cálculo agora percorre a janela real de datas do ciclo do aluno e conta as ocorrências efetivas de aulas resolvidas pelo motor de recorrência — o mesmo usado para desenhar a agenda, garantindo que "o que a agenda mostra" e "o que o financeiro cobra" nunca divirjam (módulo isomórfico, seção 2.4 da spec).
+- **O que ficou de fora**: **feriados** não são tratados (uma aula em feriado é contada normalmente, a menos que o PT a remova da agenda) e **faltas** dependem do item 1.5.
+- **Risco que se concretizou**: como previsto aqui, a ausência de testes automatizados fez a validação ser toda manual em produção. Dois defeitos reais escaparam para prod e só foram pegos em revisão posterior (aula excluída continuar sendo cobrada; reajuste de preço alterando ciclos antigos retroativamente). Ambos corrigidos. **Atualizado em 2026-09-03**: o registro original dizia que o projeto continuava sem rede de proteção automatizada. Hoje existem duas suítes — backend (218 testes) e frontend (37 testes, item 3.5) — e o motor de recorrência que alimenta este cálculo está coberto dos dois lados. A camada de tela continua sem cobertura.
+
+---
+
+### [ ] 4.8 Contrato / termo de responsabilidade / assinatura digital
+
+> _Numerado como 2.9 até 2026-08-26._
+
+- **O que é**: Aluno assina digitalmente um termo de responsabilidade ou atestado médico dentro do próprio app.
+- **Por que importa**: Reduz risco jurídico do PT (comum em contratos de prestação de serviço de educação física).
+- **Complexidade**: Exigiria upload/armazenamento seguro de documentos e possivelmente integração com serviço de assinatura eletrônica (ex.: Clicksign, D4Sign) — infraestrutura nova, sem base no projeto atual.
+- **Esforço**: Alto.
+
+---
+
+### [ ] 4.9 Sessão própria do backend (token de sessão com renovação) — **Opção 1 para persistência de login**
+
+- **O que é**: trocar, uma única vez no login, o ID token do Google por um token de sessão emitido e assinado pelo próprio backend, com validade longa e renovação. O `requireAuth` passa a aceitar os dois formatos durante a transição.
+- **Por que importa**: hoje a sessão está amarrada ao ciclo de vida do Google. O ID token expira em 1 hora e não tem renovação, e o PWA instalado é descartado da memória pelo sistema operacional a cada troca de app — o que faz a usuária ver login repetido ou reautenticação automática constante. Com sessão própria, ela loga uma vez e permanece por semanas, sem piscar o One Tap e sem depender do cookie `g_state` do Google.
+- **Relação com o que já foi feito**: a persistência do ID token em `localStorage` (entregue em `feat/login-sessao-persistente`) é **mitigação parcial** — resolve a troca de app dentro da hora de validade, mas não resolve a expiração nem melhora a postura de segurança do armazenamento. Este item é o caminho definitivo.
+- **Onde mexer**: `backend/src/middleware/requireAuth.js` (aceitar dois formatos de token), rota nova de emissão/renovação em `backend/src/routes/`, segredo de assinatura em `backend/src/config/env.js` e `.env.example`, e `assets/js/auth/google-identity.js` no ponto em que a credencial do Google é recebida (`_handleCredentialResponse`) e no logout (`_performSignOut`).
+- **Cuidados**: logout precisa invalidar a sessão no backend, não apenas apagar o cache local; a renovação não pode virar sessão eterna sem reautenticação; e a transição precisa manter o formato antigo funcionando até o frontend estar publicado.
+- **Esforço**: Médio.
+
+---
+
+## 📱 Grupo 5 — Auditoria de UI/UX mobile
+
+> Grupo vivo: cada rodada de UI/UX mobile entra aqui como um item novo, na ordem em que for
+> executada. Fonte de verdade do escopo e do diagnóstico original:
+> [`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`](../diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md)
+> (tabela mestra de rastreabilidade dos achados 4.1–4.17). Cada item abaixo corresponde a uma
+> "Etapa" desse diagnóstico; a numeração de Etapa não muda, só o item de roadmap é novo.
+
+### [x] 5.1 Formulários e diálogos mobile (Etapa 1) — **CONCLUÍDO**
+
+- **O que foi entregue**: `DialogController` novo, com 14 superfícies de modal migradas, tela
+  completa em mobile (≤ 430px) nos formulários de cadastro/agendamento/recorrência, empilhamento
+  real com retorno de foco, e revisão posterior removendo o foco automático em campo de texto
+  (evitava abrir o teclado virtual sem intenção).
+- **Resolve**: achados 4.1 (formulário sem saída operacional) e 4.7 (diálogo inconsistente) do
+  diagnóstico.
+- **Relatório**: [`plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md`](../plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md).
+
+---
+
+### [x] 5.2 Legibilidade e área de toque (Etapa 2) — **CONCLUÍDO**
+
+- **O que foi entregue**: escala tipográfica mínima aplicada (zero texto <12px), alvos de toque
+  ampliados para 48px nos grupos 1 (Finanças) e 2 (grade de horários) — grupo 3
+  (cabeçalho/toolbar) ficou <44px por decisão do dono, registrado como candidato a rodada
+  futura (**virou o item 5.9 em 2026-10-09**) —, `:focus-visible` dourado padronizado e `aria-label` em 13/13 botões ícone-only.
+- **Resolve**: achados 4.4 (tipografia pequena), 4.5 (alvos de toque) e a parte inicial de 4.6
+  (foco/teclado básico) do diagnóstico.
+- **Relatório**: [`plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`](../plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md).
+
+---
+
+### [x] 5.3 Navegação e topo operacional (Etapa 3) — **CONCLUÍDO**
+
+- **O que foi entregue**: header reduzido de 122px para 68px em 433px, navegação superior
+  trocada por barra inferior fixa (3 telas, alvos 134×52px, `aria-current="page"` no item ativo),
+  safe areas via `--bottombar-height` medido em runtime e `viewport-fit=cover`.
+- **Resolve**: achados 4.2 (topo consome altura excessiva), 4.3 (navegação compete com conteúdo),
+  4.14 (safe areas) e parte de 4.16 (ARIA de navegação) do diagnóstico.
+- **Relatório**: [`plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`](../plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md).
+- **Complemento visual solicitado (2026-10-14)**: FABs de Home e Alunos padronizados em **60×60 px**, ícone de **24 px** e escala **0,90** ao pressionar (54×54 px), com regras CSS compartilhadas. Posição sobre a barra inferior, sombras/hover próprios e ações preservados; mock validado em 433×762/DPR 2.81 e stress 320×568/390×844; frontend **403/403 → 403/403**, zero falhas. Registro no [plano vivo de fluxos UX, §12](../plans/2026-10-13-plan-melhorias-fluxos-ux.md); publicação/aceite do dono pendentes.
+- **Unificação completa solicitada depois (2026-10-14)**: `.fab-adicionar` é a única classe de aparência dos FABs; substitui nomes ligados à tela no CSS, HTML de Alunos e criação dinâmica da Home. Mantidos 60 px/24 px/escala 0,90, com sombra/hover/transições/camada da Home nos dois; IDs usados somente para ações. Três testes de contrato protegem marcação real, fonte CSS única e estados, com M35–M39 provadas/restauradas; frontend **403→406**, zero falhas. Mock nos três viewports confirmou zero diferenças em repouso/hover/active/foco, movimento reduzido, teclado e Finanças sem FAB. Sem regra ou dependência nova; dono relata aceite mobile no deploy específico da branch; integração à `main` pendente.
+
+---
+
+### [x] 5.4 Densidade de cards (Etapa 4) — **CONCLUÍDO**
+
+- **O que foi entregue**: 4 cartões (A–D) reduzindo informação sempre-visível dos cards de Aluno,
+  Finanças e Agenda, com áreas expansíveis ("Ver detalhes") e badges em modo ícone com
+  texto preservado em `title`/`aria-label`.
+- **Resolve**: achado 4.11 (cards com informação excessiva). O achado 4.10 (filtros apertados) já
+  havia sido resolvido fora da sequência formal (remoção de filtros de Finanças e Alunos).
+- **Relatório**: [`plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md`](../plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md).
+
+---
+
+### [x] 5.5 Eventos simultâneos na agenda diária (Etapa 5) — **CONCLUÍDO**
+
+- **O que foi entregue**: formato híbrido estilo Outlook para eventos simultâneos no dia —
+  banda de 2 em colunas proporcionais, banda de 3+ em linhas empilhadas (nome, hora, chip) — e
+  fundo do modo Dia nivelado (sem o cinza de painel) e esticado nas laterais.
+- **Resolve**: achado 4.12 (eventos simultâneos na agenda diária).
+- **Relatório**: [`plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md`](../plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md).
+
+---
+
+### [x] 5.6 Erros e toasts (Etapa 6) — **CONCLUÍDO** (2026-09-30)
+
+- **O que é**: tratar o achado 4.8 (erro global bloqueante sem recuperação) e o achado 4.9
+  (acessibilidade/contraste de toasts — `role="status"`/`role="alert"`, `aria-live`).
+- **Não refazer**: o hotfix de `pointer-events` do `.toast` (Fase 0.1 do diagnóstico) e o
+  reancoramento do `bottom` via `--bottombar-height` (Etapa 3) já estavam resolvidos e foram
+  preservados como base.
+- **O que foi entregue (2026-09-29, branch `feat/etapa-6-toast-unificado` — mergeado na `main` via PR #66 em 2026-09-30, validação em produção aprovada)**: escopo ampliado por
+  decisão do dono — os 3 mecanismos de feedback assíncrono do app (`#toast`, `#overlay-sinc`
+  bloqueante, `#indicador-sync-bg` silencioso) foram unificados em um único componente com 4
+  estados (`success`/`warning` auto-somem, `progress` fica até resolver sem bloquear a tela,
+  `error` fica até ação com botão "Tentar de novo"). O `onRetry` que existia morto em 4 pontos
+  de chamada agora está conectado à UI; `role`/`aria-live` dinâmicos por estado; o sync
+  automático do Google Calendar no boot foi religado ao componente (antes não acionava nenhum
+  feedback). Suíte frontend 77/77 antes e depois. Após a validação em produção aprovada, a
+  mesma rodada incluiu a passada de textos dos ~61 toasts do app para linguagem de usuário
+  final (removidos emojis e mensagens de debug; falhas passaram a "Não foi possível ...") em
+  8 arquivos + 1 asserção de teste — suítes 77/77 e 232/232 antes e depois. Detalhe completo
+  em
+  [`plans/2026-09-29-plan-etapa-6-toast-unificado.md`](../plans/2026-09-29-plan-etapa-6-toast-unificado.md).
+- **Adição (2026-09-30, branch `feat/financas-toast-carregamento` — mergeada na `main` via
+  PR #67)**: a tela de finanças, que mostrava só skeleton + “Carregando...” minúsculo,
+  passou a usar o mecanismo unificado — o fetch de `carregarFinancas()` roda dentro de
+  `executarOperacaoRemotaComFeedback` (contexto `carregandoFinancas`, toast de progresso
+  após o limiar de 3s, `exibirFalha: false` porque a tela trata a falha sozinha e o
+  refresh silencioso em background não exibe toast). A mensagem “Cache atualizado em...”
+  do cabeçalho não muda. 4 testes novos (frontend 77 → 81; backend 232/232).
+- **Fechado (2026-09-30)**: implementação original (PR #66) e adição da tela de finanças
+  (PR #67) mergeadas na `main`; validação em produção aprovada pelo dono. O que sobrou do
+  escopo original (skeletons padronizados + indicação explícita de "dados em cache") virou o
+  item **5.8** — ver abaixo.
+- **Depende de**: nenhum item deste grupo bloqueia.
+
+---
+
+### [x] 5.7 Consistência e acessibilidade final (Etapa 7) — **CONCLUÍDO** (cartões A–D, 2026-10-01)
+
+- **O que é**: etapa ampliada para cobrir os achados que ficaram órfãos no diagnóstico original
+  — 4.13 (amarelo sobrecarregado semanticamente) e 4.17 (6 inconsistências específicas) —, além
+  de fechar o restante de 4.6 (semantica final de cards/tabs) e 4.16 (ARIA completo de
+  navegação/tabs).
+- **O que já está resolvido de fato**: os itens 4.17.4 e 4.17.5 (padrões `disabled` e
+  `aria-label` globais) já vieram dos cartões C e D da Etapa 2 — o que resta aqui é auditoria de
+  cobertura, não trabalho novo nesses dois pontos.
+- **Item sugerido na execução da Etapa 6 (2026-09-29) — 7.1**: consistência da nomenclatura de
+  retry — o toast unificado usa "Tentar de novo", o erro do histórico de reposições usa
+  "Tentar novamente". **✅ Resolvido em 2026-10-01 (Cartão C)**: as duas specs já fixavam
+  "Tentar novamente"; era o toast que estava fora do padrão — ver seção Etapa 7 do diagnóstico.
+- **Esforço restante**: ~~só o 4.17.1 e o 4.17.6 (cartão D)~~ — **fechado no Cartão D
+  (2026-10-01)**.
+- **Preparo da validação (2026-10-01)**: criado o cenário de mock `vitrineEstados`
+  (`mocks/ui-runtime/scenarios.js`) com os estados que esta etapa audita — ciclo atrasado +
+  reposição a vencer (amarelo, 4.13), ciclo pago (`disabled`, 4.17.4), aluno inativo em modo
+  somente leitura (4.17.1) e Consultoria Online (campos desabilitados). Servidor local passou a
+  ser `node scripts/servir-local.js` (Live Server desinstalado); ver
+  [`plans/2026-10-01-plan-servidor-local-e-mock.md`](../plans/2026-10-01-plan-servidor-local-e-mock.md).
+- **Execução em cartões (2026-10-01, branch `feat/etapa-7-consistencia-acessibilidade`)**:
+  plano em [`plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md`](../plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md).
+  **Cartão A (4.13 — cor de estado) concluído**: paleta de estado tokenizada em `:root`
+  (ok/informativo/aviso/erro/neutro), dourado passa a ser só identidade e "em aberto" deixa de
+  ser dourado; os três toasts coloridos (success/error/warning) passaram a usar a paleta com
+  texto escuro, fechando de carona o achado 4.9 (branco sobre preenchimento claro dava 2.8:1 e
+  4.2:1). Verificado no mock em 433×762 DPR 2.81 + toque.
+  **Cartão B (ARIA e semântica) concluído**: os dois grupos de abas ganharam
+  `role="tablist"`/`tab`/`aria-selected` + painéis `role="tabpanel"` (4.16); o card de agenda
+  virou `<button>` nativo e o card de aluno ganhou botão "Editar" próprio como alvo de teclado
+  (4.6, decisão do dono); os campos passam a herdar a fonte do app (4.17.3 — já estava resolvido
+  de fato pela Etapa 2, exceto a fonte); auditoria de cobertura do 4.17.4/4.17.5: 105 interativos
+  e 45 campos, zero sem nome acessível. **Ressalva registrada no plano**: a ativação por teclado
+  não pôde ser observada neste ambiente (Enter não chega à página nem num botão de controle
+  pré-existente). **Pendentes naquele momento**: C (reduced-motion + retry) e D (navegação com
+  recarga/histórico; decisão do dono: a tela ativa deve sobreviver à recarga e entrar no
+  histórico) — os dois fechados na sequência, nos registros abaixo.
+  **Cartão C (movimento reduzido e textos) concluído**: bloco único de `prefers-reduced-motion` no
+  fim do `style.css` (as animações existentes + as transições que movem), guard no JS de
+  `animarTrocaPeriodo` para não prender a classe nem vazar listener, e o toast passa a
+  "Tentar novamente" (texto que as duas specs já fixavam). Correção de rumo: o achado 4.15 nomeava
+  `halterBounce`, `pulseAgora` e `homeShimmer`, que não existem mais (removidas na limpeza de CSS),
+  e o bloco `reduce` que já existia perdia para `.skeleton`/`.toast` por estar declarado antes
+  deles. **Cartão D (4.17.6 + 4.17.1) concluído**: a tela ativa passa a ir para a URL por
+  **hash** (`#tela-home`, `#tela-financas`, `#tela-alunos`) — `replaceState` no boot,
+  `pushState` nas navegações seguintes, `hashchange` para Voltar/Avançar —, então **recarregar
+  mantém a tela** (antes sempre caía na Home); hash desconhecida ou malformada cai na padrão em
+  vez de derrubar o app, e `navigateTo` ignora id que não é tela. Caminho (`/financas`) foi
+  descartado por exigir rewrite no servidor local e no deploy estático do Vercel. O pill
+  "Modo leitura" (4.17.1) passou a ser exibido **a partir de 768px** — o diagnóstico de que
+  bastava remover o `display: none` estava incompleto: medido em 433×762, o pill sai 23px para
+  fora da tela e cobre a marca. Novo `tests-frontend/router-historico.test.js` (7 casos,
+  provados por mutação); um parâmetro sem efeito observável foi **removido** em vez de mantido.
+  Suítes: frontend 91/91, backend 232/232.
+- **Validação em deploy (2026-10-05)**: o dono validou a branch num deploy provisório do Vercel,
+  com checklist próprio —
+  [`plans/2026-10-05-plan-validacao-etapa-7-branch.md`](../plans/2026-10-05-plan-validacao-etapa-7-branch.md).
+  **A seção de teclado e TalkBack passou inteira** (7 itens): era a ressalva "a ativação por
+  teclado não pôde ser observada neste ambiente", registrada desde o Cartão B, e agora tem
+  observação real no aparelho. Um defeito apareceu no item de Voltar/Avançar: **após recarregar,
+  a primeira navegação usava `replaceState` em vez de `pushState`** e o Voltar pulava uma tela —
+  e o caminho da recarga é justamente o que este item existe para resolver. Corrigido em
+  `assets/js/app-shell/router.js` (`jaEscreveuNaUrl` passou a marcar "o boot já passou", e não "a URL
+  foi escrita"), com caso novo em `tests-frontend/router-historico.test.js` e prova por mutação;
+  re-testado e aprovado. Suítes finais: **frontend 92/92, backend 232/232**.
+
+---
+
+### [x] 5.8 Estados de carregamento: skeletons + cache — **CONCLUÍDO** (executado 2026-09-30; validado 2026-10-01)
+
+- **O que é**: fechar os dois itens abertos que restaram do escopo original da Etapa 6 —
+  (a) skeletons de carregamento padronizados (hoje existem 3 versões diferentes: Home inline
+  dourado, Finanças inline cinza estático, histórico de reposições com animação) e
+  (b) indicação explícita de "dados em cache" quando o app abre com dados locais antes da
+  confirmação remota (hoje só a Finanças tem rótulo de cache).
+- **Decisão do dono (2026-09-30)**: resolver **antes** da Etapa 7, em rodadas isoladas — é a
+  última ponta do escopo original da Etapa 6 e é pré-requisito natural da auditoria de
+  consistência global da Etapa 7.
+- **Plano**: [`plans/2026-09-30-plan-skeletons-cache.md`](../plans/2026-09-30-plan-skeletons-cache.md)
+  (inventário medido, proposta A de CSS `.skeleton` + `aria-busy`, proposta B de rótulo de cache
+  no header) — **executado em 2026-09-30** (seção "Execução" do relatório).
+- **Decisões do dono (registradas no plano)**: (A1) aprovada; (Parte B) → **caminho B1**, após a
+  descoberta de que **o estado original não existe** (no boot com cache o app **não dispara sync
+  remoto** — medido no `storage.js`); (texto) "Sincronizando dados...". O B2 (sync no boot) ficou **fora** de propósito e virou o item
+  **2.4**, com desenho próprio.
+- **O que entrou na branch (2026-09-30)**:
+  - **Parte A**: classe `.skeleton` única em `style.css` (fundo `#1d1d1d`, pulso 1.2s — padrão do
+    histórico de reposições, aposentado); Home, Finanças e o modal de reposições passam a
+    `.skeleton` com altura inline; `aria-busy` adicionado em Home e Finanças; zero resíduo da
+    classe antiga.
+  - **Parte B (B1)**: `#headerCacheState` ("Sincronizando dados...", `#909090`, 11px) no header,
+    acende **só** em sync remoto **sobre** cache local (troca de login, botão "Sincronizar
+    Dados", auto-refresh ao voltar 90s+); apaga no fim de todo caminho (na falha, o toast
+    "Sem conexão..." assume); coberto por 2 testes com prova de mutação
+    (`tests-frontend/header-cache-state.test.js`).
+  - **Suítes**: frontend 82/82 → **84/84** (+2 da Parte B); backend 232/232 (inalterado).
+- **Merge e validação (2026-09-30 / 2026-10-01)**: a branch `feat/padronizar-skeletons-cache`
+  foi **mergeada na `main` via PR #68** (`9daaff8`), o que já levou o código a produção. A
+  validação visual do dono foi **aprovada em 2026-10-01** no viewport 433×762 DPR 2.81 (+ stress
+  320×568/390×844), cobrindo os cenários: Home sem semana (barras cinzas animadas), Finanças sem
+  cache (cards pulsantes), histórico de reposições unificado, botão "Sincronizar Dados" (rótulo
+  "Sincronizando dados..." sob o título) e boot com cache (nada aparece — comportamento B1).
+- **Bug achado antes da execução (2026-09-30, resolvido na branch)**: o FAB "Novo agendamento"
+  da Home persistia sobre as demais telas até o carregamento da tela destino terminar (router só
+  reavaliava o FAB depois do `await` do init). Corrigido em `assets/js/app-shell/router.js` + teste
+  (`tests-frontend/router-fab-tela.test.js`, prova de mutação):
+  [`reports/2026-09-30-hotfix-fab-home-troca-tela.md`](../reports/2026-09-30-hotfix-fab-home-troca-tela.md).
+- **Depende de**: 5.6 (concluído). Independente de 5.7 — a execução ficou **antes** dele por
+  ordem do dono, e os dois estão concluídos.
+
+---
+
+### [ ] 5.9 Alvos de toque do cabeçalho/toolbar — resíduo do achado 4.5
+
+- **O que é**: o resíduo deliberado do achado 4.5. Na Etapa 2, os grupos 1 (ações de Finanças →
+  48px) e 2 (grade de horários → 48px) foram corrigidos; o grupo 3 (cabeçalho/toolbar) ficou
+  <44px **por decisão do dono** — forçar 44px esticaria o header. Inventário completo no report
+  [`plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md`](../plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md).
+- **Validação no código (2026-10-09)**: o resíduo **segue pendente** — a varredura de
+  `min-height`/`height` ≥44px no `style.css` não encontrou nenhum acréscimo aplicado a estes
+  elementos nas rodadas posteriores (Etapas 3–7). Um item do inventário original saiu da lista: a
+  antiga navegação superior `.nav-link` **não existe mais** — a Etapa 3 a substituiu pela barra
+  inferior `.nav-link-inferior` (`min-height: 44px`; alvos 134×52 medidos no report da Etapa 3).
+- **Elementos ainda abaixo de 44px** (altura pela regra CSS atual de 2026-10-09; reconfirmar por
+  medição de runtime na execução):
+  - `.tab-btn` (~30px) — abas Semana/Dia da Home (`#tabHomeSemana`/`#tabHomeDia`) e abas do modal
+    de agendamento (Aula/Deslocamento/Bloquear); regra única `.tab-tipo-agendamento .tab-btn`,
+    sem `min-height`.
+  - `#btnSemanaHomeAnterior` / `#btnSemanaHomeProxima` (~26px) — setas da topbar da Home.
+  - `#btnSemanaHomeHoje` (~24–26px) — botão "Hoje" (override mobile `padding: 5px 12px`).
+  - `#custom-google-login` (`.btn-google-custom`: 30px; ~26px no mobile com `padding: 7px 10px` e
+    fonte de 12px).
+  - `#btnSyncBanco` (~37px) — hoje no modal Área do usuário como `.btn` base (a Etapa 3 o tirou do
+    topo); o "Configurar Grade Horária" ao lado segue o mesmo padrão.
+  - `.semana-dia-header` (~34px de altura) — cabeçalho clicável de cada dia na visão Semana.
+  - `.btn-dia-pill` (42px, valor explícito no CSS) — pills de dia da semana no formulário de
+    recorrência.
+- **Onde mexer**: `assets/css/style.css` (regras base + overrides mobile; atenção ao breakpoint de
+  430px) e `index.html` se a estrutura precisar mudar. Sem mudança de lógica/JS.
+- **Cuidado de layout**: não esticar o header de volta (reduzido de 122px para 68px em 433px na
+  Etapa 3) e não quebrar 320×568; abordagem alternativa ao `min-height` puro (área de toque
+  ampliada sem redesenhar) fica à decisão do dono na rodada.
+- **Como validar**: medição no mock em 433×762 DPR 2.81 (referência; seção 7 do documento-mãe da
+  auditoria), com 320×568 e 390×844 de stress. Os alvos dentro de modais (`btn-dia-pill`,
+  `#btnSyncBanco`) e o login deslogado exigem abrir o estado certo no mock.
+- **Esforço**: Baixo (CSS, arquivo único) — com atenção ao layout do topo.
+- **Referência cruzada**: é o único 🟡 restante da tabela mestra de
+  [`diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md`](../diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md) (linha 4.5).
+
+_Documento gerado a partir de análise do código-fonte do projeto (frontend JS vanilla + backend Node/Express/MongoDB) e atualizado após a entrega da feature de Finanças e da reorganização da documentação. Atualize livremente conforme o roadmap evoluir._
