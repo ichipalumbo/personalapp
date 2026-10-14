@@ -43,6 +43,12 @@ function _atualizarRotuloCacheHeader() {
     const el = document.getElementById('headerCacheState');
     if (!el) return;
     const router = window.__appShell && window.__appShell.router;
+    const telaAtual = router && typeof router.getCurrentViewId === 'function' ? router.getCurrentViewId() : null;
+    const telaInicial = router && typeof router.getTelaInicial === 'function' ? router.getTelaInicial() : null;
+    if (telaAtual === 'tela-financas' || (!telaAtual && telaInicial === 'tela-financas')) {
+        el.hidden = true;
+        return;
+    }
     const ativos = Array.from(_syncsSobreCacheEmAndamento).filter((voo) => CONTEXTO_DADOS.atual(voo.contexto)
         && voo.interacao === CONTEXTO_DADOS.capturarInteracao() && CONTEXTO_DADOS.podeLer()
         && !CONTEXTO_DADOS.obterPendencia(voo.contexto)
@@ -64,10 +70,11 @@ function _limparSyncSobreCache(voo) {
 }
 function _finalizarApresentacaoInicial() {
     _apresentacaoInicialPendente = false;
+    if (typeof window.finalizarSkeletonInicialHome === 'function') window.finalizarSkeletonInicialHome();
     _atualizarRotuloCacheHeader();
 }
 CONTEXTO_DADOS.aoMudarInteracao(() => {
-    if (!CONTEXTO_DADOS.podeLer() || CONTEXTO_DADOS.obterPendencia()) _apresentacaoInicialPendente = false;
+    if (!CONTEXTO_DADOS.podeLer() || CONTEXTO_DADOS.obterPendencia()) _finalizarApresentacaoInicial();
     _atualizarRotuloCacheHeader();
 });
 let _cacheInicializado = false;
@@ -116,7 +123,7 @@ window.leiturasDados = Object.freeze({
 });
 
 CONTEXTO_DADOS.aoInvalidar(({ anterior }) => {
-    if (anterior) _apresentacaoInicialPendente = false;
+    if (anterior) _finalizarApresentacaoInicial();
     _ultimaAplicacaoLeitura = null;
     _ultimaFalhaCarregamento = null;
     _sequenciaLeitura += 1;

@@ -7,6 +7,7 @@
 // Expõe: window.dataSelecionada, window.dataAlvoAcaoStr, window.horarioSelecionadoSlot,
 //         window.reagendamentoDirectCardId, window.__sincronizacaoInicialConcluida,
 //         window.__homeCarregando, window.renderizarLoadingHome,
+//         window.finalizarSkeletonInicialHome,
 //         window.inicializarHome, window.atualizarDataAtual, window.atualizarDashboardStats,
 //         window.renderizarAgendaDia
 
@@ -32,7 +33,7 @@ window.contextoDados.aoInvalidar(() => {
   _leituraHomeEmAndamento = null;
   window.__homeCarregando = false;
   const telaHome = document.getElementById('tela-home');
-  if (telaHome) telaHome.setAttribute('aria-busy', 'false');
+  if (telaHome) telaHome.setAttribute('aria-busy', document.getElementById('homeSkeletonInicial') ? 'true' : 'false');
   const form = document.getElementById('formConfigAgenda');
   const botao = form && form.querySelector('[type="submit"]');
   if (botao) botao.disabled = false;
@@ -53,7 +54,17 @@ function formatarNomeDiaHome(nomeDiaBase) {
 
 // ── Loading State ─────────────────────────────────────────────────────────────────────────────
 
+// Remove somente a silhueta neutra do HTML; nunca apaga agenda ou skeleton de leitura em voo.
+window.finalizarSkeletonInicialHome = function () {
+  const skeletonInicial = document.getElementById('homeSkeletonInicial');
+  if (!skeletonInicial) return;
+  skeletonInicial.remove();
+  const telaHome = document.getElementById('tela-home');
+  if (telaHome && !window.__homeCarregando) telaHome.setAttribute('aria-busy', 'false');
+};
+
 window.renderizarLoadingHome = function () {
+  window.finalizarSkeletonInicialHome();
   const elAulasHoje = document.getElementById("totalAulasHoje");
   const elementoSemana = document.getElementById("periodoSemanaHomeLabel");
   const grid = document.getElementById("calendarioSemanalHomeGrid");
@@ -70,10 +81,10 @@ window.renderizarLoadingHome = function () {
     const telaHome = document.getElementById("tela-home");
     if (telaHome) telaHome.setAttribute("aria-busy", "true");
     grid.innerHTML = `
-            <div style="display: flex; flex-direction: column; gap: 12px; pointer-events: none;">
-                <div class="skeleton" style="height: 112px;"></div>
-                <div class="skeleton" style="height: 112px;"></div>
-                <div class="skeleton" style="height: 112px;"></div>
+        <div class="home-agenda-carregando" aria-hidden="true">
+          <span class="skeleton"></span>
+          <span class="skeleton"></span>
+          <span class="skeleton"></span>
             </div>
         `;
   }
@@ -284,6 +295,7 @@ async function _sincronizarDadosHome(opcoes) {
       const telaHome = document.getElementById("tela-home");
       if (telaHome) telaHome.setAttribute("aria-busy", "false");
       if (!sincronizada && conteudoLoading && conteudoLoading.parentNode === grid) {
+        conteudoLoading.removeAttribute('aria-hidden');
         conteudoLoading.textContent = 'Não foi possível carregar a agenda agora. Atualize os dados para tentar novamente.';
         if (elementoSemana) elementoSemana.textContent = 'Agenda não atualizada';
         if (elAulasHoje) elAulasHoje.textContent = '--';
@@ -297,6 +309,7 @@ async function _sincronizarDadosHome(opcoes) {
 }
 
 function _renderizarHome(opcoes) {
+  window.finalizarSkeletonInicialHome();
   window.atualizarDashboardStats();
   if (typeof window.renderizarHomeSemana === "function") {
     window.renderizarHomeSemana();
@@ -325,8 +338,18 @@ window.inicializarHome = async function (opcoes = {}) {
   if (!podeAplicar()) return false;
 
   garantirHomeTabs();
-  _renderizarHome(opcoes);
-  window.alternarModoHome(window.modoHomeAtivo || 'semana');
+  // T02 estendido: fluxos de ação não reposicionam a agenda em "hoje" nos
+  // renders disparados pela própria ação. Cobre os fluxos que passam
+  // semAncoraHoje: true e qualquer render com operação — inclusive os internos
+  // da ponte do GCal e da grade, que re-renderizam dentro da persistência.
+  const semAncoraHoje = opcoes.semAncoraHoje === true || Boolean(opcoes.operacao);
+  if (semAncoraHoje) window.__homeSemAncoraHoje = true;
+  try {
+    _renderizarHome(opcoes);
+    window.alternarModoHome(window.modoHomeAtivo || 'semana');
+  } finally {
+    if (semAncoraHoje) window.__homeSemAncoraHoje = false;
+  }
   return true;
 };
 
@@ -1063,7 +1086,7 @@ window.trocarFABNovoHome = function () {
     fab.type = 'button';
     document.body.appendChild(fab);
   }
-  fab.className = 'btn-weekly-add fab-novo-home';
+  fab.className = 'fab-adicionar';
   const diaModo = window.modoHomeAtivo === 'dia';
   const rotulo = diaModo
     ? 'Novo agendamento para o dia selecionado'

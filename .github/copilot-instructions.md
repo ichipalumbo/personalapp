@@ -235,10 +235,21 @@ que pareçam pequenas:
 - `README.md` (raiz) — visão geral e onboarding. **A árvore de arquivos pode
   estar desatualizada**; o código é sempre a referência. Se notar divergência,
   reporte.
-- `.agents/skills/` — skills de agente, versionados. O `anti-ui-slop` é
-  **vendorizado** de `github/awesome-copilot` (veja o `github-tree-sha` no
-  frontmatter): **não edite**, pois alterações locais se perdem na próxima
-  atualização. Regras próprias vão neste arquivo.
+- `.agents/skills/` — skills de agente versionadas no repositório. Regras
+  próprias vão neste arquivo.
+- **Roteamento das skills de auditoria de UI**:
+  - Use `web-design-reviewer` para inspecionar a interface renderizada, estados
+    visuais e comportamento responsivo. Use o servidor local com o mock, nunca
+    produção. Para UI mobile, siga o viewport de referência e os stress tests
+    da seção 10. Trate achados como revisão; corrija somente dentro do escopo
+    pedido.
+  - Use `web-design-guidelines` para revisar arquivos-fonte contra as Web
+    Interface Guidelines; informe arquivos ou padrões-alvo. A skill busca as
+    regras atuais remotamente: se não conseguir acessá-las, declare isso. Ela
+    não audita configuração ou deploy da Vercel.
+  - Escolha a skill conforme o objetivo; use ambas apenas quando for necessário
+    revisar tanto o código quanto a interface renderizada. As instruções e
+    specs deste repositório prevalecem sobre recomendações das skills.
 - Ferramentas de análise que gerem artefatos (grafo de dependências, etc.)
   produzem material **gerado**: não é fonte de verdade, não deve ser editado à
   mão e, se estiver desatualizado, deve ser regenerado.

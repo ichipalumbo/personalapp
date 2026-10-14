@@ -34,9 +34,6 @@
                 ><i class="fa-solid fa-dumbbell"></i> Prô</span
               ><span class="marca-mente"> Josy</span>
             </h1>
-              <!-- Aviso imediato antes do bootstrap: storage distingue carga sem conteúdo
-                de atualização sobre dados existentes e encerra por voo/contexto. -->
-              <span id="headerCacheState" class="header-cache-state" role="status" data-carga-inicial="true">Carregando dados...</span>
           </div>
           <div class="auth-banner" id="headerSession">
             <div id="googleSignedOutState" class="header-session-state">
@@ -73,6 +70,8 @@
           </div>
         </div>
       </header>
+      <!-- Aviso de dados fora da marca; o ID existente preserva o controle por voo/contexto. -->
+      <p id="headerCacheState" class="aviso-carregamento-dados" role="status" data-carga-inicial="true">Carregando dados...</p>
       <section id="recuperacaoDados" class="recuperacao-dados" tabindex="-1" aria-labelledby="recuperacaoDadosTitulo" hidden>
         <h2 id="recuperacaoDadosTitulo">Alteração não confirmada</h2>
         <p id="recuperacaoDadosMensagem" role="status">Sua alteração está guardada neste aparelho. Ela pode já ter sido salva. Verifique no servidor.</p>
@@ -87,7 +86,7 @@
            permanecem no topo). A barra fica logo antes do fim do container. -->
 
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
-      <main id="tela-home" class="view-section">
+      <main id="tela-home" class="view-section" aria-busy="true">
         <div class="home-weekly-topbar">
           <div class="home-sticky-header">
             <div
@@ -176,6 +175,12 @@
           role="tabpanel"
           aria-labelledby="tabHomeSemana"
         >
+          <!-- Silhueta neutra antes da sessão; não representa dados de nenhum aluno. -->
+          <div id="homeSkeletonInicial" class="home-agenda-carregando" aria-hidden="true">
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+          </div>
           <div
             id="calendarioSemanalHomeGrid"
             class="calendario-semanal-home-grid"
@@ -204,11 +209,13 @@
 
         <button
           id="btnFlutuanteAdicionar"
+          class="fab-adicionar"
+          type="button"
           title="Novo aluno"
           aria-label="Novo aluno"
           onclick="abrirCadastroParaNovo()"
         >
-          <i class="fa-solid fa-plus"></i>
+          <i class="fa-solid fa-plus" aria-hidden="true"></i>
         </button>
 
         <div
@@ -892,8 +899,7 @@
               <span class="modal-recorrencia-trigger-texto">
                 <span id="agendaResumoRecorrencia">Não se repete</span>
                 <small id="agendaResumoRecorrenciaAux"
-                  >A configuração detalhada da repetição será conectada no
-                  próximo passo.</small
+                  >Toque para configurar a repetição.</small
                 >
               </span>
               <span class="modal-recorrencia-trigger-icone"
@@ -1461,7 +1467,7 @@
         <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.875rem;"></p>
 
         <p style="margin: 0 0 12px; color: #d9d9d9; font-size: 0.875rem; line-height: 1.5;">
-          A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, na aba Reposições.
+          A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, no card do aluno.
         </p>
 
         <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 18px;">
@@ -1478,6 +1484,7 @@
 
         <div style="border-top: 1px solid #222; padding-top: 12px; color: #d9d9d9; font-size: 0.875rem; text-align: center; line-height: 1.5;">
           <div>Não pode ser alterado depois.</div>
+          <div id="reposicaoEscolhaPrazo" style="display: none"></div>
         </div>
 
         <div style="display: flex; justify-content: flex-end; margin-top: 18px;">
@@ -1586,6 +1593,7 @@
     <script src="assets/js/utils-datetime.js"></script>
     <script src="assets/js/utils-formatters.js"></script>
     <script src="backend/shared/recurrence-helpers.js"></script>
+    <script src="backend/shared/calculo-ciclo.js"></script>
     <script src="backend/shared/reposicao-flow-helpers.js"></script>
     <!-- [3] Domain Helpers -->
     <script src="assets/js/alunos-helpers.js"></script>

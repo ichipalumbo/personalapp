@@ -1,9 +1,5 @@
-// Etapa 6 (2026-09-30) — A tela de finanças entrou no mecanismo de feedback
-// unificado (item pedido pelo dono: a tela de finanças mostrava skeleton +
-// "Carregando..." minúsculo, sem participar do toast de progresso das demais
-// telas). O fetch de carregarFinancas passou a rodar dentro de
-// executarOperacaoRemotaComFeedback (contexto "carregandoFinancas",
-// exibirFalha: false, silenciosoUI respeitando o refresh em background).
+// A tela de finanças usa skeleton na carga inicial e progresso inline no refresh
+// manual; não mostra o toast genérico de carregamento.
 //
 // Este teste usa REAL o wrapper de storage.js e REAL o toast de utils-ui.js
 // (não são stubs) — o que permite validar o limiar de 3s de verdade.
@@ -80,27 +76,28 @@ async function carregarAmbiente() {
   return { dom, window };
 }
 
-test('carregamento lento das finanças mostra o toast unificado e esconde ao concluir', async (t) => {
+test('carregamento lento das finanças mantém skeleton sem toast ou progresso redundante', async (t) => {
   const { dom, window } = await carregarAmbiente();
-  t.after(() => dom.window.close());
+  let promisseCarregamento;
+  t.after(async () => {
+    if (promisseCarregamento) await promisseCarregamento;
+    dom.window.close();
+  });
 
   window.apiFetchBackend = async () => {
     await esperar(3200); // acima do limiar de 3s do wrapper
     return criarResposta(200, [criarCard()]);
   };
 
-  const promisseCarregamento = window.inicializarFinancas({});
+  promisseCarregamento = window.inicializarFinancas({});
 
-  // Antes da resposta: o toast precisa estar visível em estado progress.
+  // Acima do limiar antigo do wrapper, só o skeleton representa a carga inicial.
   await esperar(3150);
   const toast = window.document.getElementById('toast');
-  assert.ok(toast.classList.contains('progress'), 'o toast precisa estar em estado progress');
-  assert.ok(toast.classList.contains('show'), 'o toast precisa estar visível');
-  assert.ok(toast.classList.contains('toast'));
-  assert.equal(toast.querySelector('.toast-msg').textContent, 'Carregando finanças...');
-  assert.equal(toast.getAttribute('role'), 'status');
-  assert.equal(toast.getAttribute('aria-live'), 'polite');
-  assert.ok(window.document.getElementById('toast').querySelector('.toast-spinner'), 'progresso usa o spinner do toast unificado');
+  assert.ok(!toast.classList.contains('show'), 'não exibe toast sobre os esqueletos');
+  assert.equal(toast.textContent, '');
+  assert.ok(window.document.querySelectorAll('#financasConteudo .skeleton').length > 0);
+  assert.equal(window.document.getElementById('financasProgresso').hidden, true);
 
   await promisseCarregamento;
   assert.ok(!toast.classList.contains('show'), 'o toast precisa esconder quando a resposta chega');

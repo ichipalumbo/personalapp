@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Documento vivo · **Atualizado**: 2026-10-12
+> **Status**: Documento vivo · **Atualizado**: 2026-10-13
 > Backlog de evolução do app sob a ótica de um Personal Trainer PJ usando o sistema no dia a dia.
 > Atualize o status de cada item conforme for evoluindo (`[ ]` pendente, `[~]` em andamento, `[x]` concluído).
 >
@@ -61,7 +61,7 @@ Legenda: `[x]` concluído · `[ ]` pendente · `[~]` parcial · `[→]` consolid
 | 1     | 1.8 "Aulas a repor" no card do aluno             | `[→]`  | consolidado no 0.8                                               |
 | 1     | 1.9 Pagar/ajustar ciclo anterior (do histórico)  | `[x]`  | —                                                                |
 | 1     | 1.10 Histórico de reposições no card do aluno    | `[x]`  | gestão contextual; sem aba dedicada na V1                         |
-| 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[ ]`  | —                                                                |
+| 1     | 1.11 Botão "Atualizar" em Finanças (bypass de cache) | `[x]`  | T06 + correções A1–A4/R1 validados localmente em 2026-10-13 |
 | 2     | 2.1 Google Calendar (`RRULE` + `EXDATE` + canal) | `[x]`  | validação em produção concluída em 31/08/2026; ressalva registrada no boot/manual e saga de correções em `specs/gcal-sync.md` §9 |
 | 2     | 2.2 Consolidação da sincronização tripla no boot | `[ ]`  | —                                                                |
 | 2     | 2.3 Alargamento da janela do full sync           | `[ ]`  | —                                                                |
@@ -355,14 +355,22 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Dados e escopo V1**: o modal consulta todos os status via `GET /api/reposicoes?alunoId=...`; `aulasParaRepor` continua exclusivamente com pendências. Um cache separado da lista completa alimenta os resumos dos cards. Não inclui visão global, busca, filtro por período/status/a vencer, criação, cancelamento ou mudança de regra financeira.
 - **Onde mexer**: `assets/js/view-alunos.js`, `index.html` (modal de histórico), `assets/css/style.css`, `assets/js/modal-acao-slot.js` e, se necessário para o cache separado, `assets/js/storage.js`. A API atual já atende a leitura; não há mudança de backend prevista.
 - **Referência**: [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md), seção 9.4.
+- **Correção de carregamento (T07/D7=A, 2026-10-14)**: resumo nome + “Atualizando…” preparado antes de abrir/focar, três skeletons e anúncio existente; contagens/vazio só após confirmação, erro sem falso vazio. Frontend medido **399→403**, 0 falhas; M31–M34 provadas/restauradas, mock nos três viewports sem overflow. GET/cache/grupos e regras preservados.
+- **Filtro `alunoId` do mock corrigido (commit `43b9e29`)**: GET específico retorna somente as reposições do aluno; sem parâmetro mantém a lista completa. Três testes provaram filtro e ausência de duplicação no cache, e falharam ao reverter a correção. Frontend medido **406→409**, zero falhas.
+- **Aceite**: o dono relata validação mobile bem-sucedida em produção por deploy específico desta branch. T01–T07 e F1–F7 estão concluídos; PR/integração à `main` continuam com o dono. [Plano de fluxos UX, §12–§15](plans/2026-10-13-plan-melhorias-fluxos-ux.md).
+- **Complemento visual solicitado (2026-10-14)**: barra lateral do corpo do histórico oculta com o padrão CSS dos demais modais, preservando rolagem interna e acesso por teclado à última seção. Mock validado nos três viewports; frontend **403/403 → 403/403**, zero falhas. Ajuste localizado registrado no mesmo plano, sem mudança de regra ou cache.
 - **Esforço**: Médio.
 - **Validação final**: validação visual do modal e do fluxo de reagendamento aprovada pelo dono em 2026-09-23; suítes frontend e backend verdes.
 
 ---
 
-### [ ] 1.11 Botão "Atualizar" na tela de Finanças
+### [x] 1.11 Botão "Atualizar" na tela de Finanças
 
+- **Entregue em 2026-10-13** (T06/D6=A do plano de melhorias de fluxos UX): botão no cabeçalho com leitura forçada (`forcarRemoto`), bloqueio durante o voo e falha preservando o conteúdo visível; suíte frontend 388→391; mock validado (recuperação sem reload, sem escrita).
+- **Auditoria posterior (`9d75cb7`, 2026-10-13)**: suíte frontend 391/391, fluxo principal confirmado, porém cache vazio + falha mantém skeleton (A1) e formulário aberto durante o voo mantém botão bloqueado após descarte (A2). Alvo de toque de 40 px (A3) e foco perdido após atualização por teclado (A4) também registrados. Nenhuma correção nesta revisão. Evidências e risco preexistente de integração com pendência (R1) no [plano vivo, §12/§13](plans/2026-10-13-plan-melhorias-fluxos-ux.md).
+- **Correções da auditoria (2026-10-13)**: A1–A4 resolvidos e R1 tratado por decisão explícita do dono: botão bloqueado enquanto houver intenção não confirmada, com orientação de recuperação; fluxo financeiro ordinário permanece preexistente. Suíte **391→399**, 0 falhas; M24–M30 provadas/restauradas; mock confirmou vazio sem skeleton, liberação após fechar formulário, alvo de 44 px, foco sem roubo e recuperação explícita. Contrato na [spec de Finanças §6.1.3](specs/financas-ciclo-cobranca.md). Concluído localmente; publicação e aceite real do dono não são prova desta rodada.
 - **O que é**: botão no cabeçalho de `assets/js/view-financas.js`, ao lado do rótulo de cache, que dispara `carregarFinancas({ forcarRemoto: true })` — a mesma função já usada após salvar pagamento/ajuste — ignorando o cache local e buscando o estado atual direto do backend.
+- **Feedback sem duplicidade (2026-10-14)**: skeletons são o único sinal da carga inicial; “Carregando...” junto ao botão aparece só no refresh manual, mantendo os cards em tela. Em Finanças, o aviso global e o toast genérico são suprimidos. Suíte frontend final **420/420**; mutações dos contratos de apresentação falharam como esperado e foram restauradas. O dono relata aceite mobile no deploy específico da branch.
 - **Escopo deliberadamente restrito**: apenas bypass de cache de leitura (`GET /api/financas`). **Não** é um botão de recálculo/criação manual de ciclo — a decisão #23 da spec (seção 7) já rejeita esse caso, porque o recálculo do ciclo vigente já é automático a cada leitura. Este item não reabre aquela decisão.
 - **Onde mexer**: `assets/js/view-financas.js` (`renderizarCabecalho`, `bindHandlers`, `atualizarCabecalhoCache`). Sem mudança de backend.
 - **Esforço**: Muito baixo.
@@ -488,7 +496,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
   da cascata; não presumir autorização pela ampliação do plano.
 - **Sequência**: B2-puro antes do **2.2**. ETag/304 separado, não bloqueia 2.2 e exige novo
   desenho de invalidação (collections + passagem do dia). Dono decide ordem entre essas
-  rodadas posteriores. **1.11** continua independente.
+  rodadas posteriores. **1.11** foi concluído localmente em 2026-10-13 após corrigir
+  e validar A1–A4/R1 do T06 (plano de fluxos UX).
 - **Esforço**: Médio–Alto (B2-puro, revisar após inventário de operações); ETag a estimar
   separadamente. Sem dependências novas previstas.
 - **Numeração**: "2.4" foi o número antigo do Portal do aluno (hoje 4.3, ver mapa de
@@ -718,6 +727,8 @@ Os grupos 0, 1 e 3 **não mudaram**. O item 2.1 manteve o número.
 - **Resolve**: achados 4.2 (topo consome altura excessiva), 4.3 (navegação compete com conteúdo),
   4.14 (safe areas) e parte de 4.16 (ARIA de navegação) do diagnóstico.
 - **Relatório**: [`plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md`](plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md).
+- **Complemento visual solicitado (2026-10-14)**: FABs de Home e Alunos padronizados em **60×60 px**, ícone de **24 px** e escala **0,90** ao pressionar (54×54 px), com regras CSS compartilhadas. Posição sobre a barra inferior, sombras/hover próprios e ações preservados; mock validado em 433×762/DPR 2.81 e stress 320×568/390×844; frontend **403/403 → 403/403**, zero falhas. Registro no [plano vivo de fluxos UX, §12](plans/2026-10-13-plan-melhorias-fluxos-ux.md); publicação/aceite do dono pendentes.
+- **Unificação completa solicitada depois (2026-10-14)**: `.fab-adicionar` é a única classe de aparência dos FABs; substitui nomes ligados à tela no CSS, HTML de Alunos e criação dinâmica da Home. Mantidos 60 px/24 px/escala 0,90, com sombra/hover/transições/camada da Home nos dois; IDs usados somente para ações. Três testes de contrato protegem marcação real, fonte CSS única e estados, com M35–M39 provadas/restauradas; frontend **403→406**, zero falhas. Mock nos três viewports confirmou zero diferenças em repouso/hover/active/foco, movimento reduzido, teclado e Finanças sem FAB. Sem regra ou dependência nova; dono relata aceite mobile no deploy específico da branch; integração à `main` pendente.
 
 ---
 

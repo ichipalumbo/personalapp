@@ -10,7 +10,8 @@
 //         window.atualizarAvisoConflitoEdicao, window.getLabelEscopoRecorrencia,
 //         window.getResumoEscopoRecorrencia, window.atualizarResumoEscopoRecorrencia,
 //         window.configurarEscopoRecorrenciaEdicao, window.abrirReagendarAulaModalSlot,
-//         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal
+//         window.iniciarReagendamentoReposicao, window.fecharReagendarAulaModal,
+//         window.montarContextoExibicaoOcorrencia
 
 // Exposto em window para acesso cross-módulo (widget-stepper-duracao usa para edicao)
 window.idCompromissoSelecionado = window.idCompromissoSelecionado || "";
@@ -61,6 +62,37 @@ function obterCompromissoPorId(id) {
 function obterCompromissoSelecionado() {
   return obterCompromissoPorId(window.idCompromissoSelecionado);
 }
+
+/**
+ * Contexto de exibição da ocorrência para os modais de escolha (T01/D1-B):
+ * resolve nome do aluno e a data/hora da aula em questão — ocorrência clicada
+ * no modo Semana (dataAlvoAcaoStr) ou dia selecionado no modo Dia — e o modal
+ * apenas consome. Formato aprovado: "Sáb., 17/10 · 18:00".
+ */
+window.montarContextoExibicaoOcorrencia = function (compromisso) {
+  const aluno =
+    typeof window.getAluno === "function" && compromisso
+      ? window.getAluno(compromisso.alunoId)
+      : null;
+  const nomeAluno =
+    (aluno && aluno.nome ? String(aluno.nome) : "") ||
+    (compromisso && (compromisso.alunoNome || compromisso.aluno)) ||
+    "Aluno";
+  const dataOcorrencia =
+    window.dataAlvoAcaoStr ||
+    (typeof window.getDataSelecionadaPtBr === "function"
+      ? window.getDataSelecionadaPtBr()
+      : "") ||
+    (compromisso && typeof compromisso.data === "string" ? compromisso.data : "");
+  const horario =
+    (compromisso && (compromisso.horarioInicio || compromisso.horario)) || "--:--";
+  const dataLegivel =
+    typeof window.formatarDataPtBrLegivel === "function"
+      ? window.formatarDataPtBrLegivel(dataOcorrencia)
+      : dataOcorrencia;
+  const dataHora = dataLegivel ? `${dataLegivel} · ${horario}` : horario;
+  return { nomeAluno, dataHora };
+};
 
 function gerarIdReposicao() {
   return `repo-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
@@ -582,9 +614,13 @@ window.montarResumoExclusaoCadeiaSerie = function (idOuCompromisso, hojeReferenc
    ate = formatarDataPtBr(ate);
  }
 
- const mensagem = ate
-   ? `Período: desde ${formatarDataPtBr(desde) || desde} até ${ate}`
-   : `Período: desde ${formatarDataPtBr(desde) || desde} até sem data de término`;
+ // T05: a linha "Período" também sai no formato legível e sem capitalizar
+ // ("desde sáb., 26/09", texto corrido) — o detalhe acima é que capitaliza.
+ const desdePeriodo = formatarDataSerieExibicao(desde) || desde || "";
+ const atePeriodo = ate ? formatarDataSerieExibicao(ate) || ate : "";
+ const mensagem = atePeriodo
+   ? `Período: desde ${desdePeriodo} até ${atePeriodo}`
+   : `Período: desde ${desdePeriodo} até sem data de término`;
 
  return {
    total: ids.length,
@@ -618,13 +654,32 @@ window.removerCadeiaCompletaSerie = function (idOuCompromisso) {
  return antes - aulas.length;
 };
 
+// T05 (D11): datas de série nos textos de exclusão em formato legível ("sáb., 26/09").
+function formatarDataSerieExibicao(valor) {
+ if (!valor) return "";
+ if (typeof window.formatarDataPtBrLegivel !== "function") return String(valor);
+ return window.formatarDataPtBrLegivel(valor) || String(valor);
+}
+
+// T05 (D11): data-raiz da série nos textos de exclusão; sem data, mantém "início".
+function formatarDesdeSerieExibicao(desde) {
+ return formatarDataSerieExibicao(desde) || "início";
+}
+
 window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeReferencia) {
  if (!compromisso) return [];
 
- const dataExibicao =
+ // T05 (D11=A): a data exibida nos rótulos é a do dia em gerenciamento
+ // (dataAlvoAcaoStr → dia selecionado → raiz, resolvida pelo chamador) em
+ // formato legível minúsculo — "sáb., 17/10" (revisão de 2026-10-13).
+ const dataBase =
    dataAlvoStr ||
-   (compromisso.data ? compromisso.data : "esta data") ||
-   "esta data";
+   (compromisso.data ? compromisso.data : "");
+ const dataLegivel =
+   dataBase && typeof window.formatarDataPtBrLegivel === "function"
+     ? window.formatarDataPtBrLegivel(dataBase)
+     : dataBase;
+ const dataExibicao = dataLegivel || "esta data";
 
  if (compromisso.frequencia === "uma_vez") {
    return [
@@ -642,14 +697,15 @@ window.montarOpcoesExclusaoSlot = function (compromisso, dataAlvoStr, hojeRefere
  const ocorrenciasPassadas = Number(resumo && Number.isFinite(resumo.ocorrenciasPassadas) ? resumo.ocorrenciasPassadas : 0);
  const temAulaFutura = !!(resumo && resumo.temAulaFutura);
  const unidadePassada = ocorrenciasPassadas === 1 ? "aula" : "aulas";
+ const desdeExibicao = formatarDesdeSerieExibicao(resumo && resumo.desde);
 
  let detalheSerie = "Nenhuma aula restante nesta série.";
  if (ocorrenciasPassadas > 0 && temAulaFutura) {
-   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${resumo.desde || "início"}.`;
+   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${desdeExibicao}.`;
  } else if (ocorrenciasPassadas === 0 && temAulaFutura) {
-   detalheSerie = `Todas as aulas, a partir de hoje. Desde ${resumo.desde || "início"}.`;
+   detalheSerie = `Todas as aulas, a partir de hoje. Desde ${desdeExibicao}.`;
  } else if (ocorrenciasPassadas > 0 && !temAulaFutura) {
-   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${resumo.desde || "início"}.`;
+   detalheSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${desdeExibicao}.`;
  }
 
  const opcoes = [
@@ -1058,8 +1114,14 @@ window.abrirModalAcaoSlot = function (id) {
     badge.className = "modal-badge badge-desloc";
 
     containerDiaSemana.style.display = "none";
+    // T05 (D11=A): data da avulsa em formato legível (T01/D9), sem ISO cru.
+    const dataAgendadaBruta = compromisso.data || compromisso.dia || "";
+    const dataAgendadaLegivel =
+      dataAgendadaBruta && typeof window.formatarDataPtBrLegivel === "function"
+        ? window.formatarDataPtBrLegivel(dataAgendadaBruta)
+        : dataAgendadaBruta;
     document.getElementById("editInfoDia").textContent =
-      `Agendado para: ${compromisso.data || compromisso.dia}`;
+      dataAgendadaLegivel ? `Agendado para: ${dataAgendadaLegivel}` : "";
     if (containerEscopo) containerEscopo.style.display = "none";
     if (impactoEscopo) impactoEscopo.textContent = "";
     if (acoesUnico) acoesUnico.style.display = "grid";
@@ -1175,21 +1237,57 @@ window.abrirModalEscolhaCobrancaReposicao = function (
       return;
     }
 
-    const aluno =
-      typeof window.getAluno === "function"
-        ? window.getAluno(compromisso.alunoId)
-        : null;
-    const dataOriginal =
-      compromisso.data && typeof compromisso.data === "string"
-        ? compromisso.data
-        : window.getDataSelecionadaPtBr
-          ? window.getDataSelecionadaPtBr()
-          : "";
-    const nomeAluno = aluno && aluno.nome ? String(aluno.nome) : "Aluno";
-    const dataHora = `${window.formatarDataPtBrLegivel ? window.formatarDataPtBrLegivel(dataOriginal) : dataOriginal} · ${compromisso.horarioInicio || "00:00"}`;
+    // T01 (D1=B): o chamador passa o contexto de exibição (nome + data/hora da
+    // ocorrência); sem contexto, o módulo resolve pelo mesmo helper.
+    const contextoExibicao =
+      (opcoes && opcoes.contextoExibicao) ||
+      window.montarContextoExibicaoOcorrencia(compromisso);
 
-    document.getElementById("reposicaoEscolhaAluno").textContent = nomeAluno;
-    document.getElementById("reposicaoEscolhaDataHorario").textContent = dataHora;
+    document.getElementById("reposicaoEscolhaAluno").textContent =
+      contextoExibicao.nomeAluno;
+    document.getElementById("reposicaoEscolhaDataHorario").textContent =
+      contextoExibicao.dataHora;
+
+    // T05 (D5=B): linha de prazo do modal de escolha — calculada pelo módulo
+    // compartilhado calculo-ciclo.js (mesma regra do envio, §6.2), a partir da
+    // mesma data original usada em `executarEnvioParaReposicao`; o valor
+    // exibido é idêntico ao `validoAte` que a API devolve no envio.
+    const linhaPrazo = document.getElementById("reposicaoEscolhaPrazo");
+    if (linhaPrazo) {
+      let textoPrazo = "";
+      const alunoPrazo =
+        typeof window.getAluno === "function"
+          ? window.getAluno(compromisso.alunoId)
+          : null;
+      const moduloPrazo = window.calculoCiclo;
+      if (
+        alunoPrazo &&
+        moduloPrazo &&
+        typeof moduloPrazo.calcularPrazoReposicao === "function"
+      ) {
+        const dataOriginal =
+          compromisso.frequencia !== "uma_vez"
+            ? window.dataAlvoAcaoStr ||
+              (window.dataSelecionada
+                ? window.dataSelecionada.toLocaleDateString("pt-BR")
+                : "")
+            : compromisso.data ||
+              (window.getDataSelecionadaPtBr
+                ? window.getDataSelecionadaPtBr()
+                : "");
+        const resultadoPrazo = moduloPrazo.calcularPrazoReposicao(
+          alunoPrazo,
+          dataOriginal,
+        );
+        const validoAte = resultadoPrazo && resultadoPrazo.validoAte;
+        if (validoAte && /^\d{4}-\d{2}-\d{2}$/.test(validoAte)) {
+          const [, mes, dia] = validoAte.split("-");
+          textoPrazo = `Prazo para reposição: até ${dia}/${mes}.`;
+        }
+      }
+      linhaPrazo.textContent = textoPrazo;
+      linhaPrazo.style.display = textoPrazo ? "" : "none";
+    }
 
     const opcaoButtons = modal.querySelectorAll("[data-reposicao-cobravel]");
     let escolhaConsumida = false;
@@ -1539,7 +1637,7 @@ window.executarExclusaoInstancia = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
@@ -1582,13 +1680,15 @@ window.executarExclusaoSerie = async function () {
   );
   const temAulaFutura = !!(_resumoExclusao && _resumoExclusao.temAulaFutura);
   const unidadePassada = ocorrenciasPassadas === 1 ? "aula" : "aulas";
+  // T05 (D11): mesma data legível do modal, na confirmação da execução.
+  const desdeExibicao = formatarDesdeSerieExibicao(_resumoExclusao && _resumoExclusao.desde);
   let detalheConfirmacaoSerie = "Nenhuma aula restante nesta série.";
   if (ocorrenciasPassadas > 0 && temAulaFutura) {
-    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${_resumoExclusao.desde || "início"}.`;
+    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} do passado mais todas as aulas futuras. Desde ${desdeExibicao}.`;
   } else if (ocorrenciasPassadas === 0 && temAulaFutura) {
-    detalheConfirmacaoSerie = `Todas as aulas, a partir de hoje. Desde ${_resumoExclusao.desde || "início"}.`;
+    detalheConfirmacaoSerie = `Todas as aulas, a partir de hoje. Desde ${desdeExibicao}.`;
   } else if (ocorrenciasPassadas > 0 && !temAulaFutura) {
-    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${_resumoExclusao.desde || "início"}.`;
+    detalheConfirmacaoSerie = `As ${ocorrenciasPassadas} ${unidadePassada} desta série, todas no passado. Desde ${desdeExibicao}.`;
   }
   const mensagemConfirmacaoSerie =
     _resumoExclusao.total > 0
@@ -1658,7 +1758,7 @@ window.executarExclusaoSerie = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function")
@@ -1748,7 +1848,7 @@ window.executarExclusaoAulaAvulsa = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
@@ -1778,10 +1878,13 @@ window.executarExclusaoSerieAPartirDe = async function () {
     window.obterCompromissoSelecionado
       ? window.obterCompromissoSelecionado()
       : null;
+  // T05 (D11=A): "daqui pra frente" corta a partir do dia em gerenciamento —
+  // dataAlvoAcaoStr → dia selecionado → raiz (mesma ordem da edição/instância).
+  // Sem isso, o modo Dia cortava na raiz da série (removeria a série inteira).
   const dataAlvo =
     window.dataAlvoAcaoStr ||
-    (compromisso && compromisso.data) ||
     (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+    (compromisso && compromisso.data) ||
     "";
   const previsao = window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo, {
     simular: true,
@@ -1817,7 +1920,7 @@ window.executarExclusaoSerieAPartirDe = async function () {
     escritaConfirmada = true;
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof window.inicializarHome === "function") {
-      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op }));
+      exigirAtualizacaoSlot(await window.inicializarHome({ sincronizar: true, operacao: op, semAncoraHoje: true }));
     }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") {
@@ -1862,10 +1965,12 @@ window.abrirModalEscolhaExclusao = function (opcoes, contexto) {
         : null;
 
   if (info && compromisso) {
-    const nomeAluno = compromisso.alunoNome || compromisso.aluno || "Aluno";
-    const dia = compromisso.data || compromisso.dataInicio || "esta data";
-    const horario = compromisso.horario || compromisso.horarioInicio || "--:--";
-    info.textContent = `${nomeAluno} · ${dia} · ${horario}`;
+    // T01 (D1=B): contexto de exibição vem do chamador; sem ele, resolve pelo
+    // mesmo helper — nome via getAluno e data da ocorrência clicada.
+    const contextoExibicao =
+      (contexto && contexto.exibicao) ||
+      window.montarContextoExibicaoOcorrencia(compromisso);
+    info.textContent = `${contextoExibicao.nomeAluno} · ${contextoExibicao.dataHora}`;
   }
 
   if (badge) {
@@ -1953,10 +2058,12 @@ document.addEventListener("DOMContentLoaded", () => {
   if (btnExcluirSlot) {
     btnExcluirSlot.addEventListener("click", () => {
       const compromisso = obterCompromissoSelecionado();
+      // T05 (D11=A): dia em gerenciamento — dataAlvoAcaoStr → dia selecionado →
+      // raiz, a mesma ordem da edição/instância; alimenta rótulos e modais.
       const dataAlvo =
         window.dataAlvoAcaoStr ||
-        (compromisso && compromisso.data) ||
         (window.getDataSelecionadaPtBr ? window.getDataSelecionadaPtBr() : "") ||
+        (compromisso && compromisso.data) ||
         "";
       const opcoes = window.montarOpcoesExclusaoSlot(compromisso, dataAlvo);
 
@@ -1970,7 +2077,10 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      window.abrirModalEscolhaExclusao(opcoes);
+      window.abrirModalEscolhaExclusao(opcoes, {
+        compromisso,
+        exibicao: window.montarContextoExibicaoOcorrencia(compromisso),
+      });
     });
   }
 
@@ -2141,7 +2251,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }));
         }
         if (!window.contextoDados.operacaoAtual(op)) return;
-        exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+        exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
         if (!window.contextoDados.operacaoAtual(op)) return;
 
         let mensagemPrazo = "";
@@ -2776,7 +2886,7 @@ document.addEventListener("DOMContentLoaded", () => {
           escritaConfirmada = true;
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof window.inicializarHome === "function") {
-            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
           }
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof mostrarToast === "function")
@@ -2925,7 +3035,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (!window.contextoDados.operacaoAtual(op)) return;
             if (typeof window.inicializarHome === "function") {
-              exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+              exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
             }
             if (!window.contextoDados.operacaoAtual(op)) return;
 
@@ -2973,7 +3083,7 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof window.inicializarHome === "function") {
-            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op }));
+            exigirAtualizacaoSlot(await window.inicializarHome({ operacao: op, semAncoraHoje: true }));
           }
           if (!window.contextoDados.operacaoAtual(op)) return;
           if (typeof mostrarToast === "function") {
@@ -3042,7 +3152,10 @@ document.addEventListener("DOMContentLoaded", () => {
           await window.contextoDados.finalizarOperacao(op);
         }
       },
-      { ehReabertura },
+      {
+        ehReabertura,
+        contextoExibicao: window.montarContextoExibicaoOcorrencia(compromisso),
+      },
     );
   };
 

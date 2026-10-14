@@ -217,18 +217,16 @@ body {
   gap: 10px;
 }
 
-/* 5.8 (Parte B): rótulo global de sync sobre cache. Fica na 2ª linha do brand
-   (a linha do título nunca muda de altura — o --header-height medido em
-   runtime só é alterado na mudança de tela, não é problema de 14px por vez).
-   Cor cinza neutro #909090 (achado 4.13 — amarelo não, já sobrecarregado). */
-.header-cache-state {
-  font-size: 11px;
-  line-height: 1;
+/* Aviso discreto da leitura na área de conteúdo, sem disputar espaço com a marca/login. */
+.aviso-carregamento-dados {
+  margin: 6px 12px 10px;
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: #909090;
-  white-space: nowrap;
-  flex-shrink: 0;
-  align-self: flex-end;
-  padding-bottom: 1px;
+  text-align: right;
+}
+.aviso-carregamento-dados[hidden] {
+  display: none;
 }
 
 .marca-titulo {
@@ -767,6 +765,28 @@ body {
   padding: 6px 12px;
   font-size: 0.75rem;
 }
+/* Ação secundária compacta: ícone discreto, alvo de toque e foco preservados. */
+.btn-icone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #b8b8b8;
+  font-size: 1.125rem;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.btn-icone:hover {
+  color: #ffd700;
+}
 /* Etapa 2 (Cartão B, 2026-09-26): alvo de toque — ações do card de Finanças
    (Marcar como pago / Editar ajuste / Configurar agora / Tentar novamente):
    48px (classe frequente no critério de aceite do cartão).
@@ -927,8 +947,12 @@ body {
   margin-top: 2px;
 }
 
-#btnFlutuanteAdicionar {
+/* FAB de adição compartilhado: os IDs identificam ações, não definem aparência.
+   A altura da barra já inclui a safe area; somar somente os 16px de respiro.
+   A camada 100 segue a referência da Home e fica abaixo dos diálogos (1000+). */
+.fab-adicionar {
   position: fixed;
+  bottom: calc(var(--bottombar-height, 0px) + 16px);
   right: 25px;
   width: 60px;
   height: 60px;
@@ -937,21 +961,23 @@ body {
   color: #0d0d0d;
   border: none;
   font-size: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-  z-index: 99;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42);
+  z-index: 100;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s ease;
-  /* Etapa 3 (Rodada 2, 2026-09-27): FAB da tela Alunos sobe para ACIMA da
-     barra inferior (16px de respiro). O token --bottombar-height ja inclui a
-     safe area (medido em runtime no bootstrap.js) — nao somar env() de novo
-     aqui (na rodada do Cartão F ficava em safe+16, i.e. DENTRO da barra de
-     61px; decisão do dono na Rodada 2: ajustar FAB). */
-  bottom: calc(var(--bottombar-height, 0px) + 16px);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
-#btnFlutuanteAdicionar:active {
+.fab-adicionar:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.5);
+  filter: brightness(1.03);
+}
+.fab-adicionar:active {
   transform: scale(0.9);
 }
 .modal-overlay {
@@ -1321,6 +1347,66 @@ body {
   border-bottom-right-radius: 18px;
   box-shadow: none;
   padding: 12px;
+}
+.financas-cabecalho {
+  margin-top: 0;
+}
+.financas-cabecalho-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.financas-cabecalho-titulo {
+  margin: 0;
+  color: #ffd700;
+  font-size: 1.125rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.financas-cabecalho-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.financas-cabecalho-progresso {
+  color: #b8b8b8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.financas-cabecalho-progresso[hidden],
+.financas-cabecalho-mensagem[hidden] {
+  display: none;
+}
+.financas-cabecalho-descricao {
+  margin: 4px 0 0;
+  color: #9a9a9a;
+  font-size: 0.875rem;
+}
+.financas-cabecalho-cache {
+  margin-top: 8px;
+  color: #909090;
+  font-size: 0.75rem;
+}
+.financas-cabecalho-cache:empty {
+  display: none;
+}
+.financas-cabecalho-mensagem {
+  margin: 8px 0 0;
+  color: #b8b8b8;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.home-agenda-carregando {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+}
+.home-agenda-carregando > .skeleton {
+  height: 112px;
 }
 .home-weekly-topbar {
   position: sticky;
@@ -2775,6 +2861,13 @@ button.agenda-dia-aula {
   min-height: 0;
   overflow-y: auto;
   padding: 16px 4px 4px 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.modal-historico-reposicoes-conteudo::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 .historico-reposicoes-carregando {
   display: grid;
@@ -3257,50 +3350,9 @@ button.agenda-dia-aula {
   outline: none;
   box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
 }
-.btn-weekly-add {
-  position: fixed;
-  bottom: calc(var(--bottombar-height, 0px) + 16px);
-  right: 25px;
-  width: 58px;
-  height: 58px;
-  border-radius: 50%;
-  background: #ffd700;
-  color: #0d0d0d;
-  border: none;
-  font-size: 1.35rem;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42);
-  z-index: 99;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    filter 0.2s ease;
-  /* Etapa 3 (Rodada 2, 2026-09-27): o FAB assume o "Novo agendamento" nos dois
-     modos da Home (Semana e Dia — criado dinamicamente em view-home.js como
-     #fabNovoHome). Ancorado sobre a barra inferior (token ja inclui safe
-     area); o z acima fica no #fabNovoHome (a barra é 100, o FAB precisa
-     ganhar o toque). */
-}
-
-#fabNovoHome {
-  z-index: 100;
-}
 
 /* Rodada 3 da Etapa 3 (2026-09-27): a regra #appEnvBadge (tarja "LOCAL") saiu
    junto com o elemento, removido de api-config.js a pedido do dono. */
-
-.btn-weekly-add:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.5);
-  filter: brightness(1.03);
-}
-
-.btn-weekly-add:active {
-  transform: scale(0.96);
-}
 
 @media (max-width: 430px) {
   #modalFormAluno {
@@ -3577,8 +3629,7 @@ button.agenda-dia-aula {
 
   /* 2a. Transições puramente de movimento: o estado final continua, só sem deslizar */
   .nav-icon-anim,             /* scale no :active da barra inferior */
-  #btnFlutuanteAdicionar,     /* scale no :active do FAB de Alunos */
-  .btn-weekly-add,            /* FAB da Home: hover translateY + active scale */
+  .fab-adicionar,             /* FABs: hover translateY + active scale */
   .agenda-dia-aula,           /* card: hover translateY */
   .card-stat,
   .duracao-stepper-btn,

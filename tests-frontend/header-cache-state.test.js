@@ -27,10 +27,10 @@ function criarAmbiente({ comCache }) {
         <div class="header-topline">
           <div class="brand-container">
             <h1 class="marca-titulo">Prô Josy</h1>
-            <span id="headerCacheState" class="header-cache-state" hidden>Sincronizando dados...</span>
           </div>
         </div>
       </header>
+      <p id="headerCacheState" class="aviso-carregamento-dados" role="status" hidden>Sincronizando dados...</p>
     </body></html>`,
     { runScripts: 'outside-only', url: 'http://localhost' },
   );
@@ -92,12 +92,13 @@ function criarAmbiente({ comCache }) {
   return { dom, window, rotulo: () => window.document.getElementById('headerCacheState') };
 }
 
-test('Parte B: sync remoto sobre cache acende o rótulo no header e apaga ao concluir (sucesso ou falha)', async (t) => {
+test('Parte B: sync remoto sobre cache acende o aviso no conteúdo e apaga ao concluir (sucesso ou falha)', async (t) => {
   const { dom, window, rotulo } = criarAmbiente({ comCache: true });
   t.after(() => dom.window.close());
 
   const el = rotulo();
-  assert.ok(el, 'rótulo existe no header');
+  assert.ok(el, 'aviso existe fora da marca');
+  assert.equal(el.closest('.header'), null);
   assert.equal(el.hidden, true, 'início: rótulo oculto');
   assert.equal(el.textContent, 'Sincronizando dados...');
 
@@ -133,4 +134,26 @@ test('Aviso imediato: sync remoto SEM cache informa carga e encerra ao concluir'
   assert.equal(el.textContent, 'Carregando dados...');
   await p;
   assert.equal(el.hidden, true);
+});
+
+test('Aviso global fica oculto em Finanças, que apresenta seu próprio estado de leitura', async (t) => {
+  const { dom, window, rotulo } = criarAmbiente({ comCache: true });
+  let leitura;
+  t.after(async () => {
+    if (leitura) await leitura;
+    dom.window.close();
+  });
+
+  let telaAtual = 'tela-financas';
+  window.__appShell = { router: { getCurrentViewId: () => telaAtual, getTelaInicial: () => telaAtual } };
+  window.__controleFetch.setLatencia(250);
+  leitura = window.sincronizarBancoDados();
+  await esperar(40);
+  assert.equal(rotulo().hidden, true, 'Finanças usa skeleton, conteúdo em cache e progresso local');
+
+  telaAtual = 'tela-home';
+  window.leiturasDados.atualizarFeedback();
+  assert.equal(rotulo().hidden, false, 'o aviso global continua disponível nas outras telas');
+  await leitura;
+  assert.equal(rotulo().hidden, true, 'o aviso encerra normalmente quando a leitura termina');
 });

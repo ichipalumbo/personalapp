@@ -86,6 +86,16 @@
             return refreshActiveView();
         };
 
+        if (router.getTelaInicial() === 'tela-financas') {
+            const avisoCache = document.getElementById('headerCacheState');
+            if (avisoCache) avisoCache.hidden = true;
+        }
+
+        // A silhueta do HTML é exclusiva da abertura da Home; outras hashes não a herdam.
+        if (router.getTelaInicial() !== 'tela-home' && typeof global.finalizarSkeletonInicialHome === 'function') {
+            global.finalizarSkeletonInicialHome();
+        }
+
         let bootApresentado = false;
         let autenticacaoPendenteNoBoot = false;
         // Observar antes de whenReady/navegação: o listener de sessão não reenvia

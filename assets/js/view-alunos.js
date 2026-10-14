@@ -477,7 +477,13 @@ function renderizarHistoricoReposicoes() {
         .filter(([, quantidade]) => quantidade > 0)
         .map(([status, quantidade]) => `${quantidade} ${status}`)
         .join(' · ') : '';
-    if (resumoEl) resumoEl.textContent = `${nome} · ${contagens || 'nenhuma reposição'}`;
+    let textoResumo = contagens || 'nenhuma reposição';
+    if (_historicoReposicoesModal.carregando) {
+        textoResumo = 'Atualizando…';
+    } else if (_historicoReposicoesModal.erro && dados.length === 0) {
+        textoResumo = 'Não foi possível carregar o histórico.';
+    }
+    if (resumoEl) resumoEl.textContent = `${nome} · ${textoResumo}`;
     modal.setAttribute('aria-busy', _historicoReposicoesModal.carregando ? 'true' : 'false');
 
     if (_historicoReposicoesModal.carregando && dados.length === 0) {
@@ -498,7 +504,7 @@ function renderizarHistoricoReposicoes() {
         ? `<div class="historico-reposicoes-erro" role="alert"><span>Não foi possível carregar o histórico.</span><button type="button" class="btn btn-secondary" onclick="window.recarregarHistoricoReposicoes()">Tentar novamente</button></div>`
         : '';
     if (dados.length === 0) {
-        conteudo.innerHTML = `${erro}<div class="historico-reposicoes-vazio"><strong>Nenhuma reposição registrada para este aluno.</strong><span>As reposições são criadas a partir da agenda.</span></div>`;
+        conteudo.innerHTML = erro || '<div class="historico-reposicoes-vazio"><strong>Nenhuma reposição registrada para este aluno.</strong><span>As reposições são criadas a partir da agenda.</span></div>';
         return;
     }
 
@@ -555,6 +561,8 @@ window.abrirHistoricoReposicoes = async function(alunoId, origem, opcoes = {}) {
         carregando: true,
         erro: null
     };
+    // Preparar a descrição antes de abrir/focar evita anunciar o resumo da leitura anterior.
+    renderizarHistoricoReposicoes();
     if (window.DialogController && typeof window.DialogController.open === 'function') {
         window.DialogController.open(modal, {
             trigger: _historicoReposicoesModal.origem || null,
@@ -565,7 +573,6 @@ window.abrirHistoricoReposicoes = async function(alunoId, origem, opcoes = {}) {
         modal.setAttribute('tabindex', '-1');
         modal.focus({ preventScroll: true });
     }
-    renderizarHistoricoReposicoes();
     const estadoModal = _historicoReposicoesModal;
     const podeAplicar = () => contextoAtual() && estadoModal === _historicoReposicoesModal
         && modal.isConnected && modal.style.display !== 'none';

@@ -7,6 +7,7 @@
     const STATE = {
         cards: [],
         carregando: false,
+        atualizacaoManual: false,
         salvando: false,
         operacao: null,
         requestId: 0,
@@ -41,6 +42,7 @@
         STATE.cardAtivo = null;
         STATE.cacheAtualizadoEm = null;
         STATE.carregando = false;
+        STATE.atualizacaoManual = false;
         STATE.salvando = false;
         STATE.operacao = null;
         STATE.requestId += 1;
@@ -54,11 +56,17 @@
         if (conteudo) conteudo.setAttribute('aria-busy', 'false');
         fecharModal('pagamento');
         fecharModal('ajuste');
-        ['financasConteudo', 'financasCacheLabel', 'financasSyncState', 'financasPagamentoResumo', 'financasAjusteResumo'].forEach((id) => {
+        ['financasConteudo', 'financasCacheLabel', 'financasProgresso', 'financasSyncState', 'financasPagamentoResumo', 'financasPagamentoValor', 'financasAjusteResumo', 'financasAjustePrevia'].forEach((id) => {
             const elemento = document.getElementById(id);
             if (elemento) elemento.replaceChildren();
         });
+        ['financasProgresso', 'financasSyncState'].forEach((id) => {
+            const elemento = document.getElementById(id);
+            if (elemento) elemento.hidden = true;
+        });
+        atualizarEstadoBotaoAtualizar();
     });
+    contextoDados.aoMudarInteracao(atualizarEstadoBotaoAtualizar);
 
     function formatarMoeda(valor) {
         const numero = Number(valor) || 0;
@@ -121,11 +129,13 @@
             pagamentoModal.style.display = 'none';
             pagamentoModal.setAttribute('role', 'dialog');
             pagamentoModal.setAttribute('aria-labelledby', 'financasPagamentoTitulo');
-            pagamentoModal.setAttribute('aria-describedby', 'financasPagamentoResumo');
+            pagamentoModal.setAttribute('aria-describedby', 'financasPagamentoResumo financasPagamentoValor financasPagamentoCongelamento');
             pagamentoModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
                 <h3 id="financasPagamentoTitulo"><i class="fa-solid fa-circle-check" style="color:#ffd700;margin-right:8px"></i>Marcar como pago</h3>
-                <p id="financasPagamentoResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
+                <p id="financasPagamentoResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:6px;font-weight:500;"></p>
+                <p id="financasPagamentoValor" style="font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:8px;"></p>
+                <p id="financasPagamentoCongelamento" style="font-size:0.8rem;color:#b8b8b8;margin-bottom:14px;line-height:1.35;">Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.</p>
                 <form id="formFinancasPagamento">
                   <div class="form-grupo-spa">
                     <label for="financasDataPagamento">Data do pagamento *</label>
@@ -151,16 +161,18 @@
             ajusteModal.style.display = 'none';
             ajusteModal.setAttribute('role', 'dialog');
             ajusteModal.setAttribute('aria-labelledby', 'financasAjusteTitulo');
-            ajusteModal.setAttribute('aria-describedby', 'financasAjusteResumo');
+            ajusteModal.setAttribute('aria-describedby', 'financasAjusteResumo financasAjusteSubstituicao financasAjustePrevia');
             ajusteModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
                 <h3 id="financasAjusteTitulo"><i class="fa-solid fa-sliders" style="color:#ffd700;margin-right:8px"></i>Ajuste manual</h3>
-                <p id="financasAjusteResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:14px;font-weight:500;"></p>
+                <p id="financasAjusteResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:6px;font-weight:500;"></p>
+                <p id="financasAjusteSubstituicao" style="font-size:0.8rem;color:#b8b8b8;margin-bottom:14px;line-height:1.35;">O valor informado substitui o ajuste atual do ciclo.</p>
                 <form id="formFinancasAjuste">
                   <div class="form-grupo-spa">
                     <label for="financasAulasExtras">Ajuste de aulas (pode ser negativo)</label>
                     <input type="number" id="financasAulasExtras" step="1" required />
                   </div>
+                  <p id="financasAjustePrevia" role="status" style="font-size:0.85rem;color:#d8d8d8;margin:0 0 12px;line-height:1.35;"></p>
                   <div class="form-grupo-spa">
                     <label for="financasObservacaoAjuste">Observação</label>
                     <textarea id="financasObservacaoAjuste" rows="4" style="resize:vertical;"></textarea>
@@ -172,6 +184,8 @@
                 </form>
               </div>`;
             document.body.appendChild(ajusteModal);
+            const campoExtras = ajusteModal.querySelector('#financasAulasExtras');
+            if (campoExtras) campoExtras.addEventListener('input', agendarPreviaAjuste);
         }
     }
 
@@ -181,23 +195,30 @@
         // Info de sistema no header: só aparece quando relevante (cache real ou sync
         // em andamento). "Sem cache local" em repouso virou ruído visual (decisão do
         // dono, Etapa 4, 2026-09-27) — o estado sem cache é o normal fora do app.
+        // T06 (D6=A/roadmap 1.11): o botão "Atualizar" força leitura remota manual
+        // (ignora o cache e expõe falha mesmo com conteúdo em tela).
         const cacheLabel = cache && cache.atualizadoEm ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}` : '';
 
         root.innerHTML = `
-          <section class="agenda-panel topbar-sem-cantos" style="margin-top: 0;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-              <div>
-                <h2 style="margin:0;color:#ffd700;font-size:1.125rem;font-weight:800;">💰 Finanças</h2>
-                <p style="margin:4px 0 0;color:#9a9a9a;font-size:0.875rem;">Ciclo, valor e status de cobrança por aluno.</p>
-              </div>
-              <div style="text-align:right;">
-                <div id="financasCacheLabel" style="font-size:0.75rem;color:#909090;">${cacheLabel}</div>
-                <div id="financasSyncState" style="font-size:0.75rem;color:#909090;margin-top:4px;"></div>
+                    <section class="agenda-panel topbar-sem-cantos financas-cabecalho">
+                        <div class="financas-cabecalho-linha">
+                            <h2 class="financas-cabecalho-titulo">💰 Finanças</h2>
+                            <div class="financas-cabecalho-acoes">
+                                <span id="financasProgresso" class="financas-cabecalho-progresso" role="status" hidden></span>
+                                <button type="button" class="btn-icone" id="financasAtualizar" data-financas-atualizar aria-label="Atualizar finanças" title="Atualizar finanças">
+                                    <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+                                    <span class="sr-only">Atualizar</span>
+                                </button>
               </div>
             </div>
+                        <p class="financas-cabecalho-descricao">Ciclo, valor e status de cobrança por aluno.</p>
+                        <div id="financasCacheLabel" class="financas-cabecalho-cache">${cacheLabel}</div>
+                        <p id="financasSyncState" class="financas-cabecalho-mensagem" role="status" hidden></p>
+                        <p id="financasAtualizarOrientacao" class="financas-cabecalho-mensagem" role="status" hidden>Resolva a alteração não confirmada na área de recuperação acima antes de atualizar.</p>
           </section>
           <section id="financasConteudo"></section>
         `;
+                atualizarCabecalhoCache();
     }
 
     function renderizarSkeleton() {
@@ -632,6 +653,7 @@
     function atualizarCabecalhoCache() {
         if (!telaFinancasAtiva()) return;
         const label = document.getElementById('financasCacheLabel');
+        const progresso = document.getElementById('financasProgresso');
         const syncState = document.getElementById('financasSyncState');
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
 
@@ -640,15 +662,59 @@
                 ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}`
                 : '';
         }
+        if (progresso) {
+            progresso.textContent = STATE.carregando && STATE.atualizacaoManual ? 'Carregando...' : (STATE.salvando ? 'Salvando...' : '');
+            progresso.hidden = !progresso.textContent;
+        }
         if (syncState) {
-            if (STATE.carregando) {
-                syncState.textContent = 'Carregando...';
-            } else if (STATE.salvando) {
-                syncState.textContent = 'Salvando...';
-            } else if (STATE.erro) {
-                syncState.textContent = STATE.erro;
-            } else {
-                syncState.textContent = '';
+            syncState.textContent = !STATE.carregando && !STATE.salvando && STATE.erro ? STATE.erro : '';
+            syncState.hidden = !syncState.textContent;
+        }
+        atualizarEstadoBotaoAtualizar();
+    }
+
+    function atualizarEstadoBotaoAtualizar() {
+        if (!telaFinancasAtiva()) return;
+        const botao = document.getElementById('financasAtualizar');
+        if (!botao) return;
+        const contexto = contextoDados.capturar();
+        const pendencia = contextoDados.obterPendencia(contexto);
+        botao.disabled = STATE.carregando || !contextoDados.atual(contexto)
+            || !contextoDados.podeLer() || Boolean(pendencia);
+        const orientacao = document.getElementById('financasAtualizarOrientacao');
+        if (orientacao) orientacao.hidden = !pendencia;
+        if (pendencia) botao.setAttribute('aria-describedby', 'financasAtualizarOrientacao');
+        else botao.removeAttribute('aria-describedby');
+    }
+
+    async function atualizarFinancasManualmente(botao) {
+        const contexto = contextoDados.capturar();
+        const interacao = contextoDados.capturarInteracao();
+        if (!contextoDados.atual(contexto) || STATE.carregando) return;
+        // R1: a saída de recuperação existente resolve a intenção; este botão
+        // não consulta/aplica dados por cima dela, nem reenvia escrita.
+        if (contextoDados.obterPendencia(contexto)) {
+            atualizarEstadoBotaoAtualizar();
+            if (typeof global.abrirRecuperacaoDados === 'function') global.abrirRecuperacaoDados();
+            return;
+        }
+        if (!contextoDados.podeLer()) return;
+
+        const tinhaFoco = document.activeElement === botao;
+        let focoMovido = false;
+        const observarFoco = (event) => {
+            if (event.target !== botao && event.target !== document.body) focoMovido = true;
+        };
+        if (tinhaFoco) document.addEventListener('focusin', observarFoco);
+        try {
+            await carregarFinancas({ forcarRemoto: true, atualizacaoManual: true });
+        } finally {
+            if (tinhaFoco) document.removeEventListener('focusin', observarFoco);
+            const focoNeutro = document.activeElement === document.body || document.activeElement === botao;
+            if (tinhaFoco && !focoMovido && focoNeutro && botao.isConnected && !botao.disabled
+                && telaFinancasAtiva() && contextoDados.atual(contexto)
+                && contextoDados.podeAplicarInteracao(interacao)) {
+                botao.focus({ preventScroll: true });
             }
         }
     }
@@ -688,12 +754,15 @@
         }
         if (!contextoDados.podeAplicarInteracao(interacao, operacao)) return false;
         const requestId = ++STATE.requestId;
-        const podeAplicar = () => requestId === STATE.requestId && contextoDados.atual(contexto) && contextoDados.podeAplicarInteracao(interacao, operacao);
+        const leituraAindaAtual = () => requestId === STATE.requestId && contextoDados.atual(contexto);
+        const podeAplicar = () => leituraAindaAtual() && contextoDados.podeAplicarInteracao(interacao, operacao)
+            && (!opcoes.atualizacaoManual || !contextoDados.obterPendencia(contexto));
         const deveForcarRemoto = opcoes.forcarRemoto === true;
         const silencioso = opcoes.silencioso === true;
         const cache = typeof global.obterCacheFinancas === 'function' ? global.obterCacheFinancas() : null;
 
         STATE.carregando = true;
+        STATE.atualizacaoManual = opcoes.atualizacaoManual === true;
         STATE.erro = null;
         atualizarCabecalhoCache();
         // 5.8 (Parte A): o container do conteúdo sinaliza o estado de carga
@@ -702,7 +771,7 @@
         const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
         if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'true');
 
-        if (silencioso && STATE.cards.length > 0) {
+        if ((silencioso || opcoes.atualizacaoManual) && STATE.cards.length > 0) {
             renderizarCards();
         } else if (cache && cache.dados && !deveForcarRemoto) {
             STATE.cards = Array.isArray(cache.dados) ? cache.dados : [];
@@ -723,7 +792,7 @@
                 ? await global.executarOperacaoRemotaComFeedback(executor, {
                     contexto: 'carregandoFinancas',
                     exibirFalha: false,
-                    silenciosoUI: silencioso
+                    silenciosoUI: true
                 })
                 : await executor();
             if (resposta.status === 401) {
@@ -757,16 +826,31 @@
                 if (!silencioso && typeof global.mostrarToast === 'function') {
                     global.mostrarToast(STATE.erro, 'warning');
                 }
-                if (!cache && telaFinancasAtiva()) {
-                    renderizarVazio(STATE.erro);
+            }
+            // A1: um snapshot vazio válido também precisa substituir o skeleton.
+            // Não reidratar cache não aplicado por cima da memória em uma falha.
+            if (telaFinancasAtiva() && (!silencioso || document.querySelector('#financasConteudo .skeleton'))) {
+                if (STATE.cards.length > 0 || (cache && Array.isArray(cache.dados) && cache.dados.length === 0)) {
+                    renderizarCards();
+                } else {
+                    renderizarVazio(STATE.erro || 'Não foi possível atualizar agora.');
                 }
             }
             return false;
         } finally {
             if (feedback) global.leiturasDados.finalizarFeedback(feedback);
-            // Uma leitura antiga não apaga o indicador nem o erro da operação seguinte.
-            if (podeAplicar()) {
+            // A2: encerrar o voo não exige aplicar sua resposta. Somente o request
+            // ainda vigente da mesma conta pode limpar o indicador da leitura.
+            if (leituraAindaAtual()) {
                 STATE.carregando = false;
+                STATE.atualizacaoManual = false;
+                if (!podeAplicar() && telaFinancasAtiva() && document.querySelector('#financasConteudo .skeleton')) {
+                    if (STATE.cards.length > 0 || (cache && Array.isArray(cache.dados) && cache.dados.length === 0)) {
+                        renderizarCards();
+                    } else {
+                        renderizarVazio('Atualização interrompida. Tente novamente.');
+                    }
+                }
                 atualizarCabecalhoCache();
                 const conteudoAgora = telaFinancasAtiva() && document.getElementById('financasConteudo');
                 if (conteudoAgora) conteudoAgora.setAttribute('aria-busy', 'false');
@@ -788,9 +872,11 @@
 
         const modal = document.getElementById('modalFinancasPagamento');
         const resumo = document.getElementById('financasPagamentoResumo');
+        const valorEl = document.getElementById('financasPagamentoValor');
         const dataInput = document.getElementById('financasDataPagamento');
         const formaInput = document.getElementById('financasFormaPagamento');
         if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
+        if (valorEl) valorEl.textContent = formatarMoeda(alvo.ciclo.valorTotalCiclo);
         if (dataInput) dataInput.value = new Date().toISOString().slice(0, 10);
         if (formaInput) formaInput.value = '';
         abrirDialogFinancas(modal, 'pagamento');
@@ -815,6 +901,7 @@
         if (resumo) resumo.textContent = `${alvo.card.aluno.nome} • ${formatarDataBR(alvo.ciclo.cicloInicio)} → ${formatarDataBR(alvo.ciclo.cicloFim)}`;
         if (extrasInput) extrasInput.value = String(alvo.ciclo.aulasManuaisExtras || 0);
         if (observacaoInput) observacaoInput.value = alvo.ciclo.observacaoAjuste || '';
+        atualizarPreviaAjuste();
         abrirDialogFinancas(modal, 'ajuste');
     }
 
@@ -838,6 +925,7 @@
 
     function fecharModal(tipo) {
         if (STATE.salvando) return;
+        if (tipo === 'ajuste') cancelarPreviaAjustePendente();
         const modal = document.getElementById(tipo === 'pagamento' ? 'modalFinancasPagamento' : 'modalFinancasAjuste');
         const naPilha = modal && global.DialogController && typeof global.DialogController.getStack === 'function'
             && global.DialogController.getStack().includes(modal);
@@ -848,6 +936,59 @@
             contextoDados.definirFormulario(modal, false);
         }
         STATE.cardAtivo = null;
+    }
+
+    // T04 (D4=B): prévia do ajuste calculada pelo backend — GET
+    // /financas/:cicloId/simulacao-ajuste (somente leitura). A sequência descarta
+    // respostas fora de ordem; o fechamento do modal cancela pendências.
+    let previaAjusteTimer = null;
+    let previaAjusteSeq = 0;
+
+    function cancelarPreviaAjustePendente() {
+        if (previaAjusteTimer) {
+            clearTimeout(previaAjusteTimer);
+            previaAjusteTimer = null;
+        }
+        previaAjusteSeq += 1;
+    }
+
+    function agendarPreviaAjuste() {
+        if (previaAjusteTimer) clearTimeout(previaAjusteTimer);
+        previaAjusteTimer = setTimeout(() => {
+            previaAjusteTimer = null;
+            atualizarPreviaAjuste();
+        }, 400);
+    }
+
+    function montarTextoPreviaAjuste(dados) {
+        const total = Number(dados.totalAulasCobradas) || 0;
+        const valor = formatarMoeda(dados.valorTotalCiclo);
+        if (dados.metodoCobranca === 'valor_fixo') {
+            return `Cobrança fixa: total permanece ${valor}.`;
+        }
+        return `Novo total: ${total} aula(s) × ${formatarMoeda(dados.precoAula)} → ${valor}`;
+    }
+
+    async function atualizarPreviaAjuste() {
+        const alvo = STATE.cardAtivo;
+        if (!alvo || alvo.tipo !== 'ajuste' || !alvo.cicloId) return;
+        const campo = document.getElementById('financasAulasExtras');
+        const previaEl = document.getElementById('financasAjustePrevia');
+        if (!previaEl) return;
+        const seq = ++previaAjusteSeq;
+        previaEl.textContent = 'Calculando prévia…';
+        const valor = campo ? campo.value : '';
+        try {
+            const resposta = await global.apiFetchBackend(`${global.APP_API_CONFIG.apiBaseUrl}/financas/${encodeURIComponent(alvo.cicloId)}/simulacao-ajuste?aulasManuaisExtras=${encodeURIComponent(valor)}`);
+            if (seq !== previaAjusteSeq) return;
+            if (!resposta || !resposta.ok) throw new Error('FALHA_PREVIA_AJUSTE');
+            const dados = await resposta.json();
+            if (seq !== previaAjusteSeq) return;
+            previaEl.textContent = montarTextoPreviaAjuste(dados);
+        } catch (_) {
+            if (seq !== previaAjusteSeq) return;
+            previaEl.textContent = 'Não foi possível calcular a prévia agora.';
+        }
     }
 
     async function salvarPagamento(event) {
@@ -967,6 +1108,13 @@
                 } else {
                     global.prepararEdicaoAluno(alunoId);
                 }
+                return;
+            }
+
+            const atualizarBtn = event.target.closest('[data-financas-atualizar]');
+            if (atualizarBtn) {
+                // T06 (D6=A/roadmap 1.11): leitura manual que ignora o cache — nunca escrita.
+                void atualizarFinancasManualmente(atualizarBtn);
                 return;
             }
 

@@ -12,6 +12,5 @@
 
 # Vendor fontawesome: regra do projeto é não editar vendor. "binary" impede
 # conversão (o CSS já está CRLF no git e CRLF no disco, entao renormalize nao
-# o toca). Os .agents/skills/vendor (anti-ui-slop) ja estao LF no git e seguem a
-# regra geral — sem regra especial, renormalize produz o mesmo blob (zero diff).
+# o toca).
 /assets/vendor/** binary

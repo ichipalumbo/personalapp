@@ -24,7 +24,7 @@ function criarAmbiente() {
             <a class="nav-link-inferior" data-target="tela-financas" href="#">Finanças</a>
         </nav>
         <!-- FAB criado pela Home; vive no body, fora da view-section -->
-        <button id="fabNovoHome" class="btn-weekly-add fab-novo-home">+</button>
+        <button id="fabNovoHome" class="fab-adicionar" type="button">+</button>
     </body></html>`, { url: 'http://localhost', runScripts: 'outside-only' });
     const { window } = dom;
 

@@ -944,6 +944,75 @@ async function atualizarAjusteCiclo(
   return ciclo.toObject ? ciclo.toObject() : ciclo;
 }
 
+// T04 (D4=B): prévia do ajuste — reusa o cálculo oficial de `atualizarAjusteCiclo`
+// sem nenhuma escrita: não salva, não cria ciclo e não persiste o fallback de
+// snapshot legado (a resolução roda sobre um clone em memória). Contrato:
+// GET /api/financas/:cicloId/simulacao-ajuste?aulasManuaisExtras=<inteiro>.
+async function simularAjusteCiclo(
+  ownerEmail,
+  cicloId,
+  aulasManuaisExtrasSimulado,
+) {
+  const ciclo = await CicloFinanceiro.findOne({ _id: cicloId, ownerEmail });
+  if (!ciclo) {
+    const error = new Error("Ciclo financeiro não encontrado.");
+    error.statusCode = 404;
+    throw error;
+  }
+
+  if (ciclo.dataPagamento) {
+    const error = new Error(
+      "Este ciclo já foi pago e não pode mais ser ajustado.",
+    );
+    error.statusCode = 409;
+    throw error;
+  }
+
+  // Mesma normalização do PATCH: ausente/inválido → 0.
+  const extras = Number.parseInt(aulasManuaisExtrasSimulado, 10);
+  const ajusteSimulado = Number.isNaN(extras) ? 0 : extras;
+
+  const aluno = await Aluno.findOne({ ownerEmail, id: ciclo.alunoId });
+
+  // Mesma regra de snapshot do recálculo oficial (5.9/5.10), aplicada a um
+  // clone: o fallback de legado não é gravado no ciclo durante a simulação.
+  const { snapshot } = resolverSnapshotParaRecalculo(
+    {
+      metodoCobranca: ciclo.metodoCobranca,
+      precoAulaSnapshot: ciclo.precoAulaSnapshot,
+      valorFixoSnapshot: ciclo.valorFixoSnapshot,
+    },
+    aluno,
+  );
+
+  const aulasContadas = Number(ciclo.aulasContadas) || 0;
+  const totalAulasCobradas = calcularTotalAulasCobradas(
+    aulasContadas,
+    ajusteSimulado,
+  );
+  const valorTotalCiclo = calcularValorTotalCiclo(
+    snapshot,
+    aulasContadas,
+    ajusteSimulado,
+  );
+
+  return {
+    metodoCobranca: snapshot.metodoCobranca,
+    precoAula:
+      snapshot.metodoCobranca === "valor_fixo"
+        ? null
+        : Number(snapshot.preco) || 0,
+    valorFixoCiclo:
+      snapshot.metodoCobranca === "valor_fixo"
+        ? Number(snapshot.valorFixoCiclo) || 0
+        : null,
+    aulasContadas,
+    aulasManuaisExtras: ajusteSimulado,
+    totalAulasCobradas,
+    valorTotalCiclo,
+  };
+}
+
 module.exports = {
   PRAZO_MINIMO_REPOSICAO_DIAS,
   calcularPrazoReposicao,
@@ -959,6 +1028,7 @@ module.exports = {
   obterHistoricoFinancasPorAluno,
   marcarCicloComoPago,
   atualizarAjusteCiclo,
+  simularAjusteCiclo,
   obterOuCriarCicloVigente,
   recalcularStatusCiclo: aplicarStatusCiclo,
 };

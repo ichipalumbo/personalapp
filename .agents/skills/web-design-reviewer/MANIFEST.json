@@ -1,0 +1,14 @@
+{
+  "name": "web-design-reviewer",
+  "upstream": {
+    "repository": "https://github.com/github/awesome-copilot",
+    "commit": "156736fb63e965b2f547a1460f3b5972c46e6b24",
+    "license": "MIT"
+  },
+  "included": [
+    "SKILL.md",
+    "LICENSE",
+    "references/visual-checklist.md",
+    "references/framework-fixes.md"
+  ]
+}

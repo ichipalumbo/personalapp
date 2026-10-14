@@ -248,3 +248,148 @@ test('C — retorno sem alvo ou obsoleto é false; cancelamento e erro podem rel
     }
     assert.equal(a.toasts.length, 0);
 });
+
+function verificarCarregamentoHistorico(a) {
+    const doc = a.window.document;
+    assert.equal(doc.getElementById('resumoHistoricoReposicoes').textContent, 'Ana · Atualizando…');
+    assert.equal(doc.getElementById('modalHistoricoReposicoes').getAttribute('aria-busy'), 'true');
+    assert.equal(doc.querySelectorAll('#conteudoHistoricoReposicoes .skeleton').length, 3);
+    assert.equal(doc.querySelector('#conteudoHistoricoReposicoes [role="status"] .sr-only').textContent, 'Carregando histórico de reposições');
+    assert.equal(doc.querySelector('#conteudoHistoricoReposicoes .historico-reposicoes-vazio'), null);
+    assert.equal(doc.querySelector('#conteudoHistoricoReposicoes .historico-reposicoes-erro'), null);
+}
+
+// M31: retirar Atualizando…; M33: preparar a descrição só depois do foco.
+test('T07 — abertura prepara o carregamento antes do foco e aplica contagens após o GET', { timeout: 5000 }, async (t) => {
+    const a = ambiente(t);
+    const doc = a.window.document;
+    const modal = doc.getElementById('modalHistoricoReposicoes');
+    const resumosAoFocar = [];
+    modal.addEventListener('focus', () => resumosAoFocar.push({
+        texto: doc.getElementById('resumoHistoricoReposicoes').textContent,
+        busy: modal.getAttribute('aria-busy')
+    }));
+    const corpo = adiada();
+    const iniciou = adiada();
+    const rota = `reposicoes?alunoId=${ALUNO.id}`;
+    a.fontes[rota] = async () => ({ ok: true, json: () => { iniciou.resolver(); return corpo.promise; } });
+
+    const leitura = a.window.abrirHistoricoReposicoes(ALUNO.id, a.origem);
+    await iniciou.promise;
+    verificarCarregamentoHistorico(a);
+    assert.deepEqual(resumosAoFocar, [{ texto: 'Ana · Atualizando…', busy: 'true' }]);
+    corpo.resolver([reposicao('realizada'), { ...reposicao('pendente'), status: 'pendente' }]);
+    assert.equal(await leitura, true);
+
+    assert.equal(doc.getElementById('resumoHistoricoReposicoes').textContent, 'Ana · 1 pendente · 1 realizada');
+    assert.equal(modal.getAttribute('aria-busy'), 'false');
+    assert.equal(doc.querySelectorAll('#conteudoHistoricoReposicoes .skeleton').length, 0);
+    assert.deepEqual(Array.from(doc.querySelectorAll('.historico-reposicao-grupo h4'), (el) => el.textContent), ['Pendentes (1)', 'Realizadas (1)']);
+    assert.deepEqual(a.chamadas.map((item) => item.rota), [rota]);
+});
+
+// M31 também precisa falhar na reabertura de uma leitura vazia já confirmada.
+test('T07 — vazio só aparece após confirmação e não é anunciado na reabertura', { timeout: 5000 }, async (t) => {
+    const a = ambiente(t);
+    const doc = a.window.document;
+    const modal = doc.getElementById('modalHistoricoReposicoes');
+    const resumosAoFocar = [];
+    modal.addEventListener('focus', () => resumosAoFocar.push(doc.getElementById('resumoHistoricoReposicoes').textContent));
+    const rota = `reposicoes?alunoId=${ALUNO.id}`;
+
+    for (const dados of [[], [reposicao('apos-vazio')]]) {
+        const corpo = adiada();
+        const iniciou = adiada();
+        a.fontes[rota] = async () => ({ ok: true, json: () => { iniciou.resolver(); return corpo.promise; } });
+        const leitura = a.window.abrirHistoricoReposicoes(ALUNO.id, a.origem);
+        await iniciou.promise;
+        verificarCarregamentoHistorico(a);
+        assert.equal(resumosAoFocar[resumosAoFocar.length - 1], 'Ana · Atualizando…');
+        corpo.resolver(dados);
+        assert.equal(await leitura, true);
+        assert.equal(modal.getAttribute('aria-busy'), 'false');
+        assert.equal(doc.querySelectorAll('#conteudoHistoricoReposicoes .skeleton').length, 0);
+        if (dados.length === 0) {
+            assert.equal(doc.getElementById('resumoHistoricoReposicoes').textContent, 'Ana · nenhuma reposição');
+            assert.match(doc.getElementById('conteudoHistoricoReposicoes').textContent, /Nenhuma reposição registrada para este aluno\./);
+        } else {
+            assert.equal(doc.getElementById('resumoHistoricoReposicoes').textContent, 'Ana · 1 realizada');
+            assert.equal(doc.querySelector('.historico-reposicoes-vazio'), null);
+        }
+        a.window.fecharHistoricoReposicoes();
+    }
+    assert.deepEqual(a.chamadas.map((item) => item.rota), [rota, rota]);
+});
+
+test('T07 — cancelar reagendamento reabre em carregamento e mantém a pendência após a leitura', { timeout: 5000 }, async (t) => {
+    const a = ambiente(t);
+    const pendente = { ...reposicao('pendente-preservada'), status: 'pendente' };
+    const dados = [pendente, reposicao('realizada-preservada')];
+    const rota = `reposicoes?alunoId=${ALUNO.id}`;
+    a.window.aulasParaRepor = [pendente];
+    a.fontes[rota] = async () => resposta(dados);
+    assert.equal(await a.window.abrirHistoricoReposicoes(ALUNO.id, a.origem), true);
+    const reagendamentos = [];
+    a.window.iniciarReagendamentoReposicao = (id) => reagendamentos.push(id);
+    a.window.iniciarReagendamentoReposicaoDoHistorico(pendente.id);
+    assert.deepEqual(reagendamentos, [pendente.id]);
+    assert.equal(a.window.document.getElementById('modalHistoricoReposicoes').style.display, 'none');
+
+    const corpo = adiada();
+    const iniciou = adiada();
+    a.fontes[rota] = async () => ({ ok: true, json: () => { iniciou.resolver(); return corpo.promise; } });
+    const retorno = a.window.finalizarRetornoHistoricoReposicoes({ status: 'cancelado' });
+    await iniciou.promise;
+    verificarCarregamentoHistorico(a);
+    corpo.resolver(dados);
+    assert.equal(await retorno, true);
+    assert.equal(a.window.document.getElementById('resumoHistoricoReposicoes').textContent, 'Ana · 1 pendente · 1 realizada');
+    assert.deepEqual(a.window.aulasParaRepor, [pendente]);
+    assert.equal(a.toasts.length, 0);
+    assert.deepEqual(a.chamadas.map((item) => item.rota), [rota, rota]);
+});
+
+// M32: erro junto de vazio; M34: erro sem dados volta a afirmar nenhuma reposição.
+test('T07 — falha HTTP, payload inválido e rede não são vazio; retry faz somente nova leitura', { timeout: 5000 }, async (t) => {
+    for (const caso of ['http', 'payload', 'rede']) {
+        const a = ambiente(t);
+        const doc = a.window.document;
+        const rota = `reposicoes?alunoId=${ALUNO.id}`;
+        const liberar = adiada();
+        const iniciou = adiada();
+        a.fontes[rota] = async () => {
+            iniciou.resolver();
+            await liberar.promise;
+            if (caso === 'rede') throw new Error('Sem rede');
+            return resposta({ itens: [] }, caso === 'http' ? 500 : 200);
+        };
+        const leitura = a.window.abrirHistoricoReposicoes(ALUNO.id, a.origem);
+        await iniciou.promise;
+        verificarCarregamentoHistorico(a);
+        liberar.resolver();
+        assert.equal(await leitura, false, caso);
+        assert.equal(doc.getElementById('modalHistoricoReposicoes').getAttribute('aria-busy'), 'false');
+        assert.equal(doc.getElementById('resumoHistoricoReposicoes').textContent, 'Ana · Não foi possível carregar o histórico.');
+        assert.equal(doc.querySelector('.historico-reposicoes-vazio'), null, caso);
+        assert.equal(doc.querySelectorAll('#conteudoHistoricoReposicoes .skeleton').length, 0);
+        assert.match(doc.querySelector('.historico-reposicoes-erro[role="alert"]').textContent, /Não foi possível carregar o histórico\..*Tentar novamente/);
+
+        const corpoRetry = adiada();
+        const iniciouRetry = adiada();
+        a.fontes[rota] = async () => ({ ok: true, json: () => { iniciouRetry.resolver(); return corpoRetry.promise; } });
+        const abrirReal = a.window.abrirHistoricoReposicoes;
+        let retry;
+        a.window.abrirHistoricoReposicoes = (...args) => { retry = abrirReal(...args); return retry; };
+        a.window.recarregarHistoricoReposicoes();
+        await iniciouRetry.promise;
+        verificarCarregamentoHistorico(a);
+        corpoRetry.resolver([]);
+        assert.equal(await retry, true);
+        assert.equal(doc.getElementById('resumoHistoricoReposicoes').textContent, 'Ana · nenhuma reposição');
+        assert.equal(doc.querySelector('.historico-reposicoes-erro'), null);
+        assert.ok(doc.querySelector('.historico-reposicoes-vazio'));
+        assert.deepEqual(a.chamadas.map((item) => item.rota), [rota, rota]);
+        assert.ok(a.chamadas.every((item) => !item.opcoes.method || item.opcoes.method === 'GET'));
+        assert.equal(a.toasts.length, 0);
+    }
+});
