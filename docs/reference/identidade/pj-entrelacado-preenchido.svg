@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 256 256" role="img" aria-labelledby="titulo descricao">
+  <title id="titulo">Personal Josy - PJ entrelacado preenchido</title>
+  <desc id="descricao">Rascunho estatico: P branco com contorno preto e J amarelo com contorno preto. Letras entrelacadas sobre fundo escuro.</desc>
+  <defs>
+    <path id="letra-p" d="M60 200V56H118C147 56 166 73 166 100S147 144 118 144H60"/>
+    <path id="letra-j" d="M136 88H200M188 88V156C188 183 172 200 148 200S108 183 108 164"/>
+    <mask id="separacao" maskUnits="userSpaceOnUse" x="0" y="0" width="256" height="256">
+      <rect width="256" height="256" fill="#ffffff"/>
+      <use href="#letra-j" fill="none" stroke="#000000" stroke-width="34" stroke-linecap="square" stroke-linejoin="round"/>
+    </mask>
+  </defs>
+  <rect width="256" height="256" fill="#0d0d0d"/>
+  <g fill="none" stroke-linecap="square" stroke-linejoin="round">
+    <g mask="url(#separacao)">
+      <use href="#letra-p" stroke="#000000" stroke-width="28"/>
+      <use href="#letra-p" stroke="#ffffff" stroke-width="24"/>
+    </g>
+    <use href="#letra-j" stroke="#000000" stroke-width="28"/>
+    <use href="#letra-j" stroke="#ffd700" stroke-width="24"/>
+  </g>
+</svg>

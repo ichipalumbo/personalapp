@@ -15,7 +15,7 @@
 
 ## Identidade e preparação Google — antes do planejamento
 
-- **Decisão de produto**: adotar **Personal Josy**, mantendo o vínculo com a professora e as cores atuais. Contrato e decisões ainda abertas na [spec de identidade](specs/identidade-e-apresentacao-publica.md).
+- **Decisão de produto**: adotar **Personal Josy** com o monograma PJ entrelaçado preenchido, mantendo o vínculo com a professora e a paleta da interface. Descritor, endereço atual e contato provisório de suporte também foram confirmados; contrato e pendências na [spec de identidade](specs/identidade-e-apresentacao-publica.md).
 - **Pesquisa registrada**: [diagnóstico datado](diagnostics/2026-10-14-diag-identidade-verificacao-google.md) com evidências de marca, isolamento e OAuth; [referência Google](reference/google-oauth-verificacao.md) com requisitos e limites das fontes consultadas.
 - **Limite da frente**: registro documental, sem plano de execução, esforço estimado, prioridade escolhida, mudança de produto ou submissão. O risco de isolamento identificado não foi corrigido; intervenções em autenticação/GCal exigem autorização específica. Não altera a conclusão do sync entregue em 2.1 nem aprova a sessão própria proposta em 4.9.
 

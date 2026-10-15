@@ -1,8 +1,8 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Aprovada, não implementada · **Versão**: 1 · **Atualizado**: 2026-10-14
-> **Escopo aprovado**: nome Personal Josy, vínculo com a professora, preservação das cores e objetivo de consistência da apresentação para verificação Google.
-> **Limite**: esta spec registra a decisão de identidade; não aprova logo, domínio, textos legais, desenho de autenticação ou execução do rebranding.
+> **Status**: Aprovada, não implementada · **Versão**: 2 · **Atualizado**: 2026-10-14
+> **Escopo aprovado**: nome Personal Josy, descritor, monograma PJ entrelaçado preenchido, preservação da paleta da interface, manutenção do endereço atual e contato provisório de suporte.
+> **Limite**: a aprovação do símbolo não aplica a marca ao app nem aprova tipografia, textos legais, desenho de autenticação ou execução do rebranding.
 
 ## 1. Objetivo e fronteira
 
@@ -28,7 +28,8 @@ continuam independentes e não são redefinidos aqui.
 - O nome oficial é **Personal Josy**, com essa grafia e um espaço entre as palavras.
 - A marca mantém o nome da professora; não será substituída por uma marca independente.
 - O nome não inclui `Prô`, um nome alternativo ou um descritor obrigatório como sufixo.
-- Um texto explicativo pode acompanhar o nome, mas sua redação ainda precisa de aprovação.
+- O descritor aprovado é **Agenda e gestão para personal trainers.** Ele explica o produto,
+  não integra o nome oficial nem precisa aparecer permanentemente no cabeçalho operacional.
 
 ### 2.2 Cores
 
@@ -50,6 +51,43 @@ partir do nome da marca.
 A preparação para verificação Google deve representar a integração real. Não anunciar
 endosso, parceria, certificação geral de segurança ou aprovação Google sem evidência
 correspondente. Cumprir requisitos e submeter o aplicativo não garante aprovação.
+
+### 2.4 Monograma aprovado
+
+O símbolo escolhido é o **PJ entrelaçado preenchido**, conforme o
+[SVG aprovado](../reference/identidade/pj-entrelacado-preenchido.svg):
+
+- **P** branco (`#ffffff`) com contorno preto (`#000000`).
+- **J** preenchido em amarelo/dourado (`#ffd700`) com contorno preto (`#000000`).
+- Fundo escuro (`#0d0d0d`) e proporções/entrelaçamento do arquivo escolhido preservados.
+- Versão estática, **sem ondas, tremor ou animação**.
+
+A escolha é do símbolo desse SVG. As versões lado a lado, com J vazado ou com ondas
+foram descartadas e não compõem a identidade selecionada.
+
+Tipografia da assinatura `Personal Josy`, composição do cabeçalho, adaptações para
+instalação PWA e asset de consentimento Google ainda precisam ser definidas. Aprovar o
+monograma não significa aprovar essas aplicações ou exportações anteriores.
+
+### 2.5 Endereço atual mantido
+
+Manter por enquanto o endereço público atual,
+[josy-personal-app.vercel.app](https://josy-personal-app.vercel.app/), sem contratar domínio
+próprio nesta frente. A hospedagem e os identificadores técnicos existentes não serão
+renomeados por causa da marca.
+
+Essa escolha não comprova propriedade no Search Console nem aprovação do domínio ou
+das URLs no projeto OAuth. Essas configurações continuam pendentes de conferência.
+
+### 2.6 Contato provisório de suporte
+
+O contato indicado pelo dono é **Luccas Palumbo**, pelo e-mail
+[luccaspalumbo@gmail.com](mailto:luccaspalumbo@gmail.com), provisoriamente autorizado como
+contato público de suporte na preparação do aplicativo.
+
+Informar esse contato não define, por si, responsável legal, controlador/operador de
+dados, encarregado de privacidade, canal formal de exclusão ou compromissos de retenção.
+Essas definições continuam abertas e não devem ser preenchidas por inferência.
 
 ## 3. Decisões e casos de borda
 
@@ -87,19 +125,18 @@ Lançamento público não aprova portal de aluno, equipe, compartilhamento ou no
 
 | Assunto | Situação |
 |---|---|
-| Descritor `Agenda, alunos e finanças para personal trainers` | Sugestão editorial; não aprovado como texto definitivo |
-| Logo, símbolo, tipografia e composição do cabeçalho | A definir e aprovar, preservando as cores |
-| Ícones de instalação e asset para consentimento Google | A definir; identidade consistente, sem desenho aprovado |
+| Tipografia e composição do cabeçalho | A definir usando o monograma aprovado; não redesenhar o símbolo por inferência |
+| Ícones de instalação e asset para consentimento Google | Adaptações, dimensões e enquadramento a definir a partir do monograma aprovado |
 | Página pública e localização dos links legais no app | A definir; sem arquitetura, URL ou layout aprovados |
-| Domínio próprio ou manutenção do endereço atual | A decidir após conferir controle/verificação; nenhuma compra ou migração autorizada |
-| Responsável legal, suporte, privacidade, retenção e exclusão | A confirmar com o dono; não inventar dados ou compromissos |
+| Verificação do endereço atual e das URLs no Google | Conferir Search Console e projeto OAuth; manter o endereço não comprova aprovação |
+| Responsável legal, privacidade, retenção e exclusão | A confirmar com o dono; o contato provisório de suporte não encerra essas definições |
 | Escopos, revogação, sessão, proteção OAuth e correções de isolamento | Exigem contrato e autorização específicos; esta decisão de marca não os aprova |
 | Data de lançamento, submissão Google e coordenação da publicação | A decidir; não inferir do nome aprovado |
 
 ## 5. Fora de escopo
 
 - Implementar o rebranding, planejar cartões/ordem de execução ou publicar o aplicativo.
-- Criar logo ou páginas legais definitivas sem resolver as decisões da seção 4.
+- Redesenhar o símbolo aprovado ou criar páginas legais definitivas sem decisão explícita.
 - Alterar cores, navegação, regras financeiras, recorrência ou conflitos.
 - Alterar autenticação, sincronização, tokens, webhooks ou estado remoto.
 - Comprar domínio, mudar infraestrutura, criar projetos/clientes Google ou submeter revisão.
@@ -108,4 +145,5 @@ Lançamento público não aprova portal de aluno, equipe, compartilhamento ou no
 
 O planejamento de implementação é posterior à consolidação das evidências e à confirmação
 das decisões pendentes. Esta aprovação documental não significa mudança de produto,
-aceite visual, deploy ou autorização para modificar áreas sensíveis.
+aceite da interface, deploy ou autorização para modificar áreas sensíveis. O aceite do
+símbolo em SVG não equivale ao aceite de sua futura aplicação no app.
