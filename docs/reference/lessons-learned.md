@@ -245,3 +245,21 @@ na prática — mas o código que as gerou pode não ter mudado.
   depois de qualquer remoção de bloco de código (não só edição pontual), rodar a suíte que
   carrega o arquivo afetado antes de prosseguir para a próxima tarefa — ausência de erro de
   sintaxe não é prova de que nada quebrou.
+
+---
+
+## 6. Identidade e verificação Google — aprendizado de 2026-10-14
+
+- **Marca, autorização e verificação não são equivalentes.** O aprendizado de escopos,
+  páginas, privacidade, limites e revisão fica na [referência Google](google-oauth-verificacao.md),
+  com fontes e condição de reconferência; não replicar ali ou aqui um segundo contrato.
+- **Bearer enviado não significa rota protegida.** A releitura encontrou três operações
+  de conexão GCal sem autenticação no router e com dono recebido do cliente. Evidência,
+  impacto inferido e limites estão no [diagnóstico, F01](../diagnostics/2026-10-14-diag-identidade-verificacao-google.md).
+  Não houve exploração de produção nem correção; preparação visual não encerra esse risco.
+- **Nome comercial não autoriza rename técnico em massa.** A decisão vive na
+  [spec de identidade](../specs/identidade-e-apresentacao-publica.md); o marcador GCal
+  `corepersonal`, dados, credenciais e históricos não acompanham a troca por estética.
+- **Sugestão, requisito externo e decisão precisam de rótulos distintos.** Logo, domínio,
+  textos legais e desenho OAuth permanecem abertos. A pesquisa documentada não é plano,
+  aprovação Google, clearance de marca ou autorização para alterar áreas sensíveis.

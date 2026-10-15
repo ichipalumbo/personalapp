@@ -1,7 +1,7 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Em produção · **Versão**: 16 · **Atualizado**: 2026-10-14
-> **Divergência de apresentação**: o rodapé do modal ainda exibe a redação antiga de irreversibilidade; o contrato permite edição antes do pagamento. A UI não foi alterada nesta consolidação.
+> **Status**: Em produção · **Versão**: 17 · **Atualizado**: 2026-10-14
+> **Apresentação**: rodapé alinhado ao contrato na branch de trabalho, com testes e mock; publicação e aceite no app real continuam com o dono.
 > **Situação**: histórico contextual e edição protegida da cobrança implementados; correção de
 > dados duplicados em produção concluída pelo dono em 2026-09-23.
 >
@@ -518,6 +518,7 @@ Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o 
 
 **Rodapé**
 
+- Texto fixo: `Pode alterar antes do pagamento do ciclo.`
 - A escolha pode ser alterada enquanto o ciclo responsável não estiver pago; depois do pagamento, a cobrança fica bloqueada. O rodapé não deve apresentar a escolha como irreversível desde o envio.
 - Quando houver prazo (6.2), acrescentar: `Prazo para reposição: até dd/mm.`
 
@@ -709,7 +710,7 @@ no reagendamento via modal, mas não no envio para reposição de instância rec
 | 12  | Não cobrável cai em ciclo pago? | Vai para o primeiro ciclo seguinte não pago                  |
 | 13  | Aluno `valor_fixo`?             | Escolha registrada, **não afeta valor**. Extrato informativo |
 | 14  | Aluno sem ciclo configurado?    | `validoAte` nulo, não expira                                 |
-| 15  | Registro é deletado?            | **Nunca.** `realizada` / `expirada` são estados finais       |
+| 15  | Registro é deletado?            | Registros de negócio são preservados; `realizada` / `expirada` são estados finais. Limpeza excepcional de órfã segue 13.1, sem ação geral de excluir |
 | 16  | Migração de dados?              | **Não há.** Base de produção zerada, app não lançado         |
 | 17  | Salvar antes do PATCH?          | **Sim.** PATCH só segue com confirmação de persistência (`{ ok: true }`) |
 | 18  | Contrato de `salvarDados`       | `{ ok, motivo }`, com quatro motivos estáveis (`sucesso`, `falha_remota`, `nao_autenticado`, `sessao_expirada`) |
@@ -782,3 +783,16 @@ a qualquer envio ou falha de série.
 - **Responsabilidade do servidor**: prazo e expiração seguem 6–7; não tratar o status como promessa de futura ativação nem introduzir migração de dados por inferência.
 - **Candidato de limpeza no POST**: o corpo não pode definir `cicloCobrancaResolvido`; uma leitura posterior desse campo foi registrada como ramo inalcançável. Revalidar antes de intervir; esta observação não é uma correção executada.
 - **Rótulo do extrato**: `reposicao_ja_cobrada` pode mostrar período derivado de `dataOriginal` com a configuração atual do aluno. Mudança de vencimento pode fazer a nota divergir do período histórico real; a linha vale R$ 0,00 e esse limite é de apresentação, não de valor cobrado.
+
+### 13.1 Exceção restrita de limpeza de órfã
+
+Registros de reposição que representam negócio/histórico permanecem preservados. A exceção
+é a órfã criada no fluxo de envio de **aula avulsa** que falhou, antes de a reposição ser
+apresentada como resultado concluído ao usuário. A limpeza desse caso usa o contrato de
+`DELETE /api/reposicoes/:id`, escopado por `ownerEmail` e idempotente, descrito em GCal 9.27.
+
+O DELETE é best-effort e pode falhar: não prometer que o documento foi apagado sem
+confirmação. Isso não cria botão de exclusão no histórico, não permite apagar registro
+realizado/expirado e não estende a limpeza automaticamente a envio de série, reagendamento
+ou qualquer operação composta. A política de pendência/recuperação explícita de 11.2
+continua aplicável; a exceção não autoriza replay geral ou compensação remota cega.

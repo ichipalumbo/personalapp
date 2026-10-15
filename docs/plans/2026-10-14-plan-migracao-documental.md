@@ -29,6 +29,8 @@ Incorporar conhecimento útil ainda ausente nas fontes vivas apropriadas e recon
 | Cobrança da reposição editável enquanto o ciclo responsável não estiver pago | Decisão do dono nesta retomada, 2026-10-14 | Manter a edição existente e o bloqueio após pagamento; não apresentar a escolha como irreversível desde o envio |
 | Falha parcial/desconhecida conserva pendência para recuperação explícita | Decisão do dono nesta retomada, 2026-10-14 | Manter política de Finanças/B2, sem replay geral ou compensação remota cega; não implementar novo rollback automático |
 | Reconciliar o plano de fluxos UX reaparecido com a cópia arquivada | Confirmação do dono nesta retomada | Comparar conteúdo antes de agir; preservar a versão histórica canônica e não reabrir seus cartões. A comparação confirmou equivalência descontando links/caminhos |
+| Corrigir o rodapé e continuar a documentação | Confirmação do dono nesta rodada | Exceção pontual ao escopo anterior sem código: alterar o texto da UI, proteger no teste existente e validar no mock; não alterar handlers, cálculo ou gravação |
+| Explicitar a exceção restrita de limpeza de órfã de envio avulso falho | Confirmação do dono nesta rodada | Preservar registros de negócio; DELETE idempotente por ownerEmail e best-effort apenas no caso previsto, sem ação geral, extensão a outros fluxos ou compensação cega |
 
 O [roadmap oficial](../roadmap-v3.md) continua como índice. Não usar este plano como depósito de todo o texto retirado de fontes anteriores: históricos e duplicações podem permanecer apenas na origem preservada.
 
@@ -45,7 +47,7 @@ O [roadmap oficial](../roadmap-v3.md) continua como índice. Não usar este plan
 
 | Cartão | Resultado esperado | Estado |
 |---|---|---|
-| T01 | Comparar trechos do roadmap com as fontes vivas e registrar a matriz de transferência | Parcial: MIG-01–MIG-18 classificados; os limites de revalidação funcional continuam explícitos |
+| T01 | Comparar trechos do roadmap com as fontes vivas e registrar a matriz de transferência | Parcial: MIG-01–MIG-20 classificados; os limites de revalidação funcional continuam explícitos |
 | T02 | Incorporar conhecimento técnico pertinente em referência/manual, conciliando descrições antigas | Primeiro incremento realizado e validado; outros recortes podem exigir nova triagem |
 | T03 | Reconciliar e migrar trechos de contrato/spec apenas com fundamento suficiente e sem mudança de regra | Trechos finais de Finanças/Reposições e seção 9 de GCal consolidados, com cópias históricas e decisões confirmadas. Revalidação funcional e outros trechos não examinados não foram declarados encerrados |
 | T04 | Atualizar navegação e referências afetadas e declarar o que resta migrar | Concluído neste incremento: fontes vivas e arquivo histórico navegáveis, sem links locais ausentes |
@@ -76,6 +78,8 @@ Usar uma linha por trecho significativo, não por arquivo inteiro. Classificaç�
 | MIG-16 | Rodapé e §11.2–§11.3/§13 de Reposições | Decisão confirmada e consolidação de limites | [Spec de Reposições](../specs/reposicoes-e-competencia.md) | Cobrança editável até pagamento e recuperação explícita confirmadas pelo dono; cobertura/cronologia preservadas no histórico. Regras centrais de prazo/competência inalteradas; texto antigo da UI sinalizado |
 | MIG-17 | Finanças §12, relatos de dívida/correção versus requisitos de arquitetura/expansão | Consolidação do contrato e cautelas | [Spec de Finanças](../specs/financas-ciclo-cobranca.md) | Requisitos do compartilhamento e expansão preservados; retirado enquadramento de cronologia/backlog. Regras financeiras e contratos de rede centrais idênticos à entrada |
 | MIG-18 | Plano UX reaparecido fora do archive | Reconciliação de duplicata autorizada | [Plano histórico canônico](../archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) | 556 linhas equivalentes após normalizar links e caminhos históricos, sem conteúdo novo. Duplicata retirada da área ativa e cópia arquivada preservada; nenhum cartão reaberto |
+| MIG-19 | Rodapé contraditório de cobrança e contrato de edição antes do pagamento | Correção pontual de UI autorizada | [HTML](../../index.html), [teste do modal](../../tests-frontend/modal-acao-slot.test.js) e [spec de Reposições](../specs/reposicoes-e-competencia.md) | Texto alinhado, asserção no markup real; focado 14/14, mutação 13 pass/1 fail esperada e restauração 14/14; suíte frontend 420/420 antes e depois, mock nos três viewports |
+| MIG-20 | Reposições decisão 15 versus limpeza excepcional de GCal 9.27 | Clarificação documental confirmada | [Reposições 13.1](../specs/reposicoes-e-competencia.md) e [GCal 9.27](../specs/gcal-sync.md) | Registros de negócio preservados; exceção restrita à órfã de envio avulso que falhou. Sem exclusão geral, extensão de escopo ou alteração de runtime da limpeza |
 
 ## 6. Validação
 
@@ -166,7 +170,22 @@ Frente em execução. O primeiro incremento técnico não conclui M01–M03 para
 
 | Pendência | Evidência/limite | Tratamento |
 |---|---|---|
-| Rodapé do modal ainda afirma irreversibilidade | `index.html` mantém `Não pode ser alterado depois.`; backend permite edição antes de ciclo pago | Contrato e divergência sinalizados. Alteração de UI/código e prova de teste ficam para intervenção autorizada |
+| Rodapé do modal afirmava irreversibilidade | Corrigido localmente nesta continuação; texto `Pode alterar antes do pagamento do ciclo.` protegido no markup real | Resolvido na branch, com mutação/testes e mock; publicação/aceite real continuam com o dono |
 | Recuperação de todos os ramos legados não foi recertificada | Conferidos controller de cobrança, reagendamento e contrato B2; não executado todo fluxo composto | Não afirmar que todo ramo implementa a política em todas as falhas; revalidar em frente funcional |
-| Regra genérica de nunca deletar versus limpeza excepcional de órfã | Reposições decisão 15 e contrato de limpeza GCal coexistem | Não ampliar DELETE nem apagar registro de negócio por inferência; esclarecer exceção em decisão específica se esse recorte for trabalhado |
+| Regra genérica de nunca deletar versus limpeza excepcional de órfã | Exceção restrita confirmada pelo dono e explicitada em Reposições 13.1/GCal 9.27 | Divergência documental esclarecida; implementação de todos os ramos não foi recertificada e a exceção não autoriza ampliação de DELETE |
 | Medições antigas e riscos datados | As cópias e demais históricos preservam evidência de época | Não converter relato em validação atual nem encerrar risco só por extrair texto |
+
+### 2026-10-14 — Rodapé alinhado e exceção de órfã esclarecida
+
+- Branch atual confirmada, working tree limpo na abertura. Dono autorizou a correção pontual da UI além da continuação documental; nenhuma alteração em cálculo, preço, prazo, ciclo pago, handlers ou gravação.
+- `index.html`: substituída a mensagem de irreversibilidade pela redação `Pode alterar antes do pagamento do ciclo.`. `modal-acao-slot.test.js`: caso existente T01 passou a verificar também o rodapé real extraído do HTML, sem novo arquivo/harness.
+- **Suíte frontend medida antes/depois**: **420/420 → 420/420**, exit code 0, sem falhas, cancelamentos ou ignorados; entrada TAP ~25,1 s, final ~44,9 s. A execução inicial terminou com código zero mas sem contagem capturada; repetida com `--test-reporter=tap`, sem usar números de documentação.
+- **Focado e mutação**: 14/14 após o fix; recolocar somente a frase antiga produziu exit code 1, **13 pass e 1 fail**, precisamente no caso T01. Frase correta restaurada, focado 14/14 e `git status`/diff conferidos antes da validação visual. A contagem da suíte não aumenta porque foi acrescentada asserção a caso existente.
+- **Mock**: servidor estático local na origem dedicada; referência 433×762/DPR 2.81, stress 320×568 e 390×844, com toque, ponteiro coarse e hover-none confirmados. Rodapé legível, sem overflow horizontal, dentro do modal, antes do botão Voltar e sem sobreposição; snapshots conferidos nos três tamanhos. Em 320px o texto quebra em duas linhas, sem clipping.
+- **Cancelamento**: Voltar fecha o modal sem nova chamada ou escrita (0/0), com arrays de aulas/reposições intactos. Não foi escolhida opção de cobrança, criado registro, nem executada escrita em Mongo/GCal. O POST bloqueado de renovação GCal do boot pertence ao sandbox, não à ação de cancelamento.
+- **Limites da automação**: abertura inicial do navegador falhou até o servidor estar ativo/URL básica carregar; clique na agenda abriu o diálogo mas o Playwright excedeu timeout. A inspeção foi concluída pelos handlers DOM do mock. Isso não é prova de gesto físico, TalkBack ou produção.
+- **Continuação documental**: dono confirmou a exceção restrita de limpeza de órfã. Specs de Reposições/GCal agora distinguem preservação de negócio de DELETE excepcional, mantendo ownerEmail, idempotência, best-effort e recuperação explícita. Versões atualizadas apenas nos cabeçalhos; cópias históricas intocadas.
+- **Não executado**: suíte backend, validação de todos os ramos legados de recuperação, deploy ou alterações no endpoint de DELETE. Código de backend/GCal, estilos e demais superfícies não foram modificados por esta correção.
+- **Portão final**: cinco arquivos deste recorte sem diagnósticos; `git diff --check` sem erro, com aviso de normalização CRLF/LF. Matriz com 20 entradas MIG e 428 links locais de docs válidos na checagem medida. A contagem inclui documentos criados em paralelo e não é atribuição de autoria desta rodada.
+- **Alterações paralelas preservadas**: índice, lessons-learned, roadmap e novos documentos de diagnóstico/identidade/OAuth surgiram durante a execução; não foram revertidos nem incluídos como trabalho do agente neste recorte. Escopo realizado: HTML do rodapé, asserção no teste existente, duas specs e este plano.
+- **Situação**: divergência de texto do rodapé corrigida e exceção documental esclarecida localmente; publicação/aceite real com o dono. A frente continua aberta para os recortes remanescentes, sem afirmar prova funcional dos ramos não executados.

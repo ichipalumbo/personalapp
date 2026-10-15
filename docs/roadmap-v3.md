@@ -13,6 +13,12 @@
 - Esforços são estimativas relativas herdadas do planejamento, não compromissos de prazo. Confirmar após definir o escopo.
 - Regras vigentes e casos de borda pertencem às specs; execução, testes, mutações e aceite pertencem aos planos. Este índice aponta para essas fontes, sem reproduzi-las.
 
+## Identidade e preparação Google — antes do planejamento
+
+- **Decisão de produto**: adotar **Personal Josy**, mantendo o vínculo com a professora e as cores atuais. Contrato e decisões ainda abertas na [spec de identidade](specs/identidade-e-apresentacao-publica.md).
+- **Pesquisa registrada**: [diagnóstico datado](diagnostics/2026-10-14-diag-identidade-verificacao-google.md) com evidências de marca, isolamento e OAuth; [referência Google](reference/google-oauth-verificacao.md) com requisitos e limites das fontes consultadas.
+- **Limite da frente**: registro documental, sem plano de execução, esforço estimado, prioridade escolhida, mudança de produto ou submissão. O risco de isolamento identificado não foi corrigido; intervenções em autenticação/GCal exigem autorização específica. Não altera a conclusão do sync entregue em 2.1 nem aprova a sessão própria proposta em 4.9.
+
 ## Backlog operacional
 
 Itens mapeados para a operação do personal trainer. Estar nesta seção não significa ter execução ou escopo aprovados.

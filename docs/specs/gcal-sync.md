@@ -1,6 +1,6 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: Em produção · **Versão**: 13 · **Atualizado**: 2026-10-14
+> **Status**: Em produção · **Versão**: 14 · **Atualizado**: 2026-10-14
 > **Consolidação documental**: contrato e limites preservados; relatos de execução e medições não são requisitos vigentes.
 > **Pendência funcional conhecida**: coordenação dos gatilhos do boot (9.14).
 > **Limite de evidência**: cobertura parcial de I/O real (9.8); o gatilho automático de renovação não foi observado isoladamente. Esta edição não é nova validação de produção.
@@ -661,10 +661,13 @@ Resultado parcial/desconhecido conserva pendência para recuperação explícita
 replay geral ou anunciar compensação remota automática como contrato vigente. Reações
 antigas de rollback por ponto não substituem essa política confirmada pelo dono.
 
-O contrato existente de limpeza de reposição órfã usa `DELETE /api/reposicoes/:id`, filtrado
+O contrato existente de limpeza de reposição órfã criada em envio de aula avulsa que falhou,
+antes de apresentação como resultado concluído, usa `DELETE /api/reposicoes/:id`, filtrado
 por `ownerEmail`, idempotente: id ausente pode responder 200 com `{ ok: true, deleted: false }`.
 Quando usado no caminho previsto, o DELETE é best-effort e pode falhar; nunca prometer que
 a órfã foi apagada sem confirmação nem estender essa limpeza a qualquer falha composta.
+Registros de negócio/histórico não ganham exclusão geral; a fronteira da exceção está
+explicitada em Reposições 13.1 e não redefine a política de recuperação de 11.2 daquela spec.
 
 ## 10. Custo aceito da decisão
 
