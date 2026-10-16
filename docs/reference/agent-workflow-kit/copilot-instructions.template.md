@@ -3,6 +3,7 @@
 > Modelo para `.github/copilot-instructions.md`.
 > Vale para **todas** as sessões, independentemente da tarefa.
 > Preencha cada `[ADAPTAR]`. Apague as seções que não se aplicam ao projeto.
+> O modelo não concede permissões: a política efetiva do projeto e as ferramentas do ambiente prevalecem.
 
 ---
 
@@ -25,10 +26,18 @@
   está coberto é fora de escopo e precisa de confirmação.
 - Consulte sempre as seções "Decisões e Casos de Borda" e "Fora de Escopo" da spec.
 - Backlog e priorização: `[ADAPTAR: caminho do roadmap]`.
-- **Hierarquia de confiabilidade**: código > specs > roadmap > guia/README. Se divergir, o
-  código descreve o que existe; a divergência é decisão humana.
-- **Nunca duplique metadado volátil** (versão de spec, status, contagem de teste) fora da
-  fonte. Referencie o caminho.
+- **Autoridade por assunto**: spec define o comportamento aprovado; código/testes/runtime
+  mostram o observado; plano organiza a intervenção e registra provas; diagnóstico investiga;
+  roadmap sintetiza prioridade; instruções definem permissões e o índice define governança.
+  Código não aprova regra, spec não prova implementação. Divergência exige apuração e decisão,
+  não um ranking universal nem atualização da spec para legitimar bug.
+- **Não duplique estado vivo** (versão/status da spec ou contagem atual) fora da fonte.
+  Medições datadas e listas de arquivos podem ser evidência da execução, sem virar contador paralelo.
+- `[ADAPTAR]` Índice de governança, guias operacionais e política de histórico do projeto.
+- Não exigir diagnóstico + spec + plano para toda mudança. Usar o plano aberto quando houver;
+  causa evidente pode dispensar diagnóstico e regra existente pode dispensar spec nova.
+- Promover decisão durável aprovada para a fonte permanente; execução fica no plano, sem
+  relatório final redundante. Histórico não é reescrito, movido ou podado sem autorização.
 
 ## 3. Stack e execução real
 
@@ -81,6 +90,7 @@ Lista curta. Alteração aqui exige confirmação antes de implementar, mesmo qu
   camadas são validadas só manualmente.
 - Rode a suíte afetada **antes e depois**, e reporte os **números que você mediu** — nunca
   os que leu na documentação, que envelhece.
+- Quem apenas planeja não inventa medições; registra o comando/prova a executar e a lacuna.
 - **Teste novo precisa ser provado por mutação**: reverta a correção, confirme que o teste
   falha pela razão esperada, restaure e confirme que a suíte volta a passar.
 - Declare o que **não** foi validado.
@@ -89,6 +99,9 @@ Lista curta. Alteração aqui exige confirmação antes de implementar, mesmo qu
 
 - Mudanças pequenas e incrementais.
 - Não refatore fora do escopo.
+- Definir limite de tentativas. Ao atingir o teto, bloquear o cartão e seus dependentes,
+  registrar evidência e solicitar decisão; só avançar a independente com autorização.
+- Preservar alterações alheias; não limpar o working tree ou reverter arquivos do responsável.
 - Depois de remover, mover ou substituir bloco grande, execute imediatamente a validação
   que carrega o arquivo. Sintaxe válida não prova que a função continua existindo.
 - Preserve o estilo e o idioma do arquivo que está editando.
@@ -97,13 +110,16 @@ Lista curta. Alteração aqui exige confirmação antes de implementar, mesmo qu
 ## 10. Git, revisão e deploy
 
 - `[ADAPTAR]` Operações que o agente **pode** executar.
+- `[ADAPTAR]` Separar consultas permitidas (branch/status/diff) de operações que mudam estado.
 - `[ADAPTAR]` Operações que são **do responsável** (commit, push, merge, PR…).
 - `[ADAPTAR]` Fluxo de branch e nome sugerido.
 - **Verifique o upstream antes de escrever**: se a branch atual rastreia a principal, um
   "Sync Changes" pode enviar direto para produção sem revisão. Verificável com
   `git config --get-regexp "branch\..*\.merge"`.
 - `[ADAPTAR]` O que dispara produção. Existe staging? Existe preview?
-- Toda mudança entra por pull request.
+- `[ADAPTAR]` Fluxo de revisão/PR e responsável pela publicação. Ao criar branch de uma
+  referência remota sem querer rastreá-la, usar `--no-track` conforme a política aprovada.
+- Não oferecer como executável uma operação proibida ao agente; explicar o passo do humano.
 
 ## 11. Ambiente e terminal
 
@@ -111,8 +127,8 @@ Lista curta. Alteração aqui exige confirmação antes de implementar, mesmo qu
 - `[ADAPTAR]` Armadilhas conhecidas e verificadas. Ex.: não embutir código com aspas
   aninhadas num comando de uma linha — o shell entra em continuação e parece travado.
   Sintoma: prompt de continuação com o comando repetido.
-- Comando de tiro único responde em segundos. Se um comando simples não retorna em ~30s,
-  **não faça polling**: leia a saída, mate o terminal e rode de forma mais simples.
+- Distinguir tarefa longa de prompt/erro de um comando simples. Inspecionar a saída antes
+  de interromper ou repetir; aplicar a política de execução das ferramentas do ambiente.
 - `[ADAPTAR]` Como tratar prompt interativo.
 
 ## 12. Fechamento da rodada
@@ -124,3 +140,7 @@ Ao final, relate:
 3. o que foi **encontrado e não alterado**, com o motivo;
 4. branch utilizada;
 5. riscos residuais e pendências do responsável.
+
+Implementação, validação, aceite e publicação são estados distintos. Encerrar um plano não
+publica código. Templates/skills/agentes não ampliam autorização nem garantem isolamento de
+escrita por pasta; controles técnicos adicionais precisam ser configurados quando necessários.

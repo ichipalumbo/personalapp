@@ -141,7 +141,7 @@ Cada arquivo de entrada aparece uma vez. O objetivo é o papel esperado no desen
 | Documento | Objetivo específico | Papel e tratamento |
 |---|---|---|
 | [lessons-learned.md](../../reference/lessons-learned.md) | Consolidar riscos, limites aceitos e armadilhas úteis à retomada | V de apoio; vigência por item exige revisão; não é spec ou backlog (F07) |
-| [EXPORT-boas-praticas-para-outro-projeto.md](../../reference/EXPORT-boas-praticas-para-outro-projeto.md) | Preservar um extrato de práticas para adaptar fora deste app | E; conteúdo do processo anterior, sem autoridade local (F09) |
+| [EXPORT-boas-praticas-para-outro-projeto.md](../../reference/agent-workflow-kit/rationale.md) | Preservar um extrato de práticas para adaptar fora deste app | E; conteúdo do processo anterior, sem autoridade local (F09) |
 | [agent-workflow-kit/README.md](../../reference/agent-workflow-kit/README.md) | Explicar o kit reutilizável, seus princípios e adaptação a outro projeto | E; guia de exportação, não substitui o índice ou as instruções deste app |
 | [agent-workflow-kit/copilot-instructions.template.md](../../reference/agent-workflow-kit/copilot-instructions.template.md) | Servir de base adaptável ao contrato permanente de outro repositório | E; placeholders e decisões precisam de adaptação, não aplicação automática |
 | [agent-workflow-kit/diagnostic.template.md](../../reference/agent-workflow-kit/diagnostic.template.md) | Servir de base para investigação com fatos, hipóteses, opções e limites | E; selecionar estado/escopo ao instanciar; não certifica ausência de mudanças em produto |

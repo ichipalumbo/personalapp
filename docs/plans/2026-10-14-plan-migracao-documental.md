@@ -1,6 +1,6 @@
 # Plano vivo — Migração e reconciliação documental
 
-> **Status**: Em execução · **Criado**: 2026-10-14 · **Atualizado**: 2026-10-14
+> **Status**: Em execução · **Criado**: 2026-10-14 · **Atualizado**: 2026-10-16
 > **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
 > **Branch**: `docs/auditoria-roadmap`; working tree limpo na abertura.
 > **Origem**: [auditoria documental](../archive/diagnostics/2026-10-14-diag-arquitetura-documentacao.md) e [governança vigente](../README.md).
@@ -31,6 +31,9 @@ Incorporar conhecimento útil ainda ausente nas fontes vivas apropriadas e recon
 | Reconciliar o plano de fluxos UX reaparecido com a cópia arquivada | Confirmação do dono nesta retomada | Comparar conteúdo antes de agir; preservar a versão histórica canônica e não reabrir seus cartões. A comparação confirmou equivalência descontando links/caminhos |
 | Corrigir o rodapé e continuar a documentação | Confirmação do dono nesta rodada | Exceção pontual ao escopo anterior sem código: alterar o texto da UI, proteger no teste existente e validar no mock; não alterar handlers, cálculo ou gravação |
 | Explicitar a exceção restrita de limpeza de órfã de envio avulso falho | Confirmação do dono nesta rodada | Preservar registros de negócio; DELETE idempotente por ownerEmail e best-effort apenas no caso previsto, sem ação geral, extensão a outros fluxos ou compensação cega |
+| Atualizar o kit e integrar o EXPORT | Pedido do dono em 2026-10-16, após avaliação | Revisar modelos, acrescentar spec/governança e mover o EXPORT revisado para fundamentos; atualizar ponteiros sem reescrever conclusão histórica |
+| Atualizar o arquiteto local, incluir versão portátil e guia de uso | Pedido do dono em 2026-10-16 | Preservar os nomes de modelos consumidos localmente; disponibilizar perfil adaptável sem terminal/implementação e documentar instalação/papéis |
+| Continuar na branch atual com as alterações locais existentes | Confirmação do dono nesta rodada de 2026-10-16 | Trabalhar com alterações do índice/EXPORT e preservar arquivos de identidade e demais trabalho alheio |
 
 O [roadmap oficial](../roadmap-v3.md) continua como índice. Não usar este plano como depósito de todo o texto retirado de fontes anteriores: históricos e duplicações podem permanecer apenas na origem preservada.
 
@@ -80,6 +83,8 @@ Usar uma linha por trecho significativo, não por arquivo inteiro. Classificaç�
 | MIG-18 | Plano UX reaparecido fora do archive | Reconciliação de duplicata autorizada | [Plano histórico canônico](../archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) | 556 linhas equivalentes após normalizar links e caminhos históricos, sem conteúdo novo. Duplicata retirada da área ativa e cópia arquivada preservada; nenhum cartão reaberto |
 | MIG-19 | Rodapé contraditório de cobrança e contrato de edição antes do pagamento | Correção pontual de UI autorizada | [HTML](../../index.html), [teste do modal](../../tests-frontend/modal-acao-slot.test.js) e [spec de Reposições](../specs/reposicoes-e-competencia.md) | Texto alinhado, asserção no markup real; focado 14/14, mutação 13 pass/1 fail esperada e restauração 14/14; suíte frontend 420/420 antes e depois, mock nos três viewports |
 | MIG-20 | Reposições decisão 15 versus limpeza excepcional de GCal 9.27 | Clarificação documental confirmada | [Reposições 13.1](../specs/reposicoes-e-competencia.md) e [GCal 9.27](../specs/gcal-sync.md) | Registros de negócio preservados; exceção restrita à órfã de envio avulso que falhou. Sem exclusão geral, extensão de escopo ou alteração de runtime da limpeza |
+| MIG-21 | EXPORT e modelos do kit anteriores à auditoria | Atualização do material reutilizável autorizada | [Kit](../reference/agent-workflow-kit/README.md) e [fundamentos](../reference/agent-workflow-kit/rationale.md) | EXPORT movido com hash idêntico antes da revisão; nove temas rastreados, processo antigo contextualizado, política Git/ambiente generalizada e modelos de spec/governança acrescentados |
+| MIG-22 | Agente arquiteto consumidor dos modelos | Compatibilidade local e cópia portátil autorizadas | [Agente local](../../.github/agents/arquiteto-software.agent.md) e [modelo portátil](../reference/agent-workflow-kit/software-architect.agent.template.md) | Mantidos caminhos de diagnóstico/plano, papel sem implementação, ferramentas mínimas e bloqueio de dependentes; guia de instalação/seleção/passagem ao executor no README do kit |
 
 ## 6. Validação
 
@@ -189,3 +194,25 @@ Frente em execução. O primeiro incremento técnico não conclui M01–M03 para
 - **Portão final**: cinco arquivos deste recorte sem diagnósticos; `git diff --check` sem erro, com aviso de normalização CRLF/LF. Matriz com 20 entradas MIG e 428 links locais de docs válidos na checagem medida. A contagem inclui documentos criados em paralelo e não é atribuição de autoria desta rodada.
 - **Alterações paralelas preservadas**: índice, lessons-learned, roadmap e novos documentos de diagnóstico/identidade/OAuth surgiram durante a execução; não foram revertidos nem incluídos como trabalho do agente neste recorte. Escopo realizado: HTML do rodapé, asserção no teste existente, duas specs e este plano.
 - **Situação**: divergência de texto do rodapé corrigida e exceção documental esclarecida localmente; publicação/aceite real com o dono. A frente continua aberta para os recortes remanescentes, sem afirmar prova funcional dos ramos não executados.
+
+### 2026-10-16 — Kit reutilizável e arquiteto
+
+- Continuidade na branch `docs/auditoria-roadmap` confirmada com working tree sujo. Alterações anteriores do índice/EXPORT foram lidas; arquivos de identidade e demais mudanças fora do escopo não serão revertidos ou atribuídos à atualização do kit.
+- Corrigidos os modelos existentes: autoridade por assunto em vez de ranking universal, estados por artefato, diagnóstico sem afirmação falsa de que nenhum arquivo foi escrito, validação medida versus planejada e bloqueio de dependentes após falha. Nomes de diagnóstico/plano e campos dos cartões consumidos pelo agente local preservados.
+- Acrescidos modelos de spec e índice/governança. A estrutura permanece proporcional: causa evidente ou contrato existente pode dispensar documento novo; modelos não autorizam produto, poda ou Git por si só.
+- O EXPORT foi movido para `agent-workflow-kit/rationale.md` e seu hash conferido antes da revisão. Os nove temas de origem estão na matriz do próprio documento; incidentes/motivos foram preservados, regras duplicadas migraram para os modelos e o processo de relatório por rodada/saga foi identificado como superado, não recomendado.
+- Agente local alinhado e cópia portátil criada. Ambos declaram somente `read`, `search`, `edit`, sem terminal ou subagentes. O perfil de exportação contém caminhos a adaptar e nenhum `ownerEmail`, módulo, viewport ou outra dependência de produto. A categoria edit não é sandbox de pasta; o README deixa esse limite explícito.
+- README do kit documenta os oito arquivos, adoção gradual, instalação opcional em `.github/agents/software-architect.agent.md`, seleção no Chat, exemplos de pedido e passagem manual do plano aprovado para execução. Copiar a pasta não instala nem executa o perfil automaticamente.
+- Ajustados o resumo do kit no índice e somente o destino do link do antigo EXPORT no catálogo histórico. Nenhuma conclusão, classificação ou evidência daquele diagnóstico foi alterada.
+- Portões incrementais já executados: bloqueio de cartões, campos dos modelos, contratos de papel/frontmatter dos dois agentes e 14 links internos de um pacote de oito arquivos, sem dependência de pasta externa. A primeira checagem textual de frontmatter precisou normalizar CRLF/LF; os campos declarados permaneceram corretos.
+- Validação final de cópia isolada, referências, diagnósticos e preservação segue abaixo quando concluída. Sem alteração de produto, dependência nova, suíte de aplicação, execução do arquiteto, commit ou publicação nesta rodada.
+
+#### Resultado da atualização do kit
+
+- Pacote final com **8 arquivos**, mantendo os nomes dos três templates anteriores e acrescentando governança, spec, agente portátil e fundamentos do EXPORT revisado. Não foi criado relatório paralelo nem nova frente para duplicar este registro.
+- **Cópia isolada** em pasta temporária: oito arquivos com hashes idênticos e **14 links internos válidos**, sem dependência de caminho externo ao kit. Pasta temporária removida ao final. Isso valida distribuição/navegação, não a instalação automática ou a execução do agente.
+- **Agentes**: frontmatter e contratos de papel conferidos no local e no portátil, sem terminal/delegação; integração local continua apontando aos modelos existentes. Nenhum diagnóstico nos arquivos editados e `git diff --check` sem erro, somente avisos CRLF/LF.
+- **Preservação da base**: 247 arquivos fora do recorte conferidos; 242 mantiveram o hash da entrada e cinco arquivos de identidade mudaram em paralelo (SVGs, PNG e spec de identidade). Não foram editados ou revertidos pelo agente desta rodada nem tratados como preservação byte a byte. Arquivos de produto fora do recorte não receberam alterações deste trabalho.
+- **Navegação**: o antigo nome do EXPORT permanece somente como rótulo de origem no catálogo histórico, cujo destino agora resolve para `rationale.md`. O restante do catálogo foi comparado e permanece idêntico; alterações alheias do índice foram mantidas.
+- **Limites**: sem instalação no projeto consumidor, execução do perfil pelo VS Code, CI externo, consulta de todas as URLs de benchmark ou suíte frontend/backend. O responsável precisa adaptar placeholders e aprovar política no consumidor antes de usar.
+- **Estado**: atualização do kit, cópia/guia do arquiteto e integração do EXPORT concluídas localmente; revisão e publicação com o dono. A migração documental geral conserva suas outras pendências, sem transformá-las em trabalho deste pacote.

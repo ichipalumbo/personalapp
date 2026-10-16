@@ -11,38 +11,34 @@
 | Documento | O que é | Quando ler |
 |---|---|---|
 | [`roadmap-v3.md`](roadmap-v3.md) | Roadmap oficial: backlog, entregas, dependências e decisões pendentes | Antes de escolher a próxima feature |
-| [Arquivo histórico](archive/README.md) | Roadmaps anteriores, planos, diagnósticos e relatos sem manutenção ativa | Para consultar o passado, sem confundir arquivamento com conclusão de pendências |
+| [`roadmap-v1.md`](roadmap-v1.md) | Roadmap anterior, renomeado pelo dono; preservado como registro, sem atualização de backlog | Somente para consultar o registro anterior à substituição de 2026-10-14 |
+| [`roadmap-v2.md`](roadmap-v2.md) | Variante comparativa, não oficial; não é segundo backlog ativo | Para comparar as propostas de organização anteriores ao v3 |
 | [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
 | [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md) | Fila de reposições, competência de cobrança, prazo de validade e extrato do ciclo | Antes de definir como aulas enviadas para reposição entram no cálculo e no histórico financeiro |
-| [`specs/alunos-observacoes.md`](specs/alunos-observacoes.md) | Contrato já entregue de anotação opcional por aluno e exibição segura no card | Antes de alterar observações no cadastro ou na apresentação do aluno |
-| [`specs/interface-e-navegacao.md`](specs/interface-e-navegacao.md) | Contratos transversais de navegação, diálogo, cards e acessibilidade | Antes de alterar comportamento global da interface, sem inferir regra de produto |
-| [`specs/identidade-e-apresentacao-publica.md`](specs/identidade-e-apresentacao-publica.md) | Decisão Personal Josy, preservação das cores e limites da apresentação pública | Antes de planejar o rebranding, distinguindo decisões aprovadas de logo, domínio e textos ainda pendentes |
 | [`specs/gcal-sync.md`](specs/gcal-sync.md) | Sincronização com Google Calendar | Antes de mexer em recorrência, `EXDATE`, webhook, renovação do canal ou conflitos de sincronização |
 | [`setup-ambiente-local.md`](setup-ambiente-local.md) | Passo a passo para deixar uma máquina nova rodando frontend, backend e banco de dev, como rodar as duas suítes de teste, e o viewport de referência do mobile (433×762) | Ao configurar um computador novo, quando o ambiente local parar de funcionar, antes de escrever teste novo, ou ao validar UI mobile |
 | [`reference/lessons-learned.md`](reference/lessons-learned.md) | Referência de riscos, limites aceitos e armadilhas; não substitui spec nem priorização | Antes de abrir uma rodada sensível, conferindo a vigência do item consultado |
-| [`reference/google-oauth-verificacao.md`](reference/google-oauth-verificacao.md) | Aprendizado referenciado de identidade, permissões, privacidade e processo Google | Antes de planejar ou submeter verificação, reconferindo as fontes oficiais; não é contrato de implementação nem prova de aprovação |
-| [`reference/agent-workflow-kit/`](reference/agent-workflow-kit/README.md) | Kit reutilizável de boas práticas para trabalhar com agentes: guia, contrato permanente, template de diagnóstico e template de plano vivo. Feito para copiar em outro projeto — não é documentação deste app | Ao iniciar um projeto novo, ou ao padronizar o trabalho com agentes |
-| [Diagnóstico de identidade e preparação Google](diagnostics/2026-10-14-diag-identidade-verificacao-google.md) | Evidências estáticas, hipóteses e lacunas remotas identificadas antes do planejamento | Para conhecer os riscos encontrados, incluindo isolamento da conexão GCal, sem confundir investigação com correção |
-| [Investigações anteriores](archive/diagnostics/) | Diagnósticos datados preservados; novas investigações usam `diagnostics/` quando necessário | Para recuperar evidência de uma base anterior, não escolher regra vigente |
+| [`reference/agent-workflow-kit/`](reference/agent-workflow-kit/README.md) | Kit reutilizável: guia de uso, fundamentos, modelos de instruções/governança/spec/diagnóstico/plano e arquiteto opcional. Modelos usados pelo agente local dão formato, sem substituir a política deste app | Ao adaptar o fluxo para outro projeto ou preparar trabalho com o arquiteto |
+| [`diagnostics/`](diagnostics/) | Investigações datadas: pergunta, fatos, hipóteses, causas, impacto e alternativas | Quando é preciso entender um problema ou auditar uma área antes de escolher a intervenção |
 | [`plans/`](plans/) | Plano vivo da frente: execução proposta/autorizada, critérios de aceite, validação e registro da execução | Para preparar, retomar ou verificar a entrega de uma mudança |
-| [Relatórios anteriores](archive/reports/) | Relatos pontuais preservados; não existe pasta ativa de relatórios por rodada | Para entender o resultado de uma mudança histórica, não para obter regra vigente |
+| [`reports/`](reports/) | Relatórios pontuais antigos, **congelados**; não recebem novos arquivos | Para entender o resultado de uma mudança histórica, não para obter regra vigente |
+| [`archive/`](archive/) | Processo anterior, **congelado**: relatórios de agente e sagas | Somente para reconstruir a origem de decisões e incidentes |
 | [`reference/`](reference/) | Referências do app e material exportável, com finalidade e vigência explicitadas | Para consultar conhecimento de apoio ou adaptar práticas em outro projeto |
-| [Auditoria documental](archive/diagnostics/2026-10-14-diag-arquitetura-documentacao.md) | Inventário individual e achados da pasta; fotografia da auditoria, não segundo manual de governança | Para revisar as misturas de função e preparar uma futura redistribuição |
-| [Plano da governança](archive/plans/2026-10-14-plan-governanca-documental.md) | Escopo, decisões, execução e validação desta reorganização documental | Para conferir o que foi feito e o que permanece fora da rodada |
+| [Auditoria documental](diagnostics/2026-10-14-diag-arquitetura-documentacao.md) | Inventário individual e achados da pasta; fotografia da auditoria, não segundo manual de governança | Para revisar as misturas de função e preparar uma futura redistribuição |
+| [Plano da governança](plans/2026-10-14-plan-governanca-documental.md) | Escopo, decisões, execução e validação desta reorganização documental | Para conferir o que foi feito e o que permanece fora da rodada |
 | [Migração documental](plans/2026-10-14-plan-migracao-documental.md) | Matriz por trecho: origem, destino, conteúdo incorporado, duplicações e pendências | Para retomar as transferências incrementais sem reabrir a auditoria encerrada |
 
 ---
 
 ## Como estes documentos se relacionam
 
-- O **roadmap oficial** é [`roadmap-v3.md`](roadmap-v3.md), único documento vivo de planejamento. A substituição foi autorizada pelo dono em 2026-10-14; [`roadmap-v1.md`](archive/roadmaps/roadmap-v1.md) é o registro anterior, renomeado pelo dono e sem novas atualizações de backlog. Referências ao nome antigo em documentos encerrados são históricas. Não criar outras versões paralelas nem versionar por data.
+- O **roadmap oficial** é [`roadmap-v3.md`](roadmap-v3.md), único documento vivo de planejamento. A substituição foi autorizada pelo dono em 2026-10-14; [`roadmap-v1.md`](roadmap-v1.md) é o registro anterior, renomeado pelo dono e sem novas atualizações de backlog. Referências ao nome antigo em documentos encerrados são históricas. Não criar outras versões paralelas nem versionar por data.
 - As **specs** são **uma por feature** e mantêm o contrato aprovado vigente. São evolutivas: mudança de comportamento exige decisão explícita e atualização do contrato, sem reescrever o passado como se a nova regra sempre tivesse existido. O histórico fica no Git, não em arquivos paralelos (`v1.md`, `v2.md`).
-- A preservação autorizada em [archive/spec-history](archive/spec-history/README.md) é exceção histórica para a consolidação documental de 2026-10-14. Essas cópias não recebem atualização de contrato nem prevalecem sobre `specs/`; novas cópias exigem autorização específica.
 - **Versão e status de uma spec existem em um lugar só: o cabeçalho da própria spec.** Nenhum outro documento — nem este índice, nem o roadmap, nem `.github/copilot-instructions.md` — repete o número. Repetir cria drift silencioso: já aconteceu de uma spec andar cinco versões com o índice parado, e um agente confiar no número errado.
 - Quando uma feature é entregue, o item correspondente no roadmap é marcado como concluído e passa a **apontar para a spec**, em vez de repetir o conteúdo dela.
 - **Spec não referencia plano nem relatório.** A spec é a fonte de verdade e precisa sobreviver à poda de `plans/`, `reports/` e `archive/`. Se um fato de lá importa para a regra, ele é escrito na spec — não linkado.
 - **Histórico não é regra vigente.** Plano encerrado, diagnóstico datado, relatório e saga explicam o que se sabia ou executou naquela base. Não justificam alterar produto nem reabrir trabalho por conta própria.
-- **Arquivo histórico**: o dono autorizou em 2026-10-14 mover planos/diagnósticos anteriores, reports, roadmaps v1/v2 e a referência antiga para `archive/`, com ajuste mecânico de caminhos. Essa autorização substitui o impedimento de movimentar esse conjunto, não o compromisso de preservar seu conteúdo. O arquivo é somente consulta; novas movimentações, poda ou reescrita exigem autorização específica. Ver [escopo e ressalvas](archive/README.md).
+- **Congelamento confirmado em 2026-10-14**: `reports/` e `archive/` são somente consulta, sem novos arquivos, exclusões ou migração. Poda ou transferência futura exige autorização específica e preservação prévia de informação única; esta auditoria não a autoriza.
 
 ### Autoridade por assunto
 
@@ -81,7 +77,7 @@ Não há um ranking universal em que o código, a spec ou o plano resolva qualqu
 - Critério de aceite no plano é a prova da entrega daquela frente; requisitos permanentes da feature pertencem à spec.
 - Decisão de produto descoberta durante a execução precisa da aprovação do dono e da atualização da spec. Decisão de sequência, técnica transitória ou validação fica no plano.
 - Encerramento distingue implementação, aceite e publicação; registra o que foi concluído, limitado, cancelado ou deixado a um responsável. Encerrar documento não significa publicar código.
-- Plano encerrado não é reescrito: trabalho posterior gera continuação ou plano novo, com referência ao anterior. Pode ser arquivado com autorização e ajustes de caminho, preservando o corpo. Não reapresentar o histórico como tarefa ainda aberta.
+- Plano encerrado não é reescrito: trabalho posterior gera continuação ou plano novo, com referência ao anterior. Não reapresentar o histórico como tarefa ainda aberta.
 
 ### Diagnóstico: a investigação e seus limites
 
@@ -130,13 +126,11 @@ Diagnóstico pode apontar para o plano que assumiu a intervenção; plano aponta
 | `plans/` | Frente de trabalho viva até seu encerramento; inclui sua execução | `AAAA-MM-DD-plan-<slug>.md` |
 | `reference/` | Conhecimento de apoio com fonte/vigência; não recebe backlog ou diário de execução | Nome por assunto; exportáveis claramente identificados |
 | `reference/agent-workflow-kit/` | Modelos e guia para outro projeto; não governa este app | Nomes existentes de guia/templates |
-| `archive/plans/` e `archive/diagnostics/` | Registros anteriores, inclusive casos ambíguos identificados; não são trabalho ativo | Preservar nomes e conteúdo |
-| `archive/reports/` | Relatos pontuais anteriores; sem novos relatórios de rodada | Preservar nomes e conteúdo |
-| `archive/roadmaps/` e `archive/reference/` | Versões anteriores e referência substituída | Preservar nomes e conteúdo |
+| `reports/` | Relatos pontuais anteriores; congelado, sem novos arquivos | Manter nomes originais |
 | `archive/agent-reports/` | Saídas e relatos do processo anterior; congelado | Manter nomes originais |
 | `archive/sagas/` | Sínteses históricas de várias rodadas; congelado | Manter nomes originais `SAGA-<tema>.md` |
 
-Raiz de `docs/`: índice/governança, roadmap oficial e manual de ambiente. Somente a frente de migração permanece em `plans/` nesta organização; `diagnostics/` volta a ser criada quando houver uma investigação ativa. Variantes anteriores ficam em `archive/roadmaps/`. Nomes de pastas e prefixos permanecem em inglês; conteúdo em português.
+Raiz de `docs/`: índice/governança, roadmap oficial e manual de ambiente. Variantes anteriores do roadmap são exceções de consulta, não novos documentos vivos. Nomes de pastas e prefixos permanecem em inglês; conteúdo em português. Nenhuma nova pasta é exigida por este desenho.
 
 ---
 

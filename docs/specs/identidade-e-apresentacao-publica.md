@@ -1,8 +1,8 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Aprovada, não implementada · **Versão**: 2 · **Atualizado**: 2026-10-14
-> **Escopo aprovado**: nome Personal Josy, descritor, monograma PJ entrelaçado preenchido, preservação da paleta da interface, manutenção do endereço atual e contato provisório de suporte.
-> **Limite**: a aprovação do símbolo não aplica a marca ao app nem aprova tipografia, textos legais, desenho de autenticação ou execução do rebranding.
+> **Status**: Aprovada, não implementada · **Versão**: 5 · **Atualizado**: 2026-10-16
+> **Escopo aprovado**: nome, descritor, logotipo Personal sobre Josy em Poppins Bold 700, prancheta quadrada com versões escura e transparente, paleta preservada, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa, endereço atual e contato provisório de suporte.
+> **Limite**: logotipo e composição dos SVGs aprovados; aplicação no app não executada. O peso 700 é do logotipo, não homologação dos pesos/tamanhos da interface; textos legais, autenticação e execução do rebranding continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
 
@@ -52,22 +52,40 @@ A preparação para verificação Google deve representar a integração real. N
 endosso, parceria, certificação geral de segurança ou aprovação Google sem evidência
 correspondente. Cumprir requisitos e submeter o aplicativo não garante aprovação.
 
-### 2.4 Monograma aprovado
+### 2.4 Logotipo aprovado
 
-O símbolo escolhido é o **PJ entrelaçado preenchido**, conforme o
-[SVG aprovado](../reference/identidade/pj-entrelacado-preenchido.svg):
+O logotipo escolhido é o nome completo **Personal Josy**, em duas linhas de **Poppins
+Bold 700** convertidas em caminhos vetoriais, centralizadas em uma prancheta quadrada.
+Estão aprovadas duas versões do mesmo desenho:
 
-- **P** branco (`#ffffff`) com contorno preto (`#000000`).
-- **J** preenchido em amarelo/dourado (`#ffd700`) com contorno preto (`#000000`).
-- Fundo escuro (`#0d0d0d`) e proporções/entrelaçamento do arquivo escolhido preservados.
-- Versão estática, **sem ondas, tremor ou animação**.
+- [SVG com fundo escuro](../reference/identidade/personal-josy-quadrado.svg), com base
+  incorporada `#0d0d0d`.
+- [SVG com fundo transparente](../reference/identidade/personal-josy-quadrado-transparente.svg),
+  sem retângulo de fundo; os espaços internos das letras permanecem transparentes.
 
-A escolha é do símbolo desse SVG. As versões lado a lado, com J vazado ou com ondas
-foram descartadas e não compõem a identidade selecionada.
+Nas duas versões:
 
-Tipografia da assinatura `Personal Josy`, composição do cabeçalho, adaptações para
-instalação PWA e asset de consentimento Google ainda precisam ser definidas. Aprovar o
-monograma não significa aprovar essas aplicações ou exportações anteriores.
+- **Personal** branco (`#ffffff`), menor, na linha superior.
+- **Josy** amarelo/dourado (`#ffd700`), maior, logo abaixo, com a mesma largura visual
+  de Personal. Cada palavra é escalada proporcionalmente, sem esticar as letras.
+- Prancheta `viewBox 0 0 256 256`, palavras com 200 unidades de largura, margens laterais
+  de 28 unidades, intervalo vertical de 12 unidades e bloco centralizado.
+- Sem contornos, sombras, ondas, tremor ou animação.
+- Os SVGs compartilham caminhos, cores e posicionamento e abrem sem fonte instalada
+  ou carregada externamente. A única diferença visual é o retângulo de fundo.
+
+A escolha substitui os monogramas PJ anteriores, que foram descartados. Não recriar
+as iniciais como símbolo oficial nem recompor o logotipo por digitação: a geometria e
+a relação de escala entre as palavras são as dos arquivos aprovados.
+
+A versão transparente serve para composições sobre fundo existente; a escura conserva
+uma base uniforme. Isso não homologa cada aplicação em PWA, Google ou material externo.
+Como o logotipo não tem contornos, fundo branco/claro pode comprometer Personal e Josy;
+usar base escura apropriada e conferir a leitura, sem inverter cores ou acrescentar bordas.
+
+A composição do arquivo foi aprovada. Tamanho e aplicação no cabeçalho, adaptações para
+instalação PWA e asset de consentimento Google ainda precisam ser definidos e validados,
+especialmente a leitura da palavra Personal em tamanhos pequenos.
 
 ### 2.5 Endereço atual mantido
 
@@ -88,6 +106,34 @@ contato público de suporte na preparação do aplicativo.
 Informar esse contato não define, por si, responsável legal, controlador/operador de
 dados, encarregado de privacidade, canal formal de exclusão ou compromissos de retenção.
 Essas definições continuam abertas e não devem ser preenchidas por inferência.
+
+### 2.7 Personalidade visual
+
+A direção de marca aprovada é **profissional e acolhedora**: preservar o vínculo pessoal,
+comunicar organização e proximidade, sem depender de estética agressiva de musculação
+ou efeitos metálicos de luxo. Essa direção orienta a apresentação, sem ampliar as
+funcionalidades ou promessas do produto.
+
+### 2.8 Direção tipográfica
+
+- **Poppins** é a família principal da identidade e a direção aprovada para futura adoção
+  em toda a interface do app, preservando as fontes próprias de ícones/assets de terceiros.
+- **Montserrat** é a alternativa; não combinar as duas famílias por padrão nem tratar
+  a alternativa como troca métrica automática de Poppins.
+- O logotipo aprovado deriva de Poppins Bold 700, já convertido em vetores; não substituir
+  seus caminhos por texto dependente de fonte nem refazê-lo com outra família/peso.
+- A fonte atual do app não muda nesta aprovação documental. Pesos, tamanhos, fallback,
+  arquivos/carregamento e impacto de layout devem ser definidos e validados antes da adoção.
+
+### 2.9 Direção da assinatura
+
+A assinatura oficial é a composição de duas linhas da seção 2.4: **Personal** branco
+acima de **Josy** amarelo, maior e com a mesma largura, em Poppins Bold 700. Não recebe
+contorno, sombra ou efeito do cabeçalho anterior e não combina nome com monograma PJ.
+
+O desenho dos SVGs está aprovado, mas aplicação no header, tamanho mínimo e desempenho
+de leitura em cada suporte ainda precisam de validação. Uma versão horizontal, com cores
+invertidas ou com outras proporções exige proposta e aprovação próprias.
 
 ## 3. Decisões e casos de borda
 
@@ -121,12 +167,24 @@ Manter `Josy` no nome não autoriza restringir o acesso apenas à professora nem
 acesso entre contas. O isolamento autenticado por `ownerEmail` continua obrigatório.
 Lançamento público não aprova portal de aluno, equipe, compartilhamento ou novos papéis.
 
+### 3.4 Por que usar o nome por extenso
+
+O dono identificou que `PJ` pode remeter a **Pessoa Jurídica** no contexto brasileiro e
+preferiu o nome completo. A composição com Personal acima e Josy maior abaixo dá destaque
+à professora sem depender das iniciais. Isso é decisão de reconhecimento da marca,
+não exigência de remover monogramas para obter aprovação Google.
+
+Os monogramas anteriores não são versões reduzidas oficiais deste logotipo. Se o nome
+completo perder leitura em um ícone pequeno, avaliar uma aplicação específica; não
+reintroduzir `PJ`, remover Personal ou alterar as palavras por inferência.
+
 ## 4. Propostas e decisões ainda abertas
 
 | Assunto | Situação |
 |---|---|
-| Tipografia e composição do cabeçalho | A definir usando o monograma aprovado; não redesenhar o símbolo por inferência |
-| Ícones de instalação e asset para consentimento Google | Adaptações, dimensões e enquadramento a definir a partir do monograma aprovado |
+| Aplicação e dimensões no cabeçalho | A validar usando o logotipo de duas linhas aprovado; não recompor a marca por inferência |
+| Adoção da fonte na interface | Carregamento, fallback, pesos e regressões de layout a validar; ainda não implementada |
+| Ícones de instalação e asset para consentimento Google | Dimensões, enquadramento e leitura de Personal a validar a partir do logotipo aprovado |
 | Página pública e localização dos links legais no app | A definir; sem arquitetura, URL ou layout aprovados |
 | Verificação do endereço atual e das URLs no Google | Conferir Search Console e projeto OAuth; manter o endereço não comprova aprovação |
 | Responsável legal, privacidade, retenção e exclusão | A confirmar com o dono; o contato provisório de suporte não encerra essas definições |
@@ -136,7 +194,7 @@ Lançamento público não aprova portal de aluno, equipe, compartilhamento ou no
 ## 5. Fora de escopo
 
 - Implementar o rebranding, planejar cartões/ordem de execução ou publicar o aplicativo.
-- Redesenhar o símbolo aprovado ou criar páginas legais definitivas sem decisão explícita.
+- Redesenhar o logotipo aprovado, reintroduzir monogramas ou criar páginas legais definitivas sem decisão explícita.
 - Alterar cores, navegação, regras financeiras, recorrência ou conflitos.
 - Alterar autenticação, sincronização, tokens, webhooks ou estado remoto.
 - Comprar domínio, mudar infraestrutura, criar projetos/clientes Google ou submeter revisão.
@@ -146,4 +204,4 @@ Lançamento público não aprova portal de aluno, equipe, compartilhamento ou no
 O planejamento de implementação é posterior à consolidação das evidências e à confirmação
 das decisões pendentes. Esta aprovação documental não significa mudança de produto,
 aceite da interface, deploy ou autorização para modificar áreas sensíveis. O aceite do
-símbolo em SVG não equivale ao aceite de sua futura aplicação no app.
+logotipo em SVG não equivale ao aceite de sua futura aplicação no app.

@@ -1,8 +1,8 @@
 # Diagnóstico — `[ADAPTAR: síntese do problema]`
 
-> **Data**: AAAA-MM-DD
-> **Status**: em investigação · concluído
-> **Escopo**: **somente leitura** — nada foi alterado nesta rodada
+> **Criado**: AAAA-MM-DD · **Atualizado**: AAAA-MM-DD
+> **Status**: `[ADAPTAR: escolher um — Em análise, Concluído, Inconclusivo ou Substituído]`
+> **Escopo**: investigação sem alterar produto; indicar abaixo os documentos produzidos
 > **Fontes consultadas**: `[ADAPTAR: arquivos, specs, código]`
 > **Válido contra**: `[ADAPTAR: commit, branch ou versão]`
 
@@ -23,11 +23,13 @@
 
 - **Examinado**: `[ADAPTAR]`
 - **Não examinado**: `[ADAPTAR]`
-- **Confirmação**: nenhum arquivo foi alterado.
+- **Alterações de produto**: `[ADAPTAR: nenhuma, ou declarar exceção previamente autorizada]`.
+- **Documentos produzidos**: `[ADAPTAR: este diagnóstico e outros artefatos, se houver]`.
 
 ## 4. Estado atual medido
 
-Descreva o comportamento real, com evidência:
+Descreva somente o efetivamente examinado, com fonte/data e limites. Se a causa não estiver
+determinada, declarar isso em vez de preencher uma conclusão. Testes planejados não são medidos.
 
 - entradas;
 - fluxo de execução;
@@ -47,7 +49,7 @@ Descreva o comportamento real, com evidência:
 
 Ponto de entrada → transformações → estado persistido → **ponto exato da divergência**.
 
-`[ADAPTAR]`
+`[ADAPTAR: quando identificável; se inconclusivo, declarar a lacuna e o próximo teste discriminante]`
 
 ## 7. Relação com contratos e specs
 
@@ -79,6 +81,8 @@ Ponto de entrada → transformações → estado persistido → **ponto exato da
 Para cada opção: descrição, benefício, risco, arquivos prováveis, teste necessário e se
 exige decisão humana.
 
+Usar somente opções relevantes; não inventar alternativas apenas para preencher o modelo.
+
 ### Opção A — `[ADAPTAR]`
 ### Opção B — `[ADAPTAR]`
 
@@ -103,3 +107,7 @@ Registrados, **não corrigidos**.
 ## 14. Critério para abrir o plano
 
 `[ADAPTAR: quais decisões e evidências precisam existir antes de implementar]`
+
+Concluir a investigação não corrige o defeito nem aprova a implementação. A recomendação
+continua separada das decisões do responsável; nova base posterior referencia este registro,
+sem reescrever suas conclusões silenciosamente.
