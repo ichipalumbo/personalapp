@@ -1,8 +1,8 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Aprovada, não implementada · **Versão**: 6 · **Atualizado**: 2026-10-16
-> **Escopo aprovado**: nome, descritor, identidade visual definida no guia v2 (símbolo calendário com J, assinatura e composições do kit), paleta preservada, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa, endereço atual e contato provisório de suporte.
-> **Fonte da identidade visual**: [guia de identidade visual v2](../reference/identidade/guia-identidade-visual-v2.md), com os arquivos do [kit visual completo](../reference/identidade/kit-visual-completo/LEIA-ME.md). O [PDF do guia](../reference/identidade/guia-identidade-visual.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
+> **Status**: Aprovada, não implementada · **Versão**: 7 · **Atualizado**: 2026-10-16
+> **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), paleta funcional do aplicativo preservada, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa, endereço atual e contato provisório de suporte.
+> **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
 > **Limite**: identidade e arquivos de marca aprovados; aplicação no app não executada. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, autenticação e execução do rebranding continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
@@ -24,7 +24,7 @@ continuam independentes e não são redefinidos aqui.
 
 **Autoridade sobre o visual.** Desenho, composições, cores da marca, tipografia da
 assinatura, regras de uso e usos proibidos da identidade são definidos pelo
-[guia de identidade visual v2](../reference/identidade/guia-identidade-visual-v2.md).
+[guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md).
 Esta spec registra as decisões de produto e remete ao guia, sem repetir suas regras
 de desenho. O PDF do guia é apenas a versão visual do mesmo conteúdo. Uma alteração
 de identidade exige atualizar o guia e o kit de forma coordenada; o que o guia marca
@@ -64,20 +64,23 @@ correspondente. Cumprir requisitos e submeter o aplicativo não garante aprovaç
 ### 2.4 Identidade visual aprovada
 
 A identidade visual é a definida no
-[guia de identidade visual v2](../reference/identidade/guia-identidade-visual-v2.md)
+[guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md)
 (seções 3 a 5 e 11), aplicada com os arquivos do
-[kit visual completo](../reference/identidade/kit-visual-completo/LEIA-ME.md). Em resumo,
+[kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). Em resumo,
 sem substituir o guia:
 
-- **Símbolo**: calendário amarelo com duas presilhas brancas e **J em recorte
-  transparente**. Geometria própria, não uma letra digitada.
-- **Assinatura**: **Personal** branco e **Josy** amarelo, em uma linha, nos vetores
-  aprovados.
+- **Símbolo**: calendário amarelo com duas presilhas e **J preenchido em `#202020`
+  opaco**, inclusive nos arquivos transparentes.
+- **Aplicações**: sete composições aprovadas, com aplicação clara e escura; na clara,
+  Personal, presilhas e descritor são escuros e Josy amarelo com contorno escuro; na
+  escura, Personal e presilhas são brancos, Josy amarelo sem contorno e o descritor
+  `#E0E0E0`.
 - **Sete composições aprovadas**: horizontal, somente escrita, somente símbolo,
   empilhada, horizontal com descritor, empilhada com descritor e avatar, cada uma com
-  fundo transparente e escuro.
-- **Cores da marca**: amarelo `#FFD700`, branco `#FFFFFF`, fundo escuro `#0D0D0D` e
-  cinza-claro `#E0E0E0` no descritor.
+  aplicações clara e escura, em exportações transparentes ou com fundo incorporado.
+- **Cores da marca**: amarelo `#FFDE17`, escuro `#202020`, branco `#FFFFFF` e cinza-claro
+  `#E0E0E0`. A atualização dos arquivos da marca não recolore a interface; preservar sua
+  paleta funcional.
 
 Usar sempre os arquivos do kit como mestres. Não redesenhar, recompor por digitação nem
 traçar a marca a partir de prévias ou capturas.
@@ -131,10 +134,10 @@ funcionalidades ou promessas do produto.
 
 ### 2.9 Aplicação no cabeçalho
 
-Decisão aprovada, conforme a seção 7.1 do guia v2:
+Decisão aprovada, conforme o guia v3:
 
-- Usar a composição **horizontal transparente**, no canto superior esquerdo, aplicada
-  como arquivo, não como texto.
+- Usar a composição **horizontal escura transparente, sem descritor**, no canto superior
+  esquerdo, aplicada como arquivo, não como texto.
 - Substituir a identificação **Prô Josy** por **Personal Josy**.
 - Não usar descritor, sombra, contorno ou animação no header.
 - Preservar a proporção e manter espaço para os controles existentes.
@@ -195,7 +198,7 @@ Personal da assinatura ou alterar as palavras por inferência.
 |---|---|
 | Aplicação e dimensões no cabeçalho | Composição decidida (seção 2.9); tamanho, leitura e larguras menores a validar |
 | Adoção da fonte na interface | Carregamento, fallback, pesos e regressões de layout a validar; ainda não implementada |
-| Ícones de instalação, favicon e asset para consentimento Google | Fora da entrega do guia v2; composição, dimensões e leitura a decidir a partir do kit |
+| Ícones de instalação, favicon e asset para consentimento Google | Fora da entrega do guia v3; composição, dimensões e leitura a decidir a partir do kit |
 | Página pública e localização dos links legais no app | A definir; sem arquitetura, URL ou layout aprovados |
 | Verificação do endereço atual e das URLs no Google | Conferir Search Console e projeto OAuth; manter o endereço não comprova aprovação |
 | Responsável legal, privacidade, retenção e exclusão | A confirmar com o dono; o contato provisório de suporte não encerra essas definições |
@@ -205,7 +208,7 @@ Personal da assinatura ou alterar as palavras por inferência.
 ## 5. Fora de escopo
 
 - Implementar o rebranding, planejar cartões/ordem de execução ou publicar o aplicativo.
-- Redesenhar a identidade aprovada no guia v2, reintroduzir monogramas ou o logotipo quadrado anterior, ou criar páginas legais definitivas sem decisão explícita.
+- Redesenhar a identidade aprovada no guia v3, reintroduzir monogramas ou o logotipo quadrado anterior, ou criar páginas legais definitivas sem decisão explícita.
 - Alterar cores, navegação, regras financeiras, recorrência ou conflitos.
 - Alterar autenticação, sincronização, tokens, webhooks ou estado remoto.
 - Comprar domínio, mudar infraestrutura, criar projetos/clientes Google ou submeter revisão.
