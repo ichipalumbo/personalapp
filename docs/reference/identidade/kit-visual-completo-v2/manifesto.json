@@ -1,0 +1,583 @@
+{
+  "marca": "Personal Josy",
+  "edicao": "Kit final — opção B",
+  "data": "2026-10-16",
+  "paleta": {
+    "amarelo": "#FFDE17",
+    "escuro": "#202020",
+    "branco": "#FFFFFF",
+    "descritor_escuro": "#E0E0E0"
+  },
+  "contagem": {
+    "svg_marca": 28,
+    "png_marca": 32
+  },
+  "dimensoes": {
+    "01_horizontal": [
+      2400,
+      413
+    ],
+    "02_escrita": [
+      2400,
+      390
+    ],
+    "03_simbolo": [
+      2213,
+      2400
+    ],
+    "04_empilhada": [
+      2400,
+      1597
+    ],
+    "05_horizontal_com_descritor": [
+      2400,
+      741
+    ],
+    "06_empilhada_com_descritor": [
+      2400,
+      1819
+    ],
+    "07_avatar": [
+      1080,
+      1080
+    ]
+  },
+  "assets": [
+    {
+      "composicao": "01_horizontal",
+      "titulo": "Horizontal",
+      "aplicacao": "claro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "01_horizontal/claro/personal_josy_horizontal_claro_transparente.svg",
+      "png": "01_horizontal/claro/personal_josy_horizontal_claro_transparente.png",
+      "png_px": [
+        2400,
+        413
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1562.26,
+        269.0
+      ]
+    },
+    {
+      "composicao": "01_horizontal",
+      "titulo": "Horizontal",
+      "aplicacao": "claro",
+      "fundo_externo": "branco #FFFFFF",
+      "j_interno": "#202020 opaco",
+      "svg": "01_horizontal/claro/personal_josy_horizontal_claro_com_fundo.svg",
+      "png": "01_horizontal/claro/personal_josy_horizontal_claro_com_fundo.png",
+      "png_px": [
+        2400,
+        413
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1562.26,
+        269.0
+      ]
+    },
+    {
+      "composicao": "01_horizontal",
+      "titulo": "Horizontal",
+      "aplicacao": "escuro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "01_horizontal/escuro/personal_josy_horizontal_escuro_transparente.svg",
+      "png": "01_horizontal/escuro/personal_josy_horizontal_escuro_transparente.png",
+      "png_px": [
+        2400,
+        413
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1562.26,
+        269.0
+      ]
+    },
+    {
+      "composicao": "01_horizontal",
+      "titulo": "Horizontal",
+      "aplicacao": "escuro",
+      "fundo_externo": "escuro #202020",
+      "j_interno": "#202020 opaco",
+      "svg": "01_horizontal/escuro/personal_josy_horizontal_escuro_com_fundo.svg",
+      "png": "01_horizontal/escuro/personal_josy_horizontal_escuro_com_fundo.png",
+      "png_px": [
+        2400,
+        413
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1562.26,
+        269.0
+      ]
+    },
+    {
+      "composicao": "02_escrita",
+      "titulo": "Somente a escrita",
+      "aplicacao": "claro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "02_escrita/claro/personal_josy_escrita_claro_transparente.svg",
+      "png": "02_escrita/claro/personal_josy_escrita_claro_transparente.png",
+      "png_px": [
+        2400,
+        390
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1258.26,
+        204.36
+      ]
+    },
+    {
+      "composicao": "02_escrita",
+      "titulo": "Somente a escrita",
+      "aplicacao": "claro",
+      "fundo_externo": "branco #FFFFFF",
+      "j_interno": "#202020 opaco",
+      "svg": "02_escrita/claro/personal_josy_escrita_claro_com_fundo.svg",
+      "png": "02_escrita/claro/personal_josy_escrita_claro_com_fundo.png",
+      "png_px": [
+        2400,
+        390
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1258.26,
+        204.36
+      ]
+    },
+    {
+      "composicao": "02_escrita",
+      "titulo": "Somente a escrita",
+      "aplicacao": "escuro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "02_escrita/escuro/personal_josy_escrita_escuro_transparente.svg",
+      "png": "02_escrita/escuro/personal_josy_escrita_escuro_transparente.png",
+      "png_px": [
+        2400,
+        390
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1258.26,
+        204.36
+      ]
+    },
+    {
+      "composicao": "02_escrita",
+      "titulo": "Somente a escrita",
+      "aplicacao": "escuro",
+      "fundo_externo": "escuro #202020",
+      "j_interno": "#202020 opaco",
+      "svg": "02_escrita/escuro/personal_josy_escrita_escuro_com_fundo.svg",
+      "png": "02_escrita/escuro/personal_josy_escrita_escuro_com_fundo.png",
+      "png_px": [
+        2400,
+        390
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        1258.26,
+        204.36
+      ]
+    },
+    {
+      "composicao": "03_simbolo",
+      "titulo": "Somente o símbolo",
+      "aplicacao": "claro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "03_simbolo/claro/personal_josy_simbolo_claro_transparente.svg",
+      "png": "03_simbolo/claro/personal_josy_simbolo_claro_transparente.png",
+      "png_px": [
+        2213,
+        2400
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        248.0,
+        269.0
+      ]
+    },
+    {
+      "composicao": "03_simbolo",
+      "titulo": "Somente o símbolo",
+      "aplicacao": "claro",
+      "fundo_externo": "branco #FFFFFF",
+      "j_interno": "#202020 opaco",
+      "svg": "03_simbolo/claro/personal_josy_simbolo_claro_com_fundo.svg",
+      "png": "03_simbolo/claro/personal_josy_simbolo_claro_com_fundo.png",
+      "png_px": [
+        2213,
+        2400
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        248.0,
+        269.0
+      ]
+    },
+    {
+      "composicao": "03_simbolo",
+      "titulo": "Somente o símbolo",
+      "aplicacao": "escuro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "03_simbolo/escuro/personal_josy_simbolo_escuro_transparente.svg",
+      "png": "03_simbolo/escuro/personal_josy_simbolo_escuro_transparente.png",
+      "png_px": [
+        2213,
+        2400
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        248.0,
+        269.0
+      ]
+    },
+    {
+      "composicao": "03_simbolo",
+      "titulo": "Somente o símbolo",
+      "aplicacao": "escuro",
+      "fundo_externo": "escuro #202020",
+      "j_interno": "#202020 opaco",
+      "svg": "03_simbolo/escuro/personal_josy_simbolo_escuro_com_fundo.svg",
+      "png": "03_simbolo/escuro/personal_josy_simbolo_escuro_com_fundo.png",
+      "png_px": [
+        2213,
+        2400
+      ],
+      "viewBox": [
+        -12,
+        -12,
+        248.0,
+        269.0
+      ]
+    },
+    {
+      "composicao": "04_empilhada",
+      "titulo": "Empilhada",
+      "aplicacao": "claro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "04_empilhada/claro/personal_josy_empilhada_claro_transparente.svg",
+      "png": "04_empilhada/claro/personal_josy_empilhada_claro_transparente.png",
+      "png_px": [
+        2400,
+        1597
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        665.4304
+      ]
+    },
+    {
+      "composicao": "04_empilhada",
+      "titulo": "Empilhada",
+      "aplicacao": "claro",
+      "fundo_externo": "branco #FFFFFF",
+      "j_interno": "#202020 opaco",
+      "svg": "04_empilhada/claro/personal_josy_empilhada_claro_com_fundo.svg",
+      "png": "04_empilhada/claro/personal_josy_empilhada_claro_com_fundo.png",
+      "png_px": [
+        2400,
+        1597
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        665.4304
+      ]
+    },
+    {
+      "composicao": "04_empilhada",
+      "titulo": "Empilhada",
+      "aplicacao": "escuro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "04_empilhada/escuro/personal_josy_empilhada_escuro_transparente.svg",
+      "png": "04_empilhada/escuro/personal_josy_empilhada_escuro_transparente.png",
+      "png_px": [
+        2400,
+        1597
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        665.4304
+      ]
+    },
+    {
+      "composicao": "04_empilhada",
+      "titulo": "Empilhada",
+      "aplicacao": "escuro",
+      "fundo_externo": "escuro #202020",
+      "j_interno": "#202020 opaco",
+      "svg": "04_empilhada/escuro/personal_josy_empilhada_escuro_com_fundo.svg",
+      "png": "04_empilhada/escuro/personal_josy_empilhada_escuro_com_fundo.png",
+      "png_px": [
+        2400,
+        1597
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        665.4304
+      ]
+    },
+    {
+      "composicao": "05_horizontal_com_descritor",
+      "titulo": "Horizontal com descritor",
+      "aplicacao": "claro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "05_horizontal_com_descritor/claro/personal_josy_horizontal_com_descritor_claro_transparente.svg",
+      "png": "05_horizontal_com_descritor/claro/personal_josy_horizontal_com_descritor_claro_transparente.png",
+      "png_px": [
+        2400,
+        741
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1698.26,
+        524.13366
+      ]
+    },
+    {
+      "composicao": "05_horizontal_com_descritor",
+      "titulo": "Horizontal com descritor",
+      "aplicacao": "claro",
+      "fundo_externo": "branco #FFFFFF",
+      "j_interno": "#202020 opaco",
+      "svg": "05_horizontal_com_descritor/claro/personal_josy_horizontal_com_descritor_claro_com_fundo.svg",
+      "png": "05_horizontal_com_descritor/claro/personal_josy_horizontal_com_descritor_claro_com_fundo.png",
+      "png_px": [
+        2400,
+        741
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1698.26,
+        524.13366
+      ]
+    },
+    {
+      "composicao": "05_horizontal_com_descritor",
+      "titulo": "Horizontal com descritor",
+      "aplicacao": "escuro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "05_horizontal_com_descritor/escuro/personal_josy_horizontal_com_descritor_escuro_transparente.svg",
+      "png": "05_horizontal_com_descritor/escuro/personal_josy_horizontal_com_descritor_escuro_transparente.png",
+      "png_px": [
+        2400,
+        741
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1698.26,
+        524.13366
+      ]
+    },
+    {
+      "composicao": "05_horizontal_com_descritor",
+      "titulo": "Horizontal com descritor",
+      "aplicacao": "escuro",
+      "fundo_externo": "escuro #202020",
+      "j_interno": "#202020 opaco",
+      "svg": "05_horizontal_com_descritor/escuro/personal_josy_horizontal_com_descritor_escuro_com_fundo.svg",
+      "png": "05_horizontal_com_descritor/escuro/personal_josy_horizontal_com_descritor_escuro_com_fundo.png",
+      "png_px": [
+        2400,
+        741
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1698.26,
+        524.13366
+      ]
+    },
+    {
+      "composicao": "06_empilhada_com_descritor",
+      "titulo": "Empilhada com descritor",
+      "aplicacao": "claro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "06_empilhada_com_descritor/claro/personal_josy_empilhada_com_descritor_claro_transparente.svg",
+      "png": "06_empilhada_com_descritor/claro/personal_josy_empilhada_com_descritor_claro_transparente.png",
+      "png_px": [
+        2400,
+        1819
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        757.835943
+      ]
+    },
+    {
+      "composicao": "06_empilhada_com_descritor",
+      "titulo": "Empilhada com descritor",
+      "aplicacao": "claro",
+      "fundo_externo": "branco #FFFFFF",
+      "j_interno": "#202020 opaco",
+      "svg": "06_empilhada_com_descritor/claro/personal_josy_empilhada_com_descritor_claro_com_fundo.svg",
+      "png": "06_empilhada_com_descritor/claro/personal_josy_empilhada_com_descritor_claro_com_fundo.png",
+      "png_px": [
+        2400,
+        1819
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        757.835943
+      ]
+    },
+    {
+      "composicao": "06_empilhada_com_descritor",
+      "titulo": "Empilhada com descritor",
+      "aplicacao": "escuro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "06_empilhada_com_descritor/escuro/personal_josy_empilhada_com_descritor_escuro_transparente.svg",
+      "png": "06_empilhada_com_descritor/escuro/personal_josy_empilhada_com_descritor_escuro_transparente.png",
+      "png_px": [
+        2400,
+        1819
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        757.835943
+      ]
+    },
+    {
+      "composicao": "06_empilhada_com_descritor",
+      "titulo": "Empilhada com descritor",
+      "aplicacao": "escuro",
+      "fundo_externo": "escuro #202020",
+      "j_interno": "#202020 opaco",
+      "svg": "06_empilhada_com_descritor/escuro/personal_josy_empilhada_com_descritor_escuro_com_fundo.svg",
+      "png": "06_empilhada_com_descritor/escuro/personal_josy_empilhada_com_descritor_escuro_com_fundo.png",
+      "png_px": [
+        2400,
+        1819
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1000.0,
+        757.835943
+      ]
+    },
+    {
+      "composicao": "07_avatar",
+      "titulo": "Avatar quadrado",
+      "aplicacao": "claro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "07_avatar/claro/personal_josy_avatar_claro_transparente.svg",
+      "png": "07_avatar/claro/personal_josy_avatar_claro_transparente.png",
+      "png_px": [
+        1080,
+        1080
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1080.0,
+        1080.0
+      ],
+      "png_512": "07_avatar/claro/personal_josy_avatar_claro_transparente_512.png"
+    },
+    {
+      "composicao": "07_avatar",
+      "titulo": "Avatar quadrado",
+      "aplicacao": "claro",
+      "fundo_externo": "branco #FFFFFF",
+      "j_interno": "#202020 opaco",
+      "svg": "07_avatar/claro/personal_josy_avatar_claro_com_fundo.svg",
+      "png": "07_avatar/claro/personal_josy_avatar_claro_com_fundo.png",
+      "png_px": [
+        1080,
+        1080
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1080.0,
+        1080.0
+      ],
+      "png_512": "07_avatar/claro/personal_josy_avatar_claro_com_fundo_512.png"
+    },
+    {
+      "composicao": "07_avatar",
+      "titulo": "Avatar quadrado",
+      "aplicacao": "escuro",
+      "fundo_externo": "transparente",
+      "j_interno": "#202020 opaco",
+      "svg": "07_avatar/escuro/personal_josy_avatar_escuro_transparente.svg",
+      "png": "07_avatar/escuro/personal_josy_avatar_escuro_transparente.png",
+      "png_px": [
+        1080,
+        1080
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1080.0,
+        1080.0
+      ],
+      "png_512": "07_avatar/escuro/personal_josy_avatar_escuro_transparente_512.png"
+    },
+    {
+      "composicao": "07_avatar",
+      "titulo": "Avatar quadrado",
+      "aplicacao": "escuro",
+      "fundo_externo": "escuro #202020",
+      "j_interno": "#202020 opaco",
+      "svg": "07_avatar/escuro/personal_josy_avatar_escuro_com_fundo.svg",
+      "png": "07_avatar/escuro/personal_josy_avatar_escuro_com_fundo.png",
+      "png_px": [
+        1080,
+        1080
+      ],
+      "viewBox": [
+        0.0,
+        0.0,
+        1080.0,
+        1080.0
+      ],
+      "png_512": "07_avatar/escuro/personal_josy_avatar_escuro_com_fundo_512.png"
+    }
+  ]
+}
