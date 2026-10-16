@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="224.000000" height="245.000000" viewBox="0 0 224.000000 245.000000" role="img" aria-labelledby="title desc">
+<title id="title">Personal Josy — Somente o símbolo — escuro</title>
+<desc id="desc">Personal Josy. Calendário amarelo com recorte transparente em J e presilhas brancas.</desc>
+<metadata>Derivação dos SVGs aprovados na conversa. Símbolo e escrita originais preservados, sem redesenho; somente escala uniforme e posicionamento. Nome: Poppins SemiBold 600, caminhos existentes. Descritor: Poppins Regular 400, coordenadas do TTX oficial da Indian Type Foundry, versão 4.003. Fonte do descritor: https://raw.githubusercontent.com/itfoundry/Poppins/master/products/Poppins-4.003-GoogleFonts-TTF/Poppins-Regular.ttx. Sem fonte ou bitmap incorporado, sem dependência externa. Cores sRGB: #FFD700, #FFFFFF, #0D0D0D; descritor #E0E0E0.</metadata>
+<path fill="#0D0D0D" d="M0 0H224.000000V245.000000H0Z"/>
+<path fill="#FFD700" fill-rule="evenodd" d="M32 25H192C209.673 25 224 39.327 224 57V213C224 230.673 209.673 245 192 245H32C14.327 245 0 230.673 0 213V57C0 39.327 14.327 25 32 25ZM134 72H158C160.209 72 162 73.791 162 76V163C162 192 144 212 113 212C87 212 68 197 62 173L89 162C93 174 100 181 112 181C124 181 130 173 130 161V76C130 73.791 131.791 72 134 72Z"/>
+<path fill="#FFFFFF" fill-rule="nonzero" d="M56 0C63.732 0 70 6.268 70 14V46C70 53.732 63.732 60 56 60C48.268 60 42 53.732 42 46V14C42 6.268 48.268 0 56 0ZM168 0C175.732 0 182 6.268 182 14V46C182 53.732 175.732 60 168 60C160.268 60 154 53.732 154 46V14C154 6.268 160.268 0 168 0Z"/>
+</svg>

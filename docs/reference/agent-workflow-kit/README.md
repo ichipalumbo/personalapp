@@ -157,13 +157,127 @@ existe é o sintoma clássico de que ninguém rodou a verificação.
 
 ## 11. Como adotar em outro projeto
 
-1. Manter esta pasta em um caminho conhecido do projeto consumidor e escolher seus nomes de destino.
-2. Preencher `[ADAPTAR]` nas instruções e no índice de governança: fontes, comandos, ambiente,
-   permissões Git, publicação, áreas sensíveis e histórico. Não copiar a stack ou as restrições do projeto de origem.
-3. Usar os templates de spec/diagnóstico/plano apenas quando necessários. Substituir datas,
-   escolher um status e retirar campos não pertinentes sem inventar informação para preenchê-los.
-4. Se desejar o arquiteto, seguir a instalação abaixo; caso contrário os modelos funcionam sem agente customizado.
-5. Conferir links e caminhos após a cópia. Modelos com placeholders não são arquivos já configurados.
+O kit pode ser guardado no próprio repositório consumidor ou copiado para um local conhecido.
+Mantê-lo como subpasta de referência não o ativa: instruções, índice e agente precisam ser
+instalados nos caminhos que o projeto e o VS Code reconhecem.
+
+### 11.1 Primeiro pedido à IA: auditoria sem escrita
+
+Em um repositório Git vazio, comece pedindo análise e proposta, ainda sem pedir a instalação:
+
+> Analise este repositório para preparar a instalação do workflow do kit. Nesta etapa, não
+> crie nem altere arquivos. Identifique estado real do repositório, idioma, stack/configuração
+> existente, convenções, comandos verificáveis, testes, deploy, segurança, tipos de dados e
+> integrações. Não leia registros pessoais, dumps, credenciais ou conteúdo de arquivos secretos.
+> Separe fatos observados, hipóteses, lacunas e perguntas de confirmação para mim. Proponha como
+> adaptar e instalar apenas as instruções, a governança documental e o agente autorizados, sem
+> criar specs, diagnósticos, planos, backlog, código de produto ou stack por conta própria.
+> Informe os limites de permissão do agente e o que depende de decisão humana.
+
+**O que a IA deve inspecionar**:
+
+- Estado Git, branch e arquivos existentes, distinguindo repositório realmente vazio de
+  repositório apenas sem documentação. Preservar arquivos e instruções que já existam.
+- Linguagem, pontos de entrada, dependências, comandos disponíveis e testes já configurados;
+  ler `package.json`, workflow CI, configuração e exemplos de código quando presentes.
+- Ambientes e destinos de deploy, tipos e localização de dados, integrações externas e operações
+  difíceis de reverter. Não testar escrita nem inferir configuração secreta.
+- Configuração e esquemas podem ser avaliados para identificar formatos e fluxos, mas não abrir
+  registros pessoais ou copiar dados reais para a conversa por padrão. Não ler `.env`, tokens,
+  chaves privadas, dumps ou arquivos equivalentes. Se uma inspeção de conteúdo for indispensável,
+  explicar o motivo, limitar o recorte e pedir autorização explícita antes. Preferir schema,
+  metadados, dados sintéticos ou amostra previamente redigida.
+- Perfil do usuário e do time: público, idioma, experiência técnica, necessidades de acessibilidade,
+  quem decide e quais ferramentas/agentes o ambiente realmente suporta.
+- Formatos de customização disponíveis no host (VS Code, editor/CLI ou outro). Não assumir
+  que `.github/agents/*.agent.md` é descoberta automaticamente fora de um host compatível.
+
+**Saída desta etapa**: perfil observado do repositório, perfil de uso informado pelo responsável,
+fatos, hipóteses, lacunas, riscos e perguntas de confirmação. Incluir uma proposta de adaptação e
+arquivos/diretórios do kit, sem produzir ainda um diff de instalação. Se o repo estiver vazio,
+isso apenas confirma que produto, regras, deploy e testes ainda não estão definidos; não é licença
+para preenchê-los por convenção.
+
+### 11.2 Decisões antes de instalar
+
+Depois de apresentar o que observou, a IA resume o entendimento e pergunta o que não pode ser
+deduzido com segurança. Não precisa perguntar novamente fatos visíveis na configuração: deve
+apontá-los e pedir correção somente se houver ambiguidade. Perguntas de confirmação típicas:
+
+- **Usuário e trabalho**: quem usará o projeto, para que tarefas, em qual idioma e com qual nível
+  de familiaridade técnica? Há requisitos de acessibilidade ou restrições de uso relevantes?
+- **Dados**: que tipos de dados o sistema manipula? São pessoais, financeiros, de saúde,
+  confidenciais ou regulados? Em quais ambientes existem dados reais? A IA está autorizada a
+  inspecionar conteúdo real ou deve limitar-se a schemas, metadados e amostras sintéticas/redigidas?
+- **Stack**: a stack detectada é uma decisão existente ou apenas um ponto de partida? Há runtime,
+  hospedagem, provedores ou dependências preferidos/proibidos? Se não houver decisão, a IA pode
+  comparar opções e recomendar uma, sem instalar dependências ou gerar scaffold de aplicação?
+- **Governança**: quem aprova regras de produto, segurança, acesso a dados e publicação? Quais
+  operações e caminhos o agente pode editar, e quais comandos/ações ficam reservados ao responsável?
+- **Kit e host**: quais artefatos e agente deseja instalar? Em qual editor/host o agente será usado?
+
+O responsável confirma ou ajusta, no mínimo:
+
+- Onde ficam instruções, índice, roadmap, specs, diagnósticos, planos, referências e arquivo
+  histórico; quais desses artefatos o projeto realmente quer manter.
+- Linguagem, runtime, estrutura, comandos de teste/build, estratégia de deploy e estado inicial
+  de CI. Marcar como **desconhecido/não configurado** o que ainda não existe.
+- Autoridade de produto: quem aprova comportamento, acesso a dados, segurança, publicação e
+  operações remotas. Definir fonte por assunto, não um ranking universal de documentos.
+- Protocolo de branch/Git, operações que o agente pode executar, operações reservadas ao humano
+  e como a revisão/publicação ocorre. O kit não concede permissões.
+- Se quer o agente arquiteto no host atual. Se não, os modelos e instruções continuam utilizáveis
+  sem agente customizado.
+
+Registrar separadamente fatos do repositório e decisões do responsável. Não tratar silêncio como
+autorização para ler dados reais, instalar dependências, escolher uma stack ou executar ações.
+Recomendações podem ser apresentadas com prós, contras e premissas, mas dependem de confirmação
+antes de virar configuração.
+
+Não criar spec ativa de funcionalidade sem comportamento aprovado. Não produzir diagnóstico ou
+plano só porque há um modelo disponível; esses artefatos serão usados em sessões futuras quando a
+necessidade aparecer. Não afirmar cobertura quando não há teste nem declarar “sem ambiente” como
+decisão permanente se isso só não foi investigado.
+
+### 11.3 Instalação inicial após autorização
+
+Após a confirmação do perfil e da proposta, o responsável autoriza a instalação. O executor
+aplica somente a adaptação aprovada, em alterações pequenas e revisáveis. O objetivo é deixar o
+workflow do kit configurado para uso futuro, não iniciar o desenvolvimento do produto:
+
+1. Copia/adapta `copilot-instructions.template.md` para o formato de instruções do host e
+   preenche apenas fatos confirmados. Se usar VS Code, conferir a compatibilidade do formato.
+2. Copia/adapta `docs-readme.template.md` como índice e governança. Ajusta destinos e remove
+   entradas de pastas que o responsável decidiu não criar.
+3. Cria somente os diretórios necessários para os artefatos escolhidos, sem replicar toda a
+  estrutura de exemplo por padrão.
+4. Deixa os templates de spec, diagnóstico e plano disponíveis para uso posterior. Não cria
+  documentos de trabalho nem spec ativa durante a instalação do kit.
+5. Não cria roadmap/backlog, código de produto, scaffold de aplicação, CI ou configuração de
+  deploy, nem instala dependências como parte desta etapa. Esses trabalhos exigem pedido próprio.
+6. Se autorizado, instala e adapta o agente conforme a seção 12. Seu perfil só planeja e não
+   substitui as instruções de implementação.
+7. Apresenta o diff por arquivo e pausa nos itens que exigem decisão. Instalar os arquivos não
+  aprova o conteúdo, executa testes, cria branch/commit ou publica o workflow. O usuário poderá
+  depois trabalhar com o agente ou iterar com o Copilot em novas sessões, conforme a necessidade.
+
+### 11.4 Verificação de instalação
+
+- Cada destino existe, tem uma finalidade e usa os caminhos reais do projeto; links relativos
+  resolvem. Placeholders remanescentes estão marcados, não parecem fatos configurados.
+- Instruções e agente não se contradizem; permissões declaradas correspondem às ferramentas e
+  ao protocolo do responsável. `tools: [read, search, edit]` não impõe sandbox de diretório.
+- A inspeção respeitou o limite de dados aprovado; nenhum dado real ou segredo foi incluído em
+  instruções, agente, documentação ou resumo sem necessidade e autorização.
+- Um arquivo de teste/solicitação simulada permite conferir se o agente identifica a fonte
+  correta, pergunta sobre ambiguidade e limita sua atuação ao papel. Não pedir mudança real de
+  produto só para testar a instalação.
+- O dono revisa o conteúdo antes de ativar/publicar. Não executar testes que ainda não existem,
+  criar CI, instalar dependências ou alterar configurações de deploy sem aprovação.
+
+Para projetos já existentes, usar a mesma sequência de análise, confirmação e instalação, mas
+mapear as fontes presentes antes de criar substitutos. A existência de uma pasta ou arquivo com
+nome semelhante não prova que tenha a mesma autoridade.
 
 ## 12. Como instalar e usar o arquiteto
 
