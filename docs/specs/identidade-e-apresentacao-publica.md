@@ -134,7 +134,7 @@ funcionalidades ou promessas do produto.
 
 ### 2.9 Aplicação no cabeçalho
 
-Decisão aprovada, conforme o guia v3:
+Decisão aprovada:
 
 - Usar a composição **horizontal escura transparente, sem descritor**, no canto superior
   esquerdo, aplicada como arquivo, não como texto.
