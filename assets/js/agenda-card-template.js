@@ -8,14 +8,15 @@
 
     // Chips de status de AULA (Etapa 4, Cartão D — refinamento 2026-09-27):
 // caixas fixas de 20x20px definidas no CSS (.agenda-card-inline-status
-// .badge-tag-tipo); aqui só a cor por tipo. Visual clean: FUNDOS translúcidos
+// .badge-tag-tipo); aqui só a classe de cor por tipo, definida no style.css.
+// Visual clean: FUNDOS translúcidos
 // sem borda (decisão do dono — "só o fundo, sem a borda"), como o Cartão D
 // original. Reposição usa a classe .badge-tag-tipo--reposicao (dourada
 // tracejada, design pré-existente). Deslocamento/Bloqueio/Google não têm chip:
 // o ícone do tipo já abre o título do card (carro/cadeado/G) — "só em AULA".
-const BADGE_STYLES = {
-    recorrente: 'background: rgba(255, 215, 0, 0.18); color: #FFD700; font-weight: 700;',
-    unico: 'background: rgba(129, 199, 132, 0.18); color: #81C784; font-weight: 700;'
+const BADGE_CLASSES = {
+    recorrente: 'badge-tag-tipo--recorrente',
+    unico: 'badge-tag-tipo--unico'
 };
 
     function normalizarHex(valorHex) {
@@ -233,13 +234,13 @@ const BADGE_STYLES = {
                 // title/aria-label preservando o texto (decisão do dono, D-1).
                 tagStatusHtml = `<span class="badge-tag-tipo badge-tag-tipo--reposicao agenda-card-optional agenda-card-status-badge" role="img" aria-label="Reposição" title="Reposição"><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i></span>`;
             } else if (comp.frequencia === 'semanal') {
-                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" role="img" aria-label="Recorrente" title="Recorrente" style="${BADGE_STYLES.recorrente}"><i class="fa-solid fa-infinity" aria-hidden="true"></i></span>`;
+                tagStatusHtml = `<span class="badge-tag-tipo ${BADGE_CLASSES.recorrente} agenda-card-optional agenda-card-status-badge" role="img" aria-label="Recorrente" title="Recorrente" style="font-weight: 700;"><i class="fa-solid fa-infinity" aria-hidden="true"></i></span>`;
             } else {
-                tagStatusHtml = `<span class="badge-tag-tipo agenda-card-optional agenda-card-status-badge" role="img" aria-label="Único" title="Único" style="${BADGE_STYLES.unico}"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i></span>`;
+                tagStatusHtml = `<span class="badge-tag-tipo ${BADGE_CLASSES.unico} agenda-card-optional agenda-card-status-badge" role="img" aria-label="Único" title="Único" style="font-weight: 700;"><i class="fa-solid fa-thumbtack" aria-hidden="true"></i></span>`;
             }
             tagVisualHtml = '';
             if (alunoInativo) {
-                tagVisualHtml += `<span class="badge-tag-tipo agenda-card-optional" role="img" aria-label="Aluno inativo" title="Aluno inativo" style="background: rgba(255, 138, 128, 0.15); color: #FF8A80; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></span>`;
+                tagVisualHtml += `<span class="badge-tag-tipo badge-tag-tipo--inativo agenda-card-optional" role="img" aria-label="Aluno inativo" title="Aluno inativo" style="padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></span>`;
             }
             // Semana (sem visualContext): o chip de aula fica no rodapé (meta,
             // canto inferior direito por margin-left:auto da
@@ -282,12 +283,12 @@ const BADGE_STYLES = {
                     <span class="card-content-wrapper">
                         <span class="agenda-semana-card-top">
                             <span class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome" style="color: #51b749;"><i class="fa-solid fa-car-side"></i><span class="agenda-dia-aula-nome-texto">Deslocamento</span></span>
+                                <span class="agenda-dia-aula-nome agenda-dia-aula-nome--deslocamento"><i class="fa-solid fa-car-side"></i><span class="agenda-dia-aula-nome-texto">Deslocamento</span></span>
                             </span>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </span>
                         <span class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #DDD;">${descricaoDeslocamento}</span>
+                            <span class="agenda-dia-aula-local agenda-dia-aula-local--deslocamento">${descricaoDeslocamento}</span>
                         </span>
                     </span>
                 </button>
@@ -308,12 +309,12 @@ const BADGE_STYLES = {
                     <div class="card-content-wrapper">
                         <div class="agenda-semana-card-top">
                             <div class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-brands fa-google" style="color: #4285F4;"></i><span class="agenda-dia-aula-nome-texto">${descricaoExternaSafe}</span></span>
+                                <span class="agenda-dia-aula-nome card-bloqueio-externo-nome"><i class="fa-brands fa-google"></i><span class="agenda-dia-aula-nome-texto">${descricaoExternaSafe}</span></span>
                             </div>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #ff5c54;">Bloqueado</span>
+                            <span class="agenda-dia-aula-local agenda-dia-aula-local--bloqueio">Bloqueado</span>
                         </div>
                     </div>
                 </div>
@@ -328,12 +329,12 @@ const BADGE_STYLES = {
                     <span class="card-content-wrapper">
                         <span class="agenda-semana-card-top">
                             <span class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: #DDD;"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
+                                <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
                             </span>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </span>
                         <span class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #ff5c54;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
+                            <span class="agenda-dia-aula-local agenda-dia-aula-local--bloqueio">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
                         </span>
                     </span>
                 </button>

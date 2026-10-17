@@ -27,6 +27,24 @@ function ambiente(t) {
     return { window, regras: coletarRegras(estilo.sheet.cssRules) };
 }
 
+// Etapa 3 da identidade: as cores vêm de tokens do :root. O teste resolve var()
+// com os valores reais do :root e normaliza pela mesma serialização do CSSOM,
+// então continua provando a cor final do FAB, não só o nome do token.
+function resolverTokens(regras, window) {
+    const raiz = regras.find((regra) => regra.seletor === ':root').estilo;
+    const rascunho = window.document.createElement('div').style;
+    const resolver = (valor) => valor.replace(/var\(\s*(--[\w-]+)\s*\)/g, (_, nome) => {
+        const definido = raiz.getPropertyValue(nome).trim();
+        assert.ok(definido, `${nome} precisa existir no :root`);
+        return resolver(definido);
+    });
+    return (propriedade, valor) => {
+        const resolvido = resolver(valor).replace(/\s*,\s*/g, ', ');
+        rascunho.setProperty(propriedade, resolvido);
+        return rascunho.getPropertyValue(propriedade) || resolvido;
+    };
+}
+
 function coletarRegras(lista, midias = []) {
     return Array.from(lista).flatMap((regra) => {
         if (regra.selectorText) return [{ seletor: regra.selectorText, estilo: regra.style, midias }];
@@ -50,9 +68,10 @@ function regraUnica(regras, seletor, reduzido = false) {
     return encontradas[0].estilo;
 }
 
-function verificarDeclaracoes(estilo, esperado) {
+function verificarDeclaracoes(estilo, esperado, resolver = (propriedade, valor) => valor) {
     for (const [propriedade, valor] of Object.entries(esperado)) {
-        assert.equal(estilo.getPropertyValue(propriedade).trim().replace(/\s+/g, ' '), valor, propriedade);
+        const declarado = estilo.getPropertyValue(propriedade).trim();
+        assert.equal(resolver(propriedade, declarado).trim().replace(/\s+/g, ' '), valor, propriedade);
     }
 }
 
@@ -91,7 +110,7 @@ test('FABs de Alunos e Home usam a mesma classe, inclusive ao alternar modo e re
 
 // M37/M38: reintroduzir estilo por ID/classe da tela, quebrando a fonte única.
 test('FAB tem uma única fonte CSS de aparência, sem overrides por ID ou classes antigas', (t) => {
-    const { regras } = ambiente(t);
+    const { window, regras } = ambiente(t);
     const locais = regras.filter((regra) => /#(?:fabNovoHome|btnFlutuanteAdicionar)\b|\.(?:btn-weekly-add|fab-novo-home)\b/.test(regra.seletor));
     assert.deepEqual(locais.map((regra) => regra.seletor), [], 'estilo do FAB não deve depender da tela ou do ID');
     const seletoresFab = regras.flatMap(seletores).filter((seletor) => seletor.includes('.fab-adicionar'));
@@ -103,16 +122,16 @@ test('FAB tem uma única fonte CSS de aparência, sem overrides por ID ou classe
         'box-shadow': '0 14px 28px rgba(0, 0, 0, 0.42)', 'z-index': '100', cursor: 'pointer',
         display: 'flex', 'align-items': 'center', 'justify-content': 'center',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease'
-    });
+    }, resolverTokens(regras, window));
 });
 
 // M38/M39: hover exclusivo de Home ou reduced-motion ainda apontando para classe antiga.
 test('FAB compartilha hover, pressão e movimento reduzido com a referência da Home', (t) => {
-    const { regras } = ambiente(t);
+    const { window, regras } = ambiente(t);
     verificarDeclaracoes(regraUnica(regras, '.fab-adicionar:hover'), {
         transform: 'translateY(-2px)', 'box-shadow': '0 18px 34px rgba(0, 0, 0, 0.5)',
         filter: 'brightness(1.03)'
-    });
+    }, resolverTokens(regras, window));
     verificarDeclaracoes(regraUnica(regras, '.fab-adicionar:active'), { transform: 'scale(0.9)' });
     verificarDeclaracoes(regraUnica(regras, '.fab-adicionar', true), { transition: 'none' });
 });

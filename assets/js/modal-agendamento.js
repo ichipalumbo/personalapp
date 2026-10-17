@@ -157,7 +157,7 @@ function atualizarCabecalhoModalAgendamento(tipo) {
     const submitButton = document.getElementById('btnSalvarAgendamento');
 
     if (titulo) {
-        titulo.innerHTML = `<i class="fa-solid ${meta.icone}" style="color: #ffd700; margin-right: 8px"></i>${meta.titulo}`;
+        titulo.innerHTML = `<i class="fa-solid ${meta.icone} cor-destaque" style="margin-right: 8px"></i>${meta.titulo}`;
     }
     if (subtitulo) subtitulo.textContent = meta.subtitulo;
     if (infoTipo) infoTipo.textContent = meta.infoTipo;
@@ -707,9 +707,9 @@ window.atualizarResumoRecorrenciaCadastro = function() {
         : 'sem data';
 
     container.innerHTML = `
-        <strong style="display:block; margin-bottom:4px; color:#FFD700;">Resumo da repetição</strong>
-        <span style="display:block; font-size:0.875rem; color:#DDD;">${montarResumoRecorrencia({ ...recorrencia, enabled: true })}</span>
-        <span style="display:block; font-size:0.875rem; color:#BBB; margin-top:2px;">Início: ${inicioFmt}</span>
+        <strong class="cor-destaque" style="display:block; margin-bottom:4px;">Resumo da repetição</strong>
+        <span class="cor-texto-resumo" style="display:block; font-size:0.875rem;">${montarResumoRecorrencia({ ...recorrencia, enabled: true })}</span>
+        <span class="cor-texto-resumo-apoio" style="display:block; font-size:0.875rem; margin-top:2px;">Início: ${inicioFmt}</span>
     `;
 };
 

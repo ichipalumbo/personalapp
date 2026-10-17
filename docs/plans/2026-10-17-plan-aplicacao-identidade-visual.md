@@ -77,7 +77,7 @@ As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na 
 | 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída; na `main` pelo PR #73 |
 | 1 | Cabeçalho com logo e alvos de toque do topo | Implementada em `feat/rebranding-interface`; publicação com o PR único |
 | 2 | Nome exibido, ícones e disponibilidade offline do PWA | Implementada na branch; aceite no aparelho pendente |
-| 3 | Variáveis de cor, sem mudança visual | Pendente |
+| 3 | Variáveis de cor, sem mudança visual | Implementada na branch; publicação com o PR único |
 | 4 | Recoloração com a paleta do guia | Pendente; depende da 3 |
 | 5 | Poppins na interface | Pendente |
 
@@ -120,6 +120,12 @@ As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na 
 
 - Criar variáveis CSS para as cores em uso, inclusive as variações com transparência. Trocar os literais do `style.css`, os estilos inline do `index.html` e as cores fixas dos JS por variável ou classe.
 - Os valores continuam os atuais. Os nomes das variáveis são decididos na etapa, para que a etapa 4 seja só troca de valor.
+- **Decisões do dono**:
+  - toda cor vira variável, inclusive as de uso único;
+  - nomes semânticos pelo papel da cor (por exemplo, `--cor-texto-apoio`), não pelo valor;
+  - transparências derivam de um par `-rgb` da cor base, no formato `rgba(var(--x-rgb), alfa)`;
+  - cores inline do `index.html` e dos JS saem para classes CSS; o layout inline não faz parte da etapa e continua onde está.
+- **Ficam literais por serem dado, não estilo**: `theme-color` `#202020` (etapa 2), `AULA_COR_FALLBACK` e o par nome/hex da cor de evento do Google Agenda ("Tangerina").
 - **Aceite**:
   - capturas do mock antes e depois idênticas nas telas principais e modais, nos três viewports;
   - suíte de frontend medida antes e depois.
@@ -228,3 +234,21 @@ As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na 
 - **Pendências**: a instalação e o recorte dos ícones ainda precisam de conferência no celular do dono; a validação automatizada não substitui esse aceite. Reavaliar `background_color` na etapa 4 caso o fundo da interface seja alterado.
 - **Documentação**: spec de identidade v10, plano desta frente e item 5.10 do roadmap atualizados.
 - **Não alterado**: CSS da interface, paleta e `CACHE_NAME`; não houve publicação nem alteração de dependências.
+
+### Etapa 3 — 2026-10-17
+
+- **Implementação**:
+  - `assets/css/style.css`: o `:root` passa a reunir 167 variáveis de cor, agrupadas em marca e foco, fundos e superfícies, bordas, texto, ações, categorias, sessão e Google/GCal. Novos pares `-rgb` para a categoria Tangerina, a consultoria online e os estados ok, informativo, aviso e erro; o fundo e a borda do estado de aviso passam a derivar do par. Fora do `:root`, todo literal de cor virou `var(--…)` (360 trocas);
+  - no fim do `style.css`, nova seção de classes de cor: utilitárias `.cor-*` e classes de componente para abas, campos travados, cartão de cobrança, aviso de recorrência, botões de reposição, badges de tipo, cards de deslocamento e bloqueio, alunos e finanças. Onde a regra antiga concorria com o inline, o seletor composto mantém a mesma cor vencedora;
+  - `index.html` e os templates de `agenda-card-template.js`, `modal-agendamento.js`, `view-home.js`, `view-alunos.js` e `view-financas.js`: as declarações de cor inline foram trocadas por essas classes. Em `agenda-card-template.js`, o mapa `BADGE_STYLES` passou a `BADGE_CLASSES`.
+- **Verificação de equivalência**:
+  - comparação estática do CSS antes e depois, com cada `var()` resolvido: 1.938 declarações, 0 diferenças; com um token alterado de propósito, acusou 17;
+  - comparação renderizada no mock entre o snapshot anterior e a branch, com pixels e cores computadas de cada elemento, em 28 estados (telas principais e modo Dia, 13 modais e painéis, e os cenários com vitrine de estados, alunos em atraso, agenda lotada, horários simultâneos, base vazia e sessão desconectada) nos três viewports: 84 combinações, todas com 0 diferença de cor computada e 0 pixel diferente. Hover, foco e toasts ficaram fora da captura automática; as regras desses estados foram cobertas pela comparação estática.
+- **Testes** em `tests-frontend/`:
+  - linha de base: 431 testes, 431 passando;
+  - `fab-adicionar.test.js`: a verificação da aparência do FAB passou a resolver `var()` pelo `:root` antes de comparar os valores esperados, que não mudaram;
+  - novo `cores-tokens.test.js` com 4 testes: nenhum literal de cor no `style.css` fora do `:root`; nenhum literal de cor no `index.html` e nos JS do app, salvo os dados listados na etapa; toda variável de cor usada existe no `:root`; cada par `-rgb` corresponde ao hex da cor base;
+  - mutações: literal de cor numa regra do CSS, cor inline num template JS, variável inexistente, par `-rgb` divergente, cor do FAB e sombra do FAB alteradas no token. Todas derrubaram o teste correspondente, foram revertidas e conferidas com `git status`;
+  - resultado final: 435 testes, 435 passando.
+- **Achados não corrigidos**: `.recuperacao-dados` usa `var(--estado-aviso, …)`, variável que nunca existiu, e o valor efetivo é o fallback, mantido igual; quatro linhas de comentário com acentuação corrompida no `style.css`, anteriores à etapa.
+- **Não alterado**: valores de cor, layout inline, `sw.js`, manifest e dependências.

@@ -83,9 +83,9 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 ### [ ] 5.10 Aplicação da identidade visual Personal Josy
 
 - **Resultado esperado**: app e PWA identificados como Personal Josy com a identidade do guia v3 (logo no cabeçalho, nome exibido, ícones de instalação, paleta do guia e Poppins) e alvos de toque do topo ampliados, absorvendo o item 5.9.
-- **Decidido**: contrato na [spec de identidade](specs/identidade-e-apresentacao-publica.md); sequência em etapas numa branch única, com um só PR, registrada no plano. Etapas 1 e 2 implementadas na branch: cabeçalho e alvos de toque; nome, ícones PWA e pré-cache do logo/ícones no service worker.
+- **Decidido**: contrato na [spec de identidade](specs/identidade-e-apresentacao-publica.md); sequência em etapas numa branch única, com um só PR, registrada no plano. Etapas 1 a 3 implementadas na branch: cabeçalho e alvos de toque; nome, ícones PWA e pré-cache do logo/ícones no service worker; cores centralizadas em variáveis CSS, sem mudança visual.
 - **Decidir antes**: mapeamento das cores sem correspondente na paleta e pesos da Poppins, cada um na sua etapa.
-- **Risco/dependência**: o botão Google é área de autenticação (só área de toque, com aviso prévio); ícones e manifest afetam instalações existentes; aceite da instalação depende de conferência no aparelho do dono; a recoloração depende da etapa de variáveis de cor.
+- **Risco/dependência**: o botão Google é área de autenticação (só área de toque, com aviso prévio); ícones e manifest afetam instalações existentes; aceite da instalação depende de conferência no aparelho do dono; a recoloração (etapa 4) usa as variáveis da etapa 3.
 - **Esforço**: médio, distribuído em etapas.
 - **Referência**: [plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [guia de identidade visual v3](reference/identidade/guia-identidade-visual-v3.md) e [ambiente de validação mobile](setup-ambiente-local.md).
 

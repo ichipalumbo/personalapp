@@ -2,9 +2,9 @@
 .recuperacao-dados {
   margin: 12px 0;
   padding: 16px;
-  border: 1px solid var(--estado-aviso, #e6b85c);
+  border: 1px solid var(--estado-aviso, var(--cor-recuperacao-borda));
   border-radius: 12px;
-  background: #1d1d1d;
+  background: var(--cor-recuperacao-fundo);
 }
 .recuperacao-dados[hidden] { display: none; }
 .recuperacao-dados h2 { margin: 0 0 8px; font-size: 1rem; }
@@ -19,8 +19,171 @@
   --bottombar-height: calc(var(--safe-area-bottom, 0px) + 56px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
+  /* [TAG-STYLE-CORES] Tokens de cor por papel — plano de aplicação da identidade, etapa 3.
+     Toda cor da interface sai daqui: style.css, classes usadas pelo index.html e pelos JS.
+     Os valores reproduzem a aparência anterior; a recoloração com a paleta do guia é a etapa 4.
+     Um token com par -rgb guarda os canais para transparências: rgba(var(--x-rgb), alfa).
+     Hex e -rgb do mesmo par precisam representar a mesma cor (teste cores-tokens). */
+
+  /* Marca e foco */
+  --cor-destaque: #ffd700;
+  --cor-destaque-rgb: 255, 215, 0;
+  --cor-sobre-destaque: #0d0d0d;
+  --cor-foco: #ffd700;
+  --cor-foco-rgb: 255, 215, 0;
+
+  /* Fundos e superfícies */
+  --cor-fundo-app: #0d0d0d;
+  --cor-fundo-app-rgb: 13, 13, 13;
+  --cor-fundo-agenda: #0b0b0b;
+  --cor-topo-fundo-rgb: 12, 12, 12;
+  --cor-campo-fundo: #0d0d0d;
+  --cor-superficie-recuada: #111111;
+  --cor-superficie-painel: #141414;
+  --cor-superficie-painel-base: #101010;
+  --cor-superficie: #1a1a1a;
+  --cor-superficie-elevada: #2a2a2a;
+  --cor-superficie-bloco: #101010;
+  --cor-superficie-historico: #0f0f0f;
+  --cor-opcao-fundo: #1e1e1e;
+  --cor-opcao-fundo-hover: #252525;
+  --cor-skeleton: #1d1d1d;
+  --cor-recuperacao-fundo: #1d1d1d;
+  --cor-veu-rgb: 0, 0, 0;
+  --cor-sombra-rgb: 0, 0, 0;
+  --cor-claro-rgb: 255, 255, 255;
+
+  /* Bordas, divisores e linhas da grade */
+  --cor-borda: #2a2a2a;
+  --cor-borda-sutil: #1f1f1f;
+  --cor-borda-campo: #333333;
+  --cor-borda-painel: #232323;
+  --cor-borda-controle: #3a3a3a;
+  --cor-borda-controle-hover: #555555;
+  --cor-borda-item: #242424;
+  --cor-divisor: #222222;
+  --cor-divisor-historico: #252525;
+  --cor-divisor-financas: #262626;
+  --cor-pill-borda: #2d2d2d;
+  --cor-pill-borda-hover: #444444;
+  --cor-opcao-borda: #2d2d2d;
+  --cor-stepper-borda: #2e2e2e;
+  --cor-aula-borda: #222224;
+  --cor-skeleton-borda: #3a3a3a;
+  --cor-grade-linha: #222222;
+  --cor-grade-linha-dia: #3a3a3a;
+  --cor-grade-meia-hora: #141414;
+
+  /* Texto, do mais forte ao mais discreto */
+  --cor-texto-forte: #ffffff;
+  --cor-texto-titulo-dia: #f4f4f4;
+  --cor-texto-campo-claro: #f1f1f1;
+  --cor-texto-item-titulo: #f0f0f0;
+  --cor-texto-valor: #eaeaea;
+  --cor-texto-item: #e8e8e8;
+  --cor-texto: #e0e0e0;
+  --cor-texto-bloqueio: #dddddd;
+  --cor-texto-deslocamento: #dddddd;
+  --cor-texto-pendencia: #dddddd;
+  --cor-texto-resumo: #dddddd;
+  --cor-texto-explicacao: #d9d9d9;
+  --cor-texto-vazio-hover: #d8d8d8;
+  --cor-texto-previa: #d8d8d8;
+  --cor-texto-horario-card: #d7d7d7;
+  --cor-texto-controle: #cfcfcf;
+  --cor-texto-legenda: #bdbdbd;
+  --cor-texto-resumo-apoio: #bbbbbb;
+  --cor-texto-auxiliar: #b8b8b8;
+  --cor-texto-detalhes: #b0b0b0;
+  --cor-texto-apoio: #aaaaaa;
+  --cor-texto-subtitulo: #a8a8a8;
+  --cor-texto-secundario: #a0a0a0;
+  --cor-texto-descricao: #9a9a9a;
+  --cor-texto-local: #999999;
+  --cor-texto-separador: #969696;
+  --cor-texto-status: #909090;
+  --cor-texto-rotulo: #909090;
+  --cor-texto-vazio: #8f8f8f;
+  --cor-texto-dica: #8f8f8f;
+  --cor-texto-controle-inativo: #8c8c8c;
+  --cor-icone-dia: #8c8c8c;
+  --cor-texto-terciario: #888888;
+  --cor-texto-desabilitado: #787878;
+  --cor-texto-desabilitado-rotulo: #707070;
+  --cor-texto-vazio-lista: #666666;
+  --cor-texto-sobre-estado: #1a1a1a;
+  --cor-toggle-botao: #8d8d8d;
+
+  /* Ações e avisos de interface */
+  --cor-perigo: #f44336;
+  --cor-sobre-perigo: #ffffff;
+  --cor-acao-reagendar: #ff9800;
+  --cor-sobre-acao-reagendar: #ffffff;
+  --cor-sobre-informativo: #0d0d0d;
+  --cor-hora-atual: #ef5350;
+  --cor-hora-atual-rgb: 239, 83, 80;
+  --cor-progresso: #4caf50;
+  --cor-erro-suave-rgb: 239, 154, 154;
+  --cor-observacao-texto: #c4d9e8;
+  --cor-kpi-perigo-rotulo: #c7a9a9;
+  --cor-recuperacao-borda: #e6b85c;
+
+  /* Categorias da agenda e níveis de exclusão */
+  --cor-categoria-reposicao: #fbd75b;
+  --cor-categoria-reposicao-rgb: 251, 215, 91;
+  --cor-categoria-deslocamento: #51b749;
+  --cor-categoria-deslocamento-rgb: 81, 183, 73;
+  --cor-deslocamento-fundo: #111a11;
+  --cor-categoria-bloqueio: #dc2127;
+  --cor-categoria-bloqueio-rgb: 220, 33, 39;
+  --cor-bloqueio-texto: #ff5c54;
+  --cor-bloqueio-fundo: #180f0f;
+  --cor-badge-deslocamento: #ff9800;
+  --cor-badge-deslocamento-rgb: 255, 152, 0;
+  --cor-exclusao-leve: #fbd75b;
+  --cor-exclusao-leve-rgb: 251, 215, 91;
+  --cor-exclusao-media: #ffb878;
+  --cor-exclusao-media-rgb: 255, 184, 120;
+  --cor-exclusao-total: #ff5c54;
+  --cor-exclusao-total-fundo-rgb: 220, 33, 39;
+
+  /* Sessão, Google e Google Calendar */
+  --cor-google-azul: #4285f4;
+  --cor-google-azul-rgb: 66, 133, 244;
+  --cor-google-azul-hover: #5a9eff;
+  --cor-sessao-fundo: #162233;
+  --cor-sessao-fundo-rgb: 22, 34, 51;
+  --cor-sessao-fundo-hover: #1d2e45;
+  --cor-sessao-borda: #314861;
+  --cor-sessao-borda-hover: #4d6891;
+  --cor-sessao-texto: #d8e8ff;
+  --cor-sessao-icone: #8ab4f8;
+  --cor-sessao-foco: #8ab4f8;
+  --cor-banner-auth-inicio-rgb: 18, 22, 28;
+  --cor-banner-auth-fim-rgb: 14, 18, 24;
+  --cor-perfil-nome: #f7f1cc;
+  --cor-perfil-texto: #b3bcc6;
+  --cor-somente-leitura-texto: #9eb0c3;
+  --cor-somente-leitura-borda: #2f3d4c;
+  --cor-sair-fundo: #2a1717;
+  --cor-sair-fundo-hover: #361f1f;
+  --cor-sair-borda: #4e3a3a;
+  --cor-sair-borda-hover: #7a4d4d;
+  --cor-sair-texto: #ffcbc8;
+  --cor-sair-foco: #ff8b84;
+  --cor-gcal-conectado: #34a853;
+  --cor-gcal-conectado-rgb: 52, 168, 83;
+  --cor-gcal-conectado-texto: #84d89b;
+  --cor-gcal-feedback: #9cb0c6;
+  --cor-gcal-feedback-erro: #ff8f8f;
+  --cor-desconectar: #ff5252;
+  --cor-desconectar-rgb: 255, 82, 82;
+  --cor-desconectar-hover: #ff7070;
+
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
+  --objetivo-tangerina-rgb: 255, 184, 120;
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
+  --objetivo-consultoria-online-rgb: 84, 132, 237;
 
   /* [TAG-STYLE-ESTADO] Paleta de ESTADO — achado 4.13 (Etapa 7, 2026-10-01).
      Regra: um significado por cor. O dourado (#ffd700) é IDENTIDADE/destaque
@@ -29,11 +192,15 @@
      ok = concluído · informativo = agendado · aviso = atenção (a vencer/pendente)
      · erro = atrasado/expirado · neutro = em aberto (aguardando, sem atraso). */
   --cor-estado-ok: #81c784;
+  --cor-estado-ok-rgb: 129, 199, 132;
   --cor-estado-informativo: #64b5f6;
+  --cor-estado-informativo-rgb: 100, 181, 246;
   --cor-estado-aviso: #ffb74d;
-  --cor-estado-aviso-fundo: rgba(255, 183, 77, 0.12);
-  --cor-estado-aviso-borda: rgba(255, 183, 77, 0.34);
+  --cor-estado-aviso-rgb: 255, 183, 77;
+  --cor-estado-aviso-fundo: rgba(var(--cor-estado-aviso-rgb), 0.12);
+  --cor-estado-aviso-borda: rgba(var(--cor-estado-aviso-rgb), 0.34);
   --cor-estado-erro: #ff8a80;
+  --cor-estado-erro-rgb: 255, 138, 128;
   --cor-estado-neutro: #cfcfcf;
 
   /* Contrato de camadas da visão Calendário > Dia */
@@ -84,8 +251,8 @@
 /* Badge de objetivo para Consultoria Online */
 .objetivo-ConsultoriaOnline .agenda-dia-aula-detalhes {
   color: var(--objetivo-consultoria-online);
-  background: rgba(84, 132, 237, 0.12);
-  border-color: rgba(84, 132, 237, 0.45);
+  background: rgba(var(--objetivo-consultoria-online-rgb), 0.12);
+  border-color: rgba(var(--objetivo-consultoria-online-rgb), 0.45);
 }
 .objetivo-Outro {
   color: var(--objetivo-outro-text);
@@ -104,7 +271,7 @@
    qualquer regra de elemento continua valendo por cima como override intencional
    (marcadas em Etapa 2 no arquivo). Tom: dourado do tema (decisão do dono). */
 :where(button, a, [role="button"], input, select, textarea):focus-visible {
-  outline: 2px solid #ffd700;
+  outline: 2px solid var(--cor-foco);
   outline-offset: 2px;
 }
 
@@ -143,8 +310,8 @@ textarea:disabled {
 
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: #0d0d0d;
-  color: #e0e0e0;
+  background: var(--cor-fundo-app);
+  color: var(--cor-texto);
   min-height: 100vh;
   padding: 0;
   margin: 0;
@@ -169,11 +336,11 @@ body {
   align-items: stretch;
   text-align: left;
   padding: 10px 12px;
-  background: rgba(13, 13, 13, 0.88);
+  background: rgba(var(--cor-fundo-app-rgb), 0.88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1.5px solid rgba(255, 215, 0, 0.18);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.65);
+  border-bottom: 1.5px solid rgba(var(--cor-destaque-rgb), 0.18);
+  box-shadow: 0 4px 30px rgba(var(--cor-sombra-rgb), 0.65);
   gap: 10px;
   width: 100%;
   position: sticky;
@@ -202,11 +369,11 @@ body {
   margin: 0;
   padding: 6px 8px;
   border-radius: 10px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-borda);
   background: linear-gradient(
     135deg,
-    rgba(18, 22, 28, 0.92),
-    rgba(14, 18, 24, 0.92)
+    rgba(var(--cor-banner-auth-inicio-rgb), 0.92),
+    rgba(var(--cor-banner-auth-fim-rgb), 0.92)
   );
   min-width: 0;
 }
@@ -224,7 +391,7 @@ body {
   margin: 6px 12px 10px;
   font-size: 0.75rem;
   line-height: 1.4;
-  color: #909090;
+  color: var(--cor-texto-status);
   text-align: right;
 }
 .aviso-carregamento-dados[hidden] {
@@ -267,9 +434,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid #314861;
-  background: #162233;
-  color: #d8e8ff;
+  border: 1px solid var(--cor-sessao-borda);
+  background: var(--cor-sessao-fundo);
+  color: var(--cor-sessao-texto);
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 0.875rem;
@@ -284,12 +451,12 @@ body {
 }
 
 .btn-google-custom i {
-  color: #8ab4f8;
+  color: var(--cor-sessao-icone);
 }
 
 .btn-google-custom:hover {
-  background: #1d2e45;
-  border-color: #4d6891;
+  background: var(--cor-sessao-fundo-hover);
+  border-color: var(--cor-sessao-borda-hover);
 }
 
 .btn-google-custom:active {
@@ -298,7 +465,7 @@ body {
 
 /* Etapa 2 (Cartão C): override intencional — tom azul do Google, fora do dourado global */
 .btn-google-custom:focus-visible {
-  outline: 2px solid #8ab4f8;
+  outline: 2px solid var(--cor-sessao-foco);
   outline-offset: 2px;
 }
 
@@ -317,9 +484,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #4e3a3a;
-  background: #2a1717;
-  color: #ffcbc8;
+  border: 1px solid var(--cor-sair-borda);
+  background: var(--cor-sair-fundo);
+  color: var(--cor-sair-texto);
   border-radius: 999px;
   padding: 7px 11px;
   font-size: 0.875rem;
@@ -334,8 +501,8 @@ body {
 }
 
 .btn-google-signout:hover {
-  background: #361f1f;
-  border-color: #7a4d4d;
+  background: var(--cor-sair-fundo-hover);
+  border-color: var(--cor-sair-borda-hover);
 }
 
 .btn-google-signout:active {
@@ -344,7 +511,7 @@ body {
 
 /* Etapa 2 (Cartão C): override intencional — tom vermelho-safira do logout, fora do dourado global */
 .btn-google-signout:focus-visible {
-  outline: 2px solid #ff8b84;
+  outline: 2px solid var(--cor-sair-foco);
   outline-offset: 2px;
 }
 
@@ -352,8 +519,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #314861;
-  background: #162233;
+  border: 1px solid var(--cor-sessao-borda);
+  background: var(--cor-sessao-fundo);
   border-radius: 999px;
   padding: 2px;
   cursor: pointer;
@@ -364,8 +531,8 @@ body {
 }
 
 .btn-user-area-trigger:hover {
-  background: #1d2e45;
-  border-color: #4d6891;
+  background: var(--cor-sessao-fundo-hover);
+  border-color: var(--cor-sessao-borda-hover);
 }
 
 .btn-user-area-trigger:active {
@@ -374,7 +541,7 @@ body {
 
 /* Etapa 2 (Cartão C): override intencional — tom azul do Google, fora do dourado global */
 .btn-user-area-trigger:focus-visible {
-  outline: 2px solid #8ab4f8;
+  outline: 2px solid var(--cor-sessao-foco);
   outline-offset: 2px;
 }
 
@@ -440,7 +607,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(var(--cor-veu-rgb), 0.7);
   z-index: 999;
 }
 
@@ -457,14 +624,14 @@ body {
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-destaque);
   margin-bottom: 10px;
 }
 
 .btn-modal-close {
   background: transparent;
   border: none;
-  color: #a0a0a0;
+  color: var(--cor-texto-secundario);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
@@ -479,8 +646,8 @@ body {
 }
 
 .btn-modal-close:hover {
-  background: rgba(255, 215, 0, 0.1);
-  color: #ffd700;
+  background: rgba(var(--cor-destaque-rgb), 0.1);
+  color: var(--cor-destaque);
 }
 
 .modal-body {
@@ -494,21 +661,21 @@ body {
   flex-direction: column;
   gap: 8px;
   padding: 14px;
-  background: rgba(255, 215, 0, 0.02);
-  border: 1px solid rgba(255, 215, 0, 0.1);
+  background: rgba(var(--cor-destaque-rgb), 0.02);
+  border: 1px solid rgba(var(--cor-destaque-rgb), 0.1);
   border-radius: 10px;
 }
 
 .settings-section-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-destaque);
   margin: 0;
 }
 
 .settings-description {
   font-size: 0.875rem;
-  color: #a0a0a0;
+  color: var(--cor-texto-secundario);
   margin: 0 0 4px 0;
   line-height: 1.5;
 }
@@ -518,22 +685,22 @@ body {
   align-items: center;
   gap: 12px;
   padding: 10px;
-  border: 1px solid rgba(66, 133, 244, 0.2);
+  border: 1px solid rgba(var(--cor-google-azul-rgb), 0.2);
   border-radius: 10px;
-  background: rgba(22, 34, 51, 0.35);
+  background: rgba(var(--cor-sessao-fundo-rgb), 0.35);
 }
 
 .user-profile-avatar {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: rgba(255, 215, 0, 0.16);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(var(--cor-destaque-rgb), 0.16);
+  border: 1px solid rgba(var(--cor-destaque-rgb), 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #ffd700;
+  color: var(--cor-destaque);
   flex: 0 0 auto;
   overflow: hidden;
 }
@@ -552,13 +719,13 @@ body {
 }
 
 .user-profile-copy strong {
-  color: #f7f1cc;
+  color: var(--cor-perfil-nome);
   font-size: 0.875rem;
   line-height: 1.2;
 }
 
 .user-profile-copy span {
-  color: #b3bcc6;
+  color: var(--cor-perfil-texto);
   font-size: 0.875rem;
   line-height: 1.3;
   overflow: hidden;
@@ -572,9 +739,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 2px solid #4285f4;
-  background: rgba(66, 133, 244, 0.1);
-  color: #4285f4;
+  border: 2px solid var(--cor-google-azul);
+  background: rgba(var(--cor-google-azul-rgb), 0.1);
+  color: var(--cor-google-azul);
   border-radius: 8px;
   padding: 11px 16px;
   font-size: 0.875rem;
@@ -589,9 +756,9 @@ body {
 }
 
 .btn-gcal-connect:hover {
-  background: rgba(66, 133, 244, 0.2);
-  border-color: #5a9eff;
-  color: #5a9eff;
+  background: rgba(var(--cor-google-azul-rgb), 0.2);
+  border-color: var(--cor-google-azul-hover);
+  color: var(--cor-google-azul-hover);
 }
 
 .btn-gcal-connect:active {
@@ -607,8 +774,8 @@ body {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(52, 168, 83, 0.08);
-  border: 1px solid rgba(52, 168, 83, 0.3);
+  background: rgba(var(--cor-gcal-conectado-rgb), 0.08);
+  border: 1px solid rgba(var(--cor-gcal-conectado-rgb), 0.3);
   border-radius: 8px;
 }
 
@@ -631,7 +798,7 @@ body {
   gap: 8px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #34a853;
+  color: var(--cor-gcal-conectado);
   flex: 1;
 }
 
@@ -640,7 +807,7 @@ body {
 }
 
 .gcal-status-meta {
-  color: #84d89b;
+  color: var(--cor-gcal-conectado-texto);
   font-size: 0.75rem;
   line-height: 1.25;
   word-break: break-word;
@@ -649,11 +816,11 @@ body {
 .gcal-status-feedback {
   margin: 0;
   font-size: 0.875rem;
-  color: #9cb0c6;
+  color: var(--cor-gcal-feedback);
 }
 
 .gcal-status-feedback.error {
-  color: #ff8f8f;
+  color: var(--cor-gcal-feedback-erro);
 }
 
 /* Google Calendar Disconnect Button */
@@ -662,9 +829,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #ff5252;
-  background: rgba(255, 82, 82, 0.1);
-  color: #ff5252;
+  border: 1px solid var(--cor-desconectar);
+  background: rgba(var(--cor-desconectar-rgb), 0.1);
+  color: var(--cor-desconectar);
   border-radius: 6px;
   padding: 7px 12px;
   font-size: 0.875rem;
@@ -675,9 +842,9 @@ body {
 }
 
 .btn-gcal-disconnect:hover {
-  background: rgba(255, 82, 82, 0.2);
-  border-color: #ff7070;
-  color: #ff7070;
+  background: rgba(var(--cor-desconectar-rgb), 0.2);
+  border-color: var(--cor-desconectar-hover);
+  color: var(--cor-desconectar-hover);
 }
 
 .btn-gcal-disconnect:active {
@@ -690,13 +857,13 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: rgba(255, 215, 0, 0.16);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(var(--cor-destaque-rgb), 0.16);
+  border: 1px solid rgba(var(--cor-destaque-rgb), 0.3);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #ffd700;
+  color: var(--cor-destaque);
   flex: 0 0 auto;
   overflow: hidden;
 }
@@ -716,8 +883,8 @@ body {
   /* Piso de legibilidade 12px (Etapa 2, achado 4.4) */
   font-size: 0.75rem;
   font-weight: 700;
-  color: #9eb0c3;
-  border: 1px solid #2f3d4c;
+  color: var(--cor-somente-leitura-texto);
+  border: 1px solid var(--cor-somente-leitura-borda);
   border-radius: 8px;
   padding: 6px 8px;
   line-height: 1.2;
@@ -740,8 +907,8 @@ body {
   display: flex;
   width: 100%;
   justify-content: space-around;
-  background: #1a1a1a;
-  border-top: 1px solid #2a2a2a;
+  background: var(--cor-superficie);
+  border-top: 1px solid var(--cor-borda);
   padding: 4px;
   /* Etapa 3 (Cartão F): safe area inferior do sistema (Android/PWA). */
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
@@ -764,13 +931,13 @@ body {
   text-decoration: none;
   min-width: 0;
   white-space: nowrap;
-  color: #a0a0a0;
+  color: var(--cor-texto-secundario);
   background: transparent;
 }
 
 .nav-inferior .nav-link-inferior.ativo {
-  background: #ffd700 !important;
-  color: #0d0d0d !important;
+  background: var(--cor-destaque) !important;
+  color: var(--cor-sobre-destaque) !important;
 }
 
 .nav-icon-anim {
@@ -799,17 +966,17 @@ body {
   gap: 8px;
 }
 .btn-primary {
-  background: #ffd700;
-  color: #0d0d0d;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
 }
 .btn-secondary {
-  background: #2a2a2a;
-  color: #e0e0e0;
-  border: 1px solid #333;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda-campo);
 }
 .btn-danger {
-  background: #f44336;
-  color: #fff;
+  background: var(--cor-perigo);
+  color: var(--cor-sobre-perigo);
 }
 .btn-sm {
   padding: 6px 12px;
@@ -829,13 +996,13 @@ body {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #b8b8b8;
+  color: var(--cor-texto-auxiliar);
   font-size: 1.125rem;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 .btn-icone:hover {
-  color: #ffd700;
+  color: var(--cor-destaque);
 }
 /* Etapa 2 (Cartão B, 2026-09-26): alvo de toque — ações do card de Finanças
    (Marcar como pago / Editar ajuste / Configurar agora / Tentar novamente):
@@ -865,9 +1032,9 @@ body {
   min-width: 0;
   width: 100%;
   height: 42px;
-  background: #111111;
-  color: #a0a0a0;
-  border: 1px solid #2d2d2d;
+  background: var(--cor-superficie-recuada);
+  color: var(--cor-texto-secundario);
+  border: 1px solid var(--cor-pill-borda);
   border-radius: 8px;
   padding: 0;
   font-size: 0.875rem;
@@ -878,21 +1045,21 @@ body {
   margin-bottom: 0;
 }
 .btn-dia-pill:hover {
-  border-color: #444;
-  color: #fff;
+  border-color: var(--cor-pill-borda-hover);
+  color: var(--cor-texto-forte);
 }
 .btn-dia-pill.active {
-  background: #ffd700 !important;
-  color: #0d0d0d !important;
-  border-color: #ffd700 !important;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.25);
+  background: var(--cor-destaque) !important;
+  color: var(--cor-sobre-destaque) !important;
+  border-color: var(--cor-destaque) !important;
+  box-shadow: 0 4px 12px rgba(var(--cor-destaque-rgb), 0.25);
 }
 .alunos-panel {
-  background: #1a1a1a;
+  background: var(--cor-superficie);
   border-radius: 12px;
   padding: 15px;
   margin-bottom: 20px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-borda);
 }
 .alunos-grid {
   display: grid;
@@ -901,10 +1068,10 @@ body {
   margin-bottom: 20px;
 }
 .aluno-card {
-  background: #2a2a2a;
+  background: var(--cor-superficie-elevada);
   padding: 16px;
   border-radius: 8px;
-  border-left: 4px solid #ffd700;
+  border-left: 4px solid var(--cor-destaque);
 }
 /* Etapa 7 (Cartão B, achado 4.6): alvo de TECLADO do card de aluno. O card
    segue clicável ao toque (alvo grande); este botão existe para dar foco e
@@ -917,10 +1084,10 @@ body {
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid rgba(255, 215, 0, 0.22);
+  border: 1px solid rgba(var(--cor-destaque-rgb), 0.22);
   border-radius: 6px;
-  background: rgba(255, 215, 0, 0.08);
-  color: #ffd700;
+  background: rgba(var(--cor-destaque-rgb), 0.08);
+  color: var(--cor-destaque);
   font-size: 0.875rem;
   cursor: pointer;
   flex-shrink: 0;
@@ -928,7 +1095,7 @@ body {
 }
 .aluno-card-editar:hover,
 .aluno-card-editar:active {
-  background: rgba(255, 215, 0, 0.18);
+  background: rgba(var(--cor-destaque-rgb), 0.18);
 }
 
 /* Grid de indicadores do card do aluno: comporta novas caixinhas sem refatoração. */
@@ -939,8 +1106,8 @@ body {
   margin-top: 8px;
 }
 .aluno-card-indicador {
-  background: rgba(255, 215, 0, 0.08);
-  border: 1px solid rgba(255, 215, 0, 0.22);
+  background: rgba(var(--cor-destaque-rgb), 0.08);
+  border: 1px solid rgba(var(--cor-destaque-rgb), 0.22);
   border-radius: 6px;
   padding: 8px 10px;
 }
@@ -956,8 +1123,8 @@ body {
    anel do indicador (bordas), não por outline; por isso o outline: none */
 .aluno-card-indicador--reposicoes:hover,
 .aluno-card-indicador--reposicoes:focus-visible {
-  background: rgba(255, 215, 0, 0.14);
-  border-color: rgba(255, 215, 0, 0.55);
+  background: rgba(var(--cor-destaque-rgb), 0.14);
+  border-color: rgba(var(--cor-destaque-rgb), 0.55);
   outline: none;
 }
 .aluno-card-indicador--alerta {
@@ -966,7 +1133,7 @@ body {
 }
 .aluno-card-indicador-titulo {
   font-size: 0.75rem;
-  color: #ffd700;
+  color: var(--cor-destaque);
   font-weight: 700;
 }
 .aluno-card-indicador--alerta .aluno-card-indicador-titulo {
@@ -974,14 +1141,14 @@ body {
 }
 .aluno-card-indicador-detalhe {
   font-size: 0.75rem;
-  color: #aaa;
+  color: var(--cor-texto-apoio);
   margin-top: 3px;
 }
 .aluno-card-observacoes {
   align-items: flex-start;
-  background: rgba(100, 181, 246, 0.08);
-  border-left: 3px solid rgba(100, 181, 246, 0.55);
-  color: #c4d9e8;
+  background: rgba(var(--cor-estado-informativo-rgb), 0.08);
+  border-left: 3px solid rgba(var(--cor-estado-informativo-rgb), 0.55);
+  color: var(--cor-observacao-texto);
   display: flex;
   font-size: 0.75rem;
   gap: 7px;
@@ -992,7 +1159,7 @@ body {
   overflow-wrap: anywhere;
 }
 .aluno-card-observacoes i {
-  color: #64b5f6;
+  color: var(--cor-estado-informativo);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -1007,11 +1174,11 @@ body {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #ffd700;
-  color: #0d0d0d;
+  background: var(--cor-destaque);
+  color: var(--cor-sobre-destaque);
   border: none;
   font-size: 1.5rem;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 14px 28px rgba(var(--cor-sombra-rgb), 0.42);
   z-index: 100;
   cursor: pointer;
   display: flex;
@@ -1024,7 +1191,7 @@ body {
 }
 .fab-adicionar:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 18px 34px rgba(var(--cor-sombra-rgb), 0.5);
   filter: brightness(1.03);
 }
 .fab-adicionar:active {
@@ -1037,13 +1204,13 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: rgba(var(--cor-veu-rgb), 0.85);
   z-index: 1000;
   justify-content: center;
   align-items: center;
 }
 .modal-alunos-corpo {
-  background: #1a1a1a;
+  background: var(--cor-superficie);
   border-radius: 16px;
   padding: 24px;
   width: 92%;
@@ -1051,13 +1218,13 @@ body {
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  border: 1px solid #2a2a2a;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--cor-borda);
+  box-shadow: 0 10px 30px rgba(var(--cor-sombra-rgb), 0.6);
   overflow: hidden;
 }
 .modal-alunos-corpo h3 {
   font-size: 1.3rem;
-  color: #ffd700;
+  color: var(--cor-destaque);
   margin-top: 0;
   margin-bottom: 0;
   font-weight: 700;
@@ -1108,7 +1275,7 @@ body {
 }
 .form-grupo-spa label {
   font-size: 0.875rem;
-  color: #a0a0a0;
+  color: var(--cor-texto-secundario);
   font-weight: 500;
 }
 .form-grupo-spa input,
@@ -1117,10 +1284,10 @@ body {
   width: 100%;
   height: 60%;
   padding: 10px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-borda-campo);
   border-radius: 8px;
-  background: #0d0d0d;
-  color: #e0e0e0;
+  background: var(--cor-campo-fundo);
+  color: var(--cor-texto);
   /* Etapa 2 (4.4): campos >=16px em todos os tamanhos (evita zoom auto no iOS) */
   font-size: 1rem;
   outline: none;
@@ -1129,22 +1296,22 @@ body {
 .form-grupo-spa input:focus,
 .form-grupo-spa select:focus,
 .form-grupo-spa textarea:focus {
-  border-color: #ffd700;
+  border-color: var(--cor-foco);
 }
 .form-grupo-spa.form-grupo-spa--desabilitado {
   opacity: 0.55;
 }
 .form-grupo-spa.form-grupo-spa--desabilitado label {
-  color: #707070;
+  color: var(--cor-texto-desabilitado-rotulo);
 }
 /* Etapa 2 (Cartão C): opacidade/cursor/pointer-events vêm da regra única:disabled;
    o que fica aqui é só a identidade visual dos campos deste formulário */
 .form-grupo-spa input:disabled,
 .form-grupo-spa select:disabled,
 .form-grupo-spa textarea:disabled {
-  background: #111;
-  color: #787878;
-  border-color: #2a2a2a;
+  background: var(--cor-superficie-recuada);
+  color: var(--cor-texto-desabilitado);
+  border-color: var(--cor-borda);
 }
 .duracao-stepper {
   display: grid;
@@ -1153,17 +1320,17 @@ body {
   gap: 8px;
   width: 100%;
   padding: 6px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-borda-campo);
   border-radius: 10px;
-  background: #0d0d0d;
+  background: var(--cor-campo-fundo);
 }
 .duracao-stepper-btn {
   width: 38px;
   height: 36px;
-  border: 1px solid #2e2e2e;
+  border: 1px solid var(--cor-stepper-borda);
   border-radius: 8px;
-  background: #1a1a1a;
-  color: #ffd700;
+  background: var(--cor-superficie);
+  color: var(--cor-destaque);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1171,8 +1338,8 @@ body {
   transition: all 0.2s ease;
 }
 .duracao-stepper-btn:hover {
-  border-color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  border-color: var(--cor-destaque);
+  background: rgba(var(--cor-destaque-rgb), 0.08);
 }
 .duracao-stepper-btn:active {
   transform: scale(0.95);
@@ -1181,7 +1348,7 @@ body {
   text-align: center;
   font-size: 0.875rem;
   font-weight: 800;
-  color: #eaeaea;
+  color: var(--cor-texto-valor);
   letter-spacing: 0.2px;
 }
 .bloqueio-dia-inteiro-ativo .duracao-stepper-btn {
@@ -1209,10 +1376,10 @@ body {
   gap: 10px;
   width: 100%;
   padding: 11px 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-borda-campo);
   border-radius: 10px;
-  background: linear-gradient(180deg, #141414 0%, #101010 100%);
-  color: #cfcfcf;
+  background: linear-gradient(180deg, var(--cor-superficie-painel) 0%, var(--cor-superficie-painel-base) 100%);
+  color: var(--cor-texto-controle);
   transition: all 0.2s ease;
 }
 .full-day-toggle-text {
@@ -1228,34 +1395,34 @@ body {
   text-align: center;
   font-size: 0.75rem;
   font-weight: 800;
-  color: #8c8c8c;
+  color: var(--cor-texto-controle-inativo);
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid #3a3a3a;
-  background: #0d0d0d;
+  border: 1px solid var(--cor-borda-controle);
+  background: var(--cor-campo-fundo);
 }
 .full-day-toggle:hover .full-day-toggle-ui {
-  border-color: #555;
+  border-color: var(--cor-borda-controle-hover);
 }
 /* Etapa 2 (Cartão C): override intencional — o anel de foco desenha no UI visual,
    não na input escondida (o dourado global não seria visível nela) */
 .full-day-toggle input:focus-visible + .full-day-toggle-ui {
-  border-color: #ffd700;
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.15);
+  border-color: var(--cor-foco);
+  box-shadow: 0 0 0 2px rgba(var(--cor-foco-rgb), 0.15);
 }
 .full-day-toggle input:checked + .full-day-toggle-ui {
-  border-color: #ffd700;
+  border-color: var(--cor-destaque);
   background: linear-gradient(
     180deg,
-    rgba(255, 215, 0, 0.12) 0%,
-    rgba(255, 215, 0, 0.06) 100%
+    rgba(var(--cor-destaque-rgb), 0.12) 0%,
+    rgba(var(--cor-destaque-rgb), 0.06) 100%
   );
-  color: #ffd700;
+  color: var(--cor-destaque);
 }
 .full-day-toggle input:checked + .full-day-toggle-ui .full-day-toggle-pill {
-  color: #0d0d0d;
-  border-color: #ffd700;
-  background: #ffd700;
+  color: var(--cor-sobre-destaque);
+  border-color: var(--cor-destaque);
+  background: var(--cor-destaque);
 }
 .full-day-toggle
   input:checked
@@ -1296,8 +1463,8 @@ body {
   width: 48px;
   height: 28px;
   border-radius: 999px;
-  background: #1a1a1a;
-  border: 1px solid #3a3a3a;
+  background: var(--cor-superficie);
+  border: 1px solid var(--cor-borda-controle);
   transition: all 0.2s ease;
 }
 .status-toggle-knob {
@@ -1307,40 +1474,40 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #8d8d8d;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  background: var(--cor-toggle-botao);
+  box-shadow: 0 1px 3px rgba(var(--cor-sombra-rgb), 0.45);
   transition: all 0.2s ease;
 }
 .status-toggle-label {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #bdbdbd;
+  color: var(--cor-texto-legenda);
 }
 .status-toggle:hover .status-toggle-track {
-  border-color: #555;
+  border-color: var(--cor-borda-controle-hover);
 }
 /* Etapa 2 (Cartão C): override intencional — anel de foco desenhado na trilha visual, */
 /* não na input posicionada fora (o dourado global não seria visível nela) */
 .status-toggle input:focus-visible + .status-toggle-track {
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
-  border-color: #ffd700;
+  box-shadow: 0 0 0 2px rgba(var(--cor-foco-rgb), 0.2);
+  border-color: var(--cor-foco);
 }
 .status-toggle input:checked + .status-toggle-track {
-  background: rgba(255, 215, 0, 0.2);
-  border-color: #ffd700;
+  background: rgba(var(--cor-destaque-rgb), 0.2);
+  border-color: var(--cor-destaque);
 }
 .status-toggle input:checked + .status-toggle-track .status-toggle-knob {
   transform: translateX(20px);
-  background: #ffd700;
+  background: var(--cor-destaque);
 }
 .status-toggle input:checked + .status-toggle-track + .status-toggle-label {
-  color: #ffd700;
+  color: var(--cor-destaque);
 }
 .status-toggle
   input:not(:checked)
   + .status-toggle-track
   + .status-toggle-label {
-  color: #ff8a80;
+  color: var(--cor-estado-erro);
 }
 .status-toggle.status-toggle--card {
   gap: 6px;
@@ -1373,12 +1540,12 @@ body {
 }
 /* [TAG-STYLE-AGENDA-DIARIA] */
 .agenda-panel {
-  background: #141414;
+  background: var(--cor-superficie-painel);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
-  border: 1px solid #232323;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--cor-borda-painel);
+  box-shadow: 0 4px 20px rgba(var(--cor-sombra-rgb), 0.4);
 }
 /* Etapa 4 (2026-09-27): cabeçalho da tela de Finanças sem cantos arredondados,
    sem sombra e sem fundo destacado — alinhado ao visual da topbar da Home
@@ -1387,11 +1554,11 @@ body {
   position: sticky;
   top: var(--header-height);
   z-index: 10;
-  background: rgba(12, 12, 12, 0.92);
+  background: rgba(var(--cor-topo-fundo-rgb), 0.92);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: none;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--cor-borda-sutil);
   border-radius: 0;
   border-bottom-left-radius: 18px;
   border-bottom-right-radius: 18px;
@@ -1409,7 +1576,7 @@ body {
 }
 .financas-cabecalho-titulo {
   margin: 0;
-  color: #ffd700;
+  color: var(--cor-destaque);
   font-size: 1.125rem;
   font-weight: 800;
   white-space: nowrap;
@@ -1421,7 +1588,7 @@ body {
   gap: 8px;
 }
 .financas-cabecalho-progresso {
-  color: #b8b8b8;
+  color: var(--cor-texto-auxiliar);
   font-size: 0.75rem;
   white-space: nowrap;
 }
@@ -1431,12 +1598,12 @@ body {
 }
 .financas-cabecalho-descricao {
   margin: 4px 0 0;
-  color: #9a9a9a;
+  color: var(--cor-texto-descricao);
   font-size: 0.875rem;
 }
 .financas-cabecalho-cache {
   margin-top: 8px;
-  color: #909090;
+  color: var(--cor-texto-status);
   font-size: 0.75rem;
 }
 .financas-cabecalho-cache:empty {
@@ -1444,7 +1611,7 @@ body {
 }
 .financas-cabecalho-mensagem {
   margin: 8px 0 0;
-  color: #b8b8b8;
+  color: var(--cor-texto-auxiliar);
   font-size: 0.75rem;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -1471,13 +1638,13 @@ body {
   border-bottom-right-radius: 18px;
   padding: 12px;
   /* border-radius: 18px; */
-  background-color: #0b0b0b;
-  background: rgba(12, 12, 12, 0.92);
+  background-color: var(--cor-fundo-agenda);
+  background: rgba(var(--cor-topo-fundo-rgb), 0.92);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--cor-borda-sutil);
   /* border: 1px solid rgba(255, 255, 255, 0.06); */
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 12px 30px rgba(var(--cor-sombra-rgb), 0.38);
 }
 .home-sticky-header {
   padding: 10px 8px 8px;
@@ -1496,10 +1663,10 @@ body {
   width: 100%;
   white-space: nowrap;
   flex-wrap: nowrap;
-  background: #0b0b0b;
+  background: var(--cor-fundo-agenda);
   border-radius: 10px;
   padding: 8px 10px;
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--cor-borda-sutil);
 }
 .home-weekly-nav-row .nav-calendario-main {
   display: flex;
@@ -1511,7 +1678,7 @@ body {
 }
 .home-weekly-periodo {
   font-weight: 800;
-  color: #ffd700;
+  color: var(--cor-destaque);
   font-size: 1rem;
   text-align: center;
   white-space: nowrap;
@@ -1556,11 +1723,11 @@ body {
 }
 .home-kpi-icon {
   font-size: 0.72rem;
-  color: #ffd700;
+  color: var(--cor-destaque);
   flex-shrink: 0;
 }
 .home-kpi-card-danger .home-kpi-label {
-  color: #c7a9a9;
+  color: var(--cor-kpi-perigo-rotulo);
 }
 /* Etapa 3 (Rodada 2, 2026-09-27): .btn-config-icon era dos 2 botões icon-only
    da 2ª linha do modo Dia da Home (#btnHomeDiaNovaAgenda/#btnHomeDiaConfigAgenda),
@@ -1573,9 +1740,9 @@ body {
 }
 
 .btn-escopo-recorrencia {
-  border: 1px solid #333;
-  background: #0d0d0d;
-  color: #cfcfcf;
+  border: 1px solid var(--cor-borda-campo);
+  background: var(--cor-campo-fundo);
+  color: var(--cor-texto-controle);
   border-radius: 10px;
   padding: 10px 8px;
   font-size: 0.875rem;
@@ -1585,31 +1752,31 @@ body {
 }
 
 .btn-escopo-recorrencia.active {
-  border-color: #ffd700;
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  border-color: var(--cor-destaque);
+  color: var(--cor-destaque);
+  background: rgba(var(--cor-destaque-rgb), 0.08);
 }
 
 .recorrencia-secao-titulo {
   margin: 6px 0 10px;
   font-size: 0.875rem;
-  color: #ffd700;
+  color: var(--cor-destaque);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
 
 .recorrencia-painel-opcoes {
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-borda);
   border-radius: 10px;
-  background: #111;
+  background: var(--cor-superficie-recuada);
   padding: 10px;
   margin-bottom: 12px;
 }
 
 .recorrencia-painel-opcoes > summary {
   cursor: pointer;
-  color: #e0e0e0;
+  color: var(--cor-texto);
   font-weight: 700;
   font-size: 0.875rem;
   list-style: none;
@@ -1620,8 +1787,8 @@ body {
 }
 
 .resumo-recorrencia-cadastro {
-  border: 1px dashed rgba(255, 215, 0, 0.25);
-  background: rgba(255, 215, 0, 0.05);
+  border: 1px dashed rgba(var(--cor-destaque-rgb), 0.25);
+  background: rgba(var(--cor-destaque-rgb), 0.05);
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 12px;
@@ -1629,7 +1796,7 @@ body {
 
 .modal-overlay.modal-overlay-secondary {
   z-index: 1200;
-  background: rgba(0, 0, 0, 0.92);
+  background: rgba(var(--cor-veu-rgb), 0.92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1737,11 +1904,11 @@ body {
   min-width: 0;
 }
 .agenda-data-linha-topo i {
-  color: #ffd700;
+  color: var(--cor-destaque);
   flex-shrink: 0;
 }
 .agenda-data-data-topo {
-  color: #ffd700;
+  color: var(--cor-destaque);
   font-weight: 800;
 }
 .agenda-data-dia-mobile {
@@ -1756,8 +1923,8 @@ body {
   max-height: none;
   overflow-y: visible;
   border-radius: 12px;
-  border: 1px solid #1f1f1f;
-  background: #0b0b0b;
+  border: 1px solid var(--cor-borda-sutil);
+  background: var(--cor-fundo-agenda);
   padding: 14px 12px;
   box-sizing: border-box;
   position: relative;
@@ -1781,7 +1948,7 @@ body {
 
 .time-grid-hour-label {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--cor-texto-terciario);
   font-weight: 600;
   text-align: right;
   padding-right: 10px;
@@ -1795,7 +1962,7 @@ body {
 
 .time-grid-content-col {
   position: relative;
-  border-left: 1px solid #1f1f1f;
+  border-left: 1px solid var(--cor-borda-sutil);
   z-index: var(--z-cal-dia-grid-surface);
   isolation: isolate;
 }
@@ -1807,15 +1974,15 @@ body {
 }
 
 .time-grid-line {
-  border-top: 1px solid #222222; /* "deixar a marcação de hora cheia um pouco mais forte" */
+  border-top: 1px solid var(--cor-grade-linha); /* "deixar a marcação de hora cheia um pouco mais forte" */
 }
 
 .time-grid-line-half {
-  border-top: 1px dashed #141414;
+  border-top: 1px dashed var(--cor-grade-meia-hora);
 }
 
 .time-grid-line-end {
-  border-top: 1px solid #222222;
+  border-top: 1px solid var(--cor-grade-linha);
 }
 
 /* Clickable BG Slots (Vagos) */
@@ -1835,18 +2002,18 @@ body {
 }
 
 .time-grid-bg-slot:hover {
-  background: rgba(255, 215, 0, 0.03);
+  background: rgba(var(--cor-destaque-rgb), 0.03);
 }
 
 .time-grid-bg-slot-clicked {
-  background: rgba(255, 215, 0, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.35);
+  background: rgba(var(--cor-destaque-rgb), 0.12);
+  box-shadow: inset 0 0 0 1px rgba(var(--cor-destaque-rgb), 0.35);
   animation: timeGridSlotPulse 0.38s ease;
 }
 
 .time-grid-bg-slot-text {
   font-size: 0.75rem;
-  color: #ffd700;
+  color: var(--cor-destaque);
   opacity: 0;
   transition: opacity 0.15s ease;
   font-weight: 600;
@@ -1868,14 +2035,9 @@ body {
 /* Custom modern event card styling */
 .agenda-dia-aula {
   position: absolute;
-  background: rgba(
-    255,
-    184,
-    120,
-    0.05
-  ); /* Fundo suave com base #ffb878 — Tangerine GCal colorId '6' */
-  border: 1px solid #222224;
-  border-left: 4px solid #ffd700;
+  background: rgba(var(--objetivo-tangerina-rgb), 0.05); /* Fundo suave com base #ffb878 — Tangerine GCal colorId '6' */
+  border: 1px solid var(--cor-aula-borda);
+  border-left: 4px solid var(--cor-destaque);
   border-radius: 6px !important; /* "diminuir um pouco o arredondamento das bordas" */
   padding: 10px 16px 10px 12px; /* "aumentar um pouco o espaçamento no canto direito" */
   display: flex;
@@ -1884,7 +2046,7 @@ body {
   align-items: flex-start;
   gap: 4px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--cor-sombra-rgb), 0.4);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -1958,7 +2120,7 @@ button.agenda-dia-aula {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #d7d7d7;
+  color: var(--cor-texto-horario-card);
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
@@ -1980,7 +2142,7 @@ button.agenda-dia-aula {
 
 .agenda-dia-aula:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 16px rgba(var(--cor-sombra-rgb), 0.5);
   filter: brightness(1.1);
 }
 
@@ -1990,7 +2152,7 @@ button.agenda-dia-aula {
    o texto em <span class="agenda-dia-aula-nome-texto"> corta com "…" */
 .agenda-dia-aula-nome {
   font-weight: 700;
-  color: #ffffff;
+  color: var(--cor-texto-forte);
   font-size: 0.875rem;
   display: block;
   white-space: nowrap;
@@ -2039,7 +2201,7 @@ button.agenda-dia-aula {
 
 .agenda-dia-aula-local {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--cor-texto-local);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -2049,11 +2211,11 @@ button.agenda-dia-aula {
 }
 
 .agenda-dia-aula-detalhes {
-  color: #ffb878;
+  color: var(--objetivo-tangerina);
   font-size: 0.75rem;
   align-self: flex-start;
-  background: rgba(255, 184, 120, 0.12);
-  border: 1px solid rgba(255, 184, 120, 0.45);
+  background: rgba(var(--objetivo-tangerina-rgb), 0.12);
+  border: 1px solid rgba(var(--objetivo-tangerina-rgb), 0.45);
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -2074,41 +2236,41 @@ button.agenda-dia-aula {
   flex-shrink: 0;
 }
 .badge-tag-tipo--reposicao {
-  background: rgba(251, 215, 91, 0.12);
-  border: 1px dashed rgba(251, 215, 91, 0.75);
-  color: #fbd75b;
+  background: rgba(var(--cor-categoria-reposicao-rgb), 0.12);
+  border: 1px dashed rgba(var(--cor-categoria-reposicao-rgb), 0.75);
+  color: var(--cor-categoria-reposicao);
   padding: 2px 7px;
 }
 
 /* Non-class event slots */
 .slot-deslocamento {
-  border-left-color: #51b749; /* GCal Basil — colorId '10' */
-  background: #111a11;
-  border-color: rgba(81, 183, 73, 0.45);
+  border-left-color: var(--cor-categoria-deslocamento); /* GCal Basil — colorId '10' */
+  background: var(--cor-deslocamento-fundo);
+  border-color: rgba(var(--cor-categoria-deslocamento-rgb), 0.45);
 }
 
 .slot-bloqueado {
-  border-left-color: #dc2127; /* GCal Tomato — colorId '11' */
-  background: #180f0f;
-  border-color: rgba(220, 33, 39, 0.45);
+  border-left-color: var(--cor-categoria-bloqueio); /* GCal Tomato — colorId '11' */
+  background: var(--cor-bloqueio-fundo);
+  border-color: rgba(var(--cor-categoria-bloqueio-rgb), 0.45);
 }
 
 /* [TAG-STYLE-BLOQUEIO-EXTERNO] - Eventos externos (somente leitura) do Google Calendar */
 .card-bloqueio-externo {
-  border-left-color: #4285f4;
-  background: #180f0f;
-  border-color: rgba(66, 133, 244, 0.45);
+  border-left-color: var(--cor-google-azul);
+  background: var(--cor-bloqueio-fundo);
+  border-color: rgba(var(--cor-google-azul-rgb), 0.45);
   cursor: default;
 }
 .card-bloqueio-externo:hover {
-  border-left-color: #4285f4;
+  border-left-color: var(--cor-google-azul);
 }
 .slot-bloqueado.card-bloqueio-externo,
 .slot-bloqueado.card-bloqueio-externo:hover {
-  border-left-color: #4285f4;
+  border-left-color: var(--cor-google-azul);
 }
 .card-bloqueio-externo-nome {
-  color: #ddd;
+  color: var(--cor-texto-bloqueio);
 }
 
 /* Auto-ajuste visual somente na visão Calendário > Dia */
@@ -2137,7 +2299,7 @@ button.agenda-dia-aula {
    distância FIXA da borda, imune ao padding por densidade), na SEMANA no
    canto INFERIOR direito (meta do rodapé, in-flow com margin-left:auto).
    Padrão unificado por preferência do dono. Caixa fixa 20x20px com cor por
-   tipo (fonte de cor: BADGE_STYLES em agenda-card-template.js). */
+   tipo (fonte de cor: classes .badge-tag-tipo--* em [TAG-STYLE-CORES-CLASSES]). */
 .agenda-card-inline-status {
   display: none;
   align-items: center;
@@ -2510,7 +2672,7 @@ button.agenda-dia-aula {
   flex: 0 0 auto;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-destaque);
   width: 40px;
   justify-content: flex-start;
 }
@@ -2556,14 +2718,14 @@ button.agenda-dia-aula {
    lado (20px de padding do painel + 12px do container + 2 bordas); agora
    ~8px (6px + 2px). Padrão vertical mantido (20px em cima/embaixo). */
 #homeDayPanel.agenda-panel {
-  background: #0d0d0d;
+  background: var(--cor-fundo-app);
   border: none;
   box-shadow: none;
   padding-left: 6px;
   padding-right: 6px;
 }
 #homeDayPanel .agenda-dia-container {
-  background: #0d0d0d;
+  background: var(--cor-fundo-app);
   border: none;
   padding-left: 2px;
   padding-right: 2px;
@@ -2571,11 +2733,11 @@ button.agenda-dia-aula {
 /* Linha de hora cheia: mais clara para ler sobre #0d0d0d. */
 #homeDayPanel .time-grid-line,
 #homeDayPanel .time-grid-line-end {
-  border-top-color: #3a3a3a;
+  border-top-color: var(--cor-grade-linha-dia);
 }
 /* Meia-hora tracejada: mais discreta ainda. */
 #homeDayPanel .time-grid-line-half {
-  border-top-color: #1f1f1f;
+  border-top-color: var(--cor-borda-sutil);
 }
 
 /* Indicador de Agora (Linha vermelha estilo Outlook) */
@@ -2589,26 +2751,26 @@ button.agenda-dia-aula {
 .time-grid-now-dot {
   width: 8px;
   height: 8px;
-  background: #ef5350;
+  background: var(--cor-hora-atual);
   border-radius: 50%;
   position: absolute;
   left: -4px;
-  box-shadow: 0 0 8px rgba(239, 83, 80, 0.8);
+  box-shadow: 0 0 8px rgba(var(--cor-hora-atual-rgb), 0.8);
 }
 
 .time-grid-now-line {
   flex-grow: 1;
   height: 2px;
-  background: #ef5350;
-  box-shadow: 0 0 6px rgba(239, 83, 80, 0.4);
+  background: var(--cor-hora-atual);
+  box-shadow: 0 0 6px rgba(var(--cor-hora-atual-rgb), 0.4);
 }
 
 @keyframes timeGridSlotPulse {
   0% {
-    background: rgba(255, 215, 0, 0.04);
+    background: rgba(var(--cor-destaque-rgb), 0.04);
   }
   100% {
-    background: rgba(255, 215, 0, 0.12);
+    background: rgba(var(--cor-destaque-rgb), 0.12);
   }
 }
 
@@ -2642,21 +2804,21 @@ button.agenda-dia-aula {
 }
 /* [TAG-STYLE-CALENDARIO-TABS-STICKY] */
 .badge-aula {
-  background: rgba(255, 215, 0, 0.12);
-  color: #ffd700;
-  border: 1px solid rgba(255, 215, 0, 0.25);
+  background: rgba(var(--cor-destaque-rgb), 0.12);
+  color: var(--cor-destaque);
+  border: 1px solid rgba(var(--cor-destaque-rgb), 0.25);
 }
 .badge-desloc {
-  background: rgba(255, 152, 0, 0.12);
-  color: #ff9800;
-  border: 1px solid rgba(255, 152, 0, 0.25);
+  background: rgba(var(--cor-badge-deslocamento-rgb), 0.12);
+  color: var(--cor-badge-deslocamento);
+  border: 1px solid rgba(var(--cor-badge-deslocamento-rgb), 0.25);
 }
 .semana-dia-box {
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
   padding: 10px 0 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid rgba(var(--cor-claro-rgb), 0.07);
 }
 
 #calendarioSemanalHomeGrid .agenda-dia-aula {
@@ -2697,10 +2859,10 @@ button.agenda-dia-aula {
 .semana-dia-box.is-today {
   margin: 4px 0;
   padding: 12px;
-  border: 1px solid rgba(255, 215, 0, 0.28);
+  border: 1px solid rgba(var(--cor-destaque-rgb), 0.28);
   border-radius: 12px;
-  background: rgba(255, 215, 0, 0.035);
-  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.04);
+  background: rgba(var(--cor-destaque-rgb), 0.035);
+  box-shadow: inset 0 0 0 1px rgba(var(--cor-destaque-rgb), 0.04);
 }
 .semana-dia-header {
   width: 100%;
@@ -2718,7 +2880,7 @@ button.agenda-dia-aula {
 }
 
 .semana-dia-header:hover {
-  color: #ffffff;
+  color: var(--cor-texto-forte);
 }
 
 .semana-dia-header-main {
@@ -2731,7 +2893,7 @@ button.agenda-dia-aula {
 .semana-dia-title {
   font-size: 0.96rem;
   font-weight: 700;
-  color: #f4f4f4;
+  color: var(--cor-texto-titulo-dia);
 }
 
 .semana-dia-open-icon {
@@ -2741,14 +2903,14 @@ button.agenda-dia-aula {
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  color: #8c8c8c;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--cor-icone-dia);
+  background: rgba(var(--cor-claro-rgb), 0.04);
   transition: all 0.2s ease;
 }
 
 .semana-dia-header:hover .semana-dia-open-icon {
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  color: var(--cor-destaque);
+  background: rgba(var(--cor-destaque-rgb), 0.08);
 }
 
 .semana-dia-today-badge {
@@ -2756,8 +2918,8 @@ button.agenda-dia-aula {
   align-items: center;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255, 215, 0, 0.16);
-  color: #ffd700;
+  background: rgba(var(--cor-destaque-rgb), 0.16);
+  color: var(--cor-destaque);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -2775,9 +2937,9 @@ button.agenda-dia-aula {
   gap: 10px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.02);
-  color: #8f8f8f;
+  border: 1px dashed rgba(var(--cor-claro-rgb), 0.14);
+  background: rgba(var(--cor-claro-rgb), 0.02);
+  color: var(--cor-texto-vazio);
   cursor: pointer;
   transition:
     border-color 0.2s ease,
@@ -2786,9 +2948,9 @@ button.agenda-dia-aula {
 }
 
 .semana-dia-empty-slot:hover {
-  border-color: rgba(255, 215, 0, 0.32);
-  background: rgba(255, 215, 0, 0.04);
-  color: #d8d8d8;
+  border-color: rgba(var(--cor-destaque-rgb), 0.32);
+  background: rgba(var(--cor-destaque-rgb), 0.04);
+  color: var(--cor-texto-vazio-hover);
 }
 
 .semana-dia-empty-slot-icon {
@@ -2798,8 +2960,8 @@ button.agenda-dia-aula {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  color: var(--cor-destaque);
+  background: rgba(var(--cor-destaque-rgb), 0.08);
   flex-shrink: 0;
 }
 
@@ -2813,16 +2975,16 @@ button.agenda-dia-aula {
 }
 /* [TAG-STYLE-MODAL-TOAST] */
 .modal {
-  background: #1a1a1a;
+  background: var(--cor-superficie);
   border-radius: 16px;
   padding: 20px;
   width: 92%;
   max-width: 450px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-borda);
 }
 .modal h3 {
   /* margin-bottom: 15px; */
-  color: #ffd700;
+  color: var(--cor-destaque);
   font-size: 1.2rem;
 }
 .modal-agendamento {
@@ -2867,18 +3029,18 @@ button.agenda-dia-aula {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--cor-borda);
   padding-bottom: 14px;
 }
 .modal-historico-reposicoes-cabecalho h3 {
   margin: 0 0 5px;
 }
 .modal-historico-reposicoes-cabecalho h3 i {
-  color: #64b5f6;
+  color: var(--cor-estado-informativo);
   margin-right: 8px;
 }
 .modal-historico-reposicoes-resumo {
-  color: #aaa;
+  color: var(--cor-texto-apoio);
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
@@ -2888,7 +3050,7 @@ button.agenda-dia-aula {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  color: #aaa;
+  color: var(--cor-texto-apoio);
   cursor: pointer;
   display: inline-flex;
   flex-shrink: 0;
@@ -2902,8 +3064,8 @@ button.agenda-dia-aula {
    dourada, não por outline; por isso o outline: none */
 .modal-fechar-icone:hover,
 .modal-fechar-icone:focus-visible {
-  border-color: #ffd700;
-  color: #ffd700;
+  border-color: var(--cor-destaque);
+  color: var(--cor-destaque);
   outline: none;
 }
 .modal-historico-reposicoes-conteudo {
@@ -2929,7 +3091,7 @@ button.agenda-dia-aula {
    cada tela via style inline — a silhueta de cada uma imita o que carrega ali. */
 .skeleton {
   animation: skeletonPulso 1.2s ease-in-out infinite alternate;
-  background: #1d1d1d;
+  background: var(--cor-skeleton);
   border-radius: 10px;
   display: block;
 }
@@ -2941,7 +3103,7 @@ button.agenda-dia-aula {
   margin-top: 18px;
 }
 .historico-reposicao-grupo h4 {
-  color: #ffd700;
+  color: var(--cor-destaque);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   margin: 0 0 8px;
@@ -2952,8 +3114,8 @@ button.agenda-dia-aula {
   gap: 8px;
 }
 .historico-reposicao-linha {
-  background: #111;
-  border: 1px solid #2a2a2a;
+  background: var(--cor-superficie-recuada);
+  border: 1px solid var(--cor-borda);
   border-radius: 8px;
   padding: 11px 12px;
 }
@@ -2969,7 +3131,7 @@ button.agenda-dia-aula {
   justify-content: space-between;
 }
 .historico-reposicao-status {
-  color: #e0e0e0;
+  color: var(--cor-texto);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -2982,11 +3144,11 @@ button.agenda-dia-aula {
 .historico-reposicao-cobranca,
 .historico-reposicao-detalhes,
 .historico-reposicao-aviso {
-  color: #aaa;
+  color: var(--cor-texto-apoio);
   font-size: 0.75rem;
 }
 .historico-reposicao-data {
-  color: #f0f0f0;
+  color: var(--cor-texto-item-titulo);
   font-size: 0.875rem;
   font-weight: 600;
   margin: 8px 0 6px;
@@ -2996,7 +3158,7 @@ button.agenda-dia-aula {
   font-size: 0.75rem;
 }
 .historico-reposicao-linha-acao {
-  border-top: 1px solid #252525;
+  border-top: 1px solid var(--cor-divisor-historico);
   justify-content: flex-end;
   margin-top: 10px;
   padding-top: 9px;
@@ -3007,7 +3169,7 @@ button.agenda-dia-aula {
 .historico-reposicoes-vazio,
 .historico-reposicoes-erro {
   align-items: center;
-  color: #aaa;
+  color: var(--cor-texto-apoio);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -3017,18 +3179,18 @@ button.agenda-dia-aula {
 }
 .historico-reposicoes-vazio strong,
 .historico-reposicoes-erro span {
-  color: #e0e0e0;
+  color: var(--cor-texto);
   font-size: 0.875rem;
 }
 .historico-reposicoes-erro {
-  border: 1px solid rgba(239, 154, 154, 0.35);
+  border: 1px solid rgba(var(--cor-erro-suave-rgb), 0.35);
   border-radius: 8px;
   margin-bottom: 12px;
   min-height: 0;
   padding: 12px;
 }
 .modal-historico-reposicoes-rodape {
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--cor-borda);
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
@@ -3041,20 +3203,20 @@ button.agenda-dia-aula {
   margin-top: 0;
 }
 .modal-edicao-cobranca-reposicao h3 i {
-  color: #64b5f6;
+  color: var(--cor-estado-informativo);
   margin-right: 8px;
 }
 .edicao-cobranca-reposicao-aviso {
-  background: rgba(255, 215, 0, 0.06);
-  border-left: 3px solid #ffd700;
-  color: #aaa;
+  background: rgba(var(--cor-destaque-rgb), 0.06);
+  border-left: 3px solid var(--cor-destaque);
+  color: var(--cor-texto-apoio);
   font-size: 0.75rem;
   line-height: 1.4;
   margin: 0 0 18px;
   padding: 8px 10px;
 }
 .modal-edicao-cobranca-reposicao-acoes {
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--cor-borda);
   display: flex;
   gap: 10px;
   justify-content: flex-end;
@@ -3090,7 +3252,7 @@ button.agenda-dia-aula {
      escuro. Branco sobre os preenchimentos claros não passa contraste AA: 2.8:1 no verde
      e 4.2:1 no vermelho. Com #1a1a1a: 8.7:1 e 7.6:1. */
   background: var(--cor-estado-ok);
-  color: #1a1a1a;
+  color: var(--cor-texto-sobre-estado);
   padding: 12px;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -3113,31 +3275,31 @@ button.agenda-dia-aula {
 }
 .toast.error {
   background: var(--cor-estado-erro);
-  color: #1a1a1a;
+  color: var(--cor-texto-sobre-estado);
 }
 /* Etapa 7 (achado 4.13): o aviso usa a cor de estado. Texto escuro pelo mesmo motivo
    acima — branco sobre âmbar claro também falha (o .toast base definia #fff). */
 .toast.warning {
   background: var(--cor-estado-aviso);
-  color: #1a1a1a;
+  color: var(--cor-texto-sobre-estado);
 }
 .toast.progress {
-  background: #1a1a1a;
-  color: #e0e0e0;
-  border: 1px solid #333;
+  background: var(--cor-superficie);
+  color: var(--cor-texto);
+  border: 1px solid var(--cor-borda-campo);
 }
 .toast-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border: 2px solid rgba(var(--cor-claro-rgb), 0.35);
+  border-top-color: var(--cor-texto-forte);
   border-radius: 50%;
   animation: girar-sinc 0.8s linear infinite;
   flex-shrink: 0;
 }
 .toast.progress .toast-spinner {
-  border-color: #2a2a2a;
-  border-top-color: #4caf50;
+  border-color: var(--cor-borda);
+  border-top-color: var(--cor-progresso);
 }
 @keyframes girar-sinc {
   to {
@@ -3152,9 +3314,9 @@ button.agenda-dia-aula {
    o realce translúcido branco sumiria sobre o fundo. Contraste escuro sobre escuro. */
 .toast-retry {
   flex: 0 0 auto;
-  background: rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  color: #1a1a1a;
+  background: rgba(var(--cor-veu-rgb), 0.12);
+  border: 1px solid rgba(var(--cor-veu-rgb), 0.4);
+  color: var(--cor-texto-sobre-estado);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 0.8125rem;
@@ -3162,16 +3324,16 @@ button.agenda-dia-aula {
   cursor: pointer;
 }
 .toast-retry:active {
-  background: rgba(0, 0, 0, 0.24);
+  background: rgba(var(--cor-veu-rgb), 0.24);
 }
 
 /* [TAG-STYLE-FILTRO-ALUNO-CALENDARIO] - Filter dropdown styling */
 .card-stat {
-  background: #1a1a1a;
+  background: var(--cor-superficie);
   border-radius: 12px;
   padding: 15px;
   text-align: center;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-borda);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -3182,18 +3344,18 @@ button.agenda-dia-aula {
   display: block;
   font-size: 1.6rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-destaque);
   margin-bottom: 2px;
 }
 .card-stat .stat-label {
-  color: #aaa;
+  color: var(--cor-texto-apoio);
   font-size: 0.875rem;
 }
 .tab-tipo-agendamento .tab-btn {
   flex: 1;
   background: transparent;
   border: none;
-  color: #888;
+  color: var(--cor-texto-terciario);
   padding: 8px;
   /* Etapa 2 (4.4): controle compacto da camada de badge (12px) — 14px estoura a caixa em 320px */
   font-size: 0.75rem;
@@ -3203,8 +3365,8 @@ button.agenda-dia-aula {
   transition: all 0.2s ease;
 }
 .tab-tipo-agendamento .tab-btn.active {
-  background: #2a2a2a;
-  color: #ffd700;
+  background: var(--cor-superficie-elevada);
+  color: var(--cor-destaque);
 }
 .modal-badge {
   display: inline-flex;
@@ -3233,9 +3395,9 @@ button.agenda-dia-aula {
   gap: 14px;
   padding: 15px;
   text-align: left;
-  background: #1e1e1e;
-  color: #fff;
-  border: 1px solid #2d2d2d;
+  background: var(--cor-opcao-fundo);
+  color: var(--cor-texto-forte);
+  border: 1px solid var(--cor-opcao-borda);
   border-radius: 12px;
   width: 100%;
 }
@@ -3250,32 +3412,32 @@ button.agenda-dia-aula {
   flex-shrink: 0;
 }
 .modal-escolha-icone-aula {
-  color: #ffb878; /* Tangerine — aula */
-  background: rgba(255, 184, 120, 0.1);
+  color: var(--objetivo-tangerina); /* Tangerine — aula */
+  background: rgba(var(--objetivo-tangerina-rgb), 0.1);
 }
 .modal-escolha-icone-bloqueio {
-  color: #ff5c54; /* Tomato claro — bloqueio (Etapa 2 Cartão D: 4.5:1) */
-  background: rgba(220, 33, 39, 0.1);
+  color: var(--cor-bloqueio-texto); /* Tomato claro — bloqueio (Etapa 2 Cartão D: 4.5:1) */
+  background: rgba(var(--cor-categoria-bloqueio-rgb), 0.1);
 }
 .modal-escolha-icone-deslocamento {
-  color: #51b749; /* Basil — deslocamento */
-  background: rgba(81, 183, 73, 0.1);
+  color: var(--cor-categoria-deslocamento); /* Basil — deslocamento */
+  background: rgba(var(--cor-categoria-deslocamento-rgb), 0.1);
 }
 .modal-escolha-icone-reposicao {
-  color: #fbd75b; /* Banana — reposição */
-  background: rgba(251, 215, 91, 0.1);
+  color: var(--cor-categoria-reposicao); /* Banana — reposição */
+  background: rgba(var(--cor-categoria-reposicao-rgb), 0.1);
 }
 .modal-escolha-icone-exclusao-leve {
-  color: #fbd75b; /* Banana — exclusão leve */
-  background: rgba(251, 215, 91, 0.1);
+  color: var(--cor-exclusao-leve); /* Banana — exclusão leve */
+  background: rgba(var(--cor-exclusao-leve-rgb), 0.1);
 }
 .modal-escolha-icone-exclusao-media {
-  color: #ffb878; /* Tangerine — exclusão média */
-  background: rgba(255, 184, 120, 0.1);
+  color: var(--cor-exclusao-media); /* Tangerine — exclusão média */
+  background: rgba(var(--cor-exclusao-media-rgb), 0.1);
 }
 .modal-escolha-icone-exclusao-total {
-  color: #ff5c54; /* Tomato claro — exclusão total (Etapa 2 Cartão D: 4.5:1) */
-  background: rgba(220, 33, 39, 0.1);
+  color: var(--cor-exclusao-total); /* Tomato claro — exclusão total (Etapa 2 Cartão D: 4.5:1) */
+  background: rgba(var(--cor-exclusao-total-fundo-rgb), 0.1);
 }
 .modal-exclusao {
   max-width: 420px;
@@ -3295,7 +3457,7 @@ button.agenda-dia-aula {
 } 
 .modal-escolha-contexto {
   margin: 6px 0 0;
-  color: #888;
+  color: var(--cor-texto-terciario);
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -3303,19 +3465,19 @@ button.agenda-dia-aula {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  border-top: 1px solid #222;
+  border-top: 1px solid var(--cor-divisor);
   padding-top: 12px;
   margin-top: 12px;
 }
 .modal-escolha-texto strong {
   display: block;
   font-size: 0.875rem;
-  color: #fff;
+  color: var(--cor-texto-forte);
   font-weight: 700;
 }
 .modal-escolha-texto span {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--cor-texto-terciario);
   font-weight: 400;
   display: block;
   margin-top: 2px;
@@ -3327,10 +3489,10 @@ button.agenda-dia-aula {
 }
 .modal-escolha-opcao:hover,
 .modal-recorrencia-trigger:hover {
-  border-color: #ffd700 !important;
-  background: #252525 !important;
+  border-color: var(--cor-destaque) !important;
+  background: var(--cor-opcao-fundo-hover) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15) !important;
+  box-shadow: 0 4px 15px rgba(var(--cor-destaque-rgb), 0.15) !important;
 }
 .modal-recorrencia-trigger {
   display: flex;
@@ -3339,10 +3501,10 @@ button.agenda-dia-aula {
   gap: 12px;
   width: 100%;
   padding: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-borda-campo);
   border-radius: 10px;
-  background: #0d0d0d;
-  color: #e0e0e0;
+  background: var(--cor-campo-fundo);
+  color: var(--cor-texto);
   text-align: left;
 }
 .modal-recorrencia-trigger-texto {
@@ -3354,15 +3516,15 @@ button.agenda-dia-aula {
 .modal-recorrencia-trigger-texto span {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #f1f1f1;
+  color: var(--cor-texto-campo-claro);
 }
 .modal-recorrencia-trigger-texto small {
   font-size: 0.75rem;
-  color: #8f8f8f;
+  color: var(--cor-texto-dica);
   line-height: 1.35;
 }
 .modal-recorrencia-trigger-icone {
-  color: #ffd700;
+  color: var(--cor-destaque);
   flex-shrink: 0;
 }
 .agenda-modal-data-contexto {
@@ -3370,7 +3532,7 @@ button.agenda-dia-aula {
 }
 .agenda-modal-info-horario {
   font-size: 0.875rem;
-  color: #ffd700;
+  color: var(--cor-destaque);
   margin-top: 10px;
   margin-bottom: 0;
   font-weight: 600;
@@ -3382,23 +3544,23 @@ button.agenda-dia-aula {
 }
 .agenda-modal-data-input-wrapper label {
   font-size: 0.75rem;
-  color: #a8a8a8;
+  color: var(--cor-texto-subtitulo);
   font-weight: 600;
 }
 .agenda-modal-data-input-wrapper input[type="date"] {
   width: 100%;
-  background: #111;
-  color: #f1f1f1;
-  border: 1px solid #333;
+  background: var(--cor-superficie-recuada);
+  color: var(--cor-texto-campo-claro);
+  border: 1px solid var(--cor-borda-campo);
   border-radius: 8px;
   padding: 10px 12px;
   /* Etapa 2 (4.4): campo >=16px (consistente com .form-grupo-spa) */
   font-size: 1rem;
 }
 .agenda-modal-data-input-wrapper input[type="date"]:focus {
-  border-color: #ffd700;
+  border-color: var(--cor-foco);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--cor-foco-rgb), 0.2);
 }
 
 /* Rodada 3 da Etapa 3 (2026-09-27): a regra #appEnvBadge (tarja "LOCAL") saiu
@@ -3704,4 +3866,128 @@ button.agenda-dia-aula {
       border-color 0.2s ease,
       color 0.2s ease;
   }
+}
+
+/* [TAG-STYLE-CORES-CLASSES] Cores que eram inline no index.html e nos templates JS.
+   Utilitárias: a classe .cor-X aplica color: var(--cor-X), mesmo nome do token.
+   As demais são do componente; quando outra regra mira o mesmo elemento, o seletor
+   é composto para manter a precedência que o atributo style garantia. */
+.cor-destaque { color: var(--cor-destaque); }
+.cor-estado-informativo { color: var(--cor-estado-informativo); }
+.cor-estado-erro { color: var(--cor-estado-erro); }
+.cor-texto-forte { color: var(--cor-texto-forte); }
+.cor-texto { color: var(--cor-texto); }
+.cor-texto-explicacao { color: var(--cor-texto-explicacao); }
+.cor-texto-legenda { color: var(--cor-texto-legenda); }
+.cor-texto-apoio { color: var(--cor-texto-apoio); }
+.cor-texto-subtitulo { color: var(--cor-texto-subtitulo); }
+.cor-texto-descricao { color: var(--cor-texto-descricao); }
+.cor-texto-terciario { color: var(--cor-texto-terciario); }
+.cor-texto-item-titulo { color: var(--cor-texto-item-titulo); }
+.cor-texto-item { color: var(--cor-texto-item); }
+.cor-texto-previa { color: var(--cor-texto-previa); }
+.cor-texto-resumo { color: var(--cor-texto-resumo); }
+.cor-texto-resumo-apoio { color: var(--cor-texto-resumo-apoio); }
+.cor-texto-auxiliar { color: var(--cor-texto-auxiliar); }
+.cor-texto-detalhes { color: var(--cor-texto-detalhes); }
+.cor-texto-separador { color: var(--cor-texto-separador); }
+.cor-texto-rotulo { color: var(--cor-texto-rotulo); }
+.cor-texto-vazio-lista { color: var(--cor-texto-vazio-lista); }
+
+.tab-tipo-agendamento {
+  background: var(--cor-campo-fundo);
+  border: 1px solid var(--cor-borda);
+}
+.modal-rodape-divisor {
+  border-top: 1px solid var(--cor-divisor);
+}
+.campo-travado {
+  background: var(--cor-campo-fundo);
+  color: var(--cor-texto-forte);
+  border: 1px solid var(--cor-borda-campo);
+}
+.form-grupo-spa select.campo-aluno-travado {
+  background: var(--cor-superficie-recuada);
+  color: var(--cor-texto-terciario);
+  border-color: var(--cor-divisor);
+}
+.cartao-cobranca-ciclo {
+  border: 1px solid var(--cor-divisor);
+  background: rgba(var(--cor-destaque-rgb), 0.03);
+}
+.form-grupo-spa .cartao-cobranca-ciclo-titulo {
+  color: var(--cor-destaque);
+}
+.aviso-recorrencia-mensal {
+  background: rgba(var(--cor-destaque-rgb), 0.05);
+  border: 1px dashed rgba(var(--cor-destaque-rgb), 0.2);
+}
+.btn.btn-confirmar-reposicao {
+  background: var(--cor-estado-informativo);
+  color: var(--cor-sobre-informativo);
+  border: none;
+}
+.btn.btn-acao-reagendar {
+  background: var(--cor-acao-reagendar);
+  color: var(--cor-sobre-acao-reagendar);
+  border: none;
+}
+
+/* Cards da agenda (agenda-card-template.js) */
+.badge-tag-tipo--recorrente {
+  background: rgba(var(--cor-destaque-rgb), 0.18);
+  color: var(--cor-destaque);
+}
+.badge-tag-tipo--unico {
+  background: rgba(var(--cor-estado-ok-rgb), 0.18);
+  color: var(--cor-estado-ok);
+}
+.badge-tag-tipo--inativo {
+  background: rgba(var(--cor-estado-erro-rgb), 0.15);
+  color: var(--cor-estado-erro);
+}
+.agenda-dia-aula-nome--deslocamento {
+  color: var(--cor-categoria-deslocamento);
+}
+.agenda-dia-aula-local--deslocamento {
+  color: var(--cor-texto-deslocamento);
+}
+.agenda-dia-aula-local--bloqueio {
+  color: var(--cor-bloqueio-texto);
+}
+.agenda-dia-aula-nome.agenda-dia-bloqueio-descricao {
+  color: var(--cor-texto-bloqueio);
+}
+.card-bloqueio-externo-nome .fa-google {
+  color: var(--cor-google-azul);
+}
+
+/* Alunos (view-alunos.js) */
+.aluno-card-detalhes {
+  border-top: 1px solid var(--cor-borda);
+}
+
+/* Finanças (view-financas.js) */
+.aluno-card.aluno-card--skeleton {
+  border-left-color: var(--cor-skeleton-borda);
+}
+.financas-bloco {
+  background: var(--cor-superficie-bloco);
+  border: 1px solid var(--cor-borda-painel);
+}
+.financas-extrato-item {
+  border: 1px solid var(--cor-borda-item);
+  background: var(--cor-fundo-app);
+}
+.financas-historico-ciclo {
+  border: 1px solid var(--cor-divisor-financas);
+  background: var(--cor-superficie-historico);
+}
+.financas-divisor-topo {
+  border-top: 1px solid var(--cor-divisor-financas);
+}
+.financas-config-pendente {
+  border: 1px dashed rgba(var(--cor-destaque-rgb), 0.28);
+  background: rgba(var(--cor-destaque-rgb), 0.04);
+  color: var(--cor-texto-pendencia);
 }

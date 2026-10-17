@@ -101,10 +101,8 @@
                 display: flex;
                 gap: 6px;
                 margin-bottom: 14px;
-                background: #0d0d0d;
                 padding: 4px;
                 border-radius: 8px;
-                border: 1px solid #2a2a2a;
               "
             >
               <button
@@ -201,10 +199,10 @@
       <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
       <main id="tela-alunos" class="view-section" style="display: none">
         <section class="alunos-panel">
-          <h3 style="font-size: 1.1rem; color: #e0e0e0; margin-bottom: 15px">
+          <h3 class="cor-texto" style="font-size: 1.1rem; margin-bottom: 15px">
             <i
-              class="fa-solid fa-address-book"
-              style="color: #ffd700; margin-right: 8px"
+              class="fa-solid fa-address-book cor-destaque"
+              style="margin-right: 8px"
             ></i
             >Seus Alunos
           </h3>
@@ -297,16 +295,14 @@
                 </select>
               </div>
               <div
-                class="form-grupo-spa"
+                class="form-grupo-spa cartao-cobranca-ciclo"
                 id="cardCobrancaPorCiclo"
                 style="
-                  border: 1px solid #222;
                   border-radius: 10px;
                   padding: 12px;
-                  background: rgba(255, 215, 0, 0.03);
                 "
               >
-                <label style="display:block;margin-bottom:10px;color:#ffd700;font-weight:700;">Cobrança por ciclo</label>
+                <label class="cartao-cobranca-ciclo-titulo" style="display:block;margin-bottom:10px;font-weight:700;">Cobrança por ciclo</label>
                 <label class="full-day-toggle" for="alunoFechamentoMesCheio" style="margin-bottom:10px;">
                   <input type="checkbox" id="alunoFechamentoMesCheio" />
                   <span class="full-day-toggle-ui">
@@ -501,16 +497,16 @@
       <div class="modal" style="max-width: 400px; text-align: center">
         <h3 id="tituloModalEscolhaTipo">
           <i
-            class="fa-solid fa-circle-question"
-            style="color: #ffd700; margin-right: 8px"
+            class="fa-solid fa-circle-question cor-destaque"
+            style="margin-right: 8px"
           ></i
           >O que você deseja criar?
         </h3>
         <p
           id="infoEscolhaSlot"
+          class="cor-texto-apoio"
           style="
             font-size: 0.875rem;
-            color: #aaa;
             margin-bottom: 20px;
             font-weight: 500;
           "
@@ -572,9 +568,9 @@
           </button>
         </div>
         <div
+          class="modal-rodape-divisor"
           style="
             margin-top: 20px;
-            border-top: 1px solid #222;
             padding-top: 15px;
             display: flex;
             justify-content: flex-end;
@@ -600,16 +596,16 @@
       <div class="modal" style="max-width: 440px">
         <h3 id="tituloModalReagendarAula">
           <i
-            class="fa-solid fa-arrows-rotate"
-            style="color: #64b5f6; margin-right: 8px"
+            class="fa-solid fa-arrows-rotate cor-estado-informativo"
+            style="margin-right: 8px"
           ></i
           >Agendar Reposição
         </h3>
         <p
           id="infoReagendamentoSlot"
+          class="cor-estado-informativo"
           style="
             font-size: 0.875rem;
-            color: #64b5f6;
             margin-bottom: 15px;
             font-weight: 600;
           "
@@ -629,11 +625,9 @@
             <label>Aluno Selecionado</label>
             <div
               id="reagendarAlunoLockedNome"
+              class="campo-travado"
               style="
                 padding: 12px;
-                background: #0d0d0d;
-                color: #fff;
-                border: 1px solid #333;
                 border-radius: 8px;
                 font-weight: 700;
                 font-size: 1rem;
@@ -671,12 +665,12 @@
           </div>
 
           <div
+            class="modal-rodape-divisor"
             style="
               display: flex;
               gap: 10px;
               margin-top: 24px;
               justify-content: flex-end;
-              border-top: 1px solid #222;
               padding-top: 15px;
             "
           >
@@ -689,11 +683,8 @@
             </button>
             <button
               type="submit"
-              class="btn btn-primary"
+              class="btn btn-primary btn-confirmar-reposicao"
               style="
-                background: #64b5f6;
-                color: #0d0d0d;
-                border: none;
                 font-weight: 700;
               "
             >
@@ -713,16 +704,16 @@
       <div class="modal modal-agendamento">
         <h3 id="agendaTituloModal">
           <i
-            class="fa-solid fa-calendar-day"
-            style="color: #ffd700; margin-right: 8px"
+            class="fa-solid fa-calendar-day cor-destaque"
+            style="margin-right: 8px"
           ></i
           >Novo Agendamento
         </h3>
         <p
           id="agendaSubtituloModal"
+          class="cor-texto-subtitulo"
           style="
             font-size: 0.875rem;
-            color: #a8a8a8;
             margin-bottom: 14px;
             font-weight: 500;
           "
@@ -738,10 +729,8 @@
             display: flex;
             gap: 6px;
             margin-bottom: 18px;
-            background: #0d0d0d;
             padding: 4px;
             border-radius: 8px;
-            border: 1px solid #2a2a2a;
           "
         >
           <button
@@ -830,9 +819,9 @@
           </div>
           <p
             id="infoTipoAgendamento"
+            class="cor-texto-descricao"
             style="
               font-size: 0.75rem;
-              color: #9a9a9a;
               margin-bottom: 12px;
               font-weight: 600;
             "
@@ -913,12 +902,12 @@
           </div>
 
           <div
+            class="modal-rodape-divisor"
             style="
               display: flex;
               gap: 10px;
               margin-top: 24px;
               justify-content: flex-end;
-              border-top: 1px solid #222;
               padding-top: 15px;
             "
           >
@@ -946,16 +935,16 @@
       <div class="modal modal-recorrencia-secundario">
         <h3 id="tituloModalRecorrencia">
           <i
-            class="fa-solid fa-infinity"
-            style="color: #ffd700; margin-right: 8px"
+            class="fa-solid fa-infinity cor-destaque"
+            style="margin-right: 8px"
           ></i
           >Configurar Repetição
         </h3>
         <p
           id="recorrenciaModalSubtitulo"
+          class="cor-texto-subtitulo"
           style="
             font-size: 0.875rem;
-            color: #a8a8a8;
             margin-bottom: 14px;
             font-weight: 500;
           "
@@ -969,7 +958,7 @@
             <div class="form-grupo-spa" style="margin-bottom: 14px">
               <label for="recorrenciaDataInicio">Início da recorrência *</label>
               <input type="date" id="recorrenciaDataInicio" required />
-              <small style="display: block; color: #888; font-size: 0.75rem"
+              <small class="cor-texto-terciario" style="display: block; font-size: 0.75rem"
                 >A série começa nesta data. Vem da data selecionada no
                 calendário e pode ser alterada aqui.</small
               >
@@ -1014,16 +1003,14 @@
                   <label>Unidade</label>
                   <div
                     id="labelUnidadeRecorrencia"
+                    class="campo-travado"
                     style="
                       height: 45px;
                       display: flex;
                       align-items: center;
-                      color: #fff;
                       font-size: 1rem;
                       font-weight: 700;
-                      background: #0d0d0d;
                       padding-left: 12px;
-                      border: 1px solid #333;
                       border-radius: 8px;
                     "
                   >
@@ -1072,18 +1059,17 @@
               </div>
               <div
                 id="infoRecorrenciaMensalAnual"
+                class="aviso-recorrencia-mensal"
                 style="
-                  background: rgba(255, 215, 0, 0.05);
                   padding: 12px;
                   border-radius: 8px;
                   margin-bottom: 2px;
-                  border: 1px dashed rgba(255, 215, 0, 0.2);
                 "
               >
                 <p
+                  class="cor-destaque"
                   style="
                     font-size: 0.75rem;
-                    color: #ffd700;
                     margin: 0;
                     line-height: 1.4;
                     font-weight: 600;
@@ -1133,12 +1119,12 @@
             ></div>
           </div>
           <div
+            class="modal-rodape-divisor"
             style="
               display: flex;
               gap: 10px;
               margin-top: 24px;
               justify-content: flex-end;
-              border-top: 1px solid #222;
               padding-top: 15px;
             "
           >
@@ -1200,11 +1186,9 @@
             <label for="editAluno">Aluno</label>
             <select
               id="editAluno"
+              class="campo-aluno-travado"
               disabled
               style="
-                background: #111;
-                color: #888;
-                border-color: #222;
                 cursor: not-allowed;
               "
             ></select>
@@ -1238,9 +1222,9 @@
           </div>
           <p
             id="editInfoDia"
+            class="cor-texto-forte"
             style="
               font-size: 0.875rem;
-              color: #fff;
               margin-bottom: 15px;
               font-weight: 600;
             "
@@ -1277,20 +1261,20 @@
             </div>
             <small
               id="editEscopoResumo"
+              class="cor-texto-legenda"
               style="
                 display: block;
                 margin-top: 6px;
-                color: #bdbdbd;
                 font-size: 0.875rem;
               "
               >Vai atualizar esta aula e as próximas da série.</small
             >
             <small
               id="editEscopoImpacto"
+              class="cor-destaque"
               style="
                 display: block;
                 margin-top: 6px;
-                color: #ffd700;
                 font-size: 0.875rem;
                 font-weight: 700;
               "
@@ -1298,10 +1282,10 @@
           </div>
           <small
             id="editAvisoAlunoInativo"
+            class="cor-estado-erro"
             style="
               display: none;
               margin: -4px 0 12px;
-              color: #ff8a80;
               font-size: 0.875rem;
               font-weight: 700;
             "
@@ -1378,12 +1362,12 @@
             </div>
           </div>
           <div
+            class="modal-rodape-divisor"
             style="
               display: flex;
               flex-direction: column;
               gap: 10px;
               margin-top: 20px;
-              border-top: 1px solid #222;
               padding-top: 15px;
             "
           >
@@ -1393,9 +1377,9 @@
             >
               <button
                 type="button"
-                class="btn"
+                class="btn btn-acao-reagendar"
                 id="btnMandarParaReposicao"
-                style="background: #ff9800; color: #fff; border: none; width: 100%"
+                style="width: 100%"
                 title="Enviar para reposição"
               >
                 <i
@@ -1411,9 +1395,9 @@
             >
               <button
                 type="button"
-                class="btn"
+                class="btn btn-acao-reagendar"
                 id="btnReagendarInstancia"
-                style="background: #ff9800; color: #fff; border: none; width: 100%"
+                style="width: 100%"
                 title="Enviar para reposição"
               >
                 <i
@@ -1467,10 +1451,10 @@
     >
       <div class="modal" style="max-width: 420px">
         <h3 id="tituloModalEscolhaCobrancaReposicao" style="margin-top: 0; margin-bottom: 8px;">Cobrar esta aula?</h3>
-        <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: #fff; font-size: 0.875rem;"></p>
-        <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.875rem;"></p>
+        <p id="reposicaoEscolhaAluno" class="cor-texto-forte" style="margin: 0; font-weight: 700; font-size: 0.875rem;"></p>
+        <p id="reposicaoEscolhaDataHorario" class="cor-texto-explicacao" style="margin: 6px 0 18px; font-size: 0.875rem;"></p>
 
-        <p style="margin: 0 0 12px; color: #d9d9d9; font-size: 0.875rem; line-height: 1.5;">
+        <p class="cor-texto-explicacao" style="margin: 0 0 12px; font-size: 0.875rem; line-height: 1.5;">
           A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, no card do aluno.
         </p>
 
@@ -1478,15 +1462,15 @@
           <button type="button" class="btn btn-primary" data-reposicao-cobravel="true" id="btnCobrarNesteCiclo">
             <span> Cobrar neste ciclo </span>
           </button>
-          <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Cobrada mesmo se a reposição não acontecer.</small>
+          <small class="cor-texto-legenda" style="line-height: 1.4; text-align: center;">Cobrada mesmo se a reposição não acontecer.</small>
 
           <button type="button" class="btn" data-reposicao-cobravel="false" id="btnCobrarNaReposicao">
             <span> Cobrar na reposição </span>
           </button>
-          <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Se o prazo expirar, não é cobrada.</small>
+          <small class="cor-texto-legenda" style="line-height: 1.4; text-align: center;">Se o prazo expirar, não é cobrada.</small>
         </div>
 
-        <div style="border-top: 1px solid #222; padding-top: 12px; color: #d9d9d9; font-size: 0.875rem; text-align: center; line-height: 1.5;">
+        <div class="modal-rodape-divisor cor-texto-explicacao" style="padding-top: 12px; font-size: 0.875rem; text-align: center; line-height: 1.5;">
           <div>Pode alterar antes do pagamento do ciclo.</div>
           <div id="reposicaoEscolhaPrazo" style="display: none"></div>
         </div>
@@ -1526,7 +1510,7 @@
     >
       <div class="modal" style="max-width: 380px">
         <h3 id="tituloModalConfigAgenda">Configurar Grade Horária</h3>
-        <p style="font-size: 0.875rem; color: #888; margin-bottom: 15px">
+        <p class="cor-texto-terciario" style="font-size: 0.875rem; margin-bottom: 15px">
           Defina os limites de exibição de horas de trabalho da sua agenda
           diária.
         </p>
@@ -1535,7 +1519,7 @@
           <div class="form-grupo-spa">
             <label for="configHoraInicio"
               >Hora de Início da Agenda
-              <span style="color: #888; font-weight: 400">(0–23)</span> *</label
+              <span class="cor-texto-terciario" style="font-weight: 400">(0–23)</span> *</label
             >
             <input
               type="number"
@@ -1550,7 +1534,7 @@
           <div class="form-grupo-spa">
             <label for="configHoraFim"
               >Hora de Fim da Agenda
-              <span style="color: #888; font-weight: 400">(0–23)</span> *</label
+              <span class="cor-texto-terciario" style="font-weight: 400">(0–23)</span> *</label
             >
             <input
               type="number"
