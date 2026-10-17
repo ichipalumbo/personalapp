@@ -1,12 +1,9 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: Em produção · **Versão**: 12 · **Atualizado**: 2026-10-05
-> **Validação**: sincronização, webhook, `RRULE` e `EXDATE` validados ao longo das rodadas A–H;
-> validação em produção concluída em 31/08/2026.
-> **Defeitos em aberto**: 2 (ver seção 9): 9.14 (gatilho triplo de sincronização no boot) e 9.8
-> (cobertura parcial de I/O real no Google). Os defeitos 5 e 6 foram corrigidos, cobertos por
-> testes e verificados em produção pelo dono em 2026-09-01; as duas consultas do §5.1 do
-> diagnóstico retornaram vazias nas duas contas, sem dano gravado.
+> **Status**: Em produção · **Versão**: 14 · **Atualizado**: 2026-10-14
+> **Consolidação documental**: contrato e limites preservados; relatos de execução e medições não são requisitos vigentes.
+> **Pendência funcional conhecida**: coordenação dos gatilhos do boot (9.14).
+> **Limite de evidência**: cobertura parcial de I/O real (9.8); o gatilho automático de renovação não foi observado isoladamente. Esta edição não é nova validação de produção.
 >
 > **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` define a
 > semântica de exceção de série, que esta spec precisa refletir no Google.
@@ -15,19 +12,12 @@
 
 ---
 
-## 1. Problema
+## 1. Objetivo e fronteira
 
-A integração com o Google Calendar existe e funciona para aula única, mas **uma série
-recorrente aparece no Google apenas uma vez**, na data inicial. As ocorrências seguintes
-não existem no calendário.
-
-O sintoma foi reportado como regressão: antes funcionava. O código atual mostra a causa
-estrutural (9.1), mas o histórico da regressão não é recuperável a partir do estado
-commitado — só `git log` responde.
-
-Não havia spec desta feature antes desta. A ausência levou a diagnósticos errados em
-conversa: a integração foi acusada duas vezes de bug que não existia, por leitura de
-sintoma sem leitura de código.
+Sincronizar os agendamentos criados no app com o Google Calendar, publicando séries como
+evento pai recorrente, e ler eventos externos como bloqueios sem alterar a fonte de
+verdade de cada item. Esta spec define propriedade, escrita/leitura, exceções, falhas
+e limites aceitos; não é uma lista de correções a executar.
 
 ---
 
@@ -91,8 +81,8 @@ No desenho `RRULE`:
   depende de uma janela local de expansão.
 
 A mudança de desenho é intencional: a janela de publicação não é mais uma decisão de
-negócio a se manter em sync. A decisão que permanece em aberto é outra — o que o app fará
-quando a própria série chegar ao limite de `COUNT` (item 9.11).
+negócio a se manter em sync. `COUNT` encerra o conjunto de recorrência, não representa
+um pacote comercial de aulas, conforme a decisão preservada em 9.11.
 
 ### 2.4 Reposição
 
@@ -489,408 +479,195 @@ indisponibilidade do Google. Ver 9.4.
 
 ---
 
-## 9. Bugs e divergências (backlog desta feature)
+## 9. Contratos complementares e limites conhecidos
 
-Ordenados por gravidade.
+A numeração existente foi preservada para as referências entre specs. Esta seção não
+define prioridade de execução nem usa medições históricas como evidência atual.
 
-### 9.1 Série recorrente publica apenas uma ocorrência — RESOLVIDO (Rodada C)
+### 9.1 Identificador da série recorrente
 
-> **Redesenho concluído na v4**: a correção deixa de ser “publicar N eventos
-> independentes” e passa a ser “publicar a série como um evento pai com `RRULE`”.
+`googleCalendarEventId` identifica o evento pai publicado com `RRULE`. Não manter mapa
+local de um id do Google por data nem horizonte de publicação para expandir a série.
 
-**Sintoma**: aula semanal aparece uma vez no Google, na data inicial.
+### 9.2 Leitura e propriedade dos eventos
 
-**Causa**: o app ainda usa uma representação do tipo “evento único com um único
-`googleCalendarEventId`”. O modelo atual expõe um único id por agendamento em
-`backend/src/models/Agendamento.js:19`, e a lógica de escrita do calendário também assume um
-evento único (`backend/src/services/gcalSyncService.js:643-647`).
+Classificar a propriedade antes de tratar cancelamento. Leitura de evento criado pelo
+app não apaga ou altera o agendamento local. Cancelamento de evento externo pode remover
+seu `BloqueioExterno`, nunca um dado do app.
 
-**Correção redesenhada**: não é mais um mapa `data → googleCalendarEventId`; a correção passa
-ser o padrão RRULE e o uso do id do evento pai. O campo `googleCalendarEventId` continua
-sendo o identificador do evento pai no Google e continua suficiente para a série;
-não há mais necessidade do horizonte de publicação.
+### 9.3 Exceções da série
 
-**É o item que destrava todos os outros.** Depois do redesenho, 9.3 e 2.4 passam a ser
-questões de `EXDATE`/instância e de edição parcial da série, não de expansão manual de um
-horizonte.
+As exceções do modelo se refletem em `EXDATE` e/ou cancelamento de instância do evento
+pai, conforme 2.4 e 9.12. Não publicar um evento independente por ocorrência cancelada.
 
-### 9.2 Sync de entrada ignora evento do app — RESOLVIDO (Rodada A)
+### 9.4 Persistência confirmada e falha do Google
 
-`persistSyncResults` testava `status === 'cancelled'` **antes** de `isAppOwnedEvent` e
-chamava `deleteAgendamento(ownerEmail, event.id)`. Evento do app cancelado dentro do Google
-**apagava o agendamento no app**.
+Falha externa do Google não desfaz gravação confirmada no Mongo. A API responde HTTP 200
+com `partialSuccess: true` e `gcalSyncFailed: true`, mantendo o agendamento no corpo.
+Persistência e sincronização são estados distintos; não tratar esse aviso como rejeição
+da gravação nem bloquear o gate de reposição por ele.
 
-Violava diretamente 2.1: leitura nunca deveria alterar dado do app.
+### 9.5 Horário que atravessa meia-noite
 
-**Estado atual**: `classificarEventoDeLeitura(event)` decide primeiro:
+Quando o horário final é anterior ao inicial, `end.dateTime` usa o dia seguinte. O horário
+default pode continuar no formato de hora, mas a data final do evento precisa refletir
+a virada do dia.
 
-Hoje o dano é limitado por acidente — um id por série, e o match é por
-`googleCalendarEventId`. Depois do redesenho v3, o risco continua, mas o caso mais sensível
-é o `EXDATE`/instância do evento pai, não a explosão de ids por data.
+### 9.6 Comparação de objetos
 
-`deleteAgendamento` saiu do caminho de leitura; `deleteBloqueio` continua sendo usado para
-`BloqueioExterno` externo cancelado.
+O diff normaliza a ordem das chaves dos objetos, sem reordenar arrays. Não disparar
+gravação apenas por diferença de ordem das propriedades.
 
-### 9.3 `excecoes` não propagam para o Google — RESOLVIDO (Rodada C)
+### 9.7 Cancelamentos no full e incremental
 
-> **Redesenho concluído na v4**: a correção deixou de ser “criar um evento separado por
-> data” e passa a ser “transformar a exceção do modelo em `EXDATE` no evento pai recorrente”.
+Full sync com `showDeleted=false` não recebe cancelados; o caminho de cancelamento pertence
+à leitura incremental. Essa assimetria é informativa, não pendência de implementação.
 
-Adicionar data em `excecoes` altera o documento, o que dispara `PUT` e
-`updateEventInGoogle` — mas o fluxo atual não traduz `excecoes` para o Google. O modelo
-legacy salva `excecoes` e `excecoesDetalhadas` em `aplicarRecorrenciaLegada`
-(`assets/js/features/modals/scheduling-serializer.js:238-249`), mas não há uma tradução
-para `EXDATE` específica de evento recorrente.
+### 9.8 Limite de evidência de I/O real
 
-Efeito prático: **aula cancelada ou enviada para reposição continua no Google**. O risco real
-na v3 não é mais a expansão do horizonte, e sim a escolha de fonte de verdade entre
-`excecoes` (datas pt-BR) e `excecoesDetalhadas` (amplitude detalhada), especialmente para
-agendamentos em hora e `TZID`.
+Testes de montagem/classificação não comprovam `persistSyncResults` de ponta a ponta nem
+`listCalendarEvents` em incremental/full com Google real. A cobertura desse I/O permanece
+parcial. Não apresentar uma contagem antiga de suíte como medição atual ou validação da
+integração remota; esta consolidação não executou I/O real.
 
-### 9.4 Falha do Google mascarada como falha de persistência — RESOLVIDO (Rodada A)
+### 9.9 Fronteira da ponte frontend
 
-A indisponibilidade do Google não deve ser tratada como falha de gravação no Mongo: o
-backend responde **HTTP 200** com `partialSuccess: true` e `gcalSyncFailed: true`,
-mantendo o agendamento no corpo.
+`google-calendar.js` é ponte para persistência/backend, não um importador direto da API do
+Google. O nome `salvarEventoComGCal` não comprova que a chamada publique um evento específico;
+partir da cadeia de execução definida em 3.1–3.2.
 
-Com isso, `salvarDados` continua enxergando sucesso de persistência e o gate de
-reposição não é bloqueado por um problema externo de sincronização. O log do servidor
-continua sendo emitido para registrar a falha.
+### 9.10 Unicidade da conexão
 
-### 9.5 `horarioFim` default cruzando meia-noite — RESOLVIDO (Rodada A)
+`ownerEmail` mantém o índice único de `GoogleCalendarConnection`; não duplicar uma declaração
+de índice comum sobre o mesmo campo.
 
-O rollback de data não fica em `getHorarioPadraoFim`; ele acontece em
-`montarEventoGoogle`: quando `fimEmMinutos < inicioEmMinutos`, a `end.dateTime` usa
-`adicionarDiasISO(dataISO, 1)`. O default `+60min` continua retornando `23:30 -> 00:30`
-como formato de hora válida, mas o evento real atravessa para o dia seguinte.
+### 9.11 Semântica de COUNT e EXDATE
 
-### 9.6 Diff sensível à ordem das chaves — RESOLVIDO (Rodada A)
+`COUNT` encerra a recorrência após N eventos, não representa pacote comercial de aulas.
+`EXDATE` é aplicado depois da expansão: a ocorrência cancelada continua consumindo a vaga
+do `COUNT`. O motor compartilhado continua afetando a contagem financeira; não alterar
+essa regra como se fosse apenas uma preferência de publicação no Google.
 
-`_agendamentosSaoIguais` passou a serializar objetos após ordenação recursiva das chaves,
-sem mexer na ordem dos arrays. Isso elimina o diff espúrio quando a ordem interna dos
-objetos local e remoto diverge.
+### 9.12 Exceção de evento com horário
 
-### 9.7 Teste de cancelamento inalcançável no modo full — INFORMATIVO
+`EXDATE` precisa corresponder ao `DTSTART`, incluindo horário e `TZID` quando aplicáveis.
+Uma data sem essa informação não é substituto seguro para evento cronometrado. Preservar
+a conversão de exceções, não escolher outra fonte/semântica de dados nesta consolidação.
 
-O full sync pede `showDeleted=false`, então o laço de ativos nunca vê
-`status === 'cancelled'`. Só o incremental traz cancelados. O ramo é código morto em
-metade dos caminhos — e no outro metade é o caso do app-owned event que foi corrigido.
+### 9.13 Custo de leitura aceito
 
-**Status**: observação informativa, não é pendência de trabalho nem ação de engenharia.
+`singleEvents=true` traz instâncias expandidas e aumenta o payload. A classificação por
+propriedade continua aplicável; o volume é observação de custo/escala, não um bug funcional
+nem autorização para otimização preventiva.
 
-### 9.8 Sem cobertura de teste — PARCIALMENTE RESOLVIDO (Rodada A.2)
+### 9.14 Coordenação dos gatilhos do boot — PENDENTE
 
-Existe `backend/test/gcal-sync.test.js`, com testes puramente unitários para as funções de
-montagem e classificação. A suíte total do projeto está em **72 testes**.
+Boot, auth-change e retorno à aba têm gatilhos de leitura/renovação. Sua consolidação
+permanece no item 2.2 do roadmap, sem refazer a leitura segura de B2. A cadeia de renovação
+teve validação histórica por ação manual; o disparo automático no boot não foi observado
+isoladamente e não ganha nova certificação por esta edição.
 
-Continua sem cobertura o que depende de I/O: `persistSyncResults` de ponta a ponta e
-`listCalendarEvents` em modo incremental/full com Google real. Esse é um nível de esforço
-maior (I/O real) e não uma pendência de correção de regra do calendário.
+### 9.15 Corte de série sem ocorrência restante
 
-### 9.9 Documentação desatualizada — RESOLVIDO (Rodada A.2)
+Quando o aparo não deixa ocorrência real, remover a série original do app e do Google;
+não converter o registro vazio em avulsa. A avaliação usa ocorrências reais, não só uma
+comparação entre datas. Preservar a captura do fim original antes do corte e sua herança
+na nova série quando aplicável, inclusive término por contagem convertido em `untilDate`;
+série originalmente infinita não ganha fim por inferência.
 
-- `README.md` foi ajustado para descrever o arquivo `google-calendar.js` como ponte
-  frontend → backend e não como importador direto da API do Google.
-- `.github/copilot-instructions.md` passou a exigir que testes novos sejam provados por
-  regressão/mutação.
-- O nome `salvarEventoComGCal` continua enganoso, mas a documentação agora sinaliza que
-  ele ignora os argumentos recebidos.
-
-### 9.10 Índice duplicado em `GoogleCalendarConnection` — RESOLVIDO (Rodada A.2)
-
-`ownerEmail` era declarado com `index: true` e também com um índice único. O campo agora
-mantém apenas o índice único, que é a garantia relevante.
-
-### 9.11 `COUNT` e `EXDATE` no motor local — FECHADO POR DECISÃO DE PRODUTO
-
-**Decisão**: o `COUNT` serve apenas para encerrar a recorrência após N eventos, seguindo o
-comportamento padrão do Google Calendar. Ele não representa pacote comercial de aulas, nem
-muda o dia a dia da operação com o app.
-
-**Evidência**: a checagem executada na Rodada E confirmou que o motor local e o Google
-concordam em comportamento real.
-
-```text
-MOTOR LOCAL do app:  3 aulas -> 07/09, 14/09, 28/09
-PAYLOAD ao Google:   ["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4", "EXDATE;...20260921T090000"]
-DIVERGEM? NAO
-```
-
-A correção já implementada em `contarOcorrenciasAteData` segue a RFC: o `EXDATE` é aplicado
-após a expansão e a ocorrência cancelada continua consumindo a vaga do `COUNT`; a filtragem
-prematura em `checarCompromissoNaData` continua protegendo o calendário local sem afetar a
-regra de negócio do Google.
-
-**Risco financeiro**: `recurrence-helpers.js` continua sendo consumido em
-`backend/src/services/financasService.js:6` e em `normalizarAulasContadas`
-(`backend/src/services/financasService.js:193-225`), então a regra de contagem ainda afeta
-`aulasContadas` e, por extensão, o valor do ciclo. O fechamento aqui é de produto, não uma
-mudança na regra de cálculo do app.
-
-### 9.12 `EXDATE` de evento com hora precisa do horário — RESOLVIDO (Rodada C)
-
-**Problema**: nossas `excecoes` são strings de data em `pt-BR` e o engine trata exclusão por
-`dataStr = dataAlvo.toLocaleDateString('pt-BR')` em `checarCompromissoNaData`
-(`backend/shared/recurrence-helpers.js:144-147`). Isso funciona para recorrência sem hora,
-mas não é confiável quando o evento tem horário: `EXDATE` precisa casar com o valor do
-`DTSTART`, inclusive hora e `TZID`.
-
-**Risco**: uma exclusão por data pode remover a instância errada ou falhar quando o evento
-cronometrado for publicado como recorrência. O payload já carrega `excecoesDetalhadas` em
-`aplicarRecorrenciaLegada` (`assets/js/features/modals/scheduling-serializer.js:238-239`),
-mas a Rodada C precisa decidir qual fonte de verdade será usada.
-
-### 9.13 Volume de leitura aumenta — OBSERVAÇÃO, NÃO AÇÃO
-
-`listCalendarEvents` usa `singleEvents=true` (
-`backend/src/services/gcalSyncService.js:449-473`), então o Google devolve instâncias
-expandidas dentro da janela. Essas instâncias herdam `extendedProperties` do evento pai, e a
-classificação de propriedade continua funcionando em `isAppOwnedEvent`
-(`backend/src/services/gcalSyncService.js:13-18`).
-
-Esse é um custo de payload, não um bug — e passa a ser um ponto de observação se a série
-virar longa. O risco não é a lógica de ignorar o evento do app, e sim o volume de dados
-lidos em cada sync. Como o próprio guia da API classifica isso como custo de leitura e não
-como defeito funcional, fica registrado como observação, não como pendência de trabalho.
-
-### 9.14 Gatilho de sincronização triplo no boot — PENDENTE
-
-A sincronização de leitura do Google Calendar é disparada em três pontos do boot:
-
-- `assets/js/app-shell/bootstrap.js` (gatilho de renovação + sincronização);
-- listener de auth-change (`googleIdentity.addAuthChangeListener`);
-- `visibilitychange` com auto-refresh silencioso.
-
-A validação em produção de 31/08/2026 confirmou que a cadeia de renovação do canal funciona,
-encerrando o canal antigo, registrando o novo e sincronizando a recuperação. O ponto ainda
-pendente é a observação isolada do gatilho automático no boot: a verificação executada foi por
-clique manual no botão de renovação, não por disparo direto do boot.
-
-**Status atual**: a renovação do canal está validada; o gatilho triplo do boot continua pendente
-como item funcional e segue registrado em 9.14, sem reabrir a decisão de produto da sincronização
-em si.
-
-### 9.15 — Série truncada antes do próprio início vira evento avulso. — RESOLVIDO (Rodada F/H + 2026-08-31)
-
-**Decisão de produto**: quando a série truncada fica sem ocorrência restante, o registro sai do
-app em ambos os lados e o evento sai do Google. Não há nada a preservar, porque a série nova
-assume tudo a partir da data editada.
-
-**Complemento do defeito 6 (Rodada H / 2026-08-31)**: quando a janela final da série truncada
-fica finita e não produz nenhuma ocorrência válida, a remoção não pode depender de uma
-comparação de datas invertidas. A regra correta é verificar se sobrou alguma ocorrência real, e
-isso deve ser decidido por `checarCompromissoNaData` e pelos helpers de
-`backend/shared/recurrence-helpers.js`. A herança de término no split também cobre o caso em
-que a mãe fica vazia: a filha herda quando o fim original é posterior ou igual à data do corte.
-Na rodada de 2026-08-31, a herança de término passou a cobrir a mãe finita por contagem de
-ocorrências, calculando o fim efetivo a partir da data de início original e usando como saída
-canônica da filha `untilDate` + data.
-
-**Correção no frontend**: `assets/js/modal-acao-slot.js`, bloco de split `fromDate`, foi
-ajustado para: (a) capturar o fim original da mãe antes do aparo; (b) herdar `recorrenciaDataFim`
-para a série nova apenas quando a mãe era finita e a condição de término era `untilDate`; (c)
-remover a série original quando o corte não sobrou ocorrências válidas; e (d) preservar a série
-nova infinita quando a mãe era infinita.
+Um caminho de backend que gere o mesmo problema fora do fluxo do app exige investigação
+própria. O risco dessa via não é declarado encerrado nesta consolidação.
 
-**Cobertura de teste**: a Rodada H provou a correção com mutação no arquivo real de produção,
-executando o listener registrado pelo `vm`. `backend/test/gcal-duplicata-fix.test.js` cobre os
-cenários de split na primeira ocorrência, no meio da série, na segunda-feira sem ocorrência e no
-caso de herança de fim para série previamente aparada.
+### 9.16 Representação de dia da semana
 
-**Sub-item em aberto**: o diagnóstico original do backend continua como alerta de risco em outra
-via de implementação, mas a correção entregue e coberta hoje é a do fluxo do app. Se um
-caminho do backend for identificado gerando o mesmo payload fora do split, esse caso deve ser
-registrado como sub-item separado, sem reabrir a decisão de produto já tomada.
+A normalização aceita os formatos definidos pelo mapeamento existente, incluindo formas
+sem acento, abreviadas e numéricas; descartar valor inválido deve ser observável por log.
+Não mudar a expansão de recorrência para corrigir apenas representação textual.
 
-### 9.16 — Dia da semana sem acento derruba a recorrência em silêncio. — RESOLVIDO (Rodada E)
-
-`mapearDiaSemanaParaCodigoRFC` e `normalizarDiaSemanaParaComparacao` em
-`backend/src/services/gcalSyncService.js` agora normalizam com `normalize('NFD')` e aceitam
-abreviações de três letras, ramos numéricos e `console.warn` ao descartar valor inválido. O
-código foi protegido por teste comportamental em `backend/test/gcal-sync.test.js` (`montarRecurrence aceita diasSemana sem acento, abreviado, numérico e dispara warning para inválido`).
-
-### 9.17 — Excluir a série toda usa a mesma resolução da confirmação e preserva reposições. — FECHADO (2026-08-31)
-
-**Decisão de produto**: "excluir a série toda" passou a remover a cadeia completa subindo até a
-série raiz, mas preservando as reposições. A confirmação e a remoção usam o mesmo resolver de
-família, então o número anunciado e o número removido deixam de divergir.
-
-**Cálculo do período**: a confirmação passou a informar o período da cadeia por meio do mesmo
-conjunto de membros que define a remoção. `sem data de término` só aparece quando uma série
-recorrente que será removida de fato não tem fim; avulsa e reposição não contam no cálculo.
-
-**Semântica preservada**: `removerFamiliaSerie` continua com a regra de descendentes para o fluxo
-"continuar em outra série" e para a futura etapa 6b. O caso da remoção da série toda continua
-usando o resolver full-chain, sem misturar a semântica de continuação.
-
-**Cobertura**: a correção foi validada com mutação no arquivo real de produção e com a asserção
-adicional em `backend/test/gcal-duplicata-fix.test.js` para `resumo.ate === '13/09/2026'`.
-
-### 9.18 — Motor de aparo de cadeia "daqui pra frente" corta a série sem subir ao ancestral nem mexer no histórico. — FECHADO (2026-08-31)
-
-**Decisão de produto**: existe um motor testável em `assets/js/modal-acao-slot.js`,
-`aparaCadeiaSerieAPartirDe`, que corta a recorrência a partir de uma data sem mexer no histórico
-anterior. O escopo considerado é a família descendente da série selecionada mais as avulsas
-irmãs penduradas no mesmo `serieOrigemId`; o motor nunca sobe até o ancestral, e um descendente
-que terminou completamente antes do corte é ignorado porque já entrou no histórico e não deve ser
-tocado.
-
-**Resolver usado**: em vez de subir até a raiz, ele usa `resolverFamiliaDescendenteSerie` para
-restringir a ação aos descendentes em foco e complementa a varredura com o bloco `mesmoRamo`
-para capturar a avulsa irmã sem sugar o pai. Isso evita o defeito 5 reaparecer por outra porta,
-porque o algoritmo não toma o ancestral nem o ramo já concluído como alvo de aparo ou remoção.
-
-**Semântica do corte**: descendente que começa antes do corte é aparado em vez de removido,
-porque a pessoa pode ter aulas válidas antes da linha de corte, e a exclusão deve preservar esse
-histórico e só reduzir o fim da série para o dia anterior à data escolhida. Avulsa irmã a partir
-do corte é removida, exceto quando é reposição. Reposição continua sempre preservada, e o motor
-retorna `reposicoesPreservadas` para a UI avisar sem recalcular o escopo. A interface ainda não foi
-ligada; o motor existe e a 6b-ui decide o botão e o diálogo final.
-
-**Cobertura**: a lógica foi registrada em `backend/test/gcal-duplicata-fix.test.js` com
-`aparaCadeiaSerieAPartirDe apara a série selecionada e preserva o histórico`,
-`aparaCadeiaSerieAPartirDe apara o descendente que começa antes do corte`,
-`aparaCadeiaSerieAPartirDe remove a série quando o aparo não deixa ocorrência`,
-`aparaCadeiaSerieAPartirDe não toca em descendente que termina antes do corte`,
-`aparaCadeiaSerieAPartirDe não remove o ancestral avulso` e
-`aparaCadeiaSerieAPartirDe preserva reposição irmã e a contabiliza`.
-
-### 9.19 — Exclusão de aula/serie passou a usar lixeira única com modal de escolha e despacho por função nomeada. — FECHADO (2026-09-01)
-
-A exclusão passou a ter uma única lixeira, com modal de escolha em quatro opções de ação de exclusão e duas camadas de despacho: excluir esta aula, excluir daqui pra frente, excluir a série toda e a senteça de "daqui pra frente" extraída para `executarExclusaoSerieAPartirDe`. Esse desenho evita a ambiguidade do fluxo anterior, em que a aula deletada deixa de ser cobrada e a ação destrutiva competia com "enviar para reposição". Cada opção despacha por função nomeada em `window` (`executarExclusaoInstancia`, `executarExclusaoAulaAvulsa`, `executarExclusaoSerieAPartirDe`, `executarExclusaoSerie`) em vez de simular clique em botão do DOM removido.
-
-O modal também reusa o padrão `.modal-escolha-*` já existente no app, com ícones escalonados por alcance da exclusão (leve, média e total) e cabeçalho contextual com aluno, data e horário. A confirmação final continua sendo `window.confirm()` nativo, como débito conhecido e explicitado no fluxo. A validação visual do modal ficou manual, porque `index.html` e `assets/css/style.css` não têm suíte automatizada e a checagem do comportamento final no browser precisa ser feita pelo dono.
-
-**Correção de 2026-08-31 (rodada 6b-ui.3)**: a rodada anterior que entregou o despacho por função nomeada (commit `1cb0679`) apagou o corpo das três funções — 316 linhas removidas, 138 adicionadas no arquivo — e as substituiu por stubs que chamavam funções inexistentes (`removerInstanciaAula`, `removerCadeiaInstancia`) ou a função errada para o caso (`removerFamiliaSerie` em vez de `removerCadeiaCompletaSerie` na exclusão de série toda). O efeito prático: as três ações não excluíam, não persistiam e não fechavam o modal de ação do slot, e a guarda de aluno inativo desapareceu de `executarExclusaoSerie`. A rodada 6b-ui.3 restaurou os três corpos originais a partir do commit anterior à quebra, manteve a camada visual intacta, e acrescentou o fechamento de `window.fecharModalAcaoSlot()` no ramo "daqui pra frente" (que também não fechava o modal). A exclusão de série toda volta a remover a mesma cadeia que o resumo anuncia, coerente com a correção do item 9.17.
-
-**Ajuste de 2026-09-01 (rodada 6d)**: a etapa 6d renomeou o handler avulso de `executarExclusaoDefinitiva` para `executarExclusaoAulaAvulsa` e extraiu a ação "daqui pra frente" para `executarExclusaoSerieAPartirDe`, sem alterar a lógica de negócio nem o desenho visual. O mapeamento de leitura de relatórios antigos é `executarExclusaoDefinitiva` → `executarExclusaoAulaAvulsa`.
-
-### 9.20 — Envio para reposição em série usa despachante único com dois caminhos internos. — FECHADO (2026-09-01)
-
-A ação de "Enviar para reposição" passou a ter um despachante único em `window`,
-`window.executarEnvioParaReposicao`. Ele reutiliza a área de seleção/validação do modal
-existente e conecta os dois botões do DOM (`btnMandarParaReposicao` e o resquício
-`btnReagendarInstancia`) ao mesmo ponto de entrada, sem unificar o layout visual no mesmo
-round de correção.
-
-**Semântica preservada**:
-
-- `compromisso.frequencia === "uma_vez"` usa `splice` para remover a aula do array;
-- caso contrário, usa `excecoes.push(dataAlvo)` para marcar somente a data alvo como exceção e
-  preservar a série remanescente;
-- a guarda de aluno inativo continua obrigatória antes de qualquer mutação;
-- após persistência bem-sucedida, o fluxo fecha `window.fecharModalAcaoSlot()`.
+### 9.17 Exclusão da série toda
 
-**Débito conhecido**: o DOM ainda expõe dois ids equivalentes com rótulo idêntico
-(`btnMandarParaReposicao` e `btnReagendarInstancia`), e o id do recorrente não descreve a ação
-real. A limpeza do DOM e do nome do botão continuaram fora do escopo da etapa de correção.
+A ação considera a cadeia completa até a raiz e preserva reposições. Confirmação, período
+anunciado e remoção usam os mesmos membros. `sem data de término` só descreve uma série
+recorrente removível realmente sem fim; avulsa e reposição não definem esse limite.
 
-**Feita**: a etapa 6d corrigiu o cancelamento do modal de cobrança ao fazer `window.fecharModalEscolhaCobrancaReposicao()` resolver a Promise em escopo compartilhado, de forma idempotente, sem chamar o callback. O `await` em `window.executarEnvioParaReposicao()` volta ao fluxo normal quando o usuário cancelou, e `executarExclusaoDefinitiva` foi renomeado para `executarExclusaoAulaAvulsa` para manter o nome coerente com o escopo real da ação.
+O resolver de descendentes para continuar em outra série mantém seu escopo próprio;
+não confundir continuação com exclusão full-chain.
 
-**Ordem pessimista por decisão de produto**: o caminho de série em `window.executarEnvioParaReposicao` é deliberadamente pessimista. A ordem registrada é: criar a reposição no servidor, marcar a exceção local, fechar a UI, persistir e só então confirmar sucesso após o HTTP 200. Isso foi decidido porque a reposição carrega `cobravel` e o motor financeiro das aulas está no backend; confirmar na UI antes do 200 criaria estado financeiro que o servidor pode recusar. Essa ordem não deve ser "otimizada" sem decisão explícita do dono.
+### 9.18 Aparo daqui para frente
 
-**Correção de redação (2026-09-01, etapa 6i-b)**: a versão anterior deste item afirmava que "o rollback existe e reverte a criação remota e a marcação local em caso de falha". A parte de reversão remota estava **incorreta** para o ramo `ehSerie`: o `catch` desse ramo apenas restaura `compromisso.excecoes` a partir do snapshot em memória e exibe o toast de erro — não dispara nenhuma chamada de rede que desfaça a reposição criada. A reversão remota existe apenas no ramo `!ehSerie`, e passou a existir só na etapa 6i-b (ver item `9.27`). Corrigir o ramo `ehSerie` não foi pedido pelo dono e permanece fora de escopo.
+Considerar a família descendente da série selecionada e as avulsas do mesmo ramo; não
+subir ao ancestral nem tocar membro encerrado antes do corte. Série que atravessa o corte
+é aparada até o dia anterior; avulsa do ramo a partir do corte é removida, salvo reposição.
+Reposições e histórico anterior permanecem preservados.
 
-**Cobertura**: a regressão foi validada em `backend/test/gcal-duplicata-fix.test.js` com os
-quatro efeitos esperados: `envio para reposição em série preserva a série e marca exceção`,
-`envio para reposição em avulsa remove a aula`, `os dois botões despacham para a mesma função`
- e `envio para reposição bloqueado para aluno inativo`, além dos dois testes de 6d para `executarExclusaoSerieAPartirDe apara a série e preserva o histórico` e `cancelar a escolha de cobrança não deixa a operação pendurada`.
+### 9.19 Ações destrutivas e confirmação
 
-### 9.21 — Exclusão destrutiva aguarda confirmação de gravação e reverte em falha. — FECHADO (2026-09-01)
+As opções de exclusão têm despacho próprio por escopo, sem simular clique em botão
+removido. A confirmação final nativa permanece como limite de UX; substituir esse fluxo
+exige decisão específica, não é consequência da organização da documentação.
 
-**Sintoma antigo**: os fluxos de exclusão mutavam o array local, disparavam `salvarDados()` sem
-`await` e logo em seguida executavam `inicializarHome({ sincronizar: true })`. Isso gerava corrida
-entre o `PUT` do save e o `GET` de sincronização: se o GET chegasse antes do PUT, a aula reaparecia
-na tela ao trocar de semana, e só sumia depois de um novo `Sincronizar Dados` quando o servidor já
-estava correto. Esse interleaving é justamente o motivo do efeito "a aula reaparece e depois some"
-relatado pelo dono.
+### 9.20 Envio para reposição
 
-**Falha silenciosa**: a persistência devolve `{ ok, motivo }` e algumas falhas reais (`nao_autenticado`,
-`sessao_expirada`, `falha_remota`) eram ignoradas porque nenhum handler lia o retorno. Em vez de
-mostrar o erro, a UI aceitava o estado local como se a exclusão tivesse concluído, enquanto o
-servidor mantinha a aula viva. A correção 6e tratou isso explicitamente e agora a tela só confirma
-após a persistência real, com rollback do snapshot local em caso de falha.
+Há uma entrada de negócio para o envio. Aula avulsa sai do array; ocorrência de série
+ganha exceção apenas na data alvo. A guarda de aluno inativo precede mutação. No caminho
+de série, a reposição remota é criada antes da marcação/persistência da exceção; sucesso
+só é anunciado após confirmação, sem confundir criação da reposição com gravação da agenda.
 
-**Decisão de produto**: as quatro ações de exclusão passaram a seguir a mesma ordem já registrada
-para a reposição e para a determinação do efeito financeiro: snapshot do estado antes da mutação,
-mutação local, `await salvarDados()`, validação com `deveEnviarPatchReposicao(resultado)`, rollback
-com `aulas.splice(0, aulas.length, ..._snapshotAulas)` quando o save falha e sem recarregar a tela
-nessa condição. A ordem é deliberadamente pessimista: a professora vê o estado confirmado só depois
-que o servidor responde. Isso contraria o padrão optimistic-UI do contexto de novas conversas, mas
-é necessário porque a exclusão é destrutiva e irreversível pelo usuário; confirmar antes do servidor
-criar divergência que não há como perceber nem desfazer.
+O registro de exceção local não garante desfazer uma reposição remota criada. O limite de
+rollback desse caminho continua explícito e não foi corrigido por migração documental.
 
-**Erro do usuário**: em caso de falha, o array local volta ao estado anterior, `mostrarToast(...)` ou
-`alert(...)` informa a falha e não há recarga. Essa decisão preserva a honestidade do estado da
-interface, e evita o cenário de “a aula tinha sumido na tela e reviveu no servidor”.
+### 9.21 Confirmação de exclusão e falha parcial
 
-**Débito de UX**: a espera é perceptível e o comportamento é mais lento do que uma otimização
-optimistic-UI. Reduzir a recarga sem `sincronizar: true` depois da gravação confirmada permanece
-como débito de UX para uma rodada futura, com decisão do dono.
+Exclusão destrutiva exige aguardar e verificar o resultado da gravação; não anunciar
+sucesso local antes do servidor nem recarregar como se a operação tivesse confirmado.
+Falha parcial/desconhecida usa a política de recuperação de Finanças §6.1.3 e Reposições
+§11.2: conservar pendência e intenção, sem replay geral ou compensação remota cega.
 
-**Cobertura**: a correção foi validada em `backend/test/gcal-duplicata-fix.test.js` com os testes
-`exclusão de série só recarrega depois de a gravação confirmar`,
-`falha de gravação desfaz a exclusão local e não recarrega`,
-`excluir daqui pra frente aguarda a gravação` e `falha de gravação restaura a série aparada`.
+### 9.22 Evidência histórica não é contrato atual
 
-### 9.22 — Fechamento da etapa 6 — FECHADO (2026-09-01)
+Consultas de banco, resultados de suíte e sequência de rodadas anteriores não comprovam
+a ausência de dado legado ou a conclusão de cada risco na base atual. Esta spec não
+autoriza limpeza de banco nem registra uma nova operação de produção.
 
-A etapa 6 fechou em seis rodadas — 6a, 6b-core, 6b-ui, 6c, 6d e 6e — mais as rodadas de
-restauração `6a.2`, `6b-core.2`, `6b-ui.2` e `6b-ui.3`. As quatro ações de exclusão têm
-função nomeada e são as três opções do modal mais a avulsa.
+### 9.23 Limites que não foram encerrados
 
-A limpeza retroativa foi executada e não encontrou nada: as duas consultas do §5.1 do
-diagnóstico voltaram vazias na conta de teste e na de produção em 2026-09-01. Esse é um
-fato verificado e registrado com a data, para evitar reabrir a suspeita em rodadas futuras.
-O ambiente de teste do §7 do diagnóstico foi limpo pelo dono, que guardou as collections
-originais. A suíte ficou em 187 testes.
+Agrupamento de cadeia na interface, espera perceptível após exclusão e identificação
+redundante de ações no DOM são recortes de UX/implementação a reavaliar quando houver
+frente autorizada. Não duplicar uma fila de prioridades aqui nem deduzir seu estado apenas
+pelo relato de uma correção passada.
 
-### 9.23 — Débitos remanescentes da etapa 6 — REGISTRO
+### 9.25 Rótulo de exclusão da série toda
 
-1. **Agrupar a cadeia na interface** — direção registrada no §6.4 do diagnóstico, escopo grande, sem previsão.
-2. **Espera perceptível na exclusão** — consequência aceita da 6e; reduzir a recarga é decisão do dono.
-3. **Dois ids duplicados no DOM** para "Enviar para reposição", e o id `btnReagendarInstancia` que não descreve a ação.
-4. **Ramo Google Calendar nas exclusões** — confirmando a persistência: `salvarEventoComGCal` persiste via `salvarDados`. A corrida não existia, e a falha silenciosa era real e foi corrigida — ver item `9.26`.
-5. **Relatório da 6d sem as quatro mutações** — as mutações exigidas pelo prompt da 6d não foram executadas. O código foi verificado por auditoria externa e está correto; o registro é que ficou incompleto.
-6. **Seis pontos de chamada de `salvarEventoComGCal` fora do escopo da 6h** — FECHADO na etapa 6i, ver item `9.27`. Os seis eram: criação em `modal-agendamento.js` (handler de `formAgendamento`); e, em `modal-acao-slot.js`, o `novoCompromisso` do handler de `formReagendarAula`, o par `compromisso`/`_snapshotEdicao` do handler de `formEditarCompromisso`, as duas gravações de split desse mesmo handler (`_novaOcorrenciaSerie` e `_novaSerieSplit`) e a gravação de `compromisso` no ramo `!ehSerie` de `window.executarEnvioParaReposicao`. A redação original deste débito não citava `executarEnvioParaReposicao` explicitamente, embora ela estivesse dentro da contagem de seis; o diagnóstico da 6i-a apontou a imprecisão e ela está corrigida aqui.
+Descrever aulas passadas e futuras sem prometer número finito para futuro infinito:
+`As N aulas do passado mais todas as aulas futuras`, `Todas as aulas, a partir de hoje`,
+`As N aulas desta série, todas no passado` ou `Nenhuma aula restante nesta série`, conforme
+o caso. `total` continua contando registros removíveis e protegendo a condição de cadeia
+sem membro restante; não substituir esse valor pela redação exibida.
 
-### 9.27 — Persistência silenciosa em criação, edição, split e envio para reposição — FECHADO (2026-09-01)
+### 9.26 Propagação do resultado da ponte
 
-Os seis pontos de chamada de `salvarEventoComGCal` que a 6h deixou fora (criação e edição, não exclusão) passaram a checar o retorno da persistência antes de seguir. Decisões de UX do dono, implementadas ponto a ponto:
+A ponte propaga o resultado real de persistência; o chamador o verifica antes de avançar.
+A descrição de um save como sequencial não equivale a garantia de sucesso. Não reintroduzir
+diagnóstico de corrida já descartado sem evidência nova da base examinada.
 
-| Ponto | Onde | Reação a falha de gravação |
-| --- | --- | --- |
-| 1 | `modal-agendamento.js`, handler de `submit` de `formAgendamento` | Reverte (remove a aula criada), avisa por toast e reabre o formulário com os dados preenchidos. |
-| 2 | `modal-acao-slot.js`, handler de `submit` de `formEditarCompromisso`, escopos sem split | Reverte para o snapshot, avisa por toast e reabre o modal de edição com os dados submetidos. |
-| 3 | `modal-acao-slot.js`, handler de `submit` de `formReagendarAula` | Desfaz o `PATCH` que marcou a reposição como `agendada` (volta para `pendente` com `agendamentoReposicaoId: null`), remove o compromisso criado e avisa por toast. A tela de reagendamento nunca chega a fechar nesse caminho, então continua aberta com o dia/horário escolhidos. |
-| 4 | Mesmo handler do ponto 2, ramo `escopoRecorrencia === "occurrence"` | Reverte as duas gravações, avisa e reabre o modal no mesmo escopo. |
-| 5 | Mesmo handler do ponto 2, ramo `escopoRecorrencia === "fromDate"` | Idem ponto 4, no escopo `fromDate`. |
-| 6 | `modal-acao-slot.js`, `window.executarEnvioParaReposicao`, ramo `!ehSerie` | Devolve a aula avulsa à agenda e avisa por toast. Sem reabrir tela. |
+### 9.27 Operações compostas e recuperação explícita
 
-**Ordem de execução dos splits corrigida junto.** Nos pontos 4 e 5 as duas gravações rodavam em sequência sem `return` entre elas: se a primeira falhasse, a segunda disparava mesmo assim. Agora a segunda só roda se a primeira tiver sido confirmada.
+Etapas de criação, edição, split, reagendamento e envio conferem o resultado da persistência
+antes de seguir. No split, uma segunda gravação depende da confirmação da primeira.
+No reagendamento, a gravação inicial precede o PATCH; uma confirmação adicional pela ponte
+pode ocorrer depois dele. Falha posterior não implica que o PATCH nunca aconteceu.
 
-**Gravação de compensação.** Quando a segunda gravação do split falha, a primeira já persistiu no servidor e desfazê-la só na memória não basta. O estado local é restaurado a partir do snapshot do array `aulas` e uma terceira chamada a `salvarEventoComGCal(compromissoRestaurado, { operacao: "atualizar" })` empurra esse estado restaurado para o servidor. Esse mecanismo não existia antes desta etapa — a 6h só precisava de reversão local — e foi construído aqui.
+Resultado parcial/desconhecido conserva pendência para recuperação explícita; não fazer
+replay geral ou anunciar compensação remota automática como contrato vigente. Reações
+antigas de rollback por ponto não substituem essa política confirmada pelo dono.
 
-**Reposição órfã do ponto 6 — RESOLVIDO na etapa 6i-b (2026-09-01).** A versão original deste item registrava como limite conhecido o fato de que, em falha de gravação no ponto 6, a aula voltava para a agenda mas a reposição já criada permanecia pendente no servidor, apontando para uma aula que nunca saiu do lugar. Não havia como desfazê-la: a API de reposições não expunha `DELETE` e o `enum` de `status` não tinha estado de cancelamento.
-
-A etapa 6i-b fechou esse buraco. Por decisão do dono, a reposição órfã é **apagada**, não marcada como cancelada — assim o `enum` de `status` em `backend/src/models/Reposicao.js` continua intocado, e uma reposição que a Josy nunca chegou a ver (a falha acontece no mesmo fluxo, sem tela intermediária) não tem histórico a preservar. O que foi feito:
-
-- `DELETE /api/reposicoes/:id` novo, em `backend/src/routes/reposicaoRoutes.js`, atendido por `excluirReposicao` em `backend/src/controllers/reposicaoController.js`. Segue o mesmo contrato de `excluirAgendamento`: escopado por `ownerEmail` e **idempotente** — id inexistente responde `200` com `{ ok: true, deleted: false }`, não `404`;
-- no `catch` de `window.executarEnvioParaReposicao`, ramo `!ehSerie`, a restauração do array `aulas` passou a ser seguida de um `DELETE` para a reposição criada. A variável `reposicao` foi movida para fora do `try` para que o `catch` a alcance.
-
-**O `DELETE` é best-effort e pode falhar.** Ele fica dentro de um `try/catch` próprio que apenas registra log de erro, sem relançar. O motivo é deliberado: quando esse caminho roda, a Josy já teve a aula devolvida à tela, e travar essa recuperação por causa de uma segunda chamada de rede que pode falhar por conta própria seria pior. Consequência a assumir: **não há garantia de que a reposição órfã sempre será apagada** — se a rede cair entre as duas chamadas, ela sobrevive e precisa de tratamento manual. O toast de erro exibido não promete o contrário.
-
-### 9.26 — Falha silenciosa de persistência no caminho com Google Calendar conectado — FECHADO (2026-09-01)
-
-A falha silenciosa de persistência no caminho com Google Calendar conectado foi corrigida. `_persistirDadosComBackend` passou a propagar o retorno real de `salvarDados`, e os três handlers de exclusão passaram a checá-lo antes de seguir, revertendo a exclusão local em caso de falha.
-
-A suspeita de **corrida** entre salvar e recarregar nesse caminho foi descartada, não corrigida: `_persistirDadosComBackend` já era sequencial e a recarga interna não dispara busca no servidor.
-
-### 9.25 — Rótulo "Excluir a série toda" — FECHADO (2026-09-01)
-
-O rótulo foi ajustado para descrever o efeito real da exclusão na cadeia, sem dizer que a série tem menos aulas do que realmente apaga. A frase agora conta o passado, que é finito e numérico, e não promete um total para o futuro, que pode ser infinito e não precisa de número. Essa escolha evita a contradição que causou o defeito: o texto passou a dizer que o apaga a série toda é **"As N aulas do passado mais todas as aulas futuras"** quando há futuro, **"Todas as aulas, a partir de hoje"** quando o futuro continua e **"As N aulas desta série, todas no passado"** quando a série já encerrou; em caso de série sem aulas restantes, o texto diz **"Nenhuma aula restante nesta série."**.
-
-A regra de negócio do `total` continua intacta: ele continua contando registros removíveis da cadeia, porque esse valor é a guarda que impele o casco invisível que a etapa 5 corrigiu. Em outras palavras, o rótulo descreve o efeito em aulas, mas `total` continua sendo a contagem de registros que a remoção efetivamente afetará e, por isso, continua protegendo a condição de `if (_resumoExclusao.total === 0)`.
+O contrato existente de limpeza de reposição órfã criada em envio de aula avulsa que falhou,
+antes de apresentação como resultado concluído, usa `DELETE /api/reposicoes/:id`, filtrado
+por `ownerEmail`, idempotente: id ausente pode responder 200 com `{ ok: true, deleted: false }`.
+Quando usado no caminho previsto, o DELETE é best-effort e pode falhar; nunca prometer que
+a órfã foi apagada sem confirmação nem estender essa limpeza a qualquer falha composta.
+Registros de negócio/histórico não ganham exclusão geral; a fronteira da exceção está
+explicitada em Reposições 13.1 e não redefine a política de recuperação de 11.2 daquela spec.
 
 ## 10. Custo aceito da decisão
 
@@ -903,28 +680,16 @@ instância alvo e criar uma nova série. A referência é
 Hoje isso é aceitável porque o app tem o fluxo de "editar série a partir daqui" no escopo
 `fromDate` ("editar esta e as futuras"), além do cancelamento de ocorrência com `EXDATE`.
 O padrão recomendado pela Google continua sendo aparar a série original com `UNTIL` antes da
-instância alvo e criar uma nova série; o caso degenerado de split na primeira ocorrência foi
-tratado no item 9.15, e a decisão de produto está registrada lá. A chamada de reabertura da
-decisão foi atendida nas rodadas E, F e H.
+instância alvo e criar uma nova série; o caso degenerado de split na primeira ocorrência
+segue o contrato 9.15. O custo de lidar com instância concreta e aparo é aceito; não
+reintroduzir horizonte de publicação para evitá-lo.
 
 ---
 
-## 11. Ordem sugerida de correção
+## 11. Evolução e limites de validação
 
-Os itens da Rodada C já foram resolvidos e saem do backlog desta spec. O que permanece hoje
-é apenas o que ainda exige trabalho real ou observação de custos/escala:
-
-   1. **9.14** — gatilho triplo de sincronização no boot. É o único item funcional realmente
-      pendente, e corresponde ao item **2.2** do `docs/roadmap.md`.
-   2. **9.8** — cobertura parcial de I/O real. Continuamos com validação parcial e não com
-      garantia de regra de negócio, porque depende de ambiente/Google e da execução real do
-      fluxo externo.
-   3. **9.15, sub-item de backend** — só entra aqui se a rodada G deixar esse sub-item em aberto
-      após a verificação do frontend. A correção entregue hoje é a do caminho do app, com teste
-      de mutação e cobertura do split.
-   4. **9.13** — observação de payload/volume de leitura; fica como alerta de escala, não como
-      pendência funcional.
-
-   Os itens **9.1–9.7, 9.9–9.12 e 9.16** saíram do backlog porque a §9 já os marcou como
-   resolvidos (ou, no caso do 9.8, como parcialmente resolvido) e a tabela 9.17 registra o
-   histórico correspondente. A ordem de correção não reabre itens que já encerraram na §9.
+Prioridade e frente de execução pertencem ao roadmap oficial, especialmente o item 2.2.
+Cobertura de I/O (9.8), investigação eventual de outra via de split (9.15) e observação de
+payload (9.13) conservam seus limites; não são declarações de correção ou autorização para
+mudar produto. Validação remota, decisão de intervenção e execução devem ser registradas
+na frente correspondente, sem reintroduzir aqui uma saga ou contador de testes.

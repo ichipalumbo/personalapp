@@ -282,7 +282,7 @@ test('T01 — sem clique na Semana, contexto usa o dia selecionado (modo Dia)', 
     assert.equal(exibicao.dataHora, 'sáb., 17/10 · 18:00');
 });
 
-test('T01 — modal de cobrança exibe nome e data da ocorrência passados pelo chamador', async (t) => {
+test('T01 — modal de cobrança exibe ocorrência e regra de edição antes do pagamento', async (t) => {
     const { window } = await criarAmbiente(t, { alunos: [ALUNO_MARIA], aulas: [serieSabado()] });
     window.dataAlvoAcaoStr = '17/10/2026';
     const aula = window.aulas[0];
@@ -293,6 +293,10 @@ test('T01 — modal de cobrança exibe nome e data da ocorrência passados pelo 
 
     assert.equal(window.document.getElementById('reposicaoEscolhaAluno').textContent, 'Maria Silva');
     assert.equal(window.document.getElementById('reposicaoEscolhaDataHorario').textContent, 'sáb., 17/10 · 18:00');
+    assert.equal(
+        window.document.getElementById('reposicaoEscolhaPrazo').previousElementSibling.textContent.trim(),
+        'Pode alterar antes do pagamento do ciclo.',
+    );
 
     window.fecharModalEscolhaCobrancaReposicao();
     await promessa;

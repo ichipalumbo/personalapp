@@ -91,4 +91,4 @@ O `animationend` com `{ once: true }` remove a classe automaticamente ao fim da 
 - **`halterBounce`, `pulseAgora`, `homeShimmer`, `girar-sinc`** — animações existentes sem cobertura de `prefers-reduced-motion`. Identificadas conforme esperado; fora do escopo desta rodada.
 - **`scrollIntoView` em `renderizarHomeSemana`** — intacto. A sobreposição temporal com a animação de 180ms (ver item 6) precisa de validação manual; qualquer ajuste exigiria mexer no render, que está fora do escopo.
 - **`animationend` com `animation: none`** — quando o usuário tem `prefers-reduced-motion: reduce`, o browser pode ou não disparar `animationend` dependendo da implementação. O pior caso é a classe ficar presa (sem a limpeza do `animationend`). Risco baixo na prática: a remoção de ambas as classes acontece antes de cada nova chamada via `classList.remove`, então em qualquer troca subsequente o estado é limpo de qualquer forma.
-- **`docs/roadmap.md`** — não alterado conforme instrução.
+- **`docs/archive/roadmaps/roadmap-v1.md`** — não alterado conforme instrução.

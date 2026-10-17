@@ -1,6 +1,6 @@
 # Especificação Técnica — Feature "Finanças" (Ciclo de Cobrança por Aluno)
 
-> **Status**: Em produção · **Versão**: 17 · **Atualizado**: 2026-10-13
+> **Status**: Em produção · **Versão**: 18 · **Atualizado**: 2026-10-14
 > **Evolução de cache**: isolamento, leitura segura, recuperação explícita e revalidação no boot implementados;
 > publicados na main, com uso normal aprovado pelo dono após publicação. Recuperação nativa não exercitada; TalkBack não testado e não bloqueante por decisão do dono. Teclado no uso normal aprovado; cobertura integral não declarada.
 > **Apresentação inicial**: aviso imediato com/sem conteúdo publicado; abertura no app instalado aprovada pelo relato do dono.
@@ -10,7 +10,7 @@
 > Projeto: Agenda Personal Trainer (Prô Josy) — frontend JS vanilla + backend Node/Express/MongoDB.
 > Este documento é a **fonte de verdade** das decisões de produto desta feature. Não infira regras de negócio além do que está descrito aqui — onde houver dúvida, ela está explicitamente resolvida na seção 7 ("Decisões e Casos de Borda"). Qualquer regra não coberta aqui deve ser tratada como "Fora de Escopo" (seção 8) e não implementada sem confirmação humana.
 >
-> Backlog e débitos técnicos relacionados: [`../roadmap.md`](../roadmap.md).
+> Backlog e débitos técnicos relacionados: [roadmap oficial](../roadmap-v3.md).
 
 ---
 
@@ -678,23 +678,31 @@ Nenhuma dessas mudanças altera o que o usuário vê.
 
 ---
 
-## 12. Defeitos Conhecidos e Dívidas Técnicas Aceitas
+## 12. Fronteiras e limites aceitos
 
-Itens identificados, avaliados e **deliberadamente adiados**. Não implementar sem decisão explícita. Espelhados no [`../roadmap.md`](../roadmap.md) (Grupo 0) para entrarem junto com uma próxima feature.
+Esta seção conserva requisitos e cautelas, não uma cronologia de correções ou fila de
+prioridades. Intervenções adicionais exigem decisão e frente próprias.
 
-### 12.1 Localização do módulo isomórfico de recorrência — RESOLVIDO (item 0.2 do roadmap)
+### 12.1 Localização do módulo compartilhado
 
-A dívida original: o módulo vivia em `assets/js/shared/recurrence-helpers.js` e o backend o alcançava por `require` relativo que atravessava para fora de `backend/`, dependendo de configuração de projeto não versionada.
-
-O módulo foi movido para `backend/shared/recurrence-helpers.js`: o backend o importa dentro do próprio `backend/` (`require('../../shared/recurrence-helpers')` a partir de `src/services`) e o frontend o consome por tag `<script src="backend/shared/recurrence-helpers.js">` no `index.html`. O ponto que dependia de configuração não versionada deixou de existir.
+O módulo de recorrência reside em `backend/shared/recurrence-helpers.js`. O backend o
+importa dentro do próprio diretório, e o frontend o carrega antes dos consumidores por
+tag de script. Não recriar a dependência de caminho externo ao root do backend.
 
 ### 12.2 CSS órfão da visão mensal
 
-Regras da visão mensal removida (`.calendario-mensal`, `.calendario-grid`, `.dia-cell`, `.kpi-dashboard`, `#tela-calendario`) permanecem em `assets/css/style.css`. Não removidas para evitar risco de afetar seletores compartilhados com as visões de dia/semana. Requer verificação cuidadosa antes de limpar.
+A limpeza da visão mensal e do KPI removidos foi entregue no item 0.3 do roadmap. Isso
+não significa que todo seletor antigo foi eliminado: `#tela-calendario` e
+`#containerCalendarioDia` foram preservados por falta de evidência suficiente de que
+estivessem mortos sem validar Dia/Semana. Não tratar esses candidatos como remoção
+aprovada nem reabrir a limpeza já entregue. Uma intervenção adicional exige escopo e
+validação próprios.
 
-### 12.3 Defeito corrigido — o bloco "Ver ciclos anteriores" persiste aberto em re-render
+### 12.3 Persistência da expansão em re-render
 
-**Estado atual**: o bug foi corrigido em `view-financas.js` persistindo o estado de expansão em `STATE` em vez de depender apenas do DOM. O comportamento atual é o seguinte:
+Histórico e extrato conservam a escolha de abertura/fechamento no estado da tela, não
+apenas no DOM. Re-render por pagamento, ajuste ou atualização não fecha um bloco que
+o usuário abriu. A implementação mantém os seguintes requisitos:
 
 1. o histórico mantém o estado em `STATE.historicoAberto`;
 2. o listener de `toggle` continua em fase de captura e grava **abertura e fechamento** da chave;
@@ -703,12 +711,15 @@ Regras da visão mensal removida (`.calendario-mensal`, `.calendario-grid`, `.di
 
 Esse mesmo padrão foi estendido ao extrato do ciclo: `STATE.extratoAberto` guarda a chave por identificador do ciclo (`extrato-atual-...`, `extrato-historico-...`), e a renderização reabre quando a opção estiver marcada. O guard do listener continua isolado por `data-financas-historico-details` versus `data-financas-extrato-details`, evitando que um bloco altere o outro.
 
-**Impacto**: apenas visual/estado. Não há perda de dados nem chamada de rede duplicada, e o conteúdo carregado sobrevive ao re-render do card. O bloco permanece expandido quando o usuário o abriu, mesmo depois de filtro, pagamento, ajuste ou refresh.
+Esse estado de apresentação não altera valor, confirmação de escrita ou contrato de
+cache. Não introduzir chamada de rede redundante apenas para reaplicar a expansão.
 
-**Correção documentada**: persistência do estado em `STATE`, com `open` condicionando o `<details>` e o `toggle` do histórico/extrato gravando e apagando a chave correspondente. Não requer mudança de backend.
+### 12.4 Referências e artefatos de apoio
 
-### 12.4 Documentação de apoio desatualizada
+O mapa do README não substitui inspeção do código nem certifica a presença de cada
+serviço na árvore resumida.
 
-- `README.md` da raiz: a árvore de arquivos ainda lista `backend/src/services/kpiService.js` (removido) e não menciona `agendaConsistencyService.js` nem `CicloFinanceiro.js`.
-- Os artefatos em `graphify-out/` refletem o estado anterior do código (referenciam `kpiService.js`, `exportarDados()`, `assets/js/recurrence-helpers.js`). Presumidamente gerados automaticamente — devem ser regenerados, não editados à mão. Quando desatualizados, poluem buscas por código com referências a arquivos inexistentes.
-- O roadmap foi atualizado junto com esta versão da spec e **não** faz parte desta dívida.
+Artefatos de ferramenta, como `graphify-out/`, não são fonte de verdade: quando necessários,
+devem ser regenerados, nunca corrigidos à mão. Não supor que uma saída histórica ainda
+corresponda ao estado atual. Backlog e priorização pertencem ao roadmap oficial, não a
+esta nota de manutenção documental.

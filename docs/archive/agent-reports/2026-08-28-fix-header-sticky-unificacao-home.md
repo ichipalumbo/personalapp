@@ -159,4 +159,4 @@ Ambas as classes foram removidas do CSS e do template. A classe `.btn-hoje-agend
 | **Fallbacks divergentes de `--header-height`**: `135px` (~L2590, ~L3240) vs `78px` (~L3291) | Os fallbacks só ativam se `--header-height` não for definido (o que não ocorre após o boot). Não causa bug visível em produção. | Não alterado. |
 | **`atualizarAlturaTopbarHome()` chamada antes de o DOM da topbar existir** | A topbar (`.home-weekly-topbar`) é renderizada no HTML estático e existe desde o carregamento. `offsetHeight` será zero somente se `display: none` — o que não acontece com a topbar. Risco baixo. | Aceito. |
 | **`.agenda-header-wrapper` e `.agenda-header-info`** em CSS | As declarações CSS ainda existem (`display: flex; justify-content: space-between; ...`). Não causam problemas pois as classes foram removidas do template. Podem ser limpas em rodada de CSS órfão. | Não alterado. |
-| **`docs/roadmap.md`** | Não alterado conforme instrução. | — |
+| **`docs/archive/roadmaps/roadmap-v1.md`** | Não alterado conforme instrução. | — |

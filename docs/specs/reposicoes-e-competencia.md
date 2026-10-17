@@ -1,6 +1,7 @@
 # Spec — Reposições e Competência de Cobrança
 
-> **Status**: Em produção · **Versão**: 15 · **Atualizado**: 2026-10-13
+> **Status**: Em produção · **Versão**: 17 · **Atualizado**: 2026-10-14
+> **Apresentação**: rodapé alinhado ao contrato na branch de trabalho, com testes e mock; publicação e aceite no app real continuam com o dono.
 > **Situação**: histórico contextual e edição protegida da cobrança implementados; correção de
 > dados duplicados em produção concluída pelo dono em 2026-09-23.
 >
@@ -517,16 +518,17 @@ Os rótulos descrevem _quando_ se cobra; os disclaimers existem para carregar o 
 
 **Rodapé**
 
-- Texto fixo: `Não pode ser alterado depois.`
+- Texto fixo: `Pode alterar antes do pagamento do ciclo.`
+- A escolha pode ser alterada enquanto o ciclo responsável não estiver pago; depois do pagamento, a cobrança fica bloqueada. O rodapé não deve apresentar a escolha como irreversível desde o envio.
 - Quando houver prazo (6.2), acrescentar: `Prazo para reposição: até dd/mm.`
 
-### 9.4 Histórico de reposições no card do aluno — PENDENTE
+### 9.4 Histórico de reposições no card do aluno
 
 O painel de pendências da Home foi removido em 2026-09-18. A frase histórica de que a gestão
 ocorria em uma aba específica de Reposições está incorreta: essa aba não existe e **não será
 criada nesta V1**. A gestão passa a acontecer no contexto do aluno, na tela `Alunos`.
 
-Cada card terá um bloco permanente e acionável de Reposições. Ele abre um modal com o
+Cada card tem um bloco permanente e acionável de Reposições. Ele abre um modal com o
 histórico daquele aluno e permite reagendar uma pendência. Não existe uma visão global de
 todos os alunos nesta V1; se ela for necessária no futuro, será um relatório/filtro separado,
 sem substituir este acesso contextual.
@@ -708,7 +710,7 @@ no reagendamento via modal, mas não no envio para reposição de instância rec
 | 12  | Não cobrável cai em ciclo pago? | Vai para o primeiro ciclo seguinte não pago                  |
 | 13  | Aluno `valor_fixo`?             | Escolha registrada, **não afeta valor**. Extrato informativo |
 | 14  | Aluno sem ciclo configurado?    | `validoAte` nulo, não expira                                 |
-| 15  | Registro é deletado?            | **Nunca.** `realizada` / `expirada` são estados finais       |
+| 15  | Registro é deletado?            | Registros de negócio são preservados; `realizada` / `expirada` são estados finais. Limpeza excepcional de órfã segue 13.1, sem ação geral de excluir |
 | 16  | Migração de dados?              | **Não há.** Base de produção zerada, app não lançado         |
 | 17  | Salvar antes do PATCH?          | **Sim.** PATCH só segue com confirmação de persistência (`{ ok: true }`) |
 | 18  | Contrato de `salvarDados`       | `{ ok, motivo }`, com quatro motivos estáveis (`sucesso`, `falha_remota`, `nao_autenticado`, `sessao_expirada`) |
@@ -732,44 +734,35 @@ Nos dois caminhos de reposição que fazem PATCH (`formReagendarAula` e
 `reposicao-flow-helpers.deveEnviarPatch(resultadoPersistencia)`. Sem `ok: true`, o PATCH
 não é enviado.
 
-### 11.2 Cobertura de teste atual: parcial
+### 11.2 Falha parcial, confirmação e recuperação
 
-O teste `se a persistencia do agendamento falhar, o patch nao e enviado`
-(`backend/test/reposicao-c4-regressao.test.js`) importa o helper real
-`reposicao-flow-helpers` e valida os dois ramos:
+O PATCH de reagendamento exige confirmação da persistência anterior, conforme 11.1.
+Uma falha antes dessa confirmação não autoriza enviar o PATCH. Falha em etapa posterior
+não implica que etapas já confirmadas foram desfeitas nem autoriza replay geral.
 
-- falha de persistência (`ok: false`) → PATCH não enviado;
-- sucesso (`ok: true`) → PATCH enviado.
+Falha parcial ou de resultado desconhecido conserva a pendência e a intenção para a
+recuperação explícita definida em `financas-ciclo-cobranca.md` §6.1.3: verificar no servidor
+ou usar dados do servidor com confirmação e leitura nova válida. Não executar compensação
+remota cega nem anunciar rollback completo. Medições de teste e provas de execução não
+fazem parte deste contrato.
 
-A cobertura é **parcial**: o teste valida a decisão encapsulada no helper, mas
-reimplementa localmente o fluxo chamador e não prova, sozinho, que
-`modal-acao-slot.js` está sempre usando essa decisão em runtime.
+### 11.3 Limite de restauração no envio de série
 
-### 11.3 Caso conhecido e aceito — mutação sem rollback no caminho da série — RESOLVIDO (B2-Fix)
+Restaurar uma exceção ou estado local não comprova reversão da reposição já criada no
+servidor. Pode haver uma aula presente na agenda local e uma reposição remota órfã após
+falha parcial; não anunciar restauração completa nem supor que a ausência local apagou
+o documento remoto.
 
-No envio para reposição de instância recorrente (`btnReagendarInstancia`), o fluxo passou
-a capturar snapshot de `compromisso.excecoes` antes do `push` e a marcar com a flag
-`_mutouExcecoes` quando a mutação realmente ocorreu. Em `catch`, o array é restaurado por
-cópia do snapshot anterior, seguindo o mesmo padrão já existente em `btnDeletarInstancia`
-no mesmo arquivo `assets/js/modal-acao-slot.js`.
-
-Impacto atual:
-
-- a aula volta na agenda local quando `salvarDados(true)` falha;
-- a reposição remota **permanece** criada no servidor;
-- o resultado é "aula de volta na agenda + reposição órfã no servidor": melhor que
-  antes, mas **não é restauração completa**.
-
-Essa limitação foi registrada de forma explícita. Limpar a reposição remota exigiria
-rota de `delete` e tratamento de falha em cascata; isso fica como trabalho futuro, e não
-como pendência de fechamento da spec.
+A política de 11.2 conserva a pendência e exige recuperação explícita. A existência de
+um DELETE no contrato de limpeza de outro caminho não autoriza estendê-lo automaticamente
+a qualquer envio ou falha de série.
 
 ---
 
 ## 12. Fora de escopo
 
 - **Notificação push / WhatsApp** ("sua reposição vence em 3 dias"). Exige disparo sem
-  ninguém abrir o app — Web Push com VAPID ou WhatsApp API, mais scheduler. É o item 2.2
+  ninguém abrir o app — Web Push com VAPID ou WhatsApp API, mais scheduler. É o item 4.2
   do roadmap. Esta spec entrega apenas **aviso in-app**.
 - **Visão global de reposições**, com busca e filtros por período/status/a vencer. A gestão
   contextual no card do aluno é entregue pela seção 9.4; uma visão global, se necessária,
@@ -782,29 +775,24 @@ como pendência de fechamento da spec.
 
 ---
 
-## 13. Débitos técnicos criados por esta spec
+## 13. Fronteiras técnicas e limites conhecidos
 
-- **Divergência de implementação em `calcularPrazoReposicao` — RESOLVIDO (`e4bab3f`, 2026-08-25; `57381e0`, 2026-09-18).**
-  O serviço declarava a função duas vezes no mesmo escopo de módulo: a segunda (`Math.round`) sobrescrevia
-  a primeira (morta, com `Math.floor` e guard extra por `aluno.objetivo`). A declaração redundante foi
-  removida em `e4bab3f`; o cálculo restante foi extraído em `57381e0` para `backend/shared/calculo-ciclo.js`
-  como fonte única, com o comportamento efetivo preservado (`Math.round`). Hoje `financasService` apenas
-  importa e reexporta, sem declarações duplicadas.
-- **Duas fontes no cálculo financeiro.** `financasService` passa a depender de
-  `Agendamento` **e** `Reposicao` para fechar um ciclo. É o preço da collection separada.
-  Mitigado pela regra 5.3, que torna as parcelas mutuamente exclusivas por construção.
-- **Consulta extra por leitura de ciclo.** Custo fixo, filtrada por `ownerEmail` e janela
-  de datas — mesmo padrão de `agendaConsistencyService`. Não escala por aluno.
-- **`validoAte` e `status: 'expirada'` nascem no schema com regra parcialmente ativa.**
-  Proposital, para evitar migração depois.
-- **Testes.** Esta spec mexe em código que calcula dinheiro e introduz casos de borda de
-  data. O item 3.1 do roadmap (testes das funções puras) deveria vir **antes** ou junto.
-  A janela é boa: base de produção zerada e app não lançado.
-- **Ramo morto no `POST` de reposição.** No `reposicaoController`, o POST rejeita qualquer corpo que traga
-  `cicloCobrancaResolvido`, mas mais abaixo existe um bloco que ainda lê `payload.cicloCobrancaResolvido`
-  para montar o documento; esse bloco é inalcançável. É observação de limpeza futura, sem correção nesta rodada.
-- A nota da linha `reposicao_ja_cobrada` indica o ciclo de origem, recalculado a partir de
-  `dataOriginal` com a configuração de ciclo atual do aluno. Não há campo persistido com o
-  ciclo de origem. Se o aluno mudar `diaVencimento` ou `fechamentoMesCheio` entre o ciclo de
-  origem e a leitura, o período exibido na nota pode divergir do ciclo real. A linha vale
-  R$ 0,00, então o valor cobrado não é afetado — apenas o rótulo.
+- **Fonte única do prazo**: `backend/shared/calculo-ciclo.js` concentra o cálculo; `financasService` importa/reexporta, sem manter outra declaração. A consolidação não troca `Math.round` por outra forma de cálculo.
+- **Composição do ciclo**: a leitura usa `Agendamento` e `Reposicao`; a regra anti-contagem-dupla de 5.3 mantém as parcelas mutuamente exclusivas.
+- **Custo de leitura**: consulta adicional por ciclo, filtrada por `ownerEmail` e janela de datas; não interpretar como consulta por aluno nem otimizar preventivamente por esta nota.
+- **Responsabilidade do servidor**: prazo e expiração seguem 6–7; não tratar o status como promessa de futura ativação nem introduzir migração de dados por inferência.
+- **Candidato de limpeza no POST**: o corpo não pode definir `cicloCobrancaResolvido`; uma leitura posterior desse campo foi registrada como ramo inalcançável. Revalidar antes de intervir; esta observação não é uma correção executada.
+- **Rótulo do extrato**: `reposicao_ja_cobrada` pode mostrar período derivado de `dataOriginal` com a configuração atual do aluno. Mudança de vencimento pode fazer a nota divergir do período histórico real; a linha vale R$ 0,00 e esse limite é de apresentação, não de valor cobrado.
+
+### 13.1 Exceção restrita de limpeza de órfã
+
+Registros de reposição que representam negócio/histórico permanecem preservados. A exceção
+é a órfã criada no fluxo de envio de **aula avulsa** que falhou, antes de a reposição ser
+apresentada como resultado concluído ao usuário. A limpeza desse caso usa o contrato de
+`DELETE /api/reposicoes/:id`, escopado por `ownerEmail` e idempotente, descrito em GCal 9.27.
+
+O DELETE é best-effort e pode falhar: não prometer que o documento foi apagado sem
+confirmação. Isso não cria botão de exclusão no histórico, não permite apagar registro
+realizado/expirado e não estende a limpeza automaticamente a envio de série, reagendamento
+ou qualquer operação composta. A política de pendência/recuperação explícita de 11.2
+continua aplicável; a exceção não autoriza replay geral ou compensação remota cega.

@@ -1,10 +1,11 @@
 # Setup de ambiente local
 
+> **Finalidade**: configuração e operação local · **Atualizado**: 2026-10-14
 > Passo a passo para deixar uma máquina nova rodando o app inteiro localmente:
 > frontend em `localhost:5500`, backend em `localhost:5000`, banco `personalapp_dev`.
 >
-> Reconstruído a partir das rodadas 3.2, 3.3, 3.4 e 3.5 do `roadmap.md`. Se algum passo aqui
-> divergir do código, o código é a referência — reporte a divergência.
+> Reconstruído a partir das rodadas 3.2–3.5 do [roadmap anterior](archive/roadmaps/roadmap-v1.md), com os recortes de cobertura entregues no item 0.12 incorporados. Contagens e resultados datados permanecem nos planos.
+> Se um procedimento divergir do código, confira a execução real e reporte a divergência; isso não autoriza mudar regra de produto.
 
 ---
 
@@ -20,10 +21,15 @@ Produção continua intocada: o banco de produção é `test`, e a `MONGODB_URI`
 é alterada por este setup. O nome do banco vive **só** na `MONGODB_URI` do `.env` local,
 que não é versionado.
 
-**Sem este setup**, o frontend rodando localmente detecta o hostname como não-local e aponta
-para a API de produção — ou seja, **escreve no banco de produção**. A detecção está em
-[assets/js/config/api-config.js](assets/js/config/api-config.js) e é baseada apenas no
-`hostname`.
+**A API do frontend é selecionada pelo hostname, não pela presença do `.env` do backend.**
+Em [api-config.js](../assets/js/config/api-config.js), `localhost`, `127.0.0.1`, `127.0.0.2`
+e `::1` selecionam `http://localhost:5000/api`; outros hosts selecionam a API de produção.
+Não configurar o backend não transforma automaticamente um desses hosts locais em produção.
+
+O isolamento exige conferir **dois destinos distintos**: URL da API no frontend e banco
+na `MONGODB_URI` do backend. Uma API local com URI errada ainda pode atingir o banco errado.
+Para validação de UI, use o mock da seção 4.1, sem backend, Mongo ou calendário real;
+conectar o Google Calendar localmente exige decisão separada, não faz parte deste setup.
 
 ---
 
@@ -245,6 +251,10 @@ Ambas usam `node --test`, o runner nativo do Node. Não há Jest, Vitest nem wat
 
 ### O que a suíte de frontend cobre
 
+A tabela mostra recortes úteis para localizar testes, não um inventário completo nem
+garantia de que todo fluxo de cada arquivo foi exercitado. Conferir o teste atual e a
+lacuna relevante antes de decidir a validação de uma mudança.
+
 | Arquivo | Cobre |
 |---|---|
 | `recurrence-helpers.test.js` | `backend/shared/recurrence-helpers.js` — o módulo isomórfico consumido pela agenda e pelo financeiro (recorrência, exceções, limites, `parseDataFlex`) |
@@ -256,22 +266,31 @@ Ambas usam `node --test`, o runner nativo do Node. Não há Jest, Vitest nem wat
 | `router-fab-tela.test.js` | `assets/js/app-shell/router.js` — ordem de remoção do FAB da Home na troca de tela (o FAB não pode esperar o carregamento do destino) |
 | `router-historico.test.js` | `assets/js/app-shell/router.js` — tela inicial vinda da URL, `replaceState` no boot, `pushState` na navegação e ausência de escrita quando a URL muda por fora |
 | `view-alunos-observacoes.test.js` | `assets/js/view-alunos.js` — observação escapada no card, edição e a pilha de diálogos do aluno |
-| `view-financas-carregamento-toast.test.js` | `assets/js/view-financas.js` — toast unificado no carregamento lento, silêncio abaixo do limiar e refresh em background |
+| `view-financas-carregamento-toast.test.js` | `assets/js/view-financas.js` — carga inicial sem toast/progresso redundante, refresh silencioso e tratamento local da falha |
 | `view-financas-historico.test.js` | `assets/js/view-financas.js` — ciclos anteriores: ações só no não pago, pagamento no `DialogController` e falha HTTP mantendo o modal |
-| `header-cache-state.test.js` | O rótulo de cache do header (5.8, caminho B1) — acende só em sync remoto **sobre** cache local |
+| `header-cache-state.test.js` | Contratos dos indicadores de carga/cache, sem comprovar apresentação visual completa |
+| `render-dia.test.js` | `assets/js/view-home.js` e o template real — grade do Dia, bandas em colunas/linhas, dia vazio, muitas sobreposições e tipos de evento; asserts de DOM/estilo inline |
+| `agenda-conflitos.test.js` | `assets/js/agenda-conflitos.js` — colisão versus adjacência, IDs ignorados, labels, resumos/deduplicação e recorte de recorrência coberto |
+| `modal-agendamento.test.js` | Criação avulsa com formulário real, payload, fechamento e validação sem aluno |
+| `modal-acao-slot.test.js` | Edição avulsa, conflito sem escrita, fechamento e recortes de contexto/data/prazo dos modais de escolha |
 
-**Cobre tela? Só pontualmente.** O `jsdom` é `devDependency` e **8 dos 12 arquivos** o usam para
-executar views e modais de verdade — mas sempre em recortes específicos (uma função de render,
-um diálogo, um estado de carregamento). **Tela** no sentido de comportamento visual completo
-(layout, densidade, contraste, área de toque, fluxo de ponta a ponta) **continua sem cobertura**:
-a validação de UI segue manual, nos viewports da seção 9. `agenda-conflitos.js` segue sem
-cobertura automatizada.
+**Cobre tela? Lógica/DOM, em recortes.** `jsdom` é utilizado para executar views e modais
+reais em cenários controlados; testes puros também exercitam conflitos e módulos compartilhados.
+Isso não mede pixels nem garante layout, densidade, contraste, área de toque, gestos físicos
+ou integração real. A validação visual continua no mock e nos viewports da seção 9.
+
+**Limites do recorte do item 0.12**: a proteção do render é sobre o modo Dia; o trabalho
+original não cobriu integralmente Semana, animações, escolha inicial de tipo/FAB, criação
+recorrente ou split/reposição dos modais. Recortes acrescentados depois podem exercitar
+alguns desses caminhos; sua existência não prova o fluxo inteiro. Nas bandas densas, por
+exemplo, contar linhas no DOM não demonstra ausência de clipping visual. As provas e os
+limites daquela entrega permanecem no [plano de cobertura](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md).
 
 ### Por que a pasta é separada da raiz
 
 O projeto Vercel do frontend tem _Root Directory_ na raiz do repositório. Um `package.json` na
 raiz mudaria o que a Vercel detecta no build. Por isso a suíte mora em `tests-frontend/`, e o
-[.vercelignore](.vercelignore) da raiz exclui a pasta do deploy.
+[.vercelignore](../.vercelignore) da raiz exclui a pasta do deploy.
 
 ### Como os scripts do frontend rodam fora do browser
 
@@ -302,7 +321,10 @@ no disco, que nenhum é declarado duas vezes, que as dependências de tempo de c
 dos dependentes, e que carregar o par na ordem inversa realmente lança.
 
 Só entram no guard as dependências lidas **durante a avaliação do script**, não em runtime.
-Hoje são duas, ambas protegidas por `throw` explícito no próprio código:
+A lista mantida é `DEPENDENCIAS_DE_CARGA` em
+[index-html-ordem.test.js](../tests-frontend/index-html-ordem.test.js): ela já inclui pares de
+sandbox, contexto de dados, storage, coordenador e módulos compartilhados. Não manter aqui
+uma segunda lista completa que possa divergir do teste. Exemplos de pares protegidos:
 
 | Precisa carregar antes | Dependente | Global lido |
 |---|---|---|

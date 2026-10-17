@@ -2,7 +2,7 @@
 
 **Data**: 2026-08-28
 **Branch**: `feat/login-sessao-persistente`
-**Arquivos alterados**: `assets/js/auth/google-identity.js`, `docs/roadmap.md`
+**Arquivos alterados**: `assets/js/auth/google-identity.js`, `docs/archive/roadmaps/roadmap-v1.md`
 
 ---
 
@@ -114,7 +114,7 @@ getIdToken: function () {
 
 ## Registro no roadmap
 
-Item **4.9** adicionado ao Grupo 4 de `docs/roadmap.md` como **Opção 1 — caminho recomendado** para persistência de login. A saída A (esta rodada) é explicitamente descrita como mitigação parcial.
+Item **4.9** adicionado ao Grupo 4 de `docs/archive/roadmaps/roadmap-v1.md` como **Opção 1 — caminho recomendado** para persistência de login. A saída A (esta rodada) é explicitamente descrita como mitigação parcial.
 
 ---
 

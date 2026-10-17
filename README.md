@@ -185,9 +185,10 @@ personalapp/
 |  |- servir-local.js              <- servidor estatico local do frontend
 |  |- auditar-css-morto.js
 |- docs/                           <- indice completo em docs/README.md
-|  |- roadmap.md
+|  |- roadmap-v3.md                 <- roadmap oficial
 |  |- setup-ambiente-local.md
-|  |- specs/  diagnostics/  plans/  reports/  reference/  archive/
+|  |- specs/  reference/  plans/     <- contratos, apoio e frente ativa
+|  |- archive/                     <- roadmaps anteriores e historicos
 ```
 
 ## Convencao de Nomes dos Arquivos JS
