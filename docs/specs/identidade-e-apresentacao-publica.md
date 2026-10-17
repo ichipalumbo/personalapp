@@ -1,6 +1,6 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Em implementação · **Versão**: 9 · **Atualizado**: 2026-10-17
+> **Status**: Em implementação · **Versão**: 10 · **Atualizado**: 2026-10-17
 > **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), adoção na interface das cores da marca e da paleta do produto do guia, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa com adoção da Poppins na interface por arquivos locais, aplicação no cabeçalho, nome no produto, ícones de instalação, endereço atual e contato provisório de suporte.
 > **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
 > **Limite**: aplicação no app autorizada nos termos da seção 2 e em implementação, a começar pelo cabeçalho (seção 2.9); cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
@@ -183,8 +183,9 @@ símbolo isolado.
 - Ícones de instalação, favicon e ícone da Apple seguem o
   [ícone do aplicativo no guia v3](../reference/identidade/guia-identidade-visual-v3.md#83-ícone-do-aplicativo),
   gerados a partir dos arquivos-mestre do kit, sem redesenho.
-- Cor de tema e fundo da tela de abertura do PWA são definidos na implementação, após
-  teste nas plataformas, e aprovados pelo dono.
+- `theme-color` e `theme_color` usam Grafite `#202020`; `background_color` usa
+  `#0D0D0D`, correspondente ao fundo atual da interface. Se a etapa 4 alterar o fundo
+  da interface, reavaliar o fundo de abertura para manter a continuidade visual.
 
 ## 3. Decisões e casos de borda
 
@@ -242,7 +243,7 @@ Personal da assinatura ou alterar as palavras por inferência.
 | Adoção da fonte na interface | Adoção e carregamento local decididos (seção 2.8); pesos, tamanhos, fallback e regressões de layout a definir e validar |
 | Cores da interface sem correspondente na paleta do guia | Mapeamento a decidir com o dono durante a implementação (seção 2.2) |
 | Ícones de instalação e favicon | Regra decidida (seção 2.10); dimensões e leitura a validar no suporte final |
-| Cor de tema e fundo de abertura do PWA | A definir na implementação após teste (seção 2.10) |
+| Cor de tema e fundo de abertura do PWA | Grafite `#202020` e fundo `#0D0D0D` aprovados (seção 2.10); reavaliar o fundo se a etapa 4 mudar o fundo da interface |
 | Variante e apresentação do botão Google | Pendente; apenas a ampliação da área de toque está autorizada (seção 2.9) |
 | Asset para a tela de consentimento Google | Fora desta implementação; composição, dimensões e leitura a decidir a partir do kit |
 | Página pública e localização dos links legais no app | A definir; sem arquitetura, URL ou layout aprovados |

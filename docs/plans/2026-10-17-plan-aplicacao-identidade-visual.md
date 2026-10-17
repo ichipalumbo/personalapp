@@ -20,12 +20,13 @@ Aplicar no app e no PWA a identidade aprovada: logo no cabeçalho, nome **Person
 | Nesta rodada, só a etapa 0 | Resposta do dono em 2026-10-17 | Spec, plano e roadmap; nenhum arquivo de produto alterado |
 | Consolidar o item 5.9 inteiro | Resposta do dono em 2026-10-17 | Cabeçalho e barra da agenda entram na etapa 1; 5.9 passa a apontar para 5.10 |
 | Botão de login Google: só área de toque | Resposta do dono em 2026-10-17 | Spec v8, seção 2.9: sem mudar variante, cores, texto ou símbolo; aviso ao dono antes de implementar |
-| Ícone do app e cor de tema | Decisões registradas no guia v3, seção 8.3 | Símbolo do kit sobre Grafite com área segura; cor de tema escolhida na implementação após teste |
+| Ícone do app e cor de tema | Decisões registradas no guia v3, seção 8.3; cor aprovada pelo dono em 2026-10-17, etapa 2 | Símbolo do kit sobre Grafite com área segura; `theme-color`/`theme_color` `#202020`, `background_color` `#0D0D0D` |
 | Branch única para a interface | Resposta do dono em 2026-10-17 | Etapas 1 a 5 em `feat/rebranding-interface`, com um só PR para a `main`; commit e push continuam com o dono |
 | Logo com 32 px de altura, fluido | Resposta do dono em 2026-10-17, etapa 1 | Encolhe proporcionalmente só quando falta espaço para os controles do topo |
 | Cópia do SVG em `assets/images/`, sem metadados | Resposta do dono em 2026-10-17, etapa 1 | Nome original do kit; saem `title`, `desc`, `metadata` e os atributos que apontavam para eles |
 | Área de toque invisível de 44×44 | Resposta do dono em 2026-10-17, etapa 1 | Sem mudar visual nem altura do topo, em seis grupos: cabeçalho, barra da agenda, fechar dos modais, área do usuário, cabeçalhos dos dias da semana e dias da recorrência |
 | Área de toque do botão Google | Aviso dado e autorização do dono em 2026-10-17, etapa 1 | Só a área de toque, como na spec, seção 2.9 |
+| Incluir logo e ícones no pré-cache do service worker | Pedido do dono em 2026-10-17, etapa 2 | Imagens do cabeçalho e de instalação disponíveis offline após a instalação do novo app shell; `CACHE_NAME` permanece inalterado |
 
 ## 3. Escopo
 
@@ -75,7 +76,7 @@ As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na 
 |---|---|---|
 | 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída; na `main` pelo PR #73 |
 | 1 | Cabeçalho com logo e alvos de toque do topo | Implementada em `feat/rebranding-interface`; publicação com o PR único |
-| 2 | Nome exibido e instalação do PWA | Pendente |
+| 2 | Nome exibido, ícones e disponibilidade offline do PWA | Implementada na branch; aceite no aparelho pendente |
 | 3 | Variáveis de cor, sem mudança visual | Pendente |
 | 4 | Recoloração com a paleta do guia | Pendente; depende da 3 |
 | 5 | Poppins na interface | Pendente |
@@ -102,8 +103,9 @@ As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na 
 ### Etapa 2 — Nome exibido e instalação do PWA
 
 - **Nome**: título da página, `apple-mobile-web-app-title`, e `name` e `short_name` do manifest passam a "Personal Josy". Se o nome curto for truncado, parar e pedir aprovação.
-- **Ícones**: favicon; 192 e 512 nas versões padrão e maskable (zona segura de 80%); ícone da Apple. Todos gerados do símbolo do kit sobre Grafite, conforme o guia, seção 8.3. A geração usa o Edge em modo headless, já usado no gerador do PDF do guia, sem dependência nova.
-- **Cor de tema e fundo de abertura**: proposta testada nas plataformas e aprovada pelo dono antes de entrar.
+- **Ícones**: favicon 32×32; ícones PWA 192×192 e 512×512 em versões `any` e `maskable`; ícone de toque Apple 180×180. Usar o avatar escuro com base Grafite do kit, com o símbolo dentro da zona segura de 80%, conforme o guia, seção 8.3. Os arquivos 512×512 são exportações oficiais do kit; os demais são reduzidos a partir deles sem ampliar imagem pequena e sem dependência nova.
+- **Service worker**: incluir o logo do cabeçalho e os ícones publicados no pré-cache do app shell, para estarem disponíveis offline após a instalação do novo worker. Manter `CACHE_NAME`, que é identificador técnico (spec, seção 3.2).
+- **Cor de tema e fundo de abertura**: aprovado pelo dono `theme-color`/`theme_color` `#202020` e `background_color` `#0D0D0D`, para corresponder à marca e ao fundo atual da interface; reavaliar `background_color` na etapa 4 se o fundo da interface mudar.
 - **Fora**: `CACHE_NAME` do `sw.js` não muda.
 - **Aviso prévio**: a etapa altera o que fica instalado nos aparelhos.
 - **Aceite**:
@@ -112,6 +114,7 @@ As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na 
   - favicon e título corretos na aba;
   - instalação conferida no celular do dono.
 - **Risco**: em app já instalado, ícone e nome atualizam com atraso, que depende da plataforma.
+- **Aceite ainda pendente**: conferência da instalação e do rótulo/recorte dos ícones no celular do dono.
 
 ### Etapa 3 — Variáveis de cor, sem mudança visual
 
@@ -208,3 +211,20 @@ As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na 
 - **Capturas** antes e depois em 433, 390 e 320, logado e deslogado, mantidas fora do repositório.
 - **Documentação**: spec de identidade v9, spec de interface (seções 5 e 7) e item 5.10 do roadmap.
 - **Não alterado**: `sw.js`, manifest e título da página (etapa 2) e arquivos do kit.
+
+### Etapa 2 — 2026-10-17
+
+- **Implementação**:
+  - `index.html`: título da aba e título de app Apple em **Personal Josy**; favicon próprio 32×32 e ícone Apple 180×180;
+  - `manifest.json`: `name` e `short_name` em **Personal Josy**; ícones 192×192 e 512×512 para `any` e `maskable`, com propósito declarado separadamente;
+  - `index.html` e `manifest.json`: `theme-color`/`theme_color` aprovados como `#202020` e `background_color` como `#0D0D0D`;
+  - `assets/images/`: favicon 32×32, Apple 180×180, PWA 192×192/512×512 padrão e maskable. As duas exportações 512×512 são cópias do PNG oficial do avatar escuro do kit; os tamanhos menores foram reduzidos com alta qualidade a partir desse original de 512×512. Nenhum pacote foi instalado;
+  - `sw.js`: pré-cache do logo SVG, favicon, ícone Apple e quatro ícones PWA; o `CACHE_NAME` técnico não mudou.
+- **Validação**:
+  - o navegador no mock reconhece o título **Personal Josy**, lê o manifest com os quatro ícones declarados e registra o service worker como ativo;
+  - com a rede do navegador desativada, o logo, favicon, ícone Apple e os quatro ícones PWA responderam `200` do cache, com os tipos de conteúdo esperados;
+  - `tests-frontend/`: linha de base de 427 testes, 427 passando; novo `pwa-identidade.test.js` com 4 testes e provas por mutação (nome/título, links dos ícones, propósito maskable, cores aprovadas e pré-cache do logo); resultado após a etapa: 431 testes, 431 passando;
+  - `git diff --check` sem apontamentos.
+- **Pendências**: a instalação e o recorte dos ícones ainda precisam de conferência no celular do dono; a validação automatizada não substitui esse aceite. Reavaliar `background_color` na etapa 4 caso o fundo da interface seja alterado.
+- **Documentação**: spec de identidade v10, plano desta frente e item 5.10 do roadmap atualizados.
+- **Não alterado**: CSS da interface, paleta e `CACHE_NAME`; não houve publicação nem alteração de dependências.

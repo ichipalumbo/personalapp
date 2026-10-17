@@ -3,6 +3,13 @@ const APP_SHELL_FILES = [
   '/index.html',
   '/assets/css/style.css',
   '/assets/js/app.js',
+  '/assets/images/personal_josy_horizontal_escuro_transparente.svg',
+  '/assets/images/favicon-32x32.png',
+  '/assets/images/apple-touch-icon.png',
+  '/assets/images/icon-192x192.png',
+  '/assets/images/icon-512x512.png',
+  '/assets/images/icon-192x192-maskable.png',
+  '/assets/images/icon-512x512-maskable.png',
 ];
 
 self.addEventListener('install', (event) => {
