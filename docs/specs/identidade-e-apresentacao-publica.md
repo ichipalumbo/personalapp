@@ -1,14 +1,14 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Aprovada, não implementada · **Versão**: 7 · **Atualizado**: 2026-10-16
-> **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), paleta funcional do aplicativo preservada, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa, endereço atual e contato provisório de suporte.
+> **Status**: Aprovada, não implementada · **Versão**: 8 · **Atualizado**: 2026-10-17
+> **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), adoção na interface das cores da marca e da paleta do produto do guia, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa com adoção da Poppins na interface por arquivos locais, aplicação no cabeçalho, nome no produto, ícones de instalação, endereço atual e contato provisório de suporte.
 > **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
-> **Limite**: identidade e arquivos de marca aprovados; aplicação no app não executada. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, autenticação e execução do rebranding continuam fora desta aprovação.
+> **Limite**: aplicação no app autorizada nos termos da seção 2 e ainda não executada; cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
 
 Identificar o aplicativo como **Personal Josy**, preservando a identidade pessoal da
-professora e a paleta existente. A apresentação pública deve permitir compreender o
+professora e aplicando ao produto a identidade visual aprovada. A apresentação pública deve permitir compreender o
 produto e sua integração com Google sem prometer funcionalidades ou aprovação que não
 tenham sido comprovadas.
 
@@ -42,12 +42,24 @@ como recomendação ou pendência não vira decisão aprovada por estar citado a
 
 ### 2.2 Cores
 
-- Preservar a paleta atual do aplicativo, incluindo identidade, categorias e estados.
-- O rebranding não autoriza recolorir a interface nem alterar o significado das cores.
-- Assets do Google obedecem à identidade do próprio Google; preservação da paleta do app
-  não é autorização para recolorir o símbolo oficial ou criar um logo Google próprio.
-- A escolha da variante e da apresentação do botão Google permanece pendente; não há
-  aprovação de uma exceção de cor nem de alterações concretas no botão nesta spec.
+- A interface adota as [cores da marca](../reference/identidade/guia-identidade-visual-v3.md#3-cores-da-marca)
+  e a [paleta do produto](../reference/identidade/guia-identidade-visual-v3.md#14-paleta-do-produto)
+  do guia v3.
+- **Amarelo Josy `#FFDE17`** substitui o amarelo anterior `#FFD700` em toda a interface,
+  inclusive nas variações com transparência, mantendo o papel de identidade e destaque.
+- **Grafite `#202020`** substitui `#0D0D0D` como base escura da interface.
+- Cores de categoria e estado mantêm o significado atual. A recoloração não cria, funde
+  nem troca significados.
+- Uma cor da interface sem correspondente direto na paleta do guia não é substituída por
+  inferência: o mapeamento é decidido com o dono durante a implementação, e não se cria
+  cor nova sem decisão.
+- Os pares de texto e fundo resultantes cumprem o
+  [contraste mínimo do guia](../reference/identidade/guia-identidade-visual-v3.md#10-legibilidade-e-contraste),
+  conferido no suporte final.
+- Assets do Google obedecem à identidade do próprio Google; a paleta do app não autoriza
+  recolorir o símbolo oficial ou criar um logo Google próprio.
+- A variante e a apresentação do botão Google continuam pendentes; não há exceção de cor
+  aprovada. A única alteração autorizada no botão é a da seção 2.9.
 
 ### 2.3 Consistência de apresentação
 
@@ -79,8 +91,7 @@ sem substituir o guia:
   empilhada, horizontal com descritor, empilhada com descritor e avatar, cada uma com
   aplicações clara e escura, em exportações transparentes ou com fundo incorporado.
 - **Cores da marca**: amarelo `#FFDE17`, escuro `#202020`, branco `#FFFFFF` e cinza-claro
-  `#E0E0E0`. A atualização dos arquivos da marca não recolore a interface; preservar sua
-  paleta funcional.
+  `#E0E0E0`. A aplicação dessas cores na interface segue a seção 2.2.
 
 Usar sempre os arquivos do kit como mestres. Não redesenhar, recompor por digitação nem
 traçar a marca a partir de prévias ou capturas.
@@ -122,15 +133,18 @@ funcionalidades ou promessas do produto.
 
 ### 2.8 Direção tipográfica
 
-- **Poppins** é a família principal da identidade e a direção aprovada para futura adoção
-  em toda a interface do app, preservando as fontes próprias de ícones/assets de terceiros.
+- **Poppins** é a família principal da identidade e é adotada em toda a interface do app,
+  preservando as fontes próprias de ícones/assets de terceiros.
 - **Montserrat** é a alternativa; não combinar as duas famílias por padrão nem tratar
   a alternativa como troca métrica automática de Poppins.
 - A assinatura do nome usa Poppins SemiBold 600 e o descritor, Poppins Regular 400,
   ambos já convertidos em vetores nos arquivos do kit; não substituir esses caminhos
   por texto dependente de fonte nem refazê-los com outra família ou peso.
-- A fonte atual do app não muda nesta aprovação documental. Pesos, tamanhos, fallback,
-  arquivos/carregamento e impacto de layout devem ser definidos e validados antes da adoção.
+- Na interface, a Poppins é carregada de arquivos locais servidos pelo próprio app, sem
+  requisição a serviço de fontes de terceiros, e precisa continuar disponível offline no
+  PWA. A licença da família acompanha os arquivos.
+- Pesos, tamanhos, pilha de fallback e impacto de layout são definidos e validados na
+  implementação, inclusive nos viewports menores; os pesos da marca não os homologam.
 
 ### 2.9 Aplicação no cabeçalho
 
@@ -141,12 +155,27 @@ Decisão aprovada:
 - Substituir a identificação **Prô Josy** por **Personal Josy**.
 - Não usar descritor, sombra, contorno ou animação no header.
 - Preservar a proporção e manter espaço para os controles existentes.
+- No botão de login Google do cabeçalho, apenas a área de toque pode ser ampliada, sem
+  alterar variante, cores, texto, símbolo ou comportamento de autenticação. Por ser área
+  de autenticação, a mudança é avisada ao dono antes de implementada.
 
 A simulação do header foi aprovada só como referência visual. Tamanho no app, leitura no
 viewport de referência, comportamento em larguras menores e nome acessível ainda precisam
 ser validados na implementação. Se a horizontal deixar de funcionar em alguma largura,
 a adaptação precisa de aprovação; não trocar silenciosamente pela escrita ou pelo
 símbolo isolado.
+
+### 2.10 Nome no produto e ícones de instalação
+
+- Título da página, nome e nome curto do PWA e título de app da Apple passam a
+  **Personal Josy**.
+- Se o nome curto for truncado na tela inicial de alguma plataforma, a abreviação precisa
+  de aprovação; a seção 2.1 não admite nome alternativo por inferência.
+- Ícones de instalação, favicon e ícone da Apple seguem o
+  [ícone do aplicativo no guia v3](../reference/identidade/guia-identidade-visual-v3.md#83-ícone-do-aplicativo),
+  gerados a partir dos arquivos-mestre do kit, sem redesenho.
+- Cor de tema e fundo da tela de abertura do PWA são definidos na implementação, após
+  teste nas plataformas, e aprovados pelo dono.
 
 ## 3. Decisões e casos de borda
 
@@ -170,9 +199,14 @@ O marcador `app_origin = corepersonal` identifica eventos do app no Google Calen
 deve ser preservado no rebranding. Uma eventual migração desse marcador exigiria decisão
 e contrato próprios de compatibilidade, não substituição textual pelo nome comercial.
 
+O nome do cache do service worker contém `Prô Josy`, mas é identificador técnico, não
+nome exibido. Não é renomeado por causa da marca: trocá-lo invalida o cache instalado e
+exige decisão própria.
+
 Referências a `Prô Josy` em documentos históricos continuam descrevendo a identidade da
 época. O novo nome não autoriza reescrever históricos nem apresentar a mudança como já
-publicada. Nomes ainda presentes no produto serão tratados na implementação futura.
+publicada. Nomes exibidos ainda presentes no produto são substituídos na implementação,
+conforme as seções 2.9 e 2.10.
 
 ### 3.3 Público e autorização não mudam com a marca
 
@@ -197,8 +231,12 @@ Personal da assinatura ou alterar as palavras por inferência.
 | Assunto | Situação |
 |---|---|
 | Aplicação e dimensões no cabeçalho | Composição decidida (seção 2.9); tamanho, leitura e larguras menores a validar |
-| Adoção da fonte na interface | Carregamento, fallback, pesos e regressões de layout a validar; ainda não implementada |
-| Ícones de instalação, favicon e asset para consentimento Google | Fora da entrega do guia v3; composição, dimensões e leitura a decidir a partir do kit |
+| Adoção da fonte na interface | Adoção e carregamento local decididos (seção 2.8); pesos, tamanhos, fallback e regressões de layout a definir e validar |
+| Cores da interface sem correspondente na paleta do guia | Mapeamento a decidir com o dono durante a implementação (seção 2.2) |
+| Ícones de instalação e favicon | Regra decidida (seção 2.10); dimensões e leitura a validar no suporte final |
+| Cor de tema e fundo de abertura do PWA | A definir na implementação após teste (seção 2.10) |
+| Variante e apresentação do botão Google | Pendente; apenas a ampliação da área de toque está autorizada (seção 2.9) |
+| Asset para a tela de consentimento Google | Fora desta implementação; composição, dimensões e leitura a decidir a partir do kit |
 | Página pública e localização dos links legais no app | A definir; sem arquitetura, URL ou layout aprovados |
 | Verificação do endereço atual e das URLs no Google | Conferir Search Console e projeto OAuth; manter o endereço não comprova aprovação |
 | Responsável legal, privacidade, retenção e exclusão | A confirmar com o dono; o contato provisório de suporte não encerra essas definições |
@@ -207,15 +245,15 @@ Personal da assinatura ou alterar as palavras por inferência.
 
 ## 5. Fora de escopo
 
-- Implementar o rebranding, planejar cartões/ordem de execução ou publicar o aplicativo.
+- Publicar o aplicativo, definir data de lançamento ou submeter à verificação Google.
 - Redesenhar a identidade aprovada no guia v3, reintroduzir monogramas ou o logotipo quadrado anterior, ou criar páginas legais definitivas sem decisão explícita.
-- Alterar cores, navegação, regras financeiras, recorrência ou conflitos.
-- Alterar autenticação, sincronização, tokens, webhooks ou estado remoto.
+- Alterar o significado das cores de categoria e estado, navegação, regras financeiras, recorrência ou conflitos.
+- Alterar autenticação, sincronização, tokens, webhooks ou estado remoto, exceto a área de toque do botão Google prevista na seção 2.9.
 - Comprar domínio, mudar infraestrutura, criar projetos/clientes Google ou submeter revisão.
 - Afirmar disponibilidade jurídica da marca, conformidade LGPD ou aprovação Google.
 - Reescrever documentos históricos ou tratar recomendações como decisões aprovadas.
 
-O planejamento de implementação é posterior à consolidação das evidências e à confirmação
-das decisões pendentes. Esta aprovação documental não significa mudança de produto,
-aceite da interface, deploy ou autorização para modificar áreas sensíveis. O aceite dos
-arquivos do kit não equivale ao aceite de sua futura aplicação no app.
+A aplicação da identidade no app e no PWA está autorizada nos termos da seção 2. O aceite
+dos arquivos do kit não equivale ao aceite de sua aplicação: cada aplicação precisa ser
+conferida no suporte final, e esta spec não autoriza modificar áreas sensíveis além do
+que está previsto nela.

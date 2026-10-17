@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
 
-> **Status**: Roadmap oficial · **Atualizado**: 2026-10-14
+> **Status**: Roadmap oficial · **Atualizado**: 2026-10-17
 > Índice de evolução do produto: problemas a resolver, entregas, dependências e decisões pendentes.
 > Substitui o [roadmap anterior](roadmap-v1.md), renomeado pelo dono e preservado como registro para consulta histórica.
 
@@ -80,12 +80,14 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: baixo, sujeito ao inventário; sem dependência de implantação de ambiente.
 - **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) e [execução das suítes](setup-ambiente-local.md).
 
-### [ ] 5.9 Alvos de toque do cabeçalho e toolbar
+### [ ] 5.10 Aplicação da identidade visual Personal Josy
 
-- **Resultado esperado**: melhorar os controles ainda pequenos sem voltar a aumentar excessivamente o topo nem quebrar os viewports menores.
-- **Decidir antes**: abordagem de ampliação da área de toque; reconfirmar o inventário no estado renderizado, incluindo modais e login deslogado.
-- **Esforço**: baixo, com atenção ao layout.
-- **Referência**: [diagnóstico mobile, achado 4.5](diagnostics/2026-09-23-diag-auditoria-ui-ux-mobile.md), [plano da Etapa 2](plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md) e [ambiente de validação mobile](setup-ambiente-local.md).
+- **Resultado esperado**: app e PWA identificados como Personal Josy com a identidade do guia v3 (logo no cabeçalho, nome exibido, ícones de instalação, paleta do guia e Poppins) e alvos de toque do topo ampliados, absorvendo o item 5.9.
+- **Decidido**: contrato na [spec de identidade](specs/identidade-e-apresentacao-publica.md); sequência em etapas com PR próprio, registrada no plano.
+- **Decidir antes**: abordagem de ampliação do toque no topo, cor de tema, mapeamento das cores sem correspondente na paleta e pesos da Poppins, cada um na sua etapa.
+- **Risco/dependência**: o botão Google é área de autenticação (só área de toque, com aviso prévio); ícones e manifest afetam instalações existentes; a recoloração depende da etapa de variáveis de cor.
+- **Esforço**: médio, distribuído em etapas.
+- **Referência**: [plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [guia de identidade visual v3](reference/identidade/guia-identidade-visual-v3.md) e [ambiente de validação mobile](setup-ambiente-local.md).
 
 ## Iniciativas em avaliação
 
@@ -191,6 +193,7 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 5.6 | `[x]` | Erros e toasts unificados; apresentação de carga financeira refinada posteriormente | [Etapa 6](plans/2026-09-29-plan-etapa-6-toast-unificado.md) e [refinamento](plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
 | 5.7 | `[x]` | Consistência, acessibilidade e navegação persistida | [Etapa 7](plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md) e [validação](plans/2026-10-05-plan-validacao-etapa-7-branch.md) |
 | 5.8 | `[x]` | Skeletons padronizados e indicação de cache; B2 entregue separadamente no item 2.4 | [Plano de skeletons/cache](plans/2026-09-30-plan-skeletons-cache.md) |
+| 5.9 | `[→]` | Alvos de toque do cabeçalho e toolbar consolidados no item 5.10, com inventário a refazer | [Plano da identidade visual](plans/2026-10-17-plan-aplicacao-identidade-visual.md) |
 
 ## Ressalvas e fontes
 
