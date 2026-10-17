@@ -2,8 +2,8 @@
 
 > **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-17
 > **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
-> **Branch**: `docs/auditoria-roadmap` na etapa 0, com working tree limpo na abertura. A branch de cada etapa seguinte é definida no início da rodada.
-> **Base**: commit `5416e9e`, medida em 2026-10-17.
+> **Branch**: `docs/auditoria-roadmap` na etapa 0, que entrou na `main` pelo PR #73. As etapas 1 a 5 seguem na branch única `feat/rebranding-interface`, criada a partir de `origin/main` em `ea29834`, com um só PR ao final.
+> **Base**: commit `5416e9e`, medida em 2026-10-17, para a etapa 0; `ea29834` para a etapa 1.
 > **Fontes**: [spec de identidade](../specs/identidade-e-apresentacao-publica.md), [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), [kit visual v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md), [spec de interface](../specs/interface-e-navegacao.md), [roadmap, item 5.10](../roadmap-v3.md) e [ambiente de validação](../setup-ambiente-local.md).
 
 ## 1. Objetivo
@@ -21,6 +21,11 @@ Aplicar no app e no PWA a identidade aprovada: logo no cabeçalho, nome **Person
 | Consolidar o item 5.9 inteiro | Resposta do dono em 2026-10-17 | Cabeçalho e barra da agenda entram na etapa 1; 5.9 passa a apontar para 5.10 |
 | Botão de login Google: só área de toque | Resposta do dono em 2026-10-17 | Spec v8, seção 2.9: sem mudar variante, cores, texto ou símbolo; aviso ao dono antes de implementar |
 | Ícone do app e cor de tema | Decisões registradas no guia v3, seção 8.3 | Símbolo do kit sobre Grafite com área segura; cor de tema escolhida na implementação após teste |
+| Branch única para a interface | Resposta do dono em 2026-10-17 | Etapas 1 a 5 em `feat/rebranding-interface`, com um só PR para a `main`; commit e push continuam com o dono |
+| Logo com 32 px de altura, fluido | Resposta do dono em 2026-10-17, etapa 1 | Encolhe proporcionalmente só quando falta espaço para os controles do topo |
+| Cópia do SVG em `assets/images/`, sem metadados | Resposta do dono em 2026-10-17, etapa 1 | Nome original do kit; saem `title`, `desc`, `metadata` e os atributos que apontavam para eles |
+| Área de toque invisível de 44×44 | Resposta do dono em 2026-10-17, etapa 1 | Sem mudar visual nem altura do topo, em seis grupos: cabeçalho, barra da agenda, fechar dos modais, área do usuário, cabeçalhos dos dias da semana e dias da recorrência |
+| Área de toque do botão Google | Aviso dado e autorização do dono em 2026-10-17, etapa 1 | Só a área de toque, como na spec, seção 2.9 |
 
 ## 3. Escopo
 
@@ -64,12 +69,12 @@ As contagens descrevem esta base e não são contagem viva do projeto.
 
 ## 6. Etapas
 
-Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produção. A etapa 4 depende da 3. As etapas 1 e 2 são independentes entre si. A 5 fica por último para medir o layout com as cores já estáveis. Quando a etapa 1 começar, o status da spec passa a "Em implementação".
+As etapas 1 a 5 seguem na branch única `feat/rebranding-interface` e entram na `main` por um só PR, porque o merge publica em produção. A etapa 4 depende da 3. As etapas 1 e 2 são independentes entre si. A 5 fica por último para medir o layout com as cores já estáveis. Com a etapa 1, a spec passou a "Em implementação".
 
 | Etapa | Resultado | Estado |
 |---|---|---|
-| 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída nesta rodada |
-| 1 | Cabeçalho com logo e alvos de toque do topo | Pendente |
+| 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída; na `main` pelo PR #73 |
+| 1 | Cabeçalho com logo e alvos de toque do topo | Implementada em `feat/rebranding-interface`; publicação com o PR único |
 | 2 | Nome exibido e instalação do PWA | Pendente |
 | 3 | Variáveis de cor, sem mudança visual | Pendente |
 | 4 | Recoloração com a paleta do guia | Pendente; depende da 3 |
@@ -92,6 +97,7 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
   - leitor de tela anuncia "Personal Josy";
   - alvos de toque conforme a abordagem aprovada.
 - **Convivência**: até a etapa 4, o amarelo do logo (`#FFDE17`) convive com o amarelo da interface (`#FFD700`).
+- **Decisões tomadas**: seção 2; execução registrada na seção 10.
 
 ### Etapa 2 — Nome exibido e instalação do PWA
 
@@ -143,14 +149,16 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
 
 ## 8. Riscos e publicação
 
-- O merge na `main` publica em produção. O app ainda não foi lançado e a base de produção está zerada, mas cada etapa precisa entrar inteira e reversível.
+- O merge na `main` publica em produção. O app ainda não foi lançado e a base de produção está zerada, mas o PR único precisa entrar inteiro e reversível.
 - Reverter o PR desfaz o código. Ícones e nome já instalados nos aparelhos podem demorar a voltar.
 - Mudança de fonte é a maior fonte de regressão de layout, por isso fica por último.
 
 ## 9. Pendências conhecidas fora deste plano
 
-- Os SVGs do kit têm metadados internos com "Final B", e a prancha `personal_josy_kit_final_prancha.png` mostra "OPÇÃO B". Isso não afeta a interface, salvo se a cópia levar os metadados (decisão da etapa 1).
+- Os SVGs do kit têm metadados internos com "Final B", e a prancha `personal_josy_kit_final_prancha.png` mostra "OPÇÃO B". A cópia usada no app foi limpa na etapa 1; os arquivos do kit não mudam.
 - O asset para a tela de consentimento Google continua aberto na spec, seção 4.
+- O `sw.js` não pré-cacheia o logo: ele entra no cache por uso no primeiro carregamento. Offline, antes disso, o cabeçalho mostra o texto alternativo. Incluir no pré-cache altera o `sw.js` e exige aviso.
+- Em 320×568 deslogado, o rótulo do período da barra da agenda aparece truncado ("Sema…"). Já acontecia antes da etapa 1.
 
 ## 10. Registro da execução
 
@@ -168,3 +176,35 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
   - item 5.10 criado no lugar do 5.9;
   - 5.9 registrado como consolidado (`[→]`).
 - Nenhum arquivo de produto, teste, guia ou kit foi alterado.
+
+### Etapa 1 — 2026-10-17
+
+- **Branch**: `feat/rebranding-interface`, a partir de `ea29834`.
+- **Inventário dos alvos de toque**, no estado renderizado do mock, em tamanho visual:
+  - em 433×762: avatar 36×36, botão Google 170×32, abas Semana e Dia 174×32, setas 33×26, "Hoje" 51×29, cabeçalho de dia da semana 404×34, fechar da área do usuário 32×32, fechar do histórico de reposições 36×36, Sincronizar e Configurar grade 328×40, Sair 328×30, dias da recorrência 43×42;
+  - em 390×844: botão Google 145×28, abas 157×32, "Hoje" 51×27, dias 41×42;
+  - em 320×568: abas 122×32, dias 31×42;
+  - modo Dia com os mesmos tamanhos da Semana;
+  - vizinhos conferidos com `elementFromPoint`: nenhum alvo sobrepõe outro.
+- **Implementação**:
+  - `assets/images/personal_josy_horizontal_escuro_transparente.svg`: cópia do mestre do kit sem `title`, `desc`, `metadata`, `role` e `aria-labelledby`, com desenho idêntico; 10.806 bytes, contra 12.241 do mestre;
+  - `index.html`: o `h1.marca-titulo` contém só a imagem do logo, com texto alternativo "Personal Josy" e dimensões 186×32 declaradas; saem o ícone de haltere e o texto "Prô Josy";
+  - `assets/css/style.css`: logo com até 186 px de largura e altura proporcional, e a marca encolhe antes dos controles; a área de toque é um pseudo-elemento `::after` transparente e centralizado, com no mínimo 44×44, nos seis grupos aprovados; nos dias da recorrência, a largura extra fica limitada à folga de 6 px do grid.
+- **Medido no mock**, em Semana, Dia e deslogado:
+  - altura do topo igual à de antes: cabeçalho com 70 px logado e 66 deslogado em 433, 62 e 54 em 390 e 320; barra da agenda com 121 px em 433 e 119 em 390 e 320;
+  - logo com 186×32 logado nos três viewports; deslogado, 182×31,3 em 433, 186×32 em 390 e 118×20,3 em 320, com folga de 8 a 10 px até o botão Google;
+  - sem rolagem horizontal;
+  - área de 44×44 ou mais em todos os alvos, conferida com `elementFromPoint`, exceto a largura dos dias da recorrência em 320;
+  - em 433, toques fora do desenho acionaram seta, avatar, fechar e aba Dia;
+  - foco por teclado continua visível;
+  - a árvore de acessibilidade do navegador expõe o título como "Personal Josy". Leitor de tela real não foi testado.
+- **Limitação**: em 320×568, os dias da recorrência têm 31 px de largura e a área fica com 35,5×44, porque sete áreas de 44 px exigiriam 308 px numa linha de 255 e a área não pode invadir o dia vizinho. Em 390 e 433, 44×44.
+- **Testes** em `tests-frontend/`:
+  - linha de base com 420 testes e 420 passando, depois de `npm ci` sem mudança de manifesto;
+  - fixture do cabeçalho em `header-cache-state.test.js` atualizado para o logo;
+  - novo `marca-cabecalho.test.js`, com 7 testes: markup do logo, ausência do nome antigo e do haltere, cópia sem metadados, desenho idêntico ao mestre, regra de 44×44, limite dos dias da recorrência e existência de cada alvo no app;
+  - mutações: markup antigo no cabeçalho; `title` e coordenada alterada no SVG; seletor fora da regra `::after` e limite afrouxado; seletor fora do `position: relative` e id renomeado em `view-home.js`. Cada uma derrubou os testes correspondentes, e todas foram revertidas e conferidas com `git status`;
+  - resultado final com 427 testes e 427 passando.
+- **Capturas** antes e depois em 433, 390 e 320, logado e deslogado, mantidas fora do repositório.
+- **Documentação**: spec de identidade v9, spec de interface (seções 5 e 7) e item 5.10 do roadmap.
+- **Não alterado**: `sw.js`, manifest e título da página (etapa 2) e arquivos do kit.

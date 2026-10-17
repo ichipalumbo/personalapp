@@ -1,7 +1,7 @@
 # Spec — Interface, navegação e acessibilidade
 
-> **Status**: Em produção · **Versão**: 1 · **Atualizado**: 2026-10-14
-> **Escopo de publicação**: base das etapas mobile já entregue; complementos recentes de FAB/feedback conservam a situação de integração registrada no roadmap. Esta consolidação não executa mudança de interface nem certifica novo deploy.
+> **Status**: Em produção · **Versão**: 2 · **Atualizado**: 2026-10-17
+> **Escopo de publicação**: base das etapas mobile já entregue; complementos recentes de FAB/feedback conservam a situação de integração registrada no roadmap. A área de toque do topo (seção 5) entra com o item 5.10 do roadmap. Esta consolidação não executa mudança de interface nem certifica novo deploy.
 
 ## 1. Objetivo e fronteira
 
@@ -42,7 +42,13 @@ de reposição continuam nas respectivas specs; esta não as redefine.
 - `prefers-reduced-motion` reduz animações/transições aplicáveis; o JS não depende de `animationend` para liberar estado quando a animação não ocorrer.
 - Skeletons usam a classe compartilhada, acompanhados do estado/anúncio de carregamento quando aplicável. Erro de leitura não deve ser anunciado como ausência de dados.
 - Feedback de operação não bloqueia a tela desnecessariamente; retry é uma ação real. A apresentação inicial/refresh de Finanças obedece à sua spec e não deve acumular sinais redundantes.
-- A ampliação de toque entregue em Finanças/grade não encerra os controles do cabeçalho/toolbar: o resíduo do item 5.9 continua aberto. Não ampliar o topo por inferência desta spec.
+- Área de toque mínima de 44×44, ampliada sem mudar o visual nem a altura do topo, em:
+  - os controles do cabeçalho e da barra da agenda;
+  - o fechar dos modais e os botões da área do usuário;
+  - os cabeçalhos dos dias da semana;
+  - os dias da recorrência.
+
+  Nos dias da recorrência, a área não invade o dia vizinho. Por isso fica abaixo de 44 px de largura quando os sete dias não cabem. Esta regra consolida o resíduo do item 5.9 no item 5.10 do roadmap.
 
 ## 6. Complementos aprovados e limites
 
@@ -59,8 +65,9 @@ navegação anteriormente publicada.
 A validação visual usa o mock e os viewports do [manual de ambiente](../setup-ambiente-local.md).
 Testes de lógica/DOM protegem recortes de navegação, diálogo, cards e render; não certificam
 pixels, gestos físicos, todos os estados ou integrações remotas. Nenhuma validação visual
-nova foi executada para escrever esta spec.
+nova foi executada para escrever esta spec; a área de toque da seção 5 foi validada no mock
+conforme o [plano da identidade visual](../plans/2026-10-17-plan-aplicacao-identidade-visual.md).
 
-Não inclui redesenho, nova identidade visual, novas telas, solução para o resíduo 5.9,
+Não inclui redesenho, nova identidade visual, novas telas,
 alteração de cobrança/recorrência, regra nova de cancelamento, revisão de autenticação ou
 nova integração com Google Calendar.

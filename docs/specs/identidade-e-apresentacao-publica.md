@@ -1,9 +1,9 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Aprovada, não implementada · **Versão**: 8 · **Atualizado**: 2026-10-17
+> **Status**: Em implementação · **Versão**: 9 · **Atualizado**: 2026-10-17
 > **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), adoção na interface das cores da marca e da paleta do produto do guia, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa com adoção da Poppins na interface por arquivos locais, aplicação no cabeçalho, nome no produto, ícones de instalação, endereço atual e contato provisório de suporte.
 > **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
-> **Limite**: aplicação no app autorizada nos termos da seção 2 e ainda não executada; cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
+> **Limite**: aplicação no app autorizada nos termos da seção 2 e em implementação, a começar pelo cabeçalho (seção 2.9); cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
 
@@ -159,9 +159,18 @@ Decisão aprovada:
   alterar variante, cores, texto, símbolo ou comportamento de autenticação. Por ser área
   de autenticação, a mudança é avisada ao dono antes de implementada.
 
-A simulação do header foi aprovada só como referência visual. Tamanho no app, leitura no
-viewport de referência, comportamento em larguras menores e nome acessível ainda precisam
-ser validados na implementação. Se a horizontal deixar de funcionar em alguma largura,
+A simulação do header foi aprovada só como referência visual. A aplicação no app foi
+validada no viewport de referência e nas larguras menores, com estas decisões:
+
+- O app usa uma cópia do arquivo do kit em `assets/images/`, com o nome original e o
+  mesmo desenho, sem os metadados internos do arquivo.
+- O logo tem 32 px de altura e encolhe proporcionalmente só quando falta espaço para os
+  controles do topo, preservando a área de proteção do guia.
+- O nome acessível é **Personal Josy**, dado pelo texto alternativo da imagem.
+- A área de toque ampliada do botão Google segue a regra de alvos de toque da
+  [spec de interface](interface-e-navegacao.md), seção 5.
+
+Se a horizontal deixar de funcionar em alguma largura,
 a adaptação precisa de aprovação; não trocar silenciosamente pela escrita ou pelo
 símbolo isolado.
 
@@ -230,7 +239,6 @@ Personal da assinatura ou alterar as palavras por inferência.
 
 | Assunto | Situação |
 |---|---|
-| Aplicação e dimensões no cabeçalho | Composição decidida (seção 2.9); tamanho, leitura e larguras menores a validar |
 | Adoção da fonte na interface | Adoção e carregamento local decididos (seção 2.8); pesos, tamanhos, fallback e regressões de layout a definir e validar |
 | Cores da interface sem correspondente na paleta do guia | Mapeamento a decidir com o dono durante a implementação (seção 2.2) |
 | Ícones de instalação e favicon | Regra decidida (seção 2.10); dimensões e leitura a validar no suporte final |

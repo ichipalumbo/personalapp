@@ -195,6 +195,7 @@ body {
 .auth-banner {
   width: auto;
   max-width: 72%;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -212,6 +213,7 @@ body {
 
 .brand-container {
   display: flex;
+  flex: 1 1 auto;
   align-items: center;
   min-width: 0;
   gap: 10px;
@@ -231,23 +233,17 @@ body {
 
 .marca-titulo {
   margin: 0;
-  font-size: clamp(1rem, 4.8vw, 1.25rem);
-  letter-spacing: -0.2px;
-  font-weight: 900;
-  white-space: nowrap;
+  min-width: 0;
+  line-height: 0;
 }
 
-.marca-ativa {
-  color: #ffd700;
-}
-
-.marca-mente {
-  color: #0d0d0d;
-  text-shadow:
-    -1.5px -1.5px 0 #ffd700,
-    1.5px -1.5px 0 #ffd700,
-    -1.5px 1.5px 0 #ffd700,
-    1.5px 1.5px 0 #ffd700;
+/* Logo horizontal do kit: 32px de altura, encolhendo na proporção só quando o
+   login Google disputa a linha (spec de identidade, seção 2.9). */
+.marca-logo {
+  display: block;
+  width: 186px;
+  max-width: 100%;
+  height: auto;
 }
 
 .header-session-state,
@@ -380,6 +376,60 @@ body {
 .btn-user-area-trigger:focus-visible {
   outline: 2px solid #8ab4f8;
   outline-offset: 2px;
+}
+
+/* Item 5.10, etapa 1: área de toque mínima de 44×44 sem mudar o visual nem a
+   altura do topo. O pseudo-elemento centralizado amplia só a área clicável; a
+   folga entre vizinhos foi medida em 433, 390 e 320 para não haver sobreposição.
+   No botão Google, só a área de toque muda (spec de identidade, seção 2.9). */
+#btnUserAreaTrigger,
+#custom-google-login,
+#tabHomeSemana,
+#tabHomeDia,
+#btnSemanaHomeAnterior,
+#btnSemanaHomeProxima,
+#btnSemanaHomeHoje,
+#btnHomeDiaAnterior,
+#btnHomeDiaProximo,
+#btnHomeDiaHoje,
+#btnCloseSettings,
+#btnFecharHistoricoReposicoes,
+#appSettingsModal button,
+.semana-dia-header,
+.btn-dia-pill {
+  position: relative;
+}
+
+#btnUserAreaTrigger::after,
+#custom-google-login::after,
+#tabHomeSemana::after,
+#tabHomeDia::after,
+#btnSemanaHomeAnterior::after,
+#btnSemanaHomeProxima::after,
+#btnSemanaHomeHoje::after,
+#btnHomeDiaAnterior::after,
+#btnHomeDiaProximo::after,
+#btnHomeDiaHoje::after,
+#btnCloseSettings::after,
+#btnFecharHistoricoReposicoes::after,
+#appSettingsModal button::after,
+.semana-dia-header::after,
+.btn-dia-pill::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: max(100%, 44px);
+  height: max(100%, 44px);
+  transform: translate(-50%, -50%);
+}
+
+/* Os sete dias da recorrência dividem um grid com 6px entre colunas
+   (#containerDiasSemanaRecorrencia): a largura chega a 44px quando cabe, sem
+   passar da metade dessa folga de cada lado. Em 320px os dias têm 31px e a
+   área fica abaixo de 44px de largura. */
+.btn-dia-pill::after {
+  width: min(max(100%, 44px), calc(100% + 6px));
 }
 
 /* Modal Backdrop */
