@@ -4,12 +4,17 @@
 > **Arquivos da marca:** [kit visual completo v2](kit-visual-completo-v2/LEIA-ME.md).
 > **Escopo:** identidade do aplicativo Personal Josy e de seus materiais digitais.
 > **Limites:** este guia não certifica acessibilidade, impressão, registro de marca ou aprovação de terceiros. Conferir cada aplicação no suporte final.
+> **Organização:** Parte A (seções 1 a 13) traz as regras de identidade para quem cria peças; Parte B (seções 14 e 15) reúne a paleta do produto e as especificações técnicas dos arquivos.
+
+# Parte A — Guia de identidade
+
+Regras para aplicar a marca em qualquer peça: cores da marca, símbolo, composições, tipografia, fundos, linguagem e usos proibidos.
 
 ## 1. Visão geral
 
 Este guia descreve a marca do **aplicativo Personal Josy**, não um serviço pessoal de treinamento. Ele define desenho, cores, tipografia, composições e regras de uso da identidade. Os arquivos do kit visual são os mestres da marca: usar sempre esses arquivos, sem redesenhar, redigitar ou recortar a marca a partir de prévias.
 
-As cores são citadas neste guia pelo **nome e HEX** definidos na [paleta de cores](#3-paleta-de-cores).
+As cores são citadas neste guia pelo **nome e HEX** definidos nas [cores da marca](#3-cores-da-marca) e na [paleta do produto](#14-paleta-do-produto).
 
 ### 1.1 Identidade em uma página
 
@@ -27,6 +32,10 @@ As cores são citadas neste guia pelo **nome e HEX** definidos na [paleta de cor
 | Fundos de exportação | Transparente ou incorporado, para cada aplicação |
 | Acabamento | Estático, cores planas; contorno exclusivamente em Josy na aplicação clara |
 
+### 1.2 Responsabilidade e aprovação
+
+A responsável pelo aplicativo aprova novas aplicações da marca e qualquer exceção às regras deste guia. Antes de publicar uma peça criada por terceiros, encaminhar a arte final e o contexto de uso para aprovação. O guia não publica nome nem contato pessoal.
+
 ## 2. Essência e expressão da marca
 
 Personal Josy organiza o trabalho de personal trainers. A comunicação deve partir de funções reais do aplicativo: agenda, alunos, reposições e controle financeiro. Não anunciar prescrição de treinos, processamento de pagamentos ou inteligência artificial sem confirmação de que essas capacidades existem.
@@ -42,11 +51,11 @@ O calendário comunica organização; o J aproxima o símbolo do nome. O amarelo
 
 Esses atributos orientam as peças, mas não criam um slogan. O descritor já explica o produto e não precisa acompanhar toda aparição da marca.
 
-## 3. Paleta de cores
+## 3. Cores da marca
 
-Todas as cores são planas, em sRGB. Não há equivalência CMYK definida: impressão exige perfil e prova próprios.
+Todas as cores do guia são planas, em sRGB. Não há equivalência CMYK definida: impressão exige perfil e prova próprios.
 
-### 3.1 Cores da marca
+### 3.1 Paleta da marca
 
 | Nome | HEX | RGB | Uso |
 | --- | --- | --- | --- |
@@ -57,34 +66,11 @@ Todas as cores são planas, em sRGB. Não há equivalência CMYK definida: impre
 
 O escuro da marca é Grafite `#202020`, não preto puro `#000000`. Não substituir o Amarelo Josy por dourado metálico, neon ou aproximações obtidas de screenshots.
 
-### 3.2 Neutros de interface
+### 3.2 Uso das cores da marca
 
-| Nome | HEX | RGB | Uso |
-| --- | --- | --- | --- |
-| Carvão | `#1A1A1A` | 26, 26, 26 | Superfície elevada e navegação |
-| Chumbo | `#2A2A2A` | 42, 42, 42 | Linhas e separadores discretos |
-| Cinza Médio | `#A0A0A0` | 160, 160, 160 | Texto secundário, com contraste conferido no fundo final |
-
-Névoa `#E0E0E0` também cumpre o papel de texto principal na interface.
-
-### 3.3 Cores de categoria e estado
-
-| Nome | HEX | RGB | Uso |
-| --- | --- | --- | --- |
-| Tangerina | `#FFB878` | 255, 184, 120 | Categoria Personal e objetivos associados |
-| Azul Online | `#5484ED` | 84, 132, 237 | Categoria Consultoria Online |
-| Verde Concluído | `#81C784` | 129, 199, 132 | Estado concluído ou ok |
-| Azul Informativo | `#64B5F6` | 100, 181, 246 | Estado informativo ou agendado |
-| Âmbar | `#FFB74D` | 255, 183, 77 | Aviso, atenção ou pendência |
-| Coral | `#FF8A80` | 255, 138, 128 | Erro, atraso ou expiração |
-| Cinza Neutro | `#CFCFCF` | 207, 207, 207 | Estado em aberto sem atraso |
-
-### 3.4 Uso das cores
-
-- Grafite, Carvão e Chumbo estruturam; Branco e Névoa informam; Amarelo Josy pontua a identidade. Não há porcentagens rígidas para uma tela operacional.
-- Cores de categoria e estado são funcionais, não variantes do logo. Cada uma tem um único significado; não recolorir esses elementos com Amarelo Josy.
-- Tangerina `#FFB878` é cor de categoria, não substituta do Amarelo Josy.
-- Cor não pode ser a única indicação de categoria, estado ou ação.
+- Grafite estrutura; Branco e Névoa informam; Amarelo Josy pontua a identidade e a ênfase.
+- Em peças de divulgação, Branco ou Grafite costuma funcionar como base dominante; Amarelo Josy entra como destaque. Não há percentuais fixos: ajustar a composição à mensagem, mantendo contraste e hierarquia.
+- Neutros, categorias e estados pertencem à [paleta do produto](#14-paleta-do-produto): não são cores do logo nem variantes da marca. Só aparecem em peças que mostram ou explicam a interface do aplicativo.
 - Não criar novas cores de marca a partir de tons próximos (creme, cinzas intermediários) sem incluí-las nesta paleta.
 
 ## 4. Símbolo: calendário com J
@@ -105,17 +91,17 @@ O símbolo é um calendário de cantos arredondados, com duas presilhas e um J d
 
 O símbolo não contém círculo, escudo, borda adicional ou qualquer outro emblema. Não usar o J como máscara nem torná-lo transparente.
 
-### 4.2 Geometria, prancheta e proteção
+### 4.2 Área de proteção
 
-O desenho do símbolo mede 224 × 245 unidades. Os mestres compactos (horizontal, escrita e símbolo) incluem margem técnica de 12 unidades em volta do desenho, para que o contorno não seja cortado na exportação. O mestre do símbolo usa `viewBox="-12 -12 248 269"`; o horizontal, `viewBox="-12 -12 1562.26 269"`.
+Manter livre em torno do conjunto pelo menos **um quarto da largura visível do calendário**, proporcionalmente em qualquer escala. Na escrita isolada, usar o calendário equivalente da horizontal como referência.
 
-Essa margem técnica **não substitui a área de proteção**. Manter livre em torno do conjunto pelo menos um quarto da largura visível do calendário: 56 unidades na escala original, proporcionalmente em outras escalas. Na escrita isolada, usar o calendário equivalente da horizontal como referência.
+Os arquivos-mestre já incluem uma pequena margem técnica ([seção 15.1](#151-geometria-e-prancheta)), que **não substitui a área de proteção**.
 
 As composições empilhadas, com descritor e o avatar têm enquadramento próprio com respiro. Conferir esse respiro antes de acrescentar margens; não recortar as margens do avatar para aumentar o símbolo.
 
 ### 4.3 Redução
 
-Não há tamanho mínimo definido. Conferir a leitura do J, das presilhas, do nome e do descritor no tamanho efetivo de uso. Se a marca perder definição, aumentar ou escolher uma composição mais simples. Não engrossar o J, apagar presilhas, comprimir o nome ou alterar o contorno para compensar a redução.
+Não há um tamanho mínimo numérico que sirva para todos os suportes. Testar cada composição no tamanho final e no contexto real: o símbolo, as presilhas, o nome e, quando presente, o descritor devem continuar distintos e reconhecíveis. O menor tamanho aceitável é aquele em que todos os elementos necessários ainda são percebidos sem esforço; se a leitura falhar, aumentar a marca, omitir o descritor ou escolher uma composição mais simples. Não engrossar o J, apagar presilhas, comprimir o nome ou alterar o contorno para compensar a redução. Para impressão, fazer prova no suporte e na distância de leitura previstos.
 
 ## 5. Composições e arquivos
 
@@ -129,7 +115,7 @@ Não há tamanho mínimo definido. Conferir a leitura do J, das presilhas, do no
 | Empilhada com descritor | Símbolo, nome e frase em sequência vertical | Apresentação em outra proporção |
 | Avatar | Símbolo em prancheta quadrada com respiro | Foto de perfil e recorte circular |
 
-### 5.1 Quatro exportações por composição
+### 5.1 Aplicação e fundo do arquivo
 
 | Aplicação | Fundo externo | O que usar |
 | --- | --- | --- |
@@ -138,34 +124,13 @@ Não há tamanho mínimo definido. Conferir a leitura do J, das presilhas, do no
 | Escura | Transparente | Sobre fundo escuro conferido; elementos em Branco e Josy sem contorno |
 | Escura | Grafite `#202020` incorporado | Arquivo com a base escura da marca |
 
-Todas as combinações existem em **SVG vetorial e PNG**: 28 SVGs e 32 PNGs de marca. Os 32 PNGs incluem quatro reduções do avatar em 512 px. Pranchas e referências visuais não entram nessa contagem.
+**Claro/escuro identifica para qual suporte a marca foi preparada**, não apenas a presença de um retângulo de fundo.
 
-Os PNGs, exceto o avatar, têm 2400 px no lado maior. As medidas descrevem os arquivos, não tamanhos de tela, mínimos de leitura ou formatos de publicação.
-
-| Composição | Dimensão dos PNGs |
-| --- | --- |
-| Horizontal | 2400 × 413 px |
-| Somente escrita | 2400 × 390 px |
-| Somente símbolo | 2213 × 2400 px |
-| Empilhada | 2400 × 1597 px |
-| Horizontal com descritor | 2400 × 741 px |
-| Empilhada com descritor | 2400 × 1819 px |
-| Avatar | 1080 × 1080 e 512 × 512 px |
-
-### 5.2 Nomes e escolha do arquivo
-
-Os nomes seguem o padrão `personal_josy_<composição>_<claro|escuro>_<transparente|com_fundo>[_512].<svg|png>`. **Claro/escuro identifica para qual suporte a marca foi preparada**, não apenas a presença de um retângulo de fundo.
-
-| Exemplo de nome | Significado |
-| --- | --- |
-| `personal_josy_horizontal_claro_transparente.svg` | Aplicação clara; sem fundo externo |
-| `personal_josy_horizontal_claro_com_fundo.png` | Aplicação clara com Branco `#FFFFFF` incorporado |
-| `personal_josy_horizontal_escuro_transparente.svg` | Aplicação escura; sem fundo externo |
-| `personal_josy_avatar_escuro_com_fundo_512.png` | Avatar escuro em 512 × 512 px, com base Grafite `#202020` |
+### 5.2 Formato do arquivo
 
 Preferir SVG onde for aceito; usar PNG quando necessário. Não transformar um PNG pequeno em mestre nem ampliá-lo além da resolução disponível quando for possível exportar o vetor.
 
-As pranchas e referências do kit servem para visualizar a marca: não recortar um logo delas para uso profissional.
+As pranchas e referências do kit servem para visualizar a marca: não recortar um logo delas para uso profissional. Formatos, dimensões e nomes dos arquivos estão na [seção 15](#15-especificações-técnicas-do-kit).
 
 ## 6. Tipografia
 
@@ -177,7 +142,7 @@ As pranchas e referências do kit servem para visualizar a marca: não recortar 
 | Descritor | Poppins Regular 400, em curvas | Usar a composição do kit; não remontar em fonte semelhante |
 | Calendário com J | Geometria própria em vetor | Não reconstruir digitando uma letra |
 | Textos das peças | Poppins como família principal | Conferir peso, tamanho, acentos e leitura |
-| Montserrat | Família alternativa | Não substituir o nome nem misturar famílias por padrão |
+| Montserrat | Família de fallback para textos editáveis | Usar somente quando Poppins não estiver disponível; não substituir a assinatura vetorial nem misturar famílias sem necessidade |
 
 Os SVGs do kit contêm apenas caminhos, sem texto dependente de fonte: aparecem corretamente sem a fonte instalada.
 
@@ -190,7 +155,7 @@ Os SVGs do kit contêm apenas caminhos, sem texto dependente de fonte: aparecem 
 | Texto corrido | 400 | Evitar pesos muito finos em textos pequenos |
 | Valores financeiros e horários | 500 ou 600 quando destacados | Priorizar leitura e alinhamento |
 
-Como ponto de partida editorial, texto corrido pode começar em 16 px equivalentes, informações secundárias em 14 px e títulos entre 20 e 28 px, com entrelinha confortável.
+Como ponto de partida editorial, texto corrido pode começar em 16 px equivalentes, informações secundárias em 14 px e títulos entre 20 e 28 px, com entrelinha confortável. Se Poppins não estiver disponível para textos editáveis, usar Montserrat; a assinatura da marca continua sendo aplicada pelo vetor do kit.
 
 Usar pesos reais, sem negrito ou itálico sintéticos. Não comprimir letras para fazer nomes longos caberem. Recursos de números tabulares precisam ser conferidos no arquivo de fonte adotado. Montserrat não é substituta métrica automática de Poppins.
 
@@ -215,11 +180,8 @@ Descritor exato: **Agenda e gestão para personal trainers.** Preservar acento, 
 ### 7.2 Contorno de Josy
 
 - Aplicar **somente em Josy, na aplicação clara**, em Grafite `#202020`.
-- Largura total do traço: **6 unidades na escala do mestre horizontal**.
-- O traço fica atrás do preenchimento Amarelo Josy; a parte visível avança aproximadamente 3 unidades para fora da borda da letra.
-- Junções e terminações arredondadas. Nos SVGs, traço e preenchimento são duas camadas explícitas, sem depender de `paint-order`.
-- Nas composições empilhadas, o nome está a 64% da escala da horizontal e o traço mede 3,84 unidades. O contorno acompanha a escala do nome, não a do calendário.
-- Não usar `vector-effect="non-scaling-stroke"`: o traço deve acompanhar a marca quando ela é redimensionada.
+- O contorno é fino, de cantos arredondados, e acompanha a escala do nome quando a marca é redimensionada.
+- Usar o contorno já presente nos arquivos do kit; não redesenhá-lo nem ajustar sua espessura. As medidas estão na [seção 15.2](#152-contorno-de-josy).
 - Não aplicar sombra, borda dupla, traço em Personal ou contorno no símbolo ou no descritor.
 
 O contorno garante a separação do Amarelo Josy sobre Branco; não torna o amarelo adequado para texto informativo pequeno em qualquer fundo.
@@ -243,11 +205,27 @@ Usar o avatar pronto, não o símbolo esticado. As duas aplicações existem em 
 
 O calendário mantém margem para recorte circular. Não remover margens nem adicionar descritor, texto em volta, círculo ou borda ao emblema. As dimensões são exportações do kit, não requisitos das redes: conferir o enquadramento após a publicação.
 
-### 8.3 Materiais sociais
+### 8.3 Ícone do aplicativo
+
+O ícone de instalação não é uma assinatura completa nem um avatar para redes. Usar o símbolo oficial do calendário, sem nome ou descritor e sem alterar sua geometria; como referência, partir do avatar escuro do kit. A base quadrada deve ser opaca e preencher todo o arquivo em Grafite `#202020`; não desenhar cantos arredondados, porque a plataforma pode aplicar a própria máscara.
+
+Manter exportações adequadas a cada destino: favicon do navegador, ícones PWA para uso comum e com máscara, e ícone de toque das plataformas móveis. Usar o vetor oficial como origem e gerar os formatos e dimensões pedidos pelo destino; não ampliar um PNG pequeno nem presumir que um único arquivo atende a todas as plataformas.
+
+Para ícones PWA declarados como `maskable`, manter todos os elementos essenciais dentro da zona segura circular central: raio de 40% da largura do ícone (diâmetro de 80%). A base deve continuar até as bordas, inclusive na área que pode ser cortada. Conferir o resultado em diferentes máscaras e nos dispositivos de destino, conforme a referência de [ícones maskable](https://web.dev/articles/maskable-icon) e a especificação do [Web App Manifest](https://www.w3.org/TR/appmanifest/#icons-member). Essa medida vale para ícones maskable; validar o recorte e o enquadramento próprios de cada outro destino. Não criar um monograma ou redesenhar o símbolo para caber.
+
+A cor de tema da barra do sistema não é definida por esta regra de ícone: escolhê-la na implementação, conforme o contexto da interface, e validar o resultado em cada plataforma.
+
+### 8.4 Materiais sociais
 
 Prioridades: Instagram, status do WhatsApp e adaptações para Stories. Não esticar arte quadrada para torná-la vertical. Usar o descritor quando a peça apresentar o produto e houver leitura confortável; omitir quando a mensagem já o explica ou a escala for pequena.
 
 O kit não é uma campanha: posts, artes de funcionalidades, modelos e mensagens de lançamento são desenvolvidos separadamente, seguindo este guia.
+
+### 8.5 Uso junto a outras marcas
+
+Manter cada marca em seu arquivo oficial, com proporções, cores e respiro próprios. Não fundir símbolos, criar um logo combinado ou alterar a marca de terceiros. Organizar as marcas com alinhamento e peso visual equilibrados, sem sugerir parceria, patrocínio ou endosso que não tenha sido formalmente aprovado.
+
+Para Google, usar ativos oficiais e seguir as [diretrizes de identidade](https://developers.google.com/identity/branding-guidelines). Não alterar o logotipo nem o botão de autenticação.
 
 ## 9. Linguagem visual e verbal de apoio
 
@@ -259,6 +237,8 @@ Grafismos de apoio podem sugerir organização e continuidade da agenda, mas nã
 
 Priorizar fundos planos. Texturas, se usadas, devem ser discretas e ficar fora da área de proteção da marca. Manter iconografia funcional e consistente, sem misturar famílias desnecessariamente.
 
+Na interface do aplicativo, manter a família de ícones já adotada: Font Awesome Free 6.4.0, predominantemente no estilo sólido. Em um mesmo grupo funcional, não misturar ícones sólidos e contornados sem motivo; manter escala óptica e alinhamento coerentes, e acompanhar ações importantes com rótulos claros. Ícones de apoio não substituem a marca nem devem introduzir emblemas concorrentes.
+
 ### 9.2 Conteúdo e pessoas
 
 Usar português do Brasil, frases diretas e acolhimento sem infantilização. Explicar benefícios concretos de organização; não prometer resultados físicos, financeiros ou capacidades inexistentes.
@@ -269,17 +249,15 @@ Uma tela gerada por IA é conceito, não evidência do produto. Não apresentar 
 
 ## 10. Legibilidade e contraste
 
-Pares calculados por luminância relativa sRGB, para cores sólidas sem transparência. Eles descrevem as cores; não certificam uma interface ou uma peça completa.
+Pares calculados por luminância relativa sRGB, para cores sólidas da marca sem transparência. Eles descrevem as cores; não certificam uma interface ou uma peça completa. Como referência de acessibilidade para interfaces digitais, aplicar WCAG 2.2 nível AA: contraste mínimo de 4,5:1 para texto comum, 3:1 para texto grande (a partir de 18 pt regular ou 14 pt em negrito) e 3:1 para componentes e gráficos necessários à compreensão. Considerar as exceções definidas pela norma e avaliar estados, foco e fundos reais; estes limites não tornam o logo, a tela ou o produto automaticamente conformes. Pares da interface estão na [seção 14.4](#144-contraste-de-apoio-da-interface). Consulte [WCAG 2.2 — Contraste mínimo](https://www.w3.org/TR/WCAG22/#contrast-minimum) e [Contraste não textual](https://www.w3.org/TR/WCAG22/#non-text-contrast).
 
 | Par | Contraste aproximado | Observação |
 | --- | --- | --- |
 | Amarelo Josy `#FFDE17` sobre Grafite `#202020` | 12,19:1 | Separação entre amarelo e J/base escura |
 | Branco `#FFFFFF` sobre Grafite `#202020` | 16,29:1 | Personal e presilhas na aplicação escura |
 | Névoa `#E0E0E0` sobre Grafite `#202020` | 12,34:1 | Descritor na aplicação escura |
-| Cinza Médio `#A0A0A0` sobre Grafite `#202020` | 6,23:1 | Apoio; conferir em outros fundos |
 | Grafite `#202020` sobre Branco `#FFFFFF` | 16,29:1 | Personal, presilhas e descritor na aplicação clara |
 | Amarelo Josy `#FFDE17` sobre Branco `#FFFFFF` | 1,34:1 | Amarelo sem contorno tem pouca separação do branco |
-| Chumbo `#2A2A2A` sobre Grafite `#202020` | 1,14:1 | Não usar como único sinal essencial |
 
 Na aplicação clara, o contorno Grafite define Josy sobre Branco. Conferir o contorno e as áreas internas das letras em tamanho real; se a leitura falhar, aumentar a marca ou escolher outra composição.
 
@@ -300,7 +278,7 @@ O J opaco reduz a dependência do fundo no interior do calendário, mas não gar
 - Aplicar uma variante transparente sobre qualquer fundo sem conferir sua adequação.
 - Usar quadriculado de editor como fundo da arte.
 - Criar versões monocromáticas ou inversões além das aplicações clara e escura sem aprovação.
-- Recolorir cores de categoria e estado ou alterar assets de terceiros por causa da marca.
+- Recolorir cores de categoria e estado com cores da marca, ou alterar assets de terceiros por causa da marca.
 - Apresentar uma simulação como produto real ou sugerir endosso de terceiros.
 
 ## 12. Briefing para designers e geradores de imagens
@@ -333,6 +311,97 @@ Entregar este guia, o arquivo da composição correta, o objetivo da peça, o co
 - Curvas, espaçamentos, proporções e margens foram preservados?
 - Há leitura no tamanho real e área de proteção em relação a bordas e controles?
 - O avatar permanece inteiro após o recorte circular?
+- A leitura da marca foi conferida no tamanho e no suporte finais, com o descritor omitido se perder legibilidade?
 - Todas as cores usadas estão na paleta e cumprem o papel definido?
 - Afirmações, fotos e dados têm autorização e correspondem ao produto real?
 - A peça evita tratar uma simulação como produto real?
+- Se houver outras marcas, os arquivos oficiais, o respiro e as regras de cada uma foram preservados, sem sugerir endosso não aprovado?
+
+# Parte B — Referência técnica e paleta do produto
+
+Material de consulta para quem implementa a interface ou trabalha com os arquivos-mestre. Não altera as regras de identidade da Parte A.
+
+## 14. Paleta do produto
+
+Cores funcionais do aplicativo. Complementam as [cores da marca](#3-cores-da-marca), mas não fazem parte do logo e não são usadas para compor peças de divulgação.
+
+### 14.1 Neutros de interface
+
+| Nome | HEX | RGB | Uso |
+| --- | --- | --- | --- |
+| Carvão | `#1A1A1A` | 26, 26, 26 | Superfície elevada e navegação |
+| Chumbo | `#2A2A2A` | 42, 42, 42 | Linhas e separadores discretos |
+| Cinza Médio | `#A0A0A0` | 160, 160, 160 | Texto secundário, com contraste conferido no fundo final |
+
+Na interface, Grafite `#202020` é a base escura e Névoa `#E0E0E0` cumpre o papel de texto principal.
+
+### 14.2 Categorias e estados
+
+| Nome | HEX | RGB | Uso |
+| --- | --- | --- | --- |
+| Tangerina | `#FFB878` | 255, 184, 120 | Categoria Personal e objetivos associados |
+| Azul Online | `#5484ED` | 84, 132, 237 | Categoria Consultoria Online |
+| Verde Concluído | `#81C784` | 129, 199, 132 | Estado concluído ou ok |
+| Azul Informativo | `#64B5F6` | 100, 181, 246 | Estado informativo ou agendado |
+| Âmbar | `#FFB74D` | 255, 183, 77 | Aviso, atenção ou pendência |
+| Coral | `#FF8A80` | 255, 138, 128 | Erro, atraso ou expiração |
+| Cinza Neutro | `#CFCFCF` | 207, 207, 207 | Estado em aberto sem atraso |
+
+### 14.3 Uso na interface
+
+- Grafite, Carvão e Chumbo estruturam; Branco e Névoa informam; Amarelo Josy pontua a identidade. Não há porcentagens rígidas para uma tela operacional.
+- Cores de categoria e estado são funcionais. Cada uma tem um único significado; não recolorir esses elementos com Amarelo Josy.
+- Tangerina `#FFB878` é cor de categoria, não substituta do Amarelo Josy.
+- Cor não pode ser a única indicação de categoria, estado ou ação.
+
+### 14.4 Contraste de apoio da interface
+
+| Par | Contraste aproximado | Observação |
+| --- | --- | --- |
+| Cinza Médio `#A0A0A0` sobre Grafite `#202020` | 6,23:1 | Apoio; conferir em outros fundos |
+| Chumbo `#2A2A2A` sobre Grafite `#202020` | 1,14:1 | Não usar como único sinal essencial |
+
+Mesmo critério da [seção 10](#10-legibilidade-e-contraste): os pares descrevem cores sólidas e não certificam componentes completos.
+
+## 15. Especificações técnicas do kit
+
+### 15.1 Geometria e prancheta
+
+O desenho do símbolo mede 224 × 245 unidades. Os mestres compactos (horizontal, escrita e símbolo) incluem margem técnica de 12 unidades em volta do desenho, para que o contorno não seja cortado na exportação. O mestre do símbolo usa `viewBox="-12 -12 248 269"`; o horizontal, `viewBox="-12 -12 1562.26 269"`.
+
+Na escala original, a área de proteção da [seção 4.2](#42-área-de-proteção) equivale a 56 unidades.
+
+### 15.2 Contorno de Josy
+
+- Largura total do traço: **6 unidades na escala do mestre horizontal**.
+- O traço fica atrás do preenchimento Amarelo Josy; a parte visível avança aproximadamente 3 unidades para fora da borda da letra.
+- Junções e terminações arredondadas. Nos SVGs, traço e preenchimento são duas camadas explícitas, sem depender de `paint-order`.
+- Nas composições empilhadas, o nome está a 64% da escala da horizontal e o traço mede 3,84 unidades. O contorno acompanha a escala do nome, não a do calendário.
+- Não usar `vector-effect="non-scaling-stroke"`: o traço deve acompanhar a marca quando ela é redimensionada.
+
+### 15.3 Formatos e dimensões
+
+Todas as combinações de composição, aplicação e fundo existem em **SVG vetorial e PNG**: 28 SVGs e 32 PNGs de marca. Os 32 PNGs incluem quatro reduções do avatar em 512 px. Pranchas e referências visuais não entram nessa contagem.
+
+Os PNGs, exceto o avatar, têm 2400 px no lado maior. As medidas descrevem os arquivos, não tamanhos de tela, mínimos de leitura ou formatos de publicação.
+
+| Composição | Dimensão dos PNGs |
+| --- | --- |
+| Horizontal | 2400 × 413 px |
+| Somente escrita | 2400 × 390 px |
+| Somente símbolo | 2213 × 2400 px |
+| Empilhada | 2400 × 1597 px |
+| Horizontal com descritor | 2400 × 741 px |
+| Empilhada com descritor | 2400 × 1819 px |
+| Avatar | 1080 × 1080 e 512 × 512 px |
+
+### 15.4 Nomes dos arquivos
+
+Os nomes seguem o padrão `personal_josy_<composição>_<claro|escuro>_<transparente|com_fundo>[_512].<svg|png>`.
+
+| Exemplo de nome | Significado |
+| --- | --- |
+| `personal_josy_horizontal_claro_transparente.svg` | Aplicação clara; sem fundo externo |
+| `personal_josy_horizontal_claro_com_fundo.png` | Aplicação clara com Branco `#FFFFFF` incorporado |
+| `personal_josy_horizontal_escuro_transparente.svg` | Aplicação escura; sem fundo externo |
+| `personal_josy_avatar_escuro_com_fundo_512.png` | Avatar escuro em 512 × 512 px, com base Grafite `#202020` |

@@ -65,6 +65,9 @@ const FIGURAS = {
     { src: kit('07_avatar', 'claro', 'com_fundo'), legenda: 'Avatar — aplicação clara' },
     { src: kit('07_avatar', 'escuro', 'com_fundo'), legenda: 'Avatar — aplicação escura' },
   ],
+  '8.3': [
+    { src: kit('07_avatar', 'escuro', 'com_fundo'), legenda: 'Referência de ícone quadrado — símbolo oficial em base Grafite' },
+  ],
 };
 
 function escapar(texto) {
@@ -72,13 +75,12 @@ function escapar(texto) {
 }
 
 function slug(texto) {
+  // Mesmo padrão de âncoras do GitHub/VS Code: preserva acentos, remove pontuação.
   return texto
     .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
     .trim()
-    .replace(/\s+/g, '-');
+    .replace(/\s/g, '-');
 }
 
 function inline(texto) {
@@ -127,7 +129,8 @@ function blocos(linhas) {
       const nivel = titulo[1].length;
       const texto = titulo[2];
       const numero = (texto.match(/^(\d+(?:\.\d+)*)\.?\s/) || [])[1];
-      saida.push(`<h${nivel} id="${slug(texto)}">${inline(texto)}</h${nivel}>`);
+      const classe = numero === '8.3' ? ' class="quebra-antes"' : '';
+      saida.push(`<h${nivel}${classe} id="${slug(texto)}">${inline(texto)}</h${nivel}>`);
       if (numero) saida.push(figuras(numero));
       i++;
       continue;
@@ -194,8 +197,11 @@ function montarHtml(markdown) {
   .capa .sub { color: #FFDE17; font-size: 13pt; font-weight: 500; margin-bottom: 14mm; }
   .capa .meta p { color: #E0E0E0; font-size: 9pt; margin: 0 0 2mm; }
   .capa .meta strong { color: #FFFFFF; }
+  body > h1 { font-size: 26pt; font-weight: 600; margin: 95mm 0 4mm; padding-top: 4mm; border-top: 4pt solid #FFDE17; break-before: page; }
+  body > h1 + p { font-size: 11pt; color: #555; max-width: 140mm; }
   h2 { font-size: 17pt; font-weight: 600; margin: 0 0 4mm; padding-bottom: 2mm; border-bottom: 2.5pt solid #FFDE17; break-before: page; break-after: avoid; }
   h3 { font-size: 12pt; font-weight: 600; margin: 6mm 0 2mm; break-after: avoid; }
+  h3.quebra-antes { break-before: page; page-break-before: always; }
   p, ul { margin: 0 0 3mm; }
   li { margin-bottom: 1mm; }
   table { width: 100%; border-collapse: collapse; margin: 2mm 0 5mm; font-size: 8.8pt; break-inside: auto; }
