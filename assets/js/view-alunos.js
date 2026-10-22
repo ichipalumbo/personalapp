@@ -1051,7 +1051,7 @@ window.renderizarListaAlunos = function() {
 
         if (alunos.length === 0) {
             listaContainer.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--cor-neutro-25);">
+                <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--cor-neutro-24);">
                     <i class="fa-solid fa-users-slash" style="font-size: 2.5rem; margin-bottom: 10px; display: block;"></i>
                     <p style="font-size: 1rem;">Nenhum aluno cadastrado no momento.</p>
                 </div>
@@ -1097,8 +1097,8 @@ window.renderizarListaAlunos = function() {
                             <strong style="display: block; color: var(--cor-branco); font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
                             <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
                                 <span class="objetivo-${objetivoClass}" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${objetivo}</span>
-                                <span style="color: var(--cor-neutro-33); font-size: 0.75rem;">•</span> <!-- Etapa 2 (Cartão D): 1.47:1 → 4.85:1 sobre o card var(--cor-neutro-18) -->
-                                <span style="font-size: 0.75rem; color: var(--cor-neutro-38); font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
+                                <span style="color: var(--cor-neutro-32); font-size: 0.75rem;">•</span> <!-- Etapa 2 (Cartão D): 1.47:1 → 4.85:1 sobre o card var(--cor-neutro-17) -->
+                                <span style="font-size: 0.75rem; color: var(--cor-neutro-37); font-weight: 600;">Contrato: ${freqAcordada}x/sem</span>
                             </div>
                         </div>
                         <div onclick="event.stopPropagation();" style="margin-left: auto; display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-shrink: 0;">
@@ -1121,9 +1121,9 @@ window.renderizarListaAlunos = function() {
                         </div>
                     </div>
 
-                    <details class="aluno-card-detalhes" ${detalhesAbertos.has(aluno.id) ? 'open' : ''} onclick="event.stopPropagation();" style="border-top: 1px solid var(--cor-neutro-18); padding-top: 8px; margin-top: 2px;">
+                    <details class="aluno-card-detalhes" ${detalhesAbertos.has(aluno.id) ? 'open' : ''} onclick="event.stopPropagation();" style="border-top: 1px solid var(--cor-neutro-17); padding-top: 8px; margin-top: 2px;">
                         <summary style="cursor: pointer; color: var(--cor-primaria); font-weight: 700; font-size: 0.875rem;">Ver detalhes</summary>
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.875rem; color: var(--cor-neutro-39); margin-top: 8px;">
+                        <div style="display: grid; grid-template-columns: 1fr; gap: 6px; font-size: 0.875rem; color: var(--cor-neutro-38); margin-top: 8px;">
                             <div><i class="fa-solid fa-location-dot" style="color: var(--cor-primaria); margin-right: 6px; width: 12px;"></i> ${local}</div>
                             <div><i class="fa-solid fa-dollar-sign" style="color: var(--cor-primaria); margin-right: 6px; width: 12px;"></i> ${metodoCobranca}: ${cobrancaDetalhe}</div>
                             <div><i class="fa-solid fa-calendar-days" style="color: var(--cor-primaria); margin-right: 6px; width: 12px;"></i> ${fechamentoLabel}</div>

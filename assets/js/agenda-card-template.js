@@ -287,7 +287,7 @@ const BADGE_STYLES = {
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </span>
                         <span class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: var(--cor-neutro-46);">${descricaoDeslocamento}</span>
+                            <span class="agenda-dia-aula-local" style="color: var(--cor-neutro-45);">${descricaoDeslocamento}</span>
                         </span>
                     </span>
                 </button>
@@ -313,7 +313,7 @@ const BADGE_STYLES = {
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: var(--cor-vermelho-10);">Bloqueado</span>
+                            <span class="agenda-dia-aula-local" style="color: var(--cor-estado-erro);">Bloqueado</span>
                         </div>
                     </div>
                 </div>
@@ -328,12 +328,12 @@ const BADGE_STYLES = {
                     <span class="card-content-wrapper">
                         <span class="agenda-semana-card-top">
                             <span class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: var(--cor-neutro-46);"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
+                                <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: var(--cor-neutro-45);"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
                             </span>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </span>
                         <span class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: var(--cor-vermelho-10);">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
+                            <span class="agenda-dia-aula-local" style="color: var(--cor-estado-erro);">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
                         </span>
                     </span>
                 </button>

@@ -77,7 +77,7 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 | 1 | Cabeçalho com logo e alvos de toque do topo | Concluída em 2026-10-22 |
 | 2 | Nome exibido e instalação do PWA | Concluída em 2026-10-22 |
 | 3 | Variáveis de cor, sem mudança visual | Concluída em 2026-10-22 |
-| 4 | Recoloração com a paleta do guia | Pendente; depende da 3 |
+| 4 | Recoloração com a paleta do guia | Concluída em 2026-10-22 |
 | 5 | Poppins na interface | Pendente |
 
 ### Etapa 1 — Cabeçalho e alvos de toque do topo
@@ -127,6 +127,12 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 - Para as cores sem correspondente na paleta, montar uma tabela de mapeamento cor a cor, aprovada pelo dono antes da troca.
 - O azul do Google e as cores de categoria e estado não mudam de significado.
 - Atualizar a expectativa de `fab-adicionar.test.js`, com prova por mutação.
+- **Decidido em 2026-10-22**:
+  - **Base = Grafite `#202020`, superfícies de camada mantidas.** Subir painel, modal e card junto com a base foi medido e reprovado: todo texto secundário vive sobre card e painel, e o card em `#3C3C3C` derrubou `#909090` de 4,50:1 para 3,46:1. Para recuperar o piso de 4,5:1 o card não poderia passar de `#292929`, e as 17 superfícies de camada não cabem em 10 degraus entre `#202020` e `#2A2A2A`. A hierarquia de camada fica garantida por borda, raio e sombra, e a página se distingue do painel pelo contraste de texto, não pelo degrau de fundo.
+  - **Rampa `neutro` renumerada por luminância**: 51 bases + 2 alfas, sem lacuna (era 52 bases). A base da interface é `--cor-neutro-10`, e Névoa é `--cor-neutro-46`.
+  - **Acentos convergidos para os semânticos**: 13 valores fora da paleta passaram a apontar para o token de mesmo significado (Coral, Âmbar, Verde Concluído, Informativo e Névoa). 18 tokens ficaram sem uso e foram removidos; 5 alfas de erro foram criados (`--cor-estado-erro-a10/a20/a35/a40/a80`).
+  - **Cores de categoria, estado, marca Google e Calendar preservadas** no valor do guia.
+- **Método de auditoria de contraste** (repetível): compor as camadas de `background-color` com alfa até achar a cor opaca, resolver o alfa de `color` sobre ela e comparar com WCAG AA, tela a tela, comparando `HEAD` × árvore de trabalho. Medir contra a *base* em vez do *card* foi o erro que gerou a primeira recomendação, porque é sobre card e painel que vive o texto secundário.
 - **Aceite**:
   - contraste medido nos pares de texto, fundo e foco, conforme o guia, seção 10;
   - capturas comparativas aprovadas pelo dono.
@@ -231,4 +237,22 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 - Provas por mutação: literal `#123456` fora do `:root` (1 falha); `--cor-primaria` renomeado no `:root` (1 falha); `style="color:#123456"` no `<body>` (1 falha); `--cor-neutro-01` trocado por `#f4f4f4` (1 falha); `--cor-primaria` trocado por `#00ff00` (1 falha em `fab-adicionar`). Tudo restaurado e conferido por hash.
 - Suíte de frontend: 426 antes, 430 depois, todas passando. Suíte de backend não foi executada porque nenhum arquivo de `backend/` foi tocado.
 - Encontrado e **não** alterado (anterior a esta etapa): `--header-height` é usada sem fallback em duas regras (o `top` resultante é inválido) e `var(--estado-aviso, …)` referencia variável inexistente, mas com fallback válido. Continua valendo a pendência do rótulo de período truncado em 320 px, registrada na etapa 1.
+
+### Etapa 4 — 2026-10-22
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); a etapa 3 foi commitada pelo dono em `b036424`. Nenhuma escrita em `sw.js`.
+- Decisões do dono nesta rodada: `rampa=aprovar` (base Grafite e camadas coerentes), `navegacao=sobe`, `acentos=convergir`; depois da auditoria de contraste, `reverter` as superfícies de camada. O dono pediu recomendação com padrão de mercado antes de decidir as duas primeiras.
+- O conflito central: as cores de categoria e estado do guia **já** eram as do produto (`#FFB878`, `#5484ED`, `#81C784`, `#64B5F6`, `#FFB74D`, `#FF8A80`, `#CFCFCF`), e Carvão `#1A1A1A`, Chumbo `#2A2A2A`, Névoa `#E0E0E0` e Cinza Médio `#A0A0A0` já existiam na rampa. O trabalho real era a base (`#0D0D0D` → `#202020`), o amarelo (`#FFD700` → `#FFDE17`) e os acentos que estavam fora da paleta.
+- Mudanças:
+  - `assets/css/style.css`: `--cor-neutro-10` = `#202020`; família `neutro` renumerada por luminância (51 bases + 2 alfas, sem lacuna); `--cor-primaria` = `#ffde17` com 21 alfas `rgba(255, 222, 23, α)`; 18 tokens de acento removidos e 17 referências redirecionadas para o semântico de mesmo significado; 5 alfas de erro criados; fallback órfão `var(--estado-aviso, var(--cor-amarelo-02))` corrigido para `var(--cor-estado-aviso)`; família `amarelo` renumerada (04 → 02); comentários do `:root` sem citar `#ffd700`.
+  - `index.html` e `assets/js/{agenda-card-template,modal-agendamento,view-alunos,view-financas,view-home}.js`: renumeração dos neutros e redirecionamento dos acentos. Nenhuma cor preservada como dado mudou.
+  - `tests-frontend/fab-adicionar.test.js`: expectativas finais em `rgb(255, 222, 23)` e `rgb(32, 32, 32)`.
+- Estado final medido: 157 tokens `--cor-*` (eram 170); 0 literal de cor fora do `:root`; 0 literal em `style=""`; 0 `var(--cor-*)` sem definição; 0 token sem uso.
+- **Achado que mudou o rumo**: a primeira recomendação (subir as camadas) foi feita medindo os pares de texto contra a *base*. A auditoria correta — compondo fundo efetivo com alfa e usando o *card* como fundo do texto secundário — mostrou que `#909090` sobre card caía de 4,50:1 para 3,46:1 e `#888888` sobre modal de ~5,6:1 para 3,94:1. Pares abaixo de AA por tela: `home-semana` 3 → 7, `home-dia` 3 → 7, `financas` 4 → 8, `alunos` 5 → 12. Daí a decisão do dono por reverter as superfícies.
+- Depois da reversão, a auditoria voltou ao `baseline`: `home-semana` e `home-dia` com 2 pares, `financas` e `alunos` com 3–5 — todos pré-existentes e nenhuma violação nova. Os pares que restam: `#ffffff` sobre `#ff9800` (2,16, badge de deslocamento), `#4285f4` sobre `#222830` (4,16, botão Google), `#909090` sobre `#2a2a2a` (4,50, no limite), `#5484ed` sobre `#2a2a2a` (4,03, Consultoria Online no card) e `#ff8a80` sobre fundo escuro (~4,4, desconectar GCal).
+- Medido no mock (433×762, DPR 2,81, service worker contornado): `body` `rgb(32,32,32)`, texto `rgb(224,224,224)`, FAB `rgb(255,222,23)` sobre `rgb(32,32,32)`, `--cor-primaria` `#ffde17`, sem erro de página.
+- Testes: `tests-frontend/paleta-marca-etapa4.test.js` (novo), 5 casos — Amarelo Josy e derivados com alfa; Grafite como fundo do `body` mais o cabeçalho translúcido derivado dele; convergência dos 13 acentos; e duas **guardas** que valem antes e depois (categorias e estados do guia; cores de marca Google e Calendar no valor original). Suíte de frontend: 430 antes, 435 depois, todas passando. Suíte de backend não foi executada porque nenhum arquivo de `backend/` foi tocado.
+- Provas por mutação: `style.css` e `index.html` do `HEAD` repostos na árvore — 3 das 5 falham (amarelo, Grafite, convergência de acentos) e as 2 guardas continuam passando, que é o esperado delas. Restaurado e conferido por `git status`. `--cor-primaria` trocada por `#00ff00` também derruba `fab-adicionar` (1 falha).
+- Dois bugs de script no caminho, registrados para não repetir: reler o `style.css` do disco no meio da execução apagou a rampa já calculada (a correção é transformar tudo em memória e escrever uma vez); e forçar todo valor a cinza puro colapsou `#222224` em `#222222`, duplicata que o teste da etapa 3 pegou.
+- Encontrado e **não** alterado: superfícies escuras derivadas de Tomato (`#180f0f` em `.slot-bloqueado` e `.card-bloqueio-externo`, `#2a1717` no botão de sair do Google) ficaram mais escuras que a base nova; `#ffcbc8` (texto do botão sair) não estava na tabela de acentos aprovada; o badge de deslocamento `#FF9800` com texto branco (2,16:1) é anterior a esta etapa. Seguem valendo `--header-height` sem fallback e o truncamento do rótulo de período em 320 px.
 

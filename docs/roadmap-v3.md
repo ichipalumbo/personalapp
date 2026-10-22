@@ -84,8 +84,8 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 
 - **Resultado esperado**: app e PWA identificados como Personal Josy com a identidade do guia v3 (logo no cabeçalho, nome exibido, ícones de instalação, paleta do guia e Poppins) e alvos de toque do topo ampliados, absorvendo o item 5.9.
 - **Decidido**: contrato na [spec de identidade](specs/identidade-e-apresentacao-publica.md); sequência em etapas com PR próprio, registrada no plano.
-- **Decidir antes**: abordagem de ampliação do toque no topo, cor de tema, mapeamento das cores sem correspondente na paleta e pesos da Poppins, cada um na sua etapa.
-- **Risco/dependência**: o botão Google é área de autenticação (só área de toque, com aviso prévio); ícones e manifest afetam instalações existentes; a recoloração depende da etapa de variáveis de cor.
+- **Decidir antes**: pesos da Poppins, na etapa de tipografia. Resolvidos: abordagem de ampliação do toque no topo, cor de tema e mapeamento das cores sem correspondente na paleta.
+- **Risco/dependência**: o botão Google é área de autenticação (só área de toque, com aviso prévio); ícones e manifest afetam instalações existentes; a tipografia depende do pré-cache do service worker.
 - **Esforço**: médio, distribuído em etapas.
 - **Referência**: [plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [guia de identidade visual v3](reference/identidade/guia-identidade-visual-v3.md) e [ambiente de validação mobile](setup-ambiente-local.md).
 

@@ -131,8 +131,8 @@ test('FAB tem uma única fonte CSS de aparência, sem overrides por ID ou classe
     assert.ok(seletoresFab.every((seletor) => /^\.fab-adicionar(?::(?:hover|active))?$/.test(seletor)), 'nenhum seletor do FAB pode ser limitado a uma tela');
     verificarDeclaracoes(regraUnica(regras, '.fab-adicionar'), {
         position: 'fixed', bottom: 'calc(var(--bottombar-height, 0px) + 16px)', right: '25px',
-        width: '60px', height: '60px', 'border-radius': '50%', background: 'rgb(255, 215, 0)',
-        color: 'rgb(13, 13, 13)', 'font-size': '1.5rem',
+        width: '60px', height: '60px', 'border-radius': '50%', background: 'rgb(255, 222, 23)',
+        color: 'rgb(32, 32, 32)', 'font-size': '1.5rem',
         'box-shadow': '0 14px 28px rgba(0, 0, 0, 0.42)', 'z-index': '100', cursor: 'pointer',
         display: 'flex', 'align-items': 'center', 'justify-content': 'center',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease'

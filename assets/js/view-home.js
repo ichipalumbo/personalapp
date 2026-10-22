@@ -103,7 +103,7 @@ function garantirHomeTabs() {
     tabsWrapper.id = 'homeTabsWrapper';
     tabsWrapper.style.marginBottom = '14px';
     tabsWrapper.innerHTML = `
-      <div class="tab-tipo-agendamento" role="tablist" aria-label="Visualização da agenda" style="display:flex;gap:6px;background:var(--cor-neutro-03);padding:4px;border-radius:8px;border:1px solid var(--cor-neutro-18);">
+      <div class="tab-tipo-agendamento" role="tablist" aria-label="Visualização da agenda" style="display:flex;gap:6px;background:var(--cor-neutro-10);padding:4px;border-radius:8px;border:1px solid var(--cor-neutro-17);">
         <button type="button" class="tab-btn active" id="tabHomeSemana" role="tab" aria-selected="true" aria-controls="agendaPanelSemana" onclick="window.alternarModoHome('semana')"><i class="fa-solid fa-calendar-week"></i> Semana</button>
         <button type="button" class="tab-btn" id="tabHomeDia" role="tab" aria-selected="false" aria-controls="homeDayPanel" onclick="window.alternarModoHome('dia')"><i class="fa-solid fa-calendar-day"></i> Dia</button>
       </div>
