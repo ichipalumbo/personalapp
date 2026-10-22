@@ -25,6 +25,7 @@ Aplicar no app e no PWA a identidade aprovada: logo no cabeçalho, nome **Person
 | Cópia do SVG em `assets/images/` | Resposta do dono em 2026-10-22 | Arquivo do mestre copiado para junto dos ícones do app |
 | Manter os metadados internos do SVG | Resposta do dono em 2026-10-22 | Cópia idêntica ao mestre; nada de limpeza de `title`/`desc` |
 | Alvos de toque: abordagem mista | Resposta do dono em 2026-10-22 | Hitbox de 44 px no cabeçalho (avatar e Google) e altura visual de 44 px nas tabs e na barra da agenda |
+| Cor de tema e fundo de abertura em Grafite | Resposta do dono em 2026-10-22 | `theme_color` e `background_color` = `#202020`, contínuos com o cabeçalho escuro |
 
 ## 3. Escopo
 
@@ -74,7 +75,7 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 |---|---|---|
 | 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída em 2026-10-17 |
 | 1 | Cabeçalho com logo e alvos de toque do topo | Concluída em 2026-10-22 |
-| 2 | Nome exibido e instalação do PWA | Pendente |
+| 2 | Nome exibido e instalação do PWA | Concluída em 2026-10-22 |
 | 3 | Variáveis de cor, sem mudança visual | Pendente |
 | 4 | Recoloração com a paleta do guia | Pendente; depende da 3 |
 | 5 | Poppins na interface | Pendente |
@@ -99,7 +100,8 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 
 - **Nome**: título da página, `apple-mobile-web-app-title`, e `name` e `short_name` do manifest passam a "Personal Josy". Se o nome curto for truncado, parar e pedir aprovação.
 - **Ícones**: favicon; 192 e 512 nas versões padrão e maskable (zona segura de 80%); ícone da Apple. Todos gerados do símbolo do kit sobre Grafite, conforme o guia, seção 8.3. A geração usa o Edge em modo headless, já usado no gerador do PDF do guia, sem dependência nova.
-- **Cor de tema e fundo de abertura**: proposta testada nas plataformas e aprovada pelo dono antes de entrar.
+- **Origem vetorial**: o SVG do avatar escuro com fundo do kit já é a peça da seção 8.3 — símbolo centrado sobre `#202020` opaco, sem nome, descritor ou cantos arredondados. Raio máximo do desenho medido em 411,7 de 1080 (76,2% do diâmetro), dentro do limite de 80%.
+- **Cor de tema e fundo de abertura**: proposta apresentada ao dono e aprovada em 2026-10-22 — Grafite `#202020` nos dois, contínuo com o cabeçalho escuro. O teste em plataformas reais fica na conferência de instalação do dono. O plano não testa Android/iOS reais.
 - **Fora**: `CACHE_NAME` do `sw.js` não muda.
 - **Aviso prévio**: a etapa altera o que fica instalado nos aparelhos.
 - **Aceite**:
@@ -195,4 +197,20 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 - O inventário "antes" acima foi medido em CSS px com DPR 1 e sem emulação mobile; alturas e alvos, que são o objeto da etapa, seguem comparáveis. Numa primeira medição com DPR 1 o rótulo do período aparecia truncado em 1 px em 390 px; com DPR 2,81 e emulação mobile ele cabe inteiro (118 px para 118 px), então nenhuma regra extra de vão foi mantida no CSS.
 - Em 320 px o rótulo do período já truncava antes da etapa (77 px para 104 px necessários) e agora dispõe de 47 px; a correção definitiva nessa largura exigiria quebrar "Hoje" para a segunda linha, o que muda o layout da Home e não foi aprovado nesta rodada.
 - Testes: suíte de frontend de 420 para 422, todas passando. Nenhum teste cobre medida de layout; os números acima vêm do mock.
+
+### Etapa 2 — 2026-10-22
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); a etapa 1 foi commitada pelo dono em `5ee686a`.
+- Decisão do dono nesta rodada: `theme_color` e `background_color` = Grafite `#202020`.
+- Nome: `<title>`, `apple-mobile-web-app-title`, `name` e `short_name` do manifest passaram a "Personal Josy". `start_url`, `display` e `orientation` não mudaram.
+- Ícones gerados de `07_avatar/escuro/personal_josy_avatar_escuro_com_fundo.svg` por `scripts/gerar-icones-app.js` (Edge headless, sem dependência nova):
+  - `icon-192x192.png` e `icon-512x512.png` regenerados, mantendo os nomes que o app já referenciava;
+  - `apple-touch-icon-180x180.png` e `favicon-32x32.png` criados.
+  - Conferido por amostragem de pixel: cantos em `#202020`, símbolo em `#FFDE17`, dimensão exata em cada arquivo.
+- O manifest declara as duas finalidades para 192 e 512 (`any` e `maskable`), reusando os mesmos arquivos: o desenho já respeita a zona segura, então não existe versão alternativa para manter.
+- `sw.js` não foi tocado: `CACHE_NAME` é identificador técnico (spec, 3.2) e trocá-lo força flush do cache offline de todo aparelho — o `activate` atual apaga qualquer cache com nome diferente do atual.
+- Validação no mock (433×762, DPR 2,81): `manifest.json` responde 200 com os valores novos, favicon 32×32 e apple 180×180 carregam, ícones 192/512 carregam, título da aba "Personal Josy", `theme-color` `#202020`.
+- Testes: `tests-frontend/pwa-nome-icones.test.js`, 4 casos — nome e campos do manifest; existência, tipo e dimensão real dos PNG contra o `sizes` declarado; zona segura e base opaca dos maskable; título, títulos de app e links de ícone no HTML. Suíte de frontend de 422 para 426, todas passando.
+- Provas por mutação: `name` revertido no manifest (1 falha); PNG trocado por um com pixel a 80,5 px do centro contra limite de 76,8 (1 falha); `sizes` 192 declarado como 384 (1 falha). Tudo restaurado e conferido por hash.
+- Pendente com o dono: instalar no aparelho e conferir ícone, nome curto e cor da barra. Em app já instalado, a atualização de ícone e nome tem atraso próprio da plataforma.
 
