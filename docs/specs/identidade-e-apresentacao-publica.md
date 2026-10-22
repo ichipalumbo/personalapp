@@ -1,9 +1,9 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Aprovada, não implementada · **Versão**: 8 · **Atualizado**: 2026-10-17
+> **Status**: Em implementação · **Versão**: 9 · **Atualizado**: 2026-10-22
 > **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), adoção na interface das cores da marca e da paleta do produto do guia, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa com adoção da Poppins na interface por arquivos locais, aplicação no cabeçalho, nome no produto, ícones de instalação, endereço atual e contato provisório de suporte.
 > **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
-> **Limite**: aplicação no app autorizada nos termos da seção 2 e ainda não executada; cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
+> **Limite**: aplicação no app autorizada nos termos da seção 2 e **em execução** — o cabeçalho recebeu o logo e os alvos de toque do topo; nome no produto, ícones, cores e tipografia seguem pendentes no [plano](../plans/2026-10-17-plan-aplicacao-identidade-visual.md). Cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
 
