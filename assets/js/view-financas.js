@@ -132,10 +132,10 @@
             pagamentoModal.setAttribute('aria-describedby', 'financasPagamentoResumo financasPagamentoValor financasPagamentoCongelamento');
             pagamentoModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
-                <h3 id="financasPagamentoTitulo"><i class="fa-solid fa-circle-check" style="color:#ffd700;margin-right:8px"></i>Marcar como pago</h3>
-                <p id="financasPagamentoResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:6px;font-weight:500;"></p>
-                <p id="financasPagamentoValor" style="font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:8px;"></p>
-                <p id="financasPagamentoCongelamento" style="font-size:0.8rem;color:#b8b8b8;margin-bottom:14px;line-height:1.35;">Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.</p>
+                <h3 id="financasPagamentoTitulo"><i class="fa-solid fa-circle-check" style="color:var(--cor-primaria);margin-right:8px"></i>Marcar como pago</h3>
+                <p id="financasPagamentoResumo" style="font-size:0.875rem;color:var(--cor-neutro-37);margin-bottom:6px;font-weight:500;"></p>
+                <p id="financasPagamentoValor" style="font-size:1.15rem;font-weight:800;color:var(--cor-branco);margin-bottom:8px;"></p>
+                <p id="financasPagamentoCongelamento" style="font-size:0.8rem;color:var(--cor-neutro-40);margin-bottom:14px;line-height:1.35;">Este ciclo congela após o pagamento — edições futuras na agenda não o alteram.</p>
                 <form id="formFinancasPagamento">
                   <div class="form-grupo-spa">
                     <label for="financasDataPagamento">Data do pagamento *</label>
@@ -145,7 +145,7 @@
                     <label for="financasFormaPagamento">Forma de pagamento</label>
                     <input type="text" id="financasFormaPagamento" placeholder="Pix, permuta, dinheiro..." />
                   </div>
-                  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;border-top:1px solid #222;padding-top:15px;">
+                  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;border-top:1px solid var(--cor-neutro-12);padding-top:15px;">
                     <button type="button" class="btn btn-secondary" data-financas-close="pagamento">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="btnSalvarPagamento">Salvar</button>
                   </div>
@@ -164,20 +164,20 @@
             ajusteModal.setAttribute('aria-describedby', 'financasAjusteResumo financasAjusteSubstituicao financasAjustePrevia');
             ajusteModal.innerHTML = `
               <div class="modal" style="max-width: 420px">
-                <h3 id="financasAjusteTitulo"><i class="fa-solid fa-sliders" style="color:#ffd700;margin-right:8px"></i>Ajuste manual</h3>
-                <p id="financasAjusteResumo" style="font-size:0.875rem;color:#a8a8a8;margin-bottom:6px;font-weight:500;"></p>
-                <p id="financasAjusteSubstituicao" style="font-size:0.8rem;color:#b8b8b8;margin-bottom:14px;line-height:1.35;">O valor informado substitui o ajuste atual do ciclo.</p>
+                <h3 id="financasAjusteTitulo"><i class="fa-solid fa-sliders" style="color:var(--cor-primaria);margin-right:8px"></i>Ajuste manual</h3>
+                <p id="financasAjusteResumo" style="font-size:0.875rem;color:var(--cor-neutro-37);margin-bottom:6px;font-weight:500;"></p>
+                <p id="financasAjusteSubstituicao" style="font-size:0.8rem;color:var(--cor-neutro-40);margin-bottom:14px;line-height:1.35;">O valor informado substitui o ajuste atual do ciclo.</p>
                 <form id="formFinancasAjuste">
                   <div class="form-grupo-spa">
                     <label for="financasAulasExtras">Ajuste de aulas (pode ser negativo)</label>
                     <input type="number" id="financasAulasExtras" step="1" required />
                   </div>
-                  <p id="financasAjustePrevia" role="status" style="font-size:0.85rem;color:#d8d8d8;margin:0 0 12px;line-height:1.35;"></p>
+                  <p id="financasAjustePrevia" role="status" style="font-size:0.85rem;color:var(--cor-neutro-44);margin:0 0 12px;line-height:1.35;"></p>
                   <div class="form-grupo-spa">
                     <label for="financasObservacaoAjuste">Observação</label>
                     <textarea id="financasObservacaoAjuste" rows="4" style="resize:vertical;"></textarea>
                   </div>
-                  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;border-top:1px solid #222;padding-top:15px;">
+                  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:24px;border-top:1px solid var(--cor-neutro-12);padding-top:15px;">
                     <button type="button" class="btn btn-secondary" data-financas-close="ajuste">Cancelar</button>
                     <button type="submit" class="btn btn-primary" id="btnSalvarAjuste">Salvar</button>
                   </div>
@@ -230,7 +230,7 @@
         conteudo.innerHTML = `
           <div style="display:flex;flex-direction:column;gap:12px;">
             ${Array.from({ length: 3 }).map(() => `
-              <div class="aluno-card" style="opacity:0.7;border-left-color:#3a3a3a;">
+              <div class="aluno-card" style="opacity:0.7;border-left-color:var(--cor-neutro-22);">
                 <div class="skeleton" style="height:16px;width:55%;margin-bottom:10px;"></div>
                 <div class="skeleton" style="height:10px;width:80%;margin-bottom:8px;"></div>
                 <div class="skeleton" style="height:10px;width:65%;margin-bottom:12px;"></div>
@@ -263,8 +263,8 @@
         const conteudo = document.getElementById('financasConteudo');
         if (!conteudo) return;
         conteudo.innerHTML = `
-          <div class="agenda-panel" style="text-align:center;color:#909090;">
-            <i class="fa-solid fa-wallet" style="font-size:2rem;margin-bottom:10px;display:block;color:#ffd700;"></i>
+          <div class="agenda-panel" style="text-align:center;color:var(--cor-neutro-32);">
+            <i class="fa-solid fa-wallet" style="font-size:2rem;margin-bottom:10px;display:block;color:var(--cor-primaria);"></i>
             <p style="margin:0;font-size:1rem;">${mensagem}</p>
           </div>
         `;
@@ -297,10 +297,10 @@
         const valorTotal = Number(linha && linha.valorTotal) || 0;
         const valorExibicao = formatarMoeda(valorTotal);
         const quantidadeHtml = Number.isFinite(quantidade) && quantidade !== 0
-            ? `<div style="margin-top:4px;color:#909090;font-size:0.75rem;">Qtd.: ${quantidade}</div>`
+            ? `<div style="margin-top:4px;color:var(--cor-neutro-32);font-size:0.75rem;">Qtd.: ${quantidade}</div>`
             : '';
         const notaHtml = nota
-            ? `<div style="margin-top:4px;color:#909090;font-size:0.75rem;">Nota: ${nota}</div>`
+            ? `<div style="margin-top:4px;color:var(--cor-neutro-32);font-size:0.75rem;">Nota: ${nota}</div>`
             : '';
 
         let rotuloTipo = 'Lançamento';
@@ -344,15 +344,15 @@
         }
 
         return `
-          <div style="padding:8px 10px;border:1px solid #242424;border-radius:8px;background:#0d0d0d;">
+          <div style="padding:8px 10px;border:1px solid var(--cor-neutro-15);border-radius:8px;background:var(--cor-neutro-03);">
             <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
               <div style="min-width:0;flex:1;">
-                <div style="color:#f0f0f0;font-size:0.875rem;font-weight:700;">${rotuloTipo}</div>
-                    <div style="margin-top:4px;color:#e8e8e8;font-size:0.875rem;word-break:break-word;">${descricao}</div>
+                <div style="color:var(--cor-neutro-50);font-size:0.875rem;font-weight:700;">${rotuloTipo}</div>
+                    <div style="margin-top:4px;color:var(--cor-neutro-48);font-size:0.875rem;word-break:break-word;">${descricao}</div>
                 ${quantidadeHtml}
                 ${notaHtml}
               </div>
-              <div style="color:#ffd700;font-weight:800;font-size:1rem;white-space:nowrap;">${valorExibicao}</div>
+              <div style="color:var(--cor-primaria);font-weight:800;font-size:1rem;white-space:nowrap;">${valorExibicao}</div>
             </div>
           </div>
         `;
@@ -367,15 +367,15 @@
 
         return `
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px;">
-            <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-              <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo</div>
-              <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
-              <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${cicloSubtitulo}</div>
+            <div style="background:var(--cor-neutro-05);border:1px solid var(--cor-neutro-14);border-radius:10px;padding:10px;">
+              <div style="font-size:0.75rem;color:var(--cor-neutro-32);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo</div>
+              <div style="margin-top:6px;font-size:0.875rem;color:var(--cor-branco);font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
+              <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-37);">${cicloSubtitulo}</div>
             </div>
-            <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-              <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
-              <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${metodo}</div>
-              <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${cobrancaSubtitulo}</div>
+            <div style="background:var(--cor-neutro-05);border:1px solid var(--cor-neutro-14);border-radius:10px;padding:10px;">
+              <div style="font-size:0.75rem;color:var(--cor-neutro-32);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
+              <div style="margin-top:6px;font-size:0.875rem;color:var(--cor-branco);font-weight:700;">${metodo}</div>
+              <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-37);">${cobrancaSubtitulo}</div>
             </div>
           </div>
         `;
@@ -383,18 +383,18 @@
 
     function renderizarConteudoExtrato(ciclo) {
         if (!ciclo) {
-            return '<div style="color:#909090;font-size:0.875rem;">Extrato indisponível.</div>';
+            return '<div style="color:var(--cor-neutro-32);font-size:0.875rem;">Extrato indisponível.</div>';
         }
 
         const cicloECobranca = renderizarCicloECobrancaExtrato(ciclo);
 
         if (ciclo.extrato == null) {
-            return `${cicloECobranca}<div style="color:#909090;font-size:0.875rem;">Extrato não registrado para este ciclo.</div>`;
+            return `${cicloECobranca}<div style="color:var(--cor-neutro-32);font-size:0.875rem;">Extrato não registrado para este ciclo.</div>`;
         }
 
         const linhas = Array.isArray(ciclo.extrato) ? ciclo.extrato : [];
         if (linhas.length === 0) {
-            return `${cicloECobranca}<div style="color:#909090;font-size:0.875rem;">Não há lançamentos.</div>`;
+            return `${cicloECobranca}<div style="color:var(--cor-neutro-32);font-size:0.875rem;">Não há lançamentos.</div>`;
         }
 
         const totalLabel = ciclo.metodoCobranca === 'valor_fixo'
@@ -405,7 +405,7 @@
           ${cicloECobranca}
           <div style="display:flex;flex-direction:column;gap:8px;">
             ${linhas.map((linha) => renderizarLinhaExtrato(linha, ciclo)).join('')}
-            <div style="padding-top:8px;border-top:1px solid #262626;color:#ffd700;font-size:0.875rem;font-weight:800;">${escaparHtml(totalLabel)}</div>
+            <div style="padding-top:8px;border-top:1px solid var(--cor-neutro-17);color:var(--cor-primaria);font-size:0.875rem;font-weight:800;">${escaparHtml(totalLabel)}</div>
           </div>
         `;
     }
@@ -417,8 +417,8 @@
         const aberto = opcoes.aberto === true ? 'open' : (opcoes.aberto === false ? '' : (estadoPersistido ? 'open' : ''));
 
         return `
-          <details data-financas-extrato-details="${escaparHtml(identificador)}" style="border-top:1px solid #262626;padding-top:10px;" ${aberto}>
-            <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.875rem;">${escaparHtml(rotulo)}</summary>
+          <details data-financas-extrato-details="${escaparHtml(identificador)}" style="border-top:1px solid var(--cor-neutro-17);padding-top:10px;" ${aberto}>
+            <summary style="cursor:pointer;color:var(--cor-primaria);font-weight:700;font-size:0.875rem;">${escaparHtml(rotulo)}</summary>
             <div style="margin-top:10px;">${renderizarConteudoExtrato(ciclo)}</div>
           </details>
         `;
@@ -427,7 +427,7 @@
     function renderizarListaHistorico(historico) {
         const lista = Array.isArray(historico) ? historico : [];
         if (lista.length === 0) {
-            return '<p style="margin:0;color:#909090;font-size:0.875rem;">Sem ciclos anteriores.</p>';
+            return '<p style="margin:0;color:var(--cor-neutro-32);font-size:0.875rem;">Sem ciclos anteriores.</p>';
         }
 
         return `
@@ -443,12 +443,12 @@
                                         </div>
                                 `;
                 return `
-                  <div style="border:1px solid #262626;border-radius:10px;padding:10px 12px;background:#0f0f0f;">
+                  <div style="border:1px solid var(--cor-neutro-17);border-radius:10px;padding:10px 12px;background:var(--cor-neutro-04);">
                     <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
-                      <strong style="color:#fff;font-size:0.875rem;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</strong>
+                      <strong style="color:var(--cor-branco);font-size:0.875rem;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</strong>
                       <span style="color:${ciclo.status === 'pago' ? 'var(--cor-estado-ok)' : (ciclo.status === 'atrasado' ? 'var(--cor-estado-erro)' : 'var(--cor-estado-neutro)')};font-size:0.75rem;font-weight:700;">${status}</span>
                     </div>
-                    <div style="font-size:0.75rem;color:#9a9a9a;margin-top:6px;">
+                    <div style="font-size:0.75rem;color:var(--cor-neutro-35);margin-top:6px;">
                       ${totalAulasCobradas(ciclo)} aulas cobradas (${ciclo.aulasContadas || 0} registradas, ${descreverAjuste(ciclo.aulasManuaisExtras)}) • ${valor}
                     </div>
                                         ${acoesHistorico}
@@ -472,12 +472,12 @@
 
         if (estado.status === 'carregando') {
             // Etapa 2 (Cartão D): #8e8e8e → #909090 (4.5:1 no card #2a2a2a)
-        return '<p style="margin:0;color:#909090;font-size:0.875rem;">Carregando ciclos anteriores...</p>';
+        return '<p style="margin:0;color:var(--cor-neutro-32);font-size:0.875rem;">Carregando ciclos anteriores...</p>';
         }
         if (estado.status === 'erro') {
             return `
               <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
-                <p style="margin:0;color:#ff8a80;font-size:0.875rem;">${estado.erro || 'Não foi possível carregar o histórico.'}</p>
+                <p style="margin:0;color:var(--cor-estado-erro);font-size:0.875rem;">${estado.erro || 'Não foi possível carregar o histórico.'}</p>
                 <button type="button" class="btn btn-secondary" data-financas-historico-retry="${alunoId}">Tentar novamente</button>
               </div>
             `;
@@ -587,28 +587,28 @@
           <article class="aluno-card" data-financas-card-id="${aluno.id || card.alunoId}" style="display:flex;flex-direction:column;gap:10px;position:relative;">
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
               <div style="min-width:0;">
-                <strong style="display:block;color:#fff;font-size:1.02rem;word-break:break-word;">${escaparHtml(aluno.nome || 'Aluno')}</strong>
-                ${card.configuracaoPendente ? '' : `<div style="margin-top:4px;font-size:0.75rem;color:#b8b8b8;">${resumoCiclo(card)}</div>`}
+                <strong style="display:block;color:var(--cor-branco);font-size:1.02rem;word-break:break-word;">${escaparHtml(aluno.nome || 'Aluno')}</strong>
+                ${card.configuracaoPendente ? '' : `<div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-40);">${resumoCiclo(card)}</div>`}
               </div>
               <span style="font-size:0.75rem;font-weight:800;color:${card.configuracaoPendente ? 'var(--cor-estado-erro)' : (status === 'pago' ? 'var(--cor-estado-ok)' : (status === 'atrasado' ? 'var(--cor-estado-erro)' : 'var(--cor-estado-neutro)'))};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
             </div>
 
             ${card.configuracaoPendente ? `
-              <div style="padding:12px;border:1px dashed rgba(255,215,0,0.28);border-radius:10px;background:rgba(255,215,0,0.04);color:#ddd;">
+              <div style="padding:12px;border:1px dashed var(--cor-primaria-a28);border-radius:10px;background:var(--cor-primaria-a04);color:var(--cor-neutro-46);">
                 <p style="margin:0 0 8px;font-size:1rem;">Configure o dia de vencimento para calcular a cobrança.</p>
                 <button type="button" class="btn btn-primary" data-financas-configurar="${aluno.id}" style="width:100%;">Configurar agora</button>
               </div>
             ` : `
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
-                <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
-                  <div style="margin-top:6px;font-size:0.875rem;color:#fff;font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
-                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
+                <div style="background:var(--cor-neutro-05);border:1px solid var(--cor-neutro-14);border-radius:10px;padding:10px;">
+                  <div style="font-size:0.75rem;color:var(--cor-neutro-32);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
+                  <div style="margin-top:6px;font-size:0.875rem;color:var(--cor-branco);font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
+                  <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-37);">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
                 </div>
-                <div style="background:#101010;border:1px solid #232323;border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:#909090;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
-                  <div style="margin-top:6px;font-size:1rem;color:#ffd700;font-weight:800;">${total}</div>
-                  <div style="margin-top:4px;font-size:0.75rem;color:#a8a8a8;">${status === 'pago' ? 'Pago' : 'A receber'}</div>
+                <div style="background:var(--cor-neutro-05);border:1px solid var(--cor-neutro-14);border-radius:10px;padding:10px;">
+                  <div style="font-size:0.75rem;color:var(--cor-neutro-32);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
+                  <div style="margin-top:6px;font-size:1rem;color:var(--cor-primaria);font-weight:800;">${total}</div>
+                  <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-37);">${status === 'pago' ? 'Pago' : 'A receber'}</div>
                 </div>
               </div>
 
@@ -619,8 +619,8 @@
 
               ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-atual-${aluno.id || card.alunoId}` })}
 
-              <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid #262626;padding-top:10px;" ${STATE.historicoAberto[aluno.id] ? 'open' : ''}>
-                <summary style="cursor:pointer;color:#ffd700;font-weight:700;font-size:0.875rem;">Ver ciclos anteriores</summary>
+              <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid var(--cor-neutro-17);padding-top:10px;" ${STATE.historicoAberto[aluno.id] ? 'open' : ''}>
+                <summary style="cursor:pointer;color:var(--cor-primaria);font-weight:700;font-size:0.875rem;">Ver ciclos anteriores</summary>
                 <div id="financas-historico-conteudo-${aluno.id}" style="margin-top:10px;">${montarHtmlHistorico(aluno.id)}</div>
               </details>
             `}

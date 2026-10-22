@@ -14,8 +14,8 @@
 // tracejada, design pré-existente). Deslocamento/Bloqueio/Google não têm chip:
 // o ícone do tipo já abre o título do card (carro/cadeado/G) — "só em AULA".
 const BADGE_STYLES = {
-    recorrente: 'background: rgba(255, 215, 0, 0.18); color: #FFD700; font-weight: 700;',
-    unico: 'background: rgba(129, 199, 132, 0.18); color: #81C784; font-weight: 700;'
+    recorrente: 'background: var(--cor-primaria-a18); color: var(--cor-primaria); font-weight: 700;',
+    unico: 'background: var(--cor-estado-ok-a18); color: var(--cor-estado-ok); font-weight: 700;'
 };
 
     function normalizarHex(valorHex) {
@@ -239,7 +239,7 @@ const BADGE_STYLES = {
             }
             tagVisualHtml = '';
             if (alunoInativo) {
-                tagVisualHtml += `<span class="badge-tag-tipo agenda-card-optional" role="img" aria-label="Aluno inativo" title="Aluno inativo" style="background: rgba(255, 138, 128, 0.15); color: #FF8A80; padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></span>`;
+                tagVisualHtml += `<span class="badge-tag-tipo agenda-card-optional" role="img" aria-label="Aluno inativo" title="Aluno inativo" style="background: var(--cor-estado-erro-a15); color: var(--cor-estado-erro); padding: 2px 6px; border-radius: 4px; font-weight: 700; display: inline-flex; align-items: center; gap: 3px;"><i class="fa-solid fa-user-slash" aria-hidden="true"></i></span>`;
             }
             // Semana (sem visualContext): o chip de aula fica no rodapé (meta,
             // canto inferior direito por margin-left:auto da
@@ -287,7 +287,7 @@ const BADGE_STYLES = {
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </span>
                         <span class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #DDD;">${descricaoDeslocamento}</span>
+                            <span class="agenda-dia-aula-local" style="color: var(--cor-neutro-46);">${descricaoDeslocamento}</span>
                         </span>
                     </span>
                 </button>
@@ -313,7 +313,7 @@ const BADGE_STYLES = {
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </div>
                         <div class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #ff5c54;">Bloqueado</span>
+                            <span class="agenda-dia-aula-local" style="color: var(--cor-vermelho-10);">Bloqueado</span>
                         </div>
                     </div>
                 </div>
@@ -328,12 +328,12 @@ const BADGE_STYLES = {
                     <span class="card-content-wrapper">
                         <span class="agenda-semana-card-top">
                             <span class="agenda-semana-card-title-group">
-                                <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: #DDD;"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
+                                <span class="agenda-dia-aula-nome agenda-dia-bloqueio-descricao" style="color: var(--cor-neutro-46);"><i class="fa-solid fa-lock"></i><span class="agenda-dia-bloqueio-descricao-text">${descricaoBloqueioInterno}</span></span>
                             </span>
                             <span class="agenda-semana-card-time agenda-card-optional${classeTempoConcluido}"><i class="${iconePeriodo}"></i> ${periodoExibirSeguro}</span>
                         </span>
                         <span class="agenda-semana-card-bottom">
-                            <span class="agenda-dia-aula-local" style="color: #ff5c54;">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
+                            <span class="agenda-dia-aula-local" style="color: var(--cor-vermelho-10);">${bloqueioDiaInteiro ? 'Dia bloqueado' : 'Bloqueado'}</span>
                         </span>
                     </span>
                 </button>

@@ -2,9 +2,9 @@
 .recuperacao-dados {
   margin: 12px 0;
   padding: 16px;
-  border: 1px solid var(--estado-aviso, #e6b85c);
+  border: 1px solid var(--estado-aviso, var(--cor-amarelo-02));
   border-radius: 12px;
-  background: #1d1d1d;
+  background: var(--cor-neutro-09);
 }
 .recuperacao-dados[hidden] { display: none; }
 .recuperacao-dados h2 { margin: 0 0 8px; font-size: 1rem; }
@@ -22,6 +22,8 @@
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
 
+  --cor-primaria: #ffd700; /* identidade/destaque; a etapa 4 troca para o Amarelo Josy */
+
   /* [TAG-STYLE-ESTADO] Paleta de ESTADO — achado 4.13 (Etapa 7, 2026-10-01).
      Regra: um significado por cor. O dourado (#ffd700) é IDENTIDADE/destaque
      (ação, item ativo, foco, título) e o Tangerine (--objetivo-*) é CATEGORIA
@@ -29,11 +31,13 @@
      ok = concluído · informativo = agendado · aviso = atenção (a vencer/pendente)
      · erro = atrasado/expirado · neutro = em aberto (aguardando, sem atraso). */
   --cor-estado-ok: #81c784;
+  --cor-estado-ok-a18: rgba(129, 199, 132, 0.18);
   --cor-estado-informativo: #64b5f6;
   --cor-estado-aviso: #ffb74d;
   --cor-estado-aviso-fundo: rgba(255, 183, 77, 0.12);
   --cor-estado-aviso-borda: rgba(255, 183, 77, 0.34);
   --cor-estado-erro: #ff8a80;
+  --cor-estado-erro-a15: rgba(255, 138, 128, 0.15);
   --cor-estado-neutro: #cfcfcf;
 
   /* Contrato de camadas da visão Calendário > Dia */
@@ -53,6 +57,172 @@
   --objetivo-outro-text: var(--objetivo-tangerina);
   --objetivo-outro-border: var(--objetivo-tangerina);
   --objetivo-personal-trainer-text: var(--objetivo-tangerina);
+
+  /* [TAG-TOKENS-COR] Etapa 3 da identidade visual: cores da interface centralizadas.
+     Passo = ordem de luminância dentro da família (01 = mais escuro); o sufixo
+     -aNN é o alfa em centésimos (a08 = 0,08). Os tokens semânticos acima
+     (--cor-estado-*, --objetivo-*) seguem valendo para as cores deles.
+     A etapa 4 troca somente esta tabela e os valores semânticos. */
+  --cor-amarelo-01: #ff9800;
+  --cor-amarelo-01-a12: rgba(255, 152, 0, 0.12);
+  --cor-amarelo-01-a25: rgba(255, 152, 0, 0.25);
+  --cor-amarelo-02: #e6b85c;
+  --cor-amarelo-04: #fbd75b;
+  --cor-amarelo-04-a10: rgba(251, 215, 91, 0.1);
+  --cor-amarelo-04-a12: rgba(251, 215, 91, 0.12);
+  --cor-amarelo-04-a75: rgba(251, 215, 91, 0.75);
+  --cor-amarelo-05: #f7f1cc;
+  --cor-azul-01-a92: rgba(14, 18, 24, 0.92);
+  --cor-azul-02-a92: rgba(18, 22, 28, 0.92);
+  --cor-azul-03: #162233;
+  --cor-azul-03-a35: rgba(22, 34, 51, 0.35);
+  --cor-azul-04: #1d2e45;
+  --cor-azul-05: #2f3d4c;
+  --cor-azul-06: #314861;
+  --cor-azul-07: #4d6891;
+  --cor-azul-08: #4285f4;
+  --cor-azul-08-a10: rgba(66, 133, 244, 0.1);
+  --cor-azul-08-a20: rgba(66, 133, 244, 0.2);
+  --cor-azul-08-a45: rgba(66, 133, 244, 0.45);
+  --cor-azul-09-a12: rgba(84, 132, 237, 0.12);
+  --cor-azul-09-a45: rgba(84, 132, 237, 0.45);
+  --cor-azul-10: #5a9eff;
+  --cor-azul-11: #9cb0c6;
+  --cor-azul-12: #9eb0c3;
+  --cor-azul-13-a08: rgba(100, 181, 246, 0.08);
+  --cor-azul-13-a55: rgba(100, 181, 246, 0.55);
+  --cor-azul-14: #8ab4f8;
+  --cor-azul-15: #b3bcc6;
+  --cor-azul-16: #c4d9e8;
+  --cor-azul-17: #d8e8ff;
+  --cor-branco: #ffffff;
+  --cor-branco-a02: rgba(255, 255, 255, 0.02);
+  --cor-branco-a04: rgba(255, 255, 255, 0.04);
+  --cor-branco-a06: rgba(255, 255, 255, 0.06);
+  --cor-branco-a07: rgba(255, 255, 255, 0.07);
+  --cor-branco-a14: rgba(255, 255, 255, 0.14);
+  --cor-branco-a35: rgba(255, 255, 255, 0.35);
+  --cor-laranja-01-a05: rgba(255, 184, 120, 0.05);
+  --cor-laranja-01-a10: rgba(255, 184, 120, 0.1);
+  --cor-laranja-01-a12: rgba(255, 184, 120, 0.12);
+  --cor-laranja-01-a45: rgba(255, 184, 120, 0.45);
+  --cor-neutro-01: #0b0b0b;
+  --cor-neutro-02-a92: rgba(12, 12, 12, 0.92);
+  --cor-neutro-03: #0d0d0d;
+  --cor-neutro-03-a88: rgba(13, 13, 13, 0.88);
+  --cor-neutro-04: #0f0f0f;
+  --cor-neutro-05: #101010;
+  --cor-neutro-06: #111111;
+  --cor-neutro-07: #141414;
+  --cor-neutro-08: #1a1a1a;
+  --cor-neutro-09: #1d1d1d;
+  --cor-neutro-10: #1e1e1e;
+  --cor-neutro-11: #1f1f1f;
+  --cor-neutro-12: #222222;
+  --cor-neutro-13: #222224;
+  --cor-neutro-14: #232323;
+  --cor-neutro-15: #242424;
+  --cor-neutro-16: #252525;
+  --cor-neutro-17: #262626;
+  --cor-neutro-18: #2a2a2a;
+  --cor-neutro-19: #2d2d2d;
+  --cor-neutro-20: #2e2e2e;
+  --cor-neutro-21: #333333;
+  --cor-neutro-22: #3a3a3a;
+  --cor-neutro-23: #444444;
+  --cor-neutro-24: #555555;
+  --cor-neutro-25: #666666;
+  --cor-neutro-26: #707070;
+  --cor-neutro-27: #787878;
+  --cor-neutro-28: #888888;
+  --cor-neutro-29: #8c8c8c;
+  --cor-neutro-30: #8d8d8d;
+  --cor-neutro-31: #8f8f8f;
+  --cor-neutro-32: #909090;
+  --cor-neutro-33: #969696;
+  --cor-neutro-34: #999999;
+  --cor-neutro-35: #9a9a9a;
+  --cor-neutro-36: #a0a0a0;
+  --cor-neutro-37: #a8a8a8;
+  --cor-neutro-38: #aaaaaa;
+  --cor-neutro-39: #b0b0b0;
+  --cor-neutro-40: #b8b8b8;
+  --cor-neutro-41: #bbbbbb;
+  --cor-neutro-42: #bdbdbd;
+  --cor-neutro-43: #d7d7d7;
+  --cor-neutro-44: #d8d8d8;
+  --cor-neutro-45: #d9d9d9;
+  --cor-neutro-46: #dddddd;
+  --cor-neutro-47: #e0e0e0;
+  --cor-neutro-48: #e8e8e8;
+  --cor-neutro-49: #eaeaea;
+  --cor-neutro-50: #f0f0f0;
+  --cor-neutro-51: #f1f1f1;
+  --cor-neutro-52: #f4f4f4;
+  --cor-preto-a12: rgba(0, 0, 0, 0.12);
+  --cor-preto-a24: rgba(0, 0, 0, 0.24);
+  --cor-preto-a38: rgba(0, 0, 0, 0.38);
+  --cor-preto-a40: rgba(0, 0, 0, 0.4);
+  --cor-preto-a42: rgba(0, 0, 0, 0.42);
+  --cor-preto-a45: rgba(0, 0, 0, 0.45);
+  --cor-preto-a50: rgba(0, 0, 0, 0.5);
+  --cor-preto-a60: rgba(0, 0, 0, 0.6);
+  --cor-preto-a65: rgba(0, 0, 0, 0.65);
+  --cor-preto-a70: rgba(0, 0, 0, 0.7);
+  --cor-preto-a85: rgba(0, 0, 0, 0.85);
+  --cor-preto-a92: rgba(0, 0, 0, 0.92);
+  --cor-primaria-a02: rgba(255, 215, 0, 0.02);
+  --cor-primaria-a03: rgba(255, 215, 0, 0.03);
+  --cor-primaria-a035: rgba(255, 215, 0, 0.035);
+  --cor-primaria-a04: rgba(255, 215, 0, 0.04);
+  --cor-primaria-a05: rgba(255, 215, 0, 0.05);
+  --cor-primaria-a06: rgba(255, 215, 0, 0.06);
+  --cor-primaria-a08: rgba(255, 215, 0, 0.08);
+  --cor-primaria-a10: rgba(255, 215, 0, 0.1);
+  --cor-primaria-a12: rgba(255, 215, 0, 0.12);
+  --cor-primaria-a14: rgba(255, 215, 0, 0.14);
+  --cor-primaria-a15: rgba(255, 215, 0, 0.15);
+  --cor-primaria-a16: rgba(255, 215, 0, 0.16);
+  --cor-primaria-a18: rgba(255, 215, 0, 0.18);
+  --cor-primaria-a20: rgba(255, 215, 0, 0.2);
+  --cor-primaria-a22: rgba(255, 215, 0, 0.22);
+  --cor-primaria-a25: rgba(255, 215, 0, 0.25);
+  --cor-primaria-a28: rgba(255, 215, 0, 0.28);
+  --cor-primaria-a30: rgba(255, 215, 0, 0.3);
+  --cor-primaria-a32: rgba(255, 215, 0, 0.32);
+  --cor-primaria-a35: rgba(255, 215, 0, 0.35);
+  --cor-primaria-a55: rgba(255, 215, 0, 0.55);
+  --cor-verde-01: #111a11;
+  --cor-verde-02: #34a853;
+  --cor-verde-02-a08: rgba(52, 168, 83, 0.08);
+  --cor-verde-02-a30: rgba(52, 168, 83, 0.3);
+  --cor-verde-03: #4caf50;
+  --cor-verde-04: #51b749;
+  --cor-verde-04-a10: rgba(81, 183, 73, 0.1);
+  --cor-verde-04-a45: rgba(81, 183, 73, 0.45);
+  --cor-verde-06: #84d89b;
+  --cor-vermelho-01: #180f0f;
+  --cor-vermelho-02: #2a1717;
+  --cor-vermelho-03: #361f1f;
+  --cor-vermelho-04: #4e3a3a;
+  --cor-vermelho-05: #7a4d4d;
+  --cor-vermelho-06: #dc2127;
+  --cor-vermelho-06-a10: rgba(220, 33, 39, 0.1);
+  --cor-vermelho-06-a45: rgba(220, 33, 39, 0.45);
+  --cor-vermelho-07: #f44336;
+  --cor-vermelho-08: #ef5350;
+  --cor-vermelho-08-a40: rgba(239, 83, 80, 0.4);
+  --cor-vermelho-08-a80: rgba(239, 83, 80, 0.8);
+  --cor-vermelho-09: #ff5252;
+  --cor-vermelho-09-a10: rgba(255, 82, 82, 0.1);
+  --cor-vermelho-09-a20: rgba(255, 82, 82, 0.2);
+  --cor-vermelho-10: #ff5c54;
+  --cor-vermelho-11: #ff7070;
+  --cor-vermelho-13: #ff8b84;
+  --cor-vermelho-14: #ff8f8f;
+  --cor-vermelho-15: #c7a9a9;
+  --cor-vermelho-16-a35: rgba(239, 154, 154, 0.35);
+  --cor-vermelho-17: #ffcbc8;
 }
 
 .objetivo-Hipertrofia {
@@ -84,8 +254,8 @@
 /* Badge de objetivo para Consultoria Online */
 .objetivo-ConsultoriaOnline .agenda-dia-aula-detalhes {
   color: var(--objetivo-consultoria-online);
-  background: rgba(84, 132, 237, 0.12);
-  border-color: rgba(84, 132, 237, 0.45);
+  background: var(--cor-azul-09-a12);
+  border-color: var(--cor-azul-09-a45);
 }
 .objetivo-Outro {
   color: var(--objetivo-outro-text);
@@ -104,7 +274,7 @@
    qualquer regra de elemento continua valendo por cima como override intencional
    (marcadas em Etapa 2 no arquivo). Tom: dourado do tema (decisão do dono). */
 :where(button, a, [role="button"], input, select, textarea):focus-visible {
-  outline: 2px solid #ffd700;
+  outline: 2px solid var(--cor-primaria);
   outline-offset: 2px;
 }
 
@@ -143,8 +313,8 @@ textarea:disabled {
 
 body {
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background: #0d0d0d;
-  color: #e0e0e0;
+  background: var(--cor-neutro-03);
+  color: var(--cor-neutro-47);
   min-height: 100vh;
   padding: 0;
   margin: 0;
@@ -169,11 +339,11 @@ body {
   align-items: stretch;
   text-align: left;
   padding: 10px 12px;
-  background: rgba(13, 13, 13, 0.88);
+  background: var(--cor-neutro-03-a88);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1.5px solid rgba(255, 215, 0, 0.18);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.65);
+  border-bottom: 1.5px solid var(--cor-primaria-a18);
+  box-shadow: 0 4px 30px var(--cor-preto-a65);
   gap: 10px;
   width: 100%;
   position: sticky;
@@ -201,11 +371,11 @@ body {
   margin: 0;
   padding: 6px 8px;
   border-radius: 10px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-neutro-18);
   background: linear-gradient(
     135deg,
-    rgba(18, 22, 28, 0.92),
-    rgba(14, 18, 24, 0.92)
+    var(--cor-azul-02-a92),
+    var(--cor-azul-01-a92)
   );
   min-width: 0;
 }
@@ -222,7 +392,7 @@ body {
   margin: 6px 12px 10px;
   font-size: 0.75rem;
   line-height: 1.4;
-  color: #909090;
+  color: var(--cor-neutro-32);
   text-align: right;
 }
 .aviso-carregamento-dados[hidden] {
@@ -270,9 +440,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid #314861;
-  background: #162233;
-  color: #d8e8ff;
+  border: 1px solid var(--cor-azul-06);
+  background: var(--cor-azul-03);
+  color: var(--cor-azul-17);
   border-radius: 999px;
   padding: 8px 12px;
   font-size: 0.875rem;
@@ -287,12 +457,12 @@ body {
 }
 
 .btn-google-custom i {
-  color: #8ab4f8;
+  color: var(--cor-azul-14);
 }
 
 .btn-google-custom:hover {
-  background: #1d2e45;
-  border-color: #4d6891;
+  background: var(--cor-azul-04);
+  border-color: var(--cor-azul-07);
 }
 
 .btn-google-custom:active {
@@ -301,7 +471,7 @@ body {
 
 /* Etapa 2 (Cartão C): override intencional — tom azul do Google, fora do dourado global */
 .btn-google-custom:focus-visible {
-  outline: 2px solid #8ab4f8;
+  outline: 2px solid var(--cor-azul-14);
   outline-offset: 2px;
 }
 
@@ -320,9 +490,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #4e3a3a;
-  background: #2a1717;
-  color: #ffcbc8;
+  border: 1px solid var(--cor-vermelho-04);
+  background: var(--cor-vermelho-02);
+  color: var(--cor-vermelho-17);
   border-radius: 999px;
   padding: 7px 11px;
   font-size: 0.875rem;
@@ -337,8 +507,8 @@ body {
 }
 
 .btn-google-signout:hover {
-  background: #361f1f;
-  border-color: #7a4d4d;
+  background: var(--cor-vermelho-03);
+  border-color: var(--cor-vermelho-05);
 }
 
 .btn-google-signout:active {
@@ -347,7 +517,7 @@ body {
 
 /* Etapa 2 (Cartão C): override intencional — tom vermelho-safira do logout, fora do dourado global */
 .btn-google-signout:focus-visible {
-  outline: 2px solid #ff8b84;
+  outline: 2px solid var(--cor-vermelho-13);
   outline-offset: 2px;
 }
 
@@ -355,8 +525,8 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #314861;
-  background: #162233;
+  border: 1px solid var(--cor-azul-06);
+  background: var(--cor-azul-03);
   border-radius: 999px;
   padding: 2px;
   /* Alvo de toque de 44px (plano da identidade, etapa 1). */
@@ -370,8 +540,8 @@ body {
 }
 
 .btn-user-area-trigger:hover {
-  background: #1d2e45;
-  border-color: #4d6891;
+  background: var(--cor-azul-04);
+  border-color: var(--cor-azul-07);
 }
 
 .btn-user-area-trigger:active {
@@ -380,7 +550,7 @@ body {
 
 /* Etapa 2 (Cartão C): override intencional — tom azul do Google, fora do dourado global */
 .btn-user-area-trigger:focus-visible {
-  outline: 2px solid #8ab4f8;
+  outline: 2px solid var(--cor-azul-14);
   outline-offset: 2px;
 }
 
@@ -392,7 +562,7 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: var(--cor-preto-a70);
   z-index: 999;
 }
 
@@ -409,14 +579,14 @@ body {
 .modal-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-primaria);
   margin-bottom: 10px;
 }
 
 .btn-modal-close {
   background: transparent;
   border: none;
-  color: #a0a0a0;
+  color: var(--cor-neutro-36);
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
@@ -431,8 +601,8 @@ body {
 }
 
 .btn-modal-close:hover {
-  background: rgba(255, 215, 0, 0.1);
-  color: #ffd700;
+  background: var(--cor-primaria-a10);
+  color: var(--cor-primaria);
 }
 
 .modal-body {
@@ -446,21 +616,21 @@ body {
   flex-direction: column;
   gap: 8px;
   padding: 14px;
-  background: rgba(255, 215, 0, 0.02);
-  border: 1px solid rgba(255, 215, 0, 0.1);
+  background: var(--cor-primaria-a02);
+  border: 1px solid var(--cor-primaria-a10);
   border-radius: 10px;
 }
 
 .settings-section-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-primaria);
   margin: 0;
 }
 
 .settings-description {
   font-size: 0.875rem;
-  color: #a0a0a0;
+  color: var(--cor-neutro-36);
   margin: 0 0 4px 0;
   line-height: 1.5;
 }
@@ -470,22 +640,22 @@ body {
   align-items: center;
   gap: 12px;
   padding: 10px;
-  border: 1px solid rgba(66, 133, 244, 0.2);
+  border: 1px solid var(--cor-azul-08-a20);
   border-radius: 10px;
-  background: rgba(22, 34, 51, 0.35);
+  background: var(--cor-azul-03-a35);
 }
 
 .user-profile-avatar {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: rgba(255, 215, 0, 0.16);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: var(--cor-primaria-a16);
+  border: 1px solid var(--cor-primaria-a30);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #ffd700;
+  color: var(--cor-primaria);
   flex: 0 0 auto;
   overflow: hidden;
 }
@@ -504,13 +674,13 @@ body {
 }
 
 .user-profile-copy strong {
-  color: #f7f1cc;
+  color: var(--cor-amarelo-05);
   font-size: 0.875rem;
   line-height: 1.2;
 }
 
 .user-profile-copy span {
-  color: #b3bcc6;
+  color: var(--cor-azul-15);
   font-size: 0.875rem;
   line-height: 1.3;
   overflow: hidden;
@@ -524,9 +694,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 2px solid #4285f4;
-  background: rgba(66, 133, 244, 0.1);
-  color: #4285f4;
+  border: 2px solid var(--cor-azul-08);
+  background: var(--cor-azul-08-a10);
+  color: var(--cor-azul-08);
   border-radius: 8px;
   padding: 11px 16px;
   font-size: 0.875rem;
@@ -541,9 +711,9 @@ body {
 }
 
 .btn-gcal-connect:hover {
-  background: rgba(66, 133, 244, 0.2);
-  border-color: #5a9eff;
-  color: #5a9eff;
+  background: var(--cor-azul-08-a20);
+  border-color: var(--cor-azul-10);
+  color: var(--cor-azul-10);
 }
 
 .btn-gcal-connect:active {
@@ -559,8 +729,8 @@ body {
   justify-content: space-between;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(52, 168, 83, 0.08);
-  border: 1px solid rgba(52, 168, 83, 0.3);
+  background: var(--cor-verde-02-a08);
+  border: 1px solid var(--cor-verde-02-a30);
   border-radius: 8px;
 }
 
@@ -583,7 +753,7 @@ body {
   gap: 8px;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #34a853;
+  color: var(--cor-verde-02);
   flex: 1;
 }
 
@@ -592,7 +762,7 @@ body {
 }
 
 .gcal-status-meta {
-  color: #84d89b;
+  color: var(--cor-verde-06);
   font-size: 0.75rem;
   line-height: 1.25;
   word-break: break-word;
@@ -601,11 +771,11 @@ body {
 .gcal-status-feedback {
   margin: 0;
   font-size: 0.875rem;
-  color: #9cb0c6;
+  color: var(--cor-azul-11);
 }
 
 .gcal-status-feedback.error {
-  color: #ff8f8f;
+  color: var(--cor-vermelho-14);
 }
 
 /* Google Calendar Disconnect Button */
@@ -614,9 +784,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #ff5252;
-  background: rgba(255, 82, 82, 0.1);
-  color: #ff5252;
+  border: 1px solid var(--cor-vermelho-09);
+  background: var(--cor-vermelho-09-a10);
+  color: var(--cor-vermelho-09);
   border-radius: 6px;
   padding: 7px 12px;
   font-size: 0.875rem;
@@ -627,9 +797,9 @@ body {
 }
 
 .btn-gcal-disconnect:hover {
-  background: rgba(255, 82, 82, 0.2);
-  border-color: #ff7070;
-  color: #ff7070;
+  background: var(--cor-vermelho-09-a20);
+  border-color: var(--cor-vermelho-11);
+  color: var(--cor-vermelho-11);
 }
 
 .btn-gcal-disconnect:active {
@@ -642,13 +812,13 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: rgba(255, 215, 0, 0.16);
-  border: 1px solid rgba(255, 215, 0, 0.3);
+  background: var(--cor-primaria-a16);
+  border: 1px solid var(--cor-primaria-a30);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  color: #ffd700;
+  color: var(--cor-primaria);
   flex: 0 0 auto;
   overflow: hidden;
 }
@@ -668,8 +838,8 @@ body {
   /* Piso de legibilidade 12px (Etapa 2, achado 4.4) */
   font-size: 0.75rem;
   font-weight: 700;
-  color: #9eb0c3;
-  border: 1px solid #2f3d4c;
+  color: var(--cor-azul-12);
+  border: 1px solid var(--cor-azul-05);
   border-radius: 8px;
   padding: 6px 8px;
   line-height: 1.2;
@@ -695,7 +865,7 @@ body {
 }
 
 /* Etapa 3 (Cartão E, 2026-09-27): navegação principal em barra inferior fixa.
-   Substitui a antiga .header-nav (removeda). Identidade mantida: base #1a1a1a,
+   Substitui a antiga .header-nav (removeda). Identidade mantida: base var(--cor-neutro-08),
    item ativo em gold. */
 .nav-inferior {
   position: fixed;
@@ -706,8 +876,8 @@ body {
   display: flex;
   width: 100%;
   justify-content: space-around;
-  background: #1a1a1a;
-  border-top: 1px solid #2a2a2a;
+  background: var(--cor-neutro-08);
+  border-top: 1px solid var(--cor-neutro-18);
   padding: 4px;
   /* Etapa 3 (Cartão F): safe area inferior do sistema (Android/PWA). */
   padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4px);
@@ -730,13 +900,13 @@ body {
   text-decoration: none;
   min-width: 0;
   white-space: nowrap;
-  color: #a0a0a0;
+  color: var(--cor-neutro-36);
   background: transparent;
 }
 
 .nav-inferior .nav-link-inferior.ativo {
-  background: #ffd700 !important;
-  color: #0d0d0d !important;
+  background: var(--cor-primaria) !important;
+  color: var(--cor-neutro-03) !important;
 }
 
 .nav-icon-anim {
@@ -765,17 +935,17 @@ body {
   gap: 8px;
 }
 .btn-primary {
-  background: #ffd700;
-  color: #0d0d0d;
+  background: var(--cor-primaria);
+  color: var(--cor-neutro-03);
 }
 .btn-secondary {
-  background: #2a2a2a;
-  color: #e0e0e0;
-  border: 1px solid #333;
+  background: var(--cor-neutro-18);
+  color: var(--cor-neutro-47);
+  border: 1px solid var(--cor-neutro-21);
 }
 .btn-danger {
-  background: #f44336;
-  color: #fff;
+  background: var(--cor-vermelho-07);
+  color: var(--cor-branco);
 }
 .btn-sm {
   padding: 6px 12px;
@@ -795,13 +965,13 @@ body {
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: #b8b8b8;
+  color: var(--cor-neutro-40);
   font-size: 1.125rem;
   cursor: pointer;
   transition: color 0.2s ease;
 }
 .btn-icone:hover {
-  color: #ffd700;
+  color: var(--cor-primaria);
 }
 /* Etapa 2 (Cartão B, 2026-09-26): alvo de toque — ações do card de Finanças
    (Marcar como pago / Editar ajuste / Configurar agora / Tentar novamente):
@@ -831,9 +1001,9 @@ body {
   min-width: 0;
   width: 100%;
   height: 42px;
-  background: #111111;
-  color: #a0a0a0;
-  border: 1px solid #2d2d2d;
+  background: var(--cor-neutro-06);
+  color: var(--cor-neutro-36);
+  border: 1px solid var(--cor-neutro-19);
   border-radius: 8px;
   padding: 0;
   font-size: 0.875rem;
@@ -844,21 +1014,21 @@ body {
   margin-bottom: 0;
 }
 .btn-dia-pill:hover {
-  border-color: #444;
-  color: #fff;
+  border-color: var(--cor-neutro-23);
+  color: var(--cor-branco);
 }
 .btn-dia-pill.active {
-  background: #ffd700 !important;
-  color: #0d0d0d !important;
-  border-color: #ffd700 !important;
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.25);
+  background: var(--cor-primaria) !important;
+  color: var(--cor-neutro-03) !important;
+  border-color: var(--cor-primaria) !important;
+  box-shadow: 0 4px 12px var(--cor-primaria-a25);
 }
 .alunos-panel {
-  background: #1a1a1a;
+  background: var(--cor-neutro-08);
   border-radius: 12px;
   padding: 15px;
   margin-bottom: 20px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-neutro-18);
 }
 .alunos-grid {
   display: grid;
@@ -867,10 +1037,10 @@ body {
   margin-bottom: 20px;
 }
 .aluno-card {
-  background: #2a2a2a;
+  background: var(--cor-neutro-18);
   padding: 16px;
   border-radius: 8px;
-  border-left: 4px solid #ffd700;
+  border-left: 4px solid var(--cor-primaria);
 }
 /* Etapa 7 (Cartão B, achado 4.6): alvo de TECLADO do card de aluno. O card
    segue clicável ao toque (alvo grande); este botão existe para dar foco e
@@ -883,10 +1053,10 @@ body {
   width: 32px;
   height: 32px;
   padding: 0;
-  border: 1px solid rgba(255, 215, 0, 0.22);
+  border: 1px solid var(--cor-primaria-a22);
   border-radius: 6px;
-  background: rgba(255, 215, 0, 0.08);
-  color: #ffd700;
+  background: var(--cor-primaria-a08);
+  color: var(--cor-primaria);
   font-size: 0.875rem;
   cursor: pointer;
   flex-shrink: 0;
@@ -894,7 +1064,7 @@ body {
 }
 .aluno-card-editar:hover,
 .aluno-card-editar:active {
-  background: rgba(255, 215, 0, 0.18);
+  background: var(--cor-primaria-a18);
 }
 
 /* Grid de indicadores do card do aluno: comporta novas caixinhas sem refatoração. */
@@ -905,8 +1075,8 @@ body {
   margin-top: 8px;
 }
 .aluno-card-indicador {
-  background: rgba(255, 215, 0, 0.08);
-  border: 1px solid rgba(255, 215, 0, 0.22);
+  background: var(--cor-primaria-a08);
+  border: 1px solid var(--cor-primaria-a22);
   border-radius: 6px;
   padding: 8px 10px;
 }
@@ -922,8 +1092,8 @@ body {
    anel do indicador (bordas), não por outline; por isso o outline: none */
 .aluno-card-indicador--reposicoes:hover,
 .aluno-card-indicador--reposicoes:focus-visible {
-  background: rgba(255, 215, 0, 0.14);
-  border-color: rgba(255, 215, 0, 0.55);
+  background: var(--cor-primaria-a14);
+  border-color: var(--cor-primaria-a55);
   outline: none;
 }
 .aluno-card-indicador--alerta {
@@ -932,7 +1102,7 @@ body {
 }
 .aluno-card-indicador-titulo {
   font-size: 0.75rem;
-  color: #ffd700;
+  color: var(--cor-primaria);
   font-weight: 700;
 }
 .aluno-card-indicador--alerta .aluno-card-indicador-titulo {
@@ -940,14 +1110,14 @@ body {
 }
 .aluno-card-indicador-detalhe {
   font-size: 0.75rem;
-  color: #aaa;
+  color: var(--cor-neutro-38);
   margin-top: 3px;
 }
 .aluno-card-observacoes {
   align-items: flex-start;
-  background: rgba(100, 181, 246, 0.08);
-  border-left: 3px solid rgba(100, 181, 246, 0.55);
-  color: #c4d9e8;
+  background: var(--cor-azul-13-a08);
+  border-left: 3px solid var(--cor-azul-13-a55);
+  color: var(--cor-azul-16);
   display: flex;
   font-size: 0.75rem;
   gap: 7px;
@@ -958,7 +1128,7 @@ body {
   overflow-wrap: anywhere;
 }
 .aluno-card-observacoes i {
-  color: #64b5f6;
+  color: var(--cor-estado-informativo);
   flex-shrink: 0;
   margin-top: 2px;
 }
@@ -973,11 +1143,11 @@ body {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: #ffd700;
-  color: #0d0d0d;
+  background: var(--cor-primaria);
+  color: var(--cor-neutro-03);
   border: none;
   font-size: 1.5rem;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42);
+  box-shadow: 0 14px 28px var(--cor-preto-a42);
   z-index: 100;
   cursor: pointer;
   display: flex;
@@ -990,7 +1160,7 @@ body {
 }
 .fab-adicionar:hover {
   transform: translateY(-2px);
-  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 18px 34px var(--cor-preto-a50);
   filter: brightness(1.03);
 }
 .fab-adicionar:active {
@@ -1003,13 +1173,13 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
+  background: var(--cor-preto-a85);
   z-index: 1000;
   justify-content: center;
   align-items: center;
 }
 .modal-alunos-corpo {
-  background: #1a1a1a;
+  background: var(--cor-neutro-08);
   border-radius: 16px;
   padding: 24px;
   width: 92%;
@@ -1017,13 +1187,13 @@ body {
   max-height: 88vh;
   display: flex;
   flex-direction: column;
-  border: 1px solid #2a2a2a;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--cor-neutro-18);
+  box-shadow: 0 10px 30px var(--cor-preto-a60);
   overflow: hidden;
 }
 .modal-alunos-corpo h3 {
   font-size: 1.3rem;
-  color: #ffd700;
+  color: var(--cor-primaria);
   margin-top: 0;
   margin-bottom: 0;
   font-weight: 700;
@@ -1074,7 +1244,7 @@ body {
 }
 .form-grupo-spa label {
   font-size: 0.875rem;
-  color: #a0a0a0;
+  color: var(--cor-neutro-36);
   font-weight: 500;
 }
 .form-grupo-spa input,
@@ -1083,10 +1253,10 @@ body {
   width: 100%;
   height: 60%;
   padding: 10px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-neutro-21);
   border-radius: 8px;
-  background: #0d0d0d;
-  color: #e0e0e0;
+  background: var(--cor-neutro-03);
+  color: var(--cor-neutro-47);
   /* Etapa 2 (4.4): campos >=16px em todos os tamanhos (evita zoom auto no iOS) */
   font-size: 1rem;
   outline: none;
@@ -1095,22 +1265,22 @@ body {
 .form-grupo-spa input:focus,
 .form-grupo-spa select:focus,
 .form-grupo-spa textarea:focus {
-  border-color: #ffd700;
+  border-color: var(--cor-primaria);
 }
 .form-grupo-spa.form-grupo-spa--desabilitado {
   opacity: 0.55;
 }
 .form-grupo-spa.form-grupo-spa--desabilitado label {
-  color: #707070;
+  color: var(--cor-neutro-26);
 }
 /* Etapa 2 (Cartão C): opacidade/cursor/pointer-events vêm da regra única:disabled;
    o que fica aqui é só a identidade visual dos campos deste formulário */
 .form-grupo-spa input:disabled,
 .form-grupo-spa select:disabled,
 .form-grupo-spa textarea:disabled {
-  background: #111;
-  color: #787878;
-  border-color: #2a2a2a;
+  background: var(--cor-neutro-06);
+  color: var(--cor-neutro-27);
+  border-color: var(--cor-neutro-18);
 }
 .duracao-stepper {
   display: grid;
@@ -1119,17 +1289,17 @@ body {
   gap: 8px;
   width: 100%;
   padding: 6px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-neutro-21);
   border-radius: 10px;
-  background: #0d0d0d;
+  background: var(--cor-neutro-03);
 }
 .duracao-stepper-btn {
   width: 38px;
   height: 36px;
-  border: 1px solid #2e2e2e;
+  border: 1px solid var(--cor-neutro-20);
   border-radius: 8px;
-  background: #1a1a1a;
-  color: #ffd700;
+  background: var(--cor-neutro-08);
+  color: var(--cor-primaria);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1137,8 +1307,8 @@ body {
   transition: all 0.2s ease;
 }
 .duracao-stepper-btn:hover {
-  border-color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  border-color: var(--cor-primaria);
+  background: var(--cor-primaria-a08);
 }
 .duracao-stepper-btn:active {
   transform: scale(0.95);
@@ -1147,7 +1317,7 @@ body {
   text-align: center;
   font-size: 0.875rem;
   font-weight: 800;
-  color: #eaeaea;
+  color: var(--cor-neutro-49);
   letter-spacing: 0.2px;
 }
 .bloqueio-dia-inteiro-ativo .duracao-stepper-btn {
@@ -1175,10 +1345,10 @@ body {
   gap: 10px;
   width: 100%;
   padding: 11px 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-neutro-21);
   border-radius: 10px;
-  background: linear-gradient(180deg, #141414 0%, #101010 100%);
-  color: #cfcfcf;
+  background: linear-gradient(180deg, var(--cor-neutro-07) 0%, var(--cor-neutro-05) 100%);
+  color: var(--cor-estado-neutro);
   transition: all 0.2s ease;
 }
 .full-day-toggle-text {
@@ -1194,34 +1364,34 @@ body {
   text-align: center;
   font-size: 0.75rem;
   font-weight: 800;
-  color: #8c8c8c;
+  color: var(--cor-neutro-29);
   padding: 4px 8px;
   border-radius: 999px;
-  border: 1px solid #3a3a3a;
-  background: #0d0d0d;
+  border: 1px solid var(--cor-neutro-22);
+  background: var(--cor-neutro-03);
 }
 .full-day-toggle:hover .full-day-toggle-ui {
-  border-color: #555;
+  border-color: var(--cor-neutro-24);
 }
 /* Etapa 2 (Cartão C): override intencional — o anel de foco desenha no UI visual,
    não na input escondida (o dourado global não seria visível nela) */
 .full-day-toggle input:focus-visible + .full-day-toggle-ui {
-  border-color: #ffd700;
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.15);
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px var(--cor-primaria-a15);
 }
 .full-day-toggle input:checked + .full-day-toggle-ui {
-  border-color: #ffd700;
+  border-color: var(--cor-primaria);
   background: linear-gradient(
     180deg,
-    rgba(255, 215, 0, 0.12) 0%,
-    rgba(255, 215, 0, 0.06) 100%
+    var(--cor-primaria-a12) 0%,
+    var(--cor-primaria-a06) 100%
   );
-  color: #ffd700;
+  color: var(--cor-primaria);
 }
 .full-day-toggle input:checked + .full-day-toggle-ui .full-day-toggle-pill {
-  color: #0d0d0d;
-  border-color: #ffd700;
-  background: #ffd700;
+  color: var(--cor-neutro-03);
+  border-color: var(--cor-primaria);
+  background: var(--cor-primaria);
 }
 .full-day-toggle
   input:checked
@@ -1262,8 +1432,8 @@ body {
   width: 48px;
   height: 28px;
   border-radius: 999px;
-  background: #1a1a1a;
-  border: 1px solid #3a3a3a;
+  background: var(--cor-neutro-08);
+  border: 1px solid var(--cor-neutro-22);
   transition: all 0.2s ease;
 }
 .status-toggle-knob {
@@ -1273,40 +1443,40 @@ body {
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #8d8d8d;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  background: var(--cor-neutro-30);
+  box-shadow: 0 1px 3px var(--cor-preto-a45);
   transition: all 0.2s ease;
 }
 .status-toggle-label {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #bdbdbd;
+  color: var(--cor-neutro-42);
 }
 .status-toggle:hover .status-toggle-track {
-  border-color: #555;
+  border-color: var(--cor-neutro-24);
 }
 /* Etapa 2 (Cartão C): override intencional — anel de foco desenhado na trilha visual, */
 /* não na input posicionada fora (o dourado global não seria visível nela) */
 .status-toggle input:focus-visible + .status-toggle-track {
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
-  border-color: #ffd700;
+  box-shadow: 0 0 0 2px var(--cor-primaria-a20);
+  border-color: var(--cor-primaria);
 }
 .status-toggle input:checked + .status-toggle-track {
-  background: rgba(255, 215, 0, 0.2);
-  border-color: #ffd700;
+  background: var(--cor-primaria-a20);
+  border-color: var(--cor-primaria);
 }
 .status-toggle input:checked + .status-toggle-track .status-toggle-knob {
   transform: translateX(20px);
-  background: #ffd700;
+  background: var(--cor-primaria);
 }
 .status-toggle input:checked + .status-toggle-track + .status-toggle-label {
-  color: #ffd700;
+  color: var(--cor-primaria);
 }
 .status-toggle
   input:not(:checked)
   + .status-toggle-track
   + .status-toggle-label {
-  color: #ff8a80;
+  color: var(--cor-estado-erro);
 }
 .status-toggle.status-toggle--card {
   gap: 6px;
@@ -1339,12 +1509,12 @@ body {
 }
 /* [TAG-STYLE-AGENDA-DIARIA] */
 .agenda-panel {
-  background: #141414;
+  background: var(--cor-neutro-07);
   border-radius: 16px;
   padding: 20px;
   margin-bottom: 20px;
-  border: 1px solid #232323;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--cor-neutro-14);
+  box-shadow: 0 4px 20px var(--cor-preto-a40);
 }
 /* Etapa 4 (2026-09-27): cabeçalho da tela de Finanças sem cantos arredondados,
    sem sombra e sem fundo destacado — alinhado ao visual da topbar da Home
@@ -1353,11 +1523,11 @@ body {
   position: sticky;
   top: var(--header-height);
   z-index: 10;
-  background: rgba(12, 12, 12, 0.92);
+  background: var(--cor-neutro-02-a92);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: none;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--cor-neutro-11);
   border-radius: 0;
   border-bottom-left-radius: 18px;
   border-bottom-right-radius: 18px;
@@ -1375,7 +1545,7 @@ body {
 }
 .financas-cabecalho-titulo {
   margin: 0;
-  color: #ffd700;
+  color: var(--cor-primaria);
   font-size: 1.125rem;
   font-weight: 800;
   white-space: nowrap;
@@ -1387,7 +1557,7 @@ body {
   gap: 8px;
 }
 .financas-cabecalho-progresso {
-  color: #b8b8b8;
+  color: var(--cor-neutro-40);
   font-size: 0.75rem;
   white-space: nowrap;
 }
@@ -1397,12 +1567,12 @@ body {
 }
 .financas-cabecalho-descricao {
   margin: 4px 0 0;
-  color: #9a9a9a;
+  color: var(--cor-neutro-35);
   font-size: 0.875rem;
 }
 .financas-cabecalho-cache {
   margin-top: 8px;
-  color: #909090;
+  color: var(--cor-neutro-32);
   font-size: 0.75rem;
 }
 .financas-cabecalho-cache:empty {
@@ -1410,7 +1580,7 @@ body {
 }
 .financas-cabecalho-mensagem {
   margin: 8px 0 0;
-  color: #b8b8b8;
+  color: var(--cor-neutro-40);
   font-size: 0.75rem;
   line-height: 1.4;
   overflow-wrap: anywhere;
@@ -1437,13 +1607,13 @@ body {
   border-bottom-right-radius: 18px;
   padding: 12px;
   /* border-radius: 18px; */
-  background-color: #0b0b0b;
-  background: rgba(12, 12, 12, 0.92);
+  background-color: var(--cor-neutro-01);
+  background: var(--cor-neutro-02-a92);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid #1f1f1f;
-  /* border: 1px solid rgba(255, 255, 255, 0.06); */
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.38);
+  border-bottom: 1px solid var(--cor-neutro-11);
+  /* border: 1px solid var(--cor-branco-a06); */
+  box-shadow: 0 12px 30px var(--cor-preto-a38);
 }
 .home-sticky-header {
   padding: 10px 8px 8px;
@@ -1462,10 +1632,10 @@ body {
   width: 100%;
   white-space: nowrap;
   flex-wrap: nowrap;
-  background: #0b0b0b;
+  background: var(--cor-neutro-01);
   border-radius: 10px;
   padding: 8px 10px;
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--cor-neutro-11);
 }
 .home-weekly-nav-row .nav-calendario-main {
   display: flex;
@@ -1477,7 +1647,7 @@ body {
 }
 .home-weekly-periodo {
   font-weight: 800;
-  color: #ffd700;
+  color: var(--cor-primaria);
   font-size: 1rem;
   text-align: center;
   white-space: nowrap;
@@ -1532,11 +1702,11 @@ body {
 }
 .home-kpi-icon {
   font-size: 0.72rem;
-  color: #ffd700;
+  color: var(--cor-primaria);
   flex-shrink: 0;
 }
 .home-kpi-card-danger .home-kpi-label {
-  color: #c7a9a9;
+  color: var(--cor-vermelho-15);
 }
 /* Etapa 3 (Rodada 2, 2026-09-27): .btn-config-icon era dos 2 botões icon-only
    da 2ª linha do modo Dia da Home (#btnHomeDiaNovaAgenda/#btnHomeDiaConfigAgenda),
@@ -1549,9 +1719,9 @@ body {
 }
 
 .btn-escopo-recorrencia {
-  border: 1px solid #333;
-  background: #0d0d0d;
-  color: #cfcfcf;
+  border: 1px solid var(--cor-neutro-21);
+  background: var(--cor-neutro-03);
+  color: var(--cor-estado-neutro);
   border-radius: 10px;
   padding: 10px 8px;
   font-size: 0.875rem;
@@ -1561,31 +1731,31 @@ body {
 }
 
 .btn-escopo-recorrencia.active {
-  border-color: #ffd700;
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
+  background: var(--cor-primaria-a08);
 }
 
 .recorrencia-secao-titulo {
   margin: 6px 0 10px;
   font-size: 0.875rem;
-  color: #ffd700;
+  color: var(--cor-primaria);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
 
 .recorrencia-painel-opcoes {
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-neutro-18);
   border-radius: 10px;
-  background: #111;
+  background: var(--cor-neutro-06);
   padding: 10px;
   margin-bottom: 12px;
 }
 
 .recorrencia-painel-opcoes > summary {
   cursor: pointer;
-  color: #e0e0e0;
+  color: var(--cor-neutro-47);
   font-weight: 700;
   font-size: 0.875rem;
   list-style: none;
@@ -1596,8 +1766,8 @@ body {
 }
 
 .resumo-recorrencia-cadastro {
-  border: 1px dashed rgba(255, 215, 0, 0.25);
-  background: rgba(255, 215, 0, 0.05);
+  border: 1px dashed var(--cor-primaria-a25);
+  background: var(--cor-primaria-a05);
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 12px;
@@ -1605,7 +1775,7 @@ body {
 
 .modal-overlay.modal-overlay-secondary {
   z-index: 1200;
-  background: rgba(0, 0, 0, 0.92);
+  background: var(--cor-preto-a92);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1713,11 +1883,11 @@ body {
   min-width: 0;
 }
 .agenda-data-linha-topo i {
-  color: #ffd700;
+  color: var(--cor-primaria);
   flex-shrink: 0;
 }
 .agenda-data-data-topo {
-  color: #ffd700;
+  color: var(--cor-primaria);
   font-weight: 800;
 }
 .agenda-data-dia-mobile {
@@ -1732,8 +1902,8 @@ body {
   max-height: none;
   overflow-y: visible;
   border-radius: 12px;
-  border: 1px solid #1f1f1f;
-  background: #0b0b0b;
+  border: 1px solid var(--cor-neutro-11);
+  background: var(--cor-neutro-01);
   padding: 14px 12px;
   box-sizing: border-box;
   position: relative;
@@ -1757,7 +1927,7 @@ body {
 
 .time-grid-hour-label {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--cor-neutro-28);
   font-weight: 600;
   text-align: right;
   padding-right: 10px;
@@ -1771,7 +1941,7 @@ body {
 
 .time-grid-content-col {
   position: relative;
-  border-left: 1px solid #1f1f1f;
+  border-left: 1px solid var(--cor-neutro-11);
   z-index: var(--z-cal-dia-grid-surface);
   isolation: isolate;
 }
@@ -1783,15 +1953,15 @@ body {
 }
 
 .time-grid-line {
-  border-top: 1px solid #222222; /* "deixar a marcação de hora cheia um pouco mais forte" */
+  border-top: 1px solid var(--cor-neutro-12); /* "deixar a marcação de hora cheia um pouco mais forte" */
 }
 
 .time-grid-line-half {
-  border-top: 1px dashed #141414;
+  border-top: 1px dashed var(--cor-neutro-07);
 }
 
 .time-grid-line-end {
-  border-top: 1px solid #222222;
+  border-top: 1px solid var(--cor-neutro-12);
 }
 
 /* Clickable BG Slots (Vagos) */
@@ -1811,18 +1981,18 @@ body {
 }
 
 .time-grid-bg-slot:hover {
-  background: rgba(255, 215, 0, 0.03);
+  background: var(--cor-primaria-a03);
 }
 
 .time-grid-bg-slot-clicked {
-  background: rgba(255, 215, 0, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.35);
+  background: var(--cor-primaria-a12);
+  box-shadow: inset 0 0 0 1px var(--cor-primaria-a35);
   animation: timeGridSlotPulse 0.38s ease;
 }
 
 .time-grid-bg-slot-text {
   font-size: 0.75rem;
-  color: #ffd700;
+  color: var(--cor-primaria);
   opacity: 0;
   transition: opacity 0.15s ease;
   font-weight: 600;
@@ -1844,14 +2014,9 @@ body {
 /* Custom modern event card styling */
 .agenda-dia-aula {
   position: absolute;
-  background: rgba(
-    255,
-    184,
-    120,
-    0.05
-  ); /* Fundo suave com base #ffb878 — Tangerine GCal colorId '6' */
-  border: 1px solid #222224;
-  border-left: 4px solid #ffd700;
+  background: var(--cor-laranja-01-a05); /* Fundo suave com base var(--objetivo-tangerina) — Tangerine GCal colorId '6' */
+  border: 1px solid var(--cor-neutro-13);
+  border-left: 4px solid var(--cor-primaria);
   border-radius: 6px !important; /* "diminuir um pouco o arredondamento das bordas" */
   padding: 10px 16px 10px 12px; /* "aumentar um pouco o espaçamento no canto direito" */
   display: flex;
@@ -1860,7 +2025,7 @@ body {
   align-items: flex-start;
   gap: 4px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 12px var(--cor-preto-a40);
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease,
@@ -1934,7 +2099,7 @@ button.agenda-dia-aula {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: #d7d7d7;
+  color: var(--cor-neutro-43);
   font-size: 0.75rem;
   font-weight: 700;
   white-space: nowrap;
@@ -1956,7 +2121,7 @@ button.agenda-dia-aula {
 
 .agenda-dia-aula:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 16px var(--cor-preto-a50);
   filter: brightness(1.1);
 }
 
@@ -1966,7 +2131,7 @@ button.agenda-dia-aula {
    o texto em <span class="agenda-dia-aula-nome-texto"> corta com "…" */
 .agenda-dia-aula-nome {
   font-weight: 700;
-  color: #ffffff;
+  color: var(--cor-branco);
   font-size: 0.875rem;
   display: block;
   white-space: nowrap;
@@ -2015,7 +2180,7 @@ button.agenda-dia-aula {
 
 .agenda-dia-aula-local {
   font-size: 0.75rem;
-  color: #999;
+  color: var(--cor-neutro-34);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -2025,11 +2190,11 @@ button.agenda-dia-aula {
 }
 
 .agenda-dia-aula-detalhes {
-  color: #ffb878;
+  color: var(--objetivo-tangerina);
   font-size: 0.75rem;
   align-self: flex-start;
-  background: rgba(255, 184, 120, 0.12);
-  border: 1px solid rgba(255, 184, 120, 0.45);
+  background: var(--cor-laranja-01-a12);
+  border: 1px solid var(--cor-laranja-01-a45);
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: 600;
@@ -2050,41 +2215,41 @@ button.agenda-dia-aula {
   flex-shrink: 0;
 }
 .badge-tag-tipo--reposicao {
-  background: rgba(251, 215, 91, 0.12);
-  border: 1px dashed rgba(251, 215, 91, 0.75);
-  color: #fbd75b;
+  background: var(--cor-amarelo-04-a12);
+  border: 1px dashed var(--cor-amarelo-04-a75);
+  color: var(--cor-amarelo-04);
   padding: 2px 7px;
 }
 
 /* Non-class event slots */
 .slot-deslocamento {
-  border-left-color: #51b749; /* GCal Basil — colorId '10' */
-  background: #111a11;
-  border-color: rgba(81, 183, 73, 0.45);
+  border-left-color: var(--cor-verde-04); /* GCal Basil — colorId '10' */
+  background: var(--cor-verde-01);
+  border-color: var(--cor-verde-04-a45);
 }
 
 .slot-bloqueado {
-  border-left-color: #dc2127; /* GCal Tomato — colorId '11' */
-  background: #180f0f;
-  border-color: rgba(220, 33, 39, 0.45);
+  border-left-color: var(--cor-vermelho-06); /* GCal Tomato — colorId '11' */
+  background: var(--cor-vermelho-01);
+  border-color: var(--cor-vermelho-06-a45);
 }
 
 /* [TAG-STYLE-BLOQUEIO-EXTERNO] - Eventos externos (somente leitura) do Google Calendar */
 .card-bloqueio-externo {
-  border-left-color: #4285f4;
-  background: #180f0f;
-  border-color: rgba(66, 133, 244, 0.45);
+  border-left-color: var(--cor-azul-08);
+  background: var(--cor-vermelho-01);
+  border-color: var(--cor-azul-08-a45);
   cursor: default;
 }
 .card-bloqueio-externo:hover {
-  border-left-color: #4285f4;
+  border-left-color: var(--cor-azul-08);
 }
 .slot-bloqueado.card-bloqueio-externo,
 .slot-bloqueado.card-bloqueio-externo:hover {
-  border-left-color: #4285f4;
+  border-left-color: var(--cor-azul-08);
 }
 .card-bloqueio-externo-nome {
-  color: #ddd;
+  color: var(--cor-neutro-46);
 }
 
 /* Auto-ajuste visual somente na visão Calendário > Dia */
@@ -2486,7 +2651,7 @@ button.agenda-dia-aula {
   flex: 0 0 auto;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-primaria);
   width: 40px;
   justify-content: flex-start;
 }
@@ -2521,7 +2686,7 @@ button.agenda-dia-aula {
 /* ───────────────────────────────────────────────────────────────────────────
    Etapa 5 — fundo do modo Dia "sem cinza" (decisão do dono): o painel do
    Dia e a grade perdem o fundo escuro próprio e ficam nivelados ao body do
-   app (#0d0d0d), para a timeline das horas ser o desenho principal. A
+   app (var(--cor-neutro-03)), para a timeline das horas ser o desenho principal. A
    linha de hora cheia ganha um pouco de contraste (fica mais clara) para
    continuar bem desenhada; a meia-hora tracejada fica mais discreta ainda.
    Escopo em #homeDayPanel (a classe .agenda-panel/.agenda-dia-container é
@@ -2532,26 +2697,26 @@ button.agenda-dia-aula {
    lado (20px de padding do painel + 12px do container + 2 bordas); agora
    ~8px (6px + 2px). Padrão vertical mantido (20px em cima/embaixo). */
 #homeDayPanel.agenda-panel {
-  background: #0d0d0d;
+  background: var(--cor-neutro-03);
   border: none;
   box-shadow: none;
   padding-left: 6px;
   padding-right: 6px;
 }
 #homeDayPanel .agenda-dia-container {
-  background: #0d0d0d;
+  background: var(--cor-neutro-03);
   border: none;
   padding-left: 2px;
   padding-right: 2px;
 }
-/* Linha de hora cheia: mais clara para ler sobre #0d0d0d. */
+/* Linha de hora cheia: mais clara para ler sobre var(--cor-neutro-03). */
 #homeDayPanel .time-grid-line,
 #homeDayPanel .time-grid-line-end {
-  border-top-color: #3a3a3a;
+  border-top-color: var(--cor-neutro-22);
 }
 /* Meia-hora tracejada: mais discreta ainda. */
 #homeDayPanel .time-grid-line-half {
-  border-top-color: #1f1f1f;
+  border-top-color: var(--cor-neutro-11);
 }
 
 /* Indicador de Agora (Linha vermelha estilo Outlook) */
@@ -2565,26 +2730,26 @@ button.agenda-dia-aula {
 .time-grid-now-dot {
   width: 8px;
   height: 8px;
-  background: #ef5350;
+  background: var(--cor-vermelho-08);
   border-radius: 50%;
   position: absolute;
   left: -4px;
-  box-shadow: 0 0 8px rgba(239, 83, 80, 0.8);
+  box-shadow: 0 0 8px var(--cor-vermelho-08-a80);
 }
 
 .time-grid-now-line {
   flex-grow: 1;
   height: 2px;
-  background: #ef5350;
-  box-shadow: 0 0 6px rgba(239, 83, 80, 0.4);
+  background: var(--cor-vermelho-08);
+  box-shadow: 0 0 6px var(--cor-vermelho-08-a40);
 }
 
 @keyframes timeGridSlotPulse {
   0% {
-    background: rgba(255, 215, 0, 0.04);
+    background: var(--cor-primaria-a04);
   }
   100% {
-    background: rgba(255, 215, 0, 0.12);
+    background: var(--cor-primaria-a12);
   }
 }
 
@@ -2618,21 +2783,21 @@ button.agenda-dia-aula {
 }
 /* [TAG-STYLE-CALENDARIO-TABS-STICKY] */
 .badge-aula {
-  background: rgba(255, 215, 0, 0.12);
-  color: #ffd700;
-  border: 1px solid rgba(255, 215, 0, 0.25);
+  background: var(--cor-primaria-a12);
+  color: var(--cor-primaria);
+  border: 1px solid var(--cor-primaria-a25);
 }
 .badge-desloc {
-  background: rgba(255, 152, 0, 0.12);
-  color: #ff9800;
-  border: 1px solid rgba(255, 152, 0, 0.25);
+  background: var(--cor-amarelo-01-a12);
+  color: var(--cor-amarelo-01);
+  border: 1px solid var(--cor-amarelo-01-a25);
 }
 .semana-dia-box {
   transition:
     background 0.2s ease,
     border-color 0.2s ease;
   padding: 10px 0 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  border-bottom: 1px solid var(--cor-branco-a07);
 }
 
 #calendarioSemanalHomeGrid .agenda-dia-aula {
@@ -2673,10 +2838,10 @@ button.agenda-dia-aula {
 .semana-dia-box.is-today {
   margin: 4px 0;
   padding: 12px;
-  border: 1px solid rgba(255, 215, 0, 0.28);
+  border: 1px solid var(--cor-primaria-a28);
   border-radius: 12px;
-  background: rgba(255, 215, 0, 0.035);
-  box-shadow: inset 0 0 0 1px rgba(255, 215, 0, 0.04);
+  background: var(--cor-primaria-a035);
+  box-shadow: inset 0 0 0 1px var(--cor-primaria-a04);
 }
 .semana-dia-header {
   width: 100%;
@@ -2694,7 +2859,7 @@ button.agenda-dia-aula {
 }
 
 .semana-dia-header:hover {
-  color: #ffffff;
+  color: var(--cor-branco);
 }
 
 .semana-dia-header-main {
@@ -2707,7 +2872,7 @@ button.agenda-dia-aula {
 .semana-dia-title {
   font-size: 0.96rem;
   font-weight: 700;
-  color: #f4f4f4;
+  color: var(--cor-neutro-52);
 }
 
 .semana-dia-open-icon {
@@ -2717,14 +2882,14 @@ button.agenda-dia-aula {
   width: 26px;
   height: 26px;
   border-radius: 999px;
-  color: #8c8c8c;
-  background: rgba(255, 255, 255, 0.04);
+  color: var(--cor-neutro-29);
+  background: var(--cor-branco-a04);
   transition: all 0.2s ease;
 }
 
 .semana-dia-header:hover .semana-dia-open-icon {
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  color: var(--cor-primaria);
+  background: var(--cor-primaria-a08);
 }
 
 .semana-dia-today-badge {
@@ -2732,8 +2897,8 @@ button.agenda-dia-aula {
   align-items: center;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(255, 215, 0, 0.16);
-  color: #ffd700;
+  background: var(--cor-primaria-a16);
+  color: var(--cor-primaria);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -2751,9 +2916,9 @@ button.agenda-dia-aula {
   gap: 10px;
   padding: 12px 14px;
   border-radius: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.02);
-  color: #8f8f8f;
+  border: 1px dashed var(--cor-branco-a14);
+  background: var(--cor-branco-a02);
+  color: var(--cor-neutro-31);
   cursor: pointer;
   transition:
     border-color 0.2s ease,
@@ -2762,9 +2927,9 @@ button.agenda-dia-aula {
 }
 
 .semana-dia-empty-slot:hover {
-  border-color: rgba(255, 215, 0, 0.32);
-  background: rgba(255, 215, 0, 0.04);
-  color: #d8d8d8;
+  border-color: var(--cor-primaria-a32);
+  background: var(--cor-primaria-a04);
+  color: var(--cor-neutro-44);
 }
 
 .semana-dia-empty-slot-icon {
@@ -2774,8 +2939,8 @@ button.agenda-dia-aula {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.08);
+  color: var(--cor-primaria);
+  background: var(--cor-primaria-a08);
   flex-shrink: 0;
 }
 
@@ -2789,16 +2954,16 @@ button.agenda-dia-aula {
 }
 /* [TAG-STYLE-MODAL-TOAST] */
 .modal {
-  background: #1a1a1a;
+  background: var(--cor-neutro-08);
   border-radius: 16px;
   padding: 20px;
   width: 92%;
   max-width: 450px;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-neutro-18);
 }
 .modal h3 {
   /* margin-bottom: 15px; */
-  color: #ffd700;
+  color: var(--cor-primaria);
   font-size: 1.2rem;
 }
 .modal-agendamento {
@@ -2843,18 +3008,18 @@ button.agenda-dia-aula {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid var(--cor-neutro-18);
   padding-bottom: 14px;
 }
 .modal-historico-reposicoes-cabecalho h3 {
   margin: 0 0 5px;
 }
 .modal-historico-reposicoes-cabecalho h3 i {
-  color: #64b5f6;
+  color: var(--cor-estado-informativo);
   margin-right: 8px;
 }
 .modal-historico-reposicoes-resumo {
-  color: #aaa;
+  color: var(--cor-neutro-38);
   font-size: 0.875rem;
   font-weight: 600;
   margin: 0;
@@ -2864,7 +3029,7 @@ button.agenda-dia-aula {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
-  color: #aaa;
+  color: var(--cor-neutro-38);
   cursor: pointer;
   display: inline-flex;
   flex-shrink: 0;
@@ -2878,8 +3043,8 @@ button.agenda-dia-aula {
    dourada, não por outline; por isso o outline: none */
 .modal-fechar-icone:hover,
 .modal-fechar-icone:focus-visible {
-  border-color: #ffd700;
-  color: #ffd700;
+  border-color: var(--cor-primaria);
+  color: var(--cor-primaria);
   outline: none;
 }
 .modal-historico-reposicoes-conteudo {
@@ -2905,7 +3070,7 @@ button.agenda-dia-aula {
    cada tela via style inline — a silhueta de cada uma imita o que carrega ali. */
 .skeleton {
   animation: skeletonPulso 1.2s ease-in-out infinite alternate;
-  background: #1d1d1d;
+  background: var(--cor-neutro-09);
   border-radius: 10px;
   display: block;
 }
@@ -2917,7 +3082,7 @@ button.agenda-dia-aula {
   margin-top: 18px;
 }
 .historico-reposicao-grupo h4 {
-  color: #ffd700;
+  color: var(--cor-primaria);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   margin: 0 0 8px;
@@ -2928,8 +3093,8 @@ button.agenda-dia-aula {
   gap: 8px;
 }
 .historico-reposicao-linha {
-  background: #111;
-  border: 1px solid #2a2a2a;
+  background: var(--cor-neutro-06);
+  border: 1px solid var(--cor-neutro-18);
   border-radius: 8px;
   padding: 11px 12px;
 }
@@ -2945,7 +3110,7 @@ button.agenda-dia-aula {
   justify-content: space-between;
 }
 .historico-reposicao-status {
-  color: #e0e0e0;
+  color: var(--cor-neutro-47);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.03em;
@@ -2958,11 +3123,11 @@ button.agenda-dia-aula {
 .historico-reposicao-cobranca,
 .historico-reposicao-detalhes,
 .historico-reposicao-aviso {
-  color: #aaa;
+  color: var(--cor-neutro-38);
   font-size: 0.75rem;
 }
 .historico-reposicao-data {
-  color: #f0f0f0;
+  color: var(--cor-neutro-50);
   font-size: 0.875rem;
   font-weight: 600;
   margin: 8px 0 6px;
@@ -2972,7 +3137,7 @@ button.agenda-dia-aula {
   font-size: 0.75rem;
 }
 .historico-reposicao-linha-acao {
-  border-top: 1px solid #252525;
+  border-top: 1px solid var(--cor-neutro-16);
   justify-content: flex-end;
   margin-top: 10px;
   padding-top: 9px;
@@ -2983,7 +3148,7 @@ button.agenda-dia-aula {
 .historico-reposicoes-vazio,
 .historico-reposicoes-erro {
   align-items: center;
-  color: #aaa;
+  color: var(--cor-neutro-38);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -2993,18 +3158,18 @@ button.agenda-dia-aula {
 }
 .historico-reposicoes-vazio strong,
 .historico-reposicoes-erro span {
-  color: #e0e0e0;
+  color: var(--cor-neutro-47);
   font-size: 0.875rem;
 }
 .historico-reposicoes-erro {
-  border: 1px solid rgba(239, 154, 154, 0.35);
+  border: 1px solid var(--cor-vermelho-16-a35);
   border-radius: 8px;
   margin-bottom: 12px;
   min-height: 0;
   padding: 12px;
 }
 .modal-historico-reposicoes-rodape {
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--cor-neutro-18);
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
@@ -3017,20 +3182,20 @@ button.agenda-dia-aula {
   margin-top: 0;
 }
 .modal-edicao-cobranca-reposicao h3 i {
-  color: #64b5f6;
+  color: var(--cor-estado-informativo);
   margin-right: 8px;
 }
 .edicao-cobranca-reposicao-aviso {
-  background: rgba(255, 215, 0, 0.06);
-  border-left: 3px solid #ffd700;
-  color: #aaa;
+  background: var(--cor-primaria-a06);
+  border-left: 3px solid var(--cor-primaria);
+  color: var(--cor-neutro-38);
   font-size: 0.75rem;
   line-height: 1.4;
   margin: 0 0 18px;
   padding: 8px 10px;
 }
 .modal-edicao-cobranca-reposicao-acoes {
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--cor-neutro-18);
   display: flex;
   gap: 10px;
   justify-content: flex-end;
@@ -3064,9 +3229,9 @@ button.agenda-dia-aula {
   text-align: center;
   /* Etapa 7 (achado 4.13): os três estados coloridos usam a paleta de estado com texto
      escuro. Branco sobre os preenchimentos claros não passa contraste AA: 2.8:1 no verde
-     e 4.2:1 no vermelho. Com #1a1a1a: 8.7:1 e 7.6:1. */
+     e 4.2:1 no vermelho. Com var(--cor-neutro-08): 8.7:1 e 7.6:1. */
   background: var(--cor-estado-ok);
-  color: #1a1a1a;
+  color: var(--cor-neutro-08);
   padding: 12px;
   border-radius: 8px;
   font-size: 0.875rem;
@@ -3089,31 +3254,31 @@ button.agenda-dia-aula {
 }
 .toast.error {
   background: var(--cor-estado-erro);
-  color: #1a1a1a;
+  color: var(--cor-neutro-08);
 }
 /* Etapa 7 (achado 4.13): o aviso usa a cor de estado. Texto escuro pelo mesmo motivo
-   acima — branco sobre âmbar claro também falha (o .toast base definia #fff). */
+   acima — branco sobre âmbar claro também falha (o .toast base definia var(--cor-branco)). */
 .toast.warning {
   background: var(--cor-estado-aviso);
-  color: #1a1a1a;
+  color: var(--cor-neutro-08);
 }
 .toast.progress {
-  background: #1a1a1a;
-  color: #e0e0e0;
-  border: 1px solid #333;
+  background: var(--cor-neutro-08);
+  color: var(--cor-neutro-47);
+  border: 1px solid var(--cor-neutro-21);
 }
 .toast-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #fff;
+  border: 2px solid var(--cor-branco-a35);
+  border-top-color: var(--cor-branco);
   border-radius: 50%;
   animation: girar-sinc 0.8s linear infinite;
   flex-shrink: 0;
 }
 .toast.progress .toast-spinner {
-  border-color: #2a2a2a;
-  border-top-color: #4caf50;
+  border-color: var(--cor-neutro-18);
+  border-top-color: var(--cor-verde-03);
 }
 @keyframes girar-sinc {
   to {
@@ -3128,9 +3293,9 @@ button.agenda-dia-aula {
    o realce translúcido branco sumiria sobre o fundo. Contraste escuro sobre escuro. */
 .toast-retry {
   flex: 0 0 auto;
-  background: rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.4);
-  color: #1a1a1a;
+  background: var(--cor-preto-a12);
+  border: 1px solid var(--cor-preto-a40);
+  color: var(--cor-neutro-08);
   border-radius: 6px;
   padding: 6px 12px;
   font-size: 0.8125rem;
@@ -3138,16 +3303,16 @@ button.agenda-dia-aula {
   cursor: pointer;
 }
 .toast-retry:active {
-  background: rgba(0, 0, 0, 0.24);
+  background: var(--cor-preto-a24);
 }
 
 /* [TAG-STYLE-FILTRO-ALUNO-CALENDARIO] - Filter dropdown styling */
 .card-stat {
-  background: #1a1a1a;
+  background: var(--cor-neutro-08);
   border-radius: 12px;
   padding: 15px;
   text-align: center;
-  border: 1px solid #2a2a2a;
+  border: 1px solid var(--cor-neutro-18);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -3158,18 +3323,18 @@ button.agenda-dia-aula {
   display: block;
   font-size: 1.6rem;
   font-weight: 700;
-  color: #ffd700;
+  color: var(--cor-primaria);
   margin-bottom: 2px;
 }
 .card-stat .stat-label {
-  color: #aaa;
+  color: var(--cor-neutro-38);
   font-size: 0.875rem;
 }
 .tab-tipo-agendamento .tab-btn {
   flex: 1;
   background: transparent;
   border: none;
-  color: #888;
+  color: var(--cor-neutro-28);
   padding: 8px;
   /* Etapa 2 (4.4): controle compacto da camada de badge (12px) — 14px estoura a caixa em 320px */
   font-size: 0.75rem;
@@ -3179,8 +3344,8 @@ button.agenda-dia-aula {
   transition: all 0.2s ease;
 }
 .tab-tipo-agendamento .tab-btn.active {
-  background: #2a2a2a;
-  color: #ffd700;
+  background: var(--cor-neutro-18);
+  color: var(--cor-primaria);
 }
 .modal-badge {
   display: inline-flex;
@@ -3209,9 +3374,9 @@ button.agenda-dia-aula {
   gap: 14px;
   padding: 15px;
   text-align: left;
-  background: #1e1e1e;
-  color: #fff;
-  border: 1px solid #2d2d2d;
+  background: var(--cor-neutro-10);
+  color: var(--cor-branco);
+  border: 1px solid var(--cor-neutro-19);
   border-radius: 12px;
   width: 100%;
 }
@@ -3226,32 +3391,32 @@ button.agenda-dia-aula {
   flex-shrink: 0;
 }
 .modal-escolha-icone-aula {
-  color: #ffb878; /* Tangerine — aula */
-  background: rgba(255, 184, 120, 0.1);
+  color: var(--objetivo-tangerina); /* Tangerine — aula */
+  background: var(--cor-laranja-01-a10);
 }
 .modal-escolha-icone-bloqueio {
-  color: #ff5c54; /* Tomato claro — bloqueio (Etapa 2 Cartão D: 4.5:1) */
-  background: rgba(220, 33, 39, 0.1);
+  color: var(--cor-vermelho-10); /* Tomato claro — bloqueio (Etapa 2 Cartão D: 4.5:1) */
+  background: var(--cor-vermelho-06-a10);
 }
 .modal-escolha-icone-deslocamento {
-  color: #51b749; /* Basil — deslocamento */
-  background: rgba(81, 183, 73, 0.1);
+  color: var(--cor-verde-04); /* Basil — deslocamento */
+  background: var(--cor-verde-04-a10);
 }
 .modal-escolha-icone-reposicao {
-  color: #fbd75b; /* Banana — reposição */
-  background: rgba(251, 215, 91, 0.1);
+  color: var(--cor-amarelo-04); /* Banana — reposição */
+  background: var(--cor-amarelo-04-a10);
 }
 .modal-escolha-icone-exclusao-leve {
-  color: #fbd75b; /* Banana — exclusão leve */
-  background: rgba(251, 215, 91, 0.1);
+  color: var(--cor-amarelo-04); /* Banana — exclusão leve */
+  background: var(--cor-amarelo-04-a10);
 }
 .modal-escolha-icone-exclusao-media {
-  color: #ffb878; /* Tangerine — exclusão média */
-  background: rgba(255, 184, 120, 0.1);
+  color: var(--objetivo-tangerina); /* Tangerine — exclusão média */
+  background: var(--cor-laranja-01-a10);
 }
 .modal-escolha-icone-exclusao-total {
-  color: #ff5c54; /* Tomato claro — exclusão total (Etapa 2 Cartão D: 4.5:1) */
-  background: rgba(220, 33, 39, 0.1);
+  color: var(--cor-vermelho-10); /* Tomato claro — exclusão total (Etapa 2 Cartão D: 4.5:1) */
+  background: var(--cor-vermelho-06-a10);
 }
 .modal-exclusao {
   max-width: 420px;
@@ -3271,7 +3436,7 @@ button.agenda-dia-aula {
 } 
 .modal-escolha-contexto {
   margin: 6px 0 0;
-  color: #888;
+  color: var(--cor-neutro-28);
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -3279,19 +3444,19 @@ button.agenda-dia-aula {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
-  border-top: 1px solid #222;
+  border-top: 1px solid var(--cor-neutro-12);
   padding-top: 12px;
   margin-top: 12px;
 }
 .modal-escolha-texto strong {
   display: block;
   font-size: 0.875rem;
-  color: #fff;
+  color: var(--cor-branco);
   font-weight: 700;
 }
 .modal-escolha-texto span {
   font-size: 0.75rem;
-  color: #888;
+  color: var(--cor-neutro-28);
   font-weight: 400;
   display: block;
   margin-top: 2px;
@@ -3303,10 +3468,10 @@ button.agenda-dia-aula {
 }
 .modal-escolha-opcao:hover,
 .modal-recorrencia-trigger:hover {
-  border-color: #ffd700 !important;
-  background: #252525 !important;
+  border-color: var(--cor-primaria) !important;
+  background: var(--cor-neutro-16) !important;
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15) !important;
+  box-shadow: 0 4px 15px var(--cor-primaria-a15) !important;
 }
 .modal-recorrencia-trigger {
   display: flex;
@@ -3315,10 +3480,10 @@ button.agenda-dia-aula {
   gap: 12px;
   width: 100%;
   padding: 12px;
-  border: 1px solid #333;
+  border: 1px solid var(--cor-neutro-21);
   border-radius: 10px;
-  background: #0d0d0d;
-  color: #e0e0e0;
+  background: var(--cor-neutro-03);
+  color: var(--cor-neutro-47);
   text-align: left;
 }
 .modal-recorrencia-trigger-texto {
@@ -3330,15 +3495,15 @@ button.agenda-dia-aula {
 .modal-recorrencia-trigger-texto span {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #f1f1f1;
+  color: var(--cor-neutro-51);
 }
 .modal-recorrencia-trigger-texto small {
   font-size: 0.75rem;
-  color: #8f8f8f;
+  color: var(--cor-neutro-31);
   line-height: 1.35;
 }
 .modal-recorrencia-trigger-icone {
-  color: #ffd700;
+  color: var(--cor-primaria);
   flex-shrink: 0;
 }
 .agenda-modal-data-contexto {
@@ -3346,7 +3511,7 @@ button.agenda-dia-aula {
 }
 .agenda-modal-info-horario {
   font-size: 0.875rem;
-  color: #ffd700;
+  color: var(--cor-primaria);
   margin-top: 10px;
   margin-bottom: 0;
   font-weight: 600;
@@ -3358,23 +3523,23 @@ button.agenda-dia-aula {
 }
 .agenda-modal-data-input-wrapper label {
   font-size: 0.75rem;
-  color: #a8a8a8;
+  color: var(--cor-neutro-37);
   font-weight: 600;
 }
 .agenda-modal-data-input-wrapper input[type="date"] {
   width: 100%;
-  background: #111;
-  color: #f1f1f1;
-  border: 1px solid #333;
+  background: var(--cor-neutro-06);
+  color: var(--cor-neutro-51);
+  border: 1px solid var(--cor-neutro-21);
   border-radius: 8px;
   padding: 10px 12px;
   /* Etapa 2 (4.4): campo >=16px (consistente com .form-grupo-spa) */
   font-size: 1rem;
 }
 .agenda-modal-data-input-wrapper input[type="date"]:focus {
-  border-color: #ffd700;
+  border-color: var(--cor-primaria);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+  box-shadow: 0 0 0 2px var(--cor-primaria-a20);
 }
 
 /* Rodada 3 da Etapa 3 (2026-09-27): a regra #appEnvBadge (tarja "LOCAL") saiu

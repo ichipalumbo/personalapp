@@ -103,7 +103,7 @@ function garantirHomeTabs() {
     tabsWrapper.id = 'homeTabsWrapper';
     tabsWrapper.style.marginBottom = '14px';
     tabsWrapper.innerHTML = `
-      <div class="tab-tipo-agendamento" role="tablist" aria-label="Visualização da agenda" style="display:flex;gap:6px;background:#0d0d0d;padding:4px;border-radius:8px;border:1px solid #2a2a2a;">
+      <div class="tab-tipo-agendamento" role="tablist" aria-label="Visualização da agenda" style="display:flex;gap:6px;background:var(--cor-neutro-03);padding:4px;border-radius:8px;border:1px solid var(--cor-neutro-18);">
         <button type="button" class="tab-btn active" id="tabHomeSemana" role="tab" aria-selected="true" aria-controls="agendaPanelSemana" onclick="window.alternarModoHome('semana')"><i class="fa-solid fa-calendar-week"></i> Semana</button>
         <button type="button" class="tab-btn" id="tabHomeDia" role="tab" aria-selected="false" aria-controls="homeDayPanel" onclick="window.alternarModoHome('dia')"><i class="fa-solid fa-calendar-day"></i> Dia</button>
       </div>
@@ -858,7 +858,7 @@ window.renderizarAgendaDia = function (gridId) {
                  onclick="window.abrirEscolhaTipoModalPorSlotHome('${diaTexto}', '${horaStr}', this)"
                  title="Toque para agendar em ${horaStr}">
                  <span class="time-grid-bg-slot-text">
-                    <i class="fa-regular fa-calendar-plus" style="color: #FFD700;"></i> Agendar ${horaStr}
+                    <i class="fa-regular fa-calendar-plus" style="color: var(--cor-primaria);"></i> Agendar ${horaStr}
                  </span>
             </div>
         `;

@@ -76,7 +76,7 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 | 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída em 2026-10-17 |
 | 1 | Cabeçalho com logo e alvos de toque do topo | Concluída em 2026-10-22 |
 | 2 | Nome exibido e instalação do PWA | Concluída em 2026-10-22 |
-| 3 | Variáveis de cor, sem mudança visual | Pendente |
+| 3 | Variáveis de cor, sem mudança visual | Concluída em 2026-10-22 |
 | 4 | Recoloração com a paleta do guia | Pendente; depende da 3 |
 | 5 | Poppins na interface | Pendente |
 
@@ -115,6 +115,8 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 
 - Criar variáveis CSS para as cores em uso, inclusive as variações com transparência. Trocar os literais do `style.css`, os estilos inline do `index.html` e as cores fixas dos JS por variável ou classe.
 - Os valores continuam os atuais. Os nomes das variáveis são decididos na etapa, para que a etapa 4 seja só troca de valor.
+- **Decidido em 2026-10-22**: esquema híbrido — tokens semânticos onde já existiam (`--cor-estado-*`, `--objetivo-*`, `--cor-primaria`) e tabela por família + passo para o resto (`--cor-<família>-NN`, sufixo `-aNN` = alfa em centésimos). Entrega em duas passadas: `style.css` + `index.html`, depois os JS.
+- **Fora da tokenização**: cores que são dado, não estilo — cor de objetivo vinda da API (`#FF887C` em `storage.js` e `view-alunos.js`), fallback de objetivo (`#6B7280`), verde do Google Calendar (`#51b749`) e azul da marca Google (`#4285F4`).
 - **Aceite**:
   - capturas do mock antes e depois idênticas nas telas principais e modais, nos três viewports;
   - suíte de frontend medida antes e depois.
@@ -213,4 +215,20 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 - Testes: `tests-frontend/pwa-nome-icones.test.js`, 4 casos — nome e campos do manifest; existência, tipo e dimensão real dos PNG contra o `sizes` declarado; zona segura e base opaca dos maskable; título, títulos de app e links de ícone no HTML. Suíte de frontend de 422 para 426, todas passando.
 - Provas por mutação: `name` revertido no manifest (1 falha); PNG trocado por um com pixel a 80,5 px do centro contra limite de 76,8 (1 falha); `sizes` 192 declarado como 384 (1 falha). Tudo restaurado e conferido por hash.
 - Pendente com o dono: instalar no aparelho e conferir ícone, nome curto e cor da barra. Em app já instalado, a atualização de ícone e nome tem atraso próprio da plataforma.
+
+### Etapa 3 — 2026-10-22
+
+- Branch mantida (`feat/aplicacao-identidade-visual`). Nenhuma escrita em `sw.js`.
+- Decisões do dono nesta rodada: esquema híbrido de nomes; entrega em duas passadas; **renumerar** a família `neutro` para manter a ordem de luminância, em vez de acrescentar passos fora de ordem.
+- Inventário medido no `HEAD` antes da mudança: `style.css` com 264 literais hex (87 distintos) e 101 `rgba` (71 distintos) fora do `:root`; `index.html` com 56 literais em atributos `style` (20 distintos) e nenhum bloco `<style>`; 94 literais de cor em 6 arquivos JS.
+- Resultado: 170 tokens `--cor-*` no `:root` do `style.css`, sendo a tabela por família (amarelo, azul, branco, laranja, neutro, preto, primaria, roxo, verde, vermelho) e os semânticos que já existiam reaproveitados. `neutro` ficou com 52 bases numeradas de 01 a 52 (a base 02 só existe na forma de alfa). `--cor-primaria` foi definido: era usado sem definição desde antes desta etapa.
+- Referências convertidas: `style.css` sem nenhum literal fora do `:root`; `index.html` sem literal em atributo `style`; em JS, 89 literais convertidos para token e 5 preservados por serem dado (ver "Fora da tokenização" na seção 6).
+- Tokens de alfa acrescentados nesta passada, por não existirem: `--cor-estado-ok-a18` e `--cor-estado-erro-a15`.
+- **Método de verificação** (o mesmo vale para as próximas etapas): mapa de estilo computado por caminho estrutural, cobrindo 13 propriedades de cor por elemento, comparado entre o estado do `HEAD` e o da árvore de trabalho — com `index.html`, `style.css` e os JS do **mesmo** estado. Comparação de pixel não serve: três carregamentos idênticos geraram três hashes diferentes.
+- Medido no mock (433×762, DPR 2,81, emulação mobile, service worker contornado): `home-semana` 731 elementos, `home-dia` 889, `financas` 1136, `alunos` 1352 — **zero diferenças** em todas as telas, em todas as propriedades. Os modais entram na conta porque são pré-renderizados: abrir só troca `display`.
+- Armadilha registrada para não se repetir: comparar `index.html` já tokenizado contra um `style.css` antigo faz os `var()` do bloco `<style>` inline ficarem sem definição e caírem para `transparent`, produzindo 40 "diferenças" falsas. As duas peças precisam vir sempre do mesmo estado. A contagem de `var()` também denuncia isso: o `index.html` do `HEAD` tem 0 e o atual tem 53.
+- Testes: `tests-frontend/tokens-cor-etapa3.test.js` (novo), 4 casos — nenhum literal fora do `:root`; todo `var(--cor-*)` usado em CSS, HTML e JS está definido; nenhum atributo `style` do `index.html` com literal; família `neutro` sem lacuna e em ordem crescente de luminância. `tests-frontend/fab-adicionar.test.js` passou a resolver os tokens antes de comparar a cor final, porque o CSSOM devolve `var(--cor-*)` cru.
+- Provas por mutação: literal `#123456` fora do `:root` (1 falha); `--cor-primaria` renomeado no `:root` (1 falha); `style="color:#123456"` no `<body>` (1 falha); `--cor-neutro-01` trocado por `#f4f4f4` (1 falha); `--cor-primaria` trocado por `#00ff00` (1 falha em `fab-adicionar`). Tudo restaurado e conferido por hash.
+- Suíte de frontend: 426 antes, 430 depois, todas passando. Suíte de backend não foi executada porque nenhum arquivo de `backend/` foi tocado.
+- Encontrado e **não** alterado (anterior a esta etapa): `--header-height` é usada sem fallback em duas regras (o `top` resultante é inválido) e `var(--estado-aviso, …)` referencia variável inexistente, mas com fallback válido. Continua valendo a pendência do rótulo de período truncado em 320 px, registrada na etapa 1.
 

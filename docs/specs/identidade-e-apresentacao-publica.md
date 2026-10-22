@@ -1,9 +1,9 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Em implementação · **Versão**: 10 · **Atualizado**: 2026-10-22
+> **Status**: Em implementação · **Versão**: 11 · **Atualizado**: 2026-10-22
 > **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), adoção na interface das cores da marca e da paleta do produto do guia, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa com adoção da Poppins na interface por arquivos locais, aplicação no cabeçalho, nome no produto, ícones de instalação, endereço atual e contato provisório de suporte.
 > **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
-> **Limite**: aplicação no app autorizada nos termos da seção 2 e **em execução** — o cabeçalho recebeu o logo e os alvos de toque do topo; o nome no produto, os ícones de instalação e a cor de tema e fundo do PWA foram aplicados; cores da interface e tipografia seguem pendentes no [plano](../plans/2026-10-17-plan-aplicacao-identidade-visual.md). Cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
+> **Limite**: aplicação no app autorizada nos termos da seção 2 e **em execução** — o cabeçalho recebeu o logo e os alvos de toque do topo; o nome no produto, os ícones de instalação e a cor de tema e fundo do PWA foram aplicados; as cores da interface foram centralizadas em tokens, ainda com os valores atuais; a recoloração com a paleta da marca e a tipografia seguem pendentes no [plano](../plans/2026-10-17-plan-aplicacao-identidade-visual.md). Cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
 
@@ -56,6 +56,15 @@ como recomendação ou pendência não vira decisão aprovada por estar citado a
 - Os pares de texto e fundo resultantes cumprem o
   [contraste mínimo do guia](../reference/identidade/guia-identidade-visual-v3.md#10-legibilidade-e-contraste),
   conferido no suporte final.
+- **Fonte única da cor da interface.** Todo valor de cor da interface mora na tabela de
+  tokens do `:root` do `style.css` e é consumido por `var(--cor-*)` no CSS, no HTML e nos
+  JS — inclusive nas variações com transparência, cujo sufixo `-aNN` é o alfa em
+  centésimos. Os arquivos de estilo não repetem literal de cor fora dessa tabela. A
+  recoloração da etapa seguinte troca somente a tabela, e cada valor que não tiver
+  correspondente na paleta passa pela decisão cor a cor descrita acima.
+- **Cor que é dado não vira token de estilo**: cor de objetivo vinda da API, fallback de
+  objetivo e cores de identidade de terceiros (Google Calendar e marca Google) ficam como
+  estão, porque mudam com o dado e não com a paleta.
 - Assets do Google obedecem à identidade do próprio Google; a paleta do app não autoriza
   recolorir o símbolo oficial ou criar um logo Google próprio.
 - A variante e a apresentação do botão Google continuam pendentes; não há exceção de cor
