@@ -1,6 +1,6 @@
 # Personal Josy — Guia de identidade visual
 
-> **Versão:** 3 · **Atualizado:** 16 de outubro de 2026.
+> **Versão:** 3 · **Atualizado:** 23 de outubro de 2026 (aplicação do ícone na seção 8.3).
 > **Arquivos da marca:** [kit visual completo v2](kit-visual-completo-v2/LEIA-ME.md).
 > **Escopo:** identidade do aplicativo Personal Josy e de seus materiais digitais.
 > **Limites:** este guia não certifica acessibilidade, impressão, registro de marca ou aprovação de terceiros. Conferir cada aplicação no suporte final.
@@ -207,7 +207,9 @@ O calendário mantém margem para recorte circular. Não remover margens nem adi
 
 ### 8.3 Ícone do aplicativo
 
-O ícone de instalação não é uma assinatura completa nem um avatar para redes. Usar o símbolo oficial do calendário, sem nome ou descritor e sem alterar sua geometria; como referência, partir do avatar escuro do kit. A base quadrada deve ser opaca e preencher todo o arquivo em Grafite `#202020`; não desenhar cantos arredondados, porque a plataforma pode aplicar a própria máscara.
+O ícone de instalação não é uma assinatura completa nem um avatar para redes. Usar o símbolo oficial do calendário, sem nome ou descritor e sem alterar sua geometria; partir do avatar **claro transparente** do kit, preservando o J e as presilhas opacos em Grafite `#202020`. Ícones PWA de uso comum (`any`) e favicon têm fundo transparente. Para `maskable` e ícone da Apple, compor a mesma arte sobre base quadrada opaca em Branco `#FFFFFF`, até as bordas; não desenhar cantos arredondados, porque a plataforma pode aplicar a própria máscara. Essa escolha substitui a base Grafite anterior, após a conferência do ícone instalado pelo dono em 2026-10-23.
+
+A transparência dos ícones comuns não garante transparência na tela inicial: o sistema pode impor fundo ou máscara. Conferir a versão clara no aparelho; a variante branca oferece fundo previsível onde a plataforma exige preenchimento. O kit não muda, somente a aplicação do mestre no ícone do app. O PDF é exportado deste Markdown pelo gerador versionado; em divergência, prevalece este documento.
 
 Manter exportações adequadas a cada destino: favicon do navegador, ícones PWA para uso comum e com máscara, e ícone de toque das plataformas móveis. Usar o vetor oficial como origem e gerar os formatos e dimensões pedidos pelo destino; não ampliar um PNG pequeno nem presumir que um único arquivo atende a todas as plataformas.
 

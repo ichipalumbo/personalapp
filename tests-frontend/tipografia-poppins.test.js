@@ -11,12 +11,13 @@
 //   3. nenhuma referência a fonte de terceiros no CSS ou no HTML;
 //   4. a Poppins é a primeira família do body;
 //   5. o pré-cache do sw.js cobre exatamente os arquivos que existem, e o
-//      CACHE_NAME não mudou (trocá-lo apagaria o cache de aparelhos instalados).
+//      namespace do cache é o aprovado para a identidade atual.
 
 const fs = require('fs');
 const path = require('path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const vm = require('node:vm');
 
 const RAIZ = path.resolve(__dirname, '..');
 const CAMINHO_CSS = path.join(RAIZ, 'assets', 'css', 'style.css');
@@ -97,10 +98,10 @@ test('a Poppins é a primeira família da interface e não há fonte de terceiro
   }
 });
 
-test('o pré-cache do sw.js cobre os arquivos da família sem trocar o CACHE_NAME', () => {
+test('o pré-cache do sw.js cobre os arquivos da família no cache josy-personal', () => {
   const sw = ler(CAMINHO_SW);
-  assert.match(sw, /const CACHE_NAME = 'Prô Josy - Agenda Personal Trainer';/,
-    'CACHE_NAME não pode mudar: o activate apaga todo cache com nome diferente');
+  assert.match(sw, /const CACHE_NAME = 'josy-personal';/,
+    'o namespace do cache deve ser o aprovado pelo dono');
 
   const lista = /const APP_SHELL_FILES = \[([\s\S]*?)\];/.exec(sw);
   assert.ok(lista, 'APP_SHELL_FILES não encontrada');
@@ -119,4 +120,37 @@ test('o pré-cache do sw.js cobre os arquivos da família sem trocar o CACHE_NAM
     const absoluto = path.join(RAIZ, caminho.replace(/^\//, '').split('/').join(path.sep));
     assert.ok(fs.existsSync(absoluto), 'pré-cache aponta para arquivo inexistente: ' + caminho);
   }
+});
+
+test('worker instala em josy-personal e preserva esse cache ao remover o legado', async () => {
+  const eventos = new Map();
+  const abertos = [];
+  const removidos = [];
+  const arquivos = [];
+  let ativacoes = 0;
+  vm.runInNewContext(ler(CAMINHO_SW), {
+    self: {
+      addEventListener: (nome, executar) => eventos.set(nome, executar),
+      skipWaiting: () => {},
+      clients: { claim: () => { ativacoes++; } },
+    },
+    caches: {
+      open: async (nome) => {
+        abertos.push(nome);
+        return { addAll: async (lista) => arquivos.push(...lista) };
+      },
+      keys: async () => ['Prô Josy - Agenda Personal Trainer', 'josy-personal'],
+      delete: async (nome) => { removidos.push(nome); return true; },
+    },
+  });
+  let tarefa;
+  eventos.get('install')({ waitUntil: (promise) => { tarefa = promise; } });
+  await tarefa;
+  assert.deepEqual(abertos, ['josy-personal']);
+  assert.ok(arquivos.includes('/index.html'));
+  assert.ok(arquivos.includes('/assets/vendor/poppins/poppins-400.woff2'));
+  eventos.get('activate')({ waitUntil: (promise) => { tarefa = promise; } });
+  await tarefa;
+  assert.deepEqual(removidos, ['Prô Josy - Agenda Personal Trainer']);
+  assert.equal(ativacoes, 1);
 });

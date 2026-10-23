@@ -1,8 +1,8 @@
-# Roadmap de Melhorias — Agenda Personal Trainer (Prô Josy)
+# Roadmap de Melhorias — Personal Josy
 
-> **Status**: Roadmap oficial · **Atualizado**: 2026-10-17
+> **Status**: Roadmap oficial · **Atualizado**: 2026-10-23
 > Índice de evolução do produto: problemas a resolver, entregas, dependências e decisões pendentes.
-> Substitui o [roadmap anterior](roadmap-v1.md), renomeado pelo dono e preservado como registro para consulta histórica.
+> Substitui o [roadmap anterior](archive/roadmaps/roadmap-v1.md), renomeado pelo dono e preservado como registro para consulta histórica.
 
 ## Como usar
 
@@ -62,7 +62,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Decidir antes**: desenho da coordenação, preservando a leitura segura já entregue no item 2.4.
 - **Risco/dependência**: integração com GCal é área sensível; autorização específica antes de alterar esse caminho. O item 2.4 já está concluído e não deve ser reimplementado.
 - **Esforço**: baixo–médio.
-- **Referência**: [spec de GCal, seção 9.14](specs/gcal-sync.md) e [plano B2](plans/2026-09-30-plan-b2-sync-boot.md).
+- **Referência**: [spec de GCal, seção 9.14](specs/gcal-sync.md) e [plano B2](archive/plans/2026-09-30-plan-b2-sync-boot.md).
 
 ### [ ] 2.3 Ampliar a janela do full sync
 
@@ -78,7 +78,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Próximo passo**: inventariar as lacunas reais da suíte atual e definir os casos de aceite; não usar contagens históricas como diagnóstico de cobertura.
 - **Situação atual**: existe cobertura de negócio no backend e cobertura parcial de lógica/DOM no frontend. Render do Dia, conflitos e modais receberam testes no item 0.12; isso não equivale a cobertura visual completa.
 - **Esforço**: baixo, sujeito ao inventário; sem dependência de implantação de ambiente.
-- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) e [execução das suítes](setup-ambiente-local.md).
+- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) e [execução das suítes](setup-ambiente-local.md).
 
 ## Iniciativas em avaliação
 
@@ -97,7 +97,7 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Resultado esperado**: reduzir esquecimentos de aulas e cobranças com lembretes para o personal trainer e/ou aluno.
 - **Decidir antes**: destinatários, eventos, canal (Web Push ou WhatsApp) e mecanismo de agendamento no backend.
 - **Esforço**: alto.
-- **Referência**: [contexto e alternativas anteriores](roadmap-v1.md); a infraestrutura PWA existente não representa uma integração de notificações entregue.
+- **Referência**: [contexto e alternativas anteriores](archive/roadmaps/roadmap-v1.md); a infraestrutura PWA existente não representa uma integração de notificações entregue.
 
 ### [ ] 4.3 Portal ou app do aluno
 
@@ -105,14 +105,14 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: escopo inicial e autorização entre os papéis de personal trainer e aluno sobre os mesmos dados.
 - **Risco**: o isolamento atual por conta não implementa esse compartilhamento; não ampliar acesso por inferência.
 - **Esforço**: muito alto.
-- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](roadmap-v1.md); exige desenho próprio.
+- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](archive/roadmaps/roadmap-v1.md); exige desenho próprio.
 
 ### [ ] 4.4 Avaliação física, anamnese e evolução
 
 - **Resultado esperado**: acompanhar avaliações e evolução do aluno em um histórico próprio.
 - **Decidir antes**: dados da primeira entrega, inclusão de fotos, privacidade e armazenamento/upload.
 - **Esforço**: alto.
-- **Referência**: [contexto e escopo exploratório anteriores](roadmap-v1.md); ainda não existe spec desta iniciativa.
+- **Referência**: [contexto e escopo exploratório anteriores](archive/roadmaps/roadmap-v1.md); ainda não existe spec desta iniciativa.
 
 ### [ ] 4.5 Multi-personal e gestão de equipe
 
@@ -120,7 +120,7 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: demanda por esse modelo, hierarquia de equipe, vínculos e permissões.
 - **Risco**: exige revisar a autorização atual; não é uma extensão pequena do isolamento por conta.
 - **Esforço**: muito alto.
-- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](roadmap-v1.md); exige desenho próprio.
+- **Referência**: [regras de isolamento](../.github/copilot-instructions.md) e [contexto anterior](archive/roadmaps/roadmap-v1.md); exige desenho próprio.
 
 ### [ ] 4.6 Auditoria de alterações
 
@@ -128,14 +128,14 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: eventos cobertos e desenho do registro de auditoria.
 - **Situação atual**: snapshots financeiros preservam preços por ciclo, mas não substituem um histórico geral de alterações.
 - **Esforço**: médio–alto.
-- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md) para os snapshots e [contexto anterior](roadmap-v1.md) para a proposta transversal.
+- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md) para os snapshots e [contexto anterior](archive/roadmaps/roadmap-v1.md) para a proposta transversal.
 
 ### [ ] 4.8 Contrato e assinatura digital
 
 - **Resultado esperado**: formalizar termos e documentos assinados pelo aluno.
 - **Decidir antes**: documentos, fluxo de assinatura, serviço externo e armazenamento seguro.
 - **Esforço**: alto.
-- **Referência**: [contexto e alternativas anteriores](roadmap-v1.md); ainda não existe spec desta iniciativa.
+- **Referência**: [contexto e alternativas anteriores](archive/roadmaps/roadmap-v1.md); ainda não existe spec desta iniciativa.
 
 ### [ ] 4.9 Persistência de login com sessão própria do backend
 
@@ -143,7 +143,7 @@ Possibilidades de evolução, não compromissos de entrega. As soluções técni
 - **Decidir antes**: duração, renovação, revogação/logout e transição compatível. Sessão própria é a proposta técnica registrada, não uma implementação aprovada por este índice.
 - **Risco**: autenticação é área sensível; confirmar o desenho e a autorização antes de alterar tokens ou armazenamento.
 - **Esforço**: médio.
-- **Referência**: [regras para autenticação](../.github/copilot-instructions.md) e [proposta anterior](roadmap-v1.md); exige contrato próprio.
+- **Referência**: [regras para autenticação](../.github/copilot-instructions.md) e [proposta anterior](archive/roadmaps/roadmap-v1.md); exige contrato próprio.
 
 ## Entregas concluídas
 
@@ -151,9 +151,9 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 
 | ID | Estado | Resultado entregue | Referência |
 |---|---|---|---|
-| 0.1 | `[x]` | Histórico de ciclos e extrato preservam expansão no re-render | [Registro anterior](roadmap-v1.md) |
+| 0.1 | `[x]` | Histórico de ciclos e extrato preservam expansão no re-render | [Registro anterior](archive/roadmaps/roadmap-v1.md) |
 | 0.2 | `[x]` | Módulos compartilhados consolidados dentro do backend | [Arquitetura](../.github/copilot-instructions.md) |
-| 0.3 | `[x]` | CSS órfão da visão mensal e do KPI removido | [Aprendizados e cuidados preservados](reference/APRENDIZADOS.md) |
+| 0.3 | `[x]` | CSS órfão da visão mensal e do KPI removido | [Aprendizados e cuidados preservados](reference/lessons-learned.md) |
 | 0.4 | `[x]` | Documentação organizada em fontes com funções distintas | [Índice documental](README.md) |
 | 0.5 | `[x]` | Collection de reposições e cobrança por competência | [Spec de Reposições](specs/reposicoes-e-competencia.md) |
 | 0.6 | `[x]` | Extrato explica a composição da cobrança do ciclo | [Spec de Reposições](specs/reposicoes-e-competencia.md) |
@@ -161,35 +161,35 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 0.8 | `[x]` | Avisos de reposição próxima do vencimento | [Regra vigente, seção 6.5](specs/reposicoes-e-competencia.md) |
 | 0.9 | `[x]` | Cálculo de prazo exposto em módulo compartilhado único | [Spec de Reposições](specs/reposicoes-e-competencia.md) |
 | 0.10 | `[x]` | Declaração redundante do cálculo de prazo removida | [Spec de Reposições, seção 13](specs/reposicoes-e-competencia.md) |
-| 0.11 | `[x]` | Reenvio reabre a reposição original sem duplicar cobrança; correção dos dados concluída pelo dono | [Diagnóstico e registro](diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md) |
-| 0.12 | `[x]` | Cobertura de render do Dia, conflitos e fluxos principais dos modais | [Plano encerrado e limites](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) |
+| 0.11 | `[x]` | Reenvio reabre a reposição original sem duplicar cobrança; correção dos dados concluída pelo dono | [Diagnóstico e registro](archive/diagnostics/2026-09-21-diag-0-11-duplicata-cobranca-reenvio-reposicao.md) |
+| 0.12 | `[x]` | Cobertura de render do Dia, conflitos e fluxos principais dos modais | [Plano encerrado e limites](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) |
 | 1.1 | `[x]` | Pagamentos, inadimplência e cobrança por ciclo | [Spec de Finanças](specs/financas-ciclo-cobranca.md) |
-| 1.3 | `[x]` | Observações no cadastro e card do aluno; não representa anotação por aula | [Registro anterior](roadmap-v1.md) |
+| 1.3 | `[x]` | Observações no cadastro e card do aluno; não representa anotação por aula | [Registro anterior](archive/roadmaps/roadmap-v1.md) |
 | 1.8 | `[→]` | Avisos de aulas a repor consolidados no item 0.8 | [Regra de reposições](specs/reposicoes-e-competencia.md) |
 | 1.9 | `[x]` | Pagamento e ajuste de ciclo histórico ainda não pago | [Spec de Finanças, seção 6.3](specs/financas-ciclo-cobranca.md) |
-| 1.10 | `[x]` | Histórico de reposições e reagendamento contextual no card do aluno | [Contrato](specs/reposicoes-e-competencia.md) e [complementos recentes](plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
-| 1.11 | `[x]` | Atualização manual de leitura em Finanças, com recuperação e feedback localizado | [Contrato](specs/financas-ciclo-cobranca.md) e [aceite/publicação](plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
+| 1.10 | `[x]` | Histórico de reposições e reagendamento contextual no card do aluno | [Contrato](specs/reposicoes-e-competencia.md) e [complementos recentes](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
+| 1.11 | `[x]` | Atualização manual de leitura em Finanças, com recuperação e feedback localizado | [Contrato](specs/financas-ciclo-cobranca.md) e [aceite/publicação](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
 | 2.1 | `[x]` | Séries GCal com RRULE, EXDATE e renovação ativa do canal | [Spec de GCal e ressalvas](specs/gcal-sync.md) |
-| 2.4 | `[x]` | Revalidação segura do cache no boot, publicada pelo PR #70 | [Contratos](specs/financas-ciclo-cobranca.md) e [plano/aceite B2](plans/2026-09-30-plan-b2-sync-boot.md) |
+| 2.4 | `[x]` | Revalidação segura do cache no boot, publicada pelo PR #70 | [Contratos](specs/financas-ciclo-cobranca.md) e [plano/aceite B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) |
 | 3.2 | `[x]` | Backend executável localmente | [Setup](setup-ambiente-local.md) |
 | 3.3 | `[x]` | Frontend local com configuração de API local | [Setup](setup-ambiente-local.md) |
 | 3.4 | `[x]` | Banco de desenvolvimento separado | [Setup](setup-ambiente-local.md) |
 | 3.5 | `[x]` | Suíte independente de frontend, hoje com cobertura parcial de lógica/DOM | [Setup](setup-ambiente-local.md) |
 | 4.7 | `[x]` | Cobrança baseada nas ocorrências reais da janela do ciclo | [Spec de Finanças](specs/financas-ciclo-cobranca.md) |
-| 5.1 | `[x]` | Formulários e diálogos mobile | [Plano da Etapa 1](plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md) |
-| 5.2 | `[x]` | Legibilidade e toque; resíduo do topo mantido no item 5.9 | [Plano da Etapa 2](plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md) |
-| 5.3 | `[x]` | Navegação inferior e topo operacional; FABs unificados em complemento posterior | [Etapa 3](plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md) e [complemento](plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
-| 5.4 | `[x]` | Cards mais enxutos e detalhes expansíveis | [Plano da Etapa 4](plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md) |
-| 5.5 | `[x]` | Eventos simultâneos com apresentação híbrida no Dia | [Plano da Etapa 5](plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md) |
-| 5.6 | `[x]` | Erros e toasts unificados; apresentação de carga financeira refinada posteriormente | [Etapa 6](plans/2026-09-29-plan-etapa-6-toast-unificado.md) e [refinamento](plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
-| 5.7 | `[x]` | Consistência, acessibilidade e navegação persistida | [Etapa 7](plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md) e [validação](plans/2026-10-05-plan-validacao-etapa-7-branch.md) |
-| 5.8 | `[x]` | Skeletons padronizados e indicação de cache; B2 entregue separadamente no item 2.4 | [Plano de skeletons/cache](plans/2026-09-30-plan-skeletons-cache.md) |
-| 5.9 | `[→]` | Alvos de toque do cabeçalho e toolbar consolidados no item 5.10, com inventário a refazer | [Plano da identidade visual](plans/2026-10-17-plan-aplicacao-identidade-visual.md) |
-| 5.10 | `[x]` | Identidade Personal Josy aplicada: logo, toque, PWA, paleta e Poppins local; topos e listas padronizados, com hierarquia tipográfica de Finanças alinhada a Alunos. Integração à `main` e aceite dos ajustes com o dono | [Plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [spec de identidade](specs/identidade-e-apresentacao-publica.md) e [contrato visual](specs/interface-e-navegacao.md#61-topos-das-telas-principais) |
+| 5.1 | `[x]` | Formulários e diálogos mobile | [Plano da Etapa 1](archive/plans/2026-09-24-plan-etapa-1-formularios-dialogos-mobile.md) |
+| 5.2 | `[x]` | Legibilidade e toque; resíduo do topo mantido no item 5.9 | [Plano da Etapa 2](archive/plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md) |
+| 5.3 | `[x]` | Navegação inferior e topo operacional; FABs unificados em complemento posterior | [Etapa 3](archive/plans/2026-09-27-plan-etapa-3-navegacao-e-topo-cartoes.md) e [complemento](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
+| 5.4 | `[x]` | Cards mais enxutos e detalhes expansíveis | [Plano da Etapa 4](archive/plans/2026-09-27-plan-etapa-4-densidade-cards-cartoes.md) |
+| 5.5 | `[x]` | Eventos simultâneos com apresentação híbrida no Dia | [Plano da Etapa 5](archive/plans/2026-09-27-plan-etapa-5-eventos-simultaneos.md) |
+| 5.6 | `[x]` | Erros e toasts unificados; apresentação de carga financeira refinada posteriormente | [Etapa 6](archive/plans/2026-09-29-plan-etapa-6-toast-unificado.md) e [refinamento](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
+| 5.7 | `[x]` | Consistência, acessibilidade e navegação persistida | [Etapa 7](archive/plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md) e [validação](archive/plans/2026-10-05-plan-validacao-etapa-7-branch.md) |
+| 5.8 | `[x]` | Skeletons padronizados e indicação de cache; B2 entregue separadamente no item 2.4 | [Plano de skeletons/cache](archive/plans/2026-09-30-plan-skeletons-cache.md) |
+| 5.9 | `[→]` | Alvos de toque do cabeçalho e toolbar inventariados e implementados no item 5.10 | [Plano da identidade visual](plans/2026-10-17-plan-aplicacao-identidade-visual.md) |
+| 5.10 | `[x]` | Implementação na branch: logo, toque, Poppins local, paleta, topos/listas/cards coerentes; ícones claros por finalidade e cache `josy-personal`. Integração à `main`, deploy e aceite dos últimos ajustes no aparelho com o dono | [Plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [spec de identidade](specs/identidade-e-apresentacao-publica.md) e [contrato visual](specs/interface-e-navegacao.md#61-topos-das-telas-principais) |
 
 ## Ressalvas e fontes
 
-- **Integração pendente**: complementos de 1.10/5.3 e a entrega de 1.11 têm aceite mobile relatado no deploy específico da branch; PR/merge para a `main` continuam com o dono, conforme o [fechamento da frente UX](plans/2026-10-13-plan-melhorias-fluxos-ux.md). Isso não reabre funcionalidades publicadas anteriormente nem equivale a integração desses complementos.
+- **Integração pendente**: complementos de 1.10/5.3 e a entrega de 1.11 têm aceite mobile relatado no deploy específico da branch; PR/merge para a `main` continuam com o dono, conforme o [fechamento da frente UX](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md). Isso não reabre funcionalidades publicadas anteriormente nem equivale a integração desses complementos.
 - **Google Calendar**: o item 2.1 preserva a ressalva de que o gatilho automático de renovação no boot não foi observado isoladamente. Defeitos e limites de I/O real permanecem na [spec de GCal](specs/gcal-sync.md).
 - **Validação visual**: testes de lógica/DOM não comprovam pixels, gestos físicos ou todos os fluxos. Usar o [mock e os viewports de referência](setup-ambiente-local.md), com limites registrados em cada plano.
 - **Regras de produto**: consultar [Finanças](specs/financas-ciclo-cobranca.md), [Reposições](specs/reposicoes-e-competencia.md) e [GCal](specs/gcal-sync.md). A regra antiga de alerta do item 0.8 não prevalece sobre a spec vigente.

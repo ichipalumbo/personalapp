@@ -2,7 +2,7 @@
 //
 // Fonte de verdade: spec de identidade, seções 2.10 e 8.3 do guia — nome
 // "Personal Josy" no título, no manifest e no título de app da Apple; ícones
-// gerados do vetor do kit, base opaca #202020 até as bordas, sem cantos
+// gerados do avatar claro do kit, base branca nos maskable/Apple, sem cantos
 // arredondados, e elementos essenciais dentro da zona segura circular de 80%
 // (raio de 40% da largura) quando declarados como maskable.
 const fs = require('fs');
@@ -15,7 +15,7 @@ const { JSDOM } = require('jsdom');
 const RAIZ = path.resolve(__dirname, '..');
 const CAMINHO_MANIFEST = path.join(RAIZ, 'manifest.json');
 const CAMINHO_HTML = path.join(RAIZ, 'index.html');
-const FUNDO = [0x20, 0x20, 0x20];
+const FUNDO = [255, 255, 255];
 const RAIO_SEGURO = 0.4;
 
 function paeth(a, b, c) {
@@ -101,6 +101,9 @@ function lerPng(caminho) {
       const base = (y * ihdr.largura + x) * canais;
       return [pixels[base], pixels[base + 1], pixels[base + 2]];
     },
+    alfa(x, y) {
+      return canais === 4 ? pixels[(y * ihdr.largura + x) * canais + 3] : 255;
+    },
   };
 }
 
@@ -151,6 +154,7 @@ test('ícones maskable mantêm o símbolo na zona segura e a base até as bordas
     let maiorRaio = 0;
     for (let y = 0; y < imagem.altura; y++) {
       for (let x = 0; x < imagem.largura; x++) {
+        assert.equal(imagem.alfa(x, y), 255, `${icone.src}: maskable deve ser opaco`);
         if (ehFundo(imagem.pixel(x, y))) continue;
         const raio = Math.hypot(x + 0.5 - centro, y + 0.5 - centro);
         if (raio > maiorRaio) maiorRaio = raio;
@@ -161,8 +165,38 @@ test('ícones maskable mantêm o símbolo na zona segura e a base até as bordas
       `${icone.src}: desenho chega a ${maiorRaio.toFixed(1)}px do centro, acima do raio seguro de ${limite}px`,
     );
     for (const [x, y] of [[0, 0], [imagem.largura - 1, 0], [0, imagem.altura - 1], [imagem.largura - 1, imagem.altura - 1]]) {
-      assert.ok(ehFundo(imagem.pixel(x, y)), `${icone.src}: canto (${x},${y}) deveria ser o fundo #202020`);
+      assert.ok(ehFundo(imagem.pixel(x, y)), `${icone.src}: canto (${x},${y}) deveria ser branco`);
     }
+    assert.ok(maiorRaio > imagem.largura * 0.2, 'ícone não pode estar vazio');
+  }
+});
+
+test('ícones comuns e favicon têm transparência, com J e presilhas escuros opacos; Apple tem base branca', () => {
+  const manifest = JSON.parse(fs.readFileSync(CAMINHO_MANIFEST, 'utf8'));
+  const comuns = manifest.icons.filter((icone) => icone.purpose === 'any');
+  const mascarados = manifest.icons.filter((icone) => icone.purpose === 'maskable');
+  assert.equal(comuns.length, 2);
+  for (const icone of comuns) {
+    assert.ok(!mascarados.some((outro) => outro.src === icone.src), 'finalidades precisam de arquivos próprios');
+  }
+  for (const arquivo of [...comuns.map((icone) => icone.src), 'assets/images/favicon-32x32.png']) {
+    const imagem = lerPng(path.join(RAIZ, arquivo));
+    assert.equal(imagem.alfa(0, 0), 0, arquivo + ': fundo deve ser transparente');
+    for (const [proporcaoX, proporcaoY, cor] of [
+      [0.36, 0.25, [32, 32, 32]],
+      [0.58, 0.5, [32, 32, 32]],
+      [0.3, 0.5, [255, 222, 23]],
+    ]) {
+      const x = Math.floor(imagem.largura * proporcaoX);
+      const y = Math.floor(imagem.altura * proporcaoY);
+      assert.deepEqual(imagem.pixel(x, y), cor, arquivo + ': cores do mestre claro preservadas');
+      assert.equal(imagem.alfa(x, y), 255, arquivo + ': desenho e J continuam opacos');
+    }
+  }
+  const apple = lerPng(path.join(RAIZ, 'assets/images/apple-touch-icon-180x180.png'));
+  assert.deepEqual(apple.pixel(0, 0), FUNDO);
+  for (let y = 0; y < apple.altura; y++) {
+    for (let x = 0; x < apple.largura; x++) assert.equal(apple.alfa(x, y), 255);
   }
 });
 

@@ -66,7 +66,8 @@ const FIGURAS = {
     { src: kit('07_avatar', 'escuro', 'com_fundo'), legenda: 'Avatar — aplicação escura' },
   ],
   '8.3': [
-    { src: kit('07_avatar', 'escuro', 'com_fundo'), legenda: 'Referência de ícone quadrado — símbolo oficial em base Grafite' },
+    { src: kit('07_avatar', 'claro', 'transparente'), legenda: 'Ícone comum e favicon — aplicação clara transparente' },
+    { src: kit('07_avatar', 'claro', 'com_fundo'), legenda: 'Maskable e Apple — aplicação clara sobre Branco' },
   ],
 };
 

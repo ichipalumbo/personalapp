@@ -1,6 +1,6 @@
 # Spec — Interface, navegação e acessibilidade
 
-> **Status**: Em implementação · **Versão**: 5 · **Atualizado**: 2026-10-23
+> **Status**: Em implementação · **Versão**: 6 · **Atualizado**: 2026-10-23
 > **Escopo de publicação**: base das etapas mobile já entregue; padronização dos topos, listas e hierarquia tipográfica de Alunos/Finanças aprovada e implementada na branch, ainda sem integração à `main`. Publicação e aceite dessas alterações continuam com o dono; o roadmap conserva a situação dos demais complementos.
 
 ## 1. Objetivo e fronteira
@@ -42,7 +42,7 @@ de reposição continuam nas respectivas specs; esta não as redefine.
 - `prefers-reduced-motion` reduz animações/transições aplicáveis; o JS não depende de `animationend` para liberar estado quando a animação não ocorrer.
 - Skeletons usam a classe compartilhada, acompanhados do estado/anúncio de carregamento quando aplicável. Erro de leitura não deve ser anunciado como ausência de dados.
 - Feedback de operação não bloqueia a tela desnecessariamente; retry é uma ação real. A apresentação inicial/refresh de Finanças obedece à sua spec e não deve acumular sinais redundantes.
-- A ampliação de toque entregue em Finanças/grade não encerra os controles do cabeçalho/toolbar: o resíduo do item 5.9 continua aberto. Não ampliar o topo por inferência desta spec.
+- Cabeçalho e toolbar da Home têm alvos mínimos de 44 px para conta, login Google, abas, setas e Hoje. O antigo resíduo do item 5.9 foi consolidado e implementado na frente de identidade; a integração não é presumida por esta spec.
 
 ## 6. Complementos aprovados e limites
 
@@ -73,6 +73,12 @@ navegação anteriormente publicada.
   à direita, sem empurrar os textos para baixo; o botão conserva 44×44 px.
   Cache e mensagens continuam abaixo das colunas e o texto pode quebrar em
   telas menores, sem truncamento.
+- A altura do cabeçalho da marca é medida e publicada em `--header-height`;
+	o padrão CSS antes dessa medição é 65 px, sem fallbacks diferentes por consumidor.
+- Na Home semanal, abaixo de 380 px o período usa forma compacta, por exemplo
+	`19–25/10`, mantendo o intervalo completo em `title` e `aria-label`.
+	Na virada de mês, o mês visível é o final (`28–03/01`); o intervalo completo
+	continua acessível. A mudança de faixa atualiza o rótulo sem recriar a grade.
 
 ### 6.2 Listas de Alunos e Finanças
 
@@ -107,6 +113,6 @@ Testes de lógica/DOM protegem recortes de navegação, diálogo, cards e render
 pixels, gestos físicos, todos os estados ou integrações remotas. Medições e limites de
 validação de cada alteração ficam no registro da frente, sem certificar o app inteiro.
 
-Fora dos topos, listas e hierarquia visual aprovados nas seções 6.1 a 6.3, não inclui redesenho, nova identidade visual, novas telas, solução para o resíduo 5.9,
+Fora dos topos, listas e hierarquia visual aprovados nas seções 6.1 a 6.3, não inclui redesenho, nova identidade visual ou novas telas,
 alteração de cobrança/recorrência, regra nova de cancelamento, revisão de autenticação ou
 nova integração com Google Calendar.

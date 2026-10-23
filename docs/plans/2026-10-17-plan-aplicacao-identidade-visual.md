@@ -1,6 +1,6 @@
 # Plano vivo — Aplicação da identidade visual Personal Josy
 
-> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23
+> **Status**: Em validação · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23
 > **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
 > **Branch**: `feat/aplicacao-identidade-visual`, criada de `origin/main` em 2026-10-22 com `--no-track`, abriga **todas as etapas**; um único PR ao final leva o conjunto para a `main`. A etapa 0 ficou em `docs/auditoria-roadmap`.
 > **Base**: commit `5416e9e`, medida em 2026-10-17; etapa 1 medida sobre a `main` em `ea29834`.
@@ -9,6 +9,15 @@
 ## 1. Objetivo
 
 Aplicar no app e no PWA a identidade aprovada: logo no cabeçalho, nome **Personal Josy** onde o produto exibe nome, ícones de instalação, cores do guia e Poppins. Na mesma frente, ampliar os alvos de toque do topo da tela, antes registrados no item 5.9 do roadmap.
+
+**Síntese vigente para o PR:** implementação concluída na branch, incluindo os
+complementos de topos, listas, tipografia dos cards e alinhamento de Finanças.
+Ícones comuns/favicon usam o avatar claro transparente; maskable/Apple, a mesma
+arte sobre branco opaco. Tema e abertura continuam Grafite; o cache interno é
+`josy-personal`. As decisões anteriores e medições datadas da seção 10 registram
+o estado de cada rodada, não pendências atuais. O dono relatou deploy/teste
+satisfatório antes dos últimos complementos; não há confirmação de publicação
+ou aceite no celular dos novos ícones/cache. Commit, push, PR e merge são do dono.
 
 ## 2. Autorização e limites
 
@@ -20,23 +29,24 @@ Aplicar no app e no PWA a identidade aprovada: logo no cabeçalho, nome **Person
 | Nesta rodada, só a etapa 0 | Resposta do dono em 2026-10-17 | Spec, plano e roadmap; nenhum arquivo de produto alterado |
 | Consolidar o item 5.9 inteiro | Resposta do dono em 2026-10-17 | Cabeçalho e barra da agenda entram na etapa 1; 5.9 passa a apontar para 5.10 |
 | Botão de login Google: só área de toque | Resposta do dono em 2026-10-17 | Spec v8, seção 2.9: sem mudar variante, cores, texto ou símbolo; aviso ao dono antes de implementar |
-| Ícone do app e cor de tema | Decisões registradas no guia v3, seção 8.3 | Símbolo do kit sobre Grafite com área segura; cor de tema escolhida na implementação após teste |
+| Ícone do app | Decisão revista pelo dono em 2026-10-23 | Avatar claro transparente nos comuns/favicon; branco opaco em maskable/Apple, com zona segura |
 | Uma branch para todas as etapas, com PR único | Resposta do dono em 2026-10-22 | Substitui o "branch e PR por etapa" da seção 6; o conjunto entra na `main` de uma vez |
 | Cópia do SVG em `assets/images/` | Resposta do dono em 2026-10-22 | Arquivo do mestre copiado para junto dos ícones do app |
 | Manter os metadados internos do SVG | Resposta do dono em 2026-10-22 | Cópia idêntica ao mestre; nada de limpeza de `title`/`desc` |
 | Alvos de toque: abordagem mista | Resposta do dono em 2026-10-22 | Hitbox de 44 px no cabeçalho (avatar e Google) e altura visual de 44 px nas tabs e na barra da agenda |
 | Cor de tema e fundo de abertura em Grafite | Resposta do dono em 2026-10-22 | `theme_color` e `background_color` = `#202020`, contínuos com o cabeçalho escuro |
+| Nome interno do cache | Resposta do dono em 2026-10-23, após aviso de invalidação | `josy-personal`; não é nome público nem requisito do OAuth |
 
 ## 3. Escopo
 
-**Dentro**: cabeçalho e topo da tela, nome exibido (título, manifest, título de app da Apple), favicon e ícones de instalação, cor de tema e fundo de abertura, cores da interface (CSS, estilos inline do `index.html` e cores definidas em JS) e fonte da interface.
+**Dentro**: cabeçalho e topo da tela, nome exibido (título, manifest, título de app da Apple), favicon e ícones de instalação, cor de tema e fundo de abertura, cores da interface (CSS, estilos inline do `index.html` e cores definidas em JS), fonte, complementos visuais de Alunos/Finanças e troca autorizada do nome do cache.
 
 **Fora**:
 
 - tela de consentimento Google;
 - página pública e páginas legais;
 - variante, cores e apresentação do botão Google;
-- nome do cache do service worker e demais identificadores técnicos (spec, seção 3.2);
+- demais identificadores técnicos: a exceção autorizada é somente o nome do cache (spec, seção 3.2);
 - regras de negócio;
 - publicação, que continua com o dono.
 
@@ -69,7 +79,7 @@ As contagens descrevem esta base e não são contagem viva do projeto.
 
 ## 6. Etapas
 
-As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e entram na `main` por um único PR ao final (decisão do dono em 2026-10-22, registrada na seção 2). O merge continua publicando em produção de uma vez para todas as etapas. A etapa 4 depende da 3. As etapas 1 e 2 são independentes entre si. A 5 fica por último para medir o layout com as cores já estáveis.
+As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e entram na `main` por um único PR ao final (decisão do dono em 2026-10-22, registrada na seção 2). O merge dispara redeploy de produção; deploy manual prévio de branch não substitui a integração. A etapa 4 depende da 3; a 5 foi executada após as cores. Complementos posteriores estão registrados na seção 10.
 
 | Etapa | Resultado | Estado |
 |---|---|---|
@@ -99,10 +109,10 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 ### Etapa 2 — Nome exibido e instalação do PWA
 
 - **Nome**: título da página, `apple-mobile-web-app-title`, e `name` e `short_name` do manifest passam a "Personal Josy". Se o nome curto for truncado, parar e pedir aprovação.
-- **Ícones**: favicon; 192 e 512 nas versões padrão e maskable (zona segura de 80%); ícone da Apple. Todos gerados do símbolo do kit sobre Grafite, conforme o guia, seção 8.3. A geração usa o Edge em modo headless, já usado no gerador do PDF do guia, sem dependência nova.
-- **Origem vetorial**: o SVG do avatar escuro com fundo do kit já é a peça da seção 8.3 — símbolo centrado sobre `#202020` opaco, sem nome, descritor ou cantos arredondados. Raio máximo do desenho medido em 411,7 de 1080 (76,2% do diâmetro), dentro do limite de 80%.
+- **Ícones vigentes**: favicon 32 e comuns 192/512 transparentes; maskable 192/512 e Apple 180 com base branca opaca, conforme o guia, seção 8.3. Gerados pelo Edge headless, sem dependência nova.
+- **Origem vetorial vigente**: `07_avatar/claro/personal_josy_avatar_claro_transparente.svg`, sem redesenho ou mudança no J opaco. O teste dos PNGs confirma a zona segura maskable e os fundos por finalidade. A origem escura anterior permanece no registro histórico da etapa 2.
 - **Cor de tema e fundo de abertura**: proposta apresentada ao dono e aprovada em 2026-10-22 — Grafite `#202020` nos dois, contínuo com o cabeçalho escuro. O teste em plataformas reais fica na conferência de instalação do dono. O plano não testa Android/iOS reais.
-- **Fora**: `CACHE_NAME` do `sw.js` não muda.
+- **Cache**: inicialmente fora desta etapa; complemento autorizado adotou `josy-personal`, preservando as rotinas e invalidando caches anteriores na ativação.
 - **Aviso prévio**: a etapa altera o que fica instalado nos aparelhos.
 - **Aceite**:
   - manifest válido no DevTools, sem alertas de ícone;
@@ -493,3 +503,101 @@ Rodada curta para encerrar os dois pontos que ficaram abertos acima. A rodada an
   Mock de Finanças aberto em 433×762 / DPR 2,81 para a prévia do dono; captura
   do cabeçalho realizada. Servidor existente mantido no ar. Sem commit/push;
   aceite e publicação do ajuste permanecem com o dono.
+
+### Complemento — ícone claro de instalação — 2026-10-23
+
+- Dono reinstalou no celular e rejeitou o fundo escuro do ícone; pediu o claro
+  transparente. Confirmou continuar na branch atual (limpa na abertura) e usar
+  transparência nos comuns/favicon, com branco opaco nos maskable/Apple.
+- `scripts/gerar-icones-app.js` usa o avatar claro transparente oficial, sem
+  redesenhar o mestre; screenshot headless com alfa preservado. Ícones comuns
+  192/512 e favicon 32 transparentes; maskable 192/512 próprios e Apple 180
+  com base branca. Manifest separa as finalidades; não muda tema, abertura,
+  nome, logo do cabeçalho, service worker ou CACHE_NAME.
+- Guia seção 8.3 e spec de identidade seção 2.10 atualizados com a decisão.
+  PDF anterior não regenerado: ressalva explícita no guia, cujo Markdown prevalece.
+- Teste PWA verifica alfa dos comuns, presilhas/J escuros opacos, amarelo do
+  calendário, opacidade de todos os pixels maskable/Apple, zona segura circular,
+  dimensões e caminhos distintos por finalidade. Mutação de geração com fundo
+  branco nos comuns: 4/5 passaram, novo caso falhou; restaurada e regenerada.
+- Instalação real e atualização do ícone com o dono após deploy. Android/iOS
+  podem impor fundo, máscara ou atraso no cache; não prometer transparência
+  final nem atualização imediata em aparelhos já instalados.
+- Suíte medida: **454/454 antes → 455/455 depois**, `EXIT=0`.
+
+### Complemento — namespace do cache — 2026-10-23
+
+- Dono autorizou trocar CACHE_NAME e sugeriu `josy-personal`; continuidade
+  confirmada na branch com os ícones ainda não commitados. Avisado que o
+  activate remove caches com outros nomes; MongoDB/localStorage permanecem.
+- `sw.js`: nome passa a `josy-personal`; lista de pré-cache e lógica de
+  install/activate/fetch preservadas. Não é versão pública ou nome OAuth.
+  A referência Google seção 3.1 exige identidade consistente nos pontos de
+  contato públicos, não no namespace interno do Cache Storage.
+- Teste existente de tipografia deixa de congelar o nome legado. Caso adicional
+  executa install/activate em VM isolada: instala no nome novo, preserva esse
+  cache e remove o legado. Mutação para nome antigo: 4/6 passam e 2 falham;
+  restaurada antes da suíte final. Nenhum cache real apagado como teste.
+- Nome público permanece Personal Josy. Mudança não garante atualização imediata
+  do ícone instalado, que também depende do sistema/launcher. Sem alterações
+  de OAuth, credenciais, backend, dados ou URLs. Deploy e aceite no celular
+  continuam com o dono.
+- Suíte final: **455/455 antes do cache → 456/456 depois**, `EXIT=0`.
+  Ícones e cache no conjunto: **454 → 456**; mutações restauradas e status
+  conferido. Sem diagnósticos novos nos arquivos de código editados.
+- Mock `default` aberto em
+  `http://127.0.0.2:5500/index.html?mockScenario=default&validacao=icones-cache#tela-home`,
+  433×762 / DPR 2,81 confirmados. Manifest e PNGs carregados no navegador:
+  `any` 192/512 com alfa zero no canto, `maskable` 192/512 com canto branco
+  opaco. Worker servido contém o nome novo. Servidor existente mantido no ar;
+  nenhuma limpeza real de Cache Storage foi executada para validação.
+
+### Revisão documental pré-PR — 2026-10-23
+
+- Continuidade confirmada na mesma branch, preservando os ícones/cache locais
+  ainda não commitados. Escopo: decisões e implementação da branch frente à
+  `origin/main` disponível localmente; sem fetch, commit, push ou merge.
+- Plano em **Em validação**, com síntese vigente de entrega, ícones claros,
+  cache autorizado e limites de aceite. Escopo/resumo da etapa 2 atualizados,
+  sem reescrever as medições e decisões anteriores da seção de execução.
+- Spec de identidade: pendências de fonte, paleta e tema reconciliadas com as
+  decisões aplicadas; avatar de 36 px registrado; removida a dependência de
+  plano no cabeçalho. Regra de peso sem face ajustada para não afirmar que
+  toda substituição por peso próximo seja síntese tipográfica.
+- Spec de interface: item 5.9 deixa de aparecer como aberto; contrato de
+  toque, token de altura e rótulo estreito da semana incorporados. Topos,
+  listas, hierarquia dos cards e alinhamento financeiro já correspondiam
+  aos templates/CSS e foram mantidos.
+- README e índice: nome Personal Josy, fontes locais, geradores e entradas
+  de identidade/interface/guia/OAuth. Roadmap: síntese de ícones/cache e
+  distinção de implementação na branch, integração e aceite no aparelho.
+- PDF do guia regenerado pelo script versionado após substituir a figura
+  escura da seção 8.3 pelas aplicações clara transparente e branca. A
+  ressalva de PDF desatualizado foi retirada do guia vigente; o registro
+  anterior de que ele não tinha sido regenerado permanece como histórico.
+  Gerador passou em `node --check` e executou com sucesso; PDF produzido
+  com assinatura `%PDF-1.4`. Não houve certificação visual de cada página.
+- Dono autorizou adicionalmente a correção de 33 ponteiros antigos no índice
+  e roadmap. Substituição mecânica só de destinos ausentes e com alvo existente.
+  Verificação final em 9 fontes: **142 links locais e 16 âncoras**, sem ausências.
+  Nenhum arquivo em `docs/archive/` foi editado. Links externos de políticas
+  Google não foram pesquisados de novo nem certificados como atuais nesta rodada.
+- Fontes conferidas sem necessidade de edição: manual local, referência
+  de OAuth, kit-mestre e regras financeiras quanto ao recorte visual.
+  As instruções permanentes alteradas pela branch tratam apenas do mock
+  final; nenhuma modificação adicional de instrução/skill foi feita.
+- Ressalvas preservadas, sem ampliar a implementação: instalação dos ícones
+  claros/cache no celular e teste offline real após a mudança continuam com
+  o dono; nome do cache não prova conformidade OAuth. O README contém
+  descrições anteriores sobre leitura de localStorage sem sessão, fora do
+  que esta branch alterou; não foram revalidadas/corrigidas nesta revisão.
+  Dois resumos de modais financeiros ainda usam peso 500 inline, embora as
+  faces locais sejam 400/600/700/800; isso não é corrigido por edição documental.
+  O navegador pode escolher peso próximo, portanto não afirmar síntese automática.
+- Errata da medição histórica da etapa 5: 8 px para 5,2 px de folga no pior
+  caso é **redução**, não aumento. O rótulo coube nos cenários medidos; os
+  números originais foram preservados e o erro textual fica corrigido aqui.
+- Nesta rodada não houve alteração do produto nem repetição das suítes de
+  aplicação. Última execução medida da frente: 456/456 frontend; backend
+  não alterado. Gates desta revisão: links/âncoras, sintaxe/execução do
+  gerador PDF, diagnósticos e diff. Sem novo relatório ou documento paralelo.

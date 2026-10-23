@@ -1,11 +1,10 @@
-const CACHE_NAME = 'Prô Josy - Agenda Personal Trainer';
+const CACHE_NAME = 'josy-personal';
 const APP_SHELL_FILES = [
   '/index.html',
   '/assets/css/style.css',
   '/assets/js/app.js',
   // Etapa 5 da identidade visual: a Poppins precisa existir offline desde a
-  // instalação. CACHE_NAME NÃO muda de propósito — trocar o nome faria o
-  // `activate` apagar o cache de todo aparelho já instalado.
+  // instalação. O activate remove caches anteriores após instalar este shell.
   '/assets/vendor/poppins/poppins-400.woff2',
   '/assets/vendor/poppins/poppins-600.woff2',
   '/assets/vendor/poppins/poppins-700.woff2',
