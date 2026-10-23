@@ -73,6 +73,8 @@ Se o objetivo for:
 [MongoDB - via Mongoose]
 ```
 
+O diagrama detalhado, incluindo os fluxos de autenticação e Google Calendar, está em [docs/reference/arquitetura-aplicacao.md](docs/reference/arquitetura-aplicacao.md).
+
 Comportamento de resiliencia:
 
 - O frontend tenta carregar e salvar via API.

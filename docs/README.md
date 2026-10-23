@@ -11,6 +11,7 @@
 | Documento | O que é | Quando ler |
 |---|---|---|
 | [`roadmap-v3.md`](roadmap-v3.md) | Roadmap oficial: backlog, entregas, dependências e decisões pendentes | Antes de escolher a próxima feature |
+| [`reference/arquitetura-aplicacao.md`](reference/arquitetura-aplicacao.md) | Diagrama dos componentes, fluxos de dados e integrações da aplicação | Para entender a arquitetura atual ou localizar limites entre frontend, API, dados e serviços externos |
 | [`roadmap-v1.md`](archive/roadmaps/roadmap-v1.md) | Roadmap anterior, renomeado pelo dono; preservado como registro, sem atualização de backlog | Somente para consultar o registro anterior à substituição de 2026-10-14 |
 | [`roadmap-v2.md`](archive/roadmaps/roadmap-v2.md) | Variante comparativa, não oficial; não é segundo backlog ativo | Para comparar as propostas de organização anteriores ao v3 |
 | [`specs/identidade-e-apresentacao-publica.md`](specs/identidade-e-apresentacao-publica.md) | Contrato de marca, tipografia, ícones por finalidade e cache interno | Antes de alterar apresentação da marca ou instalação do PWA |
