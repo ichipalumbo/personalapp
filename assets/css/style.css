@@ -644,11 +644,12 @@ body {
 }
 
 /* Alinhado ao avatar do cabeçalho (ajuste de 2026-10-23): um único círculo,
-   sem borda, em amarelo cheio com a inicial em Grafite (~12:1). O tamanho
-   continua 42px por causa do cartão do perfil, que tem mais respiro que o topo. */
+   sem borda, em amarelo cheio com a inicial em Grafite (~12:1), no mesmo
+   36px do topo. Antes eram 42px, o que fazia os dois avatares do app terem
+   tamanhos diferentes para o mesmo dado. */
 .user-profile-avatar {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
   background: var(--cor-primaria);
   display: inline-flex;
