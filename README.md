@@ -1,4 +1,4 @@
-# Agenda Personal Trainer (Prô Josy)
+# Personal Josy
 
 Sistema para gestao de alunos e agenda de aulas de personal trainer, com frontend em JavaScript vanilla e API Node.js/Express para persistencia em MongoDB.
 
@@ -13,6 +13,9 @@ Este README foi estruturado para facilitar onboarding tecnico e navegacao rapida
 ## Documentacao
 
 - [docs/README.md](docs/README.md): indice da documentacao do projeto, reunindo roadmap e specs de features.
+- Identidade do produto: [spec](docs/specs/identidade-e-apresentacao-publica.md) e [guia visual](docs/reference/identidade/guia-identidade-visual-v3.md).
+- Interface: Poppins local e cores em tokens; [contrato de navegacao, topos e cards](docs/specs/interface-e-navegacao.md).
+- PWA: icones comuns/favicon claros transparentes; maskable/Apple com base branca. Tema e abertura em Grafite. Cache interno `josy-personal`, distinto do nome publico/OAuth **Personal Josy**.
 
 ## Autenticacao e Modo de Uso
 
@@ -91,6 +94,7 @@ personalapp/
 |  |- images/
 |  |- vendor/
 |  |  |- fontawesome/              <- FontAwesome servido do proprio repo (sem CDN)
+|  |  |- poppins/                  <- fontes locais 400/600/700/800 e licenca OFL
 |  |- js/
 |  |  |  --- [0] Infra de base ---
 |  |  |- logger.js                 <- logger com niveis -> window.log
@@ -183,6 +187,8 @@ personalapp/
 |  |  |- README.md
 |- scripts/
 |  |- servir-local.js              <- servidor estatico local do frontend
+|  |- gerar-icones-app.js           <- PNGs do avatar claro oficial por finalidade
+|  |- gerar-guia-identidade-pdf.js  <- PDF gerado do guia Markdown e do kit
 |  |- auditar-css-morto.js
 |- docs/                           <- indice completo em docs/README.md
 |  |- roadmap-v3.md                 <- roadmap oficial

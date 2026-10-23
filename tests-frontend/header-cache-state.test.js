@@ -26,7 +26,13 @@ function criarAmbiente({ comCache }) {
       <header class="header">
         <div class="header-topline">
           <div class="brand-container">
-            <h1 class="marca-titulo">Prô Josy</h1>
+            <h1 class="marca-titulo">
+              <img
+                class="marca-logo"
+                src="assets/images/personal_josy_horizontal_escuro_transparente.svg"
+                alt="Personal Josy"
+              />
+            </h1>
           </div>
         </div>
       </header>

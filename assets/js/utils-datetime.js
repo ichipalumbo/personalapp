@@ -4,7 +4,8 @@
 // Expõe: window.somarMinutos, window.diferencaMinutos, window.getDiaTextoSelecionado,
 //         window.getDataSelecionadaPtBr, window.formatarDataPtBr, window.converterPtBrParaISO,
 //         window.formatarDataPtBrLegivel, window.converterISODateParaDataLocal,
-//         window.formatarDataLocalParaISODate, window.abrirDatePickerNativo
+//         window.formatarDataLocalParaISODate, window.abrirDatePickerNativo,
+//         window.formatarPeriodoSemana
 
 /** @param {string} horaStr - Ex: "08:30" @param {number} minutos @returns {string} Ex: "09:00" */
 window.somarMinutos = function(horaStr, minutos) {
@@ -44,6 +45,20 @@ window.getDiaTextoSelecionado = function() {
 window.getDataSelecionadaPtBr = function() {
     if (!window.dataSelecionada) return '';
     return window.dataSelecionada.toLocaleDateString('pt-BR');
+};
+
+/** Rótulo do período de uma semana da Home.
+ *  `completo` = "19/10 a 25/10"; `curto` = "19–25/10" (mês do fim). Abaixo de
+ *  380px só a forma curta cabe na linha do calendário.
+ *  @param {Date} inicio @param {Date} fim
+ *  @returns {{completo: string, curto: string}} */
+window.formatarPeriodoSemana = function(inicio, fim) {
+    const dia = (d) => String(d.getDate()).padStart(2, '0');
+    const mes = (d) => String(d.getMonth() + 1).padStart(2, '0');
+    return {
+        completo: `${dia(inicio)}/${mes(inicio)} a ${dia(fim)}/${mes(fim)}`,
+        curto: `${dia(inicio)}–${dia(fim)}/${mes(fim)}`,
+    };
 };
 
 window.normalizarDataParaISO = function(dataValor) {

@@ -101,10 +101,52 @@ window.irParaDiaDestaSemana = function(dataStr) {
         window.alternarModoHome('dia');
     }
 };
+// Faixa em que a forma longa do rótulo não cabe na linha (medido: 104px
+// necessários contra 102px disponíveis em 375).
+const CONSULTA_ROTULO_ESTREITO = '(max-width: 379px)';
+
+// Rótulo do período da Home. Fonte única da formatação:
+// window.formatarPeriodoSemana (utils-datetime.js). Não re-renderiza a grade.
+window.atualizarRotuloPeriodoSemana = function() {
+    const labelPeriodo = document.getElementById('periodoSemanaHomeLabel');
+    if (!labelPeriodo || typeof window.formatarPeriodoSemana !== 'function') return;
+    const dataRef = new Date(window.semanaReferencia);
+    const diaSemana = dataRef.getDay();
+    const dSeg = dataRef.getDate() - diaSemana + (diaSemana === 0 ? -6 : 1);
+    const segundaFeira = new Date(dataRef.setDate(dSeg));
+    const domingo = new Date(segundaFeira);
+    domingo.setDate(segundaFeira.getDate() + 6);
+    const rotulo = window.formatarPeriodoSemana(segundaFeira, domingo);
+    const estreito = typeof window.matchMedia === 'function'
+        && window.matchMedia(CONSULTA_ROTULO_ESTREITO).matches;
+    labelPeriodo.textContent = estreito ? rotulo.curto : rotulo.completo;
+    // O período completo continua disponível ao toque/hover e para o leitor de tela.
+    labelPeriodo.title = rotulo.completo;
+    labelPeriodo.setAttribute('aria-label', rotulo.completo);
+};
+
+if (typeof window.matchMedia === 'function') {
+    const faixaRotulo = window.matchMedia(CONSULTA_ROTULO_ESTREITO);
+    if (faixaRotulo && typeof faixaRotulo.addEventListener === 'function') {
+        faixaRotulo.addEventListener('change', function() {
+            window.atualizarRotuloPeriodoSemana();
+        });
+    }
+}
+
+// A escuta de matchMedia cobre a troca de faixa, mas nem todo ambiente a dispara
+// (o redimensionamento por emulação do navegador integrado, por exemplo, muda o
+// CSS e não emite o evento). O resize é a rede de segurança: ele acontece em
+// toda rotação de tela e a função relê a faixa a cada chamada.
+if (typeof window.addEventListener === 'function') {
+    window.addEventListener('resize', function() {
+        window.atualizarRotuloPeriodoSemana();
+    });
+}
+
 window.renderizarHomeSemana = function() {
     if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
     const gridSemanal = document.getElementById('calendarioSemanalHomeGrid');
-    const labelPeriodo = document.getElementById('periodoSemanaHomeLabel');
     if (!gridSemanal) return;
     const dataRef = new Date(window.semanaReferencia);
     const diaSemana = dataRef.getDay();
@@ -112,13 +154,7 @@ window.renderizarHomeSemana = function() {
     const segundaFeira = new Date(dataRef.setDate(dSeg));
     const domingo = new Date(segundaFeira);
     domingo.setDate(segundaFeira.getDate() + 6);
-    if (labelPeriodo) {
-        const dSegStr = String(segundaFeira.getDate()).padStart(2, '0');
-        const mSegStr = String(segundaFeira.getMonth() + 1).padStart(2, '0');
-        const dDomStr = String(domingo.getDate()).padStart(2, '0');
-        const mDomStr = String(domingo.getMonth() + 1).padStart(2, '0');
-        labelPeriodo.textContent = `${dSegStr}/${mSegStr} a ${dDomStr}/${mDomStr}`;
-    }
+    window.atualizarRotuloPeriodoSemana();
     
     let html = '';
     const diasSemanaMap = typeof window.getNomesDiasUteis === 'function'

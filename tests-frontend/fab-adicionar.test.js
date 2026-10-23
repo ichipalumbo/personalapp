@@ -50,9 +50,42 @@ function regraUnica(regras, seletor, reduzido = false) {
     return encontradas[0].estilo;
 }
 
+// A aparência do FAB vem da tabela de tokens (--cor-*) desde a etapa 3 da
+// identidade visual. O CSSOM devolve a declaração com var(), então o helper
+// resolve os tokens antes de comparar — o contrato segue sendo a cor final.
+const TOKENS_DE_COR = (() => {
+    const mapa = new Map();
+    for (const achado of CSS.matchAll(/(--cor-[a-z0-9-]+)\s*:\s*([^;{}]+);/g)) {
+        mapa.set(achado[1], achado[2].trim());
+    }
+    return mapa;
+})();
+
+function resolverTokensDeCor(valor) {
+    let saida = valor;
+    for (let volta = 0; volta < 5; volta++) {
+        const antes = saida;
+        saida = saida.replace(/var\((--cor-[a-z0-9-]+)(?:,\s*([^()]*))?\)/g, (todo, nome, alternativa) => {
+            if (TOKENS_DE_COR.has(nome)) return TOKENS_DE_COR.get(nome);
+            return alternativa === undefined ? todo : alternativa;
+        });
+        if (saida === antes) break;
+    }
+    return saida;
+}
+
+function normalizarCor(valor) {
+    return valor
+        .replace(/#([0-9a-fA-F]{3})\b/g, (todo, hex) => '#' + hex.split('').map((c) => c + c).join(''))
+        .replace(/#([0-9a-fA-F]{6})\b/g, (todo, hex) => `rgb(${parseInt(hex.slice(0, 2), 16)}, ${parseInt(hex.slice(2, 4), 16)}, ${parseInt(hex.slice(4, 6), 16)})`)
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
 function verificarDeclaracoes(estilo, esperado) {
     for (const [propriedade, valor] of Object.entries(esperado)) {
-        assert.equal(estilo.getPropertyValue(propriedade).trim().replace(/\s+/g, ' '), valor, propriedade);
+        const real = normalizarCor(resolverTokensDeCor(estilo.getPropertyValue(propriedade).trim()));
+        assert.equal(real, normalizarCor(valor), propriedade);
     }
 }
 
@@ -98,8 +131,8 @@ test('FAB tem uma única fonte CSS de aparência, sem overrides por ID ou classe
     assert.ok(seletoresFab.every((seletor) => /^\.fab-adicionar(?::(?:hover|active))?$/.test(seletor)), 'nenhum seletor do FAB pode ser limitado a uma tela');
     verificarDeclaracoes(regraUnica(regras, '.fab-adicionar'), {
         position: 'fixed', bottom: 'calc(var(--bottombar-height, 0px) + 16px)', right: '25px',
-        width: '60px', height: '60px', 'border-radius': '50%', background: 'rgb(255, 215, 0)',
-        color: 'rgb(13, 13, 13)', 'font-size': '1.5rem',
+        width: '60px', height: '60px', 'border-radius': '50%', background: 'rgb(255, 222, 23)',
+        color: 'rgb(32, 32, 32)', 'font-size': '1.5rem',
         'box-shadow': '0 14px 28px rgba(0, 0, 0, 0.42)', 'z-index': '100', cursor: 'pointer',
         display: 'flex', 'align-items': 'center', 'justify-content': 'center',
         transition: 'transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease'

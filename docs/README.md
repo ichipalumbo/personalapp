@@ -1,6 +1,6 @@
-# Documentação — Agenda Personal Trainer (Prô Josy)
+# Documentação — Personal Josy
 
-> **Finalidade**: índice e governança da documentação · **Atualizado**: 2026-10-14
+> **Finalidade**: índice e governança da documentação · **Atualizado**: 2026-10-23
 > Este arquivo define onde registrar cada informação e qual documento consultar; não descreve regras de produto nem a execução de uma frente.
 > **Fonte de verdade de regra de negócio**: as specs em `specs/`. Se uma regra não estiver escrita lá, ela não está decidida — confirme antes de implementar.
 
@@ -11,8 +11,12 @@
 | Documento | O que é | Quando ler |
 |---|---|---|
 | [`roadmap-v3.md`](roadmap-v3.md) | Roadmap oficial: backlog, entregas, dependências e decisões pendentes | Antes de escolher a próxima feature |
-| [`roadmap-v1.md`](roadmap-v1.md) | Roadmap anterior, renomeado pelo dono; preservado como registro, sem atualização de backlog | Somente para consultar o registro anterior à substituição de 2026-10-14 |
-| [`roadmap-v2.md`](roadmap-v2.md) | Variante comparativa, não oficial; não é segundo backlog ativo | Para comparar as propostas de organização anteriores ao v3 |
+| [`roadmap-v1.md`](archive/roadmaps/roadmap-v1.md) | Roadmap anterior, renomeado pelo dono; preservado como registro, sem atualização de backlog | Somente para consultar o registro anterior à substituição de 2026-10-14 |
+| [`roadmap-v2.md`](archive/roadmaps/roadmap-v2.md) | Variante comparativa, não oficial; não é segundo backlog ativo | Para comparar as propostas de organização anteriores ao v3 |
+| [`specs/identidade-e-apresentacao-publica.md`](specs/identidade-e-apresentacao-publica.md) | Contrato de marca, tipografia, ícones por finalidade e cache interno | Antes de alterar apresentação da marca ou instalação do PWA |
+| [`specs/interface-e-navegacao.md`](specs/interface-e-navegacao.md) | Navegação, acessibilidade, topos compartilhados, listas e hierarquia visual dos cards | Antes de alterar os padrões transversais da interface |
+| [Guia visual](reference/identidade/guia-identidade-visual-v3.md) e [PDF](reference/identidade/guia-identidade-visual-v3.pdf) | Aplicações aprovadas da identidade; Markdown é a fonte, PDF é gerado | Ao usar o kit, conferir fundos, cores e exportações do ícone |
+| [Identidade, OAuth e verificação Google](reference/google-oauth-verificacao.md) | Pesquisa com fontes externas e limites; não substitui o contrato aprovado | Ao preparar marca pública, consentimento e verificação, sem confundir nome interno de cache com nome público |
 | [`specs/financas-ciclo-cobranca.md`](specs/financas-ciclo-cobranca.md) | Modelo de cobrança por ciclo de vencimento por aluno | Antes de mexer em qualquer coisa financeira, no cadastro de aluno ou na contagem de aulas |
 | [`specs/reposicoes-e-competencia.md`](specs/reposicoes-e-competencia.md) | Fila de reposições, competência de cobrança, prazo de validade e extrato do ciclo | Antes de definir como aulas enviadas para reposição entram no cálculo e no histórico financeiro |
 | [`specs/gcal-sync.md`](specs/gcal-sync.md) | Sincronização com Google Calendar | Antes de mexer em recorrência, `EXDATE`, webhook, renovação do canal ou conflitos de sincronização |
@@ -21,18 +25,18 @@
 | [`reference/agent-workflow-kit/`](reference/agent-workflow-kit/README.md) | Kit reutilizável: guia de uso, fundamentos, modelos de instruções/governança/spec/diagnóstico/plano e arquiteto opcional. Modelos usados pelo agente local dão formato, sem substituir a política deste app | Ao adaptar o fluxo para outro projeto ou preparar trabalho com o arquiteto |
 | [`diagnostics/`](diagnostics/) | Investigações datadas: pergunta, fatos, hipóteses, causas, impacto e alternativas | Quando é preciso entender um problema ou auditar uma área antes de escolher a intervenção |
 | [`plans/`](plans/) | Plano vivo da frente: execução proposta/autorizada, critérios de aceite, validação e registro da execução | Para preparar, retomar ou verificar a entrega de uma mudança |
-| [`reports/`](reports/) | Relatórios pontuais antigos, **congelados**; não recebem novos arquivos | Para entender o resultado de uma mudança histórica, não para obter regra vigente |
+| [`reports/`](archive/reports/) | Relatórios pontuais antigos, **congelados**; não recebem novos arquivos | Para entender o resultado de uma mudança histórica, não para obter regra vigente |
 | [`archive/`](archive/) | Processo anterior, **congelado**: relatórios de agente e sagas | Somente para reconstruir a origem de decisões e incidentes |
 | [`reference/`](reference/) | Referências do app e material exportável, com finalidade e vigência explicitadas | Para consultar conhecimento de apoio ou adaptar práticas em outro projeto |
-| [Auditoria documental](diagnostics/2026-10-14-diag-arquitetura-documentacao.md) | Inventário individual e achados da pasta; fotografia da auditoria, não segundo manual de governança | Para revisar as misturas de função e preparar uma futura redistribuição |
-| [Plano da governança](plans/2026-10-14-plan-governanca-documental.md) | Escopo, decisões, execução e validação desta reorganização documental | Para conferir o que foi feito e o que permanece fora da rodada |
+| [Auditoria documental](archive/diagnostics/2026-10-14-diag-arquitetura-documentacao.md) | Inventário individual e achados da pasta; fotografia da auditoria, não segundo manual de governança | Para revisar as misturas de função e preparar uma futura redistribuição |
+| [Plano da governança](archive/plans/2026-10-14-plan-governanca-documental.md) | Escopo, decisões, execução e validação desta reorganização documental | Para conferir o que foi feito e o que permanece fora da rodada |
 | [Migração documental](plans/2026-10-14-plan-migracao-documental.md) | Matriz por trecho: origem, destino, conteúdo incorporado, duplicações e pendências | Para retomar as transferências incrementais sem reabrir a auditoria encerrada |
 
 ---
 
 ## Como estes documentos se relacionam
 
-- O **roadmap oficial** é [`roadmap-v3.md`](roadmap-v3.md), único documento vivo de planejamento. A substituição foi autorizada pelo dono em 2026-10-14; [`roadmap-v1.md`](roadmap-v1.md) é o registro anterior, renomeado pelo dono e sem novas atualizações de backlog. Referências ao nome antigo em documentos encerrados são históricas. Não criar outras versões paralelas nem versionar por data.
+- O **roadmap oficial** é [`roadmap-v3.md`](roadmap-v3.md), único documento vivo de planejamento. A substituição foi autorizada pelo dono em 2026-10-14; [`roadmap-v1.md`](archive/roadmaps/roadmap-v1.md) é o registro anterior, renomeado pelo dono e sem novas atualizações de backlog. Referências ao nome antigo em documentos encerrados são históricas. Não criar outras versões paralelas nem versionar por data.
 - As **specs** são **uma por feature** e mantêm o contrato aprovado vigente. São evolutivas: mudança de comportamento exige decisão explícita e atualização do contrato, sem reescrever o passado como se a nova regra sempre tivesse existido. O histórico fica no Git, não em arquivos paralelos (`v1.md`, `v2.md`).
 - **Versão e status de uma spec existem em um lugar só: o cabeçalho da própria spec.** Nenhum outro documento — nem este índice, nem o roadmap, nem `.github/copilot-instructions.md` — repete o número. Repetir cria drift silencioso: já aconteceu de uma spec andar cinco versões com o índice parado, e um agente confiar no número errado.
 - Quando uma feature é entregue, o item correspondente no roadmap é marcado como concluído e passa a **apontar para a spec**, em vez de repetir o conteúdo dela.

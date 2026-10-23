@@ -1,14 +1,23 @@
 # Plano vivo — Aplicação da identidade visual Personal Josy
 
-> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-17
+> **Status**: Em validação · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23
 > **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
-> **Branch**: `docs/auditoria-roadmap` na etapa 0, com working tree limpo na abertura. A branch de cada etapa seguinte é definida no início da rodada.
-> **Base**: commit `5416e9e`, medida em 2026-10-17.
+> **Branch**: `feat/aplicacao-identidade-visual`, criada de `origin/main` em 2026-10-22 com `--no-track`, abriga **todas as etapas**; um único PR ao final leva o conjunto para a `main`. A etapa 0 ficou em `docs/auditoria-roadmap`.
+> **Base**: commit `5416e9e`, medida em 2026-10-17; etapa 1 medida sobre a `main` em `ea29834`.
 > **Fontes**: [spec de identidade](../specs/identidade-e-apresentacao-publica.md), [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), [kit visual v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md), [spec de interface](../specs/interface-e-navegacao.md), [roadmap, item 5.10](../roadmap-v3.md) e [ambiente de validação](../setup-ambiente-local.md).
 
 ## 1. Objetivo
 
 Aplicar no app e no PWA a identidade aprovada: logo no cabeçalho, nome **Personal Josy** onde o produto exibe nome, ícones de instalação, cores do guia e Poppins. Na mesma frente, ampliar os alvos de toque do topo da tela, antes registrados no item 5.9 do roadmap.
+
+**Síntese vigente para o PR:** implementação concluída na branch, incluindo os
+complementos de topos, listas, tipografia dos cards e alinhamento de Finanças.
+Ícones comuns/favicon usam o avatar claro transparente; maskable/Apple, a mesma
+arte sobre branco opaco. Tema e abertura continuam Grafite; o cache interno é
+`josy-personal`. As decisões anteriores e medições datadas da seção 10 registram
+o estado de cada rodada, não pendências atuais. O dono relatou deploy/teste
+satisfatório antes dos últimos complementos; não há confirmação de publicação
+ou aceite no celular dos novos ícones/cache. Commit, push, PR e merge são do dono.
 
 ## 2. Autorização e limites
 
@@ -20,18 +29,24 @@ Aplicar no app e no PWA a identidade aprovada: logo no cabeçalho, nome **Person
 | Nesta rodada, só a etapa 0 | Resposta do dono em 2026-10-17 | Spec, plano e roadmap; nenhum arquivo de produto alterado |
 | Consolidar o item 5.9 inteiro | Resposta do dono em 2026-10-17 | Cabeçalho e barra da agenda entram na etapa 1; 5.9 passa a apontar para 5.10 |
 | Botão de login Google: só área de toque | Resposta do dono em 2026-10-17 | Spec v8, seção 2.9: sem mudar variante, cores, texto ou símbolo; aviso ao dono antes de implementar |
-| Ícone do app e cor de tema | Decisões registradas no guia v3, seção 8.3 | Símbolo do kit sobre Grafite com área segura; cor de tema escolhida na implementação após teste |
+| Ícone do app | Decisão revista pelo dono em 2026-10-23 | Avatar claro transparente nos comuns/favicon; branco opaco em maskable/Apple, com zona segura |
+| Uma branch para todas as etapas, com PR único | Resposta do dono em 2026-10-22 | Substitui o "branch e PR por etapa" da seção 6; o conjunto entra na `main` de uma vez |
+| Cópia do SVG em `assets/images/` | Resposta do dono em 2026-10-22 | Arquivo do mestre copiado para junto dos ícones do app |
+| Manter os metadados internos do SVG | Resposta do dono em 2026-10-22 | Cópia idêntica ao mestre; nada de limpeza de `title`/`desc` |
+| Alvos de toque: abordagem mista | Resposta do dono em 2026-10-22 | Hitbox de 44 px no cabeçalho (avatar e Google) e altura visual de 44 px nas tabs e na barra da agenda |
+| Cor de tema e fundo de abertura em Grafite | Resposta do dono em 2026-10-22 | `theme_color` e `background_color` = `#202020`, contínuos com o cabeçalho escuro |
+| Nome interno do cache | Resposta do dono em 2026-10-23, após aviso de invalidação | `josy-personal`; não é nome público nem requisito do OAuth |
 
 ## 3. Escopo
 
-**Dentro**: cabeçalho e topo da tela, nome exibido (título, manifest, título de app da Apple), favicon e ícones de instalação, cor de tema e fundo de abertura, cores da interface (CSS, estilos inline do `index.html` e cores definidas em JS) e fonte da interface.
+**Dentro**: cabeçalho e topo da tela, nome exibido (título, manifest, título de app da Apple), favicon e ícones de instalação, cor de tema e fundo de abertura, cores da interface (CSS, estilos inline do `index.html` e cores definidas em JS), fonte, complementos visuais de Alunos/Finanças e troca autorizada do nome do cache.
 
 **Fora**:
 
 - tela de consentimento Google;
 - página pública e páginas legais;
 - variante, cores e apresentação do botão Google;
-- nome do cache do service worker e demais identificadores técnicos (spec, seção 3.2);
+- demais identificadores técnicos: a exceção autorizada é somente o nome do cache (spec, seção 3.2);
 - regras de negócio;
 - publicação, que continua com o dono.
 
@@ -64,26 +79,24 @@ As contagens descrevem esta base e não são contagem viva do projeto.
 
 ## 6. Etapas
 
-Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produção. A etapa 4 depende da 3. As etapas 1 e 2 são independentes entre si. A 5 fica por último para medir o layout com as cores já estáveis. Quando a etapa 1 começar, o status da spec passa a "Em implementação".
+As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e entram na `main` por um único PR ao final (decisão do dono em 2026-10-22, registrada na seção 2). O merge dispara redeploy de produção; deploy manual prévio de branch não substitui a integração. A etapa 4 depende da 3; a 5 foi executada após as cores. Complementos posteriores estão registrados na seção 10.
 
 | Etapa | Resultado | Estado |
 |---|---|---|
-| 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída nesta rodada |
-| 1 | Cabeçalho com logo e alvos de toque do topo | Pendente |
-| 2 | Nome exibido e instalação do PWA | Pendente |
-| 3 | Variáveis de cor, sem mudança visual | Pendente |
-| 4 | Recoloração com a paleta do guia | Pendente; depende da 3 |
-| 5 | Poppins na interface | Pendente |
+| 0 | Contrato e plano: spec v8, este plano e item 5.10 no roadmap | Concluída em 2026-10-17 |
+| 1 | Cabeçalho com logo e alvos de toque do topo | Concluída em 2026-10-22 |
+| 2 | Nome exibido e instalação do PWA | Concluída em 2026-10-22 |
+| 3 | Variáveis de cor, sem mudança visual | Concluída em 2026-10-22 |
+| 4 | Recoloração com a paleta do guia | Concluída em 2026-10-22 |
+| 5 | Poppins na interface | Concluída em 2026-10-23 |
 
 ### Etapa 1 — Cabeçalho e alvos de toque do topo
 
 - **Logo**: `01_horizontal/escuro/personal_josy_horizontal_escuro_transparente.svg`, do kit, aplicado como arquivo, com tamanho definido por CSS, sem descritor, sombra ou animação. Sai o ícone de haltere e o texto "Prô Josy". O nome acessível é "Personal Josy".
-- **Decidir antes**:
-  - destino da cópia do SVG no app;
-  - se os metadados internos do arquivo ("Final B") são mantidos na cópia.
+- **Decidido em 2026-10-22**: cópia em `assets/images/`, mantendo os metadados internos do mestre.
 - **Alvos de toque**:
-  - refazer o inventário no estado renderizado: cabeçalho, barra da agenda, modais e login deslogado, nos três viewports;
-  - decidir com o dono a abordagem de ampliação antes de implementar, sem aumentar demais o topo.
+  - inventário refeito no estado renderizado em 2026-10-22 (números na seção 10);
+  - abordagem aprovada: mista — hitbox de 44 px no cabeçalho e altura visual de 44 px nas tabs e na barra da agenda.
 - **Botão Google**: só a área de toque, com aviso ao dono antes da implementação.
 - **Testes**: atualizar o fixture de `header-cache-state.test.js` se o markup do cabeçalho mudar; todo teste novo precisa ser provado por mutação.
 - **Aceite**:
@@ -96,9 +109,10 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
 ### Etapa 2 — Nome exibido e instalação do PWA
 
 - **Nome**: título da página, `apple-mobile-web-app-title`, e `name` e `short_name` do manifest passam a "Personal Josy". Se o nome curto for truncado, parar e pedir aprovação.
-- **Ícones**: favicon; 192 e 512 nas versões padrão e maskable (zona segura de 80%); ícone da Apple. Todos gerados do símbolo do kit sobre Grafite, conforme o guia, seção 8.3. A geração usa o Edge em modo headless, já usado no gerador do PDF do guia, sem dependência nova.
-- **Cor de tema e fundo de abertura**: proposta testada nas plataformas e aprovada pelo dono antes de entrar.
-- **Fora**: `CACHE_NAME` do `sw.js` não muda.
+- **Ícones vigentes**: favicon 32 e comuns 192/512 transparentes; maskable 192/512 e Apple 180 com base branca opaca, conforme o guia, seção 8.3. Gerados pelo Edge headless, sem dependência nova.
+- **Origem vetorial vigente**: `07_avatar/claro/personal_josy_avatar_claro_transparente.svg`, sem redesenho ou mudança no J opaco. O teste dos PNGs confirma a zona segura maskable e os fundos por finalidade. A origem escura anterior permanece no registro histórico da etapa 2.
+- **Cor de tema e fundo de abertura**: proposta apresentada ao dono e aprovada em 2026-10-22 — Grafite `#202020` nos dois, contínuo com o cabeçalho escuro. O teste em plataformas reais fica na conferência de instalação do dono. O plano não testa Android/iOS reais.
+- **Cache**: inicialmente fora desta etapa; complemento autorizado adotou `josy-personal`, preservando as rotinas e invalidando caches anteriores na ativação.
 - **Aviso prévio**: a etapa altera o que fica instalado nos aparelhos.
 - **Aceite**:
   - manifest válido no DevTools, sem alertas de ícone;
@@ -111,6 +125,8 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
 
 - Criar variáveis CSS para as cores em uso, inclusive as variações com transparência. Trocar os literais do `style.css`, os estilos inline do `index.html` e as cores fixas dos JS por variável ou classe.
 - Os valores continuam os atuais. Os nomes das variáveis são decididos na etapa, para que a etapa 4 seja só troca de valor.
+- **Decidido em 2026-10-22**: esquema híbrido — tokens semânticos onde já existiam (`--cor-estado-*`, `--objetivo-*`, `--cor-primaria`) e tabela por família + passo para o resto (`--cor-<família>-NN`, sufixo `-aNN` = alfa em centésimos). Entrega em duas passadas: `style.css` + `index.html`, depois os JS.
+- **Fora da tokenização**: cores que são dado, não estilo — cor de objetivo vinda da API (`#FF887C` em `storage.js` e `view-alunos.js`), fallback de objetivo (`#6B7280`), verde do Google Calendar (`#51b749`) e azul da marca Google (`#4285F4`).
 - **Aceite**:
   - capturas do mock antes e depois idênticas nas telas principais e modais, nos três viewports;
   - suíte de frontend medida antes e depois.
@@ -121,6 +137,12 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
 - Para as cores sem correspondente na paleta, montar uma tabela de mapeamento cor a cor, aprovada pelo dono antes da troca.
 - O azul do Google e as cores de categoria e estado não mudam de significado.
 - Atualizar a expectativa de `fab-adicionar.test.js`, com prova por mutação.
+- **Decidido em 2026-10-22**:
+  - **Base = Grafite `#202020`, superfícies de camada mantidas.** Subir painel, modal e card junto com a base foi medido e reprovado: todo texto secundário vive sobre card e painel, e o card em `#3C3C3C` derrubou `#909090` de 4,50:1 para 3,46:1. Para recuperar o piso de 4,5:1 o card não poderia passar de `#292929`, e as 17 superfícies de camada não cabem em 10 degraus entre `#202020` e `#2A2A2A`. A hierarquia de camada fica garantida por borda, raio e sombra, e a página se distingue do painel pelo contraste de texto, não pelo degrau de fundo.
+  - **Rampa `neutro` renumerada por luminância**: 51 bases + 2 alfas, sem lacuna (era 52 bases). A base da interface é `--cor-neutro-10`, e Névoa é `--cor-neutro-46`.
+  - **Acentos convergidos para os semânticos**: 13 valores fora da paleta passaram a apontar para o token de mesmo significado (Coral, Âmbar, Verde Concluído, Informativo e Névoa). 18 tokens ficaram sem uso e foram removidos; 5 alfas de erro foram criados (`--cor-estado-erro-a10/a20/a35/a40/a80`).
+  - **Cores de categoria, estado, marca Google e Calendar preservadas** no valor do guia.
+- **Método de auditoria de contraste** (repetível): compor as camadas de `background-color` com alfa até achar a cor opaca, resolver o alfa de `color` sobre ela e comparar com WCAG AA, tela a tela, comparando `HEAD` × árvore de trabalho. Medir contra a *base* em vez do *card* foi o erro que gerou a primeira recomendação, porque é sobre card e painel que vive o texto secundário.
 - **Aceite**:
   - contraste medido nos pares de texto, fundo e foco, conforme o guia, seção 10;
   - capturas comparativas aprovadas pelo dono.
@@ -134,6 +156,7 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
   - sem estouro ou quebra indevida nos três viewports, inclusive nos números do financeiro;
   - nenhuma requisição de fonte a terceiros na aba de rede;
   - fonte disponível offline após o primeiro carregamento.
+- **Decidido em 2026-10-23**: pesos **400, 600, 700 e 800** (o único uso de 500 passa a 400); `font-display: swap`; fontes incluídas no **pré-cache** do `sw.js`, com aviso prévio ao dono.
 
 ## 7. Validação comum
 
@@ -168,3 +191,413 @@ Cada etapa usa branch e PR próprios, porque o merge na `main` publica em produ�
   - item 5.10 criado no lugar do 5.9;
   - 5.9 registrado como consolidado (`[→]`).
 - Nenhum arquivo de produto, teste, guia ou kit foi alterado.
+
+### Etapa 1 — 2026-10-22
+
+- Branch `feat/aplicacao-identidade-visual`, criada de `origin/main` (`ea29834`) com `--no-track`; working tree limpo na abertura.
+- Inventário de alvos de toque medido no mock, antes da mudança (CSS px):
+
+| Elemento | 433×762 | 390×844 | 320×568 |
+|---|---|---|---|
+| Cabeçalho (altura) | 70 | 62 | 62 |
+| Marca (texto) | 113×26 | 105×25 | 90×22 |
+| Botão avatar | 36×36 | 36×36 | 36×36 |
+| Tabs Semana/Dia | 174×32 | 157×32 | 122×32 |
+| Setas de semana | 33×26 | 33×26 | 33×26 |
+| Botão "Hoje" | 51×30 | 51×28 | 51×28 |
+| Botão Google (deslogado) | 170×32 | 145×28 | 145×28 |
+
+- Mudanças:
+  - `assets/images/personal_josy_horizontal_escuro_transparente.svg`: cópia idêntica ao mestre do kit (hash conferido).
+  - `index.html`: o `h1.marca-titulo` passou a conter `img.marca-logo` com `alt="Personal Josy"`; saíram o ícone de haltere e o texto "Prô Josy".
+  - `assets/css/style.css`: `.marca-logo` com altura por `clamp(22px, 6.8vw, 30px)` e `object-fit: contain`; `.btn-user-area-trigger` com 44×44; hitbox de 44 px no botão Google por sobreposição (sem alterar visual, cores, texto ou símbolo); tabs da agenda e navegação de semana/dia com `min-height: 44px` e `min-width: 44px` no escopo `.home-weekly-nav-row` — os `.btn-sm` e `.tab-btn` dos modais não mudaram.
+  - `tests-frontend/header-marca-identidade.test.js` (novo): logo aplicado como arquivo, nome acessível e cópia idêntica ao mestre. `header-cache-state.test.js`: fixture do cabeçalho atualizada.
+- Medido depois da mudança, em 433×762 / 390×844 / 320×568 com **DPR 2,81 e emulação mobile** (setup da seção 10 das instruções): header 78/70/70; logo 171×29, 154×27 e 128×22; avatar 44×44; tabs 174/157/122 de largura por 44 de altura; setas 44×44; "Hoje" 51×44; botão Google com hitbox de 44 de altura e visual inalterado. O topo da Home termina em 245/232/221 px; `scrollWidth` igual à largura da viewport, sem rolagem horizontal.
+- O inventário "antes" acima foi medido em CSS px com DPR 1 e sem emulação mobile; alturas e alvos, que são o objeto da etapa, seguem comparáveis. Numa primeira medição com DPR 1 o rótulo do período aparecia truncado em 1 px em 390 px; com DPR 2,81 e emulação mobile ele cabe inteiro (118 px para 118 px), então nenhuma regra extra de vão foi mantida no CSS.
+- Em 320 px o rótulo do período já truncava antes da etapa (77 px para 104 px necessários) e agora dispõe de 47 px; a correção definitiva nessa largura exigiria quebrar "Hoje" para a segunda linha, o que muda o layout da Home e não foi aprovado nesta rodada.
+- Testes: suíte de frontend de 420 para 422, todas passando. Nenhum teste cobre medida de layout; os números acima vêm do mock.
+
+### Etapa 2 — 2026-10-22
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); a etapa 1 foi commitada pelo dono em `5ee686a`.
+- Decisão do dono nesta rodada: `theme_color` e `background_color` = Grafite `#202020`.
+- Nome: `<title>`, `apple-mobile-web-app-title`, `name` e `short_name` do manifest passaram a "Personal Josy". `start_url`, `display` e `orientation` não mudaram.
+- Ícones gerados de `07_avatar/escuro/personal_josy_avatar_escuro_com_fundo.svg` por `scripts/gerar-icones-app.js` (Edge headless, sem dependência nova):
+  - `icon-192x192.png` e `icon-512x512.png` regenerados, mantendo os nomes que o app já referenciava;
+  - `apple-touch-icon-180x180.png` e `favicon-32x32.png` criados.
+  - Conferido por amostragem de pixel: cantos em `#202020`, símbolo em `#FFDE17`, dimensão exata em cada arquivo.
+- O manifest declara as duas finalidades para 192 e 512 (`any` e `maskable`), reusando os mesmos arquivos: o desenho já respeita a zona segura, então não existe versão alternativa para manter.
+- `sw.js` não foi tocado: `CACHE_NAME` é identificador técnico (spec, 3.2) e trocá-lo força flush do cache offline de todo aparelho — o `activate` atual apaga qualquer cache com nome diferente do atual.
+- Validação no mock (433×762, DPR 2,81): `manifest.json` responde 200 com os valores novos, favicon 32×32 e apple 180×180 carregam, ícones 192/512 carregam, título da aba "Personal Josy", `theme-color` `#202020`.
+- Testes: `tests-frontend/pwa-nome-icones.test.js`, 4 casos — nome e campos do manifest; existência, tipo e dimensão real dos PNG contra o `sizes` declarado; zona segura e base opaca dos maskable; título, títulos de app e links de ícone no HTML. Suíte de frontend de 422 para 426, todas passando.
+- Provas por mutação: `name` revertido no manifest (1 falha); PNG trocado por um com pixel a 80,5 px do centro contra limite de 76,8 (1 falha); `sizes` 192 declarado como 384 (1 falha). Tudo restaurado e conferido por hash.
+- Pendente com o dono: instalar no aparelho e conferir ícone, nome curto e cor da barra. Em app já instalado, a atualização de ícone e nome tem atraso próprio da plataforma.
+
+### Etapa 3 — 2026-10-22
+
+- Branch mantida (`feat/aplicacao-identidade-visual`). Nenhuma escrita em `sw.js`.
+- Decisões do dono nesta rodada: esquema híbrido de nomes; entrega em duas passadas; **renumerar** a família `neutro` para manter a ordem de luminância, em vez de acrescentar passos fora de ordem.
+- Inventário medido no `HEAD` antes da mudança: `style.css` com 264 literais hex (87 distintos) e 101 `rgba` (71 distintos) fora do `:root`; `index.html` com 56 literais em atributos `style` (20 distintos) e nenhum bloco `<style>`; 94 literais de cor em 6 arquivos JS.
+- Resultado: 170 tokens `--cor-*` no `:root` do `style.css`, sendo a tabela por família (amarelo, azul, branco, laranja, neutro, preto, primaria, roxo, verde, vermelho) e os semânticos que já existiam reaproveitados. `neutro` ficou com 52 bases numeradas de 01 a 52 (a base 02 só existe na forma de alfa). `--cor-primaria` foi definido: era usado sem definição desde antes desta etapa.
+- Referências convertidas: `style.css` sem nenhum literal fora do `:root`; `index.html` sem literal em atributo `style`; em JS, 89 literais convertidos para token e 5 preservados por serem dado (ver "Fora da tokenização" na seção 6).
+- Tokens de alfa acrescentados nesta passada, por não existirem: `--cor-estado-ok-a18` e `--cor-estado-erro-a15`.
+- **Método de verificação** (o mesmo vale para as próximas etapas): mapa de estilo computado por caminho estrutural, cobrindo 13 propriedades de cor por elemento, comparado entre o estado do `HEAD` e o da árvore de trabalho — com `index.html`, `style.css` e os JS do **mesmo** estado. Comparação de pixel não serve: três carregamentos idênticos geraram três hashes diferentes.
+- Medido no mock (433×762, DPR 2,81, emulação mobile, service worker contornado): `home-semana` 731 elementos, `home-dia` 889, `financas` 1136, `alunos` 1352 — **zero diferenças** em todas as telas, em todas as propriedades. Os modais entram na conta porque são pré-renderizados: abrir só troca `display`.
+- Armadilha registrada para não se repetir: comparar `index.html` já tokenizado contra um `style.css` antigo faz os `var()` do bloco `<style>` inline ficarem sem definição e caírem para `transparent`, produzindo 40 "diferenças" falsas. As duas peças precisam vir sempre do mesmo estado. A contagem de `var()` também denuncia isso: o `index.html` do `HEAD` tem 0 e o atual tem 53.
+- Testes: `tests-frontend/tokens-cor-etapa3.test.js` (novo), 4 casos — nenhum literal fora do `:root`; todo `var(--cor-*)` usado em CSS, HTML e JS está definido; nenhum atributo `style` do `index.html` com literal; família `neutro` sem lacuna e em ordem crescente de luminância. `tests-frontend/fab-adicionar.test.js` passou a resolver os tokens antes de comparar a cor final, porque o CSSOM devolve `var(--cor-*)` cru.
+- Provas por mutação: literal `#123456` fora do `:root` (1 falha); `--cor-primaria` renomeado no `:root` (1 falha); `style="color:#123456"` no `<body>` (1 falha); `--cor-neutro-01` trocado por `#f4f4f4` (1 falha); `--cor-primaria` trocado por `#00ff00` (1 falha em `fab-adicionar`). Tudo restaurado e conferido por hash.
+- Suíte de frontend: 426 antes, 430 depois, todas passando. Suíte de backend não foi executada porque nenhum arquivo de `backend/` foi tocado.
+- Encontrado e **não** alterado (anterior a esta etapa): `--header-height` é usada sem fallback em duas regras (o `top` resultante é inválido) e `var(--estado-aviso, …)` referencia variável inexistente, mas com fallback válido. Continua valendo a pendência do rótulo de período truncado em 320 px, registrada na etapa 1.
+
+### Etapa 4 — 2026-10-22
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); a etapa 3 foi commitada pelo dono em `b036424`. Nenhuma escrita em `sw.js`.
+- Decisões do dono nesta rodada: `rampa=aprovar` (base Grafite e camadas coerentes), `navegacao=sobe`, `acentos=convergir`; depois da auditoria de contraste, `reverter` as superfícies de camada. O dono pediu recomendação com padrão de mercado antes de decidir as duas primeiras.
+- O conflito central: as cores de categoria e estado do guia **já** eram as do produto (`#FFB878`, `#5484ED`, `#81C784`, `#64B5F6`, `#FFB74D`, `#FF8A80`, `#CFCFCF`), e Carvão `#1A1A1A`, Chumbo `#2A2A2A`, Névoa `#E0E0E0` e Cinza Médio `#A0A0A0` já existiam na rampa. O trabalho real era a base (`#0D0D0D` → `#202020`), o amarelo (`#FFD700` → `#FFDE17`) e os acentos que estavam fora da paleta.
+- Mudanças:
+  - `assets/css/style.css`: `--cor-neutro-10` = `#202020`; família `neutro` renumerada por luminância (51 bases + 2 alfas, sem lacuna); `--cor-primaria` = `#ffde17` com 21 alfas `rgba(255, 222, 23, α)`; 18 tokens de acento removidos e 17 referências redirecionadas para o semântico de mesmo significado; 5 alfas de erro criados; fallback órfão `var(--estado-aviso, var(--cor-amarelo-02))` corrigido para `var(--cor-estado-aviso)`; família `amarelo` renumerada (04 → 02); comentários do `:root` sem citar `#ffd700`.
+  - `index.html` e `assets/js/{agenda-card-template,modal-agendamento,view-alunos,view-financas,view-home}.js`: renumeração dos neutros e redirecionamento dos acentos. Nenhuma cor preservada como dado mudou.
+  - `tests-frontend/fab-adicionar.test.js`: expectativas finais em `rgb(255, 222, 23)` e `rgb(32, 32, 32)`.
+- Estado final medido: 157 tokens `--cor-*` (eram 170); 0 literal de cor fora do `:root`; 0 literal em `style=""`; 0 `var(--cor-*)` sem definição; 0 token sem uso.
+- **Achado que mudou o rumo**: a primeira recomendação (subir as camadas) foi feita medindo os pares de texto contra a *base*. A auditoria correta — compondo fundo efetivo com alfa e usando o *card* como fundo do texto secundário — mostrou que `#909090` sobre card caía de 4,50:1 para 3,46:1 e `#888888` sobre modal de ~5,6:1 para 3,94:1. Pares abaixo de AA por tela: `home-semana` 3 → 7, `home-dia` 3 → 7, `financas` 4 → 8, `alunos` 5 → 12. Daí a decisão do dono por reverter as superfícies.
+- Depois da reversão, a auditoria voltou ao `baseline`: `home-semana` e `home-dia` com 2 pares, `financas` e `alunos` com 3–5 — todos pré-existentes e nenhuma violação nova. Os pares que restam: `#ffffff` sobre `#ff9800` (2,16, badge de deslocamento), `#4285f4` sobre `#222830` (4,16, botão Google), `#909090` sobre `#2a2a2a` (4,50, no limite), `#5484ed` sobre `#2a2a2a` (4,03, Consultoria Online no card) e `#ff8a80` sobre fundo escuro (~4,4, desconectar GCal).
+- Medido no mock (433×762, DPR 2,81, service worker contornado): `body` `rgb(32,32,32)`, texto `rgb(224,224,224)`, FAB `rgb(255,222,23)` sobre `rgb(32,32,32)`, `--cor-primaria` `#ffde17`, sem erro de página.
+- Testes: `tests-frontend/paleta-marca-etapa4.test.js` (novo), 5 casos — Amarelo Josy e derivados com alfa; Grafite como fundo do `body` mais o cabeçalho translúcido derivado dele; convergência dos 13 acentos; e duas **guardas** que valem antes e depois (categorias e estados do guia; cores de marca Google e Calendar no valor original). Suíte de frontend: 430 antes, 435 depois, todas passando. Suíte de backend não foi executada porque nenhum arquivo de `backend/` foi tocado.
+- Provas por mutação: `style.css` e `index.html` do `HEAD` repostos na árvore — 3 das 5 falham (amarelo, Grafite, convergência de acentos) e as 2 guardas continuam passando, que é o esperado delas. Restaurado e conferido por `git status`. `--cor-primaria` trocada por `#00ff00` também derruba `fab-adicionar` (1 falha).
+- Dois bugs de script no caminho, registrados para não repetir: reler o `style.css` do disco no meio da execução apagou a rampa já calculada (a correção é transformar tudo em memória e escrever uma vez); e forçar todo valor a cinza puro colapsou `#222224` em `#222222`, duplicata que o teste da etapa 3 pegou.
+- Encontrado e **não** alterado: superfícies escuras derivadas de Tomato (`#180f0f` em `.slot-bloqueado` e `.card-bloqueio-externo`, `#2a1717` no botão de sair do Google) ficaram mais escuras que a base nova; `#ffcbc8` (texto do botão sair) não estava na tabela de acentos aprovada; o badge de deslocamento `#FF9800` com texto branco (2,16:1) é anterior a esta etapa. Seguem valendo `--header-height` sem fallback e o truncamento do rótulo de período em 320 px.
+
+### Ajuste — botão de conta no cabeçalho — 2026-10-23
+
+Ajuste dentro da frente de identidade; **não é etapa nova** (a etapa 5, Poppins, continua pendente).
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); working tree limpo na abertura.
+- Pedido do dono: o botão de conta do cabeçalho tinha caixa, círculo dentro de círculo e a inicial — "muito carregado".
+- Decisões do dono nesta rodada: continuar na branch atual; reduzir a **uma camada** (só o círculo do avatar); pintura em **amarelo cheio com a inicial em Grafite**.
+- Base medida antes (433×762, DPR 2,81): cabeçalho 78 px; `.auth-banner` 62×58 com borda `--cor-neutro-17` e gradiente `--cor-azul-02-a92`/`--cor-azul-01-a92`; `.btn-user-area-trigger` 44×44 com borda `--cor-azul-06` e fundo `--cor-azul-03`; `.header-session-avatar` 30×30 com borda `--cor-primaria-a30`, fundo `--cor-primaria-a16` e letra `--cor-primaria`.
+- Mudanças em `assets/css/style.css`:
+  - `.auth-banner`: saíram `padding`, `border`, `border-radius` e o gradiente; o seletor ficou só com o arranjo de layout (os filhos já desenham borda e fundo próprios, inclusive no estado deslogado). Os overrides de `padding`/`border-radius` em `min-width: 768px` e `max-width: 430px` saíram junto;
+  - `.btn-user-area-trigger`: passou a ser só área de toque — sem borda, sem fundo, sem padding; 44×44 preservado (decisão da etapa 1) e transição restrita a `transform`;
+  - `.header-session-avatar`: 36×36, fundo `--cor-primaria`, letra `--cor-neutro-10`, sem borda; `font-size: 1rem`, `font-weight: 800`, transição de fundo. A pintura fica em 36 px dentro do alvo de 44 px — um disco de 44 px cheios ficaria maior que a marca ao lado;
+  - hover do botão passou a trocar o fundo do avatar para `--cor-amarelo-02`;
+  - `prefers-reduced-motion`: `.btn-user-area-trigger` foi para o grupo 2a (só movimento) e `.header-session-avatar` para o 2b (só cor).
+- Medido depois no mock, em 433×762 / 390×844 / 320×568 com **DPR 2,81 e emulação mobile**: avatar 36×36 nos três; botão 44×44; cabeçalho 65 px nos três (era 78/70/70); vão entre a marca e o botão de 164/148/104 px; `scrollWidth` igual à viewport, sem rolagem horizontal; `--header-height` publicado em 65 px. No estado deslogado (`?mockScenario=desconectado`), cabeçalho 53 px em 433 e botão Google em 170,5×32, sem estouro.
+- Testes: suíte de `tests-frontend/` **435 antes, 435 depois**, 0 falhas, `EXIT=0` medido. Nenhum teste cobre medida de layout; os números vêm do mock. Suíte de backend não foi executada porque nenhum arquivo de `backend/` foi tocado.
+- Encontrado e **não** alterado: `.user-profile-avatar` (42 px, no modal Área do usuário) mantém o tratamento antigo — borda dourada a 30% e fundo a 16% — e agora diverge do avatar do cabeçalho; o cabeçalho ficou 13 px mais baixo por consequência da caixa removida, o que muda `--header-height` usado nos `scroll-margin-top`.
+
+### Pendências encerradas — 2026-10-23
+
+Rodada pedida pelo dono para fechar as pendências abertas; a instalação no aparelho (aceite da etapa 2) continua com ele. Branch mantida (`feat/aplicacao-identidade-visual`).
+
+- Decisões do dono nesta rodada: continuar na branch atual; resolver o rótulo de período em 320 px **encurtando o texto**; corrigir os contrastes abaixo de AA **e também** o par que estava exatamente no limite (4,50:1).
+- `.user-profile-avatar`: perde a borda e passa a fundo `--cor-primaria` com a inicial em `--cor-neutro-10` — mesmo tratamento de uma camada do cabeçalho. Medido no mock: `rgb(32,32,32)` sobre `rgb(255,222,23)`, **12,19:1**. O tamanho ficou em 42 px nesta rodada (o cartão do perfil tem mais respiro que o topo) e foi igualado a 36 px no ajuste seguinte.
+- `--header-height` sem fallback: as duas regras (`top` em `.topbar-sem-cantos` e em `.home-weekly-topbar`) passaram a `var(--header-height, 0px)`, o mesmo padrão já usado em `.home-day-sticky`. Medido com o valor publicado pelo bootstrap: `top` resolve em **65 px**.
+- Rótulo de período (`#periodoSemanaHomeLabel`): a forma completa precisa de 104 px e a linha oferece 102 px em 375 e 47 px em 320. Abaixo de 380 px o texto passa a `19–25/10` em 12 px e a linha cede 16 px de vão (`.nav-calendario-main` gap 8→4 e margin do rótulo 6→2). Medido: **320 → "19–25/10"** com 55 px necessários para 63 px disponíveis; **375 → curto**; **390 e 433 → forma completa**, sem reticências em nenhum dos três.
+  - Formatação em uma única implementação: `window.formatarPeriodoSemana` (`utils-datetime.js`) devolve `{completo, curto}`; `window.atualizarRotuloPeriodoSemana` (`view-calendario.js`) escolhe a forma pela faixa e grava o período completo em `title` e `aria-label`, para hover/toque e leitor de tela. A troca de faixa é ouvida por `matchMedia`, sem re-render da grade.
+  - Efeito colateral conhecido: na forma curta o mês é o do fim da semana; a semana que vira o mês aparece como `28–03/01` (medido: 55 px, cabe em 320). O período completo está em `title`/`aria-label`.
+- Contraste (medido no mock, fundo efetivo composto com alfa):
+  - dois botões "Enviar para reposição" (`index.html`): `--cor-branco` → `--cor-neutro-10` sobre `--cor-amarelo-01`, de 2,16:1 para **7,56:1** (calculado; o par aparece no modal de ação do slot);
+  - `.btn-gcal-connect`: `--cor-azul-08` → `--cor-azul-14` no texto (borda e fundo mantêm o azul da marca Google), de **4,16:1** para **7,03:1**;
+  - `.objetivo-ConsultoriaOnline` e o badge `.agenda-dia-aula-detalhes`: novo `--objetivo-consultoria-online-text` = `--cor-azul-10`; a borda esquerda continua com o Blueberry oficial do GCal, que é o dado. De 4,12:1 (medido sobre o card) para 5,43:1 (calculado);
+  - `--cor-neutro-31`: `#909090` → `#949494`, de 4,50:1 (no limite) para **5,37:1** no cabeçalho e **6,27:1** nos rótulos do card de Finanças. O passo continua entre o 30 (`#8f8f8f`) e o 32 (`#969696`), sem quebrar a ordem de luminância.
+  - `#ff8a80` (`.btn-gcal-disconnect`) medido em **5,55:1** — o "~4,4" do registro da etapa 4 era estimativa e não precisou de mudança.
+- Testes: suíte de `tests-frontend/` **435 → 436**, `EXIT=0`, 0 falhas. Caso novo em `utils-datetime.test.js` cobre as formas longa e curta, inclusive a semana que vira o ano. Prova por mutação: forma curta trocada por `19/10–25/10` derruba 1 caso (3 pass / 1 fail), restaurada e conferida. A escolha da forma em `view-calendario.js` não tem teste — depende de `matchMedia`, e a medição ficou com o mock. Suíte de backend não foi executada: nenhum arquivo de `backend/` foi tocado.
+- Encontrado e **não** alterado: os fallbacks de `scroll-margin-top` seguem divergentes (135 px em duas regras, 78 px em uma) — só valem antes do bootstrap publicar o valor; etapa 5 (Poppins) continua pendente, e a forma curta do rótulo tem 8 px de folga em 320 px, o que precisa ser remedido depois da troca de fonte.
+- **Correção de registro**: a diferença de tamanho entre os dois avatares (42 px no modal contra 36 px no topo) foi decisão deste agente, não do dono. O dono questionou o registro em 2026-10-23 e o tamanho foi igualado no ajuste seguinte.
+
+### Fechamento dos dois itens residuais — 2026-10-23
+
+Rodada curta para encerrar os dois pontos que ficaram abertos acima. A rodada anterior foi commitada pelo dono em `f0d7593`; branch mantida.
+
+- `--header-height`: os três fallbacks de `scroll-margin-top` (135 px em duas regras, 78 px em uma) e os dois `0px` de `top` foram substituídos por uma única declaração no `:root` — `--header-height: 65px`, com o bootstrap sobrescrevendo em runtime. Nenhum consumidor repete número próprio.
+  - Medido no mock: `scroll-margin-top` resolve em **275 px** em 433 (65 + 210), **239 px** em 768 e 1024 (69 + 170) e `top` acompanha a altura real do cabeçalho nos três casos. Removendo o valor inline (situação de pré-boot), a variável resolve em **65 px** pelo `:root` e os consumidores seguem em 275 px e 65 px — antes disso, `top` caía para declaração inválida.
+  - O padrão de 65 px corresponde ao cabeçalho medido em 433/390/320; em 768+ o cabeçalho mede 69 px e o bootstrap publica esse valor — o padrão só vale antes do boot.
+- Teste da escolha de forma do rótulo: `tests-frontend/rotulo-periodo-home.test.js` (novo), 3 casos — forma curta na faixa estreita com `title`/`aria-label` no período completo; forma completa fora da faixa; e troca de faixa pelo ouvinte de `matchMedia` atualizando o texto sem re-render da grade. O `matchMedia` do jsdom não avalia media query, então o teste injeta um dublê antes de carregar `view-calendario.js`.
+- Testes: suíte de frontend **436 → 439**, `EXIT=0`, 0 falhas. Prova por mutação: invertendo a condição (`estreito ? completo : curto`), os 3 casos novos falham (0 pass / 3 fail); condição restaurada e conferida. Suíte de backend não foi executada — nenhum arquivo de `backend/` foi tocado.
+- Encontrado e **não** alterado: etapa 5 (Poppins) continua pendente, e a forma curta do rótulo tem 8 px de folga em 320 px, o que precisa ser remedido depois da troca de fonte.
+
+### Avatar do modal igualado ao do topo — 2026-10-23
+
+- O dono questionou o registro anterior, que atribuía a ele a manutenção de 42 px em `.user-profile-avatar`. A decisão era deste agente; o dono havia pedido o ajuste. O registro foi corrigido acima.
+- Mudança em `assets/css/style.css`: `.user-profile-avatar` passa de 42×42 para **36×36**, o mesmo tamanho de `.header-session-avatar`. Pintura, cor da inicial e peso da fonte não mudaram.
+- Medido no mock (433×762, DPR 2,81, modal Área do usuário aberto): avatar do modal **36×36** e avatar do cabeçalho **36×36**; fundo `rgb(255,222,23)`, inicial `rgb(32,32,32)`, 16px/800; cartão do perfil **326×59** (era 64 de altura) e `scrollWidth` igual à viewport.
+- Testes: suíte de frontend **439 antes, 439 depois**, `EXIT=0`, 0 falhas. Nenhum teste cobre medida de avatar; o número vem do mock. Suíte de backend não foi executada.
+- Conferência visual: a captura da região não renderizou nesta sessão; a validação do modal ficou pelas medidas acima. O mock segue aberto para conferência do dono.
+
+### Etapa 5 — Poppins na interface — 2026-10-23
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); a rodada anterior foi commitada e enviada pelo dono em `003ba2e`.
+- Decisões do dono nesta rodada: continuar na branch atual; pesos **400, 600, 700 e 800**; `font-display: swap`; **pré-cache no `sw.js`**. O aviso exigido para `.sw.js` (instruções, seção 7) foi dado antes da alteração.
+- **Arquivos**: `assets/vendor/poppins/` com `poppins-400.woff2`, `poppins-600.woff2`, `poppins-700.woff2`, `poppins-800.woff2` (subset latino, `U+0000-00FF`, que cobre ã, ç, é, õ, à) e `OFL.txt` (SIL Open Font License 1.1). Total **31,5 KB**; cada arquivo entre 7,8 e 8,0 KB. Assinatura `wOF2` conferida em todos.
+- `assets/css/style.css`: bloco `[TAG-STYLE-FONTES]` no topo com as quatro faces (`font-display: swap`, url relativa `../vendor/poppins/`); `body` passa a `"Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif`; o único `font-weight: 500` de `.settings-description` virou `400`, porque peso sem face cai em negrito sintético, que o guia proíbe (seção 10).
+- `sw.js`: os quatro woff2 entraram em `APP_SHELL_FILES`. **`CACHE_NAME` não mudou** de propósito — trocá-lo faria o `activate` apagar o cache offline de todo aparelho já instalado. Arquivo novo no pré-cache só é adicionado ao cache existente.
+- **Medido no mock** (DRP 2,81; recarregando em cada viewport, porque a emulação do navegador integrado não emite `resize` nem `change` de media query):
+  - as quatro faces carregam (`document.fonts` com status `loaded` e `display: swap`); `document.fonts.check` confirma 400 e 800;
+  - **nenhuma requisição a terceiros**: todas as fontes vêm de `127.0.0.2:5500`; Font Awesome continua nas próprias webfonts;
+  - rótulo de período da Home, texto real medido contra a caixa:
+
+    | Viewport | Forma | Fonte | Texto real | Disponível | Reticências |
+    |---|---|---|---|---|---|
+    | 433 | completo | 16px | 99,5 px (102,5 na virada de mês) | 160 px | não |
+    | 390 | completo | 16px | 99,5 px (102,5) | 115 px | não |
+    | 375 | curto | 12px | 52,5 px (55,8) | 116 px | não |
+    | 320 | curto | 12px | 52,5 px (55,8) | 61 px | não |
+
+  - a folga que era de 8 px em 320 px **aumentou para 5,2 px no pior caso**; e em 390 a forma completa ganhou folga (a Poppins é mais estreita que a Segoe UI nesse rótulo);
+  - Finanças em 433/390/320: nenhum texto estourado (só o `.sr-only`, que é oculto por definição) e nenhuma rolagem horizontal; valores `R$ 220,00`, `R$ 200,00` e `R$ 20,00` intactos;
+  - altura do cabeçalho: **65 px em 433** e **61 px em 390/320** (o padding do cabeçalho cai abaixo de 430 px). O padrão `--header-height: 65px` do `:root` usa o maior valor, para nunca encolher a âncora do sticky antes do boot; `scroll-margin-top` resolveu em 275 px e a topbar colou em 65 px;
+  - nenhum erro de página no console.
+- **Robustez acrescentada**: `atualizarRotuloPeriodoSemana` já escutava a troca de faixa por `matchMedia`; ganhou também um ouvinte de `resize`, porque a emulação de dispositivo do navegador integrado muda o CSS e não emite nenhum dos dois eventos. Em navegador real o `resize` cobre a rotação de tela em qualquer versão.
+- **Testes**: `tests-frontend/tipografia-poppins.test.js` (novo), 5 casos — faces apontam para woff2 existentes; licença OFL ao lado dos arquivos; todo peso usado no CSS tem face (barreira contra negrito sintético); Poppins é a primeira família do `body` e não há referência a fonte de terceiros no CSS/HTML; pré-cache do `sw.js` cobre todas as faces, `CACHE_NAME` intacto e todo caminho precacheado existe.
+  - Suíte de frontend: **439 antes, 444 depois**, `EXIT=0`, 0 falhas.
+  - Provas por mutação: `font-weight: 550` no CSS (1 falha, "pesos sem face: 550") e um woff2 removido do pré-cache (1 falha) — as duas restauradas e conferidas por `git diff`.
+- Encontrado e **não** alterado: a captura de tela não renderizou nesta sessão (as imagens voltam vazias), então a conferência visual ficou pelas medidas; a emulação do navegador integrado não emite eventos de redimensionamento, o que limita testes de troca de faixa sem recarregar.
+
+### Complemento — topos das três telas pelo padrão da Home — 2026-10-23
+
+- Base: `ca6b727`; branch `feat/aplicacao-identidade-visual`, limpa na abertura.
+  O dono relatou deploy manual em produção e teste satisfatório da identidade já
+  implementada. Isso não equivale a integração à `main`, nem aceite deste complemento.
+- Pedido aprovado: igualar visual e comportamento do topo de Finanças à Home e
+  criar o equivalente em Alunos. O dono confirmou manter **Seus Alunos** e usar
+  **Cadastre alunos, edite seus dados e acompanhe as reposições.** Continuar na branch atual.
+- Antes: Home com sombra, margem externa zero e padding externo de 12 px mais
+  interno de 10/8/8 px; Finanças sem sombra, margem inferior de 20 px e somente
+  padding de 12 px; Alunos com título e lista no mesmo painel, sem topo sticky.
+- Implementação: `.topo-tela` e `.topo-tela-conteudo` centralizam a superfície,
+  fixação e recuo já existentes na Home. Home mantém seu desenho e controles;
+  Finanças abandona as classes de painel e conserva Atualizar/avisos/cache;
+  Alunos ganha cabeçalho separado da lista, com título `h2` dourado e subtexto.
+  As classes funcionais da Home, IDs financeiros, lista/FAB/modais de Alunos
+  e os fluxos de render/leitura permanecem. Sem backend, autenticação, GCal,
+  service worker, fontes ou dependências novas nesta rodada.
+- Contrato durável incorporado na spec de interface, seção 6.1; síntese do item
+  5.10 atualizada no roadmap. Cabeçalho concatenado deste plano corrigido.
+- Suíte de frontend medida: **444/444 antes → 448/448 depois**, ambos `EXIT=0`.
+  Os 4 casos de `topos-telas.test.js` cobrem marcação real das três telas,
+  superfície/recuo únicos, subtexto e separação da lista de Alunos, conservação
+  dos indicadores financeiros e identidade do topo durante render dos cards.
+  Regressões financeiras existentes passaram na suíte; backend não executado.
+- Prova por mutação: classe/recuo financeiro trocados pelo modelo anterior,
+  sombra removida e título de Alunos trocado para `h3`: **0/4 passaram**.
+  Mutações revertidas, `git status` conferido e suíte completa novamente verde.
+  No CSSOM, zero é serializado como `0px` e o prefixo WebKit é descartado;
+  o teste normaliza o zero e não usa o prefixo como prova de browser.
+- Mock `default`, DPR 2,81: as propriedades computadas de superfície, sombra,
+  margem, padding, raio, desfoque e sticky foram iguais nos três topos em
+  433×762, 390×844, 320×568 e 1024×900. Medição após estabilizar a transição
+  do cabeçalho, usando a mesma rotina de medidas do app.
+
+  | Viewport | Home (altura) | Finanças (altura) | Alunos (altura) | Topo durante rolagem |
+  |---|---|---|---|---|
+  | 433×762 | 173 px | 138 px | 116 px | 65 px nos três |
+  | 390×844 | 173 px | 138 px | 116 px | 61 px nos três |
+  | 320×568 | 173 px | 159 px | 116 px | 61 px nos três |
+  | 1024×900 | 173 px | 138 px | 95 px | 69 px nos três |
+
+- Nenhum texto truncado nos topos nem overflow horizontal. As alturas não são
+  forçadas: conteúdo, cache e quebra de texto determinam a altura própria.
+  Captura do novo topo de Alunos realizada no navegador integrado.
+- Atualizar no mock: alvo 44×44, progresso dentro da linha do título também
+  em 320 px; só GET, sem recriar topo ou container da lista. Falha controlada
+  preservou os seis cards e exibiu o erro; sucesso posterior limpou o estado.
+  Interceptação temporária restaurada ao final.
+- Limites: navegação/rolagem exercitadas no mock; não certifica toque físico ou
+  novos deploys. Nenhuma outra inconsistência das specs/históricos foi alterada.
+  PR/merge, deploy deste complemento e aceite no aparelho seguem com o dono.
+- Encerramento: mock `default` aberto em `http://127.0.0.2:5500/index.html?mockScenario=default#tela-alunos`,
+  433×762 e DPR 2,81 confirmados. Servidor estático existente mantido no ar;
+  interceptações e sonda de medição removidas. Sem commit ou push pelo agente.
+
+### Complemento — listas sem moldura e com respiro do cabeçalho — 2026-10-23
+
+- Continuação na `feat/aplicacao-identidade-visual`, com o complemento dos topos
+  ainda não commitado; continuidade confirmada pelo dono. Pedidos: remover o
+  fundo externo de `.alunos-panel`, aproximando a apresentação de Finanças, e
+  aumentar a distância entre cabeçalho e primeiro card nas duas telas.
+- `.alunos-panel` permanece como wrapper no HTML, sem regra CSS decorativa:
+  removidos fundo, borda, raio, padding de 15 px e margem inferior do painel.
+  Os cards e seus controles mantêm seu visual e comportamento.
+- `.lista-tela` aplicada no wrapper de Alunos e em `#financasConteudo`, com
+  `padding-top: 12px` como fonte única do respiro. Nenhum recuo lateral,
+  fundo ou borda nas listas; padding evita colapso de margem e acompanha
+  cards, skeleton e apresentação vazia. Home e cabeçalhos não alterados.
+- Contrato registrado na spec de interface, seção 6.2; síntese no roadmap.
+- Frontend medido **448/448 antes → 449/449 depois**, ambos `EXIT=0`.
+  Novo caso em `topos-telas.test.js` protege listas sem moldura, largura sem
+  recuo e respiro comum de 12 px. Mutação reintroduziu o painel anterior e
+  removeu o vão: **4/5 passaram, 1/5 falhou** (caso novo). Revertida,
+  `git status` conferido e suíte completa novamente verde. Backend não executado.
+- Mock `default`, DPR 2,81: vão real de **12 px** entre cabeçalho e primeiro card
+  em Alunos e Finanças nos viewports 433×762, 390×844 e 320×568. Larguras dos
+  cards iguais às listas: 403/370/300 px respectivamente, sem rolagem horizontal.
+  Listas transparentes e sem borda; fundos próprios dos cards preservados.
+  Seis alunos continuam exibidos, detalhes abrem e controle de edição permanece.
+- Não alterados: fundos/controles dos cards, fluxos de cadastro, dados, backend,
+  finanças de negócio, autenticação, GCal ou service worker. Sem novas dependências.
+  Publicação e aceite destes ajustes seguem com o dono, sem commit/push do agente.
+
+### Complemento — hierarquia tipográfica de Finanças pelo padrão de Alunos — 2026-10-23
+
+- Continuação confirmada na `feat/aplicacao-identidade-visual`, com os ajustes
+  de topos/listas ainda não commitados. Dono aprovou cabeçalho e tipografia
+  dos cards de Finanças seguindo Alunos, mantendo textos de negócio, valores,
+  status, estrutura dos blocos e alvos de toque.
+- Nome nas duas listas centralizado em `.aluno-card-nome`: branco, 1,05 rem,
+  peso 700 e quebra de nomes longos; em Alunos é extração do estilo existente,
+  sem mudança visual. Finanças passa de 1,02 para 1,05 rem.
+- Título de Finanças: emoji substituído por `fa-wallet`, decorativo e oculto
+  do leitor de tela. Período com 12 px/peso 600 e recuo superior de 3 px;
+  rótulos Aulas/Valor/Ciclo/Cobrança e status com 12 px/peso 700, sem uppercase
+  ou tracking. Cores de estado, valor destacado e conteúdo permanecem.
+- Símbolo quebrado antes dos status reproduzido no mock: a remoção por regex
+  de emojis deixava fragmentos UTF-16. Rótulos produzidos diretamente como
+  texto (Pago, Atrasado, Em aberto, Pendente), sem alterar o significado.
+- Detalhes de ciclo e histórico usam classe com padding superior de 8 px,
+  margem de 2 px e conteúdo com 8 px de separação, pelo padrão de Alunos;
+  os alvos existentes de toque não foram reduzidos.
+- Suíte de frontend medida: **449/449 antes → 453/453 depois**, `EXIT=0`.
+  `tipografia-cards.test.js` carrega views e CSS reais: ícone/título, nomes
+  compartilhados, rótulos/status e dados preservados, detalhes/ações/alvos.
+  Mutação repôs emoji, nome em 1,02 rem, peso 800 e recuo de 10 px:
+  **0/4 passaram**; restaurado, `git status` conferido e suíte verde.
+- Mock `default`, 433×762, 390×844 e 320×568 / DPR 2,81: nomes nas duas telas
+  medidos em **16,8 px/peso 700**, sem truncamento nos cards ou overflow
+  horizontal. Botões financeiros em 48 px; summaries de detalhes em 45 px.
+  Valores e os seis cards preservados; modais de pagamento/ajuste abrem e
+  fecham por Cancelar, pagamento exibe R$ 220,00, sem salvar ou gravar.
+  Captura de Finanças realizada no navegador integrado.
+- Contrato durável registrado na spec de interface, seção 6.3; síntese no
+  roadmap. Não alterados: layout dos blocos/valores, cores de estado, rótulos
+  de negócio, regras financeiras, backend, GCal, autenticação ou SW. Rodapé
+  já tem aparência única por tela; não recebeu alteração.
+- Mock mantido em `http://127.0.0.2:5500/index.html?mockScenario=default#tela-financas`,
+  433×762 / DPR 2,81; servidor local existente permanece no ar. Novos ajustes
+  seguem sem commit/push do agente; deploy e aceite com o dono.
+
+### Complemento — alinhamento do título e subtítulo financeiros — 2026-10-23
+
+- Pedido do dono após verificar a diferença de altura dos textos; continuidade
+  confirmada na `feat/aplicacao-identidade-visual`, preservando os ajustes anteriores.
+- Base medida em 433×762 / DPR 2,81: título a 22 px do topo em Alunos e
+  30,5 px em Finanças; subtítulo a 53 px e 70 px, respectivamente. A linha
+  financeira tinha 44 px por causa de Atualizar e centralizava o título de 27 px.
+- Título/subtítulo agrupados em `.financas-cabecalho-textos` à esquerda,
+  com alinhamento superior da linha. Ações à direita sem encolher, com alvo
+  de 44×44 px preservado; cache e mensagens continuam abaixo das colunas.
+  Nenhuma alteração nas leituras, dados, cards ou demais telas.
+- Mock `default` em 433×762, 390×844 e 320×568 / DPR 2,81: título a **22 px**
+  e subtítulo a **53 px** do topo nas duas telas, com **4 px** entre os textos.
+  Finanças mede 121 px de altura em 433 (antes 138); descrição quebra em
+  390/320 sem overflow horizontal. Vão de 12 px para o primeiro card mantido.
+- Atualização manual adiada no mock em 320: progresso visível e botão bloqueado,
+  título/subtítulo permanecem no mesmo alinhamento; alvo 44×44 px e ações
+  dentro do topo. Após sucesso, progresso oculto e botão livre sem recriar
+  o cabeçalho. Interceptação temporária restaurada e removida.
+- Frontend: **453/453 antes → 454/454 depois**, `EXIT=0`; focados **20/20**.
+  Novo caso de `topos-telas.test.js` protege coluna de textos, alinhamento
+  superior, margem do subtítulo, ação e progresso. Mutação retirou a descrição
+  da coluna: **5/6 passaram, 1 falhou** (caso novo); revertida, `git status`
+  conferido e suíte completa verde. Backend não executado, pois não foi alterado.
+- Contrato de alinhamento registrado na spec de interface, seção 6.1.
+  Mock de Finanças aberto em 433×762 / DPR 2,81 para a prévia do dono; captura
+  do cabeçalho realizada. Servidor existente mantido no ar. Sem commit/push;
+  aceite e publicação do ajuste permanecem com o dono.
+
+### Complemento — ícone claro de instalação — 2026-10-23
+
+- Dono reinstalou no celular e rejeitou o fundo escuro do ícone; pediu o claro
+  transparente. Confirmou continuar na branch atual (limpa na abertura) e usar
+  transparência nos comuns/favicon, com branco opaco nos maskable/Apple.
+- `scripts/gerar-icones-app.js` usa o avatar claro transparente oficial, sem
+  redesenhar o mestre; screenshot headless com alfa preservado. Ícones comuns
+  192/512 e favicon 32 transparentes; maskable 192/512 próprios e Apple 180
+  com base branca. Manifest separa as finalidades; não muda tema, abertura,
+  nome, logo do cabeçalho, service worker ou CACHE_NAME.
+- Guia seção 8.3 e spec de identidade seção 2.10 atualizados com a decisão.
+  PDF anterior não regenerado: ressalva explícita no guia, cujo Markdown prevalece.
+- Teste PWA verifica alfa dos comuns, presilhas/J escuros opacos, amarelo do
+  calendário, opacidade de todos os pixels maskable/Apple, zona segura circular,
+  dimensões e caminhos distintos por finalidade. Mutação de geração com fundo
+  branco nos comuns: 4/5 passaram, novo caso falhou; restaurada e regenerada.
+- Instalação real e atualização do ícone com o dono após deploy. Android/iOS
+  podem impor fundo, máscara ou atraso no cache; não prometer transparência
+  final nem atualização imediata em aparelhos já instalados.
+- Suíte medida: **454/454 antes → 455/455 depois**, `EXIT=0`.
+
+### Complemento — namespace do cache — 2026-10-23
+
+- Dono autorizou trocar CACHE_NAME e sugeriu `josy-personal`; continuidade
+  confirmada na branch com os ícones ainda não commitados. Avisado que o
+  activate remove caches com outros nomes; MongoDB/localStorage permanecem.
+- `sw.js`: nome passa a `josy-personal`; lista de pré-cache e lógica de
+  install/activate/fetch preservadas. Não é versão pública ou nome OAuth.
+  A referência Google seção 3.1 exige identidade consistente nos pontos de
+  contato públicos, não no namespace interno do Cache Storage.
+- Teste existente de tipografia deixa de congelar o nome legado. Caso adicional
+  executa install/activate em VM isolada: instala no nome novo, preserva esse
+  cache e remove o legado. Mutação para nome antigo: 4/6 passam e 2 falham;
+  restaurada antes da suíte final. Nenhum cache real apagado como teste.
+- Nome público permanece Personal Josy. Mudança não garante atualização imediata
+  do ícone instalado, que também depende do sistema/launcher. Sem alterações
+  de OAuth, credenciais, backend, dados ou URLs. Deploy e aceite no celular
+  continuam com o dono.
+- Suíte final: **455/455 antes do cache → 456/456 depois**, `EXIT=0`.
+  Ícones e cache no conjunto: **454 → 456**; mutações restauradas e status
+  conferido. Sem diagnósticos novos nos arquivos de código editados.
+- Mock `default` aberto em
+  `http://127.0.0.2:5500/index.html?mockScenario=default&validacao=icones-cache#tela-home`,
+  433×762 / DPR 2,81 confirmados. Manifest e PNGs carregados no navegador:
+  `any` 192/512 com alfa zero no canto, `maskable` 192/512 com canto branco
+  opaco. Worker servido contém o nome novo. Servidor existente mantido no ar;
+  nenhuma limpeza real de Cache Storage foi executada para validação.
+
+### Revisão documental pré-PR — 2026-10-23
+
+- Continuidade confirmada na mesma branch, preservando os ícones/cache locais
+  ainda não commitados. Escopo: decisões e implementação da branch frente à
+  `origin/main` disponível localmente; sem fetch, commit, push ou merge.
+- Plano em **Em validação**, com síntese vigente de entrega, ícones claros,
+  cache autorizado e limites de aceite. Escopo/resumo da etapa 2 atualizados,
+  sem reescrever as medições e decisões anteriores da seção de execução.
+- Spec de identidade: pendências de fonte, paleta e tema reconciliadas com as
+  decisões aplicadas; avatar de 36 px registrado; removida a dependência de
+  plano no cabeçalho. Regra de peso sem face ajustada para não afirmar que
+  toda substituição por peso próximo seja síntese tipográfica.
+- Spec de interface: item 5.9 deixa de aparecer como aberto; contrato de
+  toque, token de altura e rótulo estreito da semana incorporados. Topos,
+  listas, hierarquia dos cards e alinhamento financeiro já correspondiam
+  aos templates/CSS e foram mantidos.
+- README e índice: nome Personal Josy, fontes locais, geradores e entradas
+  de identidade/interface/guia/OAuth. Roadmap: síntese de ícones/cache e
+  distinção de implementação na branch, integração e aceite no aparelho.
+- PDF do guia regenerado pelo script versionado após substituir a figura
+  escura da seção 8.3 pelas aplicações clara transparente e branca. A
+  ressalva de PDF desatualizado foi retirada do guia vigente; o registro
+  anterior de que ele não tinha sido regenerado permanece como histórico.
+  Gerador passou em `node --check` e executou com sucesso; PDF produzido
+  com assinatura `%PDF-1.4`. Não houve certificação visual de cada página.
+- Dono autorizou adicionalmente a correção de 33 ponteiros antigos no índice
+  e roadmap. Substituição mecânica só de destinos ausentes e com alvo existente.
+  Verificação final em 9 fontes: **142 links locais e 16 âncoras**, sem ausências.
+  Nenhum arquivo em `docs/archive/` foi editado. Links externos de políticas
+  Google não foram pesquisados de novo nem certificados como atuais nesta rodada.
+- Fontes conferidas sem necessidade de edição: manual local, referência
+  de OAuth, kit-mestre e regras financeiras quanto ao recorte visual.
+  As instruções permanentes alteradas pela branch tratam apenas do mock
+  final; nenhuma modificação adicional de instrução/skill foi feita.
+- Ressalvas preservadas, sem ampliar a implementação: instalação dos ícones
+  claros/cache no celular e teste offline real após a mudança continuam com
+  o dono; nome do cache não prova conformidade OAuth. O README contém
+  descrições anteriores sobre leitura de localStorage sem sessão, fora do
+  que esta branch alterou; não foram revalidadas/corrigidas nesta revisão.
+  Dois resumos de modais financeiros ainda usam peso 500 inline, embora as
+  faces locais sejam 400/600/700/800; isso não é corrigido por edição documental.
+  O navegador pode escolher peso próximo, portanto não afirmar síntese automática.
+- Errata da medição histórica da etapa 5: 8 px para 5,2 px de folga no pior
+  caso é **redução**, não aumento. O rótulo coube nos cenários medidos; os
+  números originais foram preservados e o erro textual fica corrigido aqui.
+- Nesta rodada não houve alteração do produto nem repetição das suítes de
+  aplicação. Última execução medida da frente: 456/456 frontend; backend
+  não alterado. Gates desta revisão: links/âncoras, sintaxe/execução do
+  gerador PDF, diagnósticos e diff. Sem novo relatório ou documento paralelo.

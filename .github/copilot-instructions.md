@@ -297,6 +297,18 @@ que pareçam pequenas:
   390×844 continuam válidos como **stress test** (telas menores que a
   referência). Como simular e a ressalva do breakpoint de 430px: seção 9 de
   `docs/setup-ambiente-local.md`.
+- **Encerrar toda sessão de alteração com o mock aberto no viewport de
+  referência.** Antes de devolver o controle ao dono: subir
+  `node scripts/servir-local.js` em background, abrir no navegador integrado
+  `http://127.0.0.2:5500/index.html?mockScenario=<cenário usado>` e deixar a
+  página em **433×762 com DPR 2,81**. Redimensionar a janela não muda o DPR:
+  configurar a emulação de dispositivo (CDP
+  `Emulation.setDeviceMetricsOverride` com `width: 433`, `height: 762`,
+  `deviceScaleFactor: 2.81`, `mobile: true`) e conferir `devicePixelRatio`
+  antes de encerrar. Reportar na resposta final a URL, o cenário, o
+  viewport/DPR confirmados e o fato de o servidor ter ficado no ar para
+  validação. Encerrar os demais helpers da rodada — só o servidor do mock
+  permanece.
 - **Duas suítes independentes**, ambas com `node --test` e `npm test`, cada uma
   com seu `package.json` e seu próprio número:
   - `backend/` — regras de negócio, finanças, reposições e sync do GCal.

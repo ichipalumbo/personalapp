@@ -9,15 +9,24 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#1e88e5" />
+    <meta name="theme-color" content="#202020" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="AgendaPersonalTrainer" />
-    <link rel="icon" type="image/png" href="assets/images/icon-192x192.png" />
-    <title>Prô Josy - Agenda Personal Trainer</title>
+    <meta name="apple-mobile-web-app-title" content="Personal Josy" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="assets/images/favicon-32x32.png"
+    />
+    <title>Personal Josy</title>
     <link rel="manifest" href="manifest.json" />
-    <link rel="apple-touch-icon" href="assets/images/icon-192x192.png" />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="assets/images/apple-touch-icon-180x180.png"
+    />
     <link rel="stylesheet" href="assets/css/style.css" />
     <link rel="stylesheet" href="assets/vendor/fontawesome/css/all.min.css" />
   </head>
@@ -30,9 +39,13 @@
         <div class="header-topline">
           <div class="brand-container">
             <h1 class="marca-titulo">
-              <span class="marca-ativa"
-                ><i class="fa-solid fa-dumbbell"></i> Prô</span
-              ><span class="marca-mente"> Josy</span>
+              <img
+                class="marca-logo"
+                src="assets/images/personal_josy_horizontal_escuro_transparente.svg"
+                alt="Personal Josy"
+                width="1562"
+                height="269"
+              />
             </h1>
           </div>
           <div class="auth-banner" id="headerSession">
@@ -87,8 +100,8 @@
 
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section" aria-busy="true">
-        <div class="home-weekly-topbar">
-          <div class="home-sticky-header">
+        <div class="topo-tela home-weekly-topbar">
+          <div class="topo-tela-conteudo home-sticky-header">
             <div
               class="tab-tipo-agendamento"
               role="tablist"
@@ -97,10 +110,10 @@
                 display: flex;
                 gap: 6px;
                 margin-bottom: 14px;
-                background: #0d0d0d;
+                background: var(--cor-neutro-10);
                 padding: 4px;
                 border-radius: 8px;
-                border: 1px solid #2a2a2a;
+                border: 1px solid var(--cor-neutro-17);
               "
             >
               <button
@@ -196,14 +209,15 @@
       <main id="tela-financas" class="view-section" style="display: none"></main>
       <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
       <main id="tela-alunos" class="view-section" style="display: none">
-        <section class="alunos-panel">
-          <h3 style="font-size: 1.1rem; color: #e0e0e0; margin-bottom: 15px">
-            <i
-              class="fa-solid fa-address-book"
-              style="color: #ffd700; margin-right: 8px"
-            ></i
-            >Seus Alunos
-          </h3>
+        <div class="topo-tela alunos-cabecalho">
+          <div class="topo-tela-conteudo">
+            <h2 class="topo-tela-titulo" id="tituloTelaAlunos">
+              <i class="fa-solid fa-address-book" aria-hidden="true"></i>Seus Alunos
+            </h2>
+            <p class="topo-tela-descricao">Cadastre alunos, edite seus dados e acompanhe as reposições.</p>
+          </div>
+        </div>
+        <section class="lista-tela alunos-panel">
           <div class="alunos-grid" id="listaAlunos"></div>
         </section>
 
@@ -296,13 +310,13 @@
                 class="form-grupo-spa"
                 id="cardCobrancaPorCiclo"
                 style="
-                  border: 1px solid #222;
+                  border: 1px solid var(--cor-neutro-11);
                   border-radius: 10px;
                   padding: 12px;
-                  background: rgba(255, 215, 0, 0.03);
+                  background: var(--cor-primaria-a03);
                 "
               >
-                <label style="display:block;margin-bottom:10px;color:#ffd700;font-weight:700;">Cobrança por ciclo</label>
+                <label style="display:block;margin-bottom:10px;color:var(--cor-primaria);font-weight:700;">Cobrança por ciclo</label>
                 <label class="full-day-toggle" for="alunoFechamentoMesCheio" style="margin-bottom:10px;">
                   <input type="checkbox" id="alunoFechamentoMesCheio" />
                   <span class="full-day-toggle-ui">
@@ -498,7 +512,7 @@
         <h3 id="tituloModalEscolhaTipo">
           <i
             class="fa-solid fa-circle-question"
-            style="color: #ffd700; margin-right: 8px"
+            style="color: var(--cor-primaria); margin-right: 8px"
           ></i
           >O que você deseja criar?
         </h3>
@@ -506,7 +520,7 @@
           id="infoEscolhaSlot"
           style="
             font-size: 0.875rem;
-            color: #aaa;
+            color: var(--cor-neutro-37);
             margin-bottom: 20px;
             font-weight: 500;
           "
@@ -570,7 +584,7 @@
         <div
           style="
             margin-top: 20px;
-            border-top: 1px solid #222;
+            border-top: 1px solid var(--cor-neutro-11);
             padding-top: 15px;
             display: flex;
             justify-content: flex-end;
@@ -597,7 +611,7 @@
         <h3 id="tituloModalReagendarAula">
           <i
             class="fa-solid fa-arrows-rotate"
-            style="color: #64b5f6; margin-right: 8px"
+            style="color: var(--cor-estado-informativo); margin-right: 8px"
           ></i
           >Agendar Reposição
         </h3>
@@ -605,7 +619,7 @@
           id="infoReagendamentoSlot"
           style="
             font-size: 0.875rem;
-            color: #64b5f6;
+            color: var(--cor-estado-informativo);
             margin-bottom: 15px;
             font-weight: 600;
           "
@@ -627,9 +641,9 @@
               id="reagendarAlunoLockedNome"
               style="
                 padding: 12px;
-                background: #0d0d0d;
-                color: #fff;
-                border: 1px solid #333;
+                background: var(--cor-neutro-10);
+                color: var(--cor-branco);
+                border: 1px solid var(--cor-neutro-20);
                 border-radius: 8px;
                 font-weight: 700;
                 font-size: 1rem;
@@ -672,7 +686,7 @@
               gap: 10px;
               margin-top: 24px;
               justify-content: flex-end;
-              border-top: 1px solid #222;
+              border-top: 1px solid var(--cor-neutro-11);
               padding-top: 15px;
             "
           >
@@ -687,8 +701,8 @@
               type="submit"
               class="btn btn-primary"
               style="
-                background: #64b5f6;
-                color: #0d0d0d;
+                background: var(--cor-estado-informativo);
+                color: var(--cor-neutro-10);
                 border: none;
                 font-weight: 700;
               "
@@ -710,7 +724,7 @@
         <h3 id="agendaTituloModal">
           <i
             class="fa-solid fa-calendar-day"
-            style="color: #ffd700; margin-right: 8px"
+            style="color: var(--cor-primaria); margin-right: 8px"
           ></i
           >Novo Agendamento
         </h3>
@@ -718,7 +732,7 @@
           id="agendaSubtituloModal"
           style="
             font-size: 0.875rem;
-            color: #a8a8a8;
+            color: var(--cor-neutro-36);
             margin-bottom: 14px;
             font-weight: 500;
           "
@@ -734,10 +748,10 @@
             display: flex;
             gap: 6px;
             margin-bottom: 18px;
-            background: #0d0d0d;
+            background: var(--cor-neutro-10);
             padding: 4px;
             border-radius: 8px;
-            border: 1px solid #2a2a2a;
+            border: 1px solid var(--cor-neutro-17);
           "
         >
           <button
@@ -828,7 +842,7 @@
             id="infoTipoAgendamento"
             style="
               font-size: 0.75rem;
-              color: #9a9a9a;
+              color: var(--cor-neutro-34);
               margin-bottom: 12px;
               font-weight: 600;
             "
@@ -914,7 +928,7 @@
               gap: 10px;
               margin-top: 24px;
               justify-content: flex-end;
-              border-top: 1px solid #222;
+              border-top: 1px solid var(--cor-neutro-11);
               padding-top: 15px;
             "
           >
@@ -943,7 +957,7 @@
         <h3 id="tituloModalRecorrencia">
           <i
             class="fa-solid fa-infinity"
-            style="color: #ffd700; margin-right: 8px"
+            style="color: var(--cor-primaria); margin-right: 8px"
           ></i
           >Configurar Repetição
         </h3>
@@ -951,7 +965,7 @@
           id="recorrenciaModalSubtitulo"
           style="
             font-size: 0.875rem;
-            color: #a8a8a8;
+            color: var(--cor-neutro-36);
             margin-bottom: 14px;
             font-weight: 500;
           "
@@ -965,7 +979,7 @@
             <div class="form-grupo-spa" style="margin-bottom: 14px">
               <label for="recorrenciaDataInicio">Início da recorrência *</label>
               <input type="date" id="recorrenciaDataInicio" required />
-              <small style="display: block; color: #888; font-size: 0.75rem"
+              <small style="display: block; color: var(--cor-neutro-27); font-size: 0.75rem"
                 >A série começa nesta data. Vem da data selecionada no
                 calendário e pode ser alterada aqui.</small
               >
@@ -1014,12 +1028,12 @@
                       height: 45px;
                       display: flex;
                       align-items: center;
-                      color: #fff;
+                      color: var(--cor-branco);
                       font-size: 1rem;
                       font-weight: 700;
-                      background: #0d0d0d;
+                      background: var(--cor-neutro-10);
                       padding-left: 12px;
-                      border: 1px solid #333;
+                      border: 1px solid var(--cor-neutro-20);
                       border-radius: 8px;
                     "
                   >
@@ -1069,17 +1083,17 @@
               <div
                 id="infoRecorrenciaMensalAnual"
                 style="
-                  background: rgba(255, 215, 0, 0.05);
+                  background: var(--cor-primaria-a05);
                   padding: 12px;
                   border-radius: 8px;
                   margin-bottom: 2px;
-                  border: 1px dashed rgba(255, 215, 0, 0.2);
+                  border: 1px dashed var(--cor-primaria-a20);
                 "
               >
                 <p
                   style="
                     font-size: 0.75rem;
-                    color: #ffd700;
+                    color: var(--cor-primaria);
                     margin: 0;
                     line-height: 1.4;
                     font-weight: 600;
@@ -1134,7 +1148,7 @@
               gap: 10px;
               margin-top: 24px;
               justify-content: flex-end;
-              border-top: 1px solid #222;
+              border-top: 1px solid var(--cor-neutro-11);
               padding-top: 15px;
             "
           >
@@ -1198,9 +1212,9 @@
               id="editAluno"
               disabled
               style="
-                background: #111;
-                color: #888;
-                border-color: #222;
+                background: var(--cor-neutro-04);
+                color: var(--cor-neutro-27);
+                border-color: var(--cor-neutro-11);
                 cursor: not-allowed;
               "
             ></select>
@@ -1236,7 +1250,7 @@
             id="editInfoDia"
             style="
               font-size: 0.875rem;
-              color: #fff;
+              color: var(--cor-branco);
               margin-bottom: 15px;
               font-weight: 600;
             "
@@ -1276,7 +1290,7 @@
               style="
                 display: block;
                 margin-top: 6px;
-                color: #bdbdbd;
+                color: var(--cor-neutro-41);
                 font-size: 0.875rem;
               "
               >Vai atualizar esta aula e as próximas da série.</small
@@ -1286,7 +1300,7 @@
               style="
                 display: block;
                 margin-top: 6px;
-                color: #ffd700;
+                color: var(--cor-primaria);
                 font-size: 0.875rem;
                 font-weight: 700;
               "
@@ -1297,7 +1311,7 @@
             style="
               display: none;
               margin: -4px 0 12px;
-              color: #ff8a80;
+              color: var(--cor-estado-erro);
               font-size: 0.875rem;
               font-weight: 700;
             "
@@ -1379,7 +1393,7 @@
               flex-direction: column;
               gap: 10px;
               margin-top: 20px;
-              border-top: 1px solid #222;
+              border-top: 1px solid var(--cor-neutro-11);
               padding-top: 15px;
             "
           >
@@ -1391,7 +1405,7 @@
                 type="button"
                 class="btn"
                 id="btnMandarParaReposicao"
-                style="background: #ff9800; color: #fff; border: none; width: 100%"
+                style="background: var(--cor-amarelo-01); color: var(--cor-neutro-10); border: none; width: 100%"
                 title="Enviar para reposição"
               >
                 <i
@@ -1409,7 +1423,7 @@
                 type="button"
                 class="btn"
                 id="btnReagendarInstancia"
-                style="background: #ff9800; color: #fff; border: none; width: 100%"
+                style="background: var(--cor-amarelo-01); color: var(--cor-neutro-10); border: none; width: 100%"
                 title="Enviar para reposição"
               >
                 <i
@@ -1463,10 +1477,10 @@
     >
       <div class="modal" style="max-width: 420px">
         <h3 id="tituloModalEscolhaCobrancaReposicao" style="margin-top: 0; margin-bottom: 8px;">Cobrar esta aula?</h3>
-        <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: #fff; font-size: 0.875rem;"></p>
-        <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: #d9d9d9; font-size: 0.875rem;"></p>
+        <p id="reposicaoEscolhaAluno" style="margin: 0; font-weight: 700; color: var(--cor-branco); font-size: 0.875rem;"></p>
+        <p id="reposicaoEscolhaDataHorario" style="margin: 6px 0 18px; color: var(--cor-neutro-44); font-size: 0.875rem;"></p>
 
-        <p style="margin: 0 0 12px; color: #d9d9d9; font-size: 0.875rem; line-height: 1.5;">
+        <p style="margin: 0 0 12px; color: var(--cor-neutro-44); font-size: 0.875rem; line-height: 1.5;">
           A aula sai da agenda deste dia e entra na fila de reposições. Você escolhe a nova data depois, no card do aluno.
         </p>
 
@@ -1474,15 +1488,15 @@
           <button type="button" class="btn btn-primary" data-reposicao-cobravel="true" id="btnCobrarNesteCiclo">
             <span> Cobrar neste ciclo </span>
           </button>
-          <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Cobrada mesmo se a reposição não acontecer.</small>
+          <small style="color: var(--cor-neutro-41); line-height: 1.4; text-align: center;">Cobrada mesmo se a reposição não acontecer.</small>
 
           <button type="button" class="btn" data-reposicao-cobravel="false" id="btnCobrarNaReposicao">
             <span> Cobrar na reposição </span>
           </button>
-          <small style="color: #bdbdbd; line-height: 1.4; text-align: center;">Se o prazo expirar, não é cobrada.</small>
+          <small style="color: var(--cor-neutro-41); line-height: 1.4; text-align: center;">Se o prazo expirar, não é cobrada.</small>
         </div>
 
-        <div style="border-top: 1px solid #222; padding-top: 12px; color: #d9d9d9; font-size: 0.875rem; text-align: center; line-height: 1.5;">
+        <div style="border-top: 1px solid var(--cor-neutro-11); padding-top: 12px; color: var(--cor-neutro-44); font-size: 0.875rem; text-align: center; line-height: 1.5;">
           <div>Pode alterar antes do pagamento do ciclo.</div>
           <div id="reposicaoEscolhaPrazo" style="display: none"></div>
         </div>
@@ -1522,7 +1536,7 @@
     >
       <div class="modal" style="max-width: 380px">
         <h3 id="tituloModalConfigAgenda">Configurar Grade Horária</h3>
-        <p style="font-size: 0.875rem; color: #888; margin-bottom: 15px">
+        <p style="font-size: 0.875rem; color: var(--cor-neutro-27); margin-bottom: 15px">
           Defina os limites de exibição de horas de trabalho da sua agenda
           diária.
         </p>
@@ -1531,7 +1545,7 @@
           <div class="form-grupo-spa">
             <label for="configHoraInicio"
               >Hora de Início da Agenda
-              <span style="color: #888; font-weight: 400">(0–23)</span> *</label
+              <span style="color: var(--cor-neutro-27); font-weight: 400">(0–23)</span> *</label
             >
             <input
               type="number"
@@ -1546,7 +1560,7 @@
           <div class="form-grupo-spa">
             <label for="configHoraFim"
               >Hora de Fim da Agenda
-              <span style="color: #888; font-weight: 400">(0–23)</span> *</label
+              <span style="color: var(--cor-neutro-27); font-weight: 400">(0–23)</span> *</label
             >
             <input
               type="number"

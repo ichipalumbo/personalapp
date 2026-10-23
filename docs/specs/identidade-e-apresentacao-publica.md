@@ -1,9 +1,9 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Aprovada, não implementada · **Versão**: 8 · **Atualizado**: 2026-10-17
+> **Status**: Em implementação · **Versão**: 16 · **Atualizado**: 2026-10-23
 > **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), adoção na interface das cores da marca e da paleta do produto do guia, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa com adoção da Poppins na interface por arquivos locais, aplicação no cabeçalho, nome no produto, ícones de instalação, endereço atual e contato provisório de suporte.
 > **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
-> **Limite**: aplicação no app autorizada nos termos da seção 2 e ainda não executada; cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
+> **Limite**: implementação na branch: logo e toque no topo, nome Personal Josy, ícones claros por finalidade, tema/fundo de abertura Grafite, cores centralizadas em tokens e Poppins local. O cache interno usa `josy-personal`. Integração à `main`, publicação e aceite dos ícones atuais no aparelho continuam com o dono; testes locais não certificam todas as plataformas. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
 
@@ -50,12 +50,27 @@ como recomendação ou pendência não vira decisão aprovada por estar citado a
 - **Grafite `#202020`** substitui `#0D0D0D` como base escura da interface.
 - Cores de categoria e estado mantêm o significado atual. A recoloração não cria, funde
   nem troca significados.
+- **Camadas não acompanham a base em degrau.** As superfícies de painel, modal e card
+  mantêm os valores próprios; a separação em relação à página vem de borda, raio e sombra.
+  Subir essas superfícies junto com a base foi medido e reprovado: o texto secundário vive
+  sobre card e painel, e o degrau necessário para separá-los do Grafite o levava abaixo do
+  contraste mínimo. A hierarquia visual se resolve por contraste de texto e pela borda, não
+  por degrau de fundo.
 - Uma cor da interface sem correspondente direto na paleta do guia não é substituída por
   inferência: o mapeamento é decidido com o dono durante a implementação, e não se cria
   cor nova sem decisão.
 - Os pares de texto e fundo resultantes cumprem o
   [contraste mínimo do guia](../reference/identidade/guia-identidade-visual-v3.md#10-legibilidade-e-contraste),
   conferido no suporte final.
+- **Fonte única da cor da interface.** Todo valor de cor da interface mora na tabela de
+  tokens do `:root` do `style.css` e é consumido por `var(--cor-*)` no CSS, no HTML e nos
+  JS — inclusive nas variações com transparência, cujo sufixo `-aNN` é o alfa em
+  centésimos. Os arquivos de estilo não repetem literal de cor fora dessa tabela. Ajuste de
+  paleta troca somente a tabela, e cada valor que não tiver
+  correspondente na paleta passa pela decisão cor a cor descrita acima.
+- **Cor que é dado não vira token de estilo**: cor de objetivo vinda da API, fallback de
+  objetivo e cores de identidade de terceiros (Google Calendar e marca Google) ficam como
+  estão, porque mudam com o dado e não com a paleta.
 - Assets do Google obedecem à identidade do próprio Google; a paleta do app não autoriza
   recolorir o símbolo oficial ou criar um logo Google próprio.
 - A variante e a apresentação do botão Google continuam pendentes; não há exceção de cor
@@ -63,7 +78,7 @@ como recomendação ou pendência não vira decisão aprovada por estar citado a
 
 ### 2.3 Consistência de apresentação
 
-Na implementação futura, a identidade apresentada no aplicativo, título da página,
+A identidade apresentada no aplicativo, título da página,
 instalação PWA, página pública, documentos legais e consentimento Google deve ser
 reconhecível e consistente com **Personal Josy**. O nome do responsável legal e os contatos
 devem corresponder às pessoas ou entidades efetivamente responsáveis, sem inferência a
@@ -145,6 +160,12 @@ funcionalidades ou promessas do produto.
   PWA. A licença da família acompanha os arquivos.
 - Pesos, tamanhos, pilha de fallback e impacto de layout são definidos e validados na
   implementação, inclusive nos viewports menores; os pesos da marca não os homologam.
+- **Aplicado em 2026-10-23**: pesos **400, 600, 700 e 800**, em `woff2` de subset latino
+  em `assets/vendor/poppins/`, com a licença SIL OFL 1.1 ao lado dos arquivos;
+  `font-display: swap`; pilha `Poppins, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif`;
+  arquivos incluídos no pré-cache do service worker. A troca específica do namespace
+  é definida na seção 3.2. Pesos e estilos devem usar faces reais; não sintetizar
+  negrito ou itálico. O teste dos pesos cobre o CSS, não todos os estilos inline.
 
 ### 2.9 Aplicação no cabeçalho
 
@@ -158,6 +179,10 @@ Decisão aprovada:
 - No botão de login Google do cabeçalho, apenas a área de toque pode ser ampliada, sem
   alterar variante, cores, texto, símbolo ou comportamento de autenticação. Por ser área
   de autenticação, a mudança é avisada ao dono antes de implementada.
+- Conta conectada: avatar de 36×36 px, sem molduras sobrepostas, em alvo de toque
+  de 44×44 px. Sem foto, inicial em Grafite sobre Amarelo Josy; com foto, recorte
+  circular. O avatar da Área do usuário também tem 36×36 px. A apresentação
+  não altera autenticação, credenciais nem a ação de abrir a Área do usuário.
 
 A simulação do header foi aprovada só como referência visual. Tamanho no app, leitura no
 viewport de referência, comportamento em larguras menores e nome acessível ainda precisam
@@ -174,6 +199,10 @@ símbolo isolado.
 - Ícones de instalação, favicon e ícone da Apple seguem o
   [ícone do aplicativo no guia v3](../reference/identidade/guia-identidade-visual-v3.md#83-ícone-do-aplicativo),
   gerados a partir dos arquivos-mestre do kit, sem redesenho.
+- A aplicação de instalação usa o avatar claro: fundo transparente para ícones
+  comuns e favicon; base branca opaca para `maskable` e Apple, em arquivos próprios.
+  J e presilhas permanecem em Grafite opaco. O fundo escolhido pelo sistema para
+  ícones comuns pode variar; validar no aparelho, sem prometer transparência final.
 - Cor de tema e fundo da tela de abertura do PWA são definidos na implementação, após
   teste nas plataformas, e aprovados pelo dono.
 
@@ -199,9 +228,11 @@ O marcador `app_origin = corepersonal` identifica eventos do app no Google Calen
 deve ser preservado no rebranding. Uma eventual migração desse marcador exigiria decisão
 e contrato próprios de compatibilidade, não substituição textual pelo nome comercial.
 
-O nome do cache do service worker contém `Prô Josy`, mas é identificador técnico, não
-nome exibido. Não é renomeado por causa da marca: trocá-lo invalida o cache instalado e
-exige decisão própria.
+O cache do service worker usa `josy-personal`, por decisão específica do dono após
+aviso da invalidação dos caches anteriores na ativação. É identificador técnico,
+não nome exibido nem identidade do consentimento OAuth: o nome público permanece
+**Personal Josy**. Essa troca não renomeia nem apaga dados no MongoDB ou no
+`localStorage`; recursos offline fora do pré-cache precisam ser carregados novamente.
 
 Referências a `Prô Josy` em documentos históricos continuam descrevendo a identidade da
 época. O novo nome não autoriza reescrever históricos nem apresentar a mudança como já
@@ -230,11 +261,11 @@ Personal da assinatura ou alterar as palavras por inferência.
 
 | Assunto | Situação |
 |---|---|
-| Aplicação e dimensões no cabeçalho | Composição decidida (seção 2.9); tamanho, leitura e larguras menores a validar |
-| Adoção da fonte na interface | Adoção e carregamento local decididos (seção 2.8); pesos, tamanhos, fallback e regressões de layout a definir e validar |
-| Cores da interface sem correspondente na paleta do guia | Mapeamento a decidir com o dono durante a implementação (seção 2.2) |
-| Ícones de instalação e favicon | Regra decidida (seção 2.10); dimensões e leitura a validar no suporte final |
-| Cor de tema e fundo de abertura do PWA | A definir na implementação após teste (seção 2.10) |
+| Aplicação e dimensões no cabeçalho | Implementadas e verificadas no mock em 433/390/320 px; conferir apresentação no aparelho |
+| Adoção da fonte na interface | Pesos, fallback e swap definidos e implementados (seção 2.8); pré-cache coberto por teste, sem certificação offline de todas as plataformas |
+| Cores da interface sem correspondente na paleta do guia | Mapeamento aprovado e aplicado; texto da Consultoria usa variante clara para contraste, preservando a borda oficial |
+| Ícones de instalação e favicon | PNGs claros gerados e verificados; atualização/recorte pelo launcher ainda exige aceite no aparelho (seção 2.10) |
+| Cor de tema e fundo de abertura do PWA | Grafite `#202020` aprovado e aplicado; conferir no suporte final, independente do fundo claro dos ícones |
 | Variante e apresentação do botão Google | Pendente; apenas a ampliação da área de toque está autorizada (seção 2.9) |
 | Asset para a tela de consentimento Google | Fora desta implementação; composição, dimensões e leitura a decidir a partir do kit |
 | Página pública e localização dos links legais no app | A definir; sem arquitetura, URL ou layout aprovados |
