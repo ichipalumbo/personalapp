@@ -1,3 +1,47 @@
+/* [TAG-STYLE-FONTES] Etapa 5 da identidade visual (2026-10-23): Poppins servida
+   pelo próprio app, sem serviço de fontes de terceiros (spec de identidade,
+   2.8). Arquivos em assets/vendor/poppins/, subset latino do Google Fonts
+   (U+0000-00FF cobre ã, ç, é, õ, à) e licença SIL OFL 1.1 ao lado deles.
+
+   Só os pesos que a interface usa: 400, 600, 700 e 800. O 500, que aparecia
+   uma única vez, foi para 400 — sem face própria ele cairia em negrito
+   sintético, que o guia proíbe.
+
+   font-display: swap evita texto invisível enquanto a fonte chega; o custo é
+   um salto de métrica no primeiro carregamento. O @font-face fica no topo do
+   arquivo e é declarado antes de qualquer uso de `Poppins`. */
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../vendor/poppins/poppins-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../vendor/poppins/poppins-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../vendor/poppins/poppins-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Poppins";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("../vendor/poppins/poppins-800.woff2") format("woff2");
+}
+
 /* Recuperação local explícita: permanece visível até resolução, independente do toast. */
 .recuperacao-dados {
   margin: 12px 0;
@@ -24,7 +68,9 @@
      consumidores usam var(--header-height) sem repetir números próprios —
      antes existiam fallbacks divergentes (135px, 78px e 0px), e o fallback só
      valia antes do boot, o que bastava para dar valores diferentes ao mesmo
-     dado. 65px é o cabeçalho medido em 433, 390 e 320 em 2026-10-23. */
+     dado. 65px é o maior valor medido com a Poppins em 2026-10-23 (433px;
+     em 390 e 320 o cabeçalho mede 61px por causa do padding menor abaixo de
+     430px). O padrão usa o maior para nunca encolher a âncora do sticky. */
   --header-height: 65px;
 
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
@@ -313,7 +359,9 @@ textarea:disabled {
 }
 
 body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  /* Etapa 5: Poppins é a família da identidade (spec, 2.8); a pilha anterior
+     continua como reserva caso o woff2 não carregue. */
+  font-family: "Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   background: var(--cor-neutro-10);
   color: var(--cor-neutro-46);
   min-height: 100vh;
@@ -1255,7 +1303,9 @@ body {
 .form-grupo-spa label {
   font-size: 0.875rem;
   color: var(--cor-neutro-35);
-  font-weight: 500;
+  /* Era 500: a interface só carrega 400, 600, 700 e 800, e o guia proíbe
+     negrito sintético (seção 10). */
+  font-weight: 400;
 }
 .form-grupo-spa input,
 .form-grupo-spa select,

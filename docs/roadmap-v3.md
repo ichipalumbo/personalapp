@@ -80,15 +80,6 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: baixo, sujeito ao inventário; sem dependência de implantação de ambiente.
 - **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) e [execução das suítes](setup-ambiente-local.md).
 
-### [ ] 5.10 Aplicação da identidade visual Personal Josy
-
-- **Resultado esperado**: app e PWA identificados como Personal Josy com a identidade do guia v3 (logo no cabeçalho, nome exibido, ícones de instalação, paleta do guia e Poppins) e alvos de toque do topo ampliados, absorvendo o item 5.9.
-- **Decidido**: contrato na [spec de identidade](specs/identidade-e-apresentacao-publica.md); sequência em etapas com PR próprio, registrada no plano.
-- **Decidir antes**: pesos da Poppins, na etapa de tipografia. Resolvidos: abordagem de ampliação do toque no topo, cor de tema e mapeamento das cores sem correspondente na paleta.
-- **Risco/dependência**: o botão Google é área de autenticação (só área de toque, com aviso prévio); ícones e manifest afetam instalações existentes; a tipografia depende do pré-cache do service worker.
-- **Esforço**: médio, distribuído em etapas.
-- **Referência**: [plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [guia de identidade visual v3](reference/identidade/guia-identidade-visual-v3.md) e [ambiente de validação mobile](setup-ambiente-local.md).
-
 ## Iniciativas em avaliação
 
 Possibilidades de evolução, não compromissos de entrega. As soluções técnicas citadas no planejamento anterior precisam de confirmação antes de virarem contratos.
@@ -194,6 +185,7 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 5.7 | `[x]` | Consistência, acessibilidade e navegação persistida | [Etapa 7](plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md) e [validação](plans/2026-10-05-plan-validacao-etapa-7-branch.md) |
 | 5.8 | `[x]` | Skeletons padronizados e indicação de cache; B2 entregue separadamente no item 2.4 | [Plano de skeletons/cache](plans/2026-09-30-plan-skeletons-cache.md) |
 | 5.9 | `[→]` | Alvos de toque do cabeçalho e toolbar consolidados no item 5.10, com inventário a refazer | [Plano da identidade visual](plans/2026-10-17-plan-aplicacao-identidade-visual.md) |
+| 5.10 | `[x]` | Identidade Personal Josy aplicada: logo e alvos de toque no topo, nome e ícones do PWA, paleta do guia em tokens e Poppins local com pré-cache; entrada na `main` por PR único, com o dono | [Plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md) e [spec de identidade](specs/identidade-e-apresentacao-publica.md) |
 
 ## Ressalvas e fontes
 

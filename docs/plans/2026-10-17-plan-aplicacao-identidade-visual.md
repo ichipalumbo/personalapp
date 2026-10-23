@@ -1,7 +1,6 @@
 # Plano vivo — Aplicação da identidade visual Personal Josy
 
-> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23
-> **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
+> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23> **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
 > **Branch**: `feat/aplicacao-identidade-visual`, criada de `origin/main` em 2026-10-22 com `--no-track`, abriga **todas as etapas**; um único PR ao final leva o conjunto para a `main`. A etapa 0 ficou em `docs/auditoria-roadmap`.
 > **Base**: commit `5416e9e`, medida em 2026-10-17; etapa 1 medida sobre a `main` em `ea29834`.
 > **Fontes**: [spec de identidade](../specs/identidade-e-apresentacao-publica.md), [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), [kit visual v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md), [spec de interface](../specs/interface-e-navegacao.md), [roadmap, item 5.10](../roadmap-v3.md) e [ambiente de validação](../setup-ambiente-local.md).
@@ -78,7 +77,7 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 | 2 | Nome exibido e instalação do PWA | Concluída em 2026-10-22 |
 | 3 | Variáveis de cor, sem mudança visual | Concluída em 2026-10-22 |
 | 4 | Recoloração com a paleta do guia | Concluída em 2026-10-22 |
-| 5 | Poppins na interface | Pendente |
+| 5 | Poppins na interface | Concluída em 2026-10-23 |
 
 ### Etapa 1 — Cabeçalho e alvos de toque do topo
 
@@ -146,6 +145,7 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
   - sem estouro ou quebra indevida nos três viewports, inclusive nos números do financeiro;
   - nenhuma requisição de fonte a terceiros na aba de rede;
   - fonte disponível offline após o primeiro carregamento.
+- **Decidido em 2026-10-23**: pesos **400, 600, 700 e 800** (o único uso de 500 passa a 400); `font-display: swap`; fontes incluídas no **pré-cache** do `sw.js`, com aviso prévio ao dono.
 
 ## 7. Validação comum
 
@@ -312,3 +312,32 @@ Rodada curta para encerrar os dois pontos que ficaram abertos acima. A rodada an
 - Medido no mock (433×762, DPR 2,81, modal Área do usuário aberto): avatar do modal **36×36** e avatar do cabeçalho **36×36**; fundo `rgb(255,222,23)`, inicial `rgb(32,32,32)`, 16px/800; cartão do perfil **326×59** (era 64 de altura) e `scrollWidth` igual à viewport.
 - Testes: suíte de frontend **439 antes, 439 depois**, `EXIT=0`, 0 falhas. Nenhum teste cobre medida de avatar; o número vem do mock. Suíte de backend não foi executada.
 - Conferência visual: a captura da região não renderizou nesta sessão; a validação do modal ficou pelas medidas acima. O mock segue aberto para conferência do dono.
+
+### Etapa 5 — Poppins na interface — 2026-10-23
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); a rodada anterior foi commitada e enviada pelo dono em `003ba2e`.
+- Decisões do dono nesta rodada: continuar na branch atual; pesos **400, 600, 700 e 800**; `font-display: swap`; **pré-cache no `sw.js`**. O aviso exigido para `.sw.js` (instruções, seção 7) foi dado antes da alteração.
+- **Arquivos**: `assets/vendor/poppins/` com `poppins-400.woff2`, `poppins-600.woff2`, `poppins-700.woff2`, `poppins-800.woff2` (subset latino, `U+0000-00FF`, que cobre ã, ç, é, õ, à) e `OFL.txt` (SIL Open Font License 1.1). Total **31,5 KB**; cada arquivo entre 7,8 e 8,0 KB. Assinatura `wOF2` conferida em todos.
+- `assets/css/style.css`: bloco `[TAG-STYLE-FONTES]` no topo com as quatro faces (`font-display: swap`, url relativa `../vendor/poppins/`); `body` passa a `"Poppins", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif`; o único `font-weight: 500` de `.settings-description` virou `400`, porque peso sem face cai em negrito sintético, que o guia proíbe (seção 10).
+- `sw.js`: os quatro woff2 entraram em `APP_SHELL_FILES`. **`CACHE_NAME` não mudou** de propósito — trocá-lo faria o `activate` apagar o cache offline de todo aparelho já instalado. Arquivo novo no pré-cache só é adicionado ao cache existente.
+- **Medido no mock** (DRP 2,81; recarregando em cada viewport, porque a emulação do navegador integrado não emite `resize` nem `change` de media query):
+  - as quatro faces carregam (`document.fonts` com status `loaded` e `display: swap`); `document.fonts.check` confirma 400 e 800;
+  - **nenhuma requisição a terceiros**: todas as fontes vêm de `127.0.0.2:5500`; Font Awesome continua nas próprias webfonts;
+  - rótulo de período da Home, texto real medido contra a caixa:
+
+    | Viewport | Forma | Fonte | Texto real | Disponível | Reticências |
+    |---|---|---|---|---|---|
+    | 433 | completo | 16px | 99,5 px (102,5 na virada de mês) | 160 px | não |
+    | 390 | completo | 16px | 99,5 px (102,5) | 115 px | não |
+    | 375 | curto | 12px | 52,5 px (55,8) | 116 px | não |
+    | 320 | curto | 12px | 52,5 px (55,8) | 61 px | não |
+
+  - a folga que era de 8 px em 320 px **aumentou para 5,2 px no pior caso**; e em 390 a forma completa ganhou folga (a Poppins é mais estreita que a Segoe UI nesse rótulo);
+  - Finanças em 433/390/320: nenhum texto estourado (só o `.sr-only`, que é oculto por definição) e nenhuma rolagem horizontal; valores `R$ 220,00`, `R$ 200,00` e `R$ 20,00` intactos;
+  - altura do cabeçalho: **65 px em 433** e **61 px em 390/320** (o padding do cabeçalho cai abaixo de 430 px). O padrão `--header-height: 65px` do `:root` usa o maior valor, para nunca encolher a âncora do sticky antes do boot; `scroll-margin-top` resolveu em 275 px e a topbar colou em 65 px;
+  - nenhum erro de página no console.
+- **Robustez acrescentada**: `atualizarRotuloPeriodoSemana` já escutava a troca de faixa por `matchMedia`; ganhou também um ouvinte de `resize`, porque a emulação de dispositivo do navegador integrado muda o CSS e não emite nenhum dos dois eventos. Em navegador real o `resize` cobre a rotação de tela em qualquer versão.
+- **Testes**: `tests-frontend/tipografia-poppins.test.js` (novo), 5 casos — faces apontam para woff2 existentes; licença OFL ao lado dos arquivos; todo peso usado no CSS tem face (barreira contra negrito sintético); Poppins é a primeira família do `body` e não há referência a fonte de terceiros no CSS/HTML; pré-cache do `sw.js` cobre todas as faces, `CACHE_NAME` intacto e todo caminho precacheado existe.
+  - Suíte de frontend: **439 antes, 444 depois**, `EXIT=0`, 0 falhas.
+  - Provas por mutação: `font-weight: 550` no CSS (1 falha, "pesos sem face: 550") e um woff2 removido do pré-cache (1 falha) — as duas restauradas e conferidas por `git diff`.
+- Encontrado e **não** alterado: a captura de tela não renderizou nesta sessão (as imagens voltam vazias), então a conferência visual ficou pelas medidas; a emulação do navegador integrado não emite eventos de redimensionamento, o que limita testes de troca de faixa sem recarregar.

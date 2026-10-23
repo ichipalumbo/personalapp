@@ -1,9 +1,9 @@
 # Spec — Identidade e apresentação pública
 
-> **Status**: Em implementação · **Versão**: 12 · **Atualizado**: 2026-10-22
+> **Status**: Em implementação · **Versão**: 13 · **Atualizado**: 2026-10-23
 > **Escopo aprovado**: nome, descritor, identidade visual definida no guia v3 (símbolo calendário com J, assinatura e composições do kit), adoção na interface das cores da marca e da paleta do produto do guia, personalidade profissional e acolhedora, Poppins principal/Montserrat alternativa com adoção da Poppins na interface por arquivos locais, aplicação no cabeçalho, nome no produto, ícones de instalação, endereço atual e contato provisório de suporte.
 > **Fonte da identidade visual**: [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), com os arquivos do [kit visual completo v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md). O [PDF do guia v3](../reference/identidade/guia-identidade-visual-v3.pdf) é a versão visual do mesmo conteúdo; em divergência, prevalece o `.md`.
-> **Limite**: aplicação no app autorizada nos termos da seção 2 e **em execução** — o cabeçalho recebeu o logo e os alvos de toque do topo; o nome no produto, os ícones de instalação e a cor de tema e fundo do PWA foram aplicados; as cores da interface estão na paleta do guia, centralizadas na tabela de tokens. A tipografia (Poppins) segue pendente no [plano](../plans/2026-10-17-plan-aplicacao-identidade-visual.md). Cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
+> **Limite**: aplicação no app autorizada nos termos da seção 2 e **em execução** — o cabeçalho recebeu o logo e os alvos de toque do topo; o nome no produto, os ícones de instalação e a cor de tema e fundo do PWA foram aplicados; as cores da interface estão na paleta do guia, centralizadas na tabela de tokens; a Poppins é servida por arquivos locais em toda a interface. Todas as etapas do [plano](../plans/2026-10-17-plan-aplicacao-identidade-visual.md) estão concluídas e a entrada na `main` depende de PR único, com o dono do repositório. Cada aplicação exige conferência no suporte final. Os pesos da marca não homologam pesos/tamanhos da interface; textos legais, consentimento Google, publicação e mudanças de autenticação além da seção 2.9 continuam fora desta aprovação.
 
 ## 1. Objetivo e fronteira
 
@@ -160,6 +160,12 @@ funcionalidades ou promessas do produto.
   PWA. A licença da família acompanha os arquivos.
 - Pesos, tamanhos, pilha de fallback e impacto de layout são definidos e validados na
   implementação, inclusive nos viewports menores; os pesos da marca não os homologam.
+- **Aplicado em 2026-10-23**: pesos **400, 600, 700 e 800**, em `woff2` de subset latino
+  em `assets/vendor/poppins/`, com a licença SIL OFL 1.1 ao lado dos arquivos;
+  `font-display: swap`; pilha `Poppins, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif`;
+  arquivos incluídos no pré-cache do service worker, sem alterar o nome do cache. Todo peso
+  usado pela interface precisa de face declarada — peso sem face cai em negrito sintético,
+  que a seção 10 do guia proíbe.
 
 ### 2.9 Aplicação no cabeçalho
 

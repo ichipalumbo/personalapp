@@ -134,6 +134,16 @@ if (typeof window.matchMedia === 'function') {
     }
 }
 
+// A escuta de matchMedia cobre a troca de faixa, mas nem todo ambiente a dispara
+// (o redimensionamento por emulação do navegador integrado, por exemplo, muda o
+// CSS e não emite o evento). O resize é a rede de segurança: ele acontece em
+// toda rotação de tela e a função relê a faixa a cada chamada.
+if (typeof window.addEventListener === 'function') {
+    window.addEventListener('resize', function() {
+        window.atualizarRotuloPeriodoSemana();
+    });
+}
+
 window.renderizarHomeSemana = function() {
     if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
     const gridSemanal = document.getElementById('calendarioSemanalHomeGrid');
