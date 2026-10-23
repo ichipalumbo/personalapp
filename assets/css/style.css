@@ -21,6 +21,10 @@
 
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
+  /* Texto da categoria em tom claro da mesma família: o Blueberry oficial dá
+     4,1:1 sobre o card (abaixo de AA). A borda esquerda continua com a cor
+     oficial do GCal, que é o dado — só o texto precisa vencer o contraste. */
+  --objetivo-consultoria-online-text: var(--cor-azul-10);
 
   --cor-primaria: #ffde17; /* identidade/destaque; a etapa 4 troca para o Amarelo Josy */
 
@@ -140,7 +144,9 @@
   --cor-neutro-28: #8c8c8c;
   --cor-neutro-29: #8d8d8d;
   --cor-neutro-30: #8f8f8f;
-  --cor-neutro-31: #909090;
+  /* Texto secundário: #909090 dava exatamente 4,50:1 sobre o card, sem margem.
+     #949494 sobe para 4,73:1 e continua entre o passo 30 e o 32. */
+  --cor-neutro-31: #949494;
   --cor-neutro-32: #969696;
   --cor-neutro-33: #999999;
   --cor-neutro-34: #9a9a9a;
@@ -234,13 +240,13 @@
   font-weight: 700;
 }
 .objetivo-ConsultoriaOnline {
-  color: var(--objetivo-consultoria-online);
+  color: var(--objetivo-consultoria-online-text);
   border-left-color: var(--objetivo-consultoria-online);
   font-weight: 700;
 }
 /* Badge de objetivo para Consultoria Online */
 .objetivo-ConsultoriaOnline .agenda-dia-aula-detalhes {
-  color: var(--objetivo-consultoria-online);
+  color: var(--objetivo-consultoria-online-text);
   background: var(--cor-azul-09-a12);
   border-color: var(--cor-azul-09-a45);
 }
@@ -629,17 +635,21 @@ body {
   background: var(--cor-azul-03-a35);
 }
 
+/* Alinhado ao avatar do cabeçalho (ajuste de 2026-10-23): um único círculo,
+   sem borda, em amarelo cheio com a inicial em Grafite (~12:1). O tamanho
+   continua 42px por causa do cartão do perfil, que tem mais respiro que o topo. */
 .user-profile-avatar {
   width: 42px;
   height: 42px;
   border-radius: 999px;
-  background: var(--cor-primaria-a16);
-  border: 1px solid var(--cor-primaria-a30);
+  background: var(--cor-primaria);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 1rem;
   font-weight: 800;
-  color: var(--cor-primaria);
+  line-height: 1;
+  color: var(--cor-neutro-10);
   flex: 0 0 auto;
   overflow: hidden;
 }
@@ -680,7 +690,10 @@ body {
   gap: 8px;
   border: 2px solid var(--cor-azul-08);
   background: var(--cor-azul-08-a10);
-  color: var(--cor-azul-08);
+  /* Ajuste de 2026-10-23 (contraste): o azul da marca Google dava 4,16:1 sobre o
+     fundo do próprio botão, abaixo de AA. O texto usa o tom claro da mesma
+     família; borda e fundo mantêm o azul oficial. */
+  color: var(--cor-azul-14);
   border-radius: 8px;
   padding: 11px 16px;
   font-size: 0.875rem;
@@ -697,7 +710,6 @@ body {
 .btn-gcal-connect:hover {
   background: var(--cor-azul-08-a20);
   border-color: var(--cor-azul-10);
-  color: var(--cor-azul-10);
 }
 
 .btn-gcal-connect:active {
@@ -1510,7 +1522,7 @@ body {
    (bordas superiores "retas" coladas na borda superior da tela). */
 .topbar-sem-cantos {
   position: sticky;
-  top: var(--header-height);
+  top: var(--header-height, 0px);
   z-index: 10;
   background: var(--cor-neutro-10-a92);
   backdrop-filter: blur(18px);
@@ -1585,7 +1597,7 @@ body {
 }
 .home-weekly-topbar {
   position: sticky;
-  top: var(--header-height);
+  top: var(--header-height, 0px);
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -1645,6 +1657,19 @@ body {
   flex: 1 1 auto;
   margin: 0 6px;
   min-width: 0;
+}
+/* Abaixo de 380px o rótulo longo não cabe: “19/10 a 25/10” precisa de 104px e
+   em 375 sobram 102. O texto passa à forma curta (decidida com o dono em
+   2026-10-23) e a linha cede 16px de vão para que ela caiba em 320 sem
+   reticências. O período completo fica em title e aria-label. */
+@media (max-width: 379px) {
+  .home-weekly-nav-row .nav-calendario-main {
+    gap: 4px;
+  }
+  .home-weekly-periodo {
+    font-size: 0.75rem;
+    margin: 0 2px;
+  }
 }
 .home-weekly-nav-row #btnSemanaHomeAnterior,
 .home-weekly-nav-row #btnSemanaHomeProxima,

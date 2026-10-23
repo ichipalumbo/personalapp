@@ -46,3 +46,17 @@ test('formatarDataPtBrLegivel devolve a entrada quando não é data reconhecíve
     assert.equal(window.formatarDataPtBrLegivel(''), '');
     assert.equal(window.formatarDataPtBrLegivel(null), '');
 });
+
+// Rótulo do período da Home: abaixo de 380px a forma longa não cabe na linha,
+// então o app usa a forma curta, que precisa ser derivada do mesmo par de datas.
+test('formatarPeriodoSemana devolve a forma longa e a curta do rótulo da Home', (t) => {
+    const window = criarAmbiente(t);
+
+    const semanaNormal = window.formatarPeriodoSemana(new Date(2026, 9, 19), new Date(2026, 9, 25));
+    assert.equal(semanaNormal.completo, '19/10 a 25/10');
+    assert.equal(semanaNormal.curto, '19–25/10');
+
+    const viradaDeMes = window.formatarPeriodoSemana(new Date(2026, 11, 28), new Date(2027, 0, 3));
+    assert.equal(viradaDeMes.completo, '28/12 a 03/01');
+    assert.equal(viradaDeMes.curto, '28–03/01');
+});
