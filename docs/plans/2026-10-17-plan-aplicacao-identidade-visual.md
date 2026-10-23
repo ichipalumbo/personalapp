@@ -293,3 +293,14 @@ Rodada pedida pelo dono para fechar as pendências abertas; a instalação no ap
 - Testes: suíte de `tests-frontend/` **435 → 436**, `EXIT=0`, 0 falhas. Caso novo em `utils-datetime.test.js` cobre as formas longa e curta, inclusive a semana que vira o ano. Prova por mutação: forma curta trocada por `19/10–25/10` derruba 1 caso (3 pass / 1 fail), restaurada e conferida. A escolha da forma em `view-calendario.js` não tem teste — depende de `matchMedia`, e a medição ficou com o mock. Suíte de backend não foi executada: nenhum arquivo de `backend/` foi tocado.
 - Encontrado e **não** alterado: os fallbacks de `scroll-margin-top` seguem divergentes (135 px em duas regras, 78 px em uma) — só valem antes do bootstrap publicar o valor; `.user-profile-avatar` segue 42 px contra 36 px do cabeçalho, por escolha; etapa 5 (Poppins) continua pendente, e a forma curta do rótulo tem 8 px de folga em 320 px, o que precisa ser remedido depois da troca de fonte.
 
+### Fechamento dos dois itens residuais — 2026-10-23
+
+Rodada curta para encerrar os dois pontos que ficaram abertos acima. A rodada anterior foi commitada pelo dono em `f0d7593`; branch mantida.
+
+- `--header-height`: os três fallbacks de `scroll-margin-top` (135 px em duas regras, 78 px em uma) e os dois `0px` de `top` foram substituídos por uma única declaração no `:root` — `--header-height: 65px`, com o bootstrap sobrescrevendo em runtime. Nenhum consumidor repete número próprio.
+  - Medido no mock: `scroll-margin-top` resolve em **275 px** em 433 (65 + 210), **239 px** em 768 e 1024 (69 + 170) e `top` acompanha a altura real do cabeçalho nos três casos. Removendo o valor inline (situação de pré-boot), a variável resolve em **65 px** pelo `:root` e os consumidores seguem em 275 px e 65 px — antes disso, `top` caía para declaração inválida.
+  - O padrão de 65 px corresponde ao cabeçalho medido em 433/390/320; em 768+ o cabeçalho mede 69 px e o bootstrap publica esse valor — o padrão só vale antes do boot.
+- Teste da escolha de forma do rótulo: `tests-frontend/rotulo-periodo-home.test.js` (novo), 3 casos — forma curta na faixa estreita com `title`/`aria-label` no período completo; forma completa fora da faixa; e troca de faixa pelo ouvinte de `matchMedia` atualizando o texto sem re-render da grade. O `matchMedia` do jsdom não avalia media query, então o teste injeta um dublê antes de carregar `view-calendario.js`.
+- Testes: suíte de frontend **436 → 439**, `EXIT=0`, 0 falhas. Prova por mutação: invertendo a condição (`estreito ? completo : curto`), os 3 casos novos falham (0 pass / 3 fail); condição restaurada e conferida. Suíte de backend não foi executada — nenhum arquivo de `backend/` foi tocado.
+- Encontrado e **não** alterado: `.user-profile-avatar` segue 42 px contra 36 px do cabeçalho, por escolha; etapa 5 (Poppins) continua pendente, e a forma curta do rótulo tem 8 px de folga em 320 px, o que precisa ser remedido depois da troca de fonte.
+

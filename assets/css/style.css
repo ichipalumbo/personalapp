@@ -19,6 +19,14 @@
   --bottombar-height: calc(var(--safe-area-bottom, 0px) + 56px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 
+  /* Altura do cabeçalho fixo. O bootstrap (app-shell/bootstrap.js) publica o
+     valor medido em runtime; este é só o padrão até lá. Por isso os
+     consumidores usam var(--header-height) sem repetir números próprios —
+     antes existiam fallbacks divergentes (135px, 78px e 0px), e o fallback só
+     valia antes do boot, o que bastava para dar valores diferentes ao mesmo
+     dado. 65px é o cabeçalho medido em 433, 390 e 320 em 2026-10-23. */
+  --header-height: 65px;
+
   --objetivo-tangerina: #ffb878; /* GCal Tangerine oficial — colorId '6' */
   --objetivo-consultoria-online: #5484ed; /* GCal Blueberry oficial — colorId '9' */
   /* Texto da categoria em tom claro da mesma família: o Blueberry oficial dá
@@ -1522,7 +1530,7 @@ body {
    (bordas superiores "retas" coladas na borda superior da tela). */
 .topbar-sem-cantos {
   position: sticky;
-  top: var(--header-height, 0px);
+  top: var(--header-height);
   z-index: 10;
   background: var(--cor-neutro-10-a92);
   backdrop-filter: blur(18px);
@@ -1597,7 +1605,7 @@ body {
 }
 .home-weekly-topbar {
   position: sticky;
-  top: var(--header-height, 0px);
+  top: var(--header-height);
   z-index: 10;
   display: flex;
   flex-direction: column;
@@ -2963,7 +2971,7 @@ button.agenda-dia-aula {
 }
 
 #semana-dia-hoje-elemento {
-  scroll-margin-top: calc(var(--header-height, 135px) + 210px);
+  scroll-margin-top: calc(var(--header-height) + 210px);
 }
 /* [TAG-STYLE-MODAL-TOAST] */
 .modal {
@@ -3762,7 +3770,7 @@ button.agenda-dia-aula {
   }
 
   #semana-dia-hoje-elemento {
-    scroll-margin-top: calc(var(--header-height, 135px) + 250px);
+    scroll-margin-top: calc(var(--header-height) + 250px);
   }
 }
 
@@ -3796,7 +3804,7 @@ button.agenda-dia-aula {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
   #semana-dia-hoje-elemento {
-    scroll-margin-top: calc(var(--header-height, 78px) + 170px);
+    scroll-margin-top: calc(var(--header-height) + 170px);
   }
 }
 
