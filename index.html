@@ -100,8 +100,8 @@
 
       <!-- [TAG-HTML-TELA-HOME] - Visão Operacional Diária e Dashboard -->
       <main id="tela-home" class="view-section" aria-busy="true">
-        <div class="home-weekly-topbar">
-          <div class="home-sticky-header">
+        <div class="topo-tela home-weekly-topbar">
+          <div class="topo-tela-conteudo home-sticky-header">
             <div
               class="tab-tipo-agendamento"
               role="tablist"
@@ -209,14 +209,15 @@
       <main id="tela-financas" class="view-section" style="display: none"></main>
       <!-- [TAG-HTML-TELA-ALUNOS] - Gerenciamento e Cadastro (CRM) -->
       <main id="tela-alunos" class="view-section" style="display: none">
-        <section class="alunos-panel">
-          <h3 style="font-size: 1.1rem; color: var(--cor-neutro-46); margin-bottom: 15px">
-            <i
-              class="fa-solid fa-address-book"
-              style="color: var(--cor-primaria); margin-right: 8px"
-            ></i
-            >Seus Alunos
-          </h3>
+        <div class="topo-tela alunos-cabecalho">
+          <div class="topo-tela-conteudo">
+            <h2 class="topo-tela-titulo" id="tituloTelaAlunos">
+              <i class="fa-solid fa-address-book" aria-hidden="true"></i>Seus Alunos
+            </h2>
+            <p class="topo-tela-descricao">Cadastre alunos, edite seus dados e acompanhe as reposições.</p>
+          </div>
+        </div>
+        <section class="lista-tela alunos-panel">
           <div class="alunos-grid" id="listaAlunos"></div>
         </section>
 

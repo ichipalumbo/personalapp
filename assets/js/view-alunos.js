@@ -1094,7 +1094,7 @@ window.renderizarListaAlunos = function() {
                 <div class="aluno-card aluno-card--gerenciavel" data-aluno-id="${escaparTextoAluno(aluno.id)}" onclick="prepararEdicaoAluno('${aluno.id}')" style="display: flex; flex-direction: column; gap: 10px; position: relative; cursor: pointer;">
                     <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
                         <div>
-                            <strong style="display: block; color: var(--cor-branco); font-size: 1.05rem; word-break: break-word;">${aluno.nome}</strong>
+                            <strong class="aluno-card-nome">${aluno.nome}</strong>
                             <div style="display: flex; gap: 6px; align-items: center; margin-top: 3px; flex-wrap: wrap;">
                                 <span class="objetivo-${objetivoClass}" style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${objetivo}</span>
                                 <span style="color: var(--cor-neutro-32); font-size: 0.75rem;">•</span> <!-- Etapa 2 (Cartão D): 1.47:1 → 4.85:1 sobre o card var(--cor-neutro-17) -->

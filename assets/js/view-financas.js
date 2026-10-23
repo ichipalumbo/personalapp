@@ -200,9 +200,13 @@
         const cacheLabel = cache && cache.atualizadoEm ? `Cache atualizado em ${new Date(cache.atualizadoEm).toLocaleString('pt-BR')}` : '';
 
         root.innerHTML = `
-                    <section class="agenda-panel topbar-sem-cantos financas-cabecalho">
+                    <div class="topo-tela financas-cabecalho">
+                                        <div class="topo-tela-conteudo">
                         <div class="financas-cabecalho-linha">
-                            <h2 class="financas-cabecalho-titulo">💰 Finanças</h2>
+                            <div class="financas-cabecalho-textos">
+                                <h2 class="topo-tela-titulo financas-cabecalho-titulo"><i class="fa-solid fa-wallet" aria-hidden="true"></i>Finanças</h2>
+                                <p class="topo-tela-descricao financas-cabecalho-descricao">Ciclo, valor e status de cobrança por aluno.</p>
+                            </div>
                             <div class="financas-cabecalho-acoes">
                                 <span id="financasProgresso" class="financas-cabecalho-progresso" role="status" hidden></span>
                                 <button type="button" class="btn-icone" id="financasAtualizar" data-financas-atualizar aria-label="Atualizar finanças" title="Atualizar finanças">
@@ -211,12 +215,12 @@
                                 </button>
               </div>
             </div>
-                        <p class="financas-cabecalho-descricao">Ciclo, valor e status de cobrança por aluno.</p>
                         <div id="financasCacheLabel" class="financas-cabecalho-cache">${cacheLabel}</div>
                         <p id="financasSyncState" class="financas-cabecalho-mensagem" role="status" hidden></p>
                         <p id="financasAtualizarOrientacao" class="financas-cabecalho-mensagem" role="status" hidden>Resolva a alteração não confirmada na área de recuperação acima antes de atualizar.</p>
-          </section>
-          <section id="financasConteudo"></section>
+                                        </div>
+                    </div>
+                    <section id="financasConteudo" class="lista-tela"></section>
         `;
                 atualizarCabecalhoCache();
     }
@@ -368,12 +372,12 @@
         return `
           <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px;">
             <div style="background:var(--cor-neutro-03);border:1px solid var(--cor-neutro-13);border-radius:10px;padding:10px;">
-              <div style="font-size:0.75rem;color:var(--cor-neutro-31);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Ciclo</div>
+              <div class="financas-card-rotulo">Ciclo</div>
               <div style="margin-top:6px;font-size:0.875rem;color:var(--cor-branco);font-weight:700;">${formatarDataBR(ciclo.cicloInicio)} → ${formatarDataBR(ciclo.cicloFim)}</div>
               <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-36);">${cicloSubtitulo}</div>
             </div>
             <div style="background:var(--cor-neutro-03);border:1px solid var(--cor-neutro-13);border-radius:10px;padding:10px;">
-              <div style="font-size:0.75rem;color:var(--cor-neutro-31);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Cobrança</div>
+              <div class="financas-card-rotulo">Cobrança</div>
               <div style="margin-top:6px;font-size:0.875rem;color:var(--cor-branco);font-weight:700;">${metodo}</div>
               <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-36);">${cobrancaSubtitulo}</div>
             </div>
@@ -417,9 +421,9 @@
         const aberto = opcoes.aberto === true ? 'open' : (opcoes.aberto === false ? '' : (estadoPersistido ? 'open' : ''));
 
         return `
-          <details data-financas-extrato-details="${escaparHtml(identificador)}" style="border-top:1px solid var(--cor-neutro-16);padding-top:10px;" ${aberto}>
+                    <details class="financas-card-detalhes" data-financas-extrato-details="${escaparHtml(identificador)}" ${aberto}>
             <summary style="cursor:pointer;color:var(--cor-primaria);font-weight:700;font-size:0.875rem;">${escaparHtml(rotulo)}</summary>
-            <div style="margin-top:10px;">${renderizarConteudoExtrato(ciclo)}</div>
+                        <div class="financas-card-detalhes-conteudo">${renderizarConteudoExtrato(ciclo)}</div>
           </details>
         `;
     }
@@ -577,7 +581,7 @@
         const aluno = card.aluno || {};
         const ciclo = card.cicloAtual || {};
         const status = obterStatusCard(card);
-        const statusLabel = card.configuracaoPendente ? '⚠️ Pendente' : (status === 'pago' ? '🟢 Pago' : (status === 'atrasado' ? '🔴 Atrasado' : '🟡 Em aberto'));
+        const statusLabel = card.configuracaoPendente ? 'Pendente' : (status === 'pago' ? 'Pago' : (status === 'atrasado' ? 'Atrasado' : 'Em aberto'));
         const total = formatarMoeda(ciclo.valorTotalCiclo);
         const aulasExtras = ciclo.aulasManuaisExtras || 0;
         const aulasContadas = ciclo.aulasContadas || 0;
@@ -587,10 +591,10 @@
           <article class="aluno-card" data-financas-card-id="${aluno.id || card.alunoId}" style="display:flex;flex-direction:column;gap:10px;position:relative;">
             <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
               <div style="min-width:0;">
-                <strong style="display:block;color:var(--cor-branco);font-size:1.02rem;word-break:break-word;">${escaparHtml(aluno.nome || 'Aluno')}</strong>
-                ${card.configuracaoPendente ? '' : `<div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-39);">${resumoCiclo(card)}</div>`}
+                                <strong class="aluno-card-nome">${escaparHtml(aluno.nome || 'Aluno')}</strong>
+                                ${card.configuracaoPendente ? '' : `<div class="financas-card-periodo">${resumoCiclo(card)}</div>`}
               </div>
-              <span style="font-size:0.75rem;font-weight:800;color:${card.configuracaoPendente ? 'var(--cor-estado-erro)' : (status === 'pago' ? 'var(--cor-estado-ok)' : (status === 'atrasado' ? 'var(--cor-estado-erro)' : 'var(--cor-estado-neutro)'))};text-transform:uppercase;letter-spacing:0.4px;white-space:nowrap;flex-shrink:0;">${statusLabel.replace(/[🟢🟡🔴⚠️]\s*/, '')}</span>
+                            <span class="financas-card-status" style="color:${card.configuracaoPendente ? 'var(--cor-estado-erro)' : (status === 'pago' ? 'var(--cor-estado-ok)' : (status === 'atrasado' ? 'var(--cor-estado-erro)' : 'var(--cor-estado-neutro)'))};">${statusLabel}</span>
             </div>
 
             ${card.configuracaoPendente ? `
@@ -601,12 +605,12 @@
             ` : `
               <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;">
                 <div style="background:var(--cor-neutro-03);border:1px solid var(--cor-neutro-13);border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:var(--cor-neutro-31);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Aulas</div>
+                  <div class="financas-card-rotulo">Aulas</div>
                   <div style="margin-top:6px;font-size:0.875rem;color:var(--cor-branco);font-weight:700;">${aulasCobradas} aula(s) cobrada(s)</div>
                   <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-36);">${aulasContadas} registradas • ${descreverAjuste(aulasExtras)}</div>
                 </div>
                 <div style="background:var(--cor-neutro-03);border:1px solid var(--cor-neutro-13);border-radius:10px;padding:10px;">
-                  <div style="font-size:0.75rem;color:var(--cor-neutro-31);font-weight:800;letter-spacing:0.4px;text-transform:uppercase;">Valor</div>
+                  <div class="financas-card-rotulo">Valor</div>
                   <div style="margin-top:6px;font-size:1rem;color:var(--cor-primaria);font-weight:800;">${total}</div>
                   <div style="margin-top:4px;font-size:0.75rem;color:var(--cor-neutro-36);">${status === 'pago' ? 'Pago' : 'A receber'}</div>
                 </div>
@@ -619,9 +623,9 @@
 
               ${renderizarDetalhesExtrato(ciclo, { identificador: `extrato-atual-${aluno.id || card.alunoId}` })}
 
-              <details data-financas-historico-details="${aluno.id}" style="border-top:1px solid var(--cor-neutro-16);padding-top:10px;" ${STATE.historicoAberto[aluno.id] ? 'open' : ''}>
+                            <details class="financas-card-detalhes" data-financas-historico-details="${aluno.id}" ${STATE.historicoAberto[aluno.id] ? 'open' : ''}>
                 <summary style="cursor:pointer;color:var(--cor-primaria);font-weight:700;font-size:0.875rem;">Ver ciclos anteriores</summary>
-                <div id="financas-historico-conteudo-${aluno.id}" style="margin-top:10px;">${montarHtmlHistorico(aluno.id)}</div>
+                                <div id="financas-historico-conteudo-${aluno.id}" class="financas-card-detalhes-conteudo">${montarHtmlHistorico(aluno.id)}</div>
               </details>
             `}
           </article>

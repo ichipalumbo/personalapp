@@ -185,7 +185,7 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 5.7 | `[x]` | Consistência, acessibilidade e navegação persistida | [Etapa 7](plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md) e [validação](plans/2026-10-05-plan-validacao-etapa-7-branch.md) |
 | 5.8 | `[x]` | Skeletons padronizados e indicação de cache; B2 entregue separadamente no item 2.4 | [Plano de skeletons/cache](plans/2026-09-30-plan-skeletons-cache.md) |
 | 5.9 | `[→]` | Alvos de toque do cabeçalho e toolbar consolidados no item 5.10, com inventário a refazer | [Plano da identidade visual](plans/2026-10-17-plan-aplicacao-identidade-visual.md) |
-| 5.10 | `[x]` | Identidade Personal Josy aplicada: logo e alvos de toque no topo, nome e ícones do PWA, paleta do guia em tokens e Poppins local com pré-cache; entrada na `main` por PR único, com o dono | [Plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md) e [spec de identidade](specs/identidade-e-apresentacao-publica.md) |
+| 5.10 | `[x]` | Identidade Personal Josy aplicada: logo, toque, PWA, paleta e Poppins local; topos e listas padronizados, com hierarquia tipográfica de Finanças alinhada a Alunos. Integração à `main` e aceite dos ajustes com o dono | [Plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [spec de identidade](specs/identidade-e-apresentacao-publica.md) e [contrato visual](specs/interface-e-navegacao.md#61-topos-das-telas-principais) |
 
 ## Ressalvas e fontes
 

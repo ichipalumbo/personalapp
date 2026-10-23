@@ -1081,12 +1081,10 @@ body {
   border-color: var(--cor-primaria) !important;
   box-shadow: 0 4px 12px var(--cor-primaria-a25);
 }
-.alunos-panel {
-  background: var(--cor-neutro-06);
-  border-radius: 12px;
-  padding: 15px;
-  margin-bottom: 20px;
-  border: 1px solid var(--cor-neutro-17);
+/* Alunos e Finanças: lista sem moldura externa, com o mesmo respiro do topo.
+   Padding evita colapso de margem e mantém o vão também no estado de carga. */
+.lista-tela {
+  padding-top: 12px;
 }
 .alunos-grid {
   display: grid;
@@ -1099,6 +1097,41 @@ body {
   padding: 16px;
   border-radius: 8px;
   border-left: 4px solid var(--cor-primaria);
+}
+/* Nome do aluno com a mesma hierarquia nas duas listas. */
+.aluno-card-nome {
+  display: block;
+  color: var(--cor-branco);
+  font-size: 1.05rem;
+  font-weight: 700;
+  word-break: break-word;
+}
+/* Finanças segue os pesos e recuos dos metadados/detalhes de Alunos,
+   preservando os blocos de informação, cores de estado e alvos de toque. */
+.financas-card-periodo {
+  margin-top: 3px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--cor-neutro-37);
+}
+.financas-card-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.financas-card-rotulo {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--cor-neutro-31);
+}
+.financas-card-detalhes {
+  border-top: 1px solid var(--cor-neutro-16);
+  padding-top: 8px;
+  margin-top: 2px;
+}
+.financas-card-detalhes-conteudo {
+  margin-top: 8px;
 }
 /* Etapa 7 (Cartão B, achado 4.6): alvo de TECLADO do card de aluno. O card
    segue clicável ao toque (alvo grande); este botão existe para dar foco e
@@ -1576,45 +1609,54 @@ body {
   border: 1px solid var(--cor-neutro-13);
   box-shadow: 0 4px 20px var(--cor-preto-a40);
 }
-/* Etapa 4 (2026-09-27): cabeçalho da tela de Finanças sem cantos arredondados,
-   sem sombra e sem fundo destacado — alinhado ao visual da topbar da Home
-   (bordas superiores "retas" coladas na borda superior da tela). */
-.topbar-sem-cantos {
+/* Topos das três telas: superfície e fixação seguem a referência da Home.
+   As classes de cada tela identificam seu conteúdo, não variantes visuais. */
+.topo-tela {
   position: sticky;
   top: var(--header-height);
   z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
   background: var(--cor-neutro-10-a92);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   border: none;
   border-bottom: 1px solid var(--cor-neutro-09);
-  border-radius: 0;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
-  box-shadow: none;
-  padding: 12px;
+  border-radius: 0 0 18px 18px;
+  box-shadow: 0 12px 30px var(--cor-preto-a38);
 }
-.financas-cabecalho {
-  margin-top: 0;
+.topo-tela-conteudo {
+  padding: 10px 8px 8px;
 }
 .financas-cabecalho-linha {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
-.financas-cabecalho-titulo {
+.financas-cabecalho-textos {
+  flex: 1;
+  min-width: 0;
+}
+.topo-tela-titulo {
   margin: 0;
   color: var(--cor-primaria);
   font-size: 1.125rem;
   font-weight: 800;
   white-space: nowrap;
 }
+.topo-tela-titulo i {
+  margin-right: 8px;
+}
 .financas-cabecalho-acoes {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  flex-shrink: 0;
 }
 .financas-cabecalho-progresso {
   color: var(--cor-neutro-39);
@@ -1625,7 +1667,7 @@ body {
 .financas-cabecalho-mensagem[hidden] {
   display: none;
 }
-.financas-cabecalho-descricao {
+.topo-tela-descricao {
   margin: 4px 0 0;
   color: var(--cor-neutro-34);
   font-size: 0.875rem;
@@ -1653,30 +1695,6 @@ body {
 }
 .home-agenda-carregando > .skeleton {
   height: 112px;
-}
-.home-weekly-topbar {
-  position: sticky;
-  top: var(--header-height);
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 0 !important;
-  /* margin-bottom: 16px; */
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 18px;
-  padding: 12px;
-  /* border-radius: 18px; */
-  background-color: var(--cor-neutro-01);
-  background: var(--cor-neutro-10-a92);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid var(--cor-neutro-09);
-  /* border: 1px solid var(--cor-branco-a06); */
-  box-shadow: 0 12px 30px var(--cor-preto-a38);
-}
-.home-sticky-header {
-  padding: 10px 8px 8px;
 }
 .home-weekly-toolbar {
   display: flex;
@@ -3765,10 +3783,6 @@ button.agenda-dia-aula {
     order: 2;
     flex: 1 1 100%;
     justify-content: center;
-  }
-
-  .home-sticky-header {
-    padding: 10px 8px 8px;
   }
 
   .home-weekly-nav-row .nav-calendario {

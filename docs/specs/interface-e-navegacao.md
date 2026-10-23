@@ -1,7 +1,7 @@
 # Spec — Interface, navegação e acessibilidade
 
-> **Status**: Em produção · **Versão**: 1 · **Atualizado**: 2026-10-14
-> **Escopo de publicação**: base das etapas mobile já entregue; complementos recentes de FAB/feedback conservam a situação de integração registrada no roadmap. Esta consolidação não executa mudança de interface nem certifica novo deploy.
+> **Status**: Em implementação · **Versão**: 5 · **Atualizado**: 2026-10-23
+> **Escopo de publicação**: base das etapas mobile já entregue; padronização dos topos, listas e hierarquia tipográfica de Alunos/Finanças aprovada e implementada na branch, ainda sem integração à `main`. Publicação e aceite dessas alterações continuam com o dono; o roadmap conserva a situação dos demais complementos.
 
 ## 1. Objetivo e fronteira
 
@@ -54,13 +54,59 @@ A publicação desses complementos não é presumida pelo cabeçalho da base já
 O [roadmap oficial](../roadmap-v3.md) conserva o limite de integração, sem reabrir a
 navegação anteriormente publicada.
 
+### 6.1 Topos das telas principais
+
+- Home, Finanças e Alunos compartilham `.topo-tela` como fonte única da superfície e
+	`.topo-tela-conteudo` como fonte do recuo interno, seguindo o visual da Home:
+	fundo escuro translúcido, desfoque, sombra e somente os cantos inferiores arredondados.
+- Os três topos ficam presos abaixo do cabeçalho da marca durante a rolagem, usando
+	a mesma variável de altura medida pelo app. Não há decoração ou margem externa
+	particular por tela; a altura de cada topo depende do seu próprio conteúdo.
+- Listas e cards permanecem fora do topo. Home mantém as abas e a navegação da agenda;
+	Finanças mantém título, Atualizar, cache, progresso e mensagens, com as regras de
+	leitura e recuperação da spec financeira preservadas.
+- Alunos tem o título **Seus Alunos** e o subtexto **Cadastre alunos, edite seus dados e
+	acompanhe as reposições.** O FAB de cadastro, os controles dos cards e os modais
+	permanecem nas posições e fluxos próprios, fora do topo.
+- Em Finanças, título e subtítulo ficam juntos na coluna de texto à esquerda,
+  alinhados pelo topo como em Alunos. Atualizar e seu progresso ficam na coluna
+  à direita, sem empurrar os textos para baixo; o botão conserva 44×44 px.
+  Cache e mensagens continuam abaixo das colunas e o texto pode quebrar em
+  telas menores, sem truncamento.
+
+### 6.2 Listas de Alunos e Finanças
+
+- As listas usam `.lista-tela` para manter 12 px de separação entre o cabeçalho e
+	o primeiro card na abertura da tela, inclusive durante o carregamento.
+- A lista de Alunos não possui fundo, borda, cantos ou recuo lateral próprios de
+	um painel externo. Os cards ocupam a largura útil disponível, como em Finanças,
+	preservando seus próprios fundos, bordas, controles e espaçamento entre cards.
+- A separação das listas não altera a fixação dos cabeçalhos durante a rolagem.
+
+### 6.3 Hierarquia visual dos cards
+
+- Finanças segue Alunos como referência tipográfica, sem copiar seu conteúdo de
+	cadastro: nomes nas duas listas usam `.aluno-card-nome`, com tamanho de 1,05 rem
+	e peso 700. O título de Finanças usa o ícone de carteira da mesma família de
+	ícones do título de Alunos, mantendo o nome acessível pelo texto.
+- Períodos financeiros usam 0,75 rem e peso 600. Status e rótulos dos blocos
+	Aulas, Valor, Ciclo e Cobrança usam 0,75 rem e peso 700, sem conversão visual
+	para maiúsculas ou espaçamento artificial entre letras. Status preservam texto
+	e cor semântica, sem fragmentos de emojis.
+- Detalhes financeiros seguem os recuos de Alunos (8 px acima e 2 px de margem;
+	conteúdo com 8 px de separação), preservando o alvo mínimo de 44 px das
+	expansões e de 48 px das ações dos cards financeiros.
+- Valores continuam destacados, com os blocos, textos, estados, ações e regras
+	financeiras preservados. A semelhança visual não equipara o status cadastral
+	do aluno ao pagamento do ciclo nem substitui o valor do ciclo pelo cadastro.
+
 ## 7. Verificação e fora de escopo
 
 A validação visual usa o mock e os viewports do [manual de ambiente](../setup-ambiente-local.md).
 Testes de lógica/DOM protegem recortes de navegação, diálogo, cards e render; não certificam
-pixels, gestos físicos, todos os estados ou integrações remotas. Nenhuma validação visual
-nova foi executada para escrever esta spec.
+pixels, gestos físicos, todos os estados ou integrações remotas. Medições e limites de
+validação de cada alteração ficam no registro da frente, sem certificar o app inteiro.
 
-Não inclui redesenho, nova identidade visual, novas telas, solução para o resíduo 5.9,
+Fora dos topos, listas e hierarquia visual aprovados nas seções 6.1 a 6.3, não inclui redesenho, nova identidade visual, novas telas, solução para o resíduo 5.9,
 alteração de cobrança/recorrência, regra nova de cancelamento, revisão de autenticação ou
 nova integração com Google Calendar.

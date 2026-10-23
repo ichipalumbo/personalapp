@@ -1,6 +1,7 @@
 # Plano vivo — Aplicação da identidade visual Personal Josy
 
-> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23> **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
+> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23
+> **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
 > **Branch**: `feat/aplicacao-identidade-visual`, criada de `origin/main` em 2026-10-22 com `--no-track`, abriga **todas as etapas**; um único PR ao final leva o conjunto para a `main`. A etapa 0 ficou em `docs/auditoria-roadmap`.
 > **Base**: commit `5416e9e`, medida em 2026-10-17; etapa 1 medida sobre a `main` em `ea29834`.
 > **Fontes**: [spec de identidade](../specs/identidade-e-apresentacao-publica.md), [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), [kit visual v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md), [spec de interface](../specs/interface-e-navegacao.md), [roadmap, item 5.10](../roadmap-v3.md) e [ambiente de validação](../setup-ambiente-local.md).
@@ -341,3 +342,154 @@ Rodada curta para encerrar os dois pontos que ficaram abertos acima. A rodada an
   - Suíte de frontend: **439 antes, 444 depois**, `EXIT=0`, 0 falhas.
   - Provas por mutação: `font-weight: 550` no CSS (1 falha, "pesos sem face: 550") e um woff2 removido do pré-cache (1 falha) — as duas restauradas e conferidas por `git diff`.
 - Encontrado e **não** alterado: a captura de tela não renderizou nesta sessão (as imagens voltam vazias), então a conferência visual ficou pelas medidas; a emulação do navegador integrado não emite eventos de redimensionamento, o que limita testes de troca de faixa sem recarregar.
+
+### Complemento — topos das três telas pelo padrão da Home — 2026-10-23
+
+- Base: `ca6b727`; branch `feat/aplicacao-identidade-visual`, limpa na abertura.
+  O dono relatou deploy manual em produção e teste satisfatório da identidade já
+  implementada. Isso não equivale a integração à `main`, nem aceite deste complemento.
+- Pedido aprovado: igualar visual e comportamento do topo de Finanças à Home e
+  criar o equivalente em Alunos. O dono confirmou manter **Seus Alunos** e usar
+  **Cadastre alunos, edite seus dados e acompanhe as reposições.** Continuar na branch atual.
+- Antes: Home com sombra, margem externa zero e padding externo de 12 px mais
+  interno de 10/8/8 px; Finanças sem sombra, margem inferior de 20 px e somente
+  padding de 12 px; Alunos com título e lista no mesmo painel, sem topo sticky.
+- Implementação: `.topo-tela` e `.topo-tela-conteudo` centralizam a superfície,
+  fixação e recuo já existentes na Home. Home mantém seu desenho e controles;
+  Finanças abandona as classes de painel e conserva Atualizar/avisos/cache;
+  Alunos ganha cabeçalho separado da lista, com título `h2` dourado e subtexto.
+  As classes funcionais da Home, IDs financeiros, lista/FAB/modais de Alunos
+  e os fluxos de render/leitura permanecem. Sem backend, autenticação, GCal,
+  service worker, fontes ou dependências novas nesta rodada.
+- Contrato durável incorporado na spec de interface, seção 6.1; síntese do item
+  5.10 atualizada no roadmap. Cabeçalho concatenado deste plano corrigido.
+- Suíte de frontend medida: **444/444 antes → 448/448 depois**, ambos `EXIT=0`.
+  Os 4 casos de `topos-telas.test.js` cobrem marcação real das três telas,
+  superfície/recuo únicos, subtexto e separação da lista de Alunos, conservação
+  dos indicadores financeiros e identidade do topo durante render dos cards.
+  Regressões financeiras existentes passaram na suíte; backend não executado.
+- Prova por mutação: classe/recuo financeiro trocados pelo modelo anterior,
+  sombra removida e título de Alunos trocado para `h3`: **0/4 passaram**.
+  Mutações revertidas, `git status` conferido e suíte completa novamente verde.
+  No CSSOM, zero é serializado como `0px` e o prefixo WebKit é descartado;
+  o teste normaliza o zero e não usa o prefixo como prova de browser.
+- Mock `default`, DPR 2,81: as propriedades computadas de superfície, sombra,
+  margem, padding, raio, desfoque e sticky foram iguais nos três topos em
+  433×762, 390×844, 320×568 e 1024×900. Medição após estabilizar a transição
+  do cabeçalho, usando a mesma rotina de medidas do app.
+
+  | Viewport | Home (altura) | Finanças (altura) | Alunos (altura) | Topo durante rolagem |
+  |---|---|---|---|---|
+  | 433×762 | 173 px | 138 px | 116 px | 65 px nos três |
+  | 390×844 | 173 px | 138 px | 116 px | 61 px nos três |
+  | 320×568 | 173 px | 159 px | 116 px | 61 px nos três |
+  | 1024×900 | 173 px | 138 px | 95 px | 69 px nos três |
+
+- Nenhum texto truncado nos topos nem overflow horizontal. As alturas não são
+  forçadas: conteúdo, cache e quebra de texto determinam a altura própria.
+  Captura do novo topo de Alunos realizada no navegador integrado.
+- Atualizar no mock: alvo 44×44, progresso dentro da linha do título também
+  em 320 px; só GET, sem recriar topo ou container da lista. Falha controlada
+  preservou os seis cards e exibiu o erro; sucesso posterior limpou o estado.
+  Interceptação temporária restaurada ao final.
+- Limites: navegação/rolagem exercitadas no mock; não certifica toque físico ou
+  novos deploys. Nenhuma outra inconsistência das specs/históricos foi alterada.
+  PR/merge, deploy deste complemento e aceite no aparelho seguem com o dono.
+- Encerramento: mock `default` aberto em `http://127.0.0.2:5500/index.html?mockScenario=default#tela-alunos`,
+  433×762 e DPR 2,81 confirmados. Servidor estático existente mantido no ar;
+  interceptações e sonda de medição removidas. Sem commit ou push pelo agente.
+
+### Complemento — listas sem moldura e com respiro do cabeçalho — 2026-10-23
+
+- Continuação na `feat/aplicacao-identidade-visual`, com o complemento dos topos
+  ainda não commitado; continuidade confirmada pelo dono. Pedidos: remover o
+  fundo externo de `.alunos-panel`, aproximando a apresentação de Finanças, e
+  aumentar a distância entre cabeçalho e primeiro card nas duas telas.
+- `.alunos-panel` permanece como wrapper no HTML, sem regra CSS decorativa:
+  removidos fundo, borda, raio, padding de 15 px e margem inferior do painel.
+  Os cards e seus controles mantêm seu visual e comportamento.
+- `.lista-tela` aplicada no wrapper de Alunos e em `#financasConteudo`, com
+  `padding-top: 12px` como fonte única do respiro. Nenhum recuo lateral,
+  fundo ou borda nas listas; padding evita colapso de margem e acompanha
+  cards, skeleton e apresentação vazia. Home e cabeçalhos não alterados.
+- Contrato registrado na spec de interface, seção 6.2; síntese no roadmap.
+- Frontend medido **448/448 antes → 449/449 depois**, ambos `EXIT=0`.
+  Novo caso em `topos-telas.test.js` protege listas sem moldura, largura sem
+  recuo e respiro comum de 12 px. Mutação reintroduziu o painel anterior e
+  removeu o vão: **4/5 passaram, 1/5 falhou** (caso novo). Revertida,
+  `git status` conferido e suíte completa novamente verde. Backend não executado.
+- Mock `default`, DPR 2,81: vão real de **12 px** entre cabeçalho e primeiro card
+  em Alunos e Finanças nos viewports 433×762, 390×844 e 320×568. Larguras dos
+  cards iguais às listas: 403/370/300 px respectivamente, sem rolagem horizontal.
+  Listas transparentes e sem borda; fundos próprios dos cards preservados.
+  Seis alunos continuam exibidos, detalhes abrem e controle de edição permanece.
+- Não alterados: fundos/controles dos cards, fluxos de cadastro, dados, backend,
+  finanças de negócio, autenticação, GCal ou service worker. Sem novas dependências.
+  Publicação e aceite destes ajustes seguem com o dono, sem commit/push do agente.
+
+### Complemento — hierarquia tipográfica de Finanças pelo padrão de Alunos — 2026-10-23
+
+- Continuação confirmada na `feat/aplicacao-identidade-visual`, com os ajustes
+  de topos/listas ainda não commitados. Dono aprovou cabeçalho e tipografia
+  dos cards de Finanças seguindo Alunos, mantendo textos de negócio, valores,
+  status, estrutura dos blocos e alvos de toque.
+- Nome nas duas listas centralizado em `.aluno-card-nome`: branco, 1,05 rem,
+  peso 700 e quebra de nomes longos; em Alunos é extração do estilo existente,
+  sem mudança visual. Finanças passa de 1,02 para 1,05 rem.
+- Título de Finanças: emoji substituído por `fa-wallet`, decorativo e oculto
+  do leitor de tela. Período com 12 px/peso 600 e recuo superior de 3 px;
+  rótulos Aulas/Valor/Ciclo/Cobrança e status com 12 px/peso 700, sem uppercase
+  ou tracking. Cores de estado, valor destacado e conteúdo permanecem.
+- Símbolo quebrado antes dos status reproduzido no mock: a remoção por regex
+  de emojis deixava fragmentos UTF-16. Rótulos produzidos diretamente como
+  texto (Pago, Atrasado, Em aberto, Pendente), sem alterar o significado.
+- Detalhes de ciclo e histórico usam classe com padding superior de 8 px,
+  margem de 2 px e conteúdo com 8 px de separação, pelo padrão de Alunos;
+  os alvos existentes de toque não foram reduzidos.
+- Suíte de frontend medida: **449/449 antes → 453/453 depois**, `EXIT=0`.
+  `tipografia-cards.test.js` carrega views e CSS reais: ícone/título, nomes
+  compartilhados, rótulos/status e dados preservados, detalhes/ações/alvos.
+  Mutação repôs emoji, nome em 1,02 rem, peso 800 e recuo de 10 px:
+  **0/4 passaram**; restaurado, `git status` conferido e suíte verde.
+- Mock `default`, 433×762, 390×844 e 320×568 / DPR 2,81: nomes nas duas telas
+  medidos em **16,8 px/peso 700**, sem truncamento nos cards ou overflow
+  horizontal. Botões financeiros em 48 px; summaries de detalhes em 45 px.
+  Valores e os seis cards preservados; modais de pagamento/ajuste abrem e
+  fecham por Cancelar, pagamento exibe R$ 220,00, sem salvar ou gravar.
+  Captura de Finanças realizada no navegador integrado.
+- Contrato durável registrado na spec de interface, seção 6.3; síntese no
+  roadmap. Não alterados: layout dos blocos/valores, cores de estado, rótulos
+  de negócio, regras financeiras, backend, GCal, autenticação ou SW. Rodapé
+  já tem aparência única por tela; não recebeu alteração.
+- Mock mantido em `http://127.0.0.2:5500/index.html?mockScenario=default#tela-financas`,
+  433×762 / DPR 2,81; servidor local existente permanece no ar. Novos ajustes
+  seguem sem commit/push do agente; deploy e aceite com o dono.
+
+### Complemento — alinhamento do título e subtítulo financeiros — 2026-10-23
+
+- Pedido do dono após verificar a diferença de altura dos textos; continuidade
+  confirmada na `feat/aplicacao-identidade-visual`, preservando os ajustes anteriores.
+- Base medida em 433×762 / DPR 2,81: título a 22 px do topo em Alunos e
+  30,5 px em Finanças; subtítulo a 53 px e 70 px, respectivamente. A linha
+  financeira tinha 44 px por causa de Atualizar e centralizava o título de 27 px.
+- Título/subtítulo agrupados em `.financas-cabecalho-textos` à esquerda,
+  com alinhamento superior da linha. Ações à direita sem encolher, com alvo
+  de 44×44 px preservado; cache e mensagens continuam abaixo das colunas.
+  Nenhuma alteração nas leituras, dados, cards ou demais telas.
+- Mock `default` em 433×762, 390×844 e 320×568 / DPR 2,81: título a **22 px**
+  e subtítulo a **53 px** do topo nas duas telas, com **4 px** entre os textos.
+  Finanças mede 121 px de altura em 433 (antes 138); descrição quebra em
+  390/320 sem overflow horizontal. Vão de 12 px para o primeiro card mantido.
+- Atualização manual adiada no mock em 320: progresso visível e botão bloqueado,
+  título/subtítulo permanecem no mesmo alinhamento; alvo 44×44 px e ações
+  dentro do topo. Após sucesso, progresso oculto e botão livre sem recriar
+  o cabeçalho. Interceptação temporária restaurada e removida.
+- Frontend: **453/453 antes → 454/454 depois**, `EXIT=0`; focados **20/20**.
+  Novo caso de `topos-telas.test.js` protege coluna de textos, alinhamento
+  superior, margem do subtítulo, ação e progresso. Mutação retirou a descrição
+  da coluna: **5/6 passaram, 1 falhou** (caso novo); revertida, `git status`
+  conferido e suíte completa verde. Backend não executado, pois não foi alterado.
+- Contrato de alinhamento registrado na spec de interface, seção 6.1.
+  Mock de Finanças aberto em 433×762 / DPR 2,81 para a prévia do dono; captura
+  do cabeçalho realizada. Servidor existente mantido no ar. Sem commit/push;
+  aceite e publicação do ajuste permanecem com o dono.
