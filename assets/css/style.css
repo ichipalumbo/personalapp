@@ -349,6 +349,12 @@ body {
   width: 100%;
 }
 
+/* Ajuste de 2026-10-23 — botão de conta com uma camada só.
+   A caixa decorativa saiu: ela só existia para emoldurar controles que já
+   desenham borda e fundo próprios (botão Google e aviso de leitura) e, no
+   estado logado, empilhava uma terceira moldura em volta do avatar. Sem a
+   caixa, o banner fica só com o arranjo de layout e os filhos se alinham pela
+   borda do cabeçalho. */
 .auth-banner {
   width: auto;
   max-width: 72%;
@@ -356,14 +362,6 @@ body {
   align-items: center;
   justify-content: flex-end;
   margin: 0;
-  padding: 6px 8px;
-  border-radius: 10px;
-  border: 1px solid var(--cor-neutro-17);
-  background: linear-gradient(
-    135deg,
-    var(--cor-azul-02-a92),
-    var(--cor-azul-01-a92)
-  );
   min-width: 0;
 }
 
@@ -508,27 +506,26 @@ body {
   outline-offset: 2px;
 }
 
+/* Ajuste de 2026-10-23: o botão é só área de toque. A pintura (anel + fundo)
+   passou a ser responsabilidade exclusiva do avatar, para que o topo tenha um
+   único círculo em vez de anel dentro de caixa. */
 .btn-user-area-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--cor-azul-06);
-  background: var(--cor-azul-03);
+  border: 0;
+  background: none;
   border-radius: 999px;
-  padding: 2px;
+  padding: 0;
   /* Alvo de toque de 44px (plano da identidade, etapa 1). */
   min-width: 44px;
   min-height: 44px;
   cursor: pointer;
-  transition:
-    transform 0.15s ease,
-    background 0.2s ease,
-    border-color 0.2s ease;
+  transition: transform 0.15s ease;
 }
 
-.btn-user-area-trigger:hover {
-  background: var(--cor-azul-04);
-  border-color: var(--cor-azul-07);
+.btn-user-area-trigger:hover .header-session-avatar {
+  background: var(--cor-amarelo-02);
 }
 
 .btn-user-area-trigger:active {
@@ -795,19 +792,24 @@ body {
 
 /* Etapa 2 (Cartão C): o :disabled é o bloco único global de [TAG-STYLE-BASE] */
 
+/* Avatar do cabeçalho: um único círculo, sem borda. Amarelo cheio com a
+   inicial em Grafite (contraste ~12:1), identidade sem empilhar molduras.
+   36px de pintura dentro do alvo de 44px do botão. */
 .header-session-avatar {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 999px;
-  background: var(--cor-primaria-a16);
-  border: 1px solid var(--cor-primaria-a30);
+  background: var(--cor-primaria);
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 1rem;
   font-weight: 800;
-  color: var(--cor-primaria);
+  line-height: 1;
+  color: var(--cor-neutro-10);
   flex: 0 0 auto;
   overflow: hidden;
+  transition: background 0.2s ease;
 }
 
 .header-session-avatar img {
@@ -1833,7 +1835,6 @@ body {
 @media (min-width: 768px) {
   .auth-banner {
     max-width: 68%;
-    padding: 7px 10px;
     margin: 0;
   }
 
@@ -3635,9 +3636,7 @@ button.agenda-dia-aula {
 
   .auth-banner {
     max-width: 60%;
-    padding: 4px 6px;
     margin: 0;
-    border-radius: 8px;
   }
 
   .header-session-state {
@@ -3813,6 +3812,7 @@ button.agenda-dia-aula {
   .duracao-stepper-btn,
   .modal-escolha-opcao,
   .modal-recorrencia-trigger,
+  .btn-user-area-trigger,     /* botão de conta: só o translateY do :active */
   .toast {                    /* entrada/saída: opacity + translateY */
     transition: none;
   }
@@ -3820,7 +3820,7 @@ button.agenda-dia-aula {
   /* 2b. Transições mistas: mantém a cor, remove o deslocamento de 1px do :active */
   .btn-google-custom,
   .btn-google-signout,
-  .btn-user-area-trigger {
+  .header-session-avatar {    /* hover do botão de conta é troca de fundo */
     transition:
       background 0.2s ease,
       border-color 0.2s ease;

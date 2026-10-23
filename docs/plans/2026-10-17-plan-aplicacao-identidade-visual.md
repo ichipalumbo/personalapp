@@ -1,6 +1,6 @@
 # Plano vivo — Aplicação da identidade visual Personal Josy
 
-> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-22
+> **Status**: Em execução · **Criado**: 2026-10-17 · **Atualizado**: 2026-10-23
 > **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
 > **Branch**: `feat/aplicacao-identidade-visual`, criada de `origin/main` em 2026-10-22 com `--no-track`, abriga **todas as etapas**; um único PR ao final leva o conjunto para a `main`. A etapa 0 ficou em `docs/auditoria-roadmap`.
 > **Base**: commit `5416e9e`, medida em 2026-10-17; etapa 1 medida sobre a `main` em `ea29834`.
@@ -255,4 +255,22 @@ As etapas seguem em uma única branch, `feat/aplicacao-identidade-visual`, e ent
 - Provas por mutação: `style.css` e `index.html` do `HEAD` repostos na árvore — 3 das 5 falham (amarelo, Grafite, convergência de acentos) e as 2 guardas continuam passando, que é o esperado delas. Restaurado e conferido por `git status`. `--cor-primaria` trocada por `#00ff00` também derruba `fab-adicionar` (1 falha).
 - Dois bugs de script no caminho, registrados para não repetir: reler o `style.css` do disco no meio da execução apagou a rampa já calculada (a correção é transformar tudo em memória e escrever uma vez); e forçar todo valor a cinza puro colapsou `#222224` em `#222222`, duplicata que o teste da etapa 3 pegou.
 - Encontrado e **não** alterado: superfícies escuras derivadas de Tomato (`#180f0f` em `.slot-bloqueado` e `.card-bloqueio-externo`, `#2a1717` no botão de sair do Google) ficaram mais escuras que a base nova; `#ffcbc8` (texto do botão sair) não estava na tabela de acentos aprovada; o badge de deslocamento `#FF9800` com texto branco (2,16:1) é anterior a esta etapa. Seguem valendo `--header-height` sem fallback e o truncamento do rótulo de período em 320 px.
+
+### Ajuste — botão de conta no cabeçalho — 2026-10-23
+
+Ajuste dentro da frente de identidade; **não é etapa nova** (a etapa 5, Poppins, continua pendente).
+
+- Branch mantida (`feat/aplicacao-identidade-visual`); working tree limpo na abertura.
+- Pedido do dono: o botão de conta do cabeçalho tinha caixa, círculo dentro de círculo e a inicial — "muito carregado".
+- Decisões do dono nesta rodada: continuar na branch atual; reduzir a **uma camada** (só o círculo do avatar); pintura em **amarelo cheio com a inicial em Grafite**.
+- Base medida antes (433×762, DPR 2,81): cabeçalho 78 px; `.auth-banner` 62×58 com borda `--cor-neutro-17` e gradiente `--cor-azul-02-a92`/`--cor-azul-01-a92`; `.btn-user-area-trigger` 44×44 com borda `--cor-azul-06` e fundo `--cor-azul-03`; `.header-session-avatar` 30×30 com borda `--cor-primaria-a30`, fundo `--cor-primaria-a16` e letra `--cor-primaria`.
+- Mudanças em `assets/css/style.css`:
+  - `.auth-banner`: saíram `padding`, `border`, `border-radius` e o gradiente; o seletor ficou só com o arranjo de layout (os filhos já desenham borda e fundo próprios, inclusive no estado deslogado). Os overrides de `padding`/`border-radius` em `min-width: 768px` e `max-width: 430px` saíram junto;
+  - `.btn-user-area-trigger`: passou a ser só área de toque — sem borda, sem fundo, sem padding; 44×44 preservado (decisão da etapa 1) e transição restrita a `transform`;
+  - `.header-session-avatar`: 36×36, fundo `--cor-primaria`, letra `--cor-neutro-10`, sem borda; `font-size: 1rem`, `font-weight: 800`, transição de fundo. A pintura fica em 36 px dentro do alvo de 44 px — um disco de 44 px cheios ficaria maior que a marca ao lado;
+  - hover do botão passou a trocar o fundo do avatar para `--cor-amarelo-02`;
+  - `prefers-reduced-motion`: `.btn-user-area-trigger` foi para o grupo 2a (só movimento) e `.header-session-avatar` para o 2b (só cor).
+- Medido depois no mock, em 433×762 / 390×844 / 320×568 com **DPR 2,81 e emulação mobile**: avatar 36×36 nos três; botão 44×44; cabeçalho 65 px nos três (era 78/70/70); vão entre a marca e o botão de 164/148/104 px; `scrollWidth` igual à viewport, sem rolagem horizontal; `--header-height` publicado em 65 px. No estado deslogado (`?mockScenario=desconectado`), cabeçalho 53 px em 433 e botão Google em 170,5×32, sem estouro.
+- Testes: suíte de `tests-frontend/` **435 antes, 435 depois**, 0 falhas, `EXIT=0` medido. Nenhum teste cobre medida de layout; os números vêm do mock. Suíte de backend não foi executada porque nenhum arquivo de `backend/` foi tocado.
+- Encontrado e **não** alterado: `.user-profile-avatar` (42 px, no modal Área do usuário) mantém o tratamento antigo — borda dourada a 30% e fundo a 16% — e agora diverge do avatar do cabeçalho; o cabeçalho ficou 13 px mais baixo por consequência da caixa removida, o que muda `--header-height` usado nos `scroll-margin-top`.
 
