@@ -436,6 +436,11 @@
                 sessionAvatar.textContent = fallback;
             }
         }
+
+        const rodapePublico = document.getElementById('rodapePublicoApresentacao');
+        if (rodapePublico) {
+            rodapePublico.hidden = session.isSignedIn;
+        }
     }
 
     function _handleCredentialResponse(response) {
@@ -535,10 +540,11 @@
 
         try {
             global.google.accounts.id.renderButton(container, {
-                type: 'icon',
+                type: 'standard',
                 theme: 'filled_black',
                 size: 'medium',
-                shape: 'circle'
+                text: 'signin_with',
+                shape: 'pill'
             });
         } catch (error) {
             console.warn('[auth] Falha ao renderizar botão oficial do Google:', error);
@@ -547,6 +553,11 @@
 
         if (container.childElementCount > 0) {
             container.dataset.gisRendered = 'true';
+            container.classList.add('is-visible');
+            const customLoginButton = document.getElementById('custom-google-login');
+            if (customLoginButton) {
+                customLoginButton.style.display = 'none';
+            }
             return;
         }
 
@@ -1019,6 +1030,7 @@
         });
 
         _bindCustomLoginButton();
+        _renderGoogleOfficialButton();
         _initializeGISCalendarCodeClient();
         _updateUi();
 

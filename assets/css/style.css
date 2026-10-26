@@ -3931,3 +3931,92 @@ button.agenda-dia-aula {
       color 0.2s ease;
   }
 }
+
+/* [TAG-RODAPE-PUBLICO] Apresentação pública para verificação Google e termos legais */
+.rodape-publico-apresentacao {
+  padding: 12px 16px;
+  margin-top: 16px;
+  margin-bottom: calc(var(--bottombar-height) + 12px);
+  text-align: center;
+}
+
+.rodape-publico-apresentacao[hidden] {
+  display: none !important;
+}
+
+.rodape-publico-linha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-size: 0.75rem;
+  color: var(--cor-neutro-27);
+  line-height: 1.4;
+}
+
+.rodape-publico-marca {
+  font-weight: 600;
+  color: var(--cor-primaria);
+}
+
+.rodape-publico-desc {
+  color: var(--cor-neutro-31);
+}
+
+.rodape-publico-link {
+  color: var(--cor-neutro-36);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+.rodape-publico-link:hover,
+.rodape-publico-link:focus-visible {
+  color: var(--cor-primaria);
+}
+
+.rodape-publico-sep {
+  color: var(--cor-neutro-20);
+  user-select: none;
+}
+
+.badge-beta {
+  font-size: 0.72rem;
+  background: var(--cor-primaria-a15);
+  color: var(--cor-primaria);
+  border: 1px solid var(--cor-primaria);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.settings-section-header-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.settings-section-header-linha .settings-section-title {
+  margin: 0;
+}
+
+.modal-legal-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  align-items: center;
+}
+
+.modal-legal-links a {
+  color: var(--cor-primaria);
+  text-decoration: underline;
+}
+
+.modal-legal-sep {
+  color: var(--cor-neutro-23);
+}
+
+
