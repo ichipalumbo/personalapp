@@ -877,6 +877,7 @@ function reabrirFormularioAgendamentoComValores(valores) {
 function reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormulario) {
     const indiceCriado = aulas.findIndex((item) => item && payloadCriado && item.id === payloadCriado.id);
     if (indiceCriado !== -1) aulas.splice(indiceCriado, 1);
+    forçarRenderizacaoInterface();
 
     const mensagemErro = obterMensagemFalhaPersistenciaAgendamento(resultadoPersistencia);
     if (typeof mostrarToast === 'function') {
@@ -991,6 +992,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 if (!window.contextoDados.operacaoAtual(op)) return;
                 aulas.push(payloadCriado);
+                forçarRenderizacaoInterface();
                 const ehSerie = payloadCriado.frequencia === 'semanal' || (payloadCriado.recurrence && payloadCriado.recurrence.enabled === true);
                 const ehBloqueio = (payloadCriado.tipo || 'aula') === 'bloqueio';
                 if (ehBloqueio) {

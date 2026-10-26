@@ -1600,6 +1600,7 @@ window.executarExclusaoInstancia = async function () {
     if (!compromisso.excecoes.includes(dataAlvoStr)) {
       compromisso.excecoes.push(dataAlvoStr);
     }
+    forçarRenderizacaoInterface();
     window.log.info("[agenda]", "Instância cancelada", {
       id: compromisso.id,
       dataExcecao: dataAlvoStr,
@@ -1646,6 +1647,7 @@ window.executarExclusaoInstancia = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -1728,6 +1730,7 @@ window.executarExclusaoSerie = async function () {
     const ocorrenciasAfetadas = window.removerCadeiaCompletaSerie(
       _serieDeletar || window.idCompromissoSelecionado,
     );
+    forçarRenderizacaoInterface();
     window.log.info("[agenda]", "Série excluída", {
       id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
       ocorrenciasAfetadas: ocorrenciasAfetadas,
@@ -1768,6 +1771,7 @@ window.executarExclusaoSerie = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -1857,6 +1861,7 @@ window.executarExclusaoAulaAvulsa = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -1908,6 +1913,7 @@ window.executarExclusaoSerieAPartirDe = async function () {
   try {
     if (!window.contextoDados.operacaoAtual(op)) return;
     window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo);
+    forçarRenderizacaoInterface();
     window.fecharModalAcaoSlot();
 
     const resultadoPersistencia =
@@ -1931,6 +1937,7 @@ window.executarExclusaoSerieAPartirDe = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -2838,6 +2845,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         window.fecharModalAcaoSlot();
+        forçarRenderizacaoInterface();
 
         // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
         if (typeof window.enriquecerAgendamentoComDadosFrescos === "function") {
@@ -2899,6 +2907,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
         // Rollback somente visual: a tentativa/intenção fica preservada antes dele.
         if (op && snapshotAulasEdicao) aulas.splice(0, aulas.length, ...snapshotAulasEdicao);
+        forçarRenderizacaoInterface();
         if (typeof mostrarToast === "function") {
           mostrarToast(erro && erro.message ? erro.message : "Não foi possível salvar as alterações.", "error");
         } else {
