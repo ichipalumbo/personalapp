@@ -272,3 +272,76 @@ test('modal boas-vindas: login bem-sucedido fecha o modal automaticamente', asyn
     assert.equal(window.googleIdentity.isSignedIn(), true);
     assert.equal(modal.style.display, 'none');
 });
+
+test('mock runtime (desconectado): Continuar no modo leitura fecha o modal e persiste no sessionStorage', async (t) => {
+    const html = `<!doctype html>
+<html>
+<body>
+    <header>
+        <span class="header-readonly-pill" id="headerReadonlyPill" role="button" tabindex="0">Modo leitura</span>
+        <button id="custom-google-login" type="button">Login</button>
+        <div id="googleSignedOutState" class="header-session-state"></div>
+        <div id="googleSignedInState" class="header-session-state" hidden></div>
+        <div id="headerSessionAvatar"></div>
+    </header>
+
+    <div
+      class="modal-overlay"
+      id="modalBoasVindasLogin"
+      role="dialog"
+      aria-labelledby="tituloModalBoasVindasLogin"
+      style="display: none"
+    >
+      <div class="modal modal-boas-vindas-login">
+        <button id="btnCloseModalBoasVindas" class="btn-modal-close" type="button">X</button>
+        <button id="btnGoogleLoginModal" type="button">Login Google</button>
+        <button id="btnDispensarModalLogin" type="button">Continuar no modo leitura</button>
+      </div>
+    </div>
+</body>
+</html>`;
+
+    const dom = new JSDOM(html, {
+        url: 'http://127.0.0.2:5500/index.html?mockScenario=desconectado',
+        runScripts: 'outside-only'
+    });
+    t.after(() => dom.window.close());
+    const { window } = dom;
+
+    window.Response = Response;
+    window.Request = Request;
+    window.Headers = Headers;
+    window.AbortController = AbortController;
+    window.fetch = async () => new Response('{}');
+    window.console = { info() {}, warn() {}, error() {} };
+
+    const carregar = (arquivo) => {
+        vm.runInContext(fs.readFileSync(path.join(RAIZ, arquivo), 'utf8'), dom.getInternalVMContext(), { filename: arquivo });
+    };
+
+    carregar('mocks/ui-runtime/sandbox.js');
+    carregar('mocks/ui-runtime/scenarios.js');
+    carregar('mocks/ui-runtime/mock-runtime.js');
+
+    await window.googleIdentity.initialize();
+
+    const modal = window.document.getElementById('modalBoasVindasLogin');
+    assert.equal(modal.style.display, 'flex', 'modal deve abrir no cenário desconectado');
+
+    const btnDispensar = window.document.getElementById('btnDispensarModalLogin');
+    btnDispensar.click();
+
+    assert.equal(modal.style.display, 'none', 'modal deve fechar ao clicar em modo leitura');
+    assert.equal(window.sessionStorage.getItem('personal_welcome_login_dismissed'), 'true');
+
+    // Reabertura pela pílula
+    const pill = window.document.getElementById('headerReadonlyPill');
+    pill.click();
+    assert.equal(modal.style.display, 'flex', 'modal deve reabrir ao clicar na pílula');
+
+    // Login com Google pelo modal
+    const btnGoogle = window.document.getElementById('btnGoogleLoginModal');
+    btnGoogle.click();
+    assert.equal(modal.style.display, 'none', 'modal deve fechar ao logar');
+    assert.equal(window.googleIdentity.isSignedIn(), true, 'usuário deve estar logado no mock');
+});

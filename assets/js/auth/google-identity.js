@@ -673,6 +673,31 @@
                 }
             });
         }
+
+        if (typeof document !== 'undefined' && document.addEventListener && !document.__modalBoasVindasDelegated) {
+            document.__modalBoasVindasDelegated = true;
+            document.addEventListener('click', function (e) {
+                const alvo = e.target;
+                if (!alvo) return;
+                const btnDispensar = alvo.closest && alvo.closest('#btnDispensarModalLogin, #btnCloseModalBoasVindas');
+                if (btnDispensar) {
+                    try {
+                        if (global.sessionStorage) {
+                            global.sessionStorage.setItem('personal_welcome_login_dismissed', 'true');
+                        }
+                    } catch (_) {}
+                    fecharModalBoasVindasLogin();
+                }
+            });
+        }
+    }
+
+    if (typeof document !== 'undefined' && document.addEventListener) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', _bindModalBoasVindas);
+        } else {
+            _bindModalBoasVindas();
+        }
     }
 
     function _bindCustomLoginButton() {
