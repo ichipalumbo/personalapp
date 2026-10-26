@@ -18,7 +18,7 @@
 - **Destaques Rápidos**:
   - `[Agenda]` **Agenda Inteligente**: Visões diária, semanal e mensal integradas ao Google Calendar em tempo real.
   - `[Reposições]` **Reposições Sem Atrito**: Controle de créditos e regras claras de validade para proteger seu faturamento.
-  - `[PWA]` **PWA Offline-First**: Funcione 100% mesmo sem sinal no subsolo da academia, salvando no aparelho sem travar.
+  - `[App no Celular]` **Funciona Sem Internet**: Use mesmo sem sinal no subsolo da academia. Não trava e salva tudo no aparelho.
 
 ---
 
@@ -43,7 +43,7 @@
 
 - **01. Organização Absoluta**: Grade diária em linha do tempo, visão semanal/mensal integrada e status de presença codificado por cores.
 - **02. Sincronização Nativa**: Espelhamento automático com o Google Calendar. Alertas nativos no celular e relógio, sem choque com compromissos pessoais.
-- **03. Tecnologia Sem Barreiras**: Acesso em 1 clique com Google OAuth (sem cartões nem cadastros longos), PWA leve instalável e funcionamento offline-first.
+- **03. Tecnologia Sem Barreiras**: Acesso em 1 clique com sua Conta Google (sem cartões nem cadastros longos), app direto no celular e funcionamento 100% sem internet na academia.
 
 ---
 
@@ -91,10 +91,10 @@
   - Vencimento individualizado conforme a data de início de cada aluno.
   - Status em tempo real: saiba quem está em dia, quem está pendente e o faturamento total previsto do mês.
   - Redução drástica da inadimplência e das cobranças desconfortáveis de última hora.
-- **PWA & Funcionamento Offline-First**:
-  - Instalação direta na tela inicial (Android e iOS) sem precisar baixar em lojas.
+- **App no Celular & Modo Sem Internet**:
+  - Instalação direta na tela inicial (Android e iOS) em um toque, sem filas nem lojas de apps.
   - Funciona 100% no subsolo ou em áreas sem sinal de internet na academia.
-  - Persistência local no aparelho e sincronização automática com o banco em nuvem (MongoDB) assim que a conexão volta.
+  - Tudo fica salvo no aparelho e sincroniza com a nuvem automaticamente ao reconectar.
 
 ---
 
@@ -109,7 +109,7 @@
 | **Calendário Pessoal** | [x] Furos e choque de horários com vida pessoal | [✓] Sincronização automática com Google Calendar |
 | **Reposição de Faltas**| [x] Alunos cobrando aulas de meses atrás | [✓] Fila inteligente com regras e prazos de validade |
 | **Cobrança** | [x] Esquecimento de cobrar no vencimento | [✓] Ciclos claros de cobrança e status em tempo real |
-| **Sinal na Academia** | [x] Apps lentos que travam sem internet | [✓] PWA offline-first: funciona 100% mesmo sem sinal |
+| **Sinal na Academia** | [x] Apps lentos que travam sem internet | [✓] App direto no celular: funciona 100% mesmo sem sinal |
 
 ---
 
