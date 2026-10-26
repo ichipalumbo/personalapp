@@ -497,10 +497,15 @@ body {
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0;
   transition:
     transform 0.15s ease,
     background 0.2s ease,
     border-color 0.2s ease;
+}
+
+.btn-google-custom svg {
+  flex-shrink: 0;
 }
 
 .btn-google-custom i {
@@ -3734,17 +3739,20 @@ button.agenda-dia-aula {
   .header-topline {
     gap: 8px;
     align-items: center;
+    flex-wrap: nowrap;
   }
 
   .auth-banner {
     max-width: 60%;
     margin: 0;
+    flex-shrink: 0;
   }
 
   .header-session-state {
     flex-direction: row;
     align-items: center;
     gap: 6px;
+    flex-wrap: nowrap;
   }
 
   .btn-google-custom {
@@ -3752,6 +3760,12 @@ button.agenda-dia-aula {
     padding: 7px 10px;
     font-size: 0.75rem;
     gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .google-signin-fallback.is-visible {
+    margin-left: 4px;
+    flex-shrink: 0;
   }
 
   .header-session-summary {

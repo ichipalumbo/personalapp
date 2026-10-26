@@ -540,11 +540,10 @@
 
         try {
             global.google.accounts.id.renderButton(container, {
-                type: 'standard',
+                type: 'icon',
                 theme: 'filled_black',
                 size: 'medium',
-                text: 'signin_with',
-                shape: 'pill'
+                shape: 'circle'
             });
         } catch (error) {
             console.warn('[auth] Falha ao renderizar botão oficial do Google:', error);
@@ -554,10 +553,6 @@
         if (container.childElementCount > 0) {
             container.dataset.gisRendered = 'true';
             container.classList.add('is-visible');
-            const customLoginButton = document.getElementById('custom-google-login');
-            if (customLoginButton) {
-                customLoginButton.style.display = 'none';
-            }
             return;
         }
 
@@ -1030,7 +1025,6 @@
         });
 
         _bindCustomLoginButton();
-        _renderGoogleOfficialButton();
         _initializeGISCalendarCodeClient();
         _updateUi();
 
