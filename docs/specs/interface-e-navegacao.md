@@ -1,7 +1,7 @@
 # Spec — Interface, navegação e acessibilidade
 
-> **Status**: Em implementação · **Versão**: 6 · **Atualizado**: 2026-10-23
-> **Escopo de publicação**: base das etapas mobile já entregue; padronização dos topos, listas e hierarquia tipográfica de Alunos/Finanças aprovada e implementada na branch, ainda sem integração à `main`. Publicação e aceite dessas alterações continuam com o dono; o roadmap conserva a situação dos demais complementos.
+> **Status**: Em implementação · **Versão**: 7 · **Atualizado**: 2026-10-26
+> **Escopo de publicação**: base das etapas mobile já entregue; padronização dos topos, listas e hierarquia tipográfica de Alunos/Finanças aprovada na branch; consolidação das diretrizes de mutações otimistas e reatividade imediata na Seção 8 (ADR 0001). Publicação e aceite dessas alterações continuam com o dono; o roadmap conserva a situação dos demais complementos.
 
 ## 1. Objetivo e fronteira
 
@@ -113,6 +113,25 @@ Testes de lógica/DOM protegem recortes de navegação, diálogo, cards e render
 pixels, gestos físicos, todos os estados ou integrações remotas. Medições e limites de
 validação de cada alteração ficam no registro da frente, sem certificar o app inteiro.
 
-Fora dos topos, listas e hierarquia visual aprovados nas seções 6.1 a 6.3, não inclui redesenho, nova identidade visual ou novas telas,
+Fora dos topos, listas e hierarquia visual aprovados nas seções 6.1 a 6.3 e das mutações otimistas da seção 8, não inclui redesenho, nova identidade visual ou novas telas,
 alteração de cobrança/recorrência, regra nova de cancelamento, revisão de autenticação ou
 nova integração com Google Calendar.
+
+## 8. Mutações otimistas e reatividade de interface
+
+Em alinhamento com a diretriz de experiência de uso (ADR 0001), as operações do aplicativo priorizam resposta visual imediata no momento da interação física do usuário (<100 ms).
+
+### 8.1 Fronteiras de mutação por domínio
+- **Agenda e Alunos (Otimistas)**: criação, edição e exclusão de agendamentos (aulas avulsas, séries, bloqueios e reposições) e alterações de cadastro e status de alunos aplicam a mutação imediatamente ao estado local em memória e disparam a re-renderização visual do DOM antes da confirmação da rede.
+- **Finanças (Pessimista / Determinística)**: pagamentos e ajustes de ciclos financeiros (`PATCH`) permanecem sujeitos à confirmação estrita após HTTP de sucesso (200/204), com botão em estado "Salvando..." desabilitado, conforme a Seção 5 de `copilot-instructions.md` e a Seção 6.1 de `financas-ciclo-cobranca.md`. Nunca confirmar transações financeiras com base em cache local.
+
+### 8.2 Ciclo de vida da mutação otimista
+1. **Commit Local**: no clique de confirmação ou submit de formulário, o objeto local em memória (`aulas`, `alunos`, `reposicoes`) é atualizado.
+2. **Render Imediato**: a visualização ativa (grade do dia/semana na Home ou lista de alunos) re-renderiza instantaneamente. Se a ação decorrer de um diálogo modal, este é fechado imediatamente.
+3. **Persistência Assíncrona**: a operação de rede (`storage.salvarDados` ou `salvarEventoComGCal`) é executada em segundo plano sob o controle de `contextoDados`.
+4. **Resolução de Sucesso**: a confirmação da API valida o estado silenciosamente. Toasts de sucesso são emitidos apenas onde já previstos pelas ações principais.
+5. **Reversão com Rollback**: em caso de rejeição HTTP, falha de rede ou perda de sessão, o estado anterior é restaurado na memória e na tela, acompanhado de toast com o rótulo de retry aprovado (`Tentar novamente`).
+
+### 8.3 Resiliência e sincronização secundária com Google Calendar
+- Caso o agendamento seja gravado com sucesso no banco de dados (MongoDB), mas a comunicação remota com a API do Google Calendar falhe (sinalizada por `gcalSyncFailed: true`), o item **não** é revertido da visualização local do app.
+- O sistema mantém o item visível na grade e emite o aviso de advertência já homologado (`Salvo, mas a Google Agenda não foi atualizada`), preservando a integridade dos dados operacionais da personal trainer.

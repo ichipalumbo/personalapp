@@ -284,6 +284,15 @@ function cancelarAgendamentoModal() {
     const alterado = assinaturaAberturaAgendamento !== null
         && assinaturaFormularioAgendamento() !== assinaturaAberturaAgendamento;
     if (alterado && !window.confirm('Descartar as alterações deste agendamento?')) return;
+    const contexto = window.contextoDados && typeof window.contextoDados.capturar === 'function'
+        ? window.contextoDados.capturar()
+        : null;
+    const pendenciaAnterior = contexto && typeof window.contextoDados.obterPendencia === 'function'
+        ? window.contextoDados.obterPendencia(contexto)
+        : null;
+    if (pendenciaAnterior && pendenciaAnterior.tipo === 'criar-agendamento') {
+        window.contextoDados.abandonarPendencia(pendenciaAnterior.tentativaId, contexto);
+    }
     window.fecharAgendamentoModal();
     window.reposicaoIdEmReagendamento = null;
 }
@@ -825,8 +834,11 @@ function persistenciaAgendamentoConcluida(resultadoPersistencia) {
 }
 
 function obterMensagemFalhaPersistenciaAgendamento(resultadoPersistencia) {
-    if (window.reposicaoFlowHelpers && typeof window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia === 'function') {
-        return window.reposicaoFlowHelpers.obterMensagemFalhaPersistencia(resultadoPersistencia);
+    const motivo = resultadoPersistencia && typeof resultadoPersistencia.motivo === 'string'
+        ? resultadoPersistencia.motivo
+        : 'falha_remota';
+    if (motivo === 'nao_autenticado' || motivo === 'sessao_expirada') {
+        return 'Sessão expirada. Faça login com Google para continuar.';
     }
     return 'Não foi possível salvar o agendamento. Tente novamente.';
 }
@@ -872,11 +884,16 @@ function reabrirFormularioAgendamentoComValores(valores) {
         rascunhoFluxoAgendamento = valores.rascunho;
         atualizarResumoRecorrenciaAgendamentoPrincipal();
     }
+
+    if (typeof capturarFormularioPrincipalNoRascunho === 'function') {
+        capturarFormularioPrincipalNoRascunho();
+    }
 }
 
 function reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormulario) {
     const indiceCriado = aulas.findIndex((item) => item && payloadCriado && item.id === payloadCriado.id);
     if (indiceCriado !== -1) aulas.splice(indiceCriado, 1);
+    if (typeof forçarRenderizacaoInterface === 'function') forçarRenderizacaoInterface();
 
     const mensagemErro = obterMensagemFalhaPersistenciaAgendamento(resultadoPersistencia);
     if (typeof mostrarToast === 'function') {
@@ -977,6 +994,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!window.contextoDados.atual(contexto)) return;
             const valoresFormularioAgendamento = capturarValoresFormularioAgendamento();
             const payloadCriado = resultado.payload || {};
+            const pendenciaAnterior = window.contextoDados && typeof window.contextoDados.obterPendencia === 'function'
+                ? window.contextoDados.obterPendencia(contexto)
+                : null;
+            if (pendenciaAnterior && pendenciaAnterior.tipo === 'criar-agendamento') {
+                window.contextoDados.abandonarPendencia(pendenciaAnterior.tentativaId, contexto);
+            }
             const op = window.contextoDados.iniciarOperacao({
                 tipo: 'criar-agendamento',
                 contexto,
@@ -991,6 +1014,7 @@ document.addEventListener('DOMContentLoaded', () => {
             try {
                 if (!window.contextoDados.operacaoAtual(op)) return;
                 aulas.push(payloadCriado);
+                if (typeof forçarRenderizacaoInterface === 'function') forçarRenderizacaoInterface();
                 const ehSerie = payloadCriado.frequencia === 'semanal' || (payloadCriado.recurrence && payloadCriado.recurrence.enabled === true);
                 const ehBloqueio = (payloadCriado.tipo || 'aula') === 'bloqueio';
                 if (ehBloqueio) {
