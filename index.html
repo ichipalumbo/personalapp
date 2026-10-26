@@ -50,7 +50,7 @@
           </div>
           <div class="auth-banner" id="headerSession">
             <div id="googleSignedOutState" class="header-session-state">
-              <span class="header-readonly-pill"
+              <span class="header-readonly-pill" id="headerReadonlyPill" role="button" tabindex="0" title="Clique para entrar com Google"
                 ><i class="fa-solid fa-eye"></i> Modo leitura. Faça login para
                 editar.</span
               >
@@ -58,8 +58,14 @@
                 id="custom-google-login"
                 type="button"
                 class="btn-google-custom"
+                aria-label="Entrar com Google"
               >
-                <i class="fa-brands fa-google"></i>
+                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" style="flex-shrink:0;">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+                  <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+                  <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+                  <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+                </svg>
                 <span>Entrar com Google</span>
               </button>
               <div id="googleSignInButtonFallback" class="google-signin-fallback"></div>
@@ -193,6 +199,21 @@
             <span class="skeleton"></span>
             <span class="skeleton"></span>
             <span class="skeleton"></span>
+          </div>
+          <div id="cardBoasVindasGcal" class="card-boas-vindas-gcal" hidden>
+            <div class="card-boas-vindas-gcal-conteudo">
+              <div class="card-boas-vindas-gcal-icone">
+                <i class="fa-solid fa-calendar-check" aria-hidden="true"></i>
+              </div>
+              <div class="card-boas-vindas-gcal-texto">
+                <strong>Sincronizar com a Google Agenda?</strong>
+                <p>Mantenha seus treinos e compromissos pessoais alinhados em um só lugar.</p>
+              </div>
+            </div>
+            <div class="card-boas-vindas-gcal-acoes">
+              <button type="button" class="btn-gcal-conectar-card" id="btnConectarGcalCard">Conectar</button>
+              <button type="button" class="btn-gcal-dispensar-card" id="btnDispensarGcalCard" aria-label="Dispensar aviso">Agora não</button>
+            </div>
           </div>
           <div
             id="calendarioSemanalHomeGrid"
@@ -482,6 +503,21 @@
           </div>
         </div>
       </main>
+
+      <!-- [TAG-HTML-RODAPE-PUBLICO] - Apresentação pública para verificação Google e transparência -->
+      <footer id="rodapePublicoApresentacao" class="rodape-publico-apresentacao" aria-label="Apresentação do aplicativo e termos legais">
+        <div class="rodape-publico-linha">
+          <span class="rodape-publico-marca">Personal Josy</span>
+          <span class="rodape-publico-sep" aria-hidden="true">&bull;</span>
+          <span class="rodape-publico-desc">Agenda & Gestão</span>
+          <span class="rodape-publico-sep" aria-hidden="true">&bull;</span>
+          <a href="privacidade.html" class="rodape-publico-link" target="_blank" rel="noopener noreferrer">Privacidade</a>
+          <span class="rodape-publico-sep" aria-hidden="true">&bull;</span>
+          <a href="termos.html" class="rodape-publico-link" target="_blank" rel="noopener noreferrer">Termos</a>
+          <span class="rodape-publico-sep" aria-hidden="true">&bull;</span>
+          <a href="mailto:luccaspalumbo@gmail.com" class="rodape-publico-link">Contato</a>
+        </div>
+      </footer>
 
       <!-- [TAG-HTML-NAV-INFERIOR] - Etapa 3 (Cartão E): navegação principal em barra inferior fixa -->
       <nav class="nav-inferior" aria-label="Navegação principal">
@@ -1684,7 +1720,10 @@
 
           <!-- Google Calendar Section -->
           <div class="settings-section">
-            <h3 class="settings-section-title">Google Agenda</h3>
+            <div class="settings-section-header-linha">
+              <h3 class="settings-section-title">Google Agenda</h3>
+              <span class="badge-beta">Beta</span>
+            </div>
             <p id="gcalConnectionDescription" class="settings-description">Conecte sua conta para sincronizar compromissos externos com a agenda do app.</p>
 
             <!-- Connect Button (shown when disconnected) -->
@@ -1753,6 +1792,62 @@
             <button id="btnUserSignOut" type="button" class="btn-google-signout">
               <i class="fa-solid fa-right-from-bracket"></i>
               <span>Sair da conta</span>
+            </button>
+          </div>
+
+          <div class="settings-section">
+            <h3 class="settings-section-title">Informações Legais</h3>
+            <p class="settings-description">Consulte a política de privacidade e os termos de uso do Personal Josy.</p>
+            <div class="modal-legal-links">
+              <a href="privacidade.html" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>
+              <span class="modal-legal-sep" aria-hidden="true">&bull;</span>
+              <a href="termos.html" target="_blank" rel="noopener noreferrer">Termos de Serviço</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Modal Boas-Vindas / Login -->
+    <div
+      class="modal-overlay"
+      id="modalBoasVindasLogin"
+      role="dialog"
+      aria-labelledby="tituloModalBoasVindasLogin"
+      style="display: none"
+    >
+      <div class="modal modal-boas-vindas-login">
+        <button id="btnCloseModalBoasVindas" class="btn-modal-close btn-modal-boas-vindas-close" type="button" aria-label="Fechar">
+          <i class="fa-solid fa-times" aria-hidden="true"></i>
+        </button>
+        <div class="modal-boas-vindas-corpo">
+          <div class="modal-boas-vindas-icone">
+            <i class="fa-solid fa-dumbbell" aria-hidden="true"></i>
+          </div>
+          <h2 id="tituloModalBoasVindasLogin" class="modal-title modal-boas-vindas-titulo">Bem-vindo ao Personal Josy</h2>
+          <p class="modal-boas-vindas-descricao">
+            Conecte sua conta Google para sincronizar suas aulas diretamente na sua agenda e gerenciar seus alunos em tempo real.
+          </p>
+          <div class="modal-boas-vindas-acoes">
+            <button
+              id="btnGoogleLoginModal"
+              type="button"
+              class="btn-google-custom btn-google-modal"
+              aria-label="Entrar com Google"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+                <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+                <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+                <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+              </svg>
+              <span>Entrar com Google</span>
+            </button>
+            <button
+              id="btnDispensarModalLogin"
+              type="button"
+              class="btn-modo-leitura-modal"
+            >
+              Continuar no modo leitura
             </button>
           </div>
         </div>

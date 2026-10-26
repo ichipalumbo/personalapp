@@ -497,10 +497,15 @@ body {
   line-height: 1;
   white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0;
   transition:
     transform 0.15s ease,
     background 0.2s ease,
     border-color 0.2s ease;
+}
+
+.btn-google-custom svg {
+  flex-shrink: 0;
 }
 
 .btn-google-custom i {
@@ -902,6 +907,14 @@ body {
   padding: 6px 8px;
   line-height: 1.2;
   flex: 0 0 auto;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.header-readonly-pill:hover {
+  background: var(--cor-azul-04);
+  border-color: var(--cor-azul-07);
+  color: var(--cor-azul-17);
 }
 
 .header-session-state .btn-google-custom {
@@ -2899,6 +2912,111 @@ button.agenda-dia-aula {
   width: 100%;
 }
 
+/* Card de boas-vindas / convite sutil e dispensável para conectar a Google Agenda */
+.card-boas-vindas-gcal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 8px 4px;
+  padding: 14px 16px;
+  background: var(--cor-neutro-10);
+  border: 1px solid var(--cor-neutro-17);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px var(--cor-preto-a24);
+  animation: fadeInGcalCard 0.3s ease-out;
+}
+
+.card-boas-vindas-gcal[hidden] {
+  display: none !important;
+}
+
+@keyframes fadeInGcalCard {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-boas-vindas-gcal-conteudo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.card-boas-vindas-gcal-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--cor-azul-08-a10);
+  color: var(--cor-estado-informativo);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.card-boas-vindas-gcal-texto {
+  flex: 1;
+}
+
+.card-boas-vindas-gcal-texto strong {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--cor-branco);
+  margin-bottom: 2px;
+}
+
+.card-boas-vindas-gcal-texto p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--cor-neutro-34);
+  line-height: 1.4;
+}
+
+.card-boas-vindas-gcal-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-gcal-conectar-card {
+  padding: 8px 16px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: var(--cor-primaria);
+  color: var(--cor-neutro-04);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-gcal-conectar-card:hover {
+  opacity: 0.9;
+}
+
+.btn-gcal-dispensar-card {
+  padding: 8px 14px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--cor-neutro-20);
+  background: transparent;
+  color: var(--cor-neutro-37);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.btn-gcal-dispensar-card:hover {
+  color: var(--cor-branco);
+  background: var(--cor-neutro-14);
+}
+
 .calendario-semanal-home-grid {
   display: flex;
   flex-direction: column;
@@ -3068,6 +3186,99 @@ button.agenda-dia-aula {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+/* Modal de Boas-Vindas / Login */
+.modal-boas-vindas-login {
+  position: relative;
+  max-width: 420px;
+  padding: 32px 24px 28px;
+  background: var(--cor-neutro-06);
+  border: 1px solid var(--cor-neutro-17);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px var(--cor-preto-a70);
+  text-align: center;
+}
+
+.btn-modal-boas-vindas-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+}
+
+.modal-boas-vindas-corpo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-boas-vindas-icone {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--cor-amarelo-02-a12);
+  color: var(--cor-primaria);
+  font-size: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+  border: 1px solid var(--cor-amarelo-01-a25);
+}
+
+.modal-boas-vindas-titulo {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--cor-branco);
+  margin: 0 0 10px;
+  line-height: 1.3;
+}
+
+.modal-boas-vindas-descricao {
+  font-size: 0.925rem;
+  line-height: 1.55;
+  color: var(--cor-neutro-35);
+  margin: 0 0 24px;
+  padding: 0 8px;
+}
+
+.modal-boas-vindas-acoes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.btn-google-modal {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  justify-content: center;
+}
+
+.btn-modo-leitura-modal {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--cor-neutro-20);
+  color: var(--cor-neutro-35);
+  padding: 11px 16px;
+  border-radius: 999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.btn-modo-leitura-modal:hover {
+  background: var(--cor-neutro-10);
+  border-color: var(--cor-neutro-25);
+  color: var(--cor-branco);
+}
+
+.btn-modo-leitura-modal:focus-visible {
+  outline: 2px solid var(--cor-primaria);
+  outline-offset: 2px;
 }
 
 /* Mesmo comportamento de rolagem do modal-alunos-corpo (pedido do dono, 2026-09-27):
@@ -3734,17 +3945,20 @@ button.agenda-dia-aula {
   .header-topline {
     gap: 8px;
     align-items: center;
+    flex-wrap: nowrap;
   }
 
   .auth-banner {
     max-width: 60%;
     margin: 0;
+    flex-shrink: 0;
   }
 
   .header-session-state {
     flex-direction: row;
     align-items: center;
     gap: 6px;
+    flex-wrap: nowrap;
   }
 
   .btn-google-custom {
@@ -3752,6 +3966,12 @@ button.agenda-dia-aula {
     padding: 7px 10px;
     font-size: 0.75rem;
     gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .google-signin-fallback.is-visible {
+    margin-left: 4px;
+    flex-shrink: 0;
   }
 
   .header-session-summary {
@@ -3931,3 +4151,92 @@ button.agenda-dia-aula {
       color 0.2s ease;
   }
 }
+
+/* [TAG-RODAPE-PUBLICO] Apresentação pública para verificação Google e termos legais */
+.rodape-publico-apresentacao {
+  padding: 12px 16px;
+  margin-top: 16px;
+  margin-bottom: calc(var(--bottombar-height) + 12px);
+  text-align: center;
+}
+
+.rodape-publico-apresentacao[hidden] {
+  display: none !important;
+}
+
+.rodape-publico-linha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  font-size: 0.75rem;
+  color: var(--cor-neutro-27);
+  line-height: 1.4;
+}
+
+.rodape-publico-marca {
+  font-weight: 600;
+  color: var(--cor-primaria);
+}
+
+.rodape-publico-desc {
+  color: var(--cor-neutro-31);
+}
+
+.rodape-publico-link {
+  color: var(--cor-neutro-36);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+.rodape-publico-link:hover,
+.rodape-publico-link:focus-visible {
+  color: var(--cor-primaria);
+}
+
+.rodape-publico-sep {
+  color: var(--cor-neutro-20);
+  user-select: none;
+}
+
+.badge-beta {
+  font-size: 0.72rem;
+  background: var(--cor-primaria-a15);
+  color: var(--cor-primaria);
+  border: 1px solid var(--cor-primaria);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.settings-section-header-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.settings-section-header-linha .settings-section-title {
+  margin: 0;
+}
+
+.modal-legal-links {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 0.85rem;
+  align-items: center;
+}
+
+.modal-legal-links a {
+  color: var(--cor-primaria);
+  text-decoration: underline;
+}
+
+.modal-legal-sep {
+  color: var(--cor-neutro-23);
+}
+
+

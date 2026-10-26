@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Termos de Serviço — Personal Josy</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png" />
+    <style>
+      :root {
+        --cor-grafite: #202020;
+        --cor-grafite-card: #282828;
+        --cor-amarelo: #ffde17;
+        --cor-texto-principal: #f5f5f5;
+        --cor-texto-secundario: #b3b3b3;
+        --cor-borda: #383838;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--cor-grafite);
+        color: var(--cor-texto-principal);
+        line-height: 1.6;
+        padding: 24px 16px;
+      }
+      .container {
+        max-width: 760px;
+        margin: 0 auto;
+        background-color: var(--cor-grafite-card);
+        border: 1px solid var(--cor-borda);
+        border-radius: 12px;
+        padding: 32px 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+      header {
+        border-bottom: 1px solid var(--cor-borda);
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .brand-logo {
+        height: 40px;
+        max-width: 220px;
+        object-fit: contain;
+      }
+      h1 {
+        font-size: 1.75rem;
+        color: var(--cor-amarelo);
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      .subtitulo {
+        font-size: 0.9rem;
+        color: var(--cor-texto-secundario);
+      }
+      h2 {
+        font-size: 1.25rem;
+        color: var(--cor-amarelo);
+        margin-top: 28px;
+        margin-bottom: 12px;
+        font-weight: 600;
+        border-bottom: 1px dashed var(--cor-borda);
+        padding-bottom: 4px;
+      }
+      p, ul {
+        margin-bottom: 16px;
+        color: var(--cor-texto-principal);
+        font-size: 0.95rem;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 8px;
+      }
+      strong {
+        color: #ffffff;
+      }
+      a {
+        color: var(--cor-amarelo);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .nav-links {
+        margin-top: 36px;
+        padding-top: 20px;
+        border-top: 1px solid var(--cor-borda);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .btn-voltar {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--cor-amarelo);
+        color: #000000;
+        font-weight: 600;
+        padding: 10px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+      .btn-voltar:hover {
+        opacity: 0.9;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <img src="assets/images/personal_josy_horizontal_escuro_transparente.svg" alt="Personal Josy" class="brand-logo" />
+        <h1>Termos de Serviço</h1>
+        <p class="subtitulo">Última atualização: 26 de outubro de 2026</p>
+      </header>
+
+      <main>
+        <p>
+          Bem-vindo ao <strong>Personal Josy</strong>. Ao acessar ou utilizar nosso aplicativo, você concorda com estes Termos de Serviço. Caso não concorde com qualquer disposição aqui estabelecida, solicitamos que não utilize a plataforma.
+        </p>
+
+        <h2>1. Identificação e Objeto do Serviço</h2>
+        <p>
+          O <strong>Personal Josy</strong> é um aplicativo web progressivo (PWA) desenvolvido e gerido de forma independente por <strong>Luccas Palumbo</strong>, com a finalidade de apoiar profissionais de educação física e personal trainers na gestão de horários de aula, agenda diária e semanal, cadastro de alunos, registro de ciclos financeiros e fila de reposição de aulas.
+        </p>
+
+        <h2>2. Acesso e Conta de Usuário</h2>
+        <p>
+          Para usufruir de todas as funcionalidades de sincronização remota, o usuário deve autenticar-se utilizando uma conta Google válida.
+        </p>
+        <ul>
+          <li>O usuário é o único responsável pela confidencialidade e segurança de sua conta Google.</li>
+          <li>Cada conta de usuário possui acesso isolado e restrito aos seus próprios dados de alunos e agenda. O compartilhamento de contas ou credenciais não é recomendado.</li>
+          <li>O aplicativo não solicita, não armazena e não tem acesso às senhas de suas contas Google. A autenticação é realizada diretamente pelos servidores seguros do Google (Google Identity Services).</li>
+        </ul>
+
+        <h2>3. Uso Adequado da Aplicação</h2>
+        <p>Ao utilizar o Personal Josy, você concorda em:</p>
+        <ul>
+          <li>Inserir informações legítimas relativas à sua prática profissional de personal trainer;</li>
+          <li>Respeitar a privacidade e a legislação vigente (incluindo a LGPD) no que se refere aos dados de seus alunos cadastrados na plataforma;</li>
+          <li>Não realizar engenharia reversa, tentar desestabilizar servidores, sobrecarregar as rotas de API com requisições automatizadas abusivas ou violar mecanismos de segurança da plataforma.</li>
+        </ul>
+
+        <h2>4. Disponibilidade do Serviço e Fallback Offline</h2>
+        <p>
+          O aplicativo foi construído para oferecer alta resiliência, permitindo o funcionamento e consulta de dados no navegador mesmo quando sem conexão ativa com a internet (armazenamento local via <code>localStorage</code>). Contudo:
+        </p>
+        <ul>
+          <li>O serviço é fornecido "como está" e "conforme disponível", sem garantias implícitas de disponibilidade ininterrupta 100% do tempo;</li>
+          <li>Não nos responsabilizamos por perdas de dados decorrentes de exclusão manual de dados do navegador pelo próprio usuário ou falhas de hardware/conexão do cliente;</li>
+          <li>Manutenções periódicas ou atualizações de infraestrutura podem ocorrer para melhoria contínua do aplicativo.</li>
+        </ul>
+
+        <h2>5. Propriedade Intelectual</h2>
+        <p>
+          Todos os direitos sobre a marca, design visual, interface, código-fonte e elementos gráficos do <strong>Personal Josy</strong> pertencem aos seus respectivos titulares. É proibida a reprodução, cópia ou distribuição desautorizada de qualquer parte do aplicativo sem prévio consentimento expresso.
+        </p>
+
+        <h2>6. Encerramento e Exclusão</h2>
+        <p>
+          Você pode cessar a utilização do aplicativo a qualquer momento. Para solicitar a exclusão de sua conta e dos registros vinculados no banco de dados, envie um e-mail para <a href="mailto:luccaspalumbo@gmail.com">luccaspalumbo@gmail.com</a>.
+        </p>
+
+        <h2>7. Alterações destes Termos</h2>
+        <p>
+          Estes termos podem ser atualizados periodicamente para acompanhar novas funcionalidades ou obrigações legais. A data da versão mais recente estará sempre disponível no topo desta página.
+        </p>
+
+        <h2>8. Legislação Aplicável e Contato</h2>
+        <p>
+          Estes Termos de Serviço são regidos pelas leis da República Federativa do Brasil. Para dúvidas, sugestões ou suporte técnico, entre em contato através do e-mail:
+          <br />
+          📧 <a href="mailto:luccaspalumbo@gmail.com">luccaspalumbo@gmail.com</a>
+        </p>
+
+        <div class="nav-links">
+          <a href="index.html" class="btn-voltar">← Voltar ao Aplicativo</a>
+          <a href="privacidade.html" style="align-self: center;">Ver Política de Privacidade →</a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

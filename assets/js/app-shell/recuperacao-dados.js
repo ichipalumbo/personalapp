@@ -28,7 +28,9 @@
             escreverMensagem(MENSAGEM_PADRAO);
         }
         const el = elementos();
-        if (el.painel) el.painel.hidden = !pendencia && !complementoPendente;
+        const emVoo = !contexto.semOperacoes() || (pendencia && pendencia.estado === 'em-andamento');
+        const deveExibir = (!emVoo && Boolean(pendencia)) || Boolean(complementoPendente);
+        if (el.painel) el.painel.hidden = !deveExibir;
         if (!pendencia) escreverMensagem(complementoPendente ? MENSAGEM_COMPLEMENTO : MENSAGEM_PADRAO);
         if (el.verificar) el.verificar.disabled = emAndamento || !contexto.semOperacoes() || (!pendencia && !complementoPendente);
         if (el.usar) el.usar.disabled = emAndamento || !contexto.semOperacoes() || !pendencia;

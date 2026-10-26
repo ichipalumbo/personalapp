@@ -16,7 +16,8 @@ const AgendamentoSchema = new mongoose.Schema({
   diaSemana: Number,
   semanasRecorrencia: Number,
   reposicaoId: { type: String, default: null },
-  googleCalendarEventId: { type: String, default: null }
+  googleCalendarEventId: { type: String, default: null },
+  gcalStatus: { type: String, enum: ['desconectado', 'sincronizado', 'pendente', 'falha'], default: 'desconectado' }
 }, { strict: false });
 
 AgendamentoSchema.index({ ownerEmail: 1, id: 1 }, { unique: true });

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Política de Privacidade — Personal Josy</title>
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32x32.png" />
+    <style>
+      :root {
+        --cor-grafite: #202020;
+        --cor-grafite-card: #282828;
+        --cor-amarelo: #ffde17;
+        --cor-texto-principal: #f5f5f5;
+        --cor-texto-secundario: #b3b3b3;
+        --cor-borda: #383838;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--cor-grafite);
+        color: var(--cor-texto-principal);
+        line-height: 1.6;
+        padding: 24px 16px;
+      }
+      .container {
+        max-width: 760px;
+        margin: 0 auto;
+        background-color: var(--cor-grafite-card);
+        border: 1px solid var(--cor-borda);
+        border-radius: 12px;
+        padding: 32px 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+      header {
+        border-bottom: 1px solid var(--cor-borda);
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .brand-logo {
+        height: 40px;
+        max-width: 220px;
+        object-fit: contain;
+      }
+      h1 {
+        font-size: 1.75rem;
+        color: var(--cor-amarelo);
+        font-weight: 700;
+        margin-top: 8px;
+      }
+      .subtitulo {
+        font-size: 0.9rem;
+        color: var(--cor-texto-secundario);
+      }
+      h2 {
+        font-size: 1.25rem;
+        color: var(--cor-amarelo);
+        margin-top: 28px;
+        margin-bottom: 12px;
+        font-weight: 600;
+        border-bottom: 1px dashed var(--cor-borda);
+        padding-bottom: 4px;
+      }
+      p, ul {
+        margin-bottom: 16px;
+        color: var(--cor-texto-principal);
+        font-size: 0.95rem;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 8px;
+      }
+      strong {
+        color: #ffffff;
+      }
+      a {
+        color: var(--cor-amarelo);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .nav-links {
+        margin-top: 36px;
+        padding-top: 20px;
+        border-top: 1px solid var(--cor-borda);
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .btn-voltar {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: var(--cor-amarelo);
+        color: #000000;
+        font-weight: 600;
+        padding: 10px 18px;
+        border-radius: 8px;
+        text-decoration: none;
+        transition: opacity 0.2s;
+      }
+      .btn-voltar:hover {
+        opacity: 0.9;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <img src="assets/images/personal_josy_horizontal_escuro_transparente.svg" alt="Personal Josy" class="brand-logo" />
+        <h1>Política de Privacidade</h1>
+        <p class="subtitulo">Última atualização: 26 de outubro de 2026</p>
+      </header>
+
+      <main>
+        <p>
+          Esta Política de Privacidade descreve como o aplicativo <strong>Personal Josy</strong> coleta, utiliza, armazena e protege os dados pessoais de seus usuários, em total conformidade com a Lei Geral de Proteção de Dados (LGPD - Lei nº 13.709/2018) e com as diretrizes de dados de usuário da Google API.
+        </p>
+
+        <h2>1. Identificação do Controlador e Responsável</h2>
+        <p>
+          O aplicativo <strong>Personal Josy</strong> é desenvolvido e operado de forma independente por <strong>Luccas Palumbo</strong>. Para quaisquer dúvidas, solicitações ou exercício de direitos referentes aos seus dados pessoais, entre em contato pelo e-mail:
+          <br />
+          📧 <a href="mailto:luccaspalumbo@gmail.com">luccaspalumbo@gmail.com</a>
+        </p>
+
+        <h2>2. Dados Coletados e Finalidade</h2>
+        <p>
+          O Personal Josy é uma ferramenta de gestão operacional destinada a personal trainers para administração de agenda, acompanhamento de alunos e ciclos de cobrança. Os dados coletados limitam-se ao estritamente necessário para o funcionamento do serviço:
+        </p>
+        <ul>
+          <li>
+            <strong>Autenticação com Google (Google Identity Services):</strong> Ao realizar login com sua conta Google, solicitamos apenas permissões básicas de identificação (<code>openid</code>, <code>email</code> e <code>profile</code>). Coletamos seu nome completo, endereço de e-mail e foto de perfil pública.
+            <br />
+            <em>Finalidade:</em> Autenticar sua identidade com segurança, exibir seu perfil no aplicativo e isolar seus dados no banco de dados, garantindo que nenhum outro usuário tenha acesso às suas informações ou aos dados de seus alunos.
+          </li>
+          <li>
+            <strong>Dados Operacionais Cadastrados pelo Usuário:</strong> Informações de alunos (nome, telefone, valor de mensalidade, status e observações) e registros de agendamentos e reposições inseridos por você.
+            <br />
+            <em>Finalidade:</em> Permitir a organização da sua grade horária de aulas, controle financeiro de pagamentos e histórico de atendimentos.
+          </li>
+        </ul>
+
+        <h2>3. Uso de Dados das APIs do Google (Limited Use)</h2>
+        <p>
+          O uso e a transferência para qualquer outro aplicativo de informações recebidas de APIs do Google pelo <strong>Personal Josy</strong> obedecem rigorosamente à
+          <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer">Política de Dados do Usuário dos Serviços de API do Google</a>, incluindo os requisitos de Uso Limitado (<em>Limited Use requirements</em>):
+        </p>
+        <ul>
+          <li>Não utilizamos seus dados do Google para veiculação de publicidade, marketing direcionado ou análise de crédito.</li>
+          <li>Não comercializamos nem transferimos seus dados pessoais para terceiros, exceto quando estritamente necessário para a infraestrutura técnica do serviço ou por obrigação legal.</li>
+          <li>Nenhum ser humano tem acesso de leitura aos seus dados pessoais do Google, exceto com seu consentimento explícito para fins de suporte técnico, para investigar questões de segurança ou conforme exigido por lei.</li>
+        </ul>
+
+        <h2>4. Armazenamento e Segurança das Informações</h2>
+        <p>
+          Adotamos medidas técnicas e organizacionais adequadas para proteger seus dados pessoais contra acessos não autorizados, destruição, perda ou alteração:
+        </p>
+        <ul>
+          <li>Todas as comunicações com nossa API e servidores são criptografadas em trânsito via protocolo HTTPS (TLS).</li>
+          <li>O acesso ao banco de dados é estritamente autenticado e restrito, com validação criptográfica de tokens JWT emitidos pelo Google.</li>
+          <li>Os dados no cliente podem utilizar armazenamento local do navegador (<code>localStorage</code>) como cache resiliente para permitir a visualização off-line do aplicativo.</li>
+        </ul>
+
+        <h2>5. Retenção e Exclusão de Dados</h2>
+        <p>
+          Seus dados são retidos enquanto sua conta permanecer ativa ou conforme necessário para cumprir as finalidades descritas nesta política.
+        </p>
+        <p>
+          <strong>Direito de Exclusão:</strong> Você pode solicitar a exclusão definitiva de sua conta e de todos os dados a ela associados a qualquer momento. Basta enviar um e-mail para <a href="mailto:luccaspalumbo@gmail.com">luccaspalumbo@gmail.com</a> com o assunto "Exclusão de Dados — Personal Josy". Todos os seus registros serão removidos permanentemente em até 5 dias úteis.
+        </p>
+
+        <h2>6. Direitos do Titular (LGPD)</h2>
+        <p>Nos termos da LGPD, você tem direito a:</p>
+        <ul>
+          <li>Confirmar a existência de tratamento de dados;</li>
+          <li>Acessar seus dados pessoais de forma clara;</li>
+          <li>Corrigir dados incompletos, inexatos ou desatualizados;</li>
+          <li>Revogar seu consentimento ou revogar o acesso do aplicativo à sua conta Google através das configurações de segurança do Google (<a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer">Permissões de Conta Google</a>);</li>
+          <li>Solicitar a eliminação dos dados tratados.</li>
+        </ul>
+
+        <h2>7. Alterações desta Política</h2>
+        <p>
+          Podemos atualizar esta Política de Privacidade periodicamente para refletir mudanças legais ou melhorias em nossos serviços. Recomendamos que você revise esta página regularmente. A data da versão mais recente estará sempre indicada no topo deste documento.
+        </p>
+
+        <div class="nav-links">
+          <a href="index.html" class="btn-voltar">← Voltar ao Aplicativo</a>
+          <a href="termos.html" style="align-self: center;">Ver Termos de Serviço →</a>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

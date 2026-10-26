@@ -404,6 +404,12 @@
         _calendarConnected = false;
         _persistProfile(null);
 
+        try {
+            if (global.sessionStorage) {
+                global.sessionStorage.removeItem('personal_welcome_login_dismissed');
+            }
+        } catch (_) {}
+
         if (typeof global.closeUserAreaModal === 'function') {
             global.closeUserAreaModal();
         }
@@ -434,6 +440,25 @@
                 const email = session.email || '';
                 const fallback = email ? String(email).charAt(0).toUpperCase() : 'G';
                 sessionAvatar.textContent = fallback;
+            }
+        }
+
+        const rodapePublico = document.getElementById('rodapePublicoApresentacao');
+        if (rodapePublico) {
+            rodapePublico.hidden = session.isSignedIn;
+        }
+
+        _bindModalBoasVindas();
+
+        if (session.isSignedIn) {
+            fecharModalBoasVindasLogin();
+        } else {
+            let dispensado = false;
+            try {
+                dispensado = global.sessionStorage && global.sessionStorage.getItem('personal_welcome_login_dismissed') === 'true';
+            } catch (_) {}
+            if (!dispensado) {
+                abrirModalBoasVindasLogin();
             }
         }
     }
@@ -547,6 +572,7 @@
 
         if (container.childElementCount > 0) {
             container.dataset.gisRendered = 'true';
+            container.classList.add('is-visible');
             return;
         }
 
@@ -561,7 +587,122 @@
         }, GIS_RENDER_RETRY_MS);
     }
 
+    function abrirModalBoasVindasLogin() {
+        const modal = document.getElementById('modalBoasVindasLogin');
+        if (!modal) {
+            return;
+        }
+
+        const session = _getSessionSnapshot();
+        if (session.isSignedIn) {
+            return;
+        }
+
+        modal.style.display = 'flex';
+        if (global.DialogController && typeof global.DialogController.open === 'function') {
+            global.DialogController.open(modal, {
+                onRequestClose: fecharModalBoasVindasLogin
+            });
+        } else {
+            document.body.style.overflow = 'hidden';
+        }
+    }
+
+    function fecharModalBoasVindasLogin() {
+        const modal = document.getElementById('modalBoasVindasLogin');
+        if (!modal) {
+            return;
+        }
+
+        const naPilha = global.DialogController && typeof global.DialogController.getStack === 'function'
+            && global.DialogController.getStack().includes(modal);
+        if (naPilha) {
+            global.DialogController.close(modal);
+            return;
+        }
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    function _bindModalBoasVindas() {
+        const btnClose = document.getElementById('btnCloseModalBoasVindas');
+        if (btnClose && btnClose.dataset.boundClick !== 'true') {
+            btnClose.dataset.boundClick = 'true';
+            btnClose.addEventListener('click', function () {
+                try {
+                    if (global.sessionStorage) {
+                        global.sessionStorage.setItem('personal_welcome_login_dismissed', 'true');
+                    }
+                } catch (_) {}
+                fecharModalBoasVindasLogin();
+            });
+        }
+
+        const btnDispensar = document.getElementById('btnDispensarModalLogin');
+        if (btnDispensar && btnDispensar.dataset.boundClick !== 'true') {
+            btnDispensar.dataset.boundClick = 'true';
+            btnDispensar.addEventListener('click', function () {
+                try {
+                    if (global.sessionStorage) {
+                        global.sessionStorage.setItem('personal_welcome_login_dismissed', 'true');
+                    }
+                } catch (_) {}
+                fecharModalBoasVindasLogin();
+            });
+        }
+
+        const btnGoogleModal = document.getElementById('btnGoogleLoginModal');
+        if (btnGoogleModal && btnGoogleModal.dataset.boundClick !== 'true') {
+            btnGoogleModal.dataset.boundClick = 'true';
+            btnGoogleModal.addEventListener('click', function () {
+                fecharModalBoasVindasLogin();
+                _requestInteractiveSignIn();
+            });
+        }
+
+        const headerReadonlyPill = document.getElementById('headerReadonlyPill');
+        if (headerReadonlyPill && headerReadonlyPill.dataset.boundClick !== 'true') {
+            headerReadonlyPill.dataset.boundClick = 'true';
+            headerReadonlyPill.addEventListener('click', function () {
+                abrirModalBoasVindasLogin();
+            });
+            headerReadonlyPill.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    abrirModalBoasVindasLogin();
+                }
+            });
+        }
+
+        if (typeof document !== 'undefined' && document.addEventListener && !document.__modalBoasVindasDelegated) {
+            document.__modalBoasVindasDelegated = true;
+            document.addEventListener('click', function (e) {
+                const alvo = e.target;
+                if (!alvo) return;
+                const btnDispensar = alvo.closest && alvo.closest('#btnDispensarModalLogin, #btnCloseModalBoasVindas');
+                if (btnDispensar) {
+                    try {
+                        if (global.sessionStorage) {
+                            global.sessionStorage.setItem('personal_welcome_login_dismissed', 'true');
+                        }
+                    } catch (_) {}
+                    fecharModalBoasVindasLogin();
+                }
+            });
+        }
+    }
+
+    if (typeof document !== 'undefined' && document.addEventListener) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', _bindModalBoasVindas);
+        } else {
+            _bindModalBoasVindas();
+        }
+    }
+
     function _bindCustomLoginButton() {
+        _bindModalBoasVindas();
+
         const customLoginButton = document.getElementById('custom-google-login');
         if (!customLoginButton || customLoginButton.dataset.boundAuthClick === 'true') {
             return;
@@ -939,6 +1080,10 @@
         if (status && status.connected === true) {
             btnConnect.hidden = true;
             connectedState.hidden = false;
+            const welcomeCard = document.getElementById('cardBoasVindasGcal');
+            if (welcomeCard) {
+                welcomeCard.hidden = true;
+            }
 
             if (connectionDescription) {
                 connectionDescription.textContent = 'Sua conta está conectada. Você pode desconectar quando quiser.';
@@ -1120,6 +1265,8 @@
         },
         addAuthChangeListener: addAuthChangeListener,
         refreshButton: _bindCustomLoginButton,
+        abrirModalBoasVindasLogin: abrirModalBoasVindasLogin,
+        fecharModalBoasVindasLogin: fecharModalBoasVindasLogin,
         updateUi: _updateUi
     };
 })(window);

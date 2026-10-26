@@ -308,6 +308,56 @@ async function _sincronizarDadosHome(opcoes) {
   }
 }
 
+window.atualizarVisibilidadeCardBoasVindasGcal = function () {
+  const card = document.getElementById('cardBoasVindasGcal');
+  if (!card) return;
+
+  const isSignedIn = typeof window.googleIdentity === 'object'
+    && typeof window.googleIdentity.isSignedIn === 'function'
+    && window.googleIdentity.isSignedIn();
+
+  const statusConexao = typeof window.googleIdentity === 'object'
+    && typeof window.googleIdentity.getCachedCalendarConnectionStatus === 'function'
+    ? window.googleIdentity.getCachedCalendarConnectionStatus()
+    : null;
+
+  const isConnected = !!(statusConexao && statusConexao.connected);
+  let dispensado = false;
+  try {
+    dispensado = localStorage.getItem('gcal_welcome_dismissed') === 'true';
+  } catch (_) {}
+
+  if (isSignedIn && !isConnected && !dispensado) {
+    card.hidden = false;
+    const btnConectar = document.getElementById('btnConectarGcalCard');
+    const btnDispensar = document.getElementById('btnDispensarGcalCard');
+
+    if (btnConectar && !btnConectar.dataset.boundClick) {
+      btnConectar.dataset.boundClick = 'true';
+      btnConectar.addEventListener('click', async () => {
+        if (typeof window.googleIdentity === 'object' && typeof window.googleIdentity.connectCalendar === 'function') {
+          try {
+            await window.googleIdentity.connectCalendar();
+            card.hidden = true;
+          } catch (_) {}
+        }
+      });
+    }
+
+    if (btnDispensar && !btnDispensar.dataset.boundClick) {
+      btnDispensar.dataset.boundClick = 'true';
+      btnDispensar.addEventListener('click', () => {
+        try {
+          localStorage.setItem('gcal_welcome_dismissed', 'true');
+        } catch (_) {}
+        card.hidden = true;
+      });
+    }
+  } else {
+    card.hidden = true;
+  }
+};
+
 function _renderizarHome(opcoes) {
   window.finalizarSkeletonInicialHome();
   window.atualizarDashboardStats();
@@ -315,6 +365,9 @@ function _renderizarHome(opcoes) {
     window.renderizarHomeSemana();
   }
   window.inicializarMultiSelectPills();
+  if (typeof window.atualizarVisibilidadeCardBoasVindasGcal === "function") {
+    window.atualizarVisibilidadeCardBoasVindasGcal();
+  }
 }
 
 window.inicializarHome = async function (opcoes = {}) {

@@ -270,6 +270,30 @@
       };
     }
 
+    function abrirModalMock() {
+      const modal = document.getElementById('modalBoasVindasLogin');
+      if (!modal || autenticado) return;
+      modal.style.display = 'flex';
+      if (window.DialogController && typeof window.DialogController.open === 'function') {
+        window.DialogController.open(modal, { onRequestClose: fecharModalMock });
+      } else {
+        document.body.style.overflow = 'hidden';
+      }
+    }
+
+    function fecharModalMock() {
+      const modal = document.getElementById('modalBoasVindasLogin');
+      if (!modal) return;
+      const naPilha = window.DialogController && typeof window.DialogController.getStack === 'function'
+        && window.DialogController.getStack().includes(modal);
+      if (naPilha) {
+        window.DialogController.close(modal);
+      } else {
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
+      }
+    }
+
     // O mock substitui `window.googleIdentity` inteiro (e o google-identity.js real
     // roda ANTES dele, em index.html). Sem isto, o `_updateUi()` da implementação
     // real nunca executa e o header fica travado no estado "desconectado"
@@ -289,10 +313,83 @@
         const email = autenticado && perfil ? String(perfil.email || '') : '';
         sessionAvatar.textContent = email ? email.charAt(0).toUpperCase() : 'G';
       }
+
+      const modalBoasVindas = document.getElementById('modalBoasVindasLogin');
+      if (modalBoasVindas) {
+        if (autenticado) {
+          fecharModalMock();
+        } else {
+          let dispensado = false;
+          try {
+            dispensado = window.sessionStorage && window.sessionStorage.getItem('personal_welcome_login_dismissed') === 'true';
+          } catch (_) {}
+          if (!dispensado) {
+            abrirModalMock();
+          }
+        }
+      }
+
+      const btnDispensarModal = document.getElementById('btnDispensarModalLogin');
+      if (btnDispensarModal && btnDispensarModal.dataset.boundMockClick !== 'true') {
+        btnDispensarModal.dataset.boundMockClick = 'true';
+        btnDispensarModal.addEventListener('click', function () {
+          try {
+            if (window.sessionStorage) {
+              window.sessionStorage.setItem('personal_welcome_login_dismissed', 'true');
+            }
+          } catch (_) {}
+          fecharModalMock();
+        });
+      }
+
+      const btnCloseModal = document.getElementById('btnCloseModalBoasVindas');
+      if (btnCloseModal && btnCloseModal.dataset.boundMockClick !== 'true') {
+        btnCloseModal.dataset.boundMockClick = 'true';
+        btnCloseModal.addEventListener('click', function () {
+          try {
+            if (window.sessionStorage) {
+              window.sessionStorage.setItem('personal_welcome_login_dismissed', 'true');
+            }
+          } catch (_) {}
+          fecharModalMock();
+        });
+      }
+
+      const headerReadonlyPill = document.getElementById('headerReadonlyPill');
+      if (headerReadonlyPill && headerReadonlyPill.dataset.boundMockClick !== 'true') {
+        headerReadonlyPill.dataset.boundMockClick = 'true';
+        headerReadonlyPill.addEventListener('click', function () {
+          abrirModalMock();
+        });
+        headerReadonlyPill.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            abrirModalMock();
+          }
+        });
+      }
+
+      const btnGoogleModal = document.getElementById('btnGoogleLoginModal');
+      if (btnGoogleModal && btnGoogleModal.dataset.boundMockClick !== 'true') {
+        btnGoogleModal.dataset.boundMockClick = 'true';
+        btnGoogleModal.addEventListener('click', function () {
+          fecharModalMock();
+          definirSessao({ autenticado: true });
+        });
+      }
+      const customGoogleLogin = document.getElementById('custom-google-login');
+      if (customGoogleLogin && customGoogleLogin.dataset.boundMockClick !== 'true') {
+        customGoogleLogin.dataset.boundMockClick = 'true';
+        customGoogleLogin.addEventListener('click', function () {
+          fecharModalMock();
+          definirSessao({ autenticado: true });
+        });
+      }
     }
 
     window.googleIdentity = {
       initialize() {
+        aplicarEstadoHeaderSessao();
         return Promise.resolve();
       },
       whenReady() {
@@ -319,9 +416,16 @@
         return function unsubscribe() { authListeners.delete(listener); };
       },
       signOut() {
+        try {
+          if (window.sessionStorage) {
+            window.sessionStorage.removeItem('personal_welcome_login_dismissed');
+          }
+        } catch (_) {}
         definirSessao({ autenticado: false });
         return Promise.resolve();
       },
+      abrirModalBoasVindasLogin: abrirModalMock,
+      fecharModalBoasVindasLogin: fecharModalMock,
       checkCalendarConnectionStatus() {
         return Promise.resolve({ connected: false });
       },
@@ -338,6 +442,14 @@
         return undefined;
       }
     };
+
+    if (typeof document !== 'undefined' && document.addEventListener) {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', aplicarEstadoHeaderSessao);
+      } else {
+        aplicarEstadoHeaderSessao();
+      }
+    }
 
     function definirSessao(opcoes = {}) {
       if (opcoes.conta !== undefined && !['A', 'B'].includes(opcoes.conta)) throw new Error('Conta mock deve ser A ou B.');
