@@ -156,6 +156,10 @@ Tornar a interface otimista nas ações de salvar: o item criado/editado/excluí
 | A — `forçarRenderizacaoInterface` voltou à cadeia morta (`renderizarTudo`/`atualizarInterface`/`renderizarAgenda`) | os 2 de `render-otimista-t01.test.js` | ✖✖ — 0 pass, 2 fail | sim |
 | B — gatilho removido do commit local da criação (`aulas.push`) | os 2 (com falha pendente, o render do commit nunca ocorre) | ✖✖ — 0 pass, 2 fail | sim |
 | C — gatilho removido da reversão (`reverterCriacaoAgendamento`) | teste da reversão (render pós-reversão não ocorre; estado volta, tela não) | ✔ teste 1 / ✖ teste 2 | sim |
+| D — `renderizarAposMutacaoAluno()` removido da criação/edição de aluno | teste de criação do T02 (lista não reflete o aluno com salvar pendente) | ✔ teste 2 / ✖ teste 1 | sim |
+| E — `renderizarAposMutacaoAluno()` removido da exclusão de aluno | teste de exclusão do T02 (lista não reflete a saída com salvar pendente) | ✔ teste 1 / ✖ teste 2 | sim |
+
+Gatilhos de reposição (reagendar e enviar-para-reposição) seguem o mesmo mecanismo provado em D/E; cobertura automatizada dedicada desses dois fluxos ficou como limitação registrada (§12) — validação por suíte integral verde e conferência manual pendente.
 
 ## 12. Registro da execução
 
@@ -173,6 +177,15 @@ Tornar a interface otimista nas ações de salvar: o item criado/editado/excluí
 - **Descoberta não prevista**: os 4 pontos em `carregarDados` (storage.js:1133, 1147, 1179, 1202) que chamam `forçarRenderizacaoInterface` também eram no-op; com o fix, o render de cache-local no boot volta a funcionar (rendo extra de grade em `setTimeout(0)` por chamada — invisível, sem efeito colateral de âncora).
 - **Desvio do plano**: nenhum material. Dois pontos do cartão ajustados: `widget-bloqueio.js` revelou-se só widget de formulário (sem mutação de dados) — nada a fazer nele; fluxo "enviar para reposição" (modal-acao-slot 3002+) muta só após resposta do servidor — otimismo real ali pertence ao T02.
 - **Decisão adicional tomada**: o render do commit usa a mesma guarda de âncora dos fluxos de ação (`__homeSemAncoraHoje = true` durante o render otimista), alinhado ao comentário "T02 estendido" de view-home.js:394.
+
+### 2026-10-26 — T02 (render imediato em aluno e reposições)
+- **Arquivos alterados**: `assets/js/view-alunos.js` (novo helper `renderizarAposMutacaoAluno` com guarda `typeof` — o arquivo já usava esse padrão; gatilhos na mutação de criação/edição, no sucesso pós-cascata, no catch de falha e na exclusão); `assets/js/modal-acao-slot.js` (gatilhos pós-push no reagendar-reposição, pós-remoção da fila + `renderizarListaAlunos`, pós-mutações locais do enviar-para-reposição e na reversão do fluxo de reposição). Novo: `tests-frontend/render-otimista-t02.test.js` (2 testes).
+- **Resultado**: T02 concluído no código e nos testes automatizados.
+- **Suíte antes/depois**: antes 475/475; depois **477/475→477/477** (475 + 2 novos). Backend não tocado.
+- **Achados não previstos**: (1) a semântica de falha do caminho de aluno é "manter a alteração para verificar no servidor" (sem rollback, decisão de produto anterior) — o T02 preserva isso e só garante que a tela reflita o estado mantido; (2) a cascata de aluno (`cascade-sync-aluno.js:103-107`) muta `aulas` sem renderizar — agora coberta pelo gatilho pós-cascata no sucesso e no catch; (3) o harness `view-alunos-observacoes` carrega view-alunos.js sem storage.js — as guardas `typeof` mantêm esses testes íntegros.
+- **Limitação registrada**: os dois gatilhos de reposição não têm teste dedicado (mesmo mecanismo provado em D/E; suíte integral verde); cobrir no T03 ou em cobertura futura.
+- **Desvio do plano**: nenhum material.
+- **Decisão adicional tomada**: nenhuma além do já registrado.
 
 ## 13. Achados não alterados
 

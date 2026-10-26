@@ -7,6 +7,14 @@ let _ultimaChaveRenderAlunos = null;
 // Exposto para que mutações externas possam forçar um re-render na próxima chamada.
 window.invalidarChaveRenderAlunos = function () { _ultimaChaveRenderAlunos = null; };
 
+// Render otimista pós-mutação local de aluno: reflete o estado na lista/filtros
+// e aciona o render genérico (home/agenda) quando storage.js está carregado.
+function renderizarAposMutacaoAluno() {
+    if (typeof forçarRenderizacaoInterface === 'function') forçarRenderizacaoInterface();
+    if (typeof window.renderizarListaAlunos === 'function') window.renderizarListaAlunos();
+    if (typeof window.preencherFiltrosAlunos === 'function') window.preencherFiltrosAlunos();
+}
+
 function normalizarValorAlunoComFallback(valor, normalizadorGlobal, fallbackLocal, selfRef) {
     if (typeof normalizadorGlobal === 'function' && normalizadorGlobal !== selfRef) {
         return normalizadorGlobal(valor);
@@ -1198,6 +1206,7 @@ window.deletarAlunoSPA = async function(id) {
     try {
         exigirOperacaoAlunoAtual(op);
         alunos.splice(indice, 1);
+        renderizarAposMutacaoAluno();
         if (!window.contextoDados.atualizarOperacao(op)) throw new Error('Não foi possível preservar a exclusão.');
         if (typeof salvarDados !== 'function') throw new Error('Persistência indisponível.');
         exigirPersistenciaAluno(op, await salvarDados(true, { operacao: op, contextoDados: op.contexto }));
@@ -1382,6 +1391,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 exigirOperacaoAlunoAtual(op);
                 if (index !== -1) Object.assign(alunos[index], dadosAluno);
                 else alunos.push(dadosAluno);
+                renderizarAposMutacaoAluno();
                 if (!window.contextoDados.atualizarOperacao(op, { alvos: alvosOperacaoAluno(id), intencao: { aluno: dadosAluno } })) throw new Error('Não foi possível preservar o cadastro.');
 
                 // [TAG-CASCADE-SYNC] Preparar/persistir a agenda sob a mesma raiz antes do snapshot de salvarDados.
@@ -1399,12 +1409,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 exigirPersistenciaAluno(op, await salvarDados(true, { operacao: op, contextoDados: op.contexto }));
                 concluida = true;
                 window.log.info('[aluno]', idEdicao ? 'Aluno editado' : 'Aluno criado', { id, nome, metodoCobranca });
+                if (typeof forçarRenderizacaoInterface === 'function') forçarRenderizacaoInterface();
                 window.renderizarListaAlunos();
                 if (typeof atualizarDashboardStats === 'function') atualizarDashboardStats();
                 if (typeof mostrarToast === 'function') mostrarToast(idEdicao ? 'Aluno atualizado com sucesso!' : 'Aluno cadastrado com sucesso!');
             } catch (erro) {
                 if (!concluida) window.contextoDados.marcarFalhaOperacao(op, erro);
                 if (window.contextoDados.operacaoAtual(op) && typeof mostrarToast === 'function') mostrarToast(concluida ? 'Cadastro salvo. Atualize apenas os dados para atualizar a tela.' : 'Cadastro não confirmado. A alteração foi mantida para verificar no servidor.', concluida ? 'warning' : 'error');
+                if (typeof forçarRenderizacaoInterface === 'function') forçarRenderizacaoInterface();
             } finally {
                 try { await window.contextoDados.finalizarOperacao(op); }
                 finally {

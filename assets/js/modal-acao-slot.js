@@ -2195,6 +2195,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         if (!window.contextoDados.operacaoAtual(op)) return;
         aulas.push(novoCompromisso);
+        forçarRenderizacaoInterface();
         const salvar =
           typeof window.salvarDados === "function"
             ? window.salvarDados
@@ -2244,6 +2245,8 @@ document.addEventListener("DOMContentLoaded", () => {
         escritaConfirmada = true;
         if (!window.contextoDados.operacaoAtual(op)) return;
         aulasParaRepor = aulasParaRepor.filter((r) => r.id !== repObj.id);
+        forçarRenderizacaoInterface();
+        if (typeof window.renderizarListaAlunos === "function") window.renderizarListaAlunos();
         window._reagendamentoFluxoConcluido = true;
         await window.fecharReagendarAulaModal({ operacao: op });
         if (!window.contextoDados.operacaoAtual(op)) return;
@@ -3020,6 +3023,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
           }
+          forçarRenderizacaoInterface();
 
           window.contextoDados.atualizarOperacao(op, {
             alvos: { agendamentoIds: [compromisso.id], reposicaoIds: [reposicao.id], alunoIds: [compromisso.alunoId] },
@@ -3117,6 +3121,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   : "falha_envio_para_reposicao",
             });
           }
+          forçarRenderizacaoInterface();
           if (ehSerie) {
             window.log.warn("[reposicao]", "Rollback somente local; recuperação pendente", {
               id: compromisso.id,
