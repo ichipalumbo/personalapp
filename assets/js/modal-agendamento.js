@@ -284,6 +284,15 @@ function cancelarAgendamentoModal() {
     const alterado = assinaturaAberturaAgendamento !== null
         && assinaturaFormularioAgendamento() !== assinaturaAberturaAgendamento;
     if (alterado && !window.confirm('Descartar as alterações deste agendamento?')) return;
+    const contexto = window.contextoDados && typeof window.contextoDados.capturar === 'function'
+        ? window.contextoDados.capturar()
+        : null;
+    const pendenciaAnterior = contexto && typeof window.contextoDados.obterPendencia === 'function'
+        ? window.contextoDados.obterPendencia(contexto)
+        : null;
+    if (pendenciaAnterior && pendenciaAnterior.tipo === 'criar-agendamento') {
+        window.contextoDados.abandonarPendencia(pendenciaAnterior.tentativaId, contexto);
+    }
     window.fecharAgendamentoModal();
     window.reposicaoIdEmReagendamento = null;
 }
@@ -875,6 +884,10 @@ function reabrirFormularioAgendamentoComValores(valores) {
         rascunhoFluxoAgendamento = valores.rascunho;
         atualizarResumoRecorrenciaAgendamentoPrincipal();
     }
+
+    if (typeof capturarFormularioPrincipalNoRascunho === 'function') {
+        capturarFormularioPrincipalNoRascunho();
+    }
 }
 
 function reverterCriacaoAgendamento(payloadCriado, resultadoPersistencia, valoresFormulario) {
@@ -981,6 +994,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!window.contextoDados.atual(contexto)) return;
             const valoresFormularioAgendamento = capturarValoresFormularioAgendamento();
             const payloadCriado = resultado.payload || {};
+            const pendenciaAnterior = window.contextoDados && typeof window.contextoDados.obterPendencia === 'function'
+                ? window.contextoDados.obterPendencia(contexto)
+                : null;
+            if (pendenciaAnterior && pendenciaAnterior.tipo === 'criar-agendamento') {
+                window.contextoDados.abandonarPendencia(pendenciaAnterior.tentativaId, contexto);
+            }
             const op = window.contextoDados.iniciarOperacao({
                 tipo: 'criar-agendamento',
                 contexto,

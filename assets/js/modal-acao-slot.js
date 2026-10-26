@@ -1643,7 +1643,14 @@ window.executarExclusaoInstancia = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
   } catch (erro) {
-    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!escritaConfirmada) {
+      if (window.contextoDados && typeof window.contextoDados.abandonarPendencia === "function") {
+        window.contextoDados.abandonarPendencia(op.id, op.contexto);
+      }
+      if (typeof salvarNoLocalStorage === "function" && op && op.contexto) {
+        salvarNoLocalStorage(op.contexto);
+      }
+    }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
@@ -1767,7 +1774,14 @@ window.executarExclusaoSerie = async function () {
     if (typeof mostrarToast === "function")
       mostrarToast("Série excluída — todas as ocorrências.");
   } catch (erro) {
-    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!escritaConfirmada) {
+      if (window.contextoDados && typeof window.contextoDados.abandonarPendencia === "function") {
+        window.contextoDados.abandonarPendencia(op.id, op.contexto);
+      }
+      if (typeof salvarNoLocalStorage === "function" && op && op.contexto) {
+        salvarNoLocalStorage(op.contexto);
+      }
+    }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
@@ -1857,7 +1871,14 @@ window.executarExclusaoAulaAvulsa = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (typeof mostrarToast === "function") mostrarToast(toastMensagem);
   } catch (erro) {
-    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!escritaConfirmada) {
+      if (window.contextoDados && typeof window.contextoDados.abandonarPendencia === "function") {
+        window.contextoDados.abandonarPendencia(op.id, op.contexto);
+      }
+      if (typeof salvarNoLocalStorage === "function" && op && op.contexto) {
+        salvarNoLocalStorage(op.contexto);
+      }
+    }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
@@ -1933,7 +1954,14 @@ window.executarExclusaoSerieAPartirDe = async function () {
       mostrarToast("Exclusão aplicada a partir de " + dataAlvo + ".");
     }
   } catch (erro) {
-    if (!escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+    if (!escritaConfirmada) {
+      if (window.contextoDados && typeof window.contextoDados.abandonarPendencia === "function") {
+        window.contextoDados.abandonarPendencia(op.id, op.contexto);
+      }
+      if (typeof salvarNoLocalStorage === "function" && op && op.contexto) {
+        salvarNoLocalStorage(op.contexto);
+      }
+    }
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
@@ -2905,7 +2933,14 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         escritaConfirmada = true;
       } catch (erro) {
-        if (op && !escritaConfirmada) window.contextoDados.marcarFalhaOperacao(op, erro);
+        if (op && !escritaConfirmada) {
+          if (window.contextoDados && typeof window.contextoDados.abandonarPendencia === "function") {
+            window.contextoDados.abandonarPendencia(op.id, op.contexto);
+          }
+          if (typeof salvarNoLocalStorage === "function" && op && op.contexto) {
+            salvarNoLocalStorage(op.contexto);
+          }
+        }
         if (op ? !window.contextoDados.operacaoAtual(op) : !window.contextoDados.atual(contextoConta)) return;
         if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
         // Rollback somente visual: a tentativa/intenção fica preservada antes dele.

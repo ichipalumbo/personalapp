@@ -200,5 +200,46 @@ test('T01 — falha de persistência reverte o item e re-renderiza com toast de 
     assert.equal(window.__homeSemAncoraHoje, false, 'âncora de hoje não fica pendurada após a reversão');
     assert.ok(capturado.toasts.some(([, tipo]) => tipo === 'error'), 'toast de erro comunica a reversão');
     assert.equal(capturado.alerts.length, 0);
+
+    // Imediatamente após a falha, a pendência de falha está gravada (contrato do backend)
+    const pendenciaFalha = window.contextoDados.obterPendencia();
+    assert.ok(pendenciaFalha && pendenciaFalha.tipo === 'criar-agendamento', 'pendência da tentativa existe');
+
+    // 2ª tentativa: usuário submete novamente no modal reaberto e a operação anterior não bloqueia a nova
+    window.document.getElementById('formAgendamento').dispatchEvent(
+        new window.Event('submit', { bubbles: true, cancelable: true })
+    );
+    await new Promise((resolver) => setTimeout(resolver, 100));
+
+    assert.equal(capturado.gravacoes.length, 2, 'segunda gravação é liberada sem bloqueio do botão salvar');
+});
+
+test('T01 — cancelar agendamento após falha limpa pendência e permite nova criação do zero', async (t) => {
+    const { window, capturado } = await criarAmbiente(t, { alunos: [ALUNO_ANA] });
+
+    window.salvarDados = async (_silencioso, opcoes) => {
+        const op = opcoes && opcoes.operacao;
+        capturado.gravacoes.push({ tipoOperacao: op ? op.tipo : null });
+        await new Promise((resolver) => setTimeout(resolver, 20));
+        return { ok: false, motivo: 'falha_remota' };
+    };
+
+    // 1. Tentar criar e falhar
+    preencherESubmeter(window);
+    await new Promise((resolver) => setTimeout(resolver, 100));
+    assert.equal(capturado.gravacoes.length, 1);
+
+    // 2. Usuário clica em Cancelar no modal reaberto
+    window.document.getElementById('btnFecharModal').dispatchEvent(
+        new window.Event('click', { bubbles: true, cancelable: true })
+    );
+
+    // 3. A pendência deve ter sido limpa pelo cancelamento
+    assert.equal(window.contextoDados.obterPendencia(), null, 'cancelar agendamento remove pendência anterior');
+
+    // 4. Usuário abre novo agendamento do zero e submete: deve funcionar normalmente
+    preencherESubmeter(window);
+    await new Promise((resolver) => setTimeout(resolver, 100));
+    assert.equal(capturado.gravacoes.length, 2, 'novo agendamento submete sem bloqueio');
 });
 

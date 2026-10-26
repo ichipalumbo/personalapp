@@ -1,6 +1,6 @@
 # Plano — UI otimista nas ações de salvar (agenda, aluno e afins)
 
-> **Status**: `Concluído` — T01, T02 e T03 integrados, validados e cobertos por testes (Frontend 480/480, Backend 245/245)
+> **Status**: `Concluído` — T01, T02 e T03 integrados, validados e cobertos por testes (Frontend 481/481, Backend 245/245)
 > **Abertura**: 2026-10-26
 > **Atualizado**: 2026-10-26
 > **Responsável**: Luccas (dono) + agente
@@ -194,9 +194,13 @@ Gatilhos de reposição (reagendar e enviar-para-reposição) seguem o mesmo mec
 - **Arquivos alterados**:
   - `assets/js/utils-ui.js`: temporizadores de auto-dismiss padronizados (erro simples 5s, erro com retry 8s, warning 4s, success 3s) e tap-to-dismiss ao tocar no toast (sem bloquear botão de retry).
   - `assets/css/style.css`: centralização com `max-width: 480px; margin: 0 auto; box-sizing: border-box; cursor: pointer;` para desktop e mobile.
-  - `assets/js/modal-agendamento.js`: desacoplamento da mensagem de erro de criação em relação a `reposicaoFlowHelpers` (mensagem agora é "Não foi possível salvar o agendamento. Tente novamente.").
+  - `assets/js/modal-agendamento.js`:
+    - Desacoplamento da mensagem de erro de criação em relação a `reposicaoFlowHelpers` (mensagem agora é "Não foi possível salvar o agendamento. Tente novamente.").
+    - Correção de destravamento de submissão pós-falha: ao re-submeter no formulário reaberto ou ao cancelar, a pendência anterior da tentativa é abandonada (`contextoDados.abandonarPendencia`), liberando `iniciarOperacao` para novo salvamento.
+    - Sincronização do rascunho em `reabrirFormularioAgendamentoComValores` via `capturarFormularioPrincipalNoRascunho()`.
   - `mocks/ui-runtime/scenarios.js` e `mocks/ui-runtime/mock-runtime.js`: cenários `otimistaSucesso`, `otimistaFalha` e `otimistaGCalFalha` implementados e documentados.
-- **Resultado**: Suíte frontend completa com **480/480 testes passando**. Suíte backend com **245/245 testes passando**.
+  - `tests-frontend/render-otimista-t01.test.js`: testes adicionados para cobrir 2ª submissão e cancelamento pós-falha.
+- **Resultado**: Suíte frontend completa com **481/481 testes passando**. Suíte backend com **245/245 testes passando**.
 
 ## 13. Achados não alterados
 
@@ -216,7 +220,7 @@ Gatilhos de reposição (reagendar e enviar-para-reposição) seguem o mesmo mec
 ## 15. Fechamento
 
 - **Critérios atendidos**: Todos os critérios de aceite da Seção 2 foram atendidos e verificados.
-- **Implementação / validação / aceite / publicação**: Implementação completa nos arquivos de frontend e mock; 480 testes de frontend e 245 testes de backend verdes. Validação visual e de fluxo realizada nos cenários de mock.
+- **Implementação / validação / aceite / publicação**: Implementação completa nos arquivos de frontend e mock; 481 testes de frontend e 245 testes de backend verdes. Validação visual e de fluxo realizada nos cenários de mock.
 - **Pendências**: Nenhuma pendência bloqueante para merge da frente de UI otimista. T04 (GCal assíncrono no backend) postergado para frente específica.
 - **Riscos aceitos**: Reversão visual rápida com toast em caso de falha de persistência remota.
 - **Data de fechamento**: 2026-10-26
