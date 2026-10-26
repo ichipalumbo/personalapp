@@ -587,6 +587,35 @@ window.__UI_MOCK_SCENARIOS.desconectado = Object.assign({}, window.__UI_MOCK_SCE
   signedIn: false
 });
 
+// Otimista: Sucesso com latência de rede (2,5s) — valida render imediato e feedback assíncrono
+window.__UI_MOCK_SCENARIOS.otimistaSucesso = Object.assign({}, window.__UI_MOCK_SCENARIOS.default, {
+  name: 'otimistaSucesso',
+  label: 'Otimista — Sucesso com latência de rede (2,5s)',
+  latenciaMs: 2500,
+  permiteEscrita: true,
+  escritaLiberada: true
+});
+
+// Otimista: Falha remota (1,5s) — valida render imediato seguido de rollback e toast de erro/retry
+window.__UI_MOCK_SCENARIOS.otimistaFalha = Object.assign({}, window.__UI_MOCK_SCENARIOS.default, {
+  name: 'otimistaFalha',
+  label: 'Otimista — Falha remota e reversão visual (1,5s)',
+  latenciaMs: 1500,
+  permiteEscrita: true,
+  escritaLiberada: true,
+  falhaEscrita: true
+});
+
+// Otimista: Falha parcial Google Agenda — valida preservação do item local com toast de warning
+window.__UI_MOCK_SCENARIOS.otimistaGCalFalha = Object.assign({}, window.__UI_MOCK_SCENARIOS.default, {
+  name: 'otimistaGCalFalha',
+  label: 'Otimista — Falha parcial Google Agenda (warning)',
+  latenciaMs: 1500,
+  permiteEscrita: true,
+  escritaLiberada: true,
+  gcalSyncFailed: true
+});
+
 // E1: cache sintético com nomes visualmente distintos do resultado remoto.
 // Persistência desses cenários fica exclusivamente no envelope ui_mock_runtime_v1.
 (function () {

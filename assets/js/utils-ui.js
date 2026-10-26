@@ -64,10 +64,18 @@ function _exibirToast(mensagem, estado, opcoes = {}) {
     toast.setAttribute('role', estado === 'error' ? 'alert' : 'status');
     toast.setAttribute('aria-live', estado === 'error' ? 'assertive' : 'polite');
 
+    toast.onclick = function (event) {
+        if (event && event.target && event.target.closest && event.target.closest('.toast-retry')) return;
+        _ocultarToast();
+    };
+
     setTimeout(() => toast.classList.add('show'), 10);
 
-    if (estado !== 'progress' && estado !== 'error') {
-        _toastAutoHideTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+    if (estado !== 'progress') {
+        const timeoutMs = estado === 'error'
+            ? (_toastOnRetryAtivo ? 8000 : 5000)
+            : (estado === 'warning' ? 4000 : 3000);
+        _toastAutoHideTimer = setTimeout(() => _ocultarToast(), timeoutMs);
     }
 }
 

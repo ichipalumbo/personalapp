@@ -72,7 +72,7 @@
     // interceptado lá embaixo), então não há risco de tocar produção. O store é
     // descartado ao recarregar a página. Nos demais cenários a escrita continua
     // bloqueada (409), para preservar as fixtures de demonstração/auditoria.
-    const escritaLiberada = params.get('mockEscrita') === '1' && scenario.name === 'default';
+    const escritaLiberada = (params.get('mockEscrita') === '1' && (scenario.name === 'default' || scenario.permiteEscrita === true)) || scenario.escritaLiberada === true;
 
     let store = escritaLiberada
       ? JSON.parse(JSON.stringify({
@@ -140,6 +140,14 @@
     }
 
     function tratarEscrita(responder, url, method, init, seg, store) {
+      if (scenario.falhaEscrita === true || scenario.name === 'otimistaFalha') {
+        return responder({
+          ok: false,
+          mock: true,
+          error: 'Falha simulada de persistência remota para validação de reversão.'
+        }, { status: 500 });
+      }
+
       const recurso = seg[1];
       const id = seg[2];
       const acao = seg[3];
@@ -166,11 +174,17 @@
       if (recurso === 'agendamentos') {
         if (method === 'POST') {
           const novo = Object.assign({}, payload, { id: payload.id || novoIdMock('agendamento') });
+          if (scenario.gcalSyncFailed === true || scenario.name === 'otimistaGCalFalha') {
+            novo.gcalSyncFailed = true;
+          }
           store.agendamentos.push(novo);
           return responder(novo, { status: 201 });
         }
         if (method === 'PUT' && id) {
           const atualizado = Object.assign({}, payload, { id });
+          if (scenario.gcalSyncFailed === true || scenario.name === 'otimistaGCalFalha') {
+            atualizado.gcalSyncFailed = true;
+          }
           const i = store.agendamentos.findIndex((a) => a.id === id);
           if (i >= 0) store.agendamentos[i] = atualizado; else store.agendamentos.push(atualizado);
           return responder(atualizado);

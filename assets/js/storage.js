@@ -1384,12 +1384,16 @@ function forçarRenderizacaoInterface() {
     clearTimeout(_renderDebounceTimer);
     _renderDebounceTimer = setTimeout(function () {
         if (!CONTEXTO_DADOS.atual(contexto)) return;
-        if (typeof renderizarTudo === 'function') {
-            renderizarTudo();
-        } else if (typeof atualizarInterface === 'function') {
-            atualizarInterface();
-        } else if (typeof renderizarAgenda === 'function') {
-            renderizarAgenda();
+        // Render otimista a partir do estado local, sem rede. Render disparado
+        // por ação não reposiciona a agenda em "hoje" (mesma semântica de semAncoraHoje).
+        const jaSemAncora = window.__homeSemAncoraHoje === true;
+        window.__homeSemAncoraHoje = true;
+        try {
+            if (typeof window.atualizarDashboardStats === 'function') window.atualizarDashboardStats();
+            if (window.modoHomeAtivo === 'dia' && typeof window.renderizarHomeDia === 'function') window.renderizarHomeDia();
+            else if (typeof window.renderizarHomeSemana === 'function') window.renderizarHomeSemana();
+        } finally {
+            if (!jaSemAncora) window.__homeSemAncoraHoje = false;
         }
     }, 0);
 }

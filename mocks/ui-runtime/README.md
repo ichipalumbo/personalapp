@@ -32,6 +32,9 @@ Esta pasta reúne um conjunto de fixtures e um bootstrap para simular o app em q
 - `?mockScenario=vitrineEstados`
 - `?mockScenario=carregamentoLento`
 - `?mockScenario=desconectado`
+- `?mockScenario=otimistaSucesso` (escrita liberada + latência 2,5s para auditar render imediato)
+- `?mockScenario=otimistaFalha` (escrita com falha remota 500 para auditar rollback e toast de retry)
+- `?mockScenario=otimistaGCalFalha` (gravação no banco ok + falha simulada do GCal com toast warning)
 
 ### Flags de validação (query string)
 

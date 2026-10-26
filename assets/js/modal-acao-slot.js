@@ -1600,6 +1600,7 @@ window.executarExclusaoInstancia = async function () {
     if (!compromisso.excecoes.includes(dataAlvoStr)) {
       compromisso.excecoes.push(dataAlvoStr);
     }
+    if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
     window.log.info("[agenda]", "Instância cancelada", {
       id: compromisso.id,
       dataExcecao: dataAlvoStr,
@@ -1646,6 +1647,7 @@ window.executarExclusaoInstancia = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -1728,6 +1730,7 @@ window.executarExclusaoSerie = async function () {
     const ocorrenciasAfetadas = window.removerCadeiaCompletaSerie(
       _serieDeletar || window.idCompromissoSelecionado,
     );
+    if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
     window.log.info("[agenda]", "Série excluída", {
       id: _serieDeletar && _serieDeletar.id ? _serieDeletar.id : null,
       ocorrenciasAfetadas: ocorrenciasAfetadas,
@@ -1768,6 +1771,7 @@ window.executarExclusaoSerie = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -1857,6 +1861,7 @@ window.executarExclusaoAulaAvulsa = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -1908,6 +1913,7 @@ window.executarExclusaoSerieAPartirDe = async function () {
   try {
     if (!window.contextoDados.operacaoAtual(op)) return;
     window.aparaCadeiaSerieAPartirDe(compromisso, dataAlvo);
+    if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
     window.fecharModalAcaoSlot();
 
     const resultadoPersistencia =
@@ -1931,6 +1937,7 @@ window.executarExclusaoSerieAPartirDe = async function () {
     if (!window.contextoDados.operacaoAtual(op)) return;
     if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
     aulas.splice(0, aulas.length, ..._snapshotAulas);
+    if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
     const mensagemErro =
       erro && erro.message
         ? erro.message
@@ -2188,6 +2195,7 @@ document.addEventListener("DOMContentLoaded", () => {
       try {
         if (!window.contextoDados.operacaoAtual(op)) return;
         aulas.push(novoCompromisso);
+        if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
         const salvar =
           typeof window.salvarDados === "function"
             ? window.salvarDados
@@ -2237,6 +2245,8 @@ document.addEventListener("DOMContentLoaded", () => {
         escritaConfirmada = true;
         if (!window.contextoDados.operacaoAtual(op)) return;
         aulasParaRepor = aulasParaRepor.filter((r) => r.id !== repObj.id);
+        if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
+        if (typeof window.renderizarListaAlunos === "function") window.renderizarListaAlunos();
         window._reagendamentoFluxoConcluido = true;
         await window.fecharReagendarAulaModal({ operacao: op });
         if (!window.contextoDados.operacaoAtual(op)) return;
@@ -2838,6 +2848,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         window.fecharModalAcaoSlot();
+        if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
 
         // [TAG-FRESH-DATA-BEFORE-SAVE] Enriquece agendamento com dados frescos do aluno antes de salvar
         if (typeof window.enriquecerAgendamentoComDadosFrescos === "function") {
@@ -2899,6 +2910,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
         // Rollback somente visual: a tentativa/intenção fica preservada antes dele.
         if (op && snapshotAulasEdicao) aulas.splice(0, aulas.length, ...snapshotAulasEdicao);
+        if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
         if (typeof mostrarToast === "function") {
           mostrarToast(erro && erro.message ? erro.message : "Não foi possível salvar as alterações.", "error");
         } else {
@@ -3011,6 +3023,7 @@ document.addEventListener("DOMContentLoaded", () => {
             );
             if (_idxReposicao !== -1) aulas.splice(_idxReposicao, 1);
           }
+          if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
 
           window.contextoDados.atualizarOperacao(op, {
             alvos: { agendamentoIds: [compromisso.id], reposicaoIds: [reposicao.id], alunoIds: [compromisso.alunoId] },
@@ -3108,6 +3121,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   : "falha_envio_para_reposicao",
             });
           }
+          if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
           if (ehSerie) {
             window.log.warn("[reposicao]", "Rollback somente local; recuperação pendente", {
               id: compromisso.id,
