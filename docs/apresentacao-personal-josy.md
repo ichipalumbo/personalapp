@@ -124,4 +124,3 @@ Eleve o padrão do seu atendimento, elimine o retrabalho com planilhas e tenha c
 > Acesse com sua Conta Google e experimente o **Personal Josy** na prática!
 
 ---
-*Personal Josy • Marca e Identidade Visual Registradas • Desenvolvido sob medida para o profissional de Educação Física.*

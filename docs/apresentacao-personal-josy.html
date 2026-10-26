@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Personal Josy — Apresentação Comercial (Slides 16:9)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    /* Reset & Variáveis */
+    :root {
+      --cor-base: #202020;
+      --cor-card-dark: #2A2A2A;
+      --cor-borda-dark: #3A3A3A;
+      --cor-amarelo: #FFDE17;
+      --cor-amarelo-hover: #E5C710;
+      --cor-amarelo-suave: rgba(255, 222, 23, 0.12);
+      --cor-texto-claro: #FFFFFF;
+      --cor-texto-mutado: #A0A0A0;
+      --cor-texto-secundario: #E0E0E0;
+      --cor-fundo-claro: #F5F6F8;
+      --cor-card-claro: #FFFFFF;
+      --cor-texto-escuro: #202020;
+      --cor-borda-clara: #E2E4E8;
+      --cor-alerta: #FF5E57;
+      --cor-sucesso: #2ED573;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    body {
+      font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #121212;
+      color: var(--cor-texto-claro);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 24px 0 60px;
+    }
+
+    /* Barra de Controle de Slides na Tela */
+    .deck-controls {
+      position: fixed;
+      bottom: 20px;
+      z-index: 1000;
+      background: rgba(32, 32, 32, 0.92);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 8px 18px;
+      border-radius: 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    .deck-controls button {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFFFFF;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .deck-controls button:hover {
+      background: var(--cor-amarelo);
+      color: #202020;
+      border-color: var(--cor-amarelo);
+    }
+
+    .deck-controls .btn-imprimir {
+      background: var(--cor-amarelo);
+      color: #202020;
+      font-weight: 600;
+      border-color: var(--cor-amarelo);
+    }
+
+    .deck-controls .slide-indicator {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--cor-amarelo);
+      min-width: 85px;
+      text-align: center;
+    }
+
+    /* Container de Slides */
+    .slides-container {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      width: 100%;
+      max-width: 1200px;
+      align-items: center;
+    }
+
+    /* Slide Base (Proporção 16:9) */
+    .slide {
+      width: 1120px;
+      height: 630px; /* 16:9 exato */
+      background: var(--cor-base);
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 44px 56px 36px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      page-break-after: always;
+      break-after: page;
+    }
+
+    /* Slide Claro (Variante) */
+    .slide.tema-claro {
+      background: #FFFFFF;
+      color: var(--cor-texto-escuro);
+      border-color: var(--cor-borda-clara);
+    }
+
+    /* Topo do Slide Interno */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 22px;
+    }
+
+    .slide-tag {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--cor-amarelo);
+      background: var(--cor-amarelo-suave);
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 6px;
+    }
+
+    .slide.tema-claro .slide-tag {
+      background: #FFF7C2;
+      color: #8C7500;
+    }
+
+    .slide-title {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.25;
+      color: #FFFFFF;
+    }
+
+    .slide.tema-claro .slide-title {
+      color: var(--cor-texto-escuro);
+    }
+
+    .slide-subtitle {
+      font-size: 14px;
+      color: var(--cor-texto-mutado);
+      margin-top: 4px;
+      font-weight: 400;
+    }
+
+    .slide.tema-claro .slide-subtitle {
+      color: #666666;
+    }
+
+    .slide-header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .slide-header-logo {
+      height: 32px;
+      width: auto;
+    }
+
+    .slide-num {
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 10px;
+      border-radius: 12px;
+    }
+
+    .slide.tema-claro .slide-num {
+      color: #999999;
+      background: #EEEEEE;
+    }
+
+    /* Conteúdo Principal */
+    .slide-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    /* Rodapé do Slide */
+    .slide-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 11px;
+      color: var(--cor-texto-mutado);
+    }
+
+    .slide.tema-claro .slide-footer {
+      border-top-color: var(--cor-borda-clara);
+      color: #888888;
+    }
+
+    .slide-footer strong {
+      color: var(--cor-amarelo);
+    }
+
+    .slide.tema-claro .slide-footer strong {
+      color: #202020;
+    }
+
+    /* ==============================================================
+       SLIDE 1: CAPA
+       ============================================================== */
+    .slide-capa {
+      background: radial-gradient(circle at 85% 15%, #2d2d2d 0%, #202020 100%);
+      justify-content: space-between;
+      padding: 50px 64px 40px;
+    }
+
+    .capa-topo-marca {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .capa-logo-grande {
+      height: 64px;
+      width: auto;
+    }
+
+    .capa-selo-ano {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--cor-amarelo);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+
+    .capa-centro {
+      max-width: 880px;
+      margin: 20px 0;
+    }
+
+    .capa-badge {
+      display: inline-block;
+      background: var(--cor-amarelo);
+      color: #202020;
+      font-weight: 700;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+
+    .capa-titulo {
+      font-size: 40px;
+      font-weight: 800;
+      line-height: 1.18;
+      color: #FFFFFF;
+      margin-bottom: 16px;
+    }
+
+    .capa-titulo span {
+      color: var(--cor-amarelo);
+    }
+
+    .capa-descricao {
+      font-size: 17px;
+      line-height: 1.55;
+      color: var(--cor-texto-secundario);
+      max-width: 800px;
+      font-weight: 300;
+    }
+
+    .capa-cards-destaque {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    .capa-card-item {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 14px 18px;
+      transition: transform 0.2s;
+    }
+
+    .capa-card-item strong {
+      display: block;
+      color: var(--cor-amarelo);
+      font-size: 14px;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+
+    .capa-card-item span {
+      font-size: 12px;
+      color: var(--cor-texto-mutado);
+      line-height: 1.4;
+      display: block;
+    }
+
+    /* ==============================================================
+       SLIDE 2: DORES (GRID 2x2)
+       ============================================================== */
+    .grid-dores {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .card-dor {
+      background: var(--cor-card-dark);
+      border: 1px solid var(--cor-borda-dark);
+      border-left: 4px solid var(--cor-alerta);
+      border-radius: 8px;
+      padding: 20px 22px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .card-dor-icone {
+      background: rgba(255, 94, 87, 0.12);
+      color: var(--cor-alerta);
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .card-dor-texto h4 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+    }
+
+    .card-dor-texto p {
+      font-size: 13px;
+      color: var(--cor-texto-secundario);
+      line-height: 1.48;
+    }
+
+    /* ==============================================================
+       SLIDE 3: SOLUÇÃO (3 PILARES)
+       ============================================================== */
+    .grid-pilares {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+    }
+
+    .card-pilar {
+      background: var(--cor-card-dark);
+      border: 1px solid var(--cor-borda-dark);
+      border-radius: 10px;
+      padding: 26px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card-pilar::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--cor-amarelo);
+    }
+
+    .card-pilar-numero {
+      font-size: 32px;
+      font-weight: 800;
+      color: rgba(255, 222, 23, 0.25);
+      margin-bottom: 12px;
+    }
+
+    .card-pilar h4 {
+      font-size: 18px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 10px;
+    }
+
+    .card-pilar p {
+      font-size: 13px;
+      color: var(--cor-texto-secundario);
+      line-height: 1.55;
+      margin-bottom: 16px;
+    }
+
+    .card-pilar-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .chip-item {
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--cor-amarelo);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    /* ==============================================================
+       SLIDES 4, 5, 6: COLUNAS DUPLAS
+       ============================================================== */
+    .grid-duplo {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .card-modulo {
+      background: var(--cor-card-dark);
+      border: 1px solid var(--cor-borda-dark);
+      border-radius: 10px;
+      padding: 24px 26px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .slide.tema-claro .card-modulo {
+      background: #FFFFFF;
+      border-color: var(--cor-borda-clara);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+    }
+
+    .modulo-cabecalho {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .modulo-icone {
+      width: 42px;
+      height: 42px;
+      background: var(--cor-amarelo);
+      color: #202020;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 19px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .modulo-cabecalho h4 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .slide.tema-claro .modulo-cabecalho h4 {
+      color: var(--cor-texto-escuro);
+    }
+
+    .lista-recursos {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .lista-recursos li {
+      position: relative;
+      padding-left: 24px;
+      font-size: 13px;
+      color: var(--cor-texto-secundario);
+      line-height: 1.48;
+    }
+
+    .slide.tema-claro .lista-recursos li {
+      color: #444444;
+    }
+
+    .lista-recursos li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      top: 1px;
+      color: #202020;
+      background: var(--cor-amarelo);
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .box-destaque-modulo {
+      margin-top: 18px;
+      background: rgba(255, 222, 23, 0.08);
+      border: 1px dashed rgba(255, 222, 23, 0.35);
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slide.tema-claro .box-destaque-modulo {
+      background: #FFFCE6;
+      border-color: #E6C800;
+      color: #444444;
+    }
+
+    /* ==============================================================
+       SLIDE 7: TABELA COMPARATIVA
+       ============================================================== */
+    .tabela-comparativa-wrapper {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--cor-borda-dark);
+      background: var(--cor-card-dark);
+    }
+
+    .tabela-comparativa {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .tabela-comparativa th {
+      padding: 14px 20px;
+      text-align: left;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .tabela-comparativa th.col-criterio {
+      background: #1B1B1B;
+      color: var(--cor-texto-mutado);
+      width: 24%;
+    }
+
+    .tabela-comparativa th.col-antes {
+      background: rgba(255, 94, 87, 0.12);
+      color: var(--cor-alerta);
+      width: 38%;
+      border-left: 1px solid var(--cor-borda-dark);
+    }
+
+    .tabela-comparativa th.col-depois {
+      background: rgba(255, 222, 23, 0.15);
+      color: var(--cor-amarelo);
+      width: 38%;
+      border-left: 1px solid var(--cor-borda-dark);
+    }
+
+    .tabela-comparativa td {
+      padding: 12px 20px;
+      border-top: 1px solid var(--cor-borda-dark);
+      line-height: 1.45;
+    }
+
+    .tabela-comparativa td.col-criterio {
+      font-weight: 600;
+      color: #FFFFFF;
+      background: #242424;
+    }
+
+    .tabela-comparativa td.col-antes {
+      color: #D4D4D4;
+      border-left: 1px solid var(--cor-borda-dark);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .tabela-comparativa td.col-depois {
+      color: #FFFFFF;
+      border-left: 1px solid var(--cor-borda-dark);
+      background: rgba(255, 222, 23, 0.04);
+      font-weight: 500;
+    }
+
+    .tag-x {
+      color: var(--cor-alerta);
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    .tag-check {
+      color: var(--cor-amarelo);
+      font-weight: 700;
+      margin-right: 6px;
+    }
+
+    /* ==============================================================
+       SLIDE 8: ENCERRAMENTO E CTA
+       ============================================================== */
+    .slide-cta {
+      background: radial-gradient(circle at 50% 50%, #2a2a2a 0%, #202020 100%);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 46px 60px 36px;
+    }
+
+    .cta-container-central {
+      max-width: 820px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .cta-logo {
+      height: 60px;
+      margin-bottom: 20px;
+    }
+
+    .cta-titulo {
+      font-size: 34px;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin-bottom: 12px;
+      line-height: 1.25;
+    }
+
+    .cta-titulo span {
+      color: var(--cor-amarelo);
+    }
+
+    .cta-subtitulo {
+      font-size: 16px;
+      color: var(--cor-texto-secundario);
+      line-height: 1.5;
+      margin-bottom: 28px;
+      max-width: 680px;
+    }
+
+    .cta-botao-principal {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--cor-amarelo);
+      color: #202020;
+      font-size: 17px;
+      font-weight: 700;
+      padding: 14px 34px;
+      border-radius: 8px;
+      text-decoration: none;
+      box-shadow: 0 8px 24px rgba(255, 222, 23, 0.3);
+      transition: all 0.2s ease;
+    }
+
+    .cta-botao-principal:hover {
+      background: #FFFFFF;
+      transform: translateY(-2px);
+      box-shadow: 0 10px 28px rgba(255, 255, 255, 0.2);
+    }
+
+    .cta-garantias {
+      display: flex;
+      gap: 24px;
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--cor-texto-mutado);
+    }
+
+    .cta-garantias span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .cta-garantias strong {
+      color: var(--cor-texto-secundario);
+    }
+
+    /* ==============================================================
+       ESTILOS DE IMPRESSÃO / PDF (16:9 EXATO)
+       ============================================================== */
+    @page {
+      size: 297mm 167.0625mm;
+      margin: 0;
+    }
+
+    @media print {
+      body {
+        background: #202020 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+
+      .deck-controls {
+        display: none !important;
+      }
+
+      .slides-container {
+        gap: 0 !important;
+        max-width: none !important;
+        width: 297mm !important;
+      }
+
+      .slide {
+        width: 297mm !important;
+        height: 167.0625mm !important;
+        min-height: 167.0625mm !important;
+        max-height: 167.0625mm !important;
+        border-radius: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        padding: 16mm 20mm 14mm !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+      }
+
+      .capa-logo-grande {
+        height: 18mm !important;
+      }
+
+      .capa-titulo {
+        font-size: 26pt !important;
+      }
+
+      .capa-descricao {
+        font-size: 12pt !important;
+      }
+
+      .slide-title {
+        font-size: 18pt !important;
+      }
+
+      .slide-subtitle {
+        font-size: 10pt !important;
+      }
+
+      .grid-dores, .grid-pilares, .grid-duplo {
+        gap: 5mm !important;
+      }
+
+      .card-dor, .card-pilar, .card-modulo {
+        padding: 5mm 6mm !important;
+      }
+
+      .tabela-comparativa th, .tabela-comparativa td {
+        padding: 3mm 4mm !important;
+        font-size: 9pt !important;
+      }
+
+      .cta-titulo {
+        font-size: 24pt !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de Navegação Flutuante na Tela -->
+  <aside class="deck-controls" aria-label="Controles da apresentação">
+    <button onclick="mudarSlide(-1)" title="Slide Anterior (←)">⟨ Anterior</button>
+    <div class="slide-indicator" id="indicadorSlide">Slide 1 / 8</div>
+    <button onclick="mudarSlide(1)" title="Próximo Slide (→)">Próximo ⟩</button>
+    <button onclick="window.print()" class="btn-imprimir" title="Imprimir ou Salvar PDF">🖨️ Salvar em PDF</button>
+  </aside>
+
+  <!-- Container de Todos os Slides -->
+  <main class="slides-container">
+
+    <!-- ==========================================
+         SLIDE 1: CAPA
+         ========================================== -->
+    <section class="slide slide-capa" id="slide-1">
+      <header class="capa-topo-marca">
+        <img src="reference/identidade/kit-visual-completo-v2/05_horizontal_com_descritor/escuro/personal_josy_horizontal_com_descritor_escuro_transparente.svg" alt="Personal Josy — Agenda e gestão para personal trainers" class="capa-logo-grande">
+        <div class="capa-selo-ano">Edição Oficial 2026</div>
+      </header>
+
+      <div class="capa-centro">
+        <div class="capa-badge">Apresentação Oficial do Produto</div>
+        <h1 class="capa-titulo">A Gestão da Sua Carreira de Personal em <span>Outro Nível</span>.</h1>
+        <p class="capa-descricao">
+          Diga adeus ao descontrole de horários, perdas de reposições e planilhas confusas. Tenha toda a sua consultoria física centralizada em uma ferramenta ágil, moderna e integrada ao Google Calendar.
+        </p>
+      </div>
+
+      <div class="capa-cards-destaque">
+        <div class="capa-card-item">
+          <strong>📅 Agenda Inteligente</strong>
+          <span>Visões diária, semanal e mensal integradas ao Google Calendar em tempo real.</span>
+        </div>
+        <div class="capa-card-item">
+          <strong>🔄 Reposições Sem Atrito</strong>
+          <span>Controle de créditos e regras claras de validade para proteger seu faturamento.</span>
+        </div>
+        <div class="capa-card-item">
+          <strong>⚡ PWA Offline-First</strong>
+          <span>Funcione 100% mesmo sem sinal na academia, salvando no aparelho sem travar.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 2: AS DORES DO PERSONAL
+         ========================================== -->
+    <section class="slide" id="slide-2">
+      <header class="slide-header">
+        <div>
+          <span class="slide-tag">O Cenário Atual</span>
+          <h2 class="slide-title">As Dores Invisíveis na Rotina do Personal Trainer</h2>
+          <p class="slide-subtitle">Você se preparou para prescrever treinos e transformar vidas, não para se afogar em burocracia.</p>
+        </div>
+        <div class="slide-header-right">
+          <img src="reference/identidade/kit-visual-completo-v2/03_simbolo/claro/personal_josy_simbolo_claro_transparente.svg" alt="" class="slide-header-logo">
+          <span class="slide-num">02 / 08</span>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <div class="grid-dores">
+          <div class="card-dor">
+            <div class="card-dor-icone">💬</div>
+            <div class="card-dor-texto">
+              <h4>O Caos no WhatsApp</h4>
+              <p>Dezenas de mensagens diárias para confirmar, alterar ou cancelar horários, consumindo momentos valiosos do seu descanso.</p>
+            </div>
+          </div>
+          <div class="card-dor">
+            <div class="card-dor-icone">📅</div>
+            <div class="card-dor-texto">
+              <h4>Conflitos e Furos de Agenda</h4>
+              <p>Esquecimento de compromissos pessoais e choque de horários entre alunos por manter anotações soltas e sem sincronização com o celular.</p>
+            </div>
+          </div>
+          <div class="card-dor">
+            <div class="card-dor-icone">⏳</div>
+            <div class="card-dor-texto">
+              <h4>Reposições Sem Fim</h4>
+              <p>Alunos que faltam e cobram reposições meses depois, sem controle de prazo ou limite de aulas, desorganizando a grade.</p>
+            </div>
+          </div>
+          <div class="card-dor">
+            <div class="card-dor-icone">💸</div>
+            <div class="card-dor-texto">
+              <h4>Inadimplência Involuntária</h4>
+              <p>Esquecer a data de vencimento da mensalidade de cada aluno, gerando atrasos nos pagamentos e constrangimento na cobrança.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="slide-footer">
+        <div>Personal Josy • <strong>Diagnóstico de Mercado</strong></div>
+        <div>Eliminando a sobrecarga operacional do personal trainer</div>
+      </footer>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 3: A SOLUÇÃO (3 PILARES)
+         ========================================== -->
+    <section class="slide" id="slide-3">
+      <header class="slide-header">
+        <div>
+          <span class="slide-tag">A Plataforma</span>
+          <h2 class="slide-title">Personal Josy: O Seu Hub Completo de Gestão</h2>
+          <p class="slide-subtitle">Desenvolvido sob medida para a dinâmica de academias, condomínios e treinos ao ar livre.</p>
+        </div>
+        <div class="slide-header-right">
+          <img src="reference/identidade/kit-visual-completo-v2/03_simbolo/claro/personal_josy_simbolo_claro_transparente.svg" alt="" class="slide-header-logo">
+          <span class="slide-num">03 / 08</span>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <div class="grid-pilares">
+          <div class="card-pilar">
+            <div>
+              <div class="card-pilar-numero">01</div>
+              <h4>Organização Absoluta</h4>
+              <p>Visualize seu dia e semana em uma linha do tempo clara, com status de presença por cores e agendamento instantâneo em dois toques.</p>
+            </div>
+            <div class="card-pilar-chips">
+              <span class="chip-item">Grade Diária</span>
+              <span class="chip-item">Visão Mensal</span>
+              <span class="chip-item">Recorrência Automática</span>
+            </div>
+          </div>
+
+          <div class="card-pilar">
+            <div>
+              <div class="card-pilar-numero">02</div>
+              <h4>Sincronização Nativa</h4>
+              <p>Integração direta com o Google Calendar. Suas aulas no app refletem no celular e relógio inteligente, respeitando seus bloqueios pessoais.</p>
+            </div>
+            <div class="card-pilar-chips">
+              <span class="chip-item">Google Calendar</span>
+              <span class="chip-item">Notificações Nativas</span>
+              <span class="chip-item">Zero Conflito</span>
+            </div>
+          </div>
+
+          <div class="card-pilar">
+            <div>
+              <div class="card-pilar-numero">03</div>
+              <h4>Tecnologia Sem Barreiras</h4>
+              <p>Acesse em 1 clique com sua conta Google existente. Funciona como app no Android e iOS, operando offline mesmo no subsolo da academia.</p>
+            </div>
+            <div class="card-pilar-chips">
+              <span class="chip-item">Google OAuth</span>
+              <span class="chip-item">PWA Instalável</span>
+              <span class="chip-item">Modo Offline</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="slide-footer">
+        <div>Personal Josy • <strong>Proposta de Valor</strong></div>
+        <div>Simplicidade, robustez e respeito ao tempo do instrutor</div>
+      </footer>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 4: AGENDA INTELIGENTE & GOOGLE CALENDAR
+         ========================================== -->
+    <section class="slide" id="slide-4">
+      <header class="slide-header">
+        <div>
+          <span class="slide-tag">Funcionalidades-Chave</span>
+          <h2 class="slide-title">Agenda Inteligente &amp; Google Calendar Unificados</h2>
+          <p class="slide-subtitle">Sua vida profissional e pessoal alinhadas sem a necessidade de consultar dois aplicativos.</p>
+        </div>
+        <div class="slide-header-right">
+          <img src="reference/identidade/kit-visual-completo-v2/03_simbolo/claro/personal_josy_simbolo_claro_transparente.svg" alt="" class="slide-header-logo">
+          <span class="slide-num">04 / 08</span>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <div class="grid-duplo">
+          <div class="card-modulo">
+            <div>
+              <div class="modulo-cabecalho">
+                <div class="modulo-icone">🗓️</div>
+                <h4>Agenda Multivisão Dinâmica</h4>
+              </div>
+              <ul class="lista-recursos">
+                <li><strong>Visão Diária em Linha do Tempo:</strong> Acompanhe as aulas do dia com horários, alunos e status codificados por cores.</li>
+                <li><strong>Visões Semanal e Mensal:</strong> Identifique imediatamente horários vagos na grade para preenchimento rápido de novas consultorias.</li>
+                <li><strong>Recorrências Inteligentes:</strong> Configure a grade fixa do aluno uma única vez e o sistema projeta as aulas dos próximos ciclos.</li>
+              </ul>
+            </div>
+            <div class="box-destaque-modulo">
+              💡 <em>Criação e edição de aulas em 2 toques, com cancelamento e reagendamento intuitivos.</em>
+            </div>
+          </div>
+
+          <div class="card-modulo">
+            <div>
+              <div class="modulo-cabecalho">
+                <div class="modulo-icone">🔄</div>
+                <h4>Sincronização com Google Calendar</h4>
+              </div>
+              <ul class="lista-recursos">
+                <li><strong>Espelhamento Automático:</strong> Toda aula criada, reagendada ou cancelada é sincronizada com o seu Google Calendar.</li>
+                <li><strong>Alertas no Celular e Smartwatch:</strong> Receba lembretes nativos antes de cada treino para nunca se atrasar.</li>
+                <li><strong>Respeito a Compromissos Pessoais:</strong> Seus eventos pessoais marcados no Google evitam choque de horários na grade.</li>
+              </ul>
+            </div>
+            <div class="box-destaque-modulo">
+              🔒 <em>Integração oficial via Google Identity Services com proteção total de privacidade.</em>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="slide-footer">
+        <div>Personal Josy • <strong>Módulos de Agenda</strong></div>
+        <div>Controle de tempo de alta precisão para personal trainers</div>
+      </footer>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 5: GESTÃO DE ALUNOS & REPOSIÇÕES
+         ========================================== -->
+    <section class="slide" id="slide-5">
+      <header class="slide-header">
+        <div>
+          <span class="slide-tag">Relacionamento e Retenção</span>
+          <h2 class="slide-title">Ficha do Aluno &amp; Fila Inteligente de Reposições</h2>
+          <p class="slide-subtitle">Atendimento individualizado e regras transparentes que eliminam desgastes com alunos.</p>
+        </div>
+        <div class="slide-header-right">
+          <img src="reference/identidade/kit-visual-completo-v2/03_simbolo/claro/personal_josy_simbolo_claro_transparente.svg" alt="" class="slide-header-logo">
+          <span class="slide-num">05 / 08</span>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <div class="grid-duplo">
+          <div class="card-modulo">
+            <div>
+              <div class="modulo-cabecalho">
+                <div class="modulo-icone">👤</div>
+                <h4>Ficha Centralizada do Aluno</h4>
+              </div>
+              <ul class="lista-recursos">
+                <li><strong>Perfil Completo:</strong> Dados de contato, telefone, e-mail e data de início da consultoria em um só lugar.</li>
+                <li><strong>Metas e Condições de Saúde:</strong> Registre objetivos (hipertrofia, emagrecimento, reabilitação) e observações posturais.</li>
+                <li><strong>Botão de Ação Rápida WhatsApp:</strong> Abra a conversa com o aluno com um único toque direto da ficha.</li>
+                <li><strong>Histórico de Presenças:</strong> Registro detalhado de frequência para comprovar constância e valorizar seu trabalho.</li>
+              </ul>
+            </div>
+            <div class="box-destaque-modulo">
+              🎯 <em>Fácil identificação visual de alunos ativos, pendentes ou inativos.</em>
+            </div>
+          </div>
+
+          <div class="card-modulo">
+            <div>
+              <div class="modulo-cabecalho">
+                <div class="modulo-icone">⚖️</div>
+                <h4>Fila Inteligente de Reposições</h4>
+              </div>
+              <ul class="lista-recursos">
+                <li><strong>Créditos Automáticos:</strong> Cancelamentos com justificativa viram créditos de reposição automaticamente no perfil.</li>
+                <li><strong>Regras Claras de Validade:</strong> Sistema de competência que estabelece prazos para reposição, evitando cobranças de aulas antigas.</li>
+                <li><strong>Encaixe Ágil na Grade:</strong> Visualize créditos disponíveis e agende a reposição em janelas vagas da sua semana com facilidade.</li>
+              </ul>
+            </div>
+            <div class="box-destaque-modulo">
+              🛡️ <em>Sem discussões sobre 'quantas aulas faltam': saldo 100% transparente e auditável.</em>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="slide-footer">
+        <div>Personal Josy • <strong>Gestão de Alunos e Aulas</strong></div>
+        <div>Transparência que fideliza alunos e protege a autoridade do profissional</div>
+      </footer>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 6: CONTROLE FINANCEIRO & PWA OFFLINE
+         ========================================== -->
+    <section class="slide" id="slide-6">
+      <header class="slide-header">
+        <div>
+          <span class="slide-tag">Gestão &amp; Tecnologia</span>
+          <h2 class="slide-title">Previsibilidade Financeira &amp; Resiliência Offline</h2>
+          <p class="slide-subtitle">Monitore sua receita com precisão e conte com um aplicativo que nunca te deixa na mão.</p>
+        </div>
+        <div class="slide-header-right">
+          <img src="reference/identidade/kit-visual-completo-v2/03_simbolo/claro/personal_josy_simbolo_claro_transparente.svg" alt="" class="slide-header-logo">
+          <span class="slide-num">06 / 08</span>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <div class="grid-duplo">
+          <div class="card-modulo">
+            <div>
+              <div class="modulo-cabecalho">
+                <div class="modulo-icone">💰</div>
+                <h4>Controle por Ciclo de Mensalidade</h4>
+              </div>
+              <ul class="lista-recursos">
+                <li><strong>Vencimento Individualizado:</strong> Cada aluno possui seu ciclo de pagamento conforme o dia de fechamento do plano.</li>
+                <li><strong>Status de Pagamento em Tempo Real:</strong> Identifique em segundos quem está em dia, pendente ou com mensalidade em aberto.</li>
+                <li><strong>Previsão de Faturamento:</strong> Tenha clareza sobre o valor a receber no mês e planeje suas finanças pessoais com tranquilidade.</li>
+              </ul>
+            </div>
+            <div class="box-destaque-modulo">
+              📈 <em>Reduza a inadimplência involuntária mantendo o controle das renovações na ponta dos dedos.</em>
+            </div>
+          </div>
+
+          <div class="card-modulo">
+            <div>
+              <div class="modulo-cabecalho">
+                <div class="modulo-icone">⚡</div>
+                <h4>PWA &amp; Funcionamento Offline-First</h4>
+              </div>
+              <ul class="lista-recursos">
+                <li><strong>Instalável em Qualquer Aparelho:</strong> Adicione o Personal Josy na tela inicial do Android ou iPhone sem precisar de App Store.</li>
+                <li><strong>Funciona Sem Internet no Salão:</strong> Consulte a agenda e dê presença mesmo no subsolo ou em áreas sem sinal de operadora.</li>
+                <li><strong>Sincronização em Nuvem:</strong> As alterações são salvas localmente no aparelho e sincronizadas com o MongoDB ao reconectar.</li>
+              </ul>
+            </div>
+            <div class="box-destaque-modulo">
+              🌐 <em>Leve, rápido e sem ocupar memória desnecessária no seu celular.</em>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="slide-footer">
+        <div>Personal Josy • <strong>Finanças e Arquitetura</strong></div>
+        <div>Operação confiável em qualquer ambiente e previsibilidade financeira</div>
+      </footer>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 7: TABELA COMPARATIVA
+         ========================================== -->
+    <section class="slide" id="slide-7">
+      <header class="slide-header">
+        <div>
+          <span class="slide-tag">O Salto de Eficiência</span>
+          <h2 class="slide-title">A Transformação Prática: Antes vs. Depois</h2>
+          <p class="slide-subtitle">Veja a diferença concreta entre gerenciar no improviso e utilizar o Personal Josy.</p>
+        </div>
+        <div class="slide-header-right">
+          <img src="reference/identidade/kit-visual-completo-v2/03_simbolo/claro/personal_josy_simbolo_claro_transparente.svg" alt="" class="slide-header-logo">
+          <span class="slide-num">07 / 08</span>
+        </div>
+      </header>
+
+      <div class="slide-body">
+        <div class="tabela-comparativa-wrapper">
+          <table class="tabela-comparativa">
+            <thead>
+              <tr>
+                <th class="col-criterio">Processo de Gestão</th>
+                <th class="col-antes">Sem o Personal Josy (Improviso)</th>
+                <th class="col-depois">Com o Personal Josy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="col-criterio">Agendamentos</td>
+                <td class="col-antes"><span class="tag-x">✕</span> Áudios e mensagens perdidas no WhatsApp</td>
+                <td class="col-depois"><span class="tag-check">✓</span> Grade visual limpa (diária, semanal e mensal)</td>
+              </tr>
+              <tr>
+                <td class="col-criterio">Calendário Pessoal</td>
+                <td class="col-antes"><span class="tag-x">✕</span> Furos e choque de horários com a vida pessoal</td>
+                <td class="col-depois"><span class="tag-check">✓</span> Sincronização automática com Google Calendar</td>
+              </tr>
+              <tr>
+                <td class="col-criterio">Reposição de Faltas</td>
+                <td class="col-antes"><span class="tag-x">✕</span> Alunos cobrando aulas de meses atrás sem registro</td>
+                <td class="col-depois"><span class="tag-check">✓</span> Fila inteligente com regras e prazos de validade</td>
+              </tr>
+              <tr>
+                <td class="col-criterio">Cobrança de Mensalidades</td>
+                <td class="col-antes"><span class="tag-x">✕</span> Esquecimento de cobrar no vencimento do aluno</td>
+                <td class="col-depois"><span class="tag-check">✓</span> Ciclos claros de cobrança e status em tempo real</td>
+              </tr>
+              <tr>
+                <td class="col-criterio">Sinal na Academia</td>
+                <td class="col-antes"><span class="tag-x">✕</span> Apps lentos que travam quando o 4G/5G oscila</td>
+                <td class="col-depois"><span class="tag-check">✓</span> PWA offline-first: funciona 100% mesmo sem internet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <footer class="slide-footer">
+        <div>Personal Josy • <strong>Comparativo de Produtividade</strong></div>
+        <div>Menos tempo administrando, mais tempo treinando e faturando</div>
+      </footer>
+    </section>
+
+    <!-- ==========================================
+         SLIDE 8: CALL TO ACTION
+         ========================================== -->
+    <section class="slide slide-cta" id="slide-8">
+      <div class="capa-selo-ano">Comece Gratuitamente</div>
+
+      <div class="cta-container-central">
+        <img src="reference/identidade/kit-visual-completo-v2/01_horizontal/escuro/personal_josy_horizontal_escuro_transparente.svg" alt="Personal Josy" class="cta-logo">
+
+        <h2 class="cta-titulo">Pronto para Levar Sua Consultoria ao <span>Próximo Nível</span>?</h2>
+
+        <p class="cta-subtitulo">
+          Junte-se a personal trainers que já simplificaram suas rotinas, reduziram o estresse com reposições e profissionalizaram o atendimento aos alunos.
+        </p>
+
+        <a href="../index.html" class="cta-botao-principal">
+          <span>🚀 Entrar com Google e Acessar Agora</span>
+        </a>
+
+        <div class="cta-garantias">
+          <span><strong>✓</strong> Sem cartão de crédito</span>
+          <span><strong>✓</strong> Acesso imediato em 1 clique</span>
+          <span><strong>✓</strong> Dados 100% seguros e isolados</span>
+        </div>
+      </div>
+
+      <footer class="slide-footer" style="width: 100%;">
+        <div>Personal Josy • Marca Oficial Registrada</div>
+        <div>Desenvolvido com foco no profissional de Educação Física</div>
+      </footer>
+    </section>
+
+  </main>
+
+  <script>
+    // Navegação simples entre slides na visualização em tela
+    let slideAtual = 1;
+    const totalSlides = 8;
+
+    function atualizarIndicador() {
+      const el = document.getElementById('indicadorSlide');
+      if (el) el.textContent = `Slide ${slideAtual} / ${totalSlides}`;
+    }
+
+    function mudarSlide(delta) {
+      slideAtual += delta;
+      if (slideAtual < 1) slideAtual = 1;
+      if (slideAtual > totalSlides) slideAtual = totalSlides;
+      const alvo = document.getElementById(`slide-${slideAtual}`);
+      if (alvo) {
+        alvo.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      atualizarIndicador();
+    }
+
+    // Teclas de atalho para apresentação
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        mudarSlide(1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        mudarSlide(-1);
+      } else if (e.key === 'Home') {
+        e.preventDefault();
+        slideAtual = 1;
+        document.getElementById('slide-1').scrollIntoView({ behavior: 'smooth' });
+        atualizarIndicador();
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        slideAtual = totalSlides;
+        document.getElementById(`slide-${totalSlides}`).scrollIntoView({ behavior: 'smooth' });
+        atualizarIndicador();
+      }
+    });
+  </script>
+</body>
+</html>
+
