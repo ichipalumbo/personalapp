@@ -1,126 +1,129 @@
-# Personal Josy — Apresentação Comercial e Guia do Produto
+# Personal Josy — Apresentação Comercial (Deck de Slides 16:9)
 
-> **Personal Josy** • Agenda inteligente e gestão completa para Personal Trainers  
-> **Público**: Personal Trainers, Preparadores Físicos, Consultores Online e Instrutores Autônomos  
-> **Versão do Documento**: 1.1 • Outubro de 2026  
-> **Acesso e Demonstração**: [Acessar Personal Josy](https://josy-personal-app.vercel.app)
-
----
-
-## 1. O Desafio: A Rotina do Personal Trainer
-
-A rotina de um personal trainer de alta performance é intensa. Entre orientar treinos no salão, deslocar-se entre academias ou condomínios, corrigir posturas e motivar alunos, sobram poucas horas para administrar o próprio negócio.
-
-O resultado comum é a **sobrecarga operacional invisível**:
-- **O caos do WhatsApp**: dezenas de mensagens diárias para marcar, desmarcar e confirmar horários.
-- **Furos e conflitos na agenda**: esquecimento de compromissos pessoais ou falta de tempo de deslocamento entre um aluno e outro por ausência de sincronia com a agenda do celular.
-- **Controle confuso de reposições e contratos**: alunos com pacotes de 2x ou 3x na semana que ficam com aulas pendentes de agendamento ou cobram reposições meses depois, sem registro claro.
-- **Desgaste financeiro**: planilhas e contas manuais para somar quantas aulas cada aluno realizou no ciclo, quem já pagou, quem teve ajuste e qual o dia de vencimento de cada plano.
-- **Falta de sinal na academia**: aplicativos pesados que travam quando a rede móvel oscila no subsolo ou no salão de musculação.
-
-> *"O tempo que você perde somando aulas em planilhas e respondendo mensagens sobre horários é o tempo que você poderia investir em novos alunos ou no seu próprio descanso."*
+> **Formato**: Apresentação Comercial / Pitch Deck (16:9 Widescreen)  
+> **Público**: Personal Trainers, Preparadores Físicos e Instrutores Autônomos  
+> **Versão**: 2.1 • Outubro de 2026 (Com SVGs oficiais da aplicação)  
+> **Versão Interativa HTML**: [`docs/apresentacao-personal-josy.html`](apresentacao-personal-josy.html)  
+> **Versão em PDF (Slides)**: [`docs/apresentacao-personal-josy.pdf`](apresentacao-personal-josy.pdf)  
 
 ---
 
-## 2. A Solução: Personal Josy
+<!-- slide -->
+## Slide 1: Capa Oficial
 
-O **Personal Josy** nasceu para transformar essa realidade. Trata-se de uma plataforma moderna de **agenda inteligente, controle de alunos e automação financeira**, desenvolvida sob medida para a dinâmica real de profissionais de Educação Física.
+### **Personal Josy — A Gestão da Sua Carreira de Personal em Outro Nível**
+*Agenda e gestão para personal trainers.*
 
-Sem burocracia, sem termos complexos e sem exigir cadastros longos: com apenas **um clique usando sua Conta Google**, você tem um ecossistema completo na palma da mão — no celular, tablet ou computador.
-
-### Arquitetura do Ecossistema Personal Josy
-
-| 📅 Agenda Inteligente | 👥 Gestão de Alunos | 💰 Controle Financeiro |
-| :--- | :--- | :--- |
-| • Visão Semanal e Diária em linha do tempo<br>• Sincronização nativa com **Google Calendar**<br>• Registro de Aulas, Bloqueios, Deslocamentos e Reposições | • Modalidades **Personal Trainer** e **Consultoria Online**<br>• Alerta automático de aulas pendentes no contrato<br>• Controle de locais de treino e observações de saúde | • Cálculo automático de valores por ciclo e hora/aula<br>• Fechamento personalizado por dia de vencimento<br>• Liquidação em 1 clique (*Marcar como pago*) e ajustes |
-
-> **⚡ Base Tecnológica: PWA Offline-First & Sincronização em Nuvem**  
-> Funciona 100% mesmo sem sinal de internet na academia, salvando as alterações localmente no aparelho e sincronizando automaticamente na nuvem em tempo real.
+- **Proposta de Valor**: Diga adeus ao descontrole de horários, perdas de reposições e planilhas confusas. Tenha toda a sua consultoria física centralizada em uma ferramenta ágil, moderna e integrada ao Google Calendar.
+- **Destaques Rápidos**:
+  - `[Agenda]` **Agenda Inteligente**: Visões diária, semanal e mensal integradas ao Google Calendar em tempo real.
+  - `[Reposições]` **Reposições Sem Atrito**: Controle de créditos e regras claras de validade para proteger seu faturamento.
+  - `[PWA]` **PWA Offline-First**: Funcione 100% mesmo sem sinal no subsolo da academia, salvando no aparelho sem travar.
 
 ---
 
-## 3. Principais Funcionalidades e Benefícios Práticos
+<!-- slide -->
+## Slide 2: O Cenário Atual — As Dores do Personal Trainer
 
-### 3.1 Agenda Inteligente e Multivisão
-Tenha o controle visual total do seu dia e da sua semana em segundos.
+### **O Caos Invisível na Rotina de Quem Vive do Movimento**
+*Você se preparou para prescrever treinos e transformar vidas, não para se afogar em burocracia.*
 
-- **Visão Diária e Semanal**: alterne rapidamente entre o panorama da sua semana e a linha do tempo detalhada do dia, com indicadores visuais de status e local de atendimento.
-- **4 Tipos de Compromisso Sob Medida**: registre **Aulas** (pontuais ou recorrentes), **Bloqueios** de horário indisponível, intervalos de **Deslocamento/Trânsito** entre locais e **Reposições** sem criar recorrência indevida.
-- **Repetição Inteligente**: configure a grade fixa do aluno selecionando os dias da semana (ex: Seg, Ter, Qui) uma única vez. O sistema preenche a agenda futura automaticamente sem perder o contexto.
-
-### 3.2 Sincronização em Tempo Real com o Google Calendar
-Esqueça a necessidade de consultar ou atualizar dois calendários diferentes.
-
-- **Integração Bidirecional e Transparente**: seus compromissos agendados ou editados no **Personal Josy** refletem diretamente na sua agenda conectada à Conta Google.
-- **Notificações Nativas**: aproveite os alertas nativos no celular e no smartwatch para nunca se atrasar para um treino ou esquecer um deslocamento.
-- **Proteção de Horários**: bloqueios registrados evitam que você agende aulas em horários destinados ao seu descanso ou compromissos pessoais.
-
-### 3.3 Gestão Completa de Alunos (Presencial e Online)
-Centralize todas as informações e contratos dos seus alunos em fichas inteligentes.
-
-- **Atendimento Híbrido**: classifique cada aluno entre **Personal Trainer** (presencial, com definição de academia ou condomínio) ou **Consultoria Online**.
-- **Monitoramento Automático de Contrato**: cadastre a frequência semanal contratada (ex: 2x ou 3x na semana) e deixe o sistema avisar automaticamente caso faltem aulas agendadas na grade daquele aluno.
-- **Ficha Detalhada**: mantenha telefone de contato, valor de hora/aula, dia de vencimento e observações importantes de saúde ou restrições articulares (ex: *"atenção ao joelho esquerdo"*) sempre à mão.
-
-### 3.4 Controle de Reposições sem Desgaste
-Faltas e desmarcações são inevitáveis, mas não precisam gerar confusão nem prejuízo.
-
-- **Painel de Reposições por Aluno**: visualize instantaneamente no card de cada aluno se há reposições pendentes e acesse o histórico completo com um toque.
-- **Encaixe Descomplicado**: utilize a função exclusiva de **Agendar Reposição** para alocar um aluno em um horário livre de forma pontual, sem alterar a regra de recorrência semanal do contrato.
-
-### 3.5 Automação Financeira por Ciclos de Cobrança
-Mantenha seu faturamento sob controle com cálculo automático e zero planilhas.
-
-- **Cálculo Automático por Ciclo**: a aba **Finanças** cruza automaticamente as aulas agendadas no período do ciclo (ex: 26/10 a 10/11) com o valor da hora/aula do aluno, exibindo o total exato a receber.
-- **Atualização Dinâmica**: alterou o valor da hora/aula ou adicionou novos treinos na agenda? O resumo financeiro recalcula os valores instantaneamente.
-- **Gestão de Recebimentos e Ajustes**: acompanhe os ciclos **Em aberto**, aplique ajustes personalizados quando necessário, consulte ciclos anteriores e quite pagamentos com um toque no botão **Marcar como pago**.
-
-### 3.6 Resiliência Total: PWA & Tecnologia Offline-First
-O sinal de internet caiu no subsolo da academia ou no condomínio? Isso nunca será um obstáculo.
-
-- **Instale como Aplicativo Nativo (PWA)**: adicione o Personal Josy direto na tela inicial do seu Android, iPhone, tablet ou computador sem ocupar memória e sem depender de lojas de aplicativos.
-- **Funcionamento Offline e Nuvem**: consulte sua agenda e gerencie aulas mesmo sem conexão. Tudo é salvo com segurança e sincronizado na nuvem assim que o sinal retorna.
-
-### 3.7 Privacidade, Segurança e Isolamento de Dados
-- **Acesso Oficial com Google OAuth**: autenticação rápida, criptografada e no padrão global de segurança do Google, além de contar com **Modo Leitura** para visualização rápida.
-- **Isolamento Multiusuário**: cada profissional tem seus dados 100% protegidos e isolados na nuvem. Seus alunos, horários e valores financeiros são acessíveis exclusivamente por você.
+1. `[WhatsApp]` **O Caos no WhatsApp**: Dezenas de mensagens diárias para confirmar, alterar ou desmarcar aulas picadas.
+2. `[Agenda]` **Conflitos e Furos de Agenda**: Esquecimento de compromissos pessoais e choque de horários entre alunos por anotações soltas.
+3. `[Reposições]` **Reposições Sem Fim**: Alunos que faltam e cobram reposições meses depois, sem controle de prazos ou regras claras.
+4. `[Financeiro]` **Inadimplência Involuntária**: Esquecimento do dia de vencimento de cada aluno, gerando constrangimento e perda de receita.
 
 ---
 
-## 4. O Impacto no Seu Negócio: Antes vs. Depois
+<!-- slide -->
+## Slide 3: A Solução — Personal Josy
 
-| Aspecto | Antes do Personal Josy | Com o Personal Josy |
-| :--- | :--- | :--- |
-| **Agendamentos e Trânsito** | Troca interminável de mensagens no WhatsApp e atrasos entre locais | Grade visual com aulas fixas, bloqueios e tempo de deslocamento |
-| **Cumprimento de Contrato** | Esquecimento de agendar todas as aulas semanais contratadas pelo aluno | Alerta visual automático quando a recorrência na agenda é menor que o contrato |
-| **Integração** | Agenda pessoal do celular desconectada da rotina de treinos | Sincronização direta e em tempo real com a sua Conta Google |
-| **Reposições** | Alunos cobrando aulas de meses atrás sem registro ou controle | Histórico de reposições no card do aluno e agendamento pontual sem conflitos |
-| **Financeiro** | Horas somando aulas dadas no mês para calcular quanto cobrar | Cálculo automático do valor total por ciclo de acordo com as aulas agendadas |
-| **Acesso na Academia** | Aplicativos pesados que travam onde o sinal 4G/5G é fraco | Tecnologia PWA Offline-First ultraleve que funciona em qualquer lugar |
+### **O Seu Hub Completo de Gestão**
+*Desenvolvido sob medida para a dinâmica de academias, condomínios e treinos ao ar livre.*
 
----
-
-## 5. Dúvidas Frequentes (FAQ)
-
-### Preciso pagar alguma taxa ou cadastrar cartão para começar a testar?
-Não. Você pode acessar instantaneamente utilizando sua Conta Google existente (ou explorar pelo modo leitura) e experimentar na prática todos os recursos de agenda, alunos e finanças.
-
-### Funciona tanto no celular quanto no tablet ou computador?
-Sim! O Personal Josy é um PWA (*Progressive Web App*) responsivo. Ele se adapta perfeitamente a qualquer smartphone Android, iPhone, tablet ou computador direto pelo navegador e pode ser instalado na tela inicial com um único toque.
-
-### E se eu mudar o valor da aula ou o horário de um aluno no meio do mês?
-O sistema atualiza tudo para você! Ao editar os dados cadastrais ou a recorrência de um aluno, o aplicativo atualiza os agendamentos vinculados e recalcula o ciclo financeiro automaticamente.
-
-### Meus dados e os dados dos meus alunos estão seguros?
-Absolutamente. O Personal Josy utiliza autenticação oficial do Google (OAuth 2.0) e banco de dados em nuvem criptografado, garantindo que apenas você tenha acesso às informações da sua consultoria.
+- **01. Organização Absoluta**: Grade diária em linha do tempo, visão semanal/mensal integrada e status de presença codificado por cores.
+- **02. Sincronização Nativa**: Espelhamento automático com o Google Calendar. Alertas nativos no celular e relógio, sem choque com compromissos pessoais.
+- **03. Tecnologia Sem Barreiras**: Acesso em 1 clique com Google OAuth (sem cartões nem cadastros longos), PWA leve instalável e funcionamento offline-first.
 
 ---
 
-## 6. Comece Agora Mesmo
+<!-- slide -->
+## Slide 4: Funcionalidades I — Agenda & Google Calendar
 
-Eleve o padrão do seu atendimento, elimine o retrabalho com planilhas e tenha controle total da sua carreira.
+### **Agenda Inteligente & Google Calendar Unificados**
+*Sua vida profissional e pessoal alinhadas sem a necessidade de consultar dois aplicativos.*
 
-> **Transforme a gestão dos seus treinos hoje mesmo.**  
-> Acesse com sua Conta Google e experimente o **Personal Josy** na prática!
+- **Agenda Multivisão Dinâmica**:
+  - Visão diária em linha do tempo detalhada por horário e status.
+  - Visões semanal e mensal para planejar a capacidade de atendimento e preencher janelas vagas.
+  - Recorrências inteligentes: configure a grade fixa de horários uma única vez.
+- **Sincronização com Google Calendar**:
+  - Espelhamento bidirecional contínuo de aulas criadas, reagendadas ou canceladas.
+  - Notificações nativas no smartphone e smartwatch para pontualidade impecável.
+  - Respeito automático a bloqueios e compromissos pessoais cadastrados na agenda Google.
 
 ---
+
+<!-- slide -->
+## Slide 5: Funcionalidades II — Gestão de Alunos & Reposições
+
+### **Ficha do Aluno & Fila Inteligente de Reposições**
+*Atendimento individualizado e regras transparentes que eliminam desgastes na relação aluno-personal.*
+
+- **Ficha Centralizada do Aluno**:
+  - Perfil completo com dados de contato, metas (hipertrofia, emagrecimento, reabilitação) e observações posturais/saúde.
+  - Ação rápida WhatsApp: inicie conversas com apenas 1 toque.
+  - Histórico de constância e frequência para comprovar evolução e aumentar retenção.
+- **Fila Inteligente de Reposições**:
+  - Cancelamentos justificados geram créditos de reposição automáticos.
+  - Regras de validade e competência pré-definidas (sem cobrança de aulas de meses anteriores).
+  - Encaixe ágil de reposições em janelas vagas da sua semana.
+
+---
+
+<!-- slide -->
+## Slide 6: Funcionalidades III — Finanças & Modo Offline
+
+### **Previsibilidade Financeira & Resiliência Offline**
+*Monitore sua receita com clareza e conte com um aplicativo que nunca trava.*
+
+- **Controle por Ciclo de Mensalidade**:
+  - Vencimento individualizado conforme a data de início de cada aluno.
+  - Status em tempo real: saiba quem está em dia, quem está pendente e o faturamento total previsto do mês.
+  - Redução drástica da inadimplência e das cobranças desconfortáveis de última hora.
+- **PWA & Funcionamento Offline-First**:
+  - Instalação direta na tela inicial (Android e iOS) sem precisar baixar em lojas.
+  - Funciona 100% no subsolo ou em áreas sem sinal de internet na academia.
+  - Persistência local no aparelho e sincronização automática com o banco em nuvem (MongoDB) assim que a conexão volta.
+
+---
+
+<!-- slide -->
+## Slide 7: Comparativo — Antes vs. Depois
+
+### **A Transformação Prática na Rotina de Atendimento**
+
+| Processo de Gestão | Sem o Personal Josy (Improviso) | Com o Personal Josy |
+|---|---|---|
+| **Agendamentos** | [x] Áudios e mensagens perdidas no WhatsApp | [✓] Grade visual limpa (diária, semanal e mensal) |
+| **Calendário Pessoal** | [x] Furos e choque de horários com vida pessoal | [✓] Sincronização automática com Google Calendar |
+| **Reposição de Faltas**| [x] Alunos cobrando aulas de meses atrás | [✓] Fila inteligente com regras e prazos de validade |
+| **Cobrança** | [x] Esquecimento de cobrar no vencimento | [✓] Ciclos claros de cobrança e status em tempo real |
+| **Sinal na Academia** | [x] Apps lentos que travam sem internet | [✓] PWA offline-first: funciona 100% mesmo sem sinal |
+
+---
+
+<!-- slide -->
+## Slide 8: Encerramento & Call to Action (CTA)
+
+### **Pronto para Levar Sua Consultoria ao Próximo Nível?**
+*Junte-se a personal trainers que simplificaram a rotina e profissionalizaram o atendimento aos alunos.*
+
+- **Acesse Agora Gratuitamente**:
+  - [✓] Sem cartão de crédito
+  - [✓] Acesso imediato em 1 clique com sua Conta Google
+  - [✓] Dados 100% seguros e isolados na nuvem
+- **Link de Acesso**: [Entrar com Google e Acessar o Personal Josy](../index.html)
+
+---
+*Personal Josy • Marca e Identidade Visual Registradas • Desenvolvido para o profissional de Educação Física.*

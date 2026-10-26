@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    /* Reset & Variáveis */
+    /* Reset & Variáveis de Identidade Visual v3 */
     :root {
       --cor-base: #202020;
       --cor-card-dark: #2A2A2A;
@@ -46,20 +46,39 @@
       padding: 24px 0 60px;
     }
 
+    /* Ícones SVG do App */
+    .app-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      vertical-align: middle;
+    }
+
+    .app-icon svg {
+      width: 100%;
+      height: 100%;
+      fill: currentColor;
+    }
+
+    .app-icon-multi svg {
+      fill: none; /* preserva cores internas */
+    }
+
     /* Barra de Controle de Slides na Tela */
     .deck-controls {
       position: fixed;
       bottom: 20px;
       z-index: 1000;
-      background: rgba(32, 32, 32, 0.92);
-      backdrop-filter: blur(8px);
+      background: rgba(32, 32, 32, 0.94);
+      backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.15);
       padding: 8px 18px;
       border-radius: 40px;
       display: flex;
       align-items: center;
       gap: 16px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     }
 
     .deck-controls button {
@@ -73,7 +92,7 @@
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       transition: all 0.2s ease;
     }
 
@@ -83,11 +102,19 @@
       border-color: var(--cor-amarelo);
     }
 
+    .deck-controls button:hover svg {
+      fill: #202020;
+    }
+
     .deck-controls .btn-imprimir {
       background: var(--cor-amarelo);
       color: #202020;
       font-weight: 600;
       border-color: var(--cor-amarelo);
+    }
+
+    .deck-controls .btn-imprimir svg {
+      fill: #202020;
     }
 
     .deck-controls .slide-indicator {
@@ -119,18 +146,11 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 44px 56px 36px;
+      padding: 42px 56px 34px;
       box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
       border: 1px solid rgba(255, 255, 255, 0.08);
       page-break-after: always;
       break-after: page;
-    }
-
-    /* Slide Claro (Variante) */
-    .slide.tema-claro {
-      background: #FFFFFF;
-      color: var(--cor-texto-escuro);
-      border-color: var(--cor-borda-clara);
     }
 
     /* Topo do Slide Interno */
@@ -138,11 +158,13 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
 
     .slide-tag {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
@@ -154,11 +176,6 @@
       margin-bottom: 6px;
     }
 
-    .slide.tema-claro .slide-tag {
-      background: #FFF7C2;
-      color: #8C7500;
-    }
-
     .slide-title {
       font-size: 26px;
       font-weight: 700;
@@ -166,19 +183,11 @@
       color: #FFFFFF;
     }
 
-    .slide.tema-claro .slide-title {
-      color: var(--cor-texto-escuro);
-    }
-
     .slide-subtitle {
       font-size: 14px;
       color: var(--cor-texto-mutado);
       margin-top: 4px;
       font-weight: 400;
-    }
-
-    .slide.tema-claro .slide-subtitle {
-      color: #666666;
     }
 
     .slide-header-right {
@@ -201,11 +210,6 @@
       border-radius: 12px;
     }
 
-    .slide.tema-claro .slide-num {
-      color: #999999;
-      background: #EEEEEE;
-    }
-
     /* Conteúdo Principal */
     .slide-body {
       flex: 1;
@@ -219,23 +223,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-top: 16px;
+      padding-top: 14px;
       border-top: 1px solid rgba(255, 255, 255, 0.1);
       font-size: 11px;
       color: var(--cor-texto-mutado);
     }
 
-    .slide.tema-claro .slide-footer {
-      border-top-color: var(--cor-borda-clara);
-      color: #888888;
-    }
-
     .slide-footer strong {
       color: var(--cor-amarelo);
-    }
-
-    .slide.tema-claro .slide-footer strong {
-      color: #202020;
     }
 
     /* ==============================================================
@@ -244,7 +239,7 @@
     .slide-capa {
       background: radial-gradient(circle at 85% 15%, #2d2d2d 0%, #202020 100%);
       justify-content: space-between;
-      padding: 50px 64px 40px;
+      padding: 48px 64px 38px;
     }
 
     .capa-topo-marca {
@@ -267,15 +262,20 @@
       padding: 6px 14px;
       border-radius: 20px;
       letter-spacing: 0.5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
 
     .capa-centro {
       max-width: 880px;
-      margin: 20px 0;
+      margin: 18px 0;
     }
 
     .capa-badge {
-      display: inline-block;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
       background: var(--cor-amarelo);
       color: #202020;
       font-weight: 700;
@@ -300,7 +300,7 @@
     }
 
     .capa-descricao {
-      font-size: 17px;
+      font-size: 16.5px;
       line-height: 1.55;
       color: var(--cor-texto-secundario);
       max-width: 800px;
@@ -318,14 +318,24 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       padding: 14px 18px;
-      transition: transform 0.2s;
     }
 
-    .capa-card-item strong {
-      display: block;
+    .capa-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .capa-card-header .app-icon {
+      color: var(--cor-amarelo);
+      width: 18px;
+      height: 18px;
+    }
+
+    .capa-card-header strong {
       color: var(--cor-amarelo);
       font-size: 14px;
-      margin-bottom: 4px;
       font-weight: 600;
     }
 
@@ -365,8 +375,12 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
       flex-shrink: 0;
+    }
+
+    .card-dor-icone .app-icon {
+      width: 22px;
+      height: 22px;
     }
 
     .card-dor-texto h4 {
@@ -413,11 +427,33 @@
       background: var(--cor-amarelo);
     }
 
-    .card-pilar-numero {
-      font-size: 32px;
-      font-weight: 800;
-      color: rgba(255, 222, 23, 0.25);
+    .card-pilar-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 12px;
+    }
+
+    .card-pilar-numero {
+      font-size: 30px;
+      font-weight: 800;
+      color: rgba(255, 222, 23, 0.35);
+    }
+
+    .card-pilar-icone {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 222, 23, 0.12);
+      color: var(--cor-amarelo);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-pilar-icone .app-icon {
+      width: 18px;
+      height: 18px;
     }
 
     .card-pilar h4 {
@@ -447,6 +483,14 @@
       padding: 3px 8px;
       border-radius: 4px;
       font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip-item .app-icon {
+      width: 11px;
+      height: 11px;
     }
 
     /* ==============================================================
@@ -468,12 +512,6 @@
       justify-content: space-between;
     }
 
-    .slide.tema-claro .card-modulo {
-      background: #FFFFFF;
-      border-color: var(--cor-borda-clara);
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-    }
-
     .modulo-cabecalho {
       display: flex;
       align-items: center;
@@ -490,19 +528,19 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 19px;
-      font-weight: 700;
       flex-shrink: 0;
+    }
+
+    .modulo-icone .app-icon {
+      width: 22px;
+      height: 22px;
+      color: #202020;
     }
 
     .modulo-cabecalho h4 {
       font-size: 17px;
       font-weight: 700;
       color: #FFFFFF;
-    }
-
-    .slide.tema-claro .modulo-cabecalho h4 {
-      color: var(--cor-texto-escuro);
     }
 
     .lista-recursos {
@@ -514,31 +552,30 @@
 
     .lista-recursos li {
       position: relative;
-      padding-left: 24px;
+      padding-left: 26px;
       font-size: 13px;
       color: var(--cor-texto-secundario);
       line-height: 1.48;
     }
 
-    .slide.tema-claro .lista-recursos li {
-      color: #444444;
-    }
-
-    .lista-recursos li::before {
-      content: "✓";
+    .lista-recursos li .check-icon {
       position: absolute;
       left: 0;
-      top: 1px;
-      color: #202020;
-      background: var(--cor-amarelo);
+      top: 2px;
       width: 16px;
       height: 16px;
       border-radius: 50%;
-      font-size: 9px;
-      font-weight: 800;
+      background: var(--cor-amarelo);
+      color: #202020;
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    .lista-recursos li .check-icon svg {
+      width: 10px;
+      height: 10px;
+      fill: #202020;
     }
 
     .box-destaque-modulo {
@@ -554,10 +591,10 @@
       gap: 10px;
     }
 
-    .slide.tema-claro .box-destaque-modulo {
-      background: #FFFCE6;
-      border-color: #E6C800;
-      color: #444444;
+    .box-destaque-modulo .app-icon {
+      width: 16px;
+      height: 16px;
+      color: var(--cor-amarelo);
     }
 
     /* ==============================================================
@@ -629,16 +666,31 @@
       font-weight: 500;
     }
 
-    .tag-x {
-      color: var(--cor-alerta);
-      font-weight: 700;
-      margin-right: 6px;
+    .tag-icon-status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      margin-right: 8px;
+      vertical-align: -3px;
     }
 
-    .tag-check {
-      color: var(--cor-amarelo);
-      font-weight: 700;
-      margin-right: 6px;
+    .tag-icon-status.xmark {
+      background: rgba(255, 94, 87, 0.2);
+      color: var(--cor-alerta);
+    }
+
+    .tag-icon-status.check {
+      background: var(--cor-amarelo);
+      color: #202020;
+    }
+
+    .tag-icon-status svg {
+      width: 10px;
+      height: 10px;
+      fill: currentColor;
     }
 
     /* ==============================================================
@@ -651,7 +703,7 @@
       flex-direction: column;
       justify-content: space-between;
       align-items: center;
-      padding: 46px 60px 36px;
+      padding: 44px 60px 34px;
     }
 
     .cta-container-central {
@@ -693,9 +745,9 @@
       gap: 12px;
       background: var(--cor-amarelo);
       color: #202020;
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 700;
-      padding: 14px 34px;
+      padding: 14px 32px;
       border-radius: 8px;
       text-decoration: none;
       box-shadow: 0 8px 24px rgba(255, 222, 23, 0.3);
@@ -706,6 +758,11 @@
       background: #FFFFFF;
       transform: translateY(-2px);
       box-shadow: 0 10px 28px rgba(255, 255, 255, 0.2);
+    }
+
+    .cta-botao-principal .app-icon {
+      width: 20px;
+      height: 20px;
     }
 
     .cta-garantias {
@@ -720,6 +777,12 @@
       display: flex;
       align-items: center;
       gap: 6px;
+    }
+
+    .cta-garantias .check-mini {
+      color: var(--cor-amarelo);
+      width: 14px;
+      height: 14px;
     }
 
     .cta-garantias strong {
@@ -759,7 +822,7 @@
         border-radius: 0 !important;
         border: none !important;
         box-shadow: none !important;
-        padding: 16mm 20mm 14mm !important;
+        padding: 15mm 20mm 13mm !important;
         page-break-after: always !important;
         break-after: page !important;
         page-break-inside: avoid !important;
@@ -771,11 +834,11 @@
       }
 
       .capa-titulo {
-        font-size: 26pt !important;
+        font-size: 25pt !important;
       }
 
       .capa-descricao {
-        font-size: 12pt !important;
+        font-size: 11.5pt !important;
       }
 
       .slide-title {
@@ -791,7 +854,7 @@
       }
 
       .card-dor, .card-pilar, .card-modulo {
-        padding: 5mm 6mm !important;
+        padding: 4.8mm 6mm !important;
       }
 
       .tabela-comparativa th, .tabela-comparativa td {
@@ -800,19 +863,112 @@
       }
 
       .cta-titulo {
-        font-size: 24pt !important;
+        font-size: 23pt !important;
       }
     }
   </style>
 </head>
 <body>
 
+  <!-- ==============================================================
+       DEFINIÇÕES DE SVGs REUTILIZÁVEIS DO APP
+       ============================================================== -->
+  <svg style="display: none;" xmlns="http://www.w3.org/2000/svg">
+    <!-- Simbolo Oficial Personal Josy -->
+    <symbol id="icon-simbolo-josy" viewBox="0 0 224 245">
+      <path d="M32 25H192C209.673 25 224 39.327 224 57V213C224 230.673 209.673 245 192 245H32C14.327 245 0 230.673 0 213V57C0 39.327 14.327 25 32 25Z" fill="#FFDE17"/>
+      <path d="M134 72H158C160.209 72 162 73.791 162 76V163C162 192 144 212 113 212C87 212 68 197 62 173L89 162C93 174 100 181 112 181C124 181 130 173 130 161V76C130 73.791 131.791 72 134 72Z" fill="#202020"/>
+      <path d="M56 0C63.732 0 70 6.268 70 14V46C70 53.732 63.732 60 56 60C48.268 60 42 53.732 42 46V14C42 6.268 48.268 0 56 0ZM168 0C175.732 0 182 6.268 182 14V46C182 53.732 175.732 60 168 60C160.268 60 154 53.732 154 46V14C154 6.268 160.268 0 168 0Z" fill="#202020"/>
+    </symbol>
+
+    <!-- Google G Logo Oficial Multicor -->
+    <symbol id="icon-google" viewBox="0 0 18 18">
+      <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.616z"/>
+      <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/>
+      <path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/>
+      <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
+    </symbol>
+
+    <!-- FontAwesome: Calendar Days -->
+    <symbol id="icon-calendar" viewBox="0 0 448 512">
+      <path d="M128 0c17.7 0 32 14.3 32 32V64H288V32c0-17.7 14.3-32 32-32s32 14.3 32 32V64h48c26.5 0 48 21.5 48 48v48H0V112C0 85.5 21.5 64 48 64H96V32c0-17.7 14.3-32 32-32zM0 192H448V464c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V192zm64 80c-8.8 0-16 7.2-16 16v48c0 8.8 7.2 16 16 16h48c8.8 0 16-7.2 16-16V288c0-8.8-7.2-16-16-16H64zm128 0c-8.8 0-16 7.2-16 16v48c0 8.8 7.2 16 16 16h48c8.8 0 16-7.2 16-16V288c0-8.8-7.2-16-16-16H192zm128 0c-8.8 0-16 7.2-16 16v48c0 8.8 7.2 16 16 16h48c8.8 0 16-7.2 16-16V288c0-8.8-7.2-16-16-16H320z"/>
+    </symbol>
+
+    <!-- FontAwesome: Arrows Rotate (Sync / Reposições) -->
+    <symbol id="icon-sync" viewBox="0 0 512 512">
+      <path d="M105.1 202.6c7.7-21.8 20.2-42.3 37.8-59.8c62.5-62.5 163.8-62.5 226.3 0L386.3 160H336c-17.7 0-32 14.3-32 32s14.3 32 32 32h112c17.7 0 32-14.3 32-32V80c0-17.7-14.3-32-32-32s-32 14.3-32 32v34.7L400.7 99.3c-75-75-196.5-75-271.5 0c-23.7 23.7-40.3 52.4-49.8 83.7c-5.1 16.9 4.6 34.8 21.5 39.9s34.8-4.6 39.9-21.5zM406.9 309.4c-7.7 21.8-20.2 42.3-37.8 59.8c-62.5 62.5-163.8 62.5-226.3 0L125.7 352H176c17.7 0 32-14.3 32-32s-14.3-32-32-32H64c-17.7 0-32 14.3-32 32v112c0 17.7 14.3 32 32 32s32-14.3 32-32V405.3l14.7 14.7c75 75 196.5 75 271.5 0c23.7-23.7 40.3-52.4 49.8-83.7c5.1-16.9-4.6-34.8-21.5-39.9s-34.8 4.6-39.9 21.5z"/>
+    </symbol>
+
+    <!-- FontAwesome: Bolt (PWA / Offline / Velocidade) -->
+    <symbol id="icon-bolt" viewBox="0 0 384 512">
+      <path d="M0 256L224 0v192h160L160 512V320H0z"/>
+    </symbol>
+
+    <!-- FontAwesome: WhatsApp -->
+    <symbol id="icon-whatsapp" viewBox="0 0 448 512">
+      <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+    </symbol>
+
+    <!-- FontAwesome: Clock (Horários / Furos) -->
+    <symbol id="icon-clock" viewBox="0 0 512 512">
+      <path d="M256 0a256 256 0 1 1 0 512A256 256 0 1 1 256 0zM232 120V256c0 8 4 15.5 10.7 20l96 64c11.7 7.8 27.6 4.7 35.4-7s4.7-27.6-7-35.4L280 239.3V120c0-13.3-10.7-24-24-24s-24 10.7-24 24z"/>
+    </symbol>
+
+    <!-- FontAwesome: Hourglass Half (Reposições pendentes) -->
+    <symbol id="icon-hourglass" viewBox="0 0 384 512">
+      <path d="M32 0C14.3 0 0 14.3 0 32S14.3 64 32 64V75c0 42.4 16.9 83.1 46.9 113.1L146.7 256 78.9 323.9C48.9 353.9 32 394.6 32 437v11c-17.7 0-32 14.3-32 32s14.3 32 32 32H352c17.7 0 32-14.3 32-32s-14.3-32-32-32V437c0-42.4-16.9-83.1-46.9-113.1L237.3 256l67.9-67.9c30-30 46.9-70.7 46.9-113.1V64c17.7 0 32-14.3 32-32s-14.3-32-32-32H32zM96 75V64H288V75c0 25.5-10.1 49.9-28.1 67.9L192 210.7l-67.9-67.9C106.1 124.9 96 100.5 96 75z"/>
+    </symbol>
+
+    <!-- FontAwesome: Wallet (Finanças / Mensalidades) -->
+    <symbol id="icon-wallet" viewBox="0 0 512 512">
+      <path d="M64 32C28.7 32 0 60.7 0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V192c0-35.3-28.7-64-64-64H80c-8.8 0-16-7.2-16-16s7.2-16 16-16H448c17.7 0 32-14.3 32-32s-14.3-32-32-32H64zM416 336a32 32 0 1 1 0-64 32 32 0 1 1 0 64z"/>
+    </symbol>
+
+    <!-- FontAwesome: Users (Alunos / Gestão) -->
+    <symbol id="icon-users" viewBox="0 0 640 512">
+      <path d="M144 0a80 80 0 1 1 0 160A80 80 0 1 1 144 0zM512 0a80 80 0 1 1 0 160A80 80 0 1 1 512 0zM0 298.7C0 239.8 47.8 192 106.7 192h74.7c58.9 0 106.7 47.8 106.7 106.7V352c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32v-53.3zM352 298.7c0-58.9 47.8-106.7 106.7-106.7h74.7c58.9 0 106.7 47.8 106.7 106.7V352c0 17.7-14.3 32-32 32H384c-17.7 0-32-14.3-32-32v-53.3zM224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm-45.7 48C79.8 304 0 383.8 0 482.3 0 498.7 13.3 512 29.7 512H418.3c16.4 0 29.7-13.3 29.7-29.7 0-98.5-79.8-178.3-178.3-178.3h-91.4z"/>
+    </symbol>
+
+    <!-- FontAwesome: Bullseye (Metas / Objetivos) -->
+    <symbol id="icon-bullseye" viewBox="0 0 512 512">
+      <path d="M448 256c0-106-86-192-192-192S64 150 64 256s86 192 192 192 192-86 192-192zm64 0c0 141.4-114.6 256-256 256S0 397.4 0 256 114.6 0 256 0s256 114.6 256 256zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160zm0-48a32 32 0 1 1 0-64 32 32 0 1 1 0 64z"/>
+    </symbol>
+
+    <!-- FontAwesome: Shield Halved (Segurança / Isolamento) -->
+    <symbol id="icon-shield" viewBox="0 0 512 512">
+      <path d="M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.3 31 38.3 57.2c0 105.7-45.7 266-224.2 368c-9.9 5.7-21.7 5.7-31.6 0C61.7 406 16 245.7 16 140c0-26.2 16.3-47.9 38.3-57.2L242.6 2.9C246.8 1 251.4 0 256 0zm0 66.8V440.1c137.9-80.1 176.6-208.5 176.6-300.1c0-2.3-1.4-4.2-3.4-5.1L256 66.8z"/>
+    </symbol>
+
+    <!-- FontAwesome: Lock (Bloqueio) -->
+    <symbol id="icon-lock" viewBox="0 0 448 512">
+      <path d="M144 144v48H304V144c0-44.2-35.8-80-80-80s-80 35.8-80 80zM80 192V144C80 64.5 144.5 0 224 0s144 64.5 144 144v48h16c35.3 0 64 28.7 64 64V448c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V256c0-35.3 28.7-64 64-64H80z"/>
+    </symbol>
+
+    <!-- FontAwesome: Check (Confirmado / Destaque) -->
+    <symbol id="icon-check" viewBox="0 0 448 512">
+      <path d="M438.6 105.4c12.5 12.5 12.5 32.8 0 45.3l-256 256c-12.5 12.5-32.8 12.5-45.3 0l-128-128c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0L160 338.7 393.4 105.4c12.5-12.5 32.8-12.5 45.3 0z"/>
+    </symbol>
+
+    <!-- FontAwesome: Xmark (Cancelado / Erro) -->
+    <symbol id="icon-xmark" viewBox="0 0 384 512">
+      <path d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z"/>
+    </symbol>
+
+    <!-- FontAwesome: Rocket / CTA -->
+    <symbol id="icon-rocket" viewBox="0 0 512 512">
+      <path d="M156.6 384.9L125.7 354c-8.5-8.5-11.5-20.8-7.7-32.2c3-8.9 7-20.5 11.8-33.8L24 276.9c-11.5-1.3-21.1-9-23.4-20.4s3.7-22.9 14.7-28.7l112.5-59.2c16-8.4 28.5-22.5 35.1-39.7l30.5-79.3c5.3-13.8 18.6-22.8 33.4-22.8c7.3 0 14.6 2.3 20.7 6.9l80 60c10.7 8 15.6 21.6 12.4 34.6l-13.7 55c-1.5 5.9-4 11.5-7.4 16.5l140.6 140.6c3.4-2.8 6.9-5.3 10.5-7.7c47.7-31.8 77-85.3 77-142.7c0-21.7-4.1-43-12.1-62.8c-2.3-5.7-.7-12.3 3.9-16.3l37.2-32.5c5.3-4.6 12.8-5.3 18.9-1.8c34.7 20 62.9 50.1 80.6 86.6c17.8 36.6 23.4 77.8 16.2 118.2c-10.8 60.5-44.5 113.8-94.8 150.1c-34.9 25.2-76.4 40.8-120.2 45.2l-18.7 18.7c-9.4 9.4-24.6 9.4-33.9 0l-31-31c-9.4-9.4-9.4-24.6 0-33.9l18.7-18.7c-4.4-43.8-20-85.3-45.2-120.2c-2.4-3.6-4.9-7.1-7.7-10.5L256 384c-5 3.4-10.6 5.9-16.5 7.4l-55 13.7c-13 3.2-26.6-1.7-34.6-12.4l-60-80c-4.6-6.1-6.9-13.4-6.9-20.7c0-14.8 9-28.1 22.8-33.4l79.3-30.5c17.2-6.6 31.3-19.1 39.7-35.1l59.2-112.5c5.8-11 17.3-17 28.7-14.7s19.1 11.9 20.4 23.4l11.1 105.8c13.3-4.8 24.9-8.8 33.8-11.8c11.4-3.8 23.7-.8 32.2 7.7l30.9 30.9c9.4 9.4 9.4 24.6 0 33.9l-133 133c-9.4 9.4-24.6 9.4-33.9 0z"/>
+    </symbol>
+  </svg>
+
   <!-- Barra de Navegação Flutuante na Tela -->
   <aside class="deck-controls" aria-label="Controles da apresentação">
     <button onclick="mudarSlide(-1)" title="Slide Anterior (←)">⟨ Anterior</button>
     <div class="slide-indicator" id="indicadorSlide">Slide 1 / 8</div>
     <button onclick="mudarSlide(1)" title="Próximo Slide (→)">Próximo ⟩</button>
-    <button onclick="window.print()" class="btn-imprimir" title="Imprimir ou Salvar PDF">🖨️ Salvar em PDF</button>
+    <button onclick="window.print()" class="btn-imprimir" title="Imprimir ou Salvar PDF">
+      <span class="app-icon" style="width: 14px; height: 14px;"><svg><use href="#icon-bolt"/></svg></span>
+      Salvar em PDF
+    </button>
   </aside>
 
   <!-- Container de Todos os Slides -->
@@ -824,11 +980,17 @@
     <section class="slide slide-capa" id="slide-1">
       <header class="capa-topo-marca">
         <img src="reference/identidade/kit-visual-completo-v2/05_horizontal_com_descritor/escuro/personal_josy_horizontal_com_descritor_escuro_transparente.svg" alt="Personal Josy — Agenda e gestão para personal trainers" class="capa-logo-grande">
-        <div class="capa-selo-ano">Edição Oficial 2026</div>
+        <div class="capa-selo-ano">
+          <span class="app-icon" style="width: 14px; height: 14px;"><svg><use href="#icon-shield"/></svg></span>
+          Edição Oficial 2026
+        </div>
       </header>
 
       <div class="capa-centro">
-        <div class="capa-badge">Apresentação Oficial do Produto</div>
+        <div class="capa-badge">
+          <span class="app-icon" style="width: 12px; height: 12px;"><svg><use href="#icon-simbolo-josy"/></svg></span>
+          Apresentação Oficial do Produto
+        </div>
         <h1 class="capa-titulo">A Gestão da Sua Carreira de Personal em <span>Outro Nível</span>.</h1>
         <p class="capa-descricao">
           Diga adeus ao descontrole de horários, perdas de reposições e planilhas confusas. Tenha toda a sua consultoria física centralizada em uma ferramenta ágil, moderna e integrada ao Google Calendar.
@@ -837,15 +999,24 @@
 
       <div class="capa-cards-destaque">
         <div class="capa-card-item">
-          <strong>📅 Agenda Inteligente</strong>
+          <div class="capa-card-header">
+            <span class="app-icon"><svg><use href="#icon-calendar"/></svg></span>
+            <strong>Agenda Inteligente</strong>
+          </div>
           <span>Visões diária, semanal e mensal integradas ao Google Calendar em tempo real.</span>
         </div>
         <div class="capa-card-item">
-          <strong>🔄 Reposições Sem Atrito</strong>
+          <div class="capa-card-header">
+            <span class="app-icon"><svg><use href="#icon-sync"/></svg></span>
+            <strong>Reposições Sem Atrito</strong>
+          </div>
           <span>Controle de créditos e regras claras de validade para proteger seu faturamento.</span>
         </div>
         <div class="capa-card-item">
-          <strong>⚡ PWA Offline-First</strong>
+          <div class="capa-card-header">
+            <span class="app-icon"><svg><use href="#icon-bolt"/></svg></span>
+            <strong>PWA Offline-First</strong>
+          </div>
           <span>Funcione 100% mesmo sem sinal na academia, salvando no aparelho sem travar.</span>
         </div>
       </div>
@@ -857,7 +1028,10 @@
     <section class="slide" id="slide-2">
       <header class="slide-header">
         <div>
-          <span class="slide-tag">O Cenário Atual</span>
+          <span class="slide-tag">
+            <span class="app-icon" style="width: 12px; height: 12px;"><svg><use href="#icon-simbolo-josy"/></svg></span>
+            O Cenário Atual
+          </span>
           <h2 class="slide-title">As Dores Invisíveis na Rotina do Personal Trainer</h2>
           <p class="slide-subtitle">Você se preparou para prescrever treinos e transformar vidas, não para se afogar em burocracia.</p>
         </div>
@@ -870,28 +1044,39 @@
       <div class="slide-body">
         <div class="grid-dores">
           <div class="card-dor">
-            <div class="card-dor-icone">💬</div>
+            <div class="card-dor-icone">
+              <span class="app-icon"><svg><use href="#icon-whatsapp"/></svg></span>
+            </div>
             <div class="card-dor-texto">
               <h4>O Caos no WhatsApp</h4>
               <p>Dezenas de mensagens diárias para confirmar, alterar ou cancelar horários, consumindo momentos valiosos do seu descanso.</p>
             </div>
           </div>
+
           <div class="card-dor">
-            <div class="card-dor-icone">📅</div>
+            <div class="card-dor-icone">
+              <span class="app-icon"><svg><use href="#icon-clock"/></svg></span>
+            </div>
             <div class="card-dor-texto">
               <h4>Conflitos e Furos de Agenda</h4>
               <p>Esquecimento de compromissos pessoais e choque de horários entre alunos por manter anotações soltas e sem sincronização com o celular.</p>
             </div>
           </div>
+
           <div class="card-dor">
-            <div class="card-dor-icone">⏳</div>
+            <div class="card-dor-icone">
+              <span class="app-icon"><svg><use href="#icon-hourglass"/></svg></span>
+            </div>
             <div class="card-dor-texto">
               <h4>Reposições Sem Fim</h4>
               <p>Alunos que faltam e cobram reposições meses depois, sem controle de prazo ou limite de aulas, desorganizando a grade.</p>
             </div>
           </div>
+
           <div class="card-dor">
-            <div class="card-dor-icone">💸</div>
+            <div class="card-dor-icone">
+              <span class="app-icon"><svg><use href="#icon-wallet"/></svg></span>
+            </div>
             <div class="card-dor-texto">
               <h4>Inadimplência Involuntária</h4>
               <p>Esquecer a data de vencimento da mensalidade de cada aluno, gerando atrasos nos pagamentos e constrangimento na cobrança.</p>
@@ -912,7 +1097,10 @@
     <section class="slide" id="slide-3">
       <header class="slide-header">
         <div>
-          <span class="slide-tag">A Plataforma</span>
+          <span class="slide-tag">
+            <span class="app-icon" style="width: 12px; height: 12px;"><svg><use href="#icon-simbolo-josy"/></svg></span>
+            A Plataforma
+          </span>
           <h2 class="slide-title">Personal Josy: O Seu Hub Completo de Gestão</h2>
           <p class="slide-subtitle">Desenvolvido sob medida para a dinâmica de academias, condomínios e treinos ao ar livre.</p>
         </div>
@@ -926,40 +1114,55 @@
         <div class="grid-pilares">
           <div class="card-pilar">
             <div>
-              <div class="card-pilar-numero">01</div>
+              <div class="card-pilar-top">
+                <div class="card-pilar-numero">01</div>
+                <div class="card-pilar-icone">
+                  <span class="app-icon"><svg><use href="#icon-calendar"/></svg></span>
+                </div>
+              </div>
               <h4>Organização Absoluta</h4>
               <p>Visualize seu dia e semana em uma linha do tempo clara, com status de presença por cores e agendamento instantâneo em dois toques.</p>
             </div>
             <div class="card-pilar-chips">
-              <span class="chip-item">Grade Diária</span>
-              <span class="chip-item">Visão Mensal</span>
-              <span class="chip-item">Recorrência Automática</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-calendar"/></svg></span> Grade Diária</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-calendar"/></svg></span> Visão Mensal</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-sync"/></svg></span> Recorrência</span>
             </div>
           </div>
 
           <div class="card-pilar">
             <div>
-              <div class="card-pilar-numero">02</div>
+              <div class="card-pilar-top">
+                <div class="card-pilar-numero">02</div>
+                <div class="card-pilar-icone" style="background: rgba(66, 133, 244, 0.15);">
+                  <span class="app-icon app-icon-multi" style="width: 20px; height: 20px;"><svg><use href="#icon-google"/></svg></span>
+                </div>
+              </div>
               <h4>Sincronização Nativa</h4>
               <p>Integração direta com o Google Calendar. Suas aulas no app refletem no celular e relógio inteligente, respeitando seus bloqueios pessoais.</p>
             </div>
             <div class="card-pilar-chips">
-              <span class="chip-item">Google Calendar</span>
-              <span class="chip-item">Notificações Nativas</span>
-              <span class="chip-item">Zero Conflito</span>
+              <span class="chip-item"><span class="app-icon app-icon-multi" style="width: 12px; height: 12px;"><svg><use href="#icon-google"/></svg></span> Google Calendar</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-clock"/></svg></span> Notificações</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-lock"/></svg></span> Zero Conflito</span>
             </div>
           </div>
 
           <div class="card-pilar">
             <div>
-              <div class="card-pilar-numero">03</div>
+              <div class="card-pilar-top">
+                <div class="card-pilar-numero">03</div>
+                <div class="card-pilar-icone">
+                  <span class="app-icon"><svg><use href="#icon-bolt"/></svg></span>
+                </div>
+              </div>
               <h4>Tecnologia Sem Barreiras</h4>
               <p>Acesse em 1 clique com sua conta Google existente. Funciona como app no Android e iOS, operando offline mesmo no subsolo da academia.</p>
             </div>
             <div class="card-pilar-chips">
-              <span class="chip-item">Google OAuth</span>
-              <span class="chip-item">PWA Instalável</span>
-              <span class="chip-item">Modo Offline</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-shield"/></svg></span> Google OAuth</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-bolt"/></svg></span> PWA Instalável</span>
+              <span class="chip-item"><span class="app-icon"><svg><use href="#icon-sync"/></svg></span> Modo Offline</span>
             </div>
           </div>
         </div>
@@ -977,7 +1180,10 @@
     <section class="slide" id="slide-4">
       <header class="slide-header">
         <div>
-          <span class="slide-tag">Funcionalidades-Chave</span>
+          <span class="slide-tag">
+            <span class="app-icon" style="width: 12px; height: 12px;"><svg><use href="#icon-simbolo-josy"/></svg></span>
+            Funcionalidades-Chave
+          </span>
           <h2 class="slide-title">Agenda Inteligente &amp; Google Calendar Unificados</h2>
           <p class="slide-subtitle">Sua vida profissional e pessoal alinhadas sem a necessidade de consultar dois aplicativos.</p>
         </div>
@@ -992,34 +1198,40 @@
           <div class="card-modulo">
             <div>
               <div class="modulo-cabecalho">
-                <div class="modulo-icone">🗓️</div>
+                <div class="modulo-icone">
+                  <span class="app-icon"><svg><use href="#icon-calendar"/></svg></span>
+                </div>
                 <h4>Agenda Multivisão Dinâmica</h4>
               </div>
               <ul class="lista-recursos">
-                <li><strong>Visão Diária em Linha do Tempo:</strong> Acompanhe as aulas do dia com horários, alunos e status codificados por cores.</li>
-                <li><strong>Visões Semanal e Mensal:</strong> Identifique imediatamente horários vagos na grade para preenchimento rápido de novas consultorias.</li>
-                <li><strong>Recorrências Inteligentes:</strong> Configure a grade fixa do aluno uma única vez e o sistema projeta as aulas dos próximos ciclos.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Visão Diária em Linha do Tempo:</strong> Acompanhe as aulas do dia com horários, alunos e status codificados por cores.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Visões Semanal e Mensal:</strong> Identifique imediatamente horários vagos na grade para preenchimento rápido de novas consultorias.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Recorrências Inteligentes:</strong> Configure a grade fixa do aluno uma única vez e o sistema projeta as aulas dos próximos ciclos.</li>
               </ul>
             </div>
             <div class="box-destaque-modulo">
-              💡 <em>Criação e edição de aulas em 2 toques, com cancelamento e reagendamento intuitivos.</em>
+              <span class="app-icon"><svg><use href="#icon-check"/></svg></span>
+              <em>Criação e edição de aulas em 2 toques, com cancelamento e reagendamento intuitivos.</em>
             </div>
           </div>
 
           <div class="card-modulo">
             <div>
               <div class="modulo-cabecalho">
-                <div class="modulo-icone">🔄</div>
+                <div class="modulo-icone" style="background: #FFFFFF;">
+                  <span class="app-icon app-icon-multi" style="width: 22px; height: 22px;"><svg><use href="#icon-google"/></svg></span>
+                </div>
                 <h4>Sincronização com Google Calendar</h4>
               </div>
               <ul class="lista-recursos">
-                <li><strong>Espelhamento Automático:</strong> Toda aula criada, reagendada ou cancelada é sincronizada com o seu Google Calendar.</li>
-                <li><strong>Alertas no Celular e Smartwatch:</strong> Receba lembretes nativos antes de cada treino para nunca se atrasar.</li>
-                <li><strong>Respeito a Compromissos Pessoais:</strong> Seus eventos pessoais marcados no Google evitam choque de horários na grade.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Espelhamento Automático:</strong> Toda aula criada, reagendada ou cancelada é sincronizada com o seu Google Calendar.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Alertas no Celular e Smartwatch:</strong> Receba lembretes nativos antes de cada treino para nunca se atrasar.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Respeito a Compromissos Pessoais:</strong> Seus eventos pessoais marcados no Google evitam choque de horários na grade.</li>
               </ul>
             </div>
             <div class="box-destaque-modulo">
-              🔒 <em>Integração oficial via Google Identity Services com proteção total de privacidade.</em>
+              <span class="app-icon"><svg><use href="#icon-shield"/></svg></span>
+              <em>Integração oficial via Google Identity Services com proteção total de privacidade.</em>
             </div>
           </div>
         </div>
@@ -1037,7 +1249,10 @@
     <section class="slide" id="slide-5">
       <header class="slide-header">
         <div>
-          <span class="slide-tag">Relacionamento e Retenção</span>
+          <span class="slide-tag">
+            <span class="app-icon" style="width: 12px; height: 12px;"><svg><use href="#icon-simbolo-josy"/></svg></span>
+            Relacionamento e Retenção
+          </span>
           <h2 class="slide-title">Ficha do Aluno &amp; Fila Inteligente de Reposições</h2>
           <p class="slide-subtitle">Atendimento individualizado e regras transparentes que eliminam desgastes com alunos.</p>
         </div>
@@ -1052,35 +1267,41 @@
           <div class="card-modulo">
             <div>
               <div class="modulo-cabecalho">
-                <div class="modulo-icone">👤</div>
+                <div class="modulo-icone">
+                  <span class="app-icon"><svg><use href="#icon-users"/></svg></span>
+                </div>
                 <h4>Ficha Centralizada do Aluno</h4>
               </div>
               <ul class="lista-recursos">
-                <li><strong>Perfil Completo:</strong> Dados de contato, telefone, e-mail e data de início da consultoria em um só lugar.</li>
-                <li><strong>Metas e Condições de Saúde:</strong> Registre objetivos (hipertrofia, emagrecimento, reabilitação) e observações posturais.</li>
-                <li><strong>Botão de Ação Rápida WhatsApp:</strong> Abra a conversa com o aluno com um único toque direto da ficha.</li>
-                <li><strong>Histórico de Presenças:</strong> Registro detalhado de frequência para comprovar constância e valorizar seu trabalho.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Perfil Completo:</strong> Dados de contato, telefone, e-mail e data de início da consultoria em um só lugar.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Metas e Condições de Saúde:</strong> Registre objetivos (hipertrofia, emagrecimento, reabilitação) e observações posturais.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Ação Rápida WhatsApp:</strong> Abra a conversa com o aluno com um único toque direto da ficha.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Histórico de Presenças:</strong> Registro detalhado de frequência para comprovar constância e valorizar seu trabalho.</li>
               </ul>
             </div>
             <div class="box-destaque-modulo">
-              🎯 <em>Fácil identificação visual de alunos ativos, pendentes ou inativos.</em>
+              <span class="app-icon"><svg><use href="#icon-bullseye"/></svg></span>
+              <em>Fácil identificação visual de alunos ativos, pendentes ou inativos.</em>
             </div>
           </div>
 
           <div class="card-modulo">
             <div>
               <div class="modulo-cabecalho">
-                <div class="modulo-icone">⚖️</div>
+                <div class="modulo-icone">
+                  <span class="app-icon"><svg><use href="#icon-sync"/></svg></span>
+                </div>
                 <h4>Fila Inteligente de Reposições</h4>
               </div>
               <ul class="lista-recursos">
-                <li><strong>Créditos Automáticos:</strong> Cancelamentos com justificativa viram créditos de reposição automaticamente no perfil.</li>
-                <li><strong>Regras Claras de Validade:</strong> Sistema de competência que estabelece prazos para reposição, evitando cobranças de aulas antigas.</li>
-                <li><strong>Encaixe Ágil na Grade:</strong> Visualize créditos disponíveis e agende a reposição em janelas vagas da sua semana com facilidade.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Créditos Automáticos:</strong> Cancelamentos com justificativa viram créditos de reposição automaticamente no perfil.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Regras Claras de Validade:</strong> Sistema de competência que estabelece prazos para reposição, evitando cobranças de aulas antigas.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Encaixe Ágil na Grade:</strong> Visualize créditos disponíveis e agende a reposição em janelas vagas da sua semana com facilidade.</li>
               </ul>
             </div>
             <div class="box-destaque-modulo">
-              🛡️ <em>Sem discussões sobre 'quantas aulas faltam': saldo 100% transparente e auditável.</em>
+              <span class="app-icon"><svg><use href="#icon-shield"/></svg></span>
+              <em>Sem discussões sobre 'quantas aulas faltam': saldo 100% transparente e auditável.</em>
             </div>
           </div>
         </div>
@@ -1098,7 +1319,10 @@
     <section class="slide" id="slide-6">
       <header class="slide-header">
         <div>
-          <span class="slide-tag">Gestão &amp; Tecnologia</span>
+          <span class="slide-tag">
+            <span class="app-icon" style="width: 12px; height: 12px;"><svg><use href="#icon-simbolo-josy"/></svg></span>
+            Gestão &amp; Tecnologia
+          </span>
           <h2 class="slide-title">Previsibilidade Financeira &amp; Resiliência Offline</h2>
           <p class="slide-subtitle">Monitore sua receita com precisão e conte com um aplicativo que nunca te deixa na mão.</p>
         </div>
@@ -1113,34 +1337,40 @@
           <div class="card-modulo">
             <div>
               <div class="modulo-cabecalho">
-                <div class="modulo-icone">💰</div>
+                <div class="modulo-icone">
+                  <span class="app-icon"><svg><use href="#icon-wallet"/></svg></span>
+                </div>
                 <h4>Controle por Ciclo de Mensalidade</h4>
               </div>
               <ul class="lista-recursos">
-                <li><strong>Vencimento Individualizado:</strong> Cada aluno possui seu ciclo de pagamento conforme o dia de fechamento do plano.</li>
-                <li><strong>Status de Pagamento em Tempo Real:</strong> Identifique em segundos quem está em dia, pendente ou com mensalidade em aberto.</li>
-                <li><strong>Previsão de Faturamento:</strong> Tenha clareza sobre o valor a receber no mês e planeje suas finanças pessoais com tranquilidade.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Vencimento Individualizado:</strong> Cada aluno possui seu ciclo de pagamento conforme o dia de fechamento do plano.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Status em Tempo Real:</strong> Identifique em segundos quem está em dia, pendente ou com mensalidade em aberto.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Previsão de Faturamento:</strong> Tenha clareza sobre o valor a receber no mês e planeje suas finanças pessoais com tranquilidade.</li>
               </ul>
             </div>
             <div class="box-destaque-modulo">
-              📈 <em>Reduza a inadimplência involuntária mantendo o controle das renovações na ponta dos dedos.</em>
+              <span class="app-icon"><svg><use href="#icon-wallet"/></svg></span>
+              <em>Reduza a inadimplência involuntária mantendo o controle das renovações na ponta dos dedos.</em>
             </div>
           </div>
 
           <div class="card-modulo">
             <div>
               <div class="modulo-cabecalho">
-                <div class="modulo-icone">⚡</div>
+                <div class="modulo-icone">
+                  <span class="app-icon"><svg><use href="#icon-bolt"/></svg></span>
+                </div>
                 <h4>PWA &amp; Funcionamento Offline-First</h4>
               </div>
               <ul class="lista-recursos">
-                <li><strong>Instalável em Qualquer Aparelho:</strong> Adicione o Personal Josy na tela inicial do Android ou iPhone sem precisar de App Store.</li>
-                <li><strong>Funciona Sem Internet no Salão:</strong> Consulte a agenda e dê presença mesmo no subsolo ou em áreas sem sinal de operadora.</li>
-                <li><strong>Sincronização em Nuvem:</strong> As alterações são salvas localmente no aparelho e sincronizadas com o MongoDB ao reconectar.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Instalável em Qualquer Aparelho:</strong> Adicione o Personal Josy na tela inicial do Android ou iPhone sem precisar de App Store.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Funciona Sem Internet no Salão:</strong> Consulte a agenda e dê presença mesmo no subsolo ou em áreas sem sinal de operadora.</li>
+                <li><span class="check-icon"><svg><use href="#icon-check"/></svg></span><strong>Sincronização em Nuvem:</strong> As alterações são salvas localmente no aparelho e sincronizadas com o MongoDB ao reconectar.</li>
               </ul>
             </div>
             <div class="box-destaque-modulo">
-              🌐 <em>Leve, rápido e sem ocupar memória desnecessária no seu celular.</em>
+              <span class="app-icon"><svg><use href="#icon-shield"/></svg></span>
+              <em>Leve, rápido e sem ocupar memória desnecessária no seu celular.</em>
             </div>
           </div>
         </div>
@@ -1158,7 +1388,10 @@
     <section class="slide" id="slide-7">
       <header class="slide-header">
         <div>
-          <span class="slide-tag">O Salto de Eficiência</span>
+          <span class="slide-tag">
+            <span class="app-icon" style="width: 12px; height: 12px;"><svg><use href="#icon-simbolo-josy"/></svg></span>
+            O Salto de Eficiência
+          </span>
           <h2 class="slide-title">A Transformação Prática: Antes vs. Depois</h2>
           <p class="slide-subtitle">Veja a diferença concreta entre gerenciar no improviso e utilizar o Personal Josy.</p>
         </div>
@@ -1181,28 +1414,28 @@
             <tbody>
               <tr>
                 <td class="col-criterio">Agendamentos</td>
-                <td class="col-antes"><span class="tag-x">✕</span> Áudios e mensagens perdidas no WhatsApp</td>
-                <td class="col-depois"><span class="tag-check">✓</span> Grade visual limpa (diária, semanal e mensal)</td>
+                <td class="col-antes"><span class="tag-icon-status xmark"><svg><use href="#icon-xmark"/></svg></span> Áudios e mensagens perdidas no WhatsApp</td>
+                <td class="col-depois"><span class="tag-icon-status check"><svg><use href="#icon-check"/></svg></span> Grade visual limpa (diária, semanal e mensal)</td>
               </tr>
               <tr>
                 <td class="col-criterio">Calendário Pessoal</td>
-                <td class="col-antes"><span class="tag-x">✕</span> Furos e choque de horários com a vida pessoal</td>
-                <td class="col-depois"><span class="tag-check">✓</span> Sincronização automática com Google Calendar</td>
+                <td class="col-antes"><span class="tag-icon-status xmark"><svg><use href="#icon-xmark"/></svg></span> Furos e choque de horários com a vida pessoal</td>
+                <td class="col-depois"><span class="tag-icon-status check"><svg><use href="#icon-check"/></svg></span> Sincronização automática com Google Calendar</td>
               </tr>
               <tr>
                 <td class="col-criterio">Reposição de Faltas</td>
-                <td class="col-antes"><span class="tag-x">✕</span> Alunos cobrando aulas de meses atrás sem registro</td>
-                <td class="col-depois"><span class="tag-check">✓</span> Fila inteligente com regras e prazos de validade</td>
+                <td class="col-antes"><span class="tag-icon-status xmark"><svg><use href="#icon-xmark"/></svg></span> Alunos cobrando aulas de meses atrás sem registro</td>
+                <td class="col-depois"><span class="tag-icon-status check"><svg><use href="#icon-check"/></svg></span> Fila inteligente com regras e prazos de validade</td>
               </tr>
               <tr>
                 <td class="col-criterio">Cobrança de Mensalidades</td>
-                <td class="col-antes"><span class="tag-x">✕</span> Esquecimento de cobrar no vencimento do aluno</td>
-                <td class="col-depois"><span class="tag-check">✓</span> Ciclos claros de cobrança e status em tempo real</td>
+                <td class="col-antes"><span class="tag-icon-status xmark"><svg><use href="#icon-xmark"/></svg></span> Esquecimento de cobrar no vencimento do aluno</td>
+                <td class="col-depois"><span class="tag-icon-status check"><svg><use href="#icon-check"/></svg></span> Ciclos claros de cobrança e status em tempo real</td>
               </tr>
               <tr>
                 <td class="col-criterio">Sinal na Academia</td>
-                <td class="col-antes"><span class="tag-x">✕</span> Apps lentos que travam quando o 4G/5G oscila</td>
-                <td class="col-depois"><span class="tag-check">✓</span> PWA offline-first: funciona 100% mesmo sem internet</td>
+                <td class="col-antes"><span class="tag-icon-status xmark"><svg><use href="#icon-xmark"/></svg></span> Apps lentos que travam quando o 4G/5G oscila</td>
+                <td class="col-depois"><span class="tag-icon-status check"><svg><use href="#icon-check"/></svg></span> PWA offline-first: funciona 100% mesmo sem internet</td>
               </tr>
             </tbody>
           </table>
@@ -1219,7 +1452,10 @@
          SLIDE 8: CALL TO ACTION
          ========================================== -->
     <section class="slide slide-cta" id="slide-8">
-      <div class="capa-selo-ano">Comece Gratuitamente</div>
+      <div class="capa-selo-ano">
+        <span class="app-icon" style="width: 14px; height: 14px;"><svg><use href="#icon-bolt"/></svg></span>
+        Comece Gratuitamente
+      </div>
 
       <div class="cta-container-central">
         <img src="reference/identidade/kit-visual-completo-v2/01_horizontal/escuro/personal_josy_horizontal_escuro_transparente.svg" alt="Personal Josy" class="cta-logo">
@@ -1231,13 +1467,14 @@
         </p>
 
         <a href="../index.html" class="cta-botao-principal">
-          <span>🚀 Entrar com Google e Acessar Agora</span>
+          <span class="app-icon app-icon-multi"><svg><use href="#icon-google"/></svg></span>
+          <span>Entrar com Google e Acessar Agora</span>
         </a>
 
         <div class="cta-garantias">
-          <span><strong>✓</strong> Sem cartão de crédito</span>
-          <span><strong>✓</strong> Acesso imediato em 1 clique</span>
-          <span><strong>✓</strong> Dados 100% seguros e isolados</span>
+          <span><span class="app-icon check-mini"><svg><use href="#icon-check"/></svg></span> <strong>Sem cartão de crédito</strong></span>
+          <span><span class="app-icon check-mini"><svg><use href="#icon-check"/></svg></span> <strong>Acesso imediato em 1 clique</strong></span>
+          <span><span class="app-icon check-mini"><svg><use href="#icon-check"/></svg></span> <strong>Dados 100% seguros e isolados</strong></span>
         </div>
       </div>
 
@@ -1250,7 +1487,7 @@
   </main>
 
   <script>
-    // Navegação simples entre slides na visualização em tela
+    // Navegação entre slides na visualização em tela
     let slideAtual = 1;
     const totalSlides = 8;
 
@@ -1270,7 +1507,7 @@
       atualizarIndicador();
     }
 
-    // Teclas de atalho para apresentação
+    // Atalhos de teclado para apresentação
     window.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
         e.preventDefault();
@@ -1293,4 +1530,3 @@
   </script>
 </body>
 </html>
-
