@@ -1753,12 +1753,22 @@ body {
    2026-10-23) e a linha cede 16px de vão para que ela caiba em 320 sem
    reticências. O período completo fica em title e aria-label. */
 @media (max-width: 379px) {
+  .home-weekly-nav-row .nav-calendario {
+    padding: 8px 6px;
+    gap: 6px;
+  }
   .home-weekly-nav-row .nav-calendario-main {
     gap: 4px;
   }
   .home-weekly-periodo {
     font-size: 0.75rem;
     margin: 0 2px;
+  }
+  .home-weekly-nav-row .btn-calendario-hoje {
+    margin-left: 6px;
+  }
+  .agenda-data-linha-topo i {
+    display: none;
   }
 }
 .home-weekly-nav-row #btnSemanaHomeAnterior,

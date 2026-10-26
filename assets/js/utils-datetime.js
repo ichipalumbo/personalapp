@@ -5,7 +5,7 @@
 //         window.getDataSelecionadaPtBr, window.formatarDataPtBr, window.converterPtBrParaISO,
 //         window.formatarDataPtBrLegivel, window.converterISODateParaDataLocal,
 //         window.formatarDataLocalParaISODate, window.abrirDatePickerNativo,
-//         window.formatarPeriodoSemana
+//         window.formatarPeriodoSemana, window.formatarRotuloDia
 
 /** @param {string} horaStr - Ex: "08:30" @param {number} minutos @returns {string} Ex: "09:00" */
 window.somarMinutos = function(horaStr, minutos) {
@@ -58,6 +58,41 @@ window.formatarPeriodoSemana = function(inicio, fim) {
     return {
         completo: `${dia(inicio)}/${mes(inicio)} a ${dia(fim)}/${mes(fim)}`,
         curto: `${dia(inicio)}–${dia(fim)}/${mes(fim)}`,
+    };
+};
+
+/** Rótulo do cabeçalho da visão Dia da Home.
+ *  `completo` = "Segunda-feira (26/10)"; `medio` = "Segunda, 26/10"; `curto` = "Seg, 26/10".
+ *  Em desktop (>767px) usa `completo`. Em mobile (<=767px, como 433px ou 390px) usa `medio` para caber
+ *  entre os botões de navegação. Abaixo de 380px (320px) usa `curto`.
+ *  @param {Date|string} data
+ *  @returns {{completo: string, medio: string, curto: string}} */
+window.formatarRotuloDia = function(data) {
+    let d = data;
+    if (typeof d === 'string') {
+        const texto = d.trim();
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(texto)) {
+            const [diaStr, mesStr, anoStr] = texto.split('/');
+            d = new Date(Number(anoStr), Number(mesStr) - 1, Number(diaStr));
+        } else if (/^\d{4}-\d{2}-\d{2}/.test(texto)) {
+            const [anoStr, mesStr, diaStr] = texto.slice(0, 10).split('-');
+            d = new Date(Number(anoStr), Number(mesStr) - 1, Number(diaStr));
+        } else {
+            d = new Date(texto);
+        }
+    }
+    const isDate = d && (typeof d.getTime === 'function' || Object.prototype.toString.call(d) === '[object Date]');
+    if (!isDate || isNaN(d.getTime())) return { completo: '', medio: '', curto: '' };
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const nomesCompletos = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+    const nomesMedios = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const nomesCurtos = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+    const idx = d.getDay();
+    return {
+        completo: `${nomesCompletos[idx]} (${dia}/${mes})`,
+        medio: `${nomesMedios[idx]}, ${dia}/${mes}`,
+        curto: `${nomesCurtos[idx]}, ${dia}/${mes}`,
     };
 };
 

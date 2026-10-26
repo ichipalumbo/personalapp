@@ -412,21 +412,67 @@ window.atualizarDataAtual = function (dataId, diaId) {
   const elementoData = document.getElementById(dataId || "dataAtual");
   const elementoDiaSemana = document.getElementById(diaId || "diaSemanaAtual");
   if (!elementoData) return;
-  const dia = String(window.dataSelecionada.getDate()).padStart(2, "0");
-  const mes = String(window.dataSelecionada.getMonth() + 1).padStart(2, "0");
-  const nomeDiaBase = DIAS_DA_SEMANA[window.dataSelecionada.getDay()];
+  const dataRef = window.dataSelecionada && typeof window.dataSelecionada.getTime === 'function' && !isNaN(window.dataSelecionada.getTime())
+    ? window.dataSelecionada
+    : new Date();
+  const dia = String(dataRef.getDate()).padStart(2, "0");
+  const mes = String(dataRef.getMonth() + 1).padStart(2, "0");
+  const nomeDiaBase = DIAS_DA_SEMANA[dataRef.getDay()];
   const nomeDia = formatarNomeDiaHome(nomeDiaBase);
 
-  elementoData.innerHTML = `
-    <span class="agenda-data-linha-topo">
-      <i class="fa-solid fa-calendar-minus" aria-hidden="true"></i>
-      <span class="agenda-data-dia-topo">${nomeDia}</span>
-      <span class="agenda-data-data-topo">(${dia}/${mes})</span>
-    </span>
-    <span class="agenda-data-dia-mobile">(${dia}/${mes})</span>
-  `;
+  if (typeof window.formatarRotuloDia === 'function') {
+    const rotulo = window.formatarRotuloDia(dataRef);
+    const estreito = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 419px)').matches;
+    const compacto = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 767px)').matches;
+    const textoExibido = estreito ? rotulo.curto : (compacto ? rotulo.medio : rotulo.completo);
+
+    elementoData.innerHTML = `
+      <span class="agenda-data-linha-topo">
+        <i class="fa-solid fa-calendar-minus" aria-hidden="true"></i>
+        <span class="agenda-data-dia-topo">${textoExibido}</span>
+      </span>
+    `;
+    elementoData.title = rotulo.completo;
+    elementoData.setAttribute('aria-label', rotulo.completo);
+  } else {
+    elementoData.innerHTML = `
+      <span class="agenda-data-linha-topo">
+        <i class="fa-solid fa-calendar-minus" aria-hidden="true"></i>
+        <span class="agenda-data-dia-topo">${nomeDia}</span>
+        <span class="agenda-data-data-topo">(${dia}/${mes})</span>
+      </span>
+      <span class="agenda-data-dia-mobile">(${dia}/${mes})</span>
+    `;
+  }
   if (elementoDiaSemana) elementoDiaSemana.textContent = nomeDia;
 };
+
+const CONSULTA_DIA_ESTREITO = '(max-width: 419px)';
+const CONSULTA_DIA_COMPACTO = '(max-width: 767px)';
+
+if (typeof window.matchMedia === 'function') {
+  const faixaEstreita = window.matchMedia(CONSULTA_DIA_ESTREITO);
+  const faixaCompacta = window.matchMedia(CONSULTA_DIA_COMPACTO);
+  const aoMudarFaixa = function () {
+    if (document.getElementById('dataAtualHome')) {
+      window.atualizarDataAtual('dataAtualHome', 'diaSemanaAtualHome');
+    }
+  };
+  if (faixaEstreita && typeof faixaEstreita.addEventListener === 'function') {
+    faixaEstreita.addEventListener('change', aoMudarFaixa);
+  }
+  if (faixaCompacta && typeof faixaCompacta.addEventListener === 'function') {
+    faixaCompacta.addEventListener('change', aoMudarFaixa);
+  }
+}
+
+if (typeof window.addEventListener === 'function') {
+  window.addEventListener('resize', function () {
+    if (document.getElementById('dataAtualHome')) {
+      window.atualizarDataAtual('dataAtualHome', 'diaSemanaAtualHome');
+    }
+  });
+}
 
 window.atualizarDashboardStats = function () {
   if (!window.contextoDados.atual(window.contextoDados.capturar())) return;
