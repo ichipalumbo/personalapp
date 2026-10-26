@@ -60,3 +60,27 @@ test('formatarPeriodoSemana devolve a forma longa e a curta do rótulo da Home',
     assert.equal(viradaDeMes.completo, '28/12 a 03/01');
     assert.equal(viradaDeMes.curto, '28–03/01');
 });
+
+test('formatarRotuloDia formata datas em completo, médio e curto com suporte a string e Date', (t) => {
+    const window = criarAmbiente(t);
+
+    const seg = window.formatarRotuloDia(new Date(2026, 9, 26));
+    assert.equal(seg.completo, 'Segunda-feira (26/10)');
+    assert.equal(seg.medio, 'Segunda, 26/10');
+    assert.equal(seg.curto, 'Seg, 26/10');
+
+    const dom = window.formatarRotuloDia('2026-10-25');
+    assert.equal(dom.completo, 'Domingo (25/10)');
+    assert.equal(dom.medio, 'Domingo, 25/10');
+    assert.equal(dom.curto, 'Dom, 25/10');
+
+    const qua = window.formatarRotuloDia('28/10/2026');
+    assert.equal(qua.completo, 'Quarta-feira (28/10)');
+    assert.equal(qua.medio, 'Quarta, 28/10');
+    assert.equal(qua.curto, 'Qua, 28/10');
+
+    const invalido = window.formatarRotuloDia('data-invalida');
+    assert.equal(invalido.completo, '');
+    assert.equal(invalido.medio, '');
+    assert.equal(invalido.curto, '');
+});
