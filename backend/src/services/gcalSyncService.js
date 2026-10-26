@@ -4,6 +4,7 @@ const { google } = require('googleapis');
 const Agendamento = require('../models/Agendamento');
 const BloqueioExterno = require('../models/BloqueioExterno');
 const GoogleCalendarConnection = require('../models/GoogleCalendarConnection');
+const GcalReconciliationQueue = require('../models/GcalReconciliationQueue');
 const { normalizarDataParaISO, normalizarHorarioHHMM } = require('../utils/time');
 const { decryptRefreshToken } = require('../utils/gcalCrypto');
 const { normalizeEmail } = require('../utils/emailNormalizer');
@@ -1314,6 +1315,38 @@ async function renewWebhookChannelForOwner(ownerEmail) {
         reason: 'renewed_and_synced'
       };
     } catch (error) {
+      if (error && (error.statusCode === 404 || (error.message && error.message.toLowerCase().includes('not found')))) {
+        return {
+          renewed: false,
+          synced: false,
+          activeItems: 0,
+          cancelledItems: 0,
+          reason: 'not_connected'
+        };
+      }
+
+      if (error && (
+        error.message === 'invalid_grant' ||
+        (error.error && error.error === 'invalid_grant') ||
+        String(error).includes('invalid_grant') ||
+        error.code === 'TOKEN_EXPIRED'
+      )) {
+        await GoogleCalendarConnection.findOneAndUpdate(
+          { ownerEmail: normalizedOwnerEmail },
+          { $set: { status: 'expired' } }
+        ).catch(() => {});
+
+        return {
+          renewed: false,
+          synced: false,
+          activeItems: 0,
+          cancelledItems: 0,
+          reason: 'token_expired',
+          needsReconnect: true,
+          tokenExpired: true
+        };
+      }
+
       console.error('[GcalWebhookDiag] Erro ao renovar canal do Google Calendar.', {
         ownerEmail: normalizedOwnerEmail,
         error: error && error.message ? error.message : String(error)
@@ -1533,6 +1566,145 @@ async function syncConnectionByWebhookHeaders(channelId, resourceId) {
   return result;
 }
 
+async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
+  const normalizedOwnerEmail = normalizeEmail(ownerEmail);
+  if (!normalizedOwnerEmail) {
+    return { ok: false, reason: 'invalid_email' };
+  }
+
+  // 1. Processar fila de reconciliação (ações de exclusão ou edição ocorridas enquanto desconectado)
+  let reconciledDeletions = 0;
+  let reconciledUpdates = 0;
+  try {
+    const pendingActions = await GcalReconciliationQueue.find({ ownerEmail: normalizedOwnerEmail });
+    for (const item of pendingActions) {
+      try {
+        if (item.action === 'delete') {
+          try {
+            await module.exports.deleteEventFromGoogle(normalizedOwnerEmail, item.googleCalendarEventId);
+          } catch (err) {
+            const status = err && (err.statusCode || err.status);
+            if (status !== 404 && status !== 410) {
+              console.warn(`[GcalSync] Falha ao conciliar exclusão de ${item.googleCalendarEventId}:`, err.message);
+            }
+          }
+          await GcalReconciliationQueue.deleteOne({ _id: item._id });
+          reconciledDeletions++;
+        } else if (item.action === 'update') {
+          const agendamento = await Agendamento.findOne({ ownerEmail: normalizedOwnerEmail, id: item.agendamentoId });
+          if (agendamento) {
+            const payload = {
+              id: agendamento.id,
+              alunoId: agendamento.alunoId,
+              alunoNome: agendamento.alunoNome || '',
+              objetivo: agendamento.objetivo || '',
+              data: agendamento.data,
+              horarioInicio: agendamento.horarioInicio,
+              horarioFim: agendamento.horarioFim,
+              googleCalendarEventId: item.googleCalendarEventId,
+              frequencia: agendamento.frequencia,
+              tipoRecorrencia: agendamento.tipoRecorrencia,
+              diasSemana: agendamento.diasSemana,
+              intervaloRecorrencia: agendamento.intervaloRecorrencia,
+              recorrenciaDataInicio: agendamento.recorrenciaDataInicio,
+              recorrenciaDataFim: agendamento.recorrenciaDataFim,
+              recorrenciaQuantidadeOcorrencias: agendamento.recorrenciaQuantidadeOcorrencias,
+              excecoes: agendamento.excecoes
+            };
+            try {
+              await module.exports.updateEventInGoogle(normalizedOwnerEmail, payload);
+              await Agendamento.findOneAndUpdate(
+                { ownerEmail: normalizedOwnerEmail, id: agendamento.id },
+                { $set: { gcalStatus: 'sincronizado' } }
+              );
+              reconciledUpdates++;
+            } catch (updateErr) {
+              console.warn(`[GcalSync] Falha ao conciliar atualização de ${agendamento.id}:`, updateErr.message);
+            }
+          }
+          await GcalReconciliationQueue.deleteOne({ _id: item._id });
+        }
+      } catch (actionErr) {
+        console.warn('[GcalSync] Erro no processamento de item de reconciliação:', actionErr.message);
+      }
+    }
+  } catch (queueErr) {
+    console.warn('[GcalSync] Erro ao consultar fila de reconciliação:', queueErr.message);
+  }
+
+  // 2. Sincronização retroativa de agendamentos criados ou pendentes enquanto desconectado
+  const hoje = new Date().toISOString().slice(0, 10);
+  let syncedCount = 0;
+
+  try {
+    const agendamentosParaSincronizar = await Agendamento.find({
+      ownerEmail: normalizedOwnerEmail,
+      source: { $ne: 'google_external' },
+      $or: [
+        { gcalStatus: 'desconectado' },
+        { gcalStatus: { $exists: false } },
+        { googleCalendarEventId: null }
+      ]
+    });
+
+    for (const ag of agendamentosParaSincronizar) {
+      const isRecorrente = ag.frequencia === 'semanal' || ag.frequencia === 'mensal' || ag.frequencia === 'diaria' || !!ag.tipoRecorrencia;
+      const isFuturaOuHoje = ag.data && ag.data >= hoje;
+      if (!isRecorrente && !isFuturaOuHoje) {
+        continue;
+      }
+
+      const payload = {
+        id: ag.id,
+        alunoId: ag.alunoId,
+        alunoNome: ag.alunoNome || '',
+        objetivo: ag.objetivo || '',
+        data: ag.data,
+        horarioInicio: ag.horarioInicio,
+        horarioFim: ag.horarioFim,
+        googleCalendarEventId: ag.googleCalendarEventId || null,
+        frequencia: ag.frequencia,
+        tipoRecorrencia: ag.tipoRecorrencia,
+        diasSemana: ag.diasSemana,
+        intervaloRecorrencia: ag.intervaloRecorrencia,
+        recorrenciaDataInicio: ag.recorrenciaDataInicio,
+        recorrenciaDataFim: ag.recorrenciaDataFim,
+        recorrenciaQuantidadeOcorrencias: ag.recorrenciaQuantidadeOcorrencias,
+        excecoes: ag.excecoes
+      };
+
+      try {
+        const resGcal = ag.googleCalendarEventId
+          ? await module.exports.updateEventInGoogle(normalizedOwnerEmail, payload)
+          : await module.exports.pushEventToGoogle(normalizedOwnerEmail, payload);
+
+        const eventId = resGcal && resGcal.googleCalendarEventId ? String(resGcal.googleCalendarEventId) : null;
+        await Agendamento.findOneAndUpdate(
+          { ownerEmail: normalizedOwnerEmail, id: ag.id },
+          {
+            $set: {
+              gcalStatus: 'sincronizado',
+              ...(eventId ? { googleCalendarEventId: eventId } : {})
+            }
+          }
+        );
+        syncedCount++;
+      } catch (pushErr) {
+        console.warn(`[GcalSync] Falha ao sincronizar retroativamente agendamento ${ag.id}:`, pushErr.message);
+      }
+    }
+  } catch (syncErr) {
+    console.warn('[GcalSync] Erro na sincronização retroativa:', syncErr.message);
+  }
+
+  return {
+    ok: true,
+    reconciledDeletions,
+    reconciledUpdates,
+    syncedCount
+  };
+}
+
 module.exports = {
   syncConnection,
   syncConnectionByWebhookHeaders,
@@ -1543,6 +1715,7 @@ module.exports = {
   deleteEventFromGoogle,
   registerWebhookChannel,
   renewWebhookChannelForOwner,
+  reconcileAndSyncRetroactiveAppointments,
   decryptRefreshToken,
   APP_ORIGIN,
   isAppOwnedEvent,

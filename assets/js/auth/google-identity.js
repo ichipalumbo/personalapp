@@ -945,6 +945,10 @@
         if (status && status.connected === true) {
             btnConnect.hidden = true;
             connectedState.hidden = false;
+            const welcomeCard = document.getElementById('cardBoasVindasGcal');
+            if (welcomeCard) {
+                welcomeCard.hidden = true;
+            }
 
             if (connectionDescription) {
                 connectionDescription.textContent = 'Sua conta está conectada. Você pode desconectar quando quiser.';

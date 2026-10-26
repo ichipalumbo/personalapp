@@ -2904,6 +2904,111 @@ button.agenda-dia-aula {
   width: 100%;
 }
 
+/* Card de boas-vindas / convite sutil e dispensável para conectar a Google Agenda */
+.card-boas-vindas-gcal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 8px 4px;
+  padding: 14px 16px;
+  background: var(--cor-neutro-10);
+  border: 1px solid var(--cor-neutro-17);
+  border-radius: 14px;
+  box-shadow: 0 4px 16px var(--cor-preto-a24);
+  animation: fadeInGcalCard 0.3s ease-out;
+}
+
+.card-boas-vindas-gcal[hidden] {
+  display: none !important;
+}
+
+@keyframes fadeInGcalCard {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.card-boas-vindas-gcal-conteudo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.card-boas-vindas-gcal-icone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--cor-azul-08-a10);
+  color: var(--cor-estado-informativo);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.card-boas-vindas-gcal-texto {
+  flex: 1;
+}
+
+.card-boas-vindas-gcal-texto strong {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--cor-branco);
+  margin-bottom: 2px;
+}
+
+.card-boas-vindas-gcal-texto p {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--cor-neutro-34);
+  line-height: 1.4;
+}
+
+.card-boas-vindas-gcal-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn-gcal-conectar-card {
+  padding: 8px 16px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: none;
+  background: var(--cor-primaria);
+  color: var(--cor-neutro-04);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-gcal-conectar-card:hover {
+  opacity: 0.9;
+}
+
+.btn-gcal-dispensar-card {
+  padding: 8px 14px;
+  min-height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--cor-neutro-20);
+  background: transparent;
+  color: var(--cor-neutro-37);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.btn-gcal-dispensar-card:hover {
+  color: var(--cor-branco);
+  background: var(--cor-neutro-14);
+}
+
 .calendario-semanal-home-grid {
   display: flex;
   flex-direction: column;

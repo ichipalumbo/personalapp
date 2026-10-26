@@ -6,7 +6,11 @@ const { limparPayload, responderErro } = require('../utils/controllerHelpers');
 const { normalizeEmail } = require('../utils/emailNormalizer');
 const { getOwnerEmailOrThrow } = require('../utils/ownerScope');
 const { encryptRefreshToken, decryptRefreshToken } = require('../utils/gcalCrypto');
-const { registerWebhookChannel, renewWebhookChannelForOwner } = require('../services/gcalSyncService');
+const {
+  registerWebhookChannel,
+  renewWebhookChannelForOwner,
+  reconcileAndSyncRetroactiveAppointments
+} = require('../services/gcalSyncService');
 
 function responderErroGcalAuth(res, err, contexto) {
   return responderErro(res, err, contexto, GoogleCalendarConnection, 'GcalAuthController');
@@ -157,6 +161,11 @@ async function exchangeAuthCode(req, res) {
     oauth2Client.setCredentials(tokens);
     const registeredConnection = await registerWebhookChannel(connection, oauth2Client);
 
+    // Disparar reconciliação e sincronização retroativa em background
+    void reconcileAndSyncRetroactiveAppointments(normalizedOwnerEmail).catch((syncErr) => {
+      console.warn('[GcalAuthController] Erro na sincronização retroativa pós-conexão:', syncErr.message);
+    });
+
     return res.status(200).json({
       message: 'Google Calendar connection saved successfully.',
       connection: montarRespostaConexao(registeredConnection)
@@ -187,6 +196,15 @@ async function obterConexaoGoogleCalendar(req, res) {
       return res.status(404).json({
         connected: false,
         error: 'Google Calendar connection not found.'
+      });
+    }
+
+    if (connection.status === 'expired') {
+      return res.status(200).json({
+        connected: false,
+        tokenExpired: true,
+        needsReconnect: true,
+        message: 'A conexão com o Google Agenda expirou. Reconecte nas Configurações.'
       });
     }
 
@@ -252,6 +270,16 @@ async function desconectarGoogleCalendar(req, res) {
         error: 'Google Calendar connection not found.',
         message: 'Nenhuma conexão do Google Calendar foi encontrada para este email.'
       });
+    }
+
+    // Marca aulas do app como gcalStatus: 'desconectado' mantendo googleCalendarEventId para evitar duplicatas ao reconectar
+    try {
+      await Agendamento.updateMany(
+        { ownerEmail: normalizedEmail },
+        { $set: { gcalStatus: 'desconectado' } }
+      );
+    } catch (updateErr) {
+      console.warn('[GcalAuthController] Falha ao atualizar gcalStatus após desconexão:', updateErr.message);
     }
 
     // Delete external blocks stored in agendamentos (legacy flow)

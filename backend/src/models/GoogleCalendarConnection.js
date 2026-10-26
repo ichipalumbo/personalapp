@@ -18,7 +18,8 @@ const GoogleCalendarConnectionSchema = new mongoose.Schema({
   channelExpiration: { type: Date, default: null },
   lastSyncAt: { type: Date, default: null },
   lastWebhookAt: { type: Date, default: null },
-  lastConnectedAt: { type: Date, default: null }
+  lastConnectedAt: { type: Date, default: null },
+  status: { type: String, enum: ['active', 'expired', 'disconnected'], default: 'active' }
 }, { strict: false, timestamps: true });
 
 GoogleCalendarConnectionSchema.index({ ownerEmail: 1 }, { unique: true });

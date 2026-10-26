@@ -16,7 +16,7 @@
         try {
             return await global.googleIdentity.ensureCalendarConnection(opts);
         } catch (error) {
-            if (typeof global.mostrarToast === 'function') {
+            if (opts.interactive && typeof global.mostrarToast === 'function') {
                 global.mostrarToast('Não foi possível conectar à Google Agenda agora.', 'warning');
             }
             return { connected: false, error: error.message || 'connection-failed' };
@@ -75,6 +75,12 @@
             const synced = !!payload.synced;
             const reason = payload.reason || 'unknown';
 
+            if (payload.tokenExpired || payload.needsReconnect || reason === 'token_expired') {
+                if (typeof global.mostrarToast === 'function') {
+                    global.mostrarToast('Sua conexão com o Google Agenda expirou; reconecte nas Configurações para continuar sincronizando.', 'warning');
+                }
+            }
+
             if (renewed && window.log && typeof window.log.info === 'function') {
                 window.log.info('[gcal]', 'Canal renovado', {
                     reason,
@@ -82,9 +88,9 @@
                     activeItems: Number(payload.activeItems || 0),
                     cancelledItems: Number(payload.cancelledItems || 0)
                 });
-            } else if (!renewed && reason === 'channel_valid' && window.log && typeof window.log.debug === 'function') {
-                window.log.debug('[gcal]', 'Canal ainda válido, nada a fazer', { reason });
-            } else if (!renewed && reason !== 'channel_valid' && window.log && typeof window.log.warn === 'function') {
+            } else if (!renewed && (reason === 'channel_valid' || reason === 'not_connected') && window.log && typeof window.log.debug === 'function') {
+                window.log.debug('[gcal]', 'Canal válido ou agenda desconectada', { reason });
+            } else if (!renewed && reason !== 'channel_valid' && reason !== 'not_connected' && window.log && typeof window.log.warn === 'function') {
                 const logPayload = { reason };
                 if (payload.error) {
                     logPayload.error = payload.error;
@@ -136,7 +142,7 @@
         if (!operacao) return { ok: false, motivo: 'falha_remota' };
         try {
             if (_isAppSignedIn()) {
-                await _ensureCalendarConnection({ interactive: true, force: false, operacao, contextoDados: operacao.contexto });
+                await _ensureCalendarConnection({ interactive: false, force: false, operacao, contextoDados: operacao.contexto });
             }
             if (!global.contextoDados.operacaoAtual(operacao)) return { ok: false, motivo: 'sessao_expirada' };
             const resultado = await _persistirDadosComBackend(silencioso, operacao);
