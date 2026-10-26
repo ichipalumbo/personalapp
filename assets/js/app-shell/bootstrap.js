@@ -118,6 +118,16 @@
                 if (router.getCurrentViewId() === 'tela-financas' && global.atualizarFinancasAposSync) {
                     await global.atualizarFinancasAposSync({ contextoDados: contexto, reutilizarConcluidaBoot: true });
                 }
+                if (ownerEmailAtual) {
+                    global.__homeCarregando = false;
+                    global.__sincronizacaoInicialConcluida = false;
+                }
+                if (router.getCurrentViewId() === 'tela-home' && typeof global.inicializarHome === 'function') {
+                    await global.inicializarHome({ sincronizar: true, contextoDados: contexto });
+                }
+                if (typeof global.atualizarVisibilidadeCardBoasVindasGcal === 'function') {
+                    global.atualizarVisibilidadeCardBoasVindasGcal();
+                }
                 atualizarMedidasLayout();
             });
         }
@@ -164,6 +174,10 @@
             if (autenticacaoPendenteNoBoot && router.getCurrentViewId() === 'tela-financas'
                 && global.atualizarFinancasAposSync) {
                 void global.atualizarFinancasAposSync({ contextoDados: global.contextoDados.capturar(), reutilizarConcluidaBoot: true });
+            }
+            if (autenticacaoPendenteNoBoot && router.getCurrentViewId() === 'tela-home'
+                && typeof global.inicializarHome === 'function') {
+                void global.inicializarHome({ sincronizar: true, contextoDados: global.contextoDados.capturar() });
             }
             autenticacaoPendenteNoBoot = false;
         };
