@@ -289,6 +289,36 @@
         const email = autenticado && perfil ? String(perfil.email || '') : '';
         sessionAvatar.textContent = email ? email.charAt(0).toUpperCase() : 'G';
       }
+
+      const modalBoasVindas = document.getElementById('modalBoasVindasLogin');
+      if (modalBoasVindas) {
+        if (autenticado) {
+          modalBoasVindas.style.display = 'none';
+        } else {
+          let dispensado = false;
+          try {
+            dispensado = window.sessionStorage && window.sessionStorage.getItem('personal_welcome_login_dismissed') === 'true';
+          } catch (_) {}
+          if (!dispensado) {
+            modalBoasVindas.style.display = 'flex';
+          }
+        }
+      }
+
+      const btnGoogleModal = document.getElementById('btnGoogleLoginModal');
+      if (btnGoogleModal && btnGoogleModal.dataset.boundMockClick !== 'true') {
+        btnGoogleModal.dataset.boundMockClick = 'true';
+        btnGoogleModal.addEventListener('click', function () {
+          definirSessao({ autenticado: true });
+        });
+      }
+      const customGoogleLogin = document.getElementById('custom-google-login');
+      if (customGoogleLogin && customGoogleLogin.dataset.boundMockClick !== 'true') {
+        customGoogleLogin.dataset.boundMockClick = 'true';
+        customGoogleLogin.addEventListener('click', function () {
+          definirSessao({ autenticado: true });
+        });
+      }
     }
 
     window.googleIdentity = {
@@ -319,8 +349,21 @@
         return function unsubscribe() { authListeners.delete(listener); };
       },
       signOut() {
+        try {
+          if (window.sessionStorage) {
+            window.sessionStorage.removeItem('personal_welcome_login_dismissed');
+          }
+        } catch (_) {}
         definirSessao({ autenticado: false });
         return Promise.resolve();
+      },
+      abrirModalBoasVindasLogin() {
+        const modal = document.getElementById('modalBoasVindasLogin');
+        if (modal && !autenticado) modal.style.display = 'flex';
+      },
+      fecharModalBoasVindasLogin() {
+        const modal = document.getElementById('modalBoasVindasLogin');
+        if (modal) modal.style.display = 'none';
       },
       checkCalendarConnectionStatus() {
         return Promise.resolve({ connected: false });
