@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Personal Josy
 
-> **Status**: Roadmap oficial · **Atualizado**: 2026-10-23
+> **Status**: Roadmap oficial · **Atualizado**: 2026-10-27
 > Índice de evolução do produto: problemas a resolver, entregas, dependências e decisões pendentes.
 > Substitui o [roadmap anterior](archive/roadmaps/roadmap-v1.md), renomeado pelo dono e preservado como registro para consulta histórica.
 
@@ -27,7 +27,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 ### [ ] 1.4 Contato rápido via WhatsApp
 
 - **Resultado esperado**: iniciar uma conversa a partir do telefone cadastrado no card do aluno, sem copiar o número manualmente.
-- **Decidir antes**: tratamento de telefone ausente ou inválido e normalização do número para o link.
+- **Decisão confirmada (2026-10-27)**: link `wa.me/55...` normalizando números nacionais de 10–11 dígitos; ocultar/desabilitar o atalho quando o aluno não tiver telefone válido cadastrado.
 - **Esforço**: muito baixo; a proposta atual é somente um atalho de contato, não envio automático de cobrança.
 - **Referência**: [tela de Alunos](../assets/js/view-alunos.js); sem spec própria ainda.
 
@@ -49,36 +49,36 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 ### [ ] 1.7 Busca e filtros na lista de alunos
 
 - **Resultado esperado**: localizar um aluno por nome sem percorrer toda a lista.
-- **Decidir antes**: somente busca por nome ou também novos filtros, como dia de treino.
+- **Decisão confirmada (2026-10-27)**: somente busca textual instantânea por nome, sem filtros extras no topo.
 - **Situação atual**: os antigos filtros de status/objetivo foram removidos; por isso o item deixa de ser descrito como parcialmente entregue.
-- **Esforço**: muito baixo para busca por nome; reavaliar se houver filtros adicionais.
+- **Esforço**: muito baixo para busca por nome.
 - **Referência**: [tela de Alunos](../assets/js/view-alunos.js); sem spec própria ainda.
 
 ## Confiabilidade e infraestrutura
 
 ### [ ] 2.2 Consolidar os gatilhos de sincronização
 
-- **Resultado esperado**: reduzir consultas redundantes e tornar previsível a coordenação entre boot, mudança de sessão e retorno à aba.
-- **Decidir antes**: desenho da coordenação, preservando a leitura segura já entregue no item 2.4.
-- **Risco/dependência**: integração com GCal é área sensível; autorização específica antes de alterar esse caminho. O item 2.4 já está concluído e não deve ser reimplementado.
-- **Esforço**: baixo–médio.
-- **Referência**: [spec de GCal, seção 9.14](specs/gcal-sync.md) e [plano B2](archive/plans/2026-09-30-plan-b2-sync-boot.md).
+- **Resultado esperado**: reduzir consultas redundantes e tornar previsível a coordenação entre boot, mudança de sessão e retorno à aba, além de eliminar o risco de divergência entre `gis_session_cache` e `gis_profile_cache` e desacoplar o envio ao Google Calendar do caminho crítico do CRUD (T04).
+- **Decisão confirmada (2026-10-27)**: (1) derivar perfil diretamente do JWT da sessão (Risco 1.3); (2) unificar boot + `auth-change` em coordenador único idempotente por `ownerEmail`; (3) no T04, CRUD grava/apaga no MongoDB imediatamente (`gcalStatus='pendente'` em `POST`/`PUT` e Outbox Pattern via `GcalReconciliationQueue` no `DELETE`) com flush dedicado pós-save mantendo os toasts de falha parcial.
+- **Risco/dependência**: integração com GCal e autenticação são áreas sensíveis; confirmar antes de alterar cada caminho. O item 2.4 já está concluído e não deve ser reimplementado.
+- **Esforço**: médio.
+- **Referência**: [spec de GCal, seção 9.14](specs/gcal-sync.md), [aprendizados, seção 1.3](reference/lessons-learned.md), [plano B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) e [plano de UI otimista (T04)](archive/plans/2026-10-26-plan-ui-otimista.md).
 
 ### [ ] 2.3 Ampliar a janela do full sync
 
-- **Resultado esperado**: recuperar bloqueios externos além da janela atual quando a leitura incremental não os trouxer de volta.
-- **Decidir antes**: nova janela e seus limites de custo/volume de leitura no Google Calendar.
+- **Resultado esperado**: recuperar bloqueios externos além da janela atual quando a leitura incremental não os trouxer de volta e alinhar a resolução da data base de recorrência.
+- **Decisão confirmada (2026-10-27)**: ampliar a janela do full sync de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]` e alinhar `gcalSyncService.js` à precedência canônica de data base de `recurrence-helpers.js` (Risco 1.1, sem tocar no cálculo financeiro).
 - **Risco/dependência**: altera sincronização com estado remoto; requer autorização específica e validação do caminho real.
-- **Esforço**: médio.
-- **Referência**: [spec de GCal, seção 5.2](specs/gcal-sync.md); detalhar o novo escopo antes de implementar.
+- **Esforço**: baixo–médio.
+- **Referência**: [spec de GCal, seção 5.2](specs/gcal-sync.md) e [aprendizados, seção 1.1](reference/lessons-learned.md).
 
 ### [ ] 3.1 Ampliar a cobertura das regras financeiras
 
-- **Resultado esperado**: identificar e cobrir casos financeiros e de reposição ainda sem proteção automatizada, reduzindo risco de cobrança incorreta.
+- **Resultado esperado**: identificar e cobrir casos financeiros e de reposição ainda sem proteção automatizada, incluindo os 2 gatilhos otimistas de reposição pendentes do T02, reduzindo risco de cobrança incorreta.
 - **Próximo passo**: inventariar as lacunas reais da suíte atual e definir os casos de aceite; não usar contagens históricas como diagnóstico de cobertura.
-- **Situação atual**: existe cobertura de negócio no backend e cobertura parcial de lógica/DOM no frontend. Render do Dia, conflitos e modais receberam testes no item 0.12; isso não equivale a cobertura visual completa.
+- **Situação atual**: existe cobertura de negócio no backend e cobertura parcial de lógica/DOM no frontend. Render do Dia, conflitos, modais e mutações otimistas de agenda/aluno receberam testes nos itens 0.12 e 5.11; isso não equivale a cobertura visual completa.
 - **Esforço**: baixo, sujeito ao inventário; sem dependência de implantação de ambiente.
-- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) e [execução das suítes](setup-ambiente-local.md).
+- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md), [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md) e [execução das suítes](setup-ambiente-local.md).
 
 ## Iniciativas em avaliação
 
@@ -184,8 +184,9 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 5.6 | `[x]` | Erros e toasts unificados; apresentação de carga financeira refinada posteriormente | [Etapa 6](archive/plans/2026-09-29-plan-etapa-6-toast-unificado.md) e [refinamento](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
 | 5.7 | `[x]` | Consistência, acessibilidade e navegação persistida | [Etapa 7](archive/plans/2026-10-01-plan-etapa-7-consistencia-acessibilidade.md) e [validação](archive/plans/2026-10-05-plan-validacao-etapa-7-branch.md) |
 | 5.8 | `[x]` | Skeletons padronizados e indicação de cache; B2 entregue separadamente no item 2.4 | [Plano de skeletons/cache](archive/plans/2026-09-30-plan-skeletons-cache.md) |
-| 5.9 | `[→]` | Alvos de toque do cabeçalho e toolbar inventariados e implementados no item 5.10 | [Plano da identidade visual](plans/2026-10-17-plan-aplicacao-identidade-visual.md) |
-| 5.10 | `[x]` | Implementação na branch: logo, toque, Poppins local, paleta, topos/listas/cards coerentes; ícones claros por finalidade e cache `josy-personal`. Integração à `main`, deploy e aceite dos últimos ajustes no aparelho com o dono | [Plano da frente](plans/2026-10-17-plan-aplicacao-identidade-visual.md), [spec de identidade](specs/identidade-e-apresentacao-publica.md) e [contrato visual](specs/interface-e-navegacao.md#61-topos-das-telas-principais) |
+| 5.9 | `[→]` | Alvos de toque do cabeçalho e toolbar inventariados e implementados no item 5.10 | [Plano da identidade visual](archive/plans/2026-10-17-plan-aplicacao-identidade-visual.md) |
+| 5.10 | `[x]` | Identidade visual integrada à `main`: logo, toque, Poppins local, paleta, topos/listas/cards coerentes, ícones claros por finalidade e cache `josy-personal` | [Plano encerrado](archive/plans/2026-10-17-plan-aplicacao-identidade-visual.md), [spec de identidade](specs/identidade-e-apresentacao-publica.md) e [contrato visual](specs/interface-e-navegacao.md#61-topos-das-telas-principais) |
+| 5.11 | `[x]` | UI otimista nas mutações de agenda/alunos, refinamento de toasts, abandono de pendência em re-submit e rótulo adaptativo do modo Dia (PRs #77 e #78); T04 consolidado em 2.2 | [Plano encerrado](archive/plans/2026-10-26-plan-ui-otimista.md), [ADR 0001](adr/0001-mutacoes-otimistas-e-fronteiras-de-persistencia.md) e [contrato de mutações otimistas](specs/interface-e-navegacao.md#8-mutacoes-otimistas-e-feedback-de-sincronizacao) |
 
 ## Ressalvas e fontes
 

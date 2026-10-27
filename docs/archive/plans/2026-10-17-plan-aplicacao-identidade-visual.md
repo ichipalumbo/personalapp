@@ -4,7 +4,7 @@
 > **Responsável**: GitHub Copilot · **Dono das decisões**: dono do repositório
 > **Branch**: `feat/aplicacao-identidade-visual`, criada de `origin/main` em 2026-10-22 com `--no-track`, abriga **todas as etapas**; um único PR ao final leva o conjunto para a `main`. A etapa 0 ficou em `docs/auditoria-roadmap`.
 > **Base**: commit `5416e9e`, medida em 2026-10-17; etapa 1 medida sobre a `main` em `ea29834`.
-> **Fontes**: [spec de identidade](../specs/identidade-e-apresentacao-publica.md), [guia de identidade visual v3](../reference/identidade/guia-identidade-visual-v3.md), [kit visual v2](../reference/identidade/kit-visual-completo-v2/LEIA-ME.md), [spec de interface](../specs/interface-e-navegacao.md), [roadmap, item 5.10](../roadmap-v3.md) e [ambiente de validação](../setup-ambiente-local.md).
+> **Fontes**: [spec de identidade](../../specs/identidade-e-apresentacao-publica.md), [guia de identidade visual v3](../../reference/identidade/guia-identidade-visual-v3.md), [kit visual v2](../../reference/identidade/kit-visual-completo-v2/LEIA-ME.md), [spec de interface](../../specs/interface-e-navegacao.md), [roadmap, item 5.10](../../roadmap-v3.md) e [ambiente de validação](../../setup-ambiente-local.md).
 
 ## 1. Objetivo
 
@@ -54,8 +54,8 @@ ou aceite no celular dos novos ícones/cache. Commit, push, PR e merge são do d
 
 - **Arquivos do kit são mestres** (spec, seção 2.4): copiar sem redesenhar; ajuste de tamanho só por CSS ou na exportação.
 - **Cores com significado** (spec, seção 2.2; spec de interface, seções 4 e 5): o amarelo é identidade; categorias e estados mantêm o significado; cor não é o único sinal.
-- **Contraste** conforme o [guia, seção 10](../reference/identidade/guia-identidade-visual-v3.md#10-legibilidade-e-contraste): 4,5:1 para texto comum, 3:1 para texto grande e elementos não textuais.
-- **Autenticação é área sensível** ([instruções, seção 7](../../.github/copilot-instructions.md)): avisar antes de mexer no botão Google. Manifest, ícones e service worker afetam instalações existentes e também têm aviso prévio.
+- **Contraste** conforme o [guia, seção 10](../../reference/identidade/guia-identidade-visual-v3.md#10-legibilidade-e-contraste): 4,5:1 para texto comum, 3:1 para texto grande e elementos não textuais.
+- **Autenticação é área sensível** ([instruções, seção 7](../../../.github/copilot-instructions.md)): avisar antes de mexer no botão Google. Manifest, ícones e service worker afetam instalações existentes e também têm aviso prévio.
 - **Sem dependência nova**: arquivos de fonte e ícones são assets; não entra pacote npm nem build step.
 - **Ordem das tags `<script>`**: um script novo que leia um global no topo do arquivo exige o par em `DEPENDENCIAS_DE_CARGA`.
 - **Validação visual no mock**, no viewport de referência 433×762 (DPR 2,81), com 390×844 e 320×568 como stress test.
@@ -73,7 +73,7 @@ ou aceite no celular dos novos ícones/cache. Commit, push, PR e merge são do d
 | Ícones atuais | `assets/images/icon-192x192.png` e `icon-512x512.png`: ilustração genérica de calendário, sem relação com a marca |
 | `sw.js` | `CACHE_NAME` contém "Prô Josy". Pré-cache de `index.html`, `style.css` e `app.js`. GETs da mesma origem vão primeiro à rede e são guardados no cache, que serve de reserva offline |
 | Testes de frontend | `header-cache-state.test.js` monta o cabeçalho com "Prô Josy"; `fab-adicionar.test.js` espera `rgb(255, 215, 0)` |
-| Alvos de toque do topo | O último inventário ([etapa 2, 2026-09-26](../archive/plans/2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md)) é anterior à navegação inferior; precisa ser refeito |
+| Alvos de toque do topo | O último inventário ([etapa 2, 2026-09-26](2026-09-26-plan-etapa-2-legibilidade-toque-cartoes.md)) é anterior à navegação inferior; precisa ser refeito |
 
 As contagens descrevem esta base e não são contagem viva do projeto.
 
