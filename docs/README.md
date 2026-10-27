@@ -1,6 +1,6 @@
 # Documentação — Personal Josy
 
-> **Finalidade**: índice e governança da documentação · **Atualizado**: 2026-10-23
+> **Finalidade**: índice e governança da documentação · **Atualizado**: 2026-10-27
 > Este arquivo define onde registrar cada informação e qual documento consultar; não descreve regras de produto nem a execução de uma frente.
 > **Fonte de verdade de regra de negócio**: as specs em `specs/`. Se uma regra não estiver escrita lá, ela não está decidida — confirme antes de implementar.
 
@@ -35,6 +35,7 @@
 | [Auditoria documental](archive/diagnostics/2026-10-14-diag-arquitetura-documentacao.md) | Inventário individual e achados da pasta; fotografia da auditoria, não segundo manual de governança | Para revisar as misturas de função e preparar uma futura redistribuição |
 | [Plano da governança](archive/plans/2026-10-14-plan-governanca-documental.md) | Escopo, decisões, execução e validação desta reorganização documental | Para conferir o que foi feito e o que permanece fora da rodada |
 | [Migração documental](plans/2026-10-14-plan-migracao-documental.md) | Matriz por trecho: origem, destino, conteúdo incorporado, duplicações e pendências | Para retomar as transferências incrementais sem reabrir a auditoria encerrada |
+| [Plano da frente: GCal/Sessão, Testes e Alunos](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) | Plano vivo das Ondas 1–3 definidas em 2026-10-27 (`2.2`, `2.3`, T04/Outbox, Riscos `1.1`/`1.3`, `3.1`, `1.7` e `1.4`) | Para executar, validar e registrar os cartões T01–T06 |
 
 ---
 

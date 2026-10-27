@@ -29,7 +29,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Resultado esperado**: iniciar uma conversa a partir do telefone cadastrado no card do aluno, sem copiar o número manualmente.
 - **Decisão confirmada (2026-10-27)**: link `wa.me/55...` normalizando números nacionais de 10–11 dígitos; ocultar/desabilitar o atalho quando o aluno não tiver telefone válido cadastrado.
 - **Esforço**: muito baixo; a proposta atual é somente um atalho de contato, não envio automático de cobrança.
-- **Referência**: [tela de Alunos](../assets/js/view-alunos.js); sem spec própria ainda.
+- **Referência**: [tela de Alunos](../assets/js/view-alunos.js) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md); sem spec própria ainda.
 
 ### [ ] 1.5 Presença, falta e cancelamento pelo aluno
 
@@ -52,7 +52,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Decisão confirmada (2026-10-27)**: somente busca textual instantânea por nome, sem filtros extras no topo.
 - **Situação atual**: os antigos filtros de status/objetivo foram removidos; por isso o item deixa de ser descrito como parcialmente entregue.
 - **Esforço**: muito baixo para busca por nome.
-- **Referência**: [tela de Alunos](../assets/js/view-alunos.js); sem spec própria ainda.
+- **Referência**: [tela de Alunos](../assets/js/view-alunos.js) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md); sem spec própria ainda.
 
 ## Confiabilidade e infraestrutura
 
@@ -62,7 +62,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Decisão confirmada (2026-10-27)**: (1) derivar perfil diretamente do JWT da sessão (Risco 1.3); (2) unificar boot + `auth-change` em coordenador único idempotente por `ownerEmail`; (3) no T04, CRUD grava/apaga no MongoDB imediatamente (`gcalStatus='pendente'` em `POST`/`PUT` e Outbox Pattern via `GcalReconciliationQueue` no `DELETE`) com flush dedicado pós-save mantendo os toasts de falha parcial.
 - **Risco/dependência**: integração com GCal e autenticação são áreas sensíveis; confirmar antes de alterar cada caminho. O item 2.4 já está concluído e não deve ser reimplementado.
 - **Esforço**: médio.
-- **Referência**: [spec de GCal, seção 9.14](specs/gcal-sync.md), [aprendizados, seção 1.3](reference/lessons-learned.md), [plano B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) e [plano de UI otimista (T04)](archive/plans/2026-10-26-plan-ui-otimista.md).
+- **Referência**: [plano da frente (T01–T02)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de GCal, seção 9.14](specs/gcal-sync.md), [aprendizados, seção 1.3](reference/lessons-learned.md), [plano B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) e [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md).
 
 ### [ ] 2.3 Ampliar a janela do full sync
 
@@ -70,7 +70,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Decisão confirmada (2026-10-27)**: ampliar a janela do full sync de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]` e alinhar `gcalSyncService.js` à precedência canônica de data base de `recurrence-helpers.js` (Risco 1.1, sem tocar no cálculo financeiro).
 - **Risco/dependência**: altera sincronização com estado remoto; requer autorização específica e validação do caminho real.
 - **Esforço**: baixo–médio.
-- **Referência**: [spec de GCal, seção 5.2](specs/gcal-sync.md) e [aprendizados, seção 1.1](reference/lessons-learned.md).
+- **Referência**: [plano da frente (T03)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de GCal, seção 5.2](specs/gcal-sync.md) e [aprendizados, seção 1.1](reference/lessons-learned.md).
 
 ### [ ] 3.1 Ampliar a cobertura das regras financeiras
 
@@ -78,7 +78,7 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Próximo passo**: inventariar as lacunas reais da suíte atual e definir os casos de aceite; não usar contagens históricas como diagnóstico de cobertura.
 - **Situação atual**: existe cobertura de negócio no backend e cobertura parcial de lógica/DOM no frontend. Render do Dia, conflitos, modais e mutações otimistas de agenda/aluno receberam testes nos itens 0.12 e 5.11; isso não equivale a cobertura visual completa.
 - **Esforço**: baixo, sujeito ao inventário; sem dependência de implantação de ambiente.
-- **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md), [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md) e [execução das suítes](setup-ambiente-local.md).
+- **Referência**: [plano da frente (T05)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md), [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md) e [execução das suítes](setup-ambiente-local.md).
 
 ## Iniciativas em avaliação
 
