@@ -172,8 +172,33 @@
       }
 
       if (recurso === 'agendamentos') {
+        if (method === 'POST' && id === 'flush-gcal') {
+          const gcalFalhou = scenario.gcalSyncFailed === true || scenario.name === 'otimistaGCalFalha';
+          const agendamentosFlush = (store.agendamentos || [])
+            .filter((a) => a && a.gcalStatus === 'pendente')
+            .map((a) => {
+              if (!gcalFalhou) {
+                a.gcalStatus = 'sincronizado';
+                if (!a.googleCalendarEventId) {
+                  a.googleCalendarEventId = 'mock-gcal-' + a.id;
+                }
+              }
+              return Object.assign({}, a);
+            });
+          return responder({
+            ok: true,
+            mock: true,
+            gcalSyncFailed: gcalFalhou,
+            partialSuccess: gcalFalhou,
+            agendamentos: agendamentosFlush,
+            deletedCount: 0
+          });
+        }
         if (method === 'POST') {
-          const novo = Object.assign({}, payload, { id: payload.id || novoIdMock('agendamento') });
+          const novo = Object.assign({}, payload, {
+            id: payload.id || novoIdMock('agendamento'),
+            gcalStatus: 'pendente'
+          });
           if (scenario.gcalSyncFailed === true || scenario.name === 'otimistaGCalFalha') {
             novo.gcalSyncFailed = true;
           }
@@ -181,7 +206,7 @@
           return responder(novo, { status: 201 });
         }
         if (method === 'PUT' && id) {
-          const atualizado = Object.assign({}, payload, { id });
+          const atualizado = Object.assign({}, payload, { id, gcalStatus: 'pendente' });
           if (scenario.gcalSyncFailed === true || scenario.name === 'otimistaGCalFalha') {
             atualizado.gcalSyncFailed = true;
           }
@@ -191,7 +216,14 @@
         }
         if (method === 'DELETE' && id) {
           store.agendamentos = store.agendamentos.filter((a) => a.id !== id);
-          return responder({ ok: true, mock: true, id });
+          return responder({
+            ok: true,
+            mock: true,
+            deleted: true,
+            id,
+            queuedForGcalDelete: true,
+            ...(scenario.gcalSyncFailed === true || scenario.name === 'otimistaGCalFalha' ? { gcalSyncFailed: true } : {})
+          });
         }
       }
 

@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Personal Josy
 
-> **Status**: Roadmap oficial · **Atualizado**: 2026-10-27
+> **Status**: Roadmap oficial · **Atualizado**: 2026-11-03
 > Índice de evolução do produto: problemas a resolver, entregas, dependências e decisões pendentes.
 > Substitui o [roadmap anterior](archive/roadmaps/roadmap-v1.md), renomeado pelo dono e preservado como registro para consulta histórica.
 
@@ -24,12 +24,13 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: baixo para a proposta mínima em CSV; outros formatos dependem do escopo escolhido.
 - **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), modelo `CicloFinanceiro` e contratos da API. A exportação ainda precisa de definição própria.
 
-### [ ] 1.4 Contato rápido via WhatsApp
+### [x] 1.4 Contato rápido via WhatsApp
 
 - **Resultado esperado**: iniciar uma conversa a partir do telefone cadastrado no card do aluno, sem copiar o número manualmente.
 - **Decisão confirmada (2026-10-27)**: link `wa.me/55...` normalizando números nacionais de 10–11 dígitos; ocultar/desabilitar o atalho quando o aluno não tiver telefone válido cadastrado.
+- **Entrega (2026-11-03)**: T06 executado no plano da frente. O card do aluno exibe um atalho `https://wa.me/<número>` em nova aba (`rel="noopener noreferrer"`), com alvo de 44×44 px e clique isolado do card; `normalizarTelefoneWhatsApp` reduz a dígitos, prefixa `55` em 10/11 dígitos e mantém números que já vêm com `55` + 10/11 dígitos, devolvendo `null` para qualquer outro comprimento — nesse caso o atalho não é renderizado.
 - **Esforço**: muito baixo; a proposta atual é somente um atalho de contato, não envio automático de cobrança.
-- **Referência**: [tela de Alunos](../assets/js/view-alunos.js) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md); sem spec própria ainda.
+- **Referência**: [tela de Alunos](../assets/js/view-alunos.js), [spec de interface, seção 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md).
 
 ### [ ] 1.5 Presença, falta e cancelamento pelo aluno
 
@@ -46,36 +47,40 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: baixo.
 - **Referência**: [cadastro de Alunos](../assets/js/view-alunos.js) e [Home](../assets/js/view-home.js); sem spec própria ainda.
 
-### [ ] 1.7 Busca e filtros na lista de alunos
+### [x] 1.7 Busca e filtros na lista de alunos
 
 - **Resultado esperado**: localizar um aluno por nome sem percorrer toda a lista.
 - **Decisão confirmada (2026-10-27)**: somente busca textual instantânea por nome, sem filtros extras no topo.
+- **Entrega (2026-11-03)**: T06 executado no plano da frente. Campo único `#buscaAlunos` no cabeçalho fixo da tela (acompanha a rolagem), comparando nome sem caixa, sem acentos e com correspondência parcial; o termo vive no próprio campo (fora do container re-renderizado), então sobrevive a re-renders otimistas, e a busca sem resultado mostra estado vazio próprio com o termo pesquisado.
 - **Situação atual**: os antigos filtros de status/objetivo foram removidos; por isso o item deixa de ser descrito como parcialmente entregue.
 - **Esforço**: muito baixo para busca por nome.
-- **Referência**: [tela de Alunos](../assets/js/view-alunos.js) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md); sem spec própria ainda.
+- **Referência**: [tela de Alunos](../assets/js/view-alunos.js), [spec de interface, seção 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md).
 
 ## Confiabilidade e infraestrutura
 
-### [ ] 2.2 Consolidar os gatilhos de sincronização
+### [x] 2.2 Consolidar os gatilhos de sincronização
 
 - **Resultado esperado**: reduzir consultas redundantes e tornar previsível a coordenação entre boot, mudança de sessão e retorno à aba, além de eliminar o risco de divergência entre `gis_session_cache` e `gis_profile_cache` e desacoplar o envio ao Google Calendar do caminho crítico do CRUD (T04).
 - **Decisão confirmada (2026-10-27)**: (1) derivar perfil diretamente do JWT da sessão (Risco 1.3); (2) unificar boot + `auth-change` em coordenador único idempotente por `ownerEmail`; (3) no T04, CRUD grava/apaga no MongoDB imediatamente (`gcalStatus='pendente'` em `POST`/`PUT` e Outbox Pattern via `GcalReconciliationQueue` no `DELETE`) com flush dedicado pós-save mantendo os toasts de falha parcial.
+- **Entrega (2026-11-03)**: T01 e T02 executados no plano da frente. `_profile` passou a ser derivado do `idToken` válido, com `gis_profile_cache` descartado quando o `email` não confere ou a sessão está ausente/expirada; boot e `auth-change` passaram a usar `coordenarGCalParaSessao`, idempotente por `ownerEmail`; `POST`/`PUT`/`DELETE` de agendamento deixaram de chamar o Google, com `gcalStatus='pendente'` e `GcalReconciliationQueue` processados por `POST /api/agendamentos/flush-gcal`. No fechamento da frente, as remoções na `GcalReconciliationQueue` passaram a filtrar por `ownerEmail` além do `_id`, com teste provado por mutação.
 - **Risco/dependência**: integração com GCal e autenticação são áreas sensíveis; confirmar antes de alterar cada caminho. O item 2.4 já está concluído e não deve ser reimplementado.
 - **Esforço**: médio.
 - **Referência**: [plano da frente (T01–T02)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de GCal, seção 9.14](specs/gcal-sync.md), [aprendizados, seção 1.3](reference/lessons-learned.md), [plano B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) e [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md).
 
-### [ ] 2.3 Ampliar a janela do full sync
+### [x] 2.3 Ampliar a janela do full sync
 
 - **Resultado esperado**: recuperar bloqueios externos além da janela atual quando a leitura incremental não os trouxer de volta e alinhar a resolução da data base de recorrência.
 - **Decisão confirmada (2026-10-27)**: ampliar a janela do full sync de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]` e alinhar `gcalSyncService.js` à precedência canônica de data base de `recurrence-helpers.js` (Risco 1.1, sem tocar no cálculo financeiro).
+- **Entrega (2026-11-03)**: T03 executado no plano da frente. Janela do full sync ampliada para `[-1 mês, +6 meses]`, com `timeMin` inalterado e purge de `BloqueioExterno` ainda restrito a `isBloqueioDentroDaJanela`; precedência `dataCriacao || recorrenciaDataInicio || data` extraída para `resolverDataBaseCompromisso` em `recurrence-helpers.js` e consumida pelo `gcalSyncService` nos seis pontos de data base.
 - **Risco/dependência**: altera sincronização com estado remoto; requer autorização específica e validação do caminho real.
 - **Esforço**: baixo–médio.
 - **Referência**: [plano da frente (T03)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de GCal, seção 5.2](specs/gcal-sync.md) e [aprendizados, seção 1.1](reference/lessons-learned.md).
 
-### [ ] 3.1 Ampliar a cobertura das regras financeiras
+### [x] 3.1 Ampliar a cobertura das regras financeiras
 
 - **Resultado esperado**: identificar e cobrir casos financeiros e de reposição ainda sem proteção automatizada, incluindo os 2 gatilhos otimistas de reposição pendentes do T02, reduzindo risco de cobrança incorreta.
 - **Próximo passo**: inventariar as lacunas reais da suíte atual e definir os casos de aceite; não usar contagens históricas como diagnóstico de cobertura.
+- **Entrega (2026-11-03)**: T05 executado no plano da frente. Sete lacunas inventariadas e cobertas — `listarFinancasDoOwner` (isolamento por `ownerEmail`, exclusão de Consultoria Online, card `configuracaoPendente`, `historicoDisponivel` e ordenação por status), `obterHistoricoFinancasPorAluno` (sem ciclos, aluno fora do escopo, exclusão do ciclo vigente), `recalcularStatusCiclo` nos quatro estados, `obterMensagemFalhaPersistencia` em todas as mensagens e fallbacks, o filtro privado de reposições por aluno/status via `agruparHistoricoReposicoes`, e os gatilhos otimistas de enviar para reposição e reagendar reposição (incluindo o rollback que faltava no reagendamento). Cada teste novo foi provado por mutação.
 - **Situação atual**: existe cobertura de negócio no backend e cobertura parcial de lógica/DOM no frontend. Render do Dia, conflitos, modais e mutações otimistas de agenda/aluno receberam testes nos itens 0.12 e 5.11; isso não equivale a cobertura visual completa.
 - **Esforço**: baixo, sujeito ao inventário; sem dependência de implantação de ambiente.
 - **Referência**: [plano da frente (T05)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md), [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md) e [execução das suítes](setup-ambiente-local.md).
@@ -165,12 +170,17 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 0.12 | `[x]` | Cobertura de render do Dia, conflitos e fluxos principais dos modais | [Plano encerrado e limites](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) |
 | 1.1 | `[x]` | Pagamentos, inadimplência e cobrança por ciclo | [Spec de Finanças](specs/financas-ciclo-cobranca.md) |
 | 1.3 | `[x]` | Observações no cadastro e card do aluno; não representa anotação por aula | [Registro anterior](archive/roadmaps/roadmap-v1.md) |
+| 1.4 | `[x]` | Atalho `wa.me` no card do aluno, com `55` prefixado em números nacionais e oculto quando o telefone é inválido | [Spec de interface, 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) |
+| 1.7 | `[x]` | Busca por nome na lista de alunos, sem acentos/caixa, com termo preservado e estado vazio próprio | [Spec de interface, 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) |
 | 1.8 | `[→]` | Avisos de aulas a repor consolidados no item 0.8 | [Regra de reposições](specs/reposicoes-e-competencia.md) |
 | 1.9 | `[x]` | Pagamento e ajuste de ciclo histórico ainda não pago | [Spec de Finanças, seção 6.3](specs/financas-ciclo-cobranca.md) |
 | 1.10 | `[x]` | Histórico de reposições e reagendamento contextual no card do aluno | [Contrato](specs/reposicoes-e-competencia.md) e [complementos recentes](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
 | 1.11 | `[x]` | Atualização manual de leitura em Finanças, com recuperação e feedback localizado | [Contrato](specs/financas-ciclo-cobranca.md) e [aceite/publicação](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
 | 2.1 | `[x]` | Séries GCal com RRULE, EXDATE e renovação ativa do canal | [Spec de GCal e ressalvas](specs/gcal-sync.md) |
+| 2.2 | `[x]` | Perfil derivado do JWT e gatilhos de boot/auth-change consolidados; CRUD de agendamento desacoplado do Google com flush dedicado e Outbox no `DELETE` | [Plano da frente (T01–T02)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) e [spec de GCal](specs/gcal-sync.md) |
+| 2.3 | `[x]` | Full sync com janela `[-1 mês, +6 meses]` e precedência da data base unificada em módulo compartilhado (Risco 1.1 encerrado) | [Plano da frente (T03)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) e [spec de GCal, 9.14.1](specs/gcal-sync.md) |
 | 2.4 | `[x]` | Revalidação segura do cache no boot, publicada pelo PR #70 | [Contratos](specs/financas-ciclo-cobranca.md) e [plano/aceite B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) |
+| 3.1 | `[x]` | Lacunas financeiras/reposições cobertas e gatilhos otimistas de reposição testados, incluindo o rollback que faltava no reagendamento | [Plano da frente (T05)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) |
 | 3.2 | `[x]` | Backend executável localmente | [Setup](setup-ambiente-local.md) |
 | 3.3 | `[x]` | Frontend local com configuração de API local | [Setup](setup-ambiente-local.md) |
 | 3.4 | `[x]` | Banco de desenvolvimento separado | [Setup](setup-ambiente-local.md) |
@@ -191,7 +201,7 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 ## Ressalvas e fontes
 
 - **Integração pendente**: complementos de 1.10/5.3 e a entrega de 1.11 têm aceite mobile relatado no deploy específico da branch; PR/merge para a `main` continuam com o dono, conforme o [fechamento da frente UX](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md). Isso não reabre funcionalidades publicadas anteriormente nem equivale a integração desses complementos.
-- **Google Calendar**: o item 2.1 preserva a ressalva de que o gatilho automático de renovação no boot não foi observado isoladamente. Defeitos e limites de I/O real permanecem na [spec de GCal](specs/gcal-sync.md).
+- **Google Calendar**: o item 2.1 preserva a ressalva de que o gatilho automático de renovação no boot não foi observado isoladamente; a coordenação entregue em 2.2 é coberta por teste automatizado, não por observação em produção. Defeitos e limites de I/O real permanecem na [spec de GCal](specs/gcal-sync.md).
 - **Validação visual**: testes de lógica/DOM não comprovam pixels, gestos físicos ou todos os fluxos. Usar o [mock e os viewports de referência](setup-ambiente-local.md), com limites registrados em cada plano.
 - **Regras de produto**: consultar [Finanças](specs/financas-ciclo-cobranca.md), [Reposições](specs/reposicoes-e-competencia.md) e [GCal](specs/gcal-sync.md). A regra antiga de alerta do item 0.8 não prevalece sobre a spec vigente.
 - **Riscos conhecidos**: consultar [Aprendizados](reference/lessons-learned.md); seu inventário não foi revalidado integralmente nesta reorganização nem convertido automaticamente em novos itens.

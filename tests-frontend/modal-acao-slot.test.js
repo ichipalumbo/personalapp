@@ -2,8 +2,11 @@
 // T07 (plano 2026-10-12): edição de aula avulsa com DOM real (jsdom) — abrir,
 // editar horário, salvar com operação real do contextoDados e salvarDados
 // stubado; aviso de conflito na edição (decisão 1 = B) sem gravação; e fechar
-// pelo botão Voltar sem escrita. Split de série e reposição ficam FORA
-// (já cobertos pela suíte de backend — decisão do T01).
+// pelo botão Voltar sem escrita. Split de série fica FORA (coberto pela suíte
+// de backend — decisão do T01).
+// T05 (plano 2026-10-27, item 3.1): envio para reposição e reagendamento de
+// reposição com DOM real — commit otimista antes da persistência e rollback
+// quando a persistência falha.
 
 const fs = require('node:fs');
 const path = require('node:path');
@@ -41,7 +44,7 @@ const SCRIPTS = [
 // Markup real dos modais, extraído do index.html uma única vez.
 const HTML_MODAIS = (() => {
     const fonte = new JSDOM(fs.readFileSync(path.join(RAIZ, 'index.html'), 'utf8'));
-    const html = ['modalAgendamento', 'modalAcaoSlot', 'modalEscolhaCobrancaReposicao', 'modalEscolhaExclusao']
+    const html = ['modalAgendamento', 'modalAcaoSlot', 'modalEscolhaCobrancaReposicao', 'modalEscolhaExclusao', 'modalReagendarAula']
         .map((id) => {
             const elemento = fonte.window.document.getElementById(id);
             return elemento ? elemento.outerHTML : '';
@@ -458,4 +461,176 @@ test('T05 — período da série com data final também sai no formato legível'
         /Período: desde sáb\., 26\/09 até sáb\., 19\/12\./,
         'as duas pontas do período em formato legível',
     );
+});
+
+// ── T05 (plano 2026-10-27, item 3.1): commit otimista x persistência ────────
+
+function promessaControlada() {
+    let liberar = () => {};
+    const promessa = new Promise((resolver) => { liberar = resolver; });
+    return { promessa, liberar };
+}
+
+// Rede stubada: o POST /api/reposicoes precisa devolver a própria reposição
+// enviada (modal-acao-slot confere o id) e o PATCH devolve o prazo calculado.
+function stubarApiReposicoes(window) {
+    const chamadas = [];
+    window.apiFetchBackend = async (url, opcoes = {}) => {
+        const corpo = opcoes.body ? JSON.parse(opcoes.body) : {};
+        chamadas.push({ url, metodo: opcoes.method || 'GET', corpo });
+        const resposta = {
+            ok: true,
+            json: async () => ({ ...corpo, validoAte: '2026-11-10' }),
+            clone() { return resposta; },
+        };
+        return resposta;
+    };
+    return chamadas;
+}
+
+async function aguardarAte(condicao, tentativas = 50) {
+    for (let i = 0; i < tentativas; i += 1) {
+        if (condicao()) return;
+        await barreira();
+    }
+    assert.fail('condição não foi atingida');
+}
+
+test('T05 — envio para reposição (avulsa): a aula sai da agenda antes da persistência confirmar', async (t) => {
+    const { window, capturado } = await criarAmbiente(t, { alunos: [ALUNO_ANA], aulas: [aulaAvulsa()] });
+    window.idCompromissoSelecionado = 'aula-1';
+    const api = stubarApiReposicoes(window);
+    window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) => callback(true);
+    window.carregarDados = async () => ({ ok: true, estado: 'aplicado' });
+
+    const persistencia = promessaControlada();
+    let persistenciaChamada = false;
+    window.salvarDados = async () => {
+        persistenciaChamada = true;
+        return persistencia.promessa;
+    };
+
+    const fluxo = window.executarEnvioParaReposicao();
+    await aguardarAte(() => persistenciaChamada);
+
+    assert.equal(api.length, 1, 'POST da reposição aconteceu');
+    assert.equal(api[0].metodo, 'POST');
+    assert.equal(window.aulas.length, 0, 'a aula sai da agenda antes da confirmação da escrita');
+    assert.equal(capturado.toasts.length, 0, 'nenhum desfecho anunciado antes da persistência');
+
+    persistencia.liberar({ ok: true, motivo: 'sucesso' });
+    await fluxo;
+
+    assert.equal(window.aulas.length, 0, 'permanece fora da agenda depois do sucesso');
+    assert.deepEqual(capturado.toasts, [['Aula enviada para reposição.', 'success']]);
+});
+
+test('T05 — envio para reposição (avulsa): falha na persistência devolve a aula para a agenda', async (t) => {
+    const { window, capturado, dom } = await criarAmbiente(t, { alunos: [ALUNO_ANA], aulas: [aulaAvulsa()] });
+    window.idCompromissoSelecionado = 'aula-1';
+    stubarApiReposicoes(window);
+    window.abrirModalEscolhaCobrancaReposicao = (_compromisso, callback) => callback(true);
+    window.salvarDados = async () => ({ ok: false, motivo: 'falha_remota' });
+
+    await window.executarEnvioParaReposicao();
+
+    const aulasDepois = JSON.parse(vm.runInContext('JSON.stringify(aulas)', dom.getInternalVMContext()));
+    assert.equal(aulasDepois.length, 1, 'rollback local devolve a aula para a agenda');
+    assert.equal(aulasDepois[0].id, 'aula-1');
+    assert.equal(aulasDepois[0].horarioInicio, '09:00', 'payload original preservado no rollback');
+    assert.deepEqual(capturado.toasts, [[
+        'Não foi possível salvar as alterações antes de concluir a reposição.',
+        'error',
+    ]]);
+});
+
+test('T05 — reagendamento de reposição: a aula nova entra na agenda antes da persistência confirmar', async (t) => {
+    const { window, capturado, dom } = await criarAmbiente(t, { alunos: [ALUNO_ANA], aulas: [] });
+    vm.runInContext(`
+        aulasParaRepor.push({
+            id: 'rep-1',
+            alunoId: 'aluno-1',
+            status: 'pendente',
+            dataOriginal: '2026-08-10',
+            horarioOriginal: '09:00',
+            validoAte: '2026-11-10',
+        });
+    `, dom.getInternalVMContext());
+    const api = stubarApiReposicoes(window);
+    window.carregarDados = async () => ({ ok: true, estado: 'aplicado' });
+
+    const persistencia = promessaControlada();
+    let persistenciaChamada = false;
+    window.salvarDados = async () => {
+        persistenciaChamada = true;
+        return persistencia.promessa;
+    };
+
+    window.iniciarReagendamentoReposicao('rep-1');
+    window.document.getElementById('reagendarData').value = '2026-09-05';
+    window.document.getElementById('reagendarHoraInicio').value = '10:00';
+    window.document.getElementById('reagendarDuracao').value = '60';
+    window.document.getElementById('formReagendarAula').dispatchEvent(
+        new window.Event('submit', { bubbles: true, cancelable: true }),
+    );
+    await aguardarAte(() => persistenciaChamada);
+
+    const aulasDurante = JSON.parse(vm.runInContext('JSON.stringify(aulas)', dom.getInternalVMContext()));
+    assert.equal(aulasDurante.length, 1, 'a aula da reposição já está na agenda antes da confirmação');
+    assert.equal(aulasDurante[0].isReposicao, true);
+    assert.equal(aulasDurante[0].reagendada, true);
+    assert.equal(aulasDurante[0].reposicaoId, 'rep-1');
+    assert.equal(aulasDurante[0].data, '2026-09-05');
+    assert.equal(aulasDurante[0].horarioInicio, '10:00');
+    assert.equal(aulasDurante[0].horarioFim, '11:00');
+    assert.equal(vm.runInContext('aulasParaRepor.length', dom.getInternalVMContext()), 1, 'fila de reposição intacta antes da escrita');
+
+    persistencia.liberar({ ok: true, motivo: 'sucesso' });
+    await aguardarAte(() => capturado.toasts.length > 0);
+
+    assert.equal(api.length, 1, 'PATCH da reposição para "agendada"');
+    assert.equal(api[0].metodo, 'PATCH');
+    assert.equal(api[0].url, 'http://api.test/api/reposicoes/rep-1');
+    assert.equal(api[0].corpo.status, 'agendada');
+    assert.equal(api[0].corpo.agendamentoReposicaoId, aulasDurante[0].id);
+    assert.equal(vm.runInContext('aulasParaRepor.length', dom.getInternalVMContext()), 0, 'sai da fila após o sucesso');
+    assert.match(
+        capturado.toasts.at(-1)[0],
+        /^Reposição reagendada com sucesso! Prazo: até 10\/11/,
+    );
+});
+
+test('T05 — reagendamento de reposição: falha na persistência devolve a agenda ao estado anterior', async (t) => {
+    const { window, capturado, dom } = await criarAmbiente(t, { alunos: [ALUNO_ANA], aulas: [aulaAvulsa()] });
+    vm.runInContext(`
+        aulasParaRepor.push({
+            id: 'rep-1',
+            alunoId: 'aluno-1',
+            status: 'pendente',
+            dataOriginal: '2026-08-10',
+            horarioOriginal: '09:00',
+            validoAte: '2026-11-10',
+        });
+    `, dom.getInternalVMContext());
+    const api = stubarApiReposicoes(window);
+    window.salvarDados = async () => ({ ok: false, motivo: 'falha_remota' });
+
+    window.iniciarReagendamentoReposicao('rep-1');
+    window.document.getElementById('reagendarData').value = '2026-09-05';
+    window.document.getElementById('reagendarHoraInicio').value = '10:00';
+    window.document.getElementById('reagendarDuracao').value = '60';
+    window.document.getElementById('formReagendarAula').dispatchEvent(
+        new window.Event('submit', { bubbles: true, cancelable: true }),
+    );
+    await aguardarAte(() => capturado.toasts.length > 0);
+
+    const aulasDepois = JSON.parse(vm.runInContext('JSON.stringify(aulas)', dom.getInternalVMContext()));
+    assert.deepEqual(aulasDepois.map((aula) => aula.id), ['aula-1'], 'a aula otimista sai da agenda');
+    assert.equal(aulasDepois[0].horarioInicio, '09:00', 'agenda anterior preservada');
+    assert.equal(api.length, 0, 'sem escrita remota: o PATCH não foi enviado');
+    assert.equal(vm.runInContext('aulasParaRepor.length', dom.getInternalVMContext()), 1, 'reposição continua pendente');
+    assert.deepEqual(capturado.toasts, [[
+        'Não foi possível salvar as alterações antes de concluir a reposição.',
+        'error',
+    ]]);
 });

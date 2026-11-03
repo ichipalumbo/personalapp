@@ -43,32 +43,12 @@
         return global.atualizarViewAtualAposSync(contexto);
     }
 
-    let gcalWatchCheckDisparado = false;
-
-    async function dispararVerificacaoCanalGCal() {
-        if (gcalWatchCheckDisparado) {
-            return;
-        }
-
-        gcalWatchCheckDisparado = true;
-
+    function obterOwnerEmailAtivo() {
         if (!global.googleIdentity || typeof global.googleIdentity.getOwnerEmail !== 'function') {
-            return;
+            return null;
         }
-
         const ownerEmail = global.googleIdentity.getOwnerEmail();
-        if (!ownerEmail) {
-            if (window.log && typeof window.log.debug === 'function') {
-                window.log.debug('[gcal]', 'Sem sessão Google; ignorando verificação do canal no boot.');
-            }
-            return;
-        }
-
-        try {
-            await global.renovarCanalGoogleCalendar();
-        } catch (error) {
-            console.warn('[Bootstrap] Falha ao verificar o canal do Google Calendar no boot:', error);
-        }
+        return ownerEmail ? String(ownerEmail).trim().toLowerCase() : null;
     }
 
     async function initialize() {
@@ -98,22 +78,68 @@
 
         let bootApresentado = false;
         let autenticacaoPendenteNoBoot = false;
+        let ultimoOwnerEmail = obterOwnerEmailAtivo();
+        let ultimoOwnerEmailGCal = null;
+
+        function coordenarGCalParaSessao(ownerEmailCandidato) {
+            const ownerEmail = ownerEmailCandidato !== undefined
+                ? (ownerEmailCandidato ? String(ownerEmailCandidato).trim().toLowerCase() : null)
+                : obterOwnerEmailAtivo();
+
+            if (!ownerEmail) {
+                ultimoOwnerEmailGCal = null;
+                if (window.log && typeof window.log.debug === 'function') {
+                    window.log.debug('[gcal]', 'Sem sessão Google; ignorando verificação do canal no boot.');
+                }
+                return;
+            }
+
+            if (global.gcal && typeof global.gcal.isSignedIn === 'function' && !global.gcal.isSignedIn()) {
+                return;
+            }
+
+            if (ownerEmail === ultimoOwnerEmailGCal) {
+                return;
+            }
+
+            ultimoOwnerEmailGCal = ownerEmail;
+
+            if (typeof global.iniciarSyncGoogleCalendarAutomatica === 'function') {
+                void global.iniciarSyncGoogleCalendarAutomatica();
+            } else if (typeof global.iniciarSyncGoogleCalendar === 'function') {
+                void global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
+            }
+
+            if (typeof global.renovarCanalGoogleCalendar === 'function') {
+                setTimeout(function () {
+                    if (obterOwnerEmailAtivo() !== ownerEmail) {
+                        return;
+                    }
+                    Promise.resolve(global.renovarCanalGoogleCalendar()).catch(function (error) {
+                        console.warn('[Bootstrap] Falha ao verificar o canal do Google Calendar no boot:', error);
+                    });
+                }, 0);
+            }
+        }
+
         // Observar antes de whenReady/navegação: o listener de sessão não reenvia
         // eventos ocorridos enquanto o inicializador da tela aguardava a rede.
         if (global.googleIdentity && typeof global.googleIdentity.addAuthChangeListener === 'function') {
-            let ultimoOwnerEmail = global.googleIdentity.getOwnerEmail ? global.googleIdentity.getOwnerEmail() : null;
             global.googleIdentity.addAuthChangeListener(async function (session) {
-                const ownerEmailAtual = session && session.ownerEmail ? session.ownerEmail : null;
+                const ownerEmailAtual = session && session.ownerEmail
+                    ? String(session.ownerEmail).trim().toLowerCase()
+                    : null;
                 if (ownerEmailAtual === ultimoOwnerEmail) return;
                 ultimoOwnerEmail = ownerEmailAtual;
+                if (!ownerEmailAtual) {
+                    coordenarGCalParaSessao(null);
+                }
                 if (!bootApresentado) { autenticacaoPendenteNoBoot = true; return; }
                 const contexto = global.contextoDados.capturar();
                 global.hidratarCacheDados();
                 global.syncBootDados.retomar(); // A troca tem cota nova; não abrir batch paralelo.
                 if (!global.contextoDados.atual(contexto)) return;
-                if (ownerEmailAtual && typeof global.iniciarSyncGoogleCalendar === 'function') {
-                    global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
-                }
+                coordenarGCalParaSessao(ownerEmailAtual);
                 // Finanças continua independente de falha do batch principal.
                 if (router.getCurrentViewId() === 'tela-financas' && global.atualizarFinancasAposSync) {
                     await global.atualizarFinancasAposSync({ contextoDados: contexto, reutilizarConcluidaBoot: true });
@@ -142,6 +168,9 @@
         try {
             if (global.googleIdentity && typeof global.googleIdentity.initialize === 'function') {
                 global.googleIdentity.initialize();
+                if (!autenticacaoPendenteNoBoot) {
+                    ultimoOwnerEmail = obterOwnerEmailAtivo();
+                }
                 if (typeof global.googleIdentity.whenReady === 'function') {
                     await global.googleIdentity.whenReady(1600);
                 }
@@ -171,6 +200,7 @@
             const aguardarEvento = falhaInicial && global.contextoDados.atual(falhaInicial.contexto)
                 && falhaInicial.interacao === global.contextoDados.capturarInteracao();
             global.syncBootDados.iniciar({ aguardarEvento: Boolean(aguardarEvento), motivo: falhaInicial && falhaInicial.resultado.motivo });
+            coordenarGCalParaSessao(obterOwnerEmailAtivo());
             if (autenticacaoPendenteNoBoot && router.getCurrentViewId() === 'tela-financas'
                 && global.atualizarFinancasAposSync) {
                 void global.atualizarFinancasAposSync({ contextoDados: global.contextoDados.capturar(), reutilizarConcluidaBoot: true });
@@ -184,19 +214,7 @@
         if (typeof global.requestAnimationFrame === 'function') global.requestAnimationFrame(iniciarSyncBoot);
         else Promise.resolve().then(iniciarSyncBoot);
 
-        if (global.gcal && typeof global.gcal.isSignedIn === 'function' && global.gcal.isSignedIn()) {
-            setTimeout(function () {
-                void dispararVerificacaoCanalGCal();
-            }, 0);
-        }
-
-        if (global.gcal && typeof global.gcal.isSignedIn === 'function' && global.gcal.isSignedIn()) {
-            if (typeof global.iniciarSyncGoogleCalendarAutomatica === 'function') {
-                global.iniciarSyncGoogleCalendarAutomatica();
-            } else if (typeof global.iniciarSyncGoogleCalendar === 'function') {
-                global.iniciarSyncGoogleCalendar({ silencioso: true, auto: true });
-            }
-        }
+        coordenarGCalParaSessao(obterOwnerEmailAtivo());
 
         const AUTO_REFRESH_THROTTLE_MS = 30000;
         // Alt+Tab e troca rápida de app no celular escondem e mostram a aba em segundos;

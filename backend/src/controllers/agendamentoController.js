@@ -126,27 +126,28 @@ async function persistirResultadoGcal(ownerEmail, agendamentoId, resultadoGCal, 
   }
 }
 
-async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) {
-  const statusCode = 200;
-  const ownerEmail = options && options.ownerEmail ? options.ownerEmail : null;
-  const agendamentoId = options && options.agendamentoId ? options.agendamentoId : (dados && dados.id ? dados.id : null);
+async function tratarFalhaGcalAgendamento(ownerEmail, agendamentoId, err, contexto, dados) {
   const pendenciaMarcadaEm = new Date().toISOString();
-
-  const isNotConnected = err && (err.statusCode === 404 || (err.message && err.message.toLowerCase().includes('connection not found')));
-  const isTokenExpired = err && (
+  const status = err && (err.statusCode || err.status);
+  const isNotConnected = Boolean(
+    err && (status === 404 || (err.message && err.message.toLowerCase().includes('connection not found')))
+    && (!err.message || err.message.toLowerCase().includes('connection not found') || status === 404)
+  );
+  const isTokenExpired = Boolean(err && (
     err.message === 'invalid_grant' ||
     (err.error && err.error === 'invalid_grant') ||
     String(err).includes('invalid_grant') ||
     err.code === 'TOKEN_EXPIRED'
-  );
+  ));
 
   if (isNotConnected) {
     if (ownerEmail && agendamentoId) {
       try {
         const existente = await Agendamento.findOne({ ownerEmail, id: agendamentoId });
-        if (existente && existente.googleCalendarEventId) {
+        const eventIdExistente = (existente && existente.googleCalendarEventId) || (dados && dados.googleCalendarEventId);
+        if (eventIdExistente) {
           await GcalReconciliationQueue.findOneAndUpdate(
-            { ownerEmail, googleCalendarEventId: existente.googleCalendarEventId },
+            { ownerEmail, googleCalendarEventId: eventIdExistente },
             { $set: { action: 'update', agendamentoId, updatedAt: new Date() } },
             { upsert: true }
           ).catch(() => {});
@@ -168,7 +169,13 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
       delete dados[GCAL_SYNC_PENDING_FIELD];
       delete dados[GCAL_SYNC_PENDING_ATTEMPTS_FIELD];
     }
-    return res.status(statusCode).json(dados || { id: agendamentoId, gcalStatus: 'desconectado' });
+    return {
+      outcome: 'not_connected',
+      gcalSyncFailed: false,
+      tokenExpired: false,
+      needsReconnect: false,
+      agendamento: dados || { id: agendamentoId, gcalStatus: 'desconectado' }
+    };
   }
 
   if (isTokenExpired) {
@@ -199,12 +206,14 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
       delete dados[GCAL_SYNC_PENDING_FIELD];
       delete dados[GCAL_SYNC_PENDING_ATTEMPTS_FIELD];
     }
-    return res.status(statusCode).json({
-      message: 'A conexão com o Google Agenda expirou. Reconecte nas Configurações.',
+    return {
+      outcome: 'token_expired',
+      gcalSyncFailed: false,
       tokenExpired: true,
       needsReconnect: true,
+      message: 'A conexão com o Google Agenda expirou. Reconecte nas Configurações.',
       agendamento: dados || null
-    });
+    };
   }
 
   if (ownerEmail && agendamentoId) {
@@ -217,7 +226,7 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
         ])
         : consultaBase;
 
-      let agendamentoAtual = await (consulta && typeof consulta.lean === 'function'
+      const agendamentoAtual = await (consulta && typeof consulta.lean === 'function'
         ? consulta.lean()
         : consulta);
 
@@ -228,6 +237,7 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
         { ownerEmail, id: agendamentoId },
         {
           $set: {
+            gcalStatus: 'pendente',
             [GCAL_SYNC_PENDING_FIELD]: pendenciaMarcadaEm,
             [GCAL_SYNC_PENDING_ATTEMPTS_FIELD]: tentativasNova
           }
@@ -236,6 +246,7 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
       );
 
       if (dados && typeof dados === 'object') {
+        dados.gcalStatus = 'pendente';
         dados[GCAL_SYNC_PENDING_FIELD] = pendenciaMarcadaEm;
         dados[GCAL_SYNC_PENDING_ATTEMPTS_FIELD] = tentativasNova;
       }
@@ -249,17 +260,48 @@ async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) 
     }
   }
 
-  console.error(`[AgendamentoController] Falha ao sincronizar com Google Calendar durante ${contexto}:`, err.message);
+  console.error(`[AgendamentoController] Falha ao sincronizar com Google Calendar durante ${contexto}:`, err && err.message ? err.message : String(err));
   if (err && err.stack) {
     console.error('[AgendamentoController] Stack GCal:', err.stack);
   }
 
-  return res.status(statusCode).json({
+  return {
+    outcome: 'transient_error',
     error: `Erro ao sincronizar agendamento com Google Calendar durante ${contexto}`,
-    message: err.message,
+    message: err && err.message ? err.message : String(err),
     partialSuccess: true,
     gcalSyncFailed: true,
+    tokenExpired: false,
+    needsReconnect: false,
     agendamento: dados || null
+  };
+}
+
+async function montarRespostaFalhaGcal(res, err, contexto, dados, options = {}) {
+  const statusCode = 200;
+  const ownerEmail = options && options.ownerEmail ? options.ownerEmail : null;
+  const agendamentoId = options && options.agendamentoId ? options.agendamentoId : (dados && dados.id ? dados.id : null);
+  const resultado = await tratarFalhaGcalAgendamento(ownerEmail, agendamentoId, err, contexto, dados);
+
+  if (resultado.outcome === 'not_connected') {
+    return res.status(statusCode).json(resultado.agendamento);
+  }
+
+  if (resultado.outcome === 'token_expired') {
+    return res.status(statusCode).json({
+      message: resultado.message,
+      tokenExpired: true,
+      needsReconnect: true,
+      agendamento: resultado.agendamento
+    });
+  }
+
+  return res.status(statusCode).json({
+    error: resultado.error,
+    message: resultado.message,
+    partialSuccess: true,
+    gcalSyncFailed: true,
+    agendamento: resultado.agendamento
   });
 }
 
@@ -393,36 +435,14 @@ async function criarAgendamento(req, res) {
           ...normalizarBloqueio(payload),
           id: payload.id,
           ownerEmail,
+          gcalStatus: 'pendente',
           ...(googleCalendarEventIdExistente ? { googleCalendarEventId: googleCalendarEventIdExistente } : {})
         }
       },
       { new: true, upsert: true, runValidators: true }
     );
 
-    const agendamentoParaGCalBase = normalizarAgendamentoParaResposta(agendamento);
-    const agendamentoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, agendamentoParaGCalBase);
-
-    try {
-      let resultadoGCal = null;
-
-      if (googleCalendarEventIdExistente) {
-        resultadoGCal = await gcalSyncService.updateEventInGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal));
-      } else {
-        resultadoGCal = await gcalSyncService.pushEventToGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal));
-      }
-
-      await persistirResultadoGcal(ownerEmail, agendamento.id, resultadoGCal, agendamento);
-
-      return res.status(200).json(normalizarAgendamentoParaResposta(agendamento));
-    } catch (gcalErr) {
-      return montarRespostaFalhaGcal(
-        res,
-        gcalErr,
-        'criar',
-        normalizarAgendamentoParaResposta(agendamento),
-        { ownerEmail, agendamentoId: agendamento.id }
-      );
-    }
+    return res.status(200).json(normalizarAgendamentoParaResposta(agendamento));
   } catch (err) {
     if (err && err.code === 11000) {
       try {
@@ -438,31 +458,14 @@ async function criarAgendamento(req, res) {
               ...normalizarBloqueio(payload),
               id: payload.id,
               ownerEmail,
+              gcalStatus: 'pendente',
               ...(googleCalendarEventIdExistente ? { googleCalendarEventId: googleCalendarEventIdExistente } : {})
             }
           },
           { new: true, upsert: true, runValidators: true }
         );
 
-        const agendamentoParaGCalBase = normalizarAgendamentoParaResposta(agendamento);
-        const agendamentoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, agendamentoParaGCalBase);
-
-        try {
-          const resultadoGCal = googleCalendarEventIdExistente
-            ? await gcalSyncService.updateEventInGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal))
-            : await gcalSyncService.pushEventToGoogle(ownerEmail, montarPayloadGCal(agendamentoParaGCal));
-          await persistirResultadoGcal(ownerEmail, agendamento.id, resultadoGCal, agendamento);
-
-          return res.status(200).json(normalizarAgendamentoParaResposta(agendamento));
-        } catch (gcalErr) {
-          return montarRespostaFalhaGcal(
-            res,
-            gcalErr,
-            'criar',
-            normalizarAgendamentoParaResposta(agendamento),
-            { ownerEmail, agendamentoId: agendamento.id }
-          );
-        }
+        return res.status(200).json(normalizarAgendamentoParaResposta(agendamento));
       } catch (fallbackErr) {
         return responderErroAgendamento(res, fallbackErr, 'criar agendamento');
       }
@@ -492,6 +495,7 @@ async function atualizarAgendamento(req, res) {
       id,
       ownerEmail,
       ...(googleCalendarEventIdExistente ? { googleCalendarEventId: googleCalendarEventIdExistente } : {}),
+      ...(!estavaEmEstadoTerminal || deveReabrirTentativas ? { gcalStatus: 'pendente' } : {}),
       ...(deveReabrirTentativas ? { [GCAL_SYNC_PENDING_ATTEMPTS_FIELD]: 0 } : {})
     };
 
@@ -510,56 +514,9 @@ async function atualizarAgendamento(req, res) {
       });
     }
 
-    const atualizadoParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, atualizadoParaGCalBase);
-
-    try {
-      let resultadoGCal = null;
-
-      if (googleCalendarEventIdExistente) {
-        resultadoGCal = await gcalSyncService.updateEventInGoogle(ownerEmail, montarPayloadGCal(atualizadoParaGCal));
-      } else {
-        resultadoGCal = await gcalSyncService.pushEventToGoogle(ownerEmail, montarPayloadGCal(atualizadoParaGCal));
-      }
-
-      await persistirResultadoGcal(ownerEmail, id, resultadoGCal, atualizadoParaGCalBase);
-
-      return res.json(atualizadoParaGCalBase);
-    } catch (gcalErr) {
-      return montarRespostaFalhaGcal(
-        res,
-        gcalErr,
-        'atualizar',
-        atualizadoParaGCal,
-        { ownerEmail, agendamentoId: id }
-      );
-    }
+    return res.json(atualizadoParaGCalBase);
   } catch (err) {
-    try {
-      const ownerEmail = getOwnerEmailOrThrow(req);
-      const payload = limparPayloadAgendamento(req.body);
-      const dadosFallback = { ...payload, id: req.params && req.params.id ? req.params.id : payload.id, ownerEmail };
-      const dadosParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, dadosFallback);
-
-      try {
-        if (dadosParaGCal && dadosParaGCal.googleCalendarEventId) {
-          await gcalSyncService.updateEventInGoogle(ownerEmail, montarPayloadGCal(dadosParaGCal));
-        } else {
-          await gcalSyncService.pushEventToGoogle(ownerEmail, montarPayloadGCal(dadosParaGCal));
-        }
-      } catch (gcalErr) {
-        return montarRespostaFalhaGcal(
-          res,
-          gcalErr,
-          'atualizar',
-          dadosParaGCal,
-          { ownerEmail, agendamentoId: dadosFallback.id }
-        );
-      }
-
-      return res.status(200).json(dadosParaGCal);
-    } catch (fallbackErr) {
-      responderErroAgendamento(res, fallbackErr, 'atualizar agendamento');
-    }
+    responderErroAgendamento(res, err, 'atualizar agendamento');
   }
 }
 
@@ -579,42 +536,176 @@ async function excluirAgendamento(req, res) {
     }
 
     const excluidoParaGCal = normalizarAgendamentoParaResposta(agendamentoExistente);
+    const googleCalendarEventId = excluidoParaGCal && excluidoParaGCal.googleCalendarEventId
+      ? String(excluidoParaGCal.googleCalendarEventId)
+      : null;
 
-    try {
-      if (excluidoParaGCal.googleCalendarEventId) {
-        await gcalSyncService.deleteEventFromGoogle(ownerEmail, excluidoParaGCal.googleCalendarEventId);
-      }
+    await Agendamento.findOneAndDelete({ ownerEmail, id });
 
-      await Agendamento.findOneAndDelete({ ownerEmail, id });
-
-      return res.status(200).json({
-        ok: true,
-        deleted: true,
-        id
-      });
-    } catch (gcalErr) {
-      const status = gcalErr && (gcalErr.statusCode || gcalErr.status);
-      if (status === 404 || status === 410) {
-        if (excluidoParaGCal.googleCalendarEventId && gcalErr.message && gcalErr.message.toLowerCase().includes('connection not found')) {
-          await GcalReconciliationQueue.findOneAndUpdate(
-            { ownerEmail, googleCalendarEventId: excluidoParaGCal.googleCalendarEventId },
-            { $set: { action: 'delete', agendamentoId: id, updatedAt: new Date() } },
-            { upsert: true }
-          ).catch(() => {});
-        }
-        await Agendamento.findOneAndDelete({ ownerEmail, id });
-        return res.status(200).json({
-          ok: true,
-          deleted: true,
-          id,
-          message: 'Agendamento removido no MongoDB.'
-        });
-      }
-
-      return montarRespostaFalhaGcal(res, gcalErr, 'excluir', excluidoParaGCal, { ownerEmail, agendamentoId: id });
+    if (googleCalendarEventId) {
+      await GcalReconciliationQueue.findOneAndUpdate(
+        { ownerEmail, googleCalendarEventId },
+        {
+          $set: {
+            ownerEmail,
+            action: 'delete',
+            googleCalendarEventId,
+            agendamentoId: id,
+            updatedAt: new Date()
+          }
+        },
+        { upsert: true }
+      );
     }
+
+    return res.status(200).json({
+      ok: true,
+      deleted: true,
+      id,
+      queuedForGcalDelete: Boolean(googleCalendarEventId)
+    });
   } catch (err) {
     responderErroAgendamento(res, err, 'excluir agendamento');
+  }
+}
+
+async function sincronizarPendentesGcal(req, res) {
+  try {
+    const ownerEmail = getOwnerEmailOrThrow(req);
+    let gcalSyncFailed = false;
+    let tokenExpired = false;
+    let needsReconnect = false;
+    let tokenExpiredMessage = null;
+    let deletedCount = 0;
+    const agendamentosSincronizados = [];
+
+    // 1. Processar deleções pendentes na GcalReconciliationQueue (Outbox Pattern)
+    let filaDelecoes = [];
+    if (GcalReconciliationQueue && typeof GcalReconciliationQueue.find === 'function') {
+      const consultaFila = GcalReconciliationQueue.find({ ownerEmail, action: 'delete' });
+      filaDelecoes = await (consultaFila && typeof consultaFila.lean === 'function' ? consultaFila.lean() : consultaFila);
+    }
+
+    for (const item of (Array.isArray(filaDelecoes) ? filaDelecoes : [])) {
+      if (!item || !item.googleCalendarEventId) continue;
+      if (item.ownerEmail && item.ownerEmail !== ownerEmail) continue;
+
+      try {
+        await gcalSyncService.deleteEventFromGoogle(ownerEmail, item.googleCalendarEventId);
+        if (typeof GcalReconciliationQueue.deleteOne === 'function') {
+          await GcalReconciliationQueue.deleteOne({ _id: item._id, ownerEmail });
+        }
+        deletedCount += 1;
+      } catch (delErr) {
+        const status = delErr && (delErr.statusCode || delErr.status);
+        const msgLower = delErr && delErr.message ? delErr.message.toLowerCase() : '';
+        const isNotConnected = status === 404 && msgLower.includes('connection not found');
+        const isTokenExp = Boolean(delErr && (
+          delErr.message === 'invalid_grant' ||
+          (delErr.error && delErr.error === 'invalid_grant') ||
+          String(delErr).includes('invalid_grant') ||
+          delErr.code === 'TOKEN_EXPIRED'
+        ));
+
+        if (isNotConnected) {
+          // Permanece na fila para quando o usuário reconectar a conta Google
+          continue;
+        }
+
+        if (isTokenExp) {
+          tokenExpired = true;
+          needsReconnect = true;
+          tokenExpiredMessage = 'A conexão com o Google Agenda expirou. Reconecte nas Configurações.';
+          try {
+            await GoogleCalendarConnection.findOneAndUpdate(
+              { ownerEmail },
+              { $set: { status: 'expired' } }
+            ).catch(() => {});
+          } catch (_) {}
+          continue;
+        }
+
+        if (status === 404 || status === 410) {
+          // Evento já não existe no Google Calendar -> remover da fila com sucesso
+          if (typeof GcalReconciliationQueue.deleteOne === 'function') {
+            await GcalReconciliationQueue.deleteOne({ _id: item._id, ownerEmail });
+          }
+          deletedCount += 1;
+          continue;
+        }
+
+        // Erro 5xx / timeout / rede -> permanece na fila e sinaliza falha parcial
+        gcalSyncFailed = true;
+      }
+    }
+
+    // 2. Processar agendamentos pendentes de criação/atualização do ownerEmail
+    let listaPendentes = [];
+    if (Agendamento && typeof Agendamento.find === 'function') {
+      const consultaPendentes = Agendamento.find({
+        ownerEmail,
+        $or: [
+          { gcalStatus: 'pendente' },
+          { [GCAL_SYNC_PENDING_FIELD]: { $exists: true, $ne: null } }
+        ]
+      });
+      listaPendentes = await (consultaPendentes && typeof consultaPendentes.lean === 'function'
+        ? consultaPendentes.lean()
+        : consultaPendentes);
+    }
+
+    for (const itemBruto of (Array.isArray(listaPendentes) ? listaPendentes : [])) {
+      const agBase = normalizarAgendamentoParaResposta(itemBruto);
+      if (!agBase || !agBase.id) continue;
+      if (agBase.ownerEmail && agBase.ownerEmail !== ownerEmail) continue;
+      if (agendamentoEmEstadoTerminal(agBase)) continue;
+
+      const agParaGCal = await enriquecerAgendamentoComAluno(ownerEmail, { ...agBase });
+
+      try {
+        const resultadoGCal = agParaGCal.googleCalendarEventId
+          ? await gcalSyncService.updateEventInGoogle(ownerEmail, montarPayloadGCal(agParaGCal))
+          : await gcalSyncService.pushEventToGoogle(ownerEmail, montarPayloadGCal(agParaGCal));
+
+        await persistirResultadoGcal(ownerEmail, agBase.id, resultadoGCal, agBase);
+        agendamentosSincronizados.push(agBase);
+      } catch (gcalErr) {
+        const resultadoFalha = await tratarFalhaGcalAgendamento(
+          ownerEmail,
+          agBase.id,
+          gcalErr,
+          'flush',
+          agBase
+        );
+        if (resultadoFalha.gcalSyncFailed) {
+          gcalSyncFailed = true;
+        }
+        if (resultadoFalha.tokenExpired) {
+          tokenExpired = true;
+          needsReconnect = true;
+          tokenExpiredMessage = resultadoFalha.message;
+        }
+        if (resultadoFalha.agendamento) {
+          agendamentosSincronizados.push(resultadoFalha.agendamento);
+        }
+      }
+    }
+
+    return res.status(200).json({
+      ok: true,
+      partialSuccess: gcalSyncFailed,
+      gcalSyncFailed,
+      ...(tokenExpired ? {
+        message: tokenExpiredMessage || 'A conexão com o Google Agenda expirou. Reconecte nas Configurações.',
+        tokenExpired: true,
+        needsReconnect: true
+      } : {}),
+      agendamentos: agendamentosSincronizados,
+      agendamento: agendamentosSincronizados.length === 1 ? agendamentosSincronizados[0] : null,
+      deletedCount
+    });
+  } catch (err) {
+    responderErroAgendamento(res, err, 'sincronizar agendamentos pendentes com Google Calendar');
   }
 }
 
@@ -651,6 +742,7 @@ module.exports = {
   criarAgendamento,
   atualizarAgendamento,
   excluirAgendamento,
+  sincronizarPendentesGcal,
   patchAgendamento,
   montarPayloadGCal
 };

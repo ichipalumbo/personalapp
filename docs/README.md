@@ -36,6 +36,7 @@
 | [Plano da governança](archive/plans/2026-10-14-plan-governanca-documental.md) | Escopo, decisões, execução e validação desta reorganização documental | Para conferir o que foi feito e o que permanece fora da rodada |
 | [Migração documental](plans/2026-10-14-plan-migracao-documental.md) | Matriz por trecho: origem, destino, conteúdo incorporado, duplicações e pendências | Para retomar as transferências incrementais sem reabrir a auditoria encerrada |
 | [Plano da frente: GCal/Sessão, Testes e Alunos](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) | Plano vivo das Ondas 1–3 definidas em 2026-10-27 (`2.2`, `2.3`, T04/Outbox, Riscos `1.1`/`1.3`, `3.1`, `1.7` e `1.4`) | Para executar, validar e registrar os cartões T01–T06 |
+| [Plano da frente: Landing dos serviços da Prô Josy](plans/2026-11-03-plan-landing-servicos-josy.md) | Plano vivo das decisões do grill de 2026-11-03: landing estática autocontida em `landing/` para alunos finais, com placeholders tipados e link no rodapé por último (T02) | Para executar, validar e registrar os cartões T01–T02 |
 
 ---
 

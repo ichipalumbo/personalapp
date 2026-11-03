@@ -7,7 +7,8 @@ const gcalSyncService = require('../src/services/gcalSyncService');
 const {
   criarAgendamento,
   atualizarAgendamento,
-  excluirAgendamento
+  excluirAgendamento,
+  sincronizarPendentesGcal
 } = require('../src/controllers/agendamentoController');
 
 function criarRespostaMock() {
@@ -26,20 +27,27 @@ function criarRespostaMock() {
   return res;
 }
 
-test('criarAgendamento sem Google Calendar conectado salva com gcalStatus desconectado e sem pendencias de erro', async () => {
+test('criarAgendamento sem Google Calendar conectado salva com gcalStatus pendente no POST e transiciona para desconectado no flush sem pendencias de erro', async () => {
   const originalFindOneAgendamento = Agendamento.findOne;
+  const originalFindAgendamento = Agendamento.find;
   const originalFindOneAndUpdateAgendamento = Agendamento.findOneAndUpdate;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalPushEventToGoogle = gcalSyncService.pushEventToGoogle;
+  let docPersistido = null;
 
   try {
-    Agendamento.findOne = () => null;
+    Agendamento.findOne = async () => docPersistido;
+    Agendamento.find = async () => (docPersistido ? [docPersistido] : []);
     Agendamento.findOneAndUpdate = async (filtro, update) => {
-      return {
+      docPersistido = {
+        ...(docPersistido || {}),
         id: filtro.id,
         ownerEmail: filtro.ownerEmail,
         ...(update.$set || {})
       };
+      return docPersistido;
     };
+    GcalReconciliationQueue.find = async () => [];
 
     gcalSyncService.pushEventToGoogle = async () => {
       const erro = new Error('Google Calendar connection not found for the authenticated owner.');
@@ -57,48 +65,64 @@ test('criarAgendamento sem Google Calendar conectado salva com gcalStatus descon
         tipo: 'aula'
       }
     };
-    const res = criarRespostaMock();
+    const resPost = criarRespostaMock();
 
-    await criarAgendamento(req, res);
+    await criarAgendamento(req, resPost);
 
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.gcalSyncFailed, undefined, 'Não deve retornar flag de falha');
-    assert.equal(res.body.gcalStatus, 'desconectado', 'gcalStatus deve ser desconectado');
-    assert.equal(res.body.gcalSyncPendingAt, undefined, 'Não deve marcar retry');
-    assert.equal(res.body.gcalSyncPendingTentativas, undefined, 'Não deve incrementar tentativas');
+    assert.equal(resPost.statusCode, 200);
+    assert.equal(resPost.body.gcalStatus, 'pendente', 'POST deve marcar gcalStatus como pendente sem bloquear');
+
+    const resFlush = criarRespostaMock();
+    await sincronizarPendentesGcal(req, resFlush);
+
+    assert.equal(resFlush.statusCode, 200);
+    assert.equal(resFlush.body.gcalSyncFailed, false, 'Não deve retornar flag de falha');
+    assert.equal(resFlush.body.agendamento.gcalStatus, 'desconectado', 'gcalStatus deve transicionar para desconectado no flush');
+    assert.equal(resFlush.body.agendamento.gcalSyncPendingAt, undefined, 'Não deve marcar retry');
+    assert.equal(resFlush.body.agendamento.gcalSyncPendingTentativas, undefined, 'Não deve incrementar tentativas');
   } finally {
     Agendamento.findOne = originalFindOneAgendamento;
+    Agendamento.find = originalFindAgendamento;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdateAgendamento;
+    GcalReconciliationQueue.find = originalFindQueue;
     gcalSyncService.pushEventToGoogle = originalPushEventToGoogle;
   }
 });
 
-test('atualizarAgendamento sem Google Calendar conectado enfileira reconciliacao se ja possuia googleCalendarEventId', async () => {
+test('atualizarAgendamento sem Google Calendar conectado enfileira reconciliacao no flush se ja possuia googleCalendarEventId', async () => {
   const originalFindOneAgendamento = Agendamento.findOne;
+  const originalFindAgendamento = Agendamento.find;
   const originalFindOneAndUpdateAgendamento = Agendamento.findOneAndUpdate;
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalFindOneAndUpdateQueue = GcalReconciliationQueue.findOneAndUpdate;
 
   let filaReconciliacaoAtualizada = null;
+  let docPersistido = {
+    id: 'ag-edit-desconectado-1',
+    ownerEmail: 'personal@example.com',
+    googleCalendarEventId: 'evt-google-123',
+    data: '2026-11-10',
+    horarioInicio: '08:00',
+    horarioFim: '09:00'
+  };
 
   try {
     Agendamento.findOne = () => ({
-      id: 'ag-edit-desconectado-1',
-      ownerEmail: 'personal@example.com',
-      googleCalendarEventId: 'evt-google-123',
-      data: '2026-11-10',
-      horarioInicio: '08:00',
-      horarioFim: '09:00',
-      select: () => ({ id: 'ag-edit-desconectado-1', googleCalendarEventId: 'evt-google-123' }),
-      lean: () => ({ id: 'ag-edit-desconectado-1', googleCalendarEventId: 'evt-google-123' })
+      ...docPersistido,
+      select: () => ({ id: docPersistido.id, googleCalendarEventId: docPersistido.googleCalendarEventId }),
+      lean: () => ({ ...docPersistido })
     });
+    Agendamento.find = async () => [{ ...docPersistido }];
 
     Agendamento.findOneAndUpdate = async (filtro, update) => {
-      return {
+      docPersistido = {
+        ...docPersistido,
         id: filtro.id,
         ownerEmail: filtro.ownerEmail,
         ...(update.$set || {})
       };
+      return docPersistido;
     };
 
     gcalSyncService.updateEventInGoogle = async () => {
@@ -107,6 +131,7 @@ test('atualizarAgendamento sem Google Calendar conectado enfileira reconciliacao
       throw erro;
     };
 
+    GcalReconciliationQueue.find = async () => [];
     GcalReconciliationQueue.findOneAndUpdate = async (filtro, update) => {
       filaReconciliacaoAtualizada = { ...filtro, ...(update.$set || {}) };
       return filaReconciliacaoAtualizada;
@@ -123,19 +148,25 @@ test('atualizarAgendamento sem Google Calendar conectado enfileira reconciliacao
         googleCalendarEventId: 'evt-google-123'
       }
     };
-    const res = criarRespostaMock();
+    const resPut = criarRespostaMock();
+    await atualizarAgendamento(req, resPut);
+    assert.equal(resPut.statusCode, 200);
+    assert.equal(resPut.body.gcalStatus, 'pendente');
 
-    await atualizarAgendamento(req, res);
+    const resFlush = criarRespostaMock();
+    await sincronizarPendentesGcal(req, resFlush);
 
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.gcalStatus, 'desconectado');
+    assert.equal(resFlush.statusCode, 200);
+    assert.equal(resFlush.body.agendamento.gcalStatus, 'desconectado');
     assert.ok(filaReconciliacaoAtualizada, 'Deve ter registrado na fila de reconciliação');
     assert.equal(filaReconciliacaoAtualizada.action, 'update');
     assert.equal(filaReconciliacaoAtualizada.googleCalendarEventId, 'evt-google-123');
   } finally {
     Agendamento.findOne = originalFindOneAgendamento;
+    Agendamento.find = originalFindAgendamento;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdateAgendamento;
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+    GcalReconciliationQueue.find = originalFindQueue;
     GcalReconciliationQueue.findOneAndUpdate = originalFindOneAndUpdateQueue;
   }
 });
@@ -254,23 +285,91 @@ test('reconcileAndSyncRetroactiveAppointments processa exclusoes da fila e publi
   }
 });
 
-test('erro invalid_grant transiciona conexao para expired e agendamento para desconectado', async () => {
+test('reconcileAndSyncRetroactiveAppointments filtra por ownerEmail ao remover itens da fila (delete e update)', async () => {
+  const originalFindQueue = GcalReconciliationQueue.find;
+  const originalDeleteOneQueue = GcalReconciliationQueue.deleteOne;
   const originalFindOneAgendamento = Agendamento.findOne;
+  const originalFindAgendamento = Agendamento.find;
+  const originalFindOneAndUpdateAgendamento = Agendamento.findOneAndUpdate;
+  const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+
+  const filtrosRemocao = [];
+  const atualizadosNoGoogle = [];
+
+  try {
+    GcalReconciliationQueue.find = async () => [
+      { _id: 'queue-del', action: 'delete', googleCalendarEventId: 'evt-del' },
+      { _id: 'queue-upd', action: 'update', agendamentoId: 'ag-upd', googleCalendarEventId: 'evt-upd' }
+    ];
+    GcalReconciliationQueue.deleteOne = async (filtro) => {
+      filtrosRemocao.push(filtro);
+    };
+    gcalSyncService.deleteEventFromGoogle = async () => {};
+    gcalSyncService.updateEventInGoogle = async (_email, payload) => {
+      atualizadosNoGoogle.push(payload.id);
+      return { googleCalendarEventId: 'evt-upd' };
+    };
+    Agendamento.findOne = async () => ({ id: 'ag-upd', alunoNome: 'Aluno', data: '2026-11-10' });
+    Agendamento.find = async () => [];
+    Agendamento.findOneAndUpdate = async () => {};
+
+    const resultado = await gcalSyncService.reconcileAndSyncRetroactiveAppointments('personal@example.com');
+
+    assert.equal(resultado.reconciledDeletions, 1);
+    assert.equal(resultado.reconciledUpdates, 1);
+    assert.deepEqual(atualizadosNoGoogle, ['ag-upd']);
+    assert.equal(filtrosRemocao.length, 2, 'as duas ramificações da fila removem o item consumido');
+    assert.deepEqual(
+      filtrosRemocao.map((filtro) => filtro._id),
+      ['queue-del', 'queue-upd'],
+    );
+    for (const filtro of filtrosRemocao) {
+      assert.equal(
+        filtro.ownerEmail,
+        'personal@example.com',
+        'remoção da fila precisa ser escopada por ownerEmail (regra 4.1)',
+      );
+    }
+  } finally {
+    GcalReconciliationQueue.find = originalFindQueue;
+    GcalReconciliationQueue.deleteOne = originalDeleteOneQueue;
+    Agendamento.findOne = originalFindOneAgendamento;
+    Agendamento.find = originalFindAgendamento;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdateAgendamento;
+    gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
+    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+  }
+});
+
+test('erro invalid_grant transiciona conexao para expired e agendamento para desconectado no flush', async () => {
+  const originalFindOneAgendamento = Agendamento.findOne;
+  const originalFindAgendamento = Agendamento.find;
   const originalFindOneAndUpdateAgendamento = Agendamento.findOneAndUpdate;
   const originalFindOneAndUpdateConn = GoogleCalendarConnection.findOneAndUpdate;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalPushEventToGoogle = gcalSyncService.pushEventToGoogle;
 
   let connectionStatusSet = null;
   let agendamentoStatusSet = null;
+  let docPersistido = null;
 
   try {
     Agendamento.findOne = () => null;
+    Agendamento.find = async () => (docPersistido ? [docPersistido] : []);
     Agendamento.findOneAndUpdate = async (_filtro, update) => {
       if (update.$set && update.$set.gcalStatus) {
         agendamentoStatusSet = update.$set.gcalStatus;
       }
-      return { id: 'ag-expired-1', gcalStatus: agendamentoStatusSet };
+      docPersistido = {
+        ...(docPersistido || {}),
+        id: 'ag-expired-1',
+        ...(update.$set || {}),
+        gcalStatus: agendamentoStatusSet
+      };
+      return docPersistido;
     };
+    GcalReconciliationQueue.find = async () => [];
 
     GoogleCalendarConnection.findOneAndUpdate = async (_filtro, update) => {
       if (update.$set && update.$set.status) {
@@ -295,19 +394,25 @@ test('erro invalid_grant transiciona conexao para expired e agendamento para des
         tipo: 'aula'
       }
     };
-    const res = criarRespostaMock();
+    const resPost = criarRespostaMock();
+    await criarAgendamento(req, resPost);
+    assert.equal(resPost.statusCode, 200);
+    assert.equal(resPost.body.gcalStatus, 'pendente');
 
-    await criarAgendamento(req, res);
+    const resFlush = criarRespostaMock();
+    await sincronizarPendentesGcal(req, resFlush);
 
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.tokenExpired, true);
-    assert.equal(res.body.needsReconnect, true);
+    assert.equal(resFlush.statusCode, 200);
+    assert.equal(resFlush.body.tokenExpired, true);
+    assert.equal(resFlush.body.needsReconnect, true);
     assert.equal(connectionStatusSet, 'expired', 'Conexão deve ser marcada como expired');
     assert.equal(agendamentoStatusSet, 'desconectado', 'Agendamento deve ser marcado como desconectado');
   } finally {
     Agendamento.findOne = originalFindOneAgendamento;
+    Agendamento.find = originalFindAgendamento;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdateAgendamento;
     GoogleCalendarConnection.findOneAndUpdate = originalFindOneAndUpdateConn;
+    GcalReconciliationQueue.find = originalFindQueue;
     gcalSyncService.pushEventToGoogle = originalPushEventToGoogle;
   }
 });

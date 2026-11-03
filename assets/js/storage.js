@@ -738,6 +738,9 @@ function _normalizarAgendamentoParaComparacao(agendamento) {
     delete copia.ownerEmail;
     delete copia._id;
     delete copia.__v;
+    if (copia.gcalStatus !== 'pendente') {
+        delete copia.gcalStatus;
+    }
     return _ordenarChavesRecursivamente(copia);
 }
 
@@ -748,6 +751,10 @@ function _removerCamposPendenciaGcalDoAgendamento(agendamento) {
 
     for (const campo of GCAL_SYNC_PENDING_FIELDS) {
         delete agendamento[campo];
+    }
+
+    if (agendamento.gcalStatus === 'pendente') {
+        delete agendamento.gcalStatus;
     }
 
     return agendamento;
@@ -901,6 +908,7 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
     const remotoPorId = new Map(listaRemota.map((agendamento) => [agendamento.id, agendamento]));
     const localPorId = new Map(listaLocal.map((agendamento) => [agendamento.id, agendamento]));
     let gcalSyncFailed = false;
+    let precisaFlushGcal = false;
 
     for (const agendamento of listaLocal) {
         if (!agendamento || !agendamento.id) continue;
@@ -929,6 +937,9 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
             } else if (payloadCriar) {
                 _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamento, payloadCriar);
                 CONTEXTO_DADOS.atualizarVinculoPendente(tentativaId, contexto, agendamento.id, agendamento.googleCalendarEventId);
+                if (payloadCriar.gcalStatus === 'pendente') {
+                    precisaFlushGcal = true;
+                }
                 if (payloadCriar.gcalSyncFailed === true) {
                     gcalSyncFailed = true;
                     window.log.warn('[sync]', 'Falha no Google Calendar ao criar agendamento', { id: agendamento.id, operacao: 'POST' });
@@ -960,6 +971,9 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
             } else if (payloadAtualizar) {
                 _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agendamento, payloadAtualizar);
                 CONTEXTO_DADOS.atualizarVinculoPendente(tentativaId, contexto, agendamento.id, agendamento.googleCalendarEventId);
+                if (payloadAtualizar.gcalStatus === 'pendente' && !payloadAtualizar.gcalSyncPausado) {
+                    precisaFlushGcal = true;
+                }
                 if (payloadAtualizar.gcalSyncFailed === true) {
                     gcalSyncFailed = true;
                     window.log.warn('[sync]', 'Falha no Google Calendar ao atualizar agendamento', { id: agendamento.id, operacao: 'PUT' });
@@ -983,6 +997,9 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
         if (typeof resExcluir.clone === 'function' && resExcluir.ok) {
             try {
                 const payload = await resExcluir.clone().json();
+                if (payload && (payload.queuedForGcalDelete === true || payload.gcalStatus === 'pendente')) {
+                    precisaFlushGcal = true;
+                }
                 if (payload && payload.gcalSyncFailed === true) {
                     gcalSyncFailed = true;
                     window.log.warn('[sync]', 'Falha no Google Calendar ao excluir agendamento', { id: agendamentoRemoto.id, operacao: 'DELETE' });
@@ -994,6 +1011,46 @@ async function _sincronizarAgendamentosViaCRUD(agendamentosLocais, timeoutMs, co
                     message: error && error.message ? error.message : String(error)
                 });
             }
+        }
+    }
+
+    if (precisaFlushGcal) {
+        try {
+            const resFlush = await requisitar(`${API_BASE_URL}/agendamentos/flush-gcal`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                statusEsperados: [404]
+            }, timeoutMs);
+
+            if (resFlush && resFlush.ok) {
+                const payloadFlush = await _lerPayloadCrudJson(resFlush);
+                if (payloadFlush && !payloadFlush._erroParseJson) {
+                    if (Array.isArray(payloadFlush.agendamentos)) {
+                        for (const itemSincronizado of payloadFlush.agendamentos) {
+                            if (!itemSincronizado || !itemSincronizado.id) continue;
+                            const agLocal = localPorId.get(itemSincronizado.id);
+                            if (agLocal) {
+                                _mesclarGoogleCalendarEventIdNoAgendamentoLocal(agLocal, itemSincronizado);
+                                CONTEXTO_DADOS.atualizarVinculoPendente(
+                                    tentativaId,
+                                    contexto,
+                                    agLocal.id,
+                                    agLocal.googleCalendarEventId
+                                );
+                            }
+                        }
+                    }
+                    if (payloadFlush.gcalSyncFailed === true) {
+                        gcalSyncFailed = true;
+                        window.log.warn('[sync]', 'Falha no Google Calendar durante flush pós-CRUD', { operacao: 'FLUSH' });
+                    }
+                }
+            }
+        } catch (flushError) {
+            gcalSyncFailed = true;
+            window.log.warn('[sync]', 'Erro ao executar flush do Google Calendar pós-CRUD', {
+                message: flushError && flushError.message ? flushError.message : String(flushError)
+            });
         }
     }
 

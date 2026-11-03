@@ -6,6 +6,7 @@ const assert = require('node:assert/strict');
 const { OAuth2Client } = require('google-auth-library');
 
 const Agendamento = require('../src/models/Agendamento');
+const GcalReconciliationQueue = require('../src/models/GcalReconciliationQueue');
 const { encryptRefreshToken } = require('../src/utils/gcalCrypto');
 const GoogleCalendarConnection = require('../src/models/GoogleCalendarConnection');
 const gcalSyncService = require('../src/services/gcalSyncService');
@@ -585,13 +586,16 @@ test('pushEventToGoogle usa id deterministico e trata 409 como sucesso idempoten
   }
 });
 
-test('atualizarAgendamento com googleCalendarEventId existente usa updateEventInGoogle', async () => {
+test('atualizarAgendamento + flush com googleCalendarEventId existente usa updateEventInGoogle', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalPushEventToGoogle = gcalSyncService.pushEventToGoogle;
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
   const calls = { push: 0, update: 0, updatesMongo: [] };
+  let docPersistido = null;
 
   try {
     delete require.cache[controllerPath];
@@ -613,27 +617,24 @@ test('atualizarAgendamento com googleCalendarEventId existente usa updateEventIn
         googleCalendarEventId: 'evt-existente-1'
       })
     });
+    Agendamento.find = async () => (docPersistido ? [docPersistido] : []);
+    GcalReconciliationQueue.find = async () => [];
     Agendamento.findOneAndUpdate = async (query, update) => {
       calls.updatesMongo.push({ query, update });
-      if (calls.updatesMongo.length === 1) {
-        return {
-          id: 'ag-200',
-          data: '2026-08-29',
-          horarioInicio: '09:00',
-          horarioFim: '10:00',
-          tipo: 'aula',
-          googleCalendarEventId: 'evt-existente-1'
-        };
-      }
-      return {
+      docPersistido = {
         id: 'ag-200',
-        googleCalendarEventId: 'evt-existente-1'
+        data: '2026-08-29',
+        horarioInicio: '09:00',
+        horarioFim: '10:00',
+        tipo: 'aula',
+        googleCalendarEventId: 'evt-existente-1',
+        ...(update && update.$set ? update.$set : {})
       };
+      return docPersistido;
     };
 
-    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
-    const res = criarRespostaExpress();
-    await atualizarAgendamento({
+    const { atualizarAgendamento, sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
+    const req = {
       params: { id: 'ag-200' },
       body: {
         id: 'ag-200',
@@ -643,15 +644,24 @@ test('atualizarAgendamento com googleCalendarEventId existente usa updateEventIn
         tipo: 'aula'
       },
       auth: { ownerEmail: 'joao@example.com' }
-    }, res);
+    };
+    const res = criarRespostaExpress();
+    await atualizarAgendamento(req, res);
+    assert.equal(calls.update, 0, 'PUT não deve chamar Google sincronamente');
+    assert.equal(res.body.gcalStatus, 'pendente');
+
+    const resFlush = criarRespostaExpress();
+    await sincronizarPendentesGcal(req, resFlush);
 
     assert.equal(calls.update, 1);
     assert.equal(calls.push, 0);
-    assert.equal(res.body.googleCalendarEventId, 'evt-existente-1');
+    assert.equal(resFlush.body.agendamento.googleCalendarEventId, 'evt-existente-1');
   } finally {
     gcalSyncService.pushEventToGoogle = originalPushEventToGoogle;
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
+    Agendamento.find = originalFind;
+    GcalReconciliationQueue.find = originalFindQueue;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
     delete require.cache[controllerPath];
   }
@@ -706,10 +716,12 @@ test('criarAgendamento honra a projeção de googleCalendarEventId ao reusar eve
   }
 });
 
-test('montarRespostaFalhaGcal não vaza agendamentoAtual no escopo global', async () => {
+test('montarRespostaFalhaGcal / flush não vaza agendamentoAtual no escopo global', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
   delete globalThis.agendamentoAtual;
 
@@ -718,49 +730,35 @@ test('montarRespostaFalhaGcal não vaza agendamentoAtual no escopo global', asyn
     gcalSyncService.updateEventInGoogle = async () => {
       throw new Error('falha de teste do Google');
     };
+    const docBase = {
+      id: 'ag-global-1',
+      ownerEmail: 'joao@example.com',
+      googleCalendarEventId: 'evt-global-1',
+      gcalStatus: 'pendente',
+      gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
+      gcalSyncPendingTentativas: 3,
+      data: '2026-08-29',
+      horarioInicio: '09:00',
+      horarioFim: '10:00',
+      tipo: 'aula'
+    };
     Agendamento.findOne = () => ({
       select: () => ({
-        lean: async () => ({
-          id: 'ag-global-1',
-          ownerEmail: 'joao@example.com',
-          googleCalendarEventId: 'evt-global-1',
-          gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
-          gcalSyncPendingTentativas: 3,
-          data: '2026-08-29',
-          horarioInicio: '09:00',
-          horarioFim: '10:00',
-          tipo: 'aula'
-        })
+        lean: async () => ({ ...docBase })
       }),
-      lean: async () => ({
-        id: 'ag-global-1',
-        ownerEmail: 'joao@example.com',
-        googleCalendarEventId: 'evt-global-1',
-        gcalSyncPendingAt: '2026-08-29T12:00:00.000Z',
-        gcalSyncPendingTentativas: 3,
-        data: '2026-08-29',
-        horarioInicio: '09:00',
-        horarioFim: '10:00',
-        tipo: 'aula'
-      })
+      lean: async () => ({ ...docBase })
     });
+    Agendamento.find = async () => [{ ...docBase }];
+    GcalReconciliationQueue.find = async () => [];
     Agendamento.findOneAndUpdate = async (_query, update) => ({
       id: 'ag-global-1',
       googleCalendarEventId: 'evt-global-1',
       ...update.$set
     });
 
-    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+    const { sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
     const res = criarRespostaExpress();
-    await atualizarAgendamento({
-      params: { id: 'ag-global-1' },
-      body: {
-        id: 'ag-global-1',
-        data: '2026-08-29',
-        horarioInicio: '15:00',
-        horarioFim: '16:00',
-        tipo: 'aula'
-      },
+    await sincronizarPendentesGcal({
       auth: { ownerEmail: 'joao@example.com' }
     }, res);
 
@@ -769,6 +767,8 @@ test('montarRespostaFalhaGcal não vaza agendamentoAtual no escopo global', asyn
   } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
+    Agendamento.find = originalFind;
+    GcalReconciliationQueue.find = originalFindQueue;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
     delete globalThis.agendamentoAtual;
     delete require.cache[controllerPath];
@@ -879,12 +879,15 @@ test('pushEventToGoogle rejeita evento cancelado do Google como falha, nao como 
   }
 });
 
-test('atualizarAgendamento grava marca de pendencia quando a chamada ao Google falha', async () => {
+test('atualizarAgendamento + flush grava marca de pendencia quando a chamada ao Google falha', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
   const updatesMongo = [];
+  let docPersistido = null;
 
   try {
     delete require.cache[controllerPath];
@@ -904,22 +907,25 @@ test('atualizarAgendamento grava marca de pendencia quando a chamada ao Google f
         excecoes: ['29/08/2026']
       })
     });
+    Agendamento.find = async () => (docPersistido ? [docPersistido] : []);
+    GcalReconciliationQueue.find = async () => [];
     Agendamento.findOneAndUpdate = async (query, update) => {
       updatesMongo.push({ query, update });
-      return {
+      docPersistido = {
         id: 'ag-serie-1',
         data: '2026-08-29',
         horarioInicio: '09:00',
         horarioFim: '10:00',
         tipo: 'aula',
         googleCalendarEventId: 'evt-serie-1',
-        excecoes: ['29/08/2026']
+        excecoes: ['29/08/2026'],
+        ...(update && update.$set ? update.$set : {})
       };
+      return docPersistido;
     };
 
-    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
-    const res = criarRespostaExpress();
-    await atualizarAgendamento({
+    const { atualizarAgendamento, sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
+    const req = {
       params: { id: 'ag-serie-1' },
       body: {
         id: 'ag-serie-1',
@@ -930,25 +936,36 @@ test('atualizarAgendamento grava marca de pendencia quando a chamada ao Google f
         excecoes: ['29/08/2026']
       },
       auth: { ownerEmail: 'joao@example.com' }
-    }, res);
+    };
+    const resPut = criarRespostaExpress();
+    await atualizarAgendamento(req, resPut);
+    assert.equal(resPut.statusCode, 200);
+    assert.equal(resPut.body.gcalStatus, 'pendente');
 
-    assert.equal(res.statusCode, 200);
-    assert.equal(res.body.gcalSyncFailed, true);
-    assert.equal(typeof res.body.agendamento.gcalSyncPendingAt, 'string');
+    const resFlush = criarRespostaExpress();
+    await sincronizarPendentesGcal(req, resFlush);
+
+    assert.equal(resFlush.statusCode, 200);
+    assert.equal(resFlush.body.gcalSyncFailed, true);
+    assert.equal(typeof resFlush.body.agendamento.gcalSyncPendingAt, 'string');
     assert.equal(updatesMongo.length, 2);
     assert.equal(typeof updatesMongo[1].update.$set.gcalSyncPendingAt, 'string');
   } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
+    Agendamento.find = originalFind;
+    GcalReconciliationQueue.find = originalFindQueue;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
     delete require.cache[controllerPath];
   }
 });
 
-test('atualizarAgendamento preserva 200 mesmo quando a persistencia da marca falha', async () => {
+test('flush preserva 200 mesmo quando a persistencia da marca falha', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
 
   try {
@@ -961,23 +978,25 @@ test('atualizarAgendamento preserva 200 mesmo quando a persistencia da marca fal
     Agendamento.findOne = () => ({
       lean: async () => ({ gcalSyncPendingTentativas: 2 })
     });
+    Agendamento.find = async () => [{
+      id: 'ag-falha-persistencia-1',
+      ownerEmail: 'joao@example.com',
+      data: '2026-08-29',
+      horarioInicio: '09:00',
+      horarioFim: '10:00',
+      tipo: 'aula',
+      gcalStatus: 'pendente'
+    }];
+    GcalReconciliationQueue.find = async () => [];
     Agendamento.findOneAndUpdate = async () => {
       const error = new Error('mongo falhou');
       error.statusCode = 500;
       throw error;
     };
 
-    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+    const { sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
     const res = criarRespostaExpress();
-    await atualizarAgendamento({
-      params: { id: 'ag-falha-persistencia-1' },
-      body: {
-        id: 'ag-falha-persistencia-1',
-        data: '2026-08-29',
-        horarioInicio: '09:00',
-        horarioFim: '10:00',
-        tipo: 'aula'
-      },
+    await sincronizarPendentesGcal({
       auth: { ownerEmail: 'joao@example.com' }
     }, res);
 
@@ -986,17 +1005,22 @@ test('atualizarAgendamento preserva 200 mesmo quando a persistencia da marca fal
   } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
+    Agendamento.find = originalFind;
+    GcalReconciliationQueue.find = originalFindQueue;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
     delete require.cache[controllerPath];
   }
 });
 
-test('atualizarAgendamento limpa marca de pendencia quando o Google responde com sucesso', async () => {
+test('atualizarAgendamento + flush limpa marca de pendencia quando o Google responde com sucesso', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
   const updatesMongo = [];
+  let docPersistido = null;
 
   try {
     delete require.cache[controllerPath];
@@ -1015,18 +1039,22 @@ test('atualizarAgendamento limpa marca de pendencia quando o Google responde com
         gcalSyncPendingTentativas: 1
       })
     });
+    Agendamento.find = async () => (docPersistido ? [docPersistido] : []);
+    GcalReconciliationQueue.find = async () => [];
     Agendamento.findOneAndUpdate = async (query, update) => {
       updatesMongo.push({ query, update });
       if (updatesMongo.length === 1) {
-        return {
+        docPersistido = {
           id: 'ag-serie-1',
           data: '2026-08-29',
           horarioInicio: '09:00',
           horarioFim: '10:00',
           tipo: 'aula',
           googleCalendarEventId: 'evt-serie-1',
+          gcalStatus: 'pendente',
           gcalSyncPendingAt: '2026-08-29T12:00:00.000Z'
         };
+        return docPersistido;
       }
 
       return {
@@ -1035,9 +1063,8 @@ test('atualizarAgendamento limpa marca de pendencia quando o Google responde com
       };
     };
 
-    const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
-    const res = criarRespostaExpress();
-    await atualizarAgendamento({
+    const { atualizarAgendamento, sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
+    const req = {
       params: { id: 'ag-serie-1' },
       body: {
         id: 'ag-serie-1',
@@ -1047,18 +1074,25 @@ test('atualizarAgendamento limpa marca de pendencia quando o Google responde com
         tipo: 'aula'
       },
       auth: { ownerEmail: 'joao@example.com' }
-    }, res);
+    };
+    const resPut = criarRespostaExpress();
+    await atualizarAgendamento(req, resPut);
+
+    const resFlush = criarRespostaExpress();
+    await sincronizarPendentesGcal(req, resFlush);
 
     assert.equal(updatesMongo.length, 2);
     assert.deepEqual(updatesMongo[1].update.$unset, {
       gcalSyncPendingAt: 1,
       gcalSyncPendingTentativas: 1
     });
-    assert.equal(res.body.gcalSyncPendingAt, undefined);
-    assert.equal(res.body.gcalSyncPendingTentativas, undefined);
+    assert.equal(resFlush.body.agendamento.gcalSyncPendingAt, undefined);
+    assert.equal(resFlush.body.agendamento.gcalSyncPendingTentativas, undefined);
   } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
+    Agendamento.find = originalFind;
+    GcalReconciliationQueue.find = originalFindQueue;
     Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
     delete require.cache[controllerPath];
   }
@@ -1139,8 +1173,8 @@ test('portao 2.0: campo novo atravessa PUT e GET, strict false persiste e ausenc
     assert.equal(updatesMongo[0].$set._id, undefined);
     assert.equal(updatesMongo[0].$set.__v, undefined);
     assert.equal(updatesMongo[0].$set.ownerEmail, 'joao@example.com');
-    assert.equal(Object.prototype.hasOwnProperty.call(updatesMongo[2].$set, 'campoNovoSync'), false);
-    assert.equal(Object.prototype.hasOwnProperty.call(updatesMongo[2], '$unset') && Object.prototype.hasOwnProperty.call(updatesMongo[2].$unset, 'campoNovoSync'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(updatesMongo[1].$set, 'campoNovoSync'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(updatesMongo[1], '$unset') && Object.prototype.hasOwnProperty.call(updatesMongo[1].$unset, 'campoNovoSync'), false);
   } finally {
     gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
     Agendamento.findOne = originalFindOne;
@@ -1999,12 +2033,17 @@ test('avulsa criada por occurrence continua com excecoes vazias mesmo quando a s
   assert.equal(avulsa.excecoesDetalhadas.length, 0);
 });
 
-test('excluirAgendamento chama Google antes do Mongo e retorna sucesso quando o registro foi apagado', async () => {
+test('excluirAgendamento apaga do Mongo imediatamente, enfileira na GcalReconciliationQueue e flush remove do Google', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
   const originalFindOneAndDelete = Agendamento.findOneAndDelete;
+  const originalQueueFindOneAndUpdate = GcalReconciliationQueue.findOneAndUpdate;
+  const originalQueueFind = GcalReconciliationQueue.find;
+  const originalQueueDeleteOne = GcalReconciliationQueue.deleteOne;
   const order = [];
+  const fila = [];
 
   try {
     delete require.cache[controllerPath];
@@ -2019,35 +2058,66 @@ test('excluirAgendamento chama Google antes do Mongo e retorna sucesso quando o 
       ownerEmail: 'joao@example.com',
       googleCalendarEventId: 'evt-delete-ok'
     });
+    Agendamento.find = async () => [];
     Agendamento.findOneAndDelete = async () => {
       order.push('mongo');
       return { id: 'ag-delete-ok' };
     };
+    GcalReconciliationQueue.findOneAndUpdate = async (filtro, update) => {
+      order.push('queue-outbox');
+      const item = { _id: 'q-1', ...filtro, ...(update.$set || {}) };
+      fila.push(item);
+      return item;
+    };
+    GcalReconciliationQueue.find = async () => [...fila];
+    GcalReconciliationQueue.deleteOne = async (filtro) => {
+      order.push('queue-remove');
+      const idx = fila.findIndex((i) => i._id === filtro._id);
+      if (idx >= 0) fila.splice(idx, 1);
+    };
 
-    const { excluirAgendamento } = require('../src/controllers/agendamentoController');
-    const res = criarRespostaExpress();
-    await excluirAgendamento({
+    const { excluirAgendamento, sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
+    const req = {
       params: { id: 'ag-delete-ok' },
       auth: { ownerEmail: 'joao@example.com' }
-    }, res);
+    };
+    const res = criarRespostaExpress();
+    await excluirAgendamento(req, res);
 
-    assert.deepEqual(order, ['google', 'mongo']);
+    assert.deepEqual(order, ['mongo', 'queue-outbox'], 'DELETE não chama Google sincronamente');
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.deleted, true);
+    assert.equal(res.body.queuedForGcalDelete, true);
+
+    const resFlush = criarRespostaExpress();
+    await sincronizarPendentesGcal(req, resFlush);
+
+    assert.deepEqual(order, ['mongo', 'queue-outbox', 'google', 'queue-remove']);
+    assert.equal(fila.length, 0);
+    assert.equal(resFlush.body.deletedCount, 1);
   } finally {
     gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
     Agendamento.findOne = originalFindOne;
+    Agendamento.find = originalFind;
     Agendamento.findOneAndDelete = originalFindOneAndDelete;
+    GcalReconciliationQueue.findOneAndUpdate = originalQueueFindOneAndUpdate;
+    GcalReconciliationQueue.find = originalQueueFind;
+    GcalReconciliationQueue.deleteOne = originalQueueDeleteOne;
     delete require.cache[controllerPath];
   }
 });
 
-test('excluirAgendamento trata 404/410 como sucesso e ainda remove do Mongo', async () => {
+test('excluirAgendamento + flush trata 404/410 do Google como sucesso e remove da GcalReconciliationQueue', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
   const originalFindOneAndDelete = Agendamento.findOneAndDelete;
+  const originalQueueFindOneAndUpdate = GcalReconciliationQueue.findOneAndUpdate;
+  const originalQueueFind = GcalReconciliationQueue.find;
+  const originalQueueDeleteOne = GcalReconciliationQueue.deleteOne;
   const order = [];
+  const fila = [];
 
   try {
     delete require.cache[controllerPath];
@@ -2062,35 +2132,63 @@ test('excluirAgendamento trata 404/410 como sucesso e ainda remove do Mongo', as
       ownerEmail: 'joao@example.com',
       googleCalendarEventId: 'evt-delete-404'
     });
+    Agendamento.find = async () => [];
     Agendamento.findOneAndDelete = async () => {
       order.push('mongo');
       return { id: 'ag-delete-404' };
     };
+    GcalReconciliationQueue.findOneAndUpdate = async (filtro, update) => {
+      order.push('queue-outbox');
+      const item = { _id: 'q-404', ...filtro, ...(update.$set || {}) };
+      fila.push(item);
+      return item;
+    };
+    GcalReconciliationQueue.find = async () => [...fila];
+    GcalReconciliationQueue.deleteOne = async (filtro) => {
+      order.push('queue-remove');
+      const idx = fila.findIndex((i) => i._id === filtro._id);
+      if (idx >= 0) fila.splice(idx, 1);
+    };
 
-    const { excluirAgendamento } = require('../src/controllers/agendamentoController');
-    const res = criarRespostaExpress();
-    await excluirAgendamento({
+    const { excluirAgendamento, sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
+    const req = {
       params: { id: 'ag-delete-404' },
       auth: { ownerEmail: 'joao@example.com' }
-    }, res);
-
-    assert.deepEqual(order, ['google', 'mongo']);
+    };
+    const res = criarRespostaExpress();
+    await excluirAgendamento(req, res);
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.deleted, true);
+
+    const resFlush = criarRespostaExpress();
+    await sincronizarPendentesGcal(req, resFlush);
+
+    assert.deepEqual(order, ['mongo', 'queue-outbox', 'google', 'queue-remove']);
+    assert.equal(fila.length, 0);
+    assert.equal(resFlush.body.gcalSyncFailed, false);
   } finally {
     gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
     Agendamento.findOne = originalFindOne;
+    Agendamento.find = originalFind;
     Agendamento.findOneAndDelete = originalFindOneAndDelete;
+    GcalReconciliationQueue.findOneAndUpdate = originalQueueFindOneAndUpdate;
+    GcalReconciliationQueue.find = originalQueueFind;
+    GcalReconciliationQueue.deleteOne = originalQueueDeleteOne;
     delete require.cache[controllerPath];
   }
 });
 
-test('excluirAgendamento não apaga o Mongo quando o Google falha com 500 e grava pendencia', async () => {
+test('excluirAgendamento apaga do Mongo imediatamente e quando o Google falha com 500 no flush mantém item na GcalReconciliationQueue e sinaliza gcalSyncFailed', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
   const originalFindOne = Agendamento.findOne;
-  const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
+  const originalFind = Agendamento.find;
+  const originalFindOneAndDelete = Agendamento.findOneAndDelete;
+  const originalQueueFindOneAndUpdate = GcalReconciliationQueue.findOneAndUpdate;
+  const originalQueueFind = GcalReconciliationQueue.find;
+  const originalQueueDeleteOne = GcalReconciliationQueue.deleteOne;
   const order = [];
+  const fila = [];
 
   try {
     delete require.cache[controllerPath];
@@ -2105,30 +2203,50 @@ test('excluirAgendamento não apaga o Mongo quando o Google falha com 500 e grav
       ownerEmail: 'joao@example.com',
       googleCalendarEventId: 'evt-delete-500'
     });
-    Agendamento.findOneAndUpdate = async (query, update) => {
-      order.push('pendencia');
-      return { id: 'ag-delete-500', ...update.$set };
-    };
+    Agendamento.find = async () => [];
     Agendamento.findOneAndDelete = async () => {
       order.push('mongo');
       return { id: 'ag-delete-500' };
     };
+    GcalReconciliationQueue.findOneAndUpdate = async (filtro, update) => {
+      order.push('queue-outbox');
+      const item = { _id: 'q-500', ...filtro, ...(update.$set || {}) };
+      fila.push(item);
+      return item;
+    };
+    GcalReconciliationQueue.find = async () => [...fila];
+    GcalReconciliationQueue.deleteOne = async (filtro) => {
+      order.push('queue-remove');
+      const idx = fila.findIndex((i) => i._id === filtro._id);
+      if (idx >= 0) fila.splice(idx, 1);
+    };
 
-    const { excluirAgendamento } = require('../src/controllers/agendamentoController');
-    const res = criarRespostaExpress();
-    await excluirAgendamento({
+    const { excluirAgendamento, sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
+    const req = {
       params: { id: 'ag-delete-500' },
       auth: { ownerEmail: 'joao@example.com' }
-    }, res);
-
-    assert.deepEqual(order, ['google', 'pendencia']);
+    };
+    const res = criarRespostaExpress();
+    await excluirAgendamento(req, res);
+    assert.deepEqual(order, ['mongo', 'queue-outbox']);
     assert.equal(res.statusCode, 200);
-    assert.equal(res.body.gcalSyncFailed, true);
-    assert.equal(res.body.agendamento.gcalSyncPendingTentativas, 1);
+    assert.equal(res.body.deleted, true, 'Deve apagar do MongoDB mesmo se o Google for falhar depois');
+
+    const resFlush = criarRespostaExpress();
+    await sincronizarPendentesGcal(req, resFlush);
+
+    assert.deepEqual(order, ['mongo', 'queue-outbox', 'google']);
+    assert.equal(fila.length, 1, 'Item deve permanecer na GcalReconciliationQueue após erro 500');
+    assert.equal(resFlush.statusCode, 200);
+    assert.equal(resFlush.body.gcalSyncFailed, true);
   } finally {
     gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
     Agendamento.findOne = originalFindOne;
-    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
+    Agendamento.find = originalFind;
+    Agendamento.findOneAndDelete = originalFindOneAndDelete;
+    GcalReconciliationQueue.findOneAndUpdate = originalQueueFindOneAndUpdate;
+    GcalReconciliationQueue.find = originalQueueFind;
+    GcalReconciliationQueue.deleteOne = originalQueueDeleteOne;
     delete require.cache[controllerPath];
   }
 });
@@ -4275,9 +4393,8 @@ test('Ponto 2 — edição sem split reverte, avisa e reabre o modal preenchido 
 
   assert.equal(gravacoes.length, 1);
   assertOperacaoEdicao(gravacoes[0], 'serie-p2-falha', 'entireSeries');
-  assert.equal(gravacoes[0].operacao.falha, true);
-  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 0, 1);
-  assert.equal(pendencia.snapshot.aulas[0].horarioInicio, '10:00');
+  assert.equal(context.contextoDados.obterPendencia(), null);
+  assert.equal(context.contextoDados.semOperacoes(), true);
   assert.equal(aulas.length, 1);
   assert.equal(aulas[0].horarioInicio, '09:00', 'o horário anterior precisa voltar');
   assert.equal(aulas[0].horarioFim, '10:00');
@@ -4333,10 +4450,8 @@ test('Ponto 4 — falha na PRIMEIRA gravação do split occurrence impede a segu
 
   assert.equal(gravacoes.length, 1, 'a segunda gravação não pode ser disparada quando a primeira falha');
   assertOperacaoEdicao(gravacoes[0], 'serie-p4-falha1', 'occurrence');
-  assert.equal(gravacoes[0].operacao.falha, true);
-  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 0, 1);
-  assert.equal(pendencia.snapshot.aulas.length, 2);
-  assert.ok(pendencia.snapshot.aulas[0].excecoes.includes('31/08/2026'));
+  assert.equal(context.contextoDados.obterPendencia(), null);
+  assert.equal(context.contextoDados.semOperacoes(), true);
   assert.equal(aulas.length, 1, 'a ocorrência nova precisa sair do array');
   assert.deepEqual(Array.from(aulas[0].excecoes || []), [], 'o EXDATE precisa ser desfeito');
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
@@ -4369,10 +4484,8 @@ test('Ponto 4 — falha na SEGUNDA gravação do split occurrence não compensa 
   assert.equal(gravacoes[1].operacao, gravacoes[0].operacao);
   assert.equal(gravacoes[1].id, gravacoes[0].operacao.intencao.novaOcorrencia.id);
   assert.deepEqual(excecoesPorGravacao[0], ['31/08/2026']);
-  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 1, 2);
-  assert.equal(gravacoes[0].operacao.falha, true);
-  assert.equal(pendencia.snapshot.aulas.length, 2, 'snapshot preserva a intenção anterior ao rollback visual');
-  assert.ok(pendencia.snapshot.aulas[0].excecoes.includes('31/08/2026'));
+  assert.equal(context.contextoDados.obterPendencia(), null);
+  assert.equal(context.contextoDados.semOperacoes(), true);
   assert.equal(aulas.length, 1);
   assert.deepEqual(Array.from(aulas[0].excecoes || []), []);
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
@@ -4425,9 +4538,8 @@ test('Ponto 5 — falha na PRIMEIRA gravação do split fromDate impede a segund
 
   assert.equal(gravacoes.length, 1, 'a segunda gravação não pode ser disparada quando a primeira falha');
   assertOperacaoEdicao(gravacoes[0], 'serie-p5-falha1', 'fromDate');
-  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 0, 1);
-  assert.equal(pendencia.snapshot.aulas.length, 2);
-  assert.equal(pendencia.snapshot.aulas[0].recorrenciaDataFim, '01/09/2026');
+  assert.equal(context.contextoDados.obterPendencia(), null);
+  assert.equal(context.contextoDados.semOperacoes(), true);
   assert.equal(aulas.length, 1, 'a série nova precisa sair do array');
   assert.equal(aulas[0].id, 'serie-p5-falha1');
   assert.equal(aulas[0].recorrenciaDataFim, undefined, 'o UNTIL do corte precisa ser desfeito');
@@ -4461,10 +4573,8 @@ test('Ponto 5 — falha na SEGUNDA gravação do split fromDate não compensa e 
   assert.equal(gravacoes[1].operacao, gravacoes[0].operacao);
   assert.equal(gravacoes[1].id, gravacoes[0].operacao.intencao.novaSerie.id);
   assert.equal(fimPorGravacao[0], '01/09/2026', 'a primeira gravou o corte');
-  const pendencia = assertPendenciaFalha(context, 'editar-agendamento', 1, 2);
-  assert.equal(pendencia.snapshot.aulas.length, 2);
-  assert.equal(pendencia.snapshot.aulas[0].recorrenciaDataFim, '01/09/2026');
-  assert.equal(gravacoes[0].operacao.falha, true);
+  assert.equal(context.contextoDados.obterPendencia(), null);
+  assert.equal(context.contextoDados.semOperacoes(), true);
   assert.equal(aulas.length, 1);
   assert.ok(toasts.some(([, tipo]) => tipo === 'error'));
   assert.deepEqual(reaberturas, ['serie-p5-falha2']);

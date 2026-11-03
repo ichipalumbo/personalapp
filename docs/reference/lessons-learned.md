@@ -1,6 +1,6 @@
 # Aprendizados consolidados dos relatórios
 
-> **Finalidade**: referência de riscos, limites e armadilhas · **Atualizado**: 2026-10-14
+> **Finalidade**: referência de riscos, limites e armadilhas · **Atualizado**: 2026-11-03
 > Consolida relatos históricos e conhecimento útil do roadmap/planos, com a fonte de cada complemento. A atualização não recertifica todos os riscos antigos.
 >
 > **Este arquivo não é fonte de verdade de regra de negócio** — as specs em `docs/specs/`
@@ -14,18 +14,8 @@
 
 ## 1. Riscos ativos sem dono
 
-### 1.1 Precedência divergente da data base entre os dois lados da recorrência — sem dono
-
-`backend/src/services/gcalSyncService.js` resolve a data base como
-`recorrenciaDataInicio || data || dataCriacao`. `backend/shared/recurrence-helpers.js`
-resolve como `dataCriacao || recorrenciaDataInicio || data`. São duas implementações da
-mesma noção, com ordens diferentes.
-
-Coincidem nos fluxos normais, e é exatamente por isso que o risco é alto: a divergência só
-aparece quando um dos três campos está ausente ou vazio. Isso contraria diretamente a regra
-4.3 das instruções do repositório (implementação única de cálculo de regra de negócio).
-
-Registrado em: `2026-08-29-fix-dtstart-byday-gcal`, `2026-08-29-fix-global-e-mock-teto-gcal`.
+Os riscos `1.1` e `1.3` foram encerrados em 2026-11-03 e estão registrados em 1A, com a
+evidência que sustenta o encerramento.
 
 ### 1.2 `resolverDataISO` sincroniza silenciosamente para hoje — sem dono
 
@@ -35,18 +25,6 @@ em duas rodadas distintas e deliberadamente não alterado nas duas, para não me
 comportamento já coberto por teste.
 
 Registrado em: `2026-08-29-fix-dtstart-byday-gcal`, `2026-08-29-fix-duplicata-edicao-serie-gcal`.
-
-### 1.3 Divergência entre `gis_session_cache` e `gis_profile_cache` — sem dono
-
-As duas chaves são gravadas de forma independente, em momentos distintos. Se uma gravação
-falhar (cota de storage, aba fechada no meio da escrita, edição manual no DevTools), o
-header pode mostrar o nome da conta A enquanto as requisições vão assinadas com o token da
-conta B.
-
-Agrava o risco: a usuária tem **duas contas Google no mesmo celular**. A falha é silenciosa —
-sem erro visível, sem `401`.
-
-Registrado em: `2026-08-28-feat-login-sessao-persistente`.
 
 ### 1.4 Backend sem `'use strict'` e sem lint de variável não declarada — sem dono
 
@@ -74,6 +52,53 @@ Origem do risco: `2026-08-31-fix-heranca-mae-vazia-split`; controle documental c
 
 ---
 
+## 1A. Riscos encerrados — registro preservado
+
+### 1.1 Precedência divergente da data base entre os dois lados da recorrência — ENCERRADO em 2026-11-03
+
+`backend/src/services/gcalSyncService.js` resolvia a data base como
+`recorrenciaDataInicio || data || dataCriacao`. `backend/shared/recurrence-helpers.js`
+resolvia como `dataCriacao || recorrenciaDataInicio || data`. Eram duas implementações da
+mesma noção, com ordens diferentes.
+
+Coincidiam nos fluxos normais, e é exatamente por isso que o risco era alto: a divergência
+só aparecia quando um dos três campos estava ausente ou vazio. Isso contrariava diretamente
+a regra 4.3 das instruções do repositório (implementação única de cálculo de regra de
+negócio).
+
+**Como foi encerrado**: a precedência canônica passou a viver só em
+`recurrence-helpers.js`, exposta como `resolverDataBaseCompromisso`; o `gcalSyncService`
+consome essa função por meio de `resolverDataBaseRecorrencia` nos seis pontos que resolviam
+a data base. Contrato em [spec de GCal, 9.14.1](../specs/gcal-sync.md).
+
+**Evidência**: `backend/test/t03-janela-fullsync-data-base.test.js` (`T03-03` a `T03-05`),
+provados por mutação — reinstalar a ordem antiga no helper derruba os três. O fallback de
+`resolverDataISO` (risco `1.2`) permanece intacto.
+
+Registrado originalmente em: `2026-08-29-fix-dtstart-byday-gcal`, `2026-08-29-fix-global-e-mock-teto-gcal`.
+
+### 1.3 Divergência entre `gis_session_cache` e `gis_profile_cache` — ENCERRADO em 2026-11-03
+
+As duas chaves eram gravadas de forma independente, em momentos distintos. Se uma gravação
+falhasse (cota de storage, aba fechada no meio da escrita, edição manual no DevTools), o
+header podia mostrar o nome da conta A enquanto as requisições iam assinadas com o token da
+conta B.
+
+Agravava o risco a usuária ter **duas contas Google no mesmo celular**. A falha era
+silenciosa — sem erro visível, sem `401`.
+
+**Como foi encerrado**: `_profile` passou a ser derivado do payload do `idToken` válido em
+`gis_session_cache`; `gis_profile_cache` só é aproveitado quando o `email` bate com o do
+token e é apagado sempre que `gis_session_cache` está ausente, inválido ou expirado.
+`isSignedIn`, `getOwnerEmail` e `getProfile` também passaram a validar a expiração do token.
+
+**Evidência**: `tests-frontend/t01-sessao-boot-gcal.test.js` (`T01-01` e `T01-02`), provados
+por mutação — aceitar o perfil em cache sem validar o `email` derruba os dois.
+
+Registrado originalmente em: `2026-08-28-feat-login-sessao-persistente`.
+
+---
+
 ## 2. Limites aceitos por decisão — não são bugs
 
 ### 2.1 `DELETE` da reposição órfã é best-effort
@@ -94,7 +119,9 @@ escrita aceito em troca da garantia de nunca bloquear a persistência.
 
 Quando o Mongo grava e o Google falha, a resposta é `200`. Foi reportado como defeito em
 três rodadas e mantido de propósito: a regra é que a persistência mandou, e a falha de
-sincronização é aviso, não erro. Há divergência documentada entre esse `200` e o `502` que
+sincronização é aviso, não erro. Desde a separação entre gravação e envio, a falha do Google
+aparece no `POST /api/agendamentos/flush-gcal` e não mais na rota de CRUD; o contrato de
+`200` com a flag continua o mesmo. Há divergência documentada entre esse `200` e o `502` que
 a spec chegou a descrever.
 
 ### 2.4 Detecção de edição por igualdade estrita

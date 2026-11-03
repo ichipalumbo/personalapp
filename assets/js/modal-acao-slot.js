@@ -2220,8 +2220,14 @@ document.addEventListener("DOMContentLoaded", () => {
         { acao: "reagendar-reposicao", agendamento: novoCompromisso, reposicaoId: repObj.id, status: "agendada" });
       if (!op) { await apresentarRecuperacaoSlot(); return; }
       let escritaConfirmada = false;
+      let aulaPersistida = false;
+      let _snapshotAulasReposicao = null;
       try {
         if (!window.contextoDados.operacaoAtual(op)) return;
+        _snapshotAulasReposicao = aulas.map((a) => ({
+          ...a,
+          excecoes: Array.isArray(a.excecoes) ? [...a.excecoes] : a.excecoes,
+        }));
         aulas.push(novoCompromisso);
         if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
         const salvar =
@@ -2233,6 +2239,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ? await salvar(true, { operacao: op, contextoDados: op.contexto })
             : { ok: false, motivo: "falha_remota" };
         confirmarPersistenciaSlot(op, resultadoPersistencia);
+        aulaPersistida = true;
         if (!window.contextoDados.operacaoAtual(op)) return;
 
         const respostaPatch = await window.apiFetchBackend(
@@ -2323,6 +2330,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (!window.contextoDados.operacaoAtual(op)) return;
         if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
+        // Só desfaz a inserção otimista quando a gravação local falhou: depois dela a
+        // aula já está no servidor e a tentativa precisa ser preservada para recuperação.
+        if (!aulaPersistida && Array.isArray(_snapshotAulasReposicao)) {
+          aulas.splice(0, aulas.length, ..._snapshotAulasReposicao);
+          if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
+          window.log.warn("[reposicao]", "Rollback somente local; recuperação pendente", {
+            id: novoCompromisso.id,
+            motivo:
+              erro && erro.message
+                ? erro.message
+                : "falha_reagendamento_reposicao",
+          });
+        }
         if (typeof mostrarToast === "function") {
           mostrarToast(
             erro && erro.message

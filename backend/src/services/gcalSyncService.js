@@ -237,7 +237,7 @@ function deveAplicarAlinhamentoDtstart(agendamento) {
 }
 
 function resolverDataInicioAlinhada(agendamento) {
-  const dataBase = parseDataISOParaDate(agendamento && (agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao));
+  const dataBase = resolverDataBaseRecorrencia(agendamento);
   if (!dataBase) {
     return resolverDataISO(agendamento);
   }
@@ -300,7 +300,7 @@ function dtstartAlinhadoUltrapassaUntil(agendamento, until, motivo = 'DTSTART al
     return false;
   }
 
-  const dataBase = parseDataISOParaDate(agendamento && (agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao));
+  const dataBase = resolverDataBaseRecorrencia(agendamento);
   const dataBaseISO = dataBase ? dataBase.toISOString().slice(0, 10) : null;
   const dataInicioAlinhada = resolverDataInicioAlinhada(agendamento);
   const dataAlinhada = dataInicioAlinhada ? parseDataISOParaDate(dataInicioAlinhada) : null;
@@ -418,6 +418,14 @@ function parseDataISOParaDate(value) {
   }
 
   return new Date(Date.UTC(parsed.getFullYear(), parsed.getMonth(), parsed.getDate(), 12, 0, 0));
+}
+
+function resolverDataBaseRecorrencia(agendamento) {
+  const base = recurrenceHelpers.resolverDataBaseCompromisso(agendamento);
+  if (!base) {
+    return null;
+  }
+  return new Date(Date.UTC(base.getFullYear(), base.getMonth(), base.getDate(), 12, 0, 0));
 }
 
 function formatarDataUtcRfc5545(date) {
@@ -556,7 +564,7 @@ function montarExdatesDeAgendamento(agendamento) {
     : (Array.isArray(agendamento.excecoes) ? agendamento.excecoes : []);
 
   const timezone = agendamento.timeZone || process.env.GCAL_TIMEZONE || 'America/Sao_Paulo';
-  const startDate = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+  const startDate = resolverDataBaseRecorrencia(agendamento);
   const endDate = agendamento.recorrenciaFimCondicao === 'untilDate' && agendamento.recorrenciaDataFim
     ? parseDataISOParaDate(agendamento.recorrenciaDataFim)
     : null;
@@ -661,7 +669,7 @@ function montarRecurrence(agendamento) {
     if (dias.length > 0) {
       ruleParts.push(`BYDAY=${dias.join(',')}`);
     } else {
-      const dataInicio = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+      const dataInicio = resolverDataBaseRecorrencia(agendamento);
       if (!dataInicio) {
         return null;
       }
@@ -671,7 +679,7 @@ function montarRecurrence(agendamento) {
   }
 
   if (tipo === 'anual') {
-    const dataInicio = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+    const dataInicio = resolverDataBaseRecorrencia(agendamento);
     if (!dataInicio) {
       return null;
     }
@@ -696,7 +704,7 @@ function montarRecurrence(agendamento) {
     }
     ruleParts.push(`UNTIL=${until}`);
   } else if (agendamento.recorrenciaEscopo === 'monthOfDate') {
-    const dataInicio = parseDataISOParaDate(agendamento.recorrenciaDataInicio || agendamento.data || agendamento.dataCriacao);
+    const dataInicio = resolverDataBaseRecorrencia(agendamento);
     if (!dataInicio) {
       return null;
     }
@@ -1011,7 +1019,7 @@ async function listCalendarEvents(oauth2Client, connection) {
   const timeMin = new Date();
   timeMin.setMonth(timeMin.getMonth() - 1);
   const timeMax = new Date();
-  timeMax.setMonth(timeMax.getMonth() + 2);
+  timeMax.setMonth(timeMax.getMonth() + 6);
 
   const params = new URLSearchParams({
     singleEvents: 'true',
@@ -1580,16 +1588,20 @@ async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
     for (const item of pendingActions) {
       try {
         if (item.action === 'delete') {
+          let deveRemoverDaFila = true;
           try {
             await module.exports.deleteEventFromGoogle(normalizedOwnerEmail, item.googleCalendarEventId);
           } catch (err) {
             const status = err && (err.statusCode || err.status);
             if (status !== 404 && status !== 410) {
+              deveRemoverDaFila = false;
               console.warn(`[GcalSync] Falha ao conciliar exclusão de ${item.googleCalendarEventId}:`, err.message);
             }
           }
-          await GcalReconciliationQueue.deleteOne({ _id: item._id });
-          reconciledDeletions++;
+          if (deveRemoverDaFila) {
+            await GcalReconciliationQueue.deleteOne({ _id: item._id, ownerEmail: normalizedOwnerEmail });
+            reconciledDeletions++;
+          }
         } else if (item.action === 'update') {
           const agendamento = await Agendamento.findOne({ ownerEmail: normalizedOwnerEmail, id: item.agendamentoId });
           if (agendamento) {
@@ -1622,7 +1634,7 @@ async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
               console.warn(`[GcalSync] Falha ao conciliar atualização de ${agendamento.id}:`, updateErr.message);
             }
           }
-          await GcalReconciliationQueue.deleteOne({ _id: item._id });
+          await GcalReconciliationQueue.deleteOne({ _id: item._id, ownerEmail: normalizedOwnerEmail });
         }
       } catch (actionErr) {
         console.warn('[GcalSync] Erro no processamento de item de reconciliação:', actionErr.message);
@@ -1642,6 +1654,7 @@ async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
       source: { $ne: 'google_external' },
       $or: [
         { gcalStatus: 'desconectado' },
+        { gcalStatus: 'pendente' },
         { gcalStatus: { $exists: false } },
         { googleCalendarEventId: null }
       ]
