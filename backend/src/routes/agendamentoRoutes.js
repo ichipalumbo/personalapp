@@ -5,6 +5,7 @@ const {
   criarAgendamento,
   atualizarAgendamento,
   excluirAgendamento,
+  sincronizarPendentesGcal,
   patchAgendamento
 } = require('../controllers/agendamentoController');
 
@@ -13,6 +14,8 @@ const router = express.Router();
 router.route('/')
   .get(listarAgendamentos)
   .post(criarAgendamento);
+
+router.post('/flush-gcal', sincronizarPendentesGcal);
 
 router.route('/:id')
   .get(obterAgendamento)

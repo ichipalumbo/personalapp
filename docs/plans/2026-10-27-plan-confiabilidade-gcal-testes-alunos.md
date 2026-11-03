@@ -1,13 +1,13 @@
 # Plano — Confiabilidade de Sincronização (GCal/Sessão), Blindagem Financeira e Operação Rápida em Alunos
 
-> **Status**: `Em execução` — T00 (higiene documental e plano vivo) concluído; T01–T06 aguardando autorização por cartão
+> **Status**: `Em execução` — T00, T01 e T02 concluídos; T03–T06 aguardando execução
 > **Abertura**: 2026-10-27
-> **Atualizado**: 2026-10-27
+> **Atualizado**: 2026-11-03
 > **Responsável**: Luccas (dono) + agente
-> **Branch**: `main` (abertura documental autorizada pelo dono; código dos cartões T01–T06 entrará via branch/PR dedicado)
+> **Branch**: `feat/confiabilidade-gcal-testes-alunos` (criada a partir de `origin/main` em `20a85a9` com `--no-track`)
 > **Diagnóstico de origem**: nenhum documento autônomo — decisões tomadas no grill de 2026-10-27 com inspeção direta de `agendamentoController.js`, `gcalSyncService.js`, `bootstrap.js`, `google-identity.js` e `storage.js` (dispensável por [`docs/README.md`](../README.md), "Ciclo de vida", item 2)
 > **Contratos duráveis**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md), [`docs/specs/interface-e-navegacao.md`](../specs/interface-e-navegacao.md), [`docs/specs/financas-ciclo-cobranca.md`](../specs/financas-ciclo-cobranca.md) e [`docs/specs/reposicoes-e-competencia.md`](../specs/reposicoes-e-competencia.md)
-> **Válido contra**: `c073d0e` (`main`)
+> **Válido contra**: `20a85a9` (`main`)
 
 > **Este arquivo é vivo.** Enquanto a frente estiver aberta, ele recebe decisões, execução,
 > medições e desvios. Não crie um relatório separado para "o depois".
@@ -24,8 +24,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 ## 2. Critérios de aceite
 
 - [x] **Documental (T00)**: planos concluídos (`2026-10-17-plan-aplicacao-identidade-visual.md` e `2026-10-26-plan-ui-otimista.md`) arquivados em [`docs/archive/plans/`](../archive/plans/) com links preservados; [`docs/roadmap-v3.md`](../roadmap-v3.md) atualizado com o item `5.11` e com as decisões desta frente.
-- [ ] **Sessão e Boot (T01 — Item `2.2` + Risco `1.3`)**: perfil derivado diretamente do JWT válido em `gis_session_cache` (impedindo exibir conta A enquanto assina requisições com conta B no celular); gatilhos de sincronização e renovação do canal GCal coordenados de forma idempotente por `ownerEmail` entre boot, restauração tardia de sessão (`auth-change`) e retorno à aba (`visibilitychange`), preservando integralmente o B2 (`2.4`).
-- [ ] **GCal fora do caminho crítico na Vercel (T02 — antigo `T04`)**: `POST`/`PUT`/`DELETE /api/agendamentos` confirmam imediatamente no MongoDB (`gcalStatus: 'pendente'` em criações/edições; deleção imediata no Mongo + registro em `GcalReconciliationQueue` pelo **Outbox Pattern** no `DELETE`); flush dedicado pós-save sincroniza os itens pendentes com o Google Calendar sem risco de congelamento de Lambda na Vercel e mantém os toasts de falha parcial (`gcalSyncFailed` / `tokenExpired`).
+- [x] **Sessão e Boot (T01 — Item `2.2` + Risco `1.3`)**: perfil derivado diretamente do JWT válido em `gis_session_cache` (impedindo exibir conta A enquanto assina requisições com conta B no celular); gatilhos de sincronização e renovação do canal GCal coordenados de forma idempotente por `ownerEmail` entre boot, restauração tardia de sessão (`auth-change`) e retorno à aba (`visibilitychange`), preservando integralmente o B2 (`2.4`).
+- [x] **GCal fora do caminho crítico na Vercel (T02 — antigo `T04`)**: `POST`/`PUT`/`DELETE /api/agendamentos` confirmam imediatamente no MongoDB (`gcalStatus: 'pendente'` em criações/edições; deleção imediata no Mongo + registro em `GcalReconciliationQueue` pelo **Outbox Pattern** no `DELETE`); flush dedicado pós-save sincroniza os itens pendentes com o Google Calendar sem risco de congelamento de Lambda na Vercel e mantém os toasts de falha parcial (`gcalSyncFailed` / `tokenExpired`).
 - [ ] **Janela de Full Sync e Data Base (T03 — Item `2.3` + Risco `1.1`)**: modo full de `listCalendarEvents` ampliado de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]`, com reconciliação restrita à mesma janela; `gcalSyncService.js` alinhado à precedência canônica de data base de `recurrence-helpers.js` (`dataCriacao || recorrenciaDataInicio || data`), sem alterar o motor financeiro.
 - [ ] **Contratos e Riscos (T04)**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md) e [`docs/reference/lessons-learned.md`](../reference/lessons-learned.md) atualizados refletindo o desacoplamento do CRUD, o Outbox no `DELETE`, a nova janela `[-1m, +6m]` e o encerramento dos riscos `1.1` e `1.3`.
 - [ ] **Blindagem Financeira e de Reposições (T05 — Item `3.1`)**: lacunas inventariadas nas regras financeiras/reposições e os 2 gatilhos otimistas de reposição (enviar para reposição e reagendar reposição) cobertos por testes automatizados provados por mutação.
@@ -103,8 +103,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 ## 8. Baseline
 
-- **Estado da branch e do working tree na abertura**: branch `main` em `429386a`, working tree limpo antes do T00.
-- **Suíte medida na base (`429386a`)**: Frontend `481/481` passando; Backend `245/245` passando (medição de fechamento do PR #77/#78; reexecutar e medir antes do primeiro cartão de código T01).
+- **Estado da branch e do working tree na abertura**: branch `main` em `429386a` antes do T00; branch `feat/confiabilidade-gcal-testes-alunos` criada em `20a85a9` com working tree limpo antes do T01.
+- **Suíte medida na base (`20a85a9`)**: Frontend medida antes do T01 em `487/487` passando (`tests-frontend/`), e após o T01 em `491/491` passando. Backend medida na abertura em `245/245` passando (será remedida antes do T02).
 - **Condição de parada se o baseline divergir**: se qualquer uma das suítes (`tests-frontend/` ou `backend/`) falhar na base limpa antes de iniciar um cartão de código, interromper a execução e reportar ao dono.
 
 ---
@@ -154,7 +154,7 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
   3. Novo endpoint autenticado (declarado antes de rotas `/:id`, regra 4.4, filtrado por `ownerEmail`, regra 4.1) para processar os agendamentos com `gcalStatus: 'pendente'` e os itens da `GcalReconciliationQueue` do `ownerEmail`, retornando os `googleCalendarEventId` criados/atualizados e as flags `gcalSyncFailed` / `tokenExpired` / `needsReconnect`.
   4. Em `storage.js` (`_sincronizarAgendamentosViaCRUD`): disparar o flush ao final do envio dos agendamentos modificados/excluídos, mesclando os `googleCalendarEventId` retornados no estado local e mantendo exatamente o mesmo contrato de toasts de falha parcial (`gcalSyncFailed`).
 - **Não inclui**: alterar webhooks do Google Calendar, credenciais OAuth ou regras financeiras.
-- **Decisões pendentes / bloqueios**: confirmar aviso de área sensível (`gcalSyncService.js` / `agendamentoController.js`) antes de editar.
+- **Decisões pendentes / bloqueios**: nenhum — aviso de área sensível (`gcalSyncService.js` / `agendamentoController.js`) confirmado pelo dono antes da edição.
 - **Critérios de aceite**:
   - `POST`/`PUT`/`DELETE /api/agendamentos` não invocam a API do Google dentro da própria requisição CRUD;
   - Falha transitória do Google durante uma exclusão não mantém o agendamento vivo no MongoDB;
@@ -252,7 +252,12 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 | Mutação aplicada | Teste que deve falhar | Resultado observado | Restaurado? |
 |---|---|---|---|
-| `não executado` (aguardando início do T01) | — | — | — |
+| **M1 (T01 — `google-identity.js`)**: aceitar `perfilFallback` sem validar igualdade do `email` com o JWT e manter `_profile = perfilEmCache` quando `gis_session_cache` está ausente | `T01-01` e `T01-02` em `tests-frontend/t01-sessao-boot-gcal.test.js` | Ambos falharam (`T01-01`: retornou `ana@example.com` em vez de `bia@example.com`; `T01-02`: manteve perfil residual com sessão ausente) | Sim |
+| **M2 (T01 — `bootstrap.js`)**: remover guarda de idempotência `ownerEmail === ultimoOwnerEmailGCal` e omitir disparo de `renovarCanalGoogleCalendar` na restauração de sessão em `addAuthChangeListener` | `T01-03` e `T01-04` em `tests-frontend/t01-sessao-boot-gcal.test.js` | Ambos falharam (`T01-03`: duplicou `iniciarSyncGoogleCalendarAutomatica` para a mesma conta; `T01-04`: `chamadasRenovarCanal` ficou vazio `[]` após restauração tardia) | Sim |
+| **M3 (T02 — `agendamentoController.js`)**: apagar o item da `GcalReconciliationQueue` também no ramo de erro `5xx`/rede do flush, eliminando a retenção do Outbox | `excluirAgendamento apaga do Mongo imediatamente e quando o Google falha com 500 no flush mantém item na GcalReconciliationQueue e sinaliza gcalSyncFailed` | Falhou (`1/8`): a fila ficou vazia e o teste não encontrou o item retido | Sim |
+| **M4 (T02 — `agendamentoController.js`)**: desativar o upsert do Outbox em `excluirAgendamento` (`if (googleCalendarEventId && false)`), mantendo a deleção imediata no Mongo | `...enfileira na GcalReconciliationQueue e flush remove do Google`, `...trata 404/410 do Google como sucesso...` e `...quando o Google falha com 500...` | Falharam `3/8` (a ordem `['mongo','queue-outbox','google','queue-remove']` deixou de existir e a fila nunca foi populada) | Sim |
+| **M5 (T02 — `storage.js`)**: desativar o flush pós-CRUD (`if (precisaFlushGcal && false)`) | `T02-01` e `T02-02` em `tests-frontend/t02-flush-gcal-storage.test.js` | Ambos falharam (`0/2`): nenhuma chamada a `POST /api/agendamentos/flush-gcal` e `gcalSyncFailed` não propagado | Sim |
+| **M6 (T02 — `storage.js`)**: manter o flush mas remover a mesclagem de `googleCalendarEventId` retornado por ele | `T02-01` em `tests-frontend/t02-flush-gcal-storage.test.js` | Falhou (`1/2`): o agendamento local ficou sem `googleCalendarEventId`, enquanto `T02-02` (que não depende da mesclagem) continuou passando | Sim |
 
 ---
 
@@ -269,6 +274,32 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - **Suíte antes/depois**: `não executado` (alteração estritamente documental).
 - **Desvio do plano**: na primeira resposta do Passo 0, as decisões haviam sido registradas apenas no `roadmap-v3.md` sem criar o documento de plano em `docs/plans/`; corrigido imediatamente a pedido do dono com a criação deste plano completo seguindo `plan.template.md`.
 - **Decisão adicional tomada**: continuar na branch `main` para o registro documental do T00.
+
+### 2026-10-27 — T01 (Blindar cache de sessão/perfil e consolidar gatilhos de sincronização no boot)
+- **Arquivos alterados**:
+  - `assets/js/auth/google-identity.js`: adicionada `_derivarPerfilDoToken(token, perfilFallback)` e decodificação UTF-8 segura em `_decodeJwtPayload`; `_restoreCachedSession` e `_persistSession` passam a derivar `_profile` diretamente do JWT válido em `gis_session_cache`, aproveitando `gis_profile_cache` apenas quando pertence ao mesmo `email` e limpando `gis_profile_cache` sempre que `gis_session_cache` estiver ausente, inválido ou expirado; `isSignedIn`, `getOwnerEmail` e `getProfile` também passam a verificar expiração do token;
+  - `assets/js/app-shell/bootstrap.js`: substituídos os disparos separados de `dispararVerificacaoCanalGCal` e `iniciarSyncGoogleCalendarAutomatica` por `coordenarGCalParaSessao`, idempotente por `ownerEmail` entre boot, `iniciarSyncBoot` e `addAuthChangeListener`, e sincronizado `ultimoOwnerEmail` após `googleIdentity.initialize()` para impedir reexecução duplicada quando o GIS confirma a mesma sessão já restaurada do cache;
+  - `tests-frontend/t01-sessao-boot-gcal.test.js` (criado): 4 testes cobrindo divergência entre `gis_profile_cache` (conta A) e `gis_session_cache` (conta B), limpeza de `gis_profile_cache` quando `gis_session_cache` está ausente/expirado, idempotência no boot autenticado e disparo único de status + `webhook/renew` na restauração tardia de sessão e troca de conta;
+  - `docs/plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md`: atualizado com baseline medido, prova por mutação e registro do T01.
+- **Resultado**: T01 concluído e validado por testes automatizados, prova por mutação e mock local.
+- **Suíte antes/depois**: `tests-frontend/` antes `487/487` passando → depois `491/491` passando.
+- **Desvio do plano**: nenhum.
+- **Decisão adicional tomada**: criada branch `feat/confiabilidade-gcal-testes-alunos` a partir de `origin/main` (`--no-track`), autorizadas as áreas sensíveis (§7) e definido pelo dono executar apenas o T01 nesta rodada.
+
+### 2026-11-03 — T02 (GCal fora do caminho crítico do CRUD com Outbox no `DELETE`)
+- **Arquivos alterados**:
+  - `backend/src/controllers/agendamentoController.js`: `criarAgendamento` e `atualizarAgendamento` gravam com `gcalStatus: 'pendente'` (preservando a guarda de estado terminal `gcalSyncPausado`) e respondem 200 sem chamar `googleapis`; `excluirAgendamento` apaga do Mongo imediatamente e faz upsert de `{ ownerEmail, action: 'delete', googleCalendarEventId, agendamentoId }` em `GcalReconciliationQueue`, devolvendo `queuedForGcalDelete`; novo `sincronizarPendentesGcal` processa a fila de deleções e os agendamentos pendentes do `ownerEmail`, limpando a fila em `200/204/404/410` e retendo o item com `gcalSyncFailed: true` em `5xx`/rede;
+  - `backend/src/routes/agendamentoRoutes.js`: `POST /flush-gcal` declarado **antes** de `router.route('/:id')` (regra 4.4);
+  - `backend/src/services/gcalSyncService.js`: `reconcileAndSyncRetroactiveAppointments` passou a varrer também `{ gcalStatus: 'pendente' }` e o `deleteOne` da `GcalReconciliationQueue` deixou de descartar itens em erro `5xx`;
+  - `assets/js/storage.js`: `_sincronizarAgendamentosViaCRUD` dispara `POST /api/agendamentos/flush-gcal` ao final do batch quando houve `gcalStatus: 'pendente'` ou `queuedForGcalDelete: true`, mescla os `googleCalendarEventId` retornados e propaga `gcalSyncFailed`; `_normalizarAgendamentoParaComparacao` e `_removerCamposPendenciaGcalDoAgendamento` ignoram/limpam `gcalStatus` para não gerar diff falso entre `sincronizado`/`desconectado` e o estado local;
+  - `mocks/ui-runtime/mock-runtime.js`: simula `POST /api/agendamentos/flush-gcal` e devolve `gcalStatus: 'pendente'`/`queuedForGcalDelete` nos cenários `otimistaSucesso`, `otimistaFalha` e `otimistaGCalFalha`;
+  - `backend/test/gcal-duplicata-fix.test.js`, `backend/test/gcal-login-fallback.test.js` e `backend/test/gcal-sync.test.js`: 13 testes de controller alinhados à arquitetura `CRUD + sincronizarPendentesGcal` e 5 asserções de rollback otimista atualizadas para o contrato pós-PR #77 (`obterPendencia() === null` e `semOperacoes() === true`);
+  - `tests-frontend/t02-flush-gcal-storage.test.js` (criado): `T02-01` (flush após `POST` pendente, ordem `POST → flush` e mesclagem do `googleCalendarEventId`) e `T02-02` (flush após `DELETE` com `queuedForGcalDelete`, propagação de `gcalSyncFailed` e toast de aviso);
+  - `docs/plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md`: atualizado com este registro, as mutações M3–M6 e o fechamento do cartão.
+- **Resultado**: T02 concluído; nenhum `POST`/`PUT`/`DELETE` de agendamento chama a API do Google dentro da própria requisição e a falha transitória do Google na exclusão não ressuscita o agendamento no MongoDB.
+- **Suíte antes/depois**: `backend/` antes `240/245` (5 falhas pré-existentes em `gcal-duplicata-fix.test.js` por asserções defasadas do PR #77) → baseline ajustada `245/245` → depois `245/245` passando; `tests-frontend/` antes `491/491` → depois `493/493` passando.
+- **Desvio do plano**: as 5 falhas encontradas no baseline do `backend/` não eram do T02 — vinham de asserções de rollback otimista anteriores ao PR #77. Com autorização do dono, foram atualizadas no lugar em vez de ignoradas, porque cobrem rollback de série (`occurrence` e `fromDate`) que nenhuma outra suíte exercita.
+- **Decisão adicional tomada**: o flush em `storage.js` só dispara quando a resposta do CRUD traz `gcalStatus: 'pendente'` ou `queuedForGcalDelete: true`, o que mantém compatibilidade com harnesses sintéticos de teste que não conhecem a rota nova.
 
 ---
 
@@ -295,8 +326,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: `em andamento` (apenas T00 concluído).
-- **Implementação / validação / aceite / publicação**: T00 implementado e validado localmente; T01–T06 pendentes de execução.
-- **Pendências**: executar T01 a T06 conforme autorização do dono.
+- **Critérios atendidos**: `em andamento` (T00, T01 e T02 concluídos).
+- **Implementação / validação / aceite / publicação**: T00, T01 e T02 implementados e validados localmente; T03–T06 pendentes de execução.
+- **Pendências**: executar T03 a T06 nas próximas rodadas. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção.
 - **Riscos aceitos**: nenhum adicional até o momento.
 - **Data de fechamento**: `em aberto`

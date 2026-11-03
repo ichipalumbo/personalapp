@@ -1580,16 +1580,20 @@ async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
     for (const item of pendingActions) {
       try {
         if (item.action === 'delete') {
+          let deveRemoverDaFila = true;
           try {
             await module.exports.deleteEventFromGoogle(normalizedOwnerEmail, item.googleCalendarEventId);
           } catch (err) {
             const status = err && (err.statusCode || err.status);
             if (status !== 404 && status !== 410) {
+              deveRemoverDaFila = false;
               console.warn(`[GcalSync] Falha ao conciliar exclusão de ${item.googleCalendarEventId}:`, err.message);
             }
           }
-          await GcalReconciliationQueue.deleteOne({ _id: item._id });
-          reconciledDeletions++;
+          if (deveRemoverDaFila) {
+            await GcalReconciliationQueue.deleteOne({ _id: item._id });
+            reconciledDeletions++;
+          }
         } else if (item.action === 'update') {
           const agendamento = await Agendamento.findOne({ ownerEmail: normalizedOwnerEmail, id: item.agendamentoId });
           if (agendamento) {
@@ -1642,6 +1646,7 @@ async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
       source: { $ne: 'google_external' },
       $or: [
         { gcalStatus: 'desconectado' },
+        { gcalStatus: 'pendente' },
         { gcalStatus: { $exists: false } },
         { googleCalendarEventId: null }
       ]

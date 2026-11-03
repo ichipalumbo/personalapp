@@ -189,14 +189,18 @@ test('classificarEventoDeLeitura faz upsert de evento externo ativo sem extended
   }), 'upsert');
 });
 
-test('atualizarAgendamento enriquece o payload do Google com alunoNome e objetivo antes do update', async () => {
+test('atualizarAgendamento + flush enriquece o payload do Google com alunoNome e objetivo antes do update', async () => {
   const controllerPath = require.resolve('../src/controllers/agendamentoController');
   const gcalSyncService = require('../src/services/gcalSyncService');
+  const GcalReconciliationQueue = require('../src/models/GcalReconciliationQueue');
   const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
   const originalFindOneAndUpdate = Agendamento.findOneAndUpdate;
   const originalFindOne = Agendamento.findOne;
+  const originalFind = Agendamento.find;
+  const originalFindQueue = GcalReconciliationQueue.find;
   const originalAlunoFindOne = Aluno.findOne;
   const corpoResposta = {};
+  let docPersistido = null;
 
   try {
    delete require.cache[controllerPath];
@@ -217,25 +221,27 @@ test('atualizarAgendamento enriquece o payload do Google com alunoNome e objetiv
        googleCalendarEventId: 'evt-123'
      })
    });
-   Agendamento.findOneAndUpdate = async (query, update, options) => {
-     if (query && query.id === 'ag-200') {
-       return {
-         id: 'ag-200',
-         alunoId: 'al-111',
-         data: '2026-08-25',
-         horarioInicio: '09:00',
-         horarioFim: '10:00',
-         tipo: 'aula',
-         googleCalendarEventId: 'evt-123'
-       };
-     }
-     return { id: 'ag-200', googleCalendarEventId: 'evt-789' };
+   Agendamento.find = async () => (docPersistido ? [docPersistido] : []);
+   GcalReconciliationQueue.find = async () => [];
+   Agendamento.findOneAndUpdate = async (query, update) => {
+     docPersistido = {
+       ...(docPersistido || {}),
+       id: 'ag-200',
+       alunoId: 'al-111',
+       data: '2026-08-25',
+       horarioInicio: '09:00',
+       horarioFim: '10:00',
+       tipo: 'aula',
+       googleCalendarEventId: 'evt-123',
+       ...(update && update.$set ? update.$set : {})
+     };
+     return docPersistido;
    };
    Aluno.findOne = () => ({
      lean: async () => ({ id: 'al-111', nome: 'João', objetivo: 'Hipertrofia' })
    });
 
-   const { atualizarAgendamento } = require('../src/controllers/agendamentoController');
+   const { atualizarAgendamento, sincronizarPendentesGcal } = require('../src/controllers/agendamentoController');
    const req = {
      params: { id: 'ag-200' },
      body: {
@@ -249,6 +255,7 @@ test('atualizarAgendamento enriquece o payload do Google com alunoNome e objetiv
      auth: { ownerEmail: 'joao@example.com' }
    };
    const res = {
+     status() { return this; },
      json: (body) => {
        corpoResposta.response = body;
        return body;
@@ -256,16 +263,25 @@ test('atualizarAgendamento enriquece o payload do Google com alunoNome e objetiv
    };
 
    await atualizarAgendamento(req, res);
+   assert.equal(corpoResposta.payload, undefined, 'PUT não deve chamar Google sincronamente');
+   assert.equal(corpoResposta.response.alunoNome, undefined);
+   assert.equal(corpoResposta.response.objetivo, undefined);
+
+   const resFlush = {
+     status() { return this; },
+     json: (body) => body
+   };
+   await sincronizarPendentesGcal(req, resFlush);
 
    assert.equal(corpoResposta.payload.alunoNome, 'João');
    assert.equal(corpoResposta.payload.objetivo, 'Hipertrofia');
    assert.equal(montarTituloEvento(corpoResposta.payload), 'Hipertrofia - João');
-   assert.equal(corpoResposta.response.alunoNome, undefined);
-   assert.equal(corpoResposta.response.objetivo, undefined);
   } finally {
    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
    Agendamento.findOneAndUpdate = originalFindOneAndUpdate;
    Agendamento.findOne = originalFindOne;
+   Agendamento.find = originalFind;
+   GcalReconciliationQueue.find = originalFindQueue;
    Aluno.findOne = originalAlunoFindOne;
    delete require.cache[controllerPath];
   }

@@ -99,12 +99,39 @@
 
             const base64Url = parts[1].replace(/-/g, '+').replace(/_/g, '/');
             const padded = base64Url + '='.repeat((4 - (base64Url.length % 4)) % 4);
-            const json = global.atob(padded);
+            const binary = global.atob(padded);
+            let json = binary;
+            try {
+                json = decodeURIComponent(escape(binary));
+            } catch (_) {}
             return JSON.parse(json);
         } catch (error) {
             console.warn('[auth] Falha ao decodificar JWT do Google:', error);
             return null;
         }
+    }
+
+    function _derivarPerfilDoToken(token, perfilFallback) {
+        const payload = _decodeJwtPayload(token);
+        if (!payload || typeof payload.email !== 'string' || !payload.email.trim()) {
+            return null;
+        }
+
+        const email = payload.email.trim();
+        const emailNormalizado = email.toLowerCase();
+        const fallbackCompativel = perfilFallback
+            && typeof perfilFallback === 'object'
+            && typeof perfilFallback.email === 'string'
+            && perfilFallback.email.trim().toLowerCase() === emailNormalizado
+            ? perfilFallback
+            : null;
+
+        return {
+            name: payload.name || (fallbackCompativel && fallbackCompativel.name) || '',
+            email: email,
+            picture: payload.picture || (fallbackCompativel && fallbackCompativel.picture) || '',
+            sub: payload.sub || (fallbackCompativel && fallbackCompativel.sub) || ''
+        };
     }
 
     function _showAuthMessage(message, level) {
@@ -204,58 +231,40 @@
         }
     }
 
-    function _restoreCachedProfile() {
+    function _lerPerfilCacheBruto() {
         try {
             const raw = localStorage.getItem(PROFILE_CACHE_KEY);
             if (!raw) {
-                return;
+                return null;
             }
 
             const parsed = JSON.parse(raw);
-            if (parsed && parsed.email) {
-                _profile = parsed;
+            if (parsed && typeof parsed.email === 'string' && parsed.email.trim()) {
+                return parsed;
             }
+            return null;
         } catch (error) {
             console.warn('[auth] Falha ao restaurar perfil em cache:', error);
+            return null;
         }
     }
 
     function _lerExpiracaoDoToken(token) {
-        try {
-            const partes = String(token).split('.');
-            if (partes.length < 2) {
-                return 0;
-            }
-
-            const base64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
-            const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
-            if (!payload || typeof payload.exp !== 'number') {
-                return 0;
-            }
-
-            return payload.exp * 1000;
-        } catch (_) {
+        const payload = _decodeJwtPayload(token);
+        if (!payload || typeof payload.exp !== 'number') {
             return 0;
         }
+
+        return payload.exp * 1000;
     }
 
     function _lerEmailDoToken(token) {
-        try {
-            const partes = String(token).split('.');
-            if (partes.length < 2) {
-                return '';
-            }
-
-            const base64 = partes[1].replace(/-/g, '+').replace(/_/g, '/');
-            const payload = JSON.parse(decodeURIComponent(escape(atob(base64))));
-            if (!payload || typeof payload.email !== 'string') {
-                return '';
-            }
-
-            return payload.email.trim().toLowerCase();
-        } catch (_) {
+        const payload = _decodeJwtPayload(token);
+        if (!payload || typeof payload.email !== 'string') {
             return '';
         }
+
+        return payload.email.trim().toLowerCase();
     }
 
     function _tokenAindaValido(expiraEm) {
@@ -266,60 +275,77 @@
         return expiraEm - Date.now() > TOKEN_SKEW_MS;
     }
 
-    function _persistSession(token) {
+    function _persistSession(token, perfilOpcional) {
         try {
             if (!token) {
                 localStorage.removeItem(SESSION_CACHE_KEY);
+                _persistProfile(null);
                 return;
             }
 
             const expiraEm = _lerExpiracaoDoToken(token);
-            if (!_tokenAindaValido(expiraEm)) {
+            const perfilDerivado = _derivarPerfilDoToken(token, perfilOpcional || _profile);
+            if (!_tokenAindaValido(expiraEm) || !perfilDerivado) {
                 localStorage.removeItem(SESSION_CACHE_KEY);
+                _persistProfile(null);
                 return;
             }
 
             localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({
                 idToken: token,
                 expiraEm: expiraEm,
-                email: _lerEmailDoToken(token)
+                email: perfilDerivado.email.toLowerCase(),
+                profile: perfilDerivado
             }));
+            _persistProfile(perfilDerivado);
         } catch (error) {
             console.warn('[auth] Não foi possível persistir a sessão:', error);
         }
     }
 
     function _restoreCachedSession() {
+        const perfilEmCache = _lerPerfilCacheBruto();
         try {
             const raw = localStorage.getItem(SESSION_CACHE_KEY);
             if (!raw) {
+                _idToken = null;
+                _idTokenExpiraEm = 0;
+                _profile = null;
+                if (perfilEmCache) {
+                    _persistProfile(null);
+                }
                 return;
             }
 
             const cache = JSON.parse(raw);
-            if (!cache || !cache.idToken || !_tokenAindaValido(cache.expiraEm)) {
-                localStorage.removeItem(SESSION_CACHE_KEY);
-                return;
-            }
+            const expiraEm = cache && typeof cache.expiraEm === 'number'
+                ? cache.expiraEm
+                : _lerExpiracaoDoToken(cache && cache.idToken);
+            const perfilDerivado = cache && cache.idToken
+                ? _derivarPerfilDoToken(cache.idToken, (cache && cache.profile) || perfilEmCache)
+                : null;
 
-            const emailPerfil = _profile && _profile.email
-                ? String(_profile.email).trim().toLowerCase()
-                : '';
-
-            if (emailPerfil && cache.email && cache.email !== emailPerfil) {
-                console.warn('[auth] Cache de sessão pertence a outra conta. Descartando sessão e perfil.');
+            if (!cache || !cache.idToken || !_tokenAindaValido(expiraEm) || !perfilDerivado) {
                 localStorage.removeItem(SESSION_CACHE_KEY);
                 _persistProfile(null);
+                _idToken = null;
+                _idTokenExpiraEm = 0;
                 _profile = null;
                 return;
             }
 
             _idToken = cache.idToken;
-            _idTokenExpiraEm = cache.expiraEm;
+            _idTokenExpiraEm = expiraEm;
+            _profile = perfilDerivado;
+            _persistProfile(_profile);
             console.info('[auth] Sessão restaurada do dispositivo.');
         } catch (error) {
             console.warn('[auth] Cache de sessão inválido. Descartando.', error);
             localStorage.removeItem(SESSION_CACHE_KEY);
+            _persistProfile(null);
+            _idToken = null;
+            _idTokenExpiraEm = 0;
+            _profile = null;
         }
     }
 
@@ -469,8 +495,8 @@
             return;
         }
 
-        const payload = _decodeJwtPayload(response.credential);
-        if (!payload || !payload.email) {
+        const perfilDerivado = _derivarPerfilDoToken(response.credential, null);
+        if (!perfilDerivado) {
             console.warn('[auth] Credencial do Google sem email utilizável.');
             _markReady();
             return;
@@ -478,15 +504,8 @@
 
         _idToken = response.credential;
         _idTokenExpiraEm = _lerExpiracaoDoToken(_idToken);
-        _persistSession(_idToken);
-        _profile = {
-            name: payload.name || '',
-            email: payload.email || '',
-            picture: payload.picture || '',
-            sub: payload.sub || ''
-        };
-
-        _persistProfile(_profile);
+        _profile = perfilDerivado;
+        _persistSession(_idToken, _profile);
         _updateUi();
         _notifyAuthListeners();
         _markReady();
@@ -1186,7 +1205,6 @@
         }
 
         _initialized = true;
-        _restoreCachedProfile();
         _restoreCachedSession();
         _restoreCalendarStatusCache();
         _updateUi();
@@ -1234,7 +1252,10 @@
         initialize: initialize,
         whenReady: whenReady,
         isSignedIn: function () {
-            return !!_idToken;
+            if (_idToken && _idTokenExpiraEm && !_tokenAindaValido(_idTokenExpiraEm)) {
+                return false;
+            }
+            return !!(_idToken && _profile && _profile.email);
         },
         getIdToken: function () {
             if (_idToken && _idTokenExpiraEm && !_tokenAindaValido(_idTokenExpiraEm)) {
@@ -1244,11 +1265,17 @@
             return _idToken;
         },
         getOwnerEmail: function () {
+            if (_idToken && _idTokenExpiraEm && !_tokenAindaValido(_idTokenExpiraEm)) {
+                return null;
+            }
             return _idToken && _profile && _profile.email
                 ? String(_profile.email).toLowerCase()
                 : null;
         },
         getProfile: function () {
+            if (_idToken && _idTokenExpiraEm && !_tokenAindaValido(_idTokenExpiraEm)) {
+                return null;
+            }
             return _profile ? { ..._profile } : null;
         },
         signOut: _performSignOut,
