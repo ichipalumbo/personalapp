@@ -2220,8 +2220,13 @@ document.addEventListener("DOMContentLoaded", () => {
         { acao: "reagendar-reposicao", agendamento: novoCompromisso, reposicaoId: repObj.id, status: "agendada" });
       if (!op) { await apresentarRecuperacaoSlot(); return; }
       let escritaConfirmada = false;
+      let _snapshotAulasReposicao = null;
       try {
         if (!window.contextoDados.operacaoAtual(op)) return;
+        _snapshotAulasReposicao = aulas.map((a) => ({
+          ...a,
+          excecoes: Array.isArray(a.excecoes) ? [...a.excecoes] : a.excecoes,
+        }));
         aulas.push(novoCompromisso);
         if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
         const salvar =
@@ -2323,6 +2328,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (!window.contextoDados.operacaoAtual(op)) return;
         if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
+        if (Array.isArray(_snapshotAulasReposicao)) {
+          aulas.splice(0, aulas.length, ..._snapshotAulasReposicao);
+          if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
+          window.log.warn("[reposicao]", "Rollback somente local; recuperação pendente", {
+            id: novoCompromisso.id,
+            motivo:
+              erro && erro.message
+                ? erro.message
+                : "falha_reagendamento_reposicao",
+          });
+        }
         if (typeof mostrarToast === "function") {
           mostrarToast(
             erro && erro.message

@@ -74,10 +74,11 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: baixo–médio.
 - **Referência**: [plano da frente (T03)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de GCal, seção 5.2](specs/gcal-sync.md) e [aprendizados, seção 1.1](reference/lessons-learned.md).
 
-### [ ] 3.1 Ampliar a cobertura das regras financeiras
+### [x] 3.1 Ampliar a cobertura das regras financeiras
 
 - **Resultado esperado**: identificar e cobrir casos financeiros e de reposição ainda sem proteção automatizada, incluindo os 2 gatilhos otimistas de reposição pendentes do T02, reduzindo risco de cobrança incorreta.
 - **Próximo passo**: inventariar as lacunas reais da suíte atual e definir os casos de aceite; não usar contagens históricas como diagnóstico de cobertura.
+- **Entrega (2026-11-03)**: T05 executado no plano da frente. Sete lacunas inventariadas e cobertas — `listarFinancasDoOwner` (isolamento por `ownerEmail`, exclusão de Consultoria Online, card `configuracaoPendente`, `historicoDisponivel` e ordenação por status), `obterHistoricoFinancasPorAluno` (sem ciclos, aluno fora do escopo, exclusão do ciclo vigente), `recalcularStatusCiclo` nos quatro estados, `obterMensagemFalhaPersistencia` em todas as mensagens e fallbacks, o filtro privado de reposições por aluno/status via `agruparHistoricoReposicoes`, e os gatilhos otimistas de enviar para reposição e reagendar reposição (incluindo o rollback que faltava no reagendamento). Cada teste novo foi provado por mutação.
 - **Situação atual**: existe cobertura de negócio no backend e cobertura parcial de lógica/DOM no frontend. Render do Dia, conflitos, modais e mutações otimistas de agenda/aluno receberam testes nos itens 0.12 e 5.11; isso não equivale a cobertura visual completa.
 - **Esforço**: baixo, sujeito ao inventário; sem dependência de implantação de ambiente.
 - **Referência**: [plano da frente (T05)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de Finanças](specs/financas-ciclo-cobranca.md), [spec de Reposições](specs/reposicoes-e-competencia.md), [plano de cobertura frontend encerrado](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md), [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md) e [execução das suítes](setup-ambiente-local.md).
@@ -175,6 +176,7 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 2.2 | `[x]` | Perfil derivado do JWT e gatilhos de boot/auth-change consolidados; CRUD de agendamento desacoplado do Google com flush dedicado e Outbox no `DELETE` | [Plano da frente (T01–T02)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) e [spec de GCal](specs/gcal-sync.md) |
 | 2.3 | `[x]` | Full sync com janela `[-1 mês, +6 meses]` e precedência da data base unificada em módulo compartilhado (Risco 1.1 encerrado) | [Plano da frente (T03)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) e [spec de GCal, 9.14.1](specs/gcal-sync.md) |
 | 2.4 | `[x]` | Revalidação segura do cache no boot, publicada pelo PR #70 | [Contratos](specs/financas-ciclo-cobranca.md) e [plano/aceite B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) |
+| 3.1 | `[x]` | Lacunas financeiras/reposições cobertas e gatilhos otimistas de reposição testados, incluindo o rollback que faltava no reagendamento | [Plano da frente (T05)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) |
 | 3.2 | `[x]` | Backend executável localmente | [Setup](setup-ambiente-local.md) |
 | 3.3 | `[x]` | Frontend local com configuração de API local | [Setup](setup-ambiente-local.md) |
 | 3.4 | `[x]` | Banco de desenvolvimento separado | [Setup](setup-ambiente-local.md) |

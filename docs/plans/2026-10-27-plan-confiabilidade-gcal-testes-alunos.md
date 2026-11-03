@@ -28,7 +28,7 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - [x] **GCal fora do caminho crítico na Vercel (T02 — antigo `T04`)**: `POST`/`PUT`/`DELETE /api/agendamentos` confirmam imediatamente no MongoDB (`gcalStatus: 'pendente'` em criações/edições; deleção imediata no Mongo + registro em `GcalReconciliationQueue` pelo **Outbox Pattern** no `DELETE`); flush dedicado pós-save sincroniza os itens pendentes com o Google Calendar sem risco de congelamento de Lambda na Vercel e mantém os toasts de falha parcial (`gcalSyncFailed` / `tokenExpired`).
 - [x] **Janela de Full Sync e Data Base (T03 — Item `2.3` + Risco `1.1`)**: modo full de `listCalendarEvents` ampliado de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]`, com reconciliação restrita à mesma janela; `gcalSyncService.js` alinhado à precedência canônica de data base de `recurrence-helpers.js` (`dataCriacao || recorrenciaDataInicio || data`), sem alterar o motor financeiro.
 - [x] **Contratos e Riscos (T04)**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md) e [`docs/reference/lessons-learned.md`](../reference/lessons-learned.md) atualizados refletindo o desacoplamento do CRUD, o Outbox no `DELETE`, a nova janela `[-1m, +6m]` e o encerramento dos riscos `1.1` e `1.3`.
-- [ ] **Blindagem Financeira e de Reposições (T05 — Item `3.1`)**: lacunas inventariadas nas regras financeiras/reposições e os 2 gatilhos otimistas de reposição (enviar para reposição e reagendar reposição) cobertos por testes automatizados provados por mutação.
+- [x] **Blindagem Financeira e de Reposições (T05 — Item `3.1`)**: lacunas inventariadas nas regras financeiras/reposições e os 2 gatilhos otimistas de reposição (enviar para reposição e reagendar reposição) cobertos por testes automatizados provados por mutação — incluindo o rollback local que faltava no reagendamento de reposição.
 - [ ] **Operação Rápida em Alunos (T06 — Itens `1.7` e `1.4`)**: busca textual instantânea somente por nome na lista de alunos (`1.7`) e botão de atalho WhatsApp (`wa.me/55...` para números nacionais de 10–11 dígitos, oculto/desabilitado quando telefone ausente ou inválido, `1.4`).
 - [ ] **Segurança e Isolamento**: toda query e fila (`Agendamento`, `GcalReconciliationQueue`, `GoogleCalendarConnection`) estritamente filtrada por `ownerEmail` via `getOwnerEmailOrThrow(req)` (regra 4.1).
 - [ ] **Regressão e Validação Visual**: suítes de backend (`backend/`) e frontend (`tests-frontend/`) medidas antes e depois de cada cartão aplicável, com prova por mutação para todo teste novo; validação visual no mock no viewport de referência `433×762`, `DPR 2.81`.
@@ -209,7 +209,7 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - **Decisões pendentes / bloqueios**: nenhum.
 - **Critérios de aceite**: todos os testes novos passam no código atual e falham quando a mutação correspondente é introduzida; item `3.1` atualizado no roadmap.
 - **Validação**: suítes `backend/` e `tests-frontend/` antes e depois, com tabela de mutações preenchida na §11.
-- **Riscos e rollback**: zero risco em produção (apenas arquivos de teste); rollback por `git revert`.
+- **Riscos e rollback**: o cartão nasceu como "apenas arquivos de teste"; a correção autorizada do rollback do reagendamento em `modal-acao-slot.js` mantém o risco baixo (só restaura estado local no `catch`, sem escrita remota nova) e o rollback continua por `git revert`.
 - **Limite de tentativas**: 2.
 
 ---
@@ -261,6 +261,19 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 | **M7 (T03 — `gcalSyncService.js`)**: regredir `timeMax` do full sync de `+6` para `+2` meses | `T03-01` e `T03-02` em `backend/test/t03-janela-fullsync-data-base.test.js` | Ambos falharam (`2/5`, restaram 3 verdes): `timeMax` veio com ~61 dias em vez de ~182 | Sim |
 | **M8 (T03 — `gcalSyncService.js`)**: trocar `resolverDataBaseRecorrencia` para a precedência antiga (`recorrenciaDataInicio \|\| data \|\| dataCriacao`) | `T03-04` em `backend/test/t03-janela-fullsync-data-base.test.js` | Falhou (`1/5`): o RRULE saiu com `BYMONTH=4;BYMONTHDAY=20` (de `recorrenciaDataInicio`) em vez de `BYMONTH=3;BYMONTHDAY=15` (de `dataCriacao`) | Sim |
 | **M9 (T03 — `recurrence-helpers.js`)**: inverter a ordem do helper canônico para `data \|\| recorrenciaDataInicio \|\| dataCriacao` | `T03-03`, `T03-04` e `T03-05` em `backend/test/t03-janela-fullsync-data-base.test.js` | Falharam `3/5`: a precedência canônica e os dois consumidores no `gcalSyncService` divergiram | Sim |
+| **M10 (T05 — `reposicao-flow-helpers.js`)**: trocar o `motivo === 'falha_remota'` por um motivo inexistente, deixando a falha remota cair na mensagem genérica | `T05 — obterMensagemFalhaPersistencia distingue sessão expirada, falha remota e falha desconhecida` | Falhou (`1/9`): a mensagem de falha remota virou a genérica | Sim |
+| **M11 (T05 — `reposicao-flow-helpers.js`)**: remover o filtro `reposicao.alunoId === alunoId` de `obterReposicoesDoAluno` | `T05 — agruparHistoricoReposicoes ignora reposições de outro aluno e status fora do contrato` | Falhou (`1/9`): a reposição `r4` do `aluno-2` entrou no grupo `pendente` | Sim |
+| **M12 (T05 — `financasService.js`)**: trocar `hojeIso > ciclo.cicloFim` por `>=` em `calcularStatusCiclo` | `T05 — recalcularStatusCiclo: pago, atrasado, em aberto e null` | Falhou (`1/9`): o ciclo que vence hoje passou a ser `atrasado` | Sim |
+| **M13 (T05 — `financasService.js`)**: remover o filtro `aluno.objetivo !== "Consultoria Online"` de `listarFinancasDoOwner` | `T05 — listarFinancasDoOwner filtra todas as coleções por ownerEmail e exclui Consultoria Online` | Falhou (`1/9`): o card da Consultoria Online apareceu na listagem | Sim |
+| **M14 (T05 — `financasService.js`)**: fixar `historicoDisponivel: true` ignorando o resultado de `countDocuments` | `T05 — listarFinancasDoOwner sinaliza histórico com countDocuments (limit 1) e ordena por status` | Falhou (`1/9`): o card sem ciclos anteriores passou a anunciar histórico | Sim |
+| **M15 (T05 — `financasService.js`)**: usar `ciclos` direto em `obterHistoricoFinancasPorAluno` em vez de `filtrarHistoricoExcluindoCicloAtual` | `T05 — obterHistoricoFinancasPorAluno exclui o ciclo vigente e recalcula o status do ciclo pago` | Falhou (`1/9`): o histórico voltou com 2 ciclos (vigente incluído) | Sim |
+| **M16 (T05 — `financasService.js`)**: remover `ownerEmail` de `Aluno.find` e de `Aluno.findOne` (violação da regra 4.1) | `T05 — listarFinancasDoOwner filtra todas as coleções por ownerEmail...` e `T05 — obterHistoricoFinancasPorAluno devolve [] quando o aluno não pertence ao escopo` | Falharam `2/9`: os filtros observados deixaram de conter `ownerEmail` | Sim |
+| **M17 (T05 — `financasService.js`)**: consultar o aluno antes do `if (ciclos.length === 0) return []` | `T05 — obterHistoricoFinancasPorAluno devolve [] sem consultar o aluno quando não há ciclos` | Falhou (`1/9`): `Aluno.findOne` passou a ser chamado sem ciclos | Sim |
+| **M18 (T05 — `financasService.js`)**: fixar `configuracaoPendente = false` | `T05 — listarFinancasDoOwner marca configuracaoPendente...` e `T05 — listarFinancasDoOwner sinaliza histórico com countDocuments...` | Falharam `2/9`: o aluno sem `diaVencimento` passou a tentar criar ciclo | Sim |
+| **M19 (T05 — `modal-acao-slot.js`)**: remover a remoção otimista `aulas.splice(_idxReposicao, 1)` do envio para reposição (avulsa) | `T05 — envio para reposição (avulsa): a aula sai da agenda antes da persistência confirmar` | Falhou (`1/18`): a aula continuou na agenda antes da confirmação | Sim |
+| **M20 (T05 — `modal-acao-slot.js`)**: remover o rollback `aulas.splice(0, aulas.length, ..._snapshotAulasReposicao)` do envio para reposição | `T05 — envio para reposição (avulsa): falha na persistência devolve a aula para a agenda` | Falhou (`1/18`): a agenda ficou vazia após a falha | Sim |
+| **M21 (T05 — `modal-acao-slot.js`)**: remover o `aulas.push(novoCompromisso)` otimista do reagendamento de reposição | `T05 — reagendamento de reposição: a aula nova entra na agenda antes da persistência confirmar` | Falhou (`1/18`): a aula da reposição não apareceu antes da escrita | Sim |
+| **M22 (T05 — `modal-acao-slot.js`)**: remover o bloco de rollback `if (Array.isArray(_snapshotAulasReposicao))` recém-adicionado ao reagendamento | `T05 — reagendamento de reposição: falha na persistência devolve a agenda ao estado anterior` | Falhou (`1/18`): a aula fantasma permaneceu na agenda após a falha | Sim |
 
 ---
 
@@ -326,6 +339,18 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - **Desvio do plano**: o cartão listava as seções 5.2, 6, 7 e 9.14. Também foram ajustadas 3.2, 3.3, 5.1.2, 5.1.3, 5.1.5, 8, 9.4 e 11 — todas descreviam o comportamento antigo e ficariam contradizendo o novo contrato dentro da mesma spec, o que violaria o critério de "specs consistentes". Nenhuma regra de produto nova foi criada.
 - **Decisão adicional tomada**: os riscos encerrados foram preservados com o mesmo número (1.1 e 1.3) numa seção própria, em vez de apagados, para que as referências existentes no roadmap e em outros documentos continuem apontando para o registro correto.
 
+### 2026-11-03 — T05 (Lacunas de testes financeiros/reposições + gatilhos otimistas de reposição)
+- **Arquivos alterados**:
+  - `backend/test/t05-lacunas-financeiro-reposicoes.test.js` (criado): 9 testes com stubs de model (o padrão já usado em `financas-pure.test.js`) — `listarFinancasDoOwner` com isolamento por `ownerEmail` em todos os quatro acessos (`Aluno.find`, `Agendamento.find`, `Reposicao.find`, `CicloFinanceiro.findOne`/`countDocuments`), exclusão de `Consultoria Online`, card `configuracaoPendente` sem consultar ciclo, `historicoDisponivel` vindo de `countDocuments({..., limit: 1})` e ordenação por status; `obterHistoricoFinancasPorAluno` sem ciclos (não consulta o aluno), com aluno fora do escopo e excluindo o ciclo vigente com recálculo de status persistido; `recalcularStatusCiclo` nos quatro estados (incluindo "vence hoje" não sendo atrasado); `obterMensagemFalhaPersistencia` nas três mensagens e nos fallbacks de motivo ausente/não-string; `agruparHistoricoReposicoes` filtrando aluno estrangeiro e status fora de `STATUS_REPOSICAO` (caminho que cobre `obterReposicoesDoAluno`, que não é exportado);
+  - `tests-frontend/modal-acao-slot.test.js`: cabeçalho atualizado (reposição deixou de ser "fora do escopo") e 4 testes novos reusando o harness jsdom existente — envio para reposição (avulsa) com a aula saindo da agenda antes da persistência confirmar, rollback quando a persistência falha, reagendamento de reposição com a aula nova entrando na agenda antes da confirmação e rollback do reagendamento. O markup real de `modalReagendarAula` passou a ser extraído do `index.html`;
+  - `assets/js/modal-acao-slot.js`: o reagendamento de reposição passou a capturar `_snapshotAulasReposicao` antes do `aulas.push(novoCompromisso)` e a restaurar a agenda no `catch` quando `!escritaConfirmada` (mesmo padrão de `executarEnvioParaReposicao`), com `window.log.warn` de "Rollback somente local";
+  - `docs/roadmap-v3.md`: item `3.1` marcado como `[x]`;
+  - `docs/plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md`: atualizado com este registro, as mutações M10–M22 e o fechamento do cartão.
+- **Resultado**: T05 concluído; as 7 lacunas inventariadas (5 no backend, 2 no frontend) estão cobertas por asserção direta e provadas por mutação.
+- **Suíte antes/depois**: `backend/` antes `250/250` → depois `259/259` passando; `tests-frontend/` antes `493/493` → depois `497/497` passando.
+- **Desvio do plano**: o cartão previa "apenas arquivos de teste". Ao escrever o teste de rollback do reagendamento, ficou comprovado que o fluxo **não tinha** rollback (o `catch` só fechava o modal e mostrava o toast, deixando a aula fantasma na agenda em memória até um `carregarDados` completo). O achado foi levado ao dono antes de qualquer edição e a correção foi autorizada; o teste do rollback foi provado por mutação (M22) sobre a correção.
+- **Decisão adicional tomada**: `aplicarStatusCiclo` é exercitado pelo alias exportado `recalcularStatusCiclo`, e o filtro `obterReposicoesDoAluno` (privado) é coberto via `agruparHistoricoReposicoes`/`resumoHistoricoReposicoesAluno` — nenhum export novo foi criado só para o teste.
+
 ---
 
 ## 13. Achados não alterados
@@ -351,8 +376,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: `em andamento` (T00, T01, T02, T03 e T04 concluídos).
-- **Implementação / validação / aceite / publicação**: T00 a T04 implementados e validados localmente; T05 e T06 pendentes de execução.
-- **Pendências**: executar T05 e T06 nas próximas rodadas. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção; nenhum cartão desta frente foi publicado ainda.
+- **Critérios atendidos**: `em andamento` (T00, T01, T02, T03, T04 e T05 concluídos).
+- **Implementação / validação / aceite / publicação**: T00 a T05 implementados e validados localmente; T06 pendente de execução.
+- **Pendências**: executar T06 na próxima rodada. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção; nenhum cartão desta frente foi publicado ainda.
 - **Riscos aceitos**: nenhum adicional até o momento.
 - **Data de fechamento**: `em aberto`
