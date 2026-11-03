@@ -5,6 +5,7 @@
 > **Base**: `1ff3ca374443c6292c3518c1095054382ab8ce93` (`main`, merge do PR #79) · **Branch**: `feat/atualizacao-app`, criada de `origin/main` com `--no-track`; working tree com apenas `.vscode/` não rastreado.
 > **Método**: leitura dirigida de código e documentação, contagens por busca no workspace e execução da suíte `tests-frontend/`. Sem deploy, sem teste em navegador, sem chamada a produção e sem alteração de produto.
 > **Limite**: concluído significa investigação registrada. Não comprova comportamento em navegador real, não mede cabeçalhos de cache da Vercel e não aprova implementação. A intervenção está no [plano da frente](../plans/2026-11-03-plan-atualizacao-app.md).
+> **Auditoria posterior**: levantamento estático iniciado em 2026-11-03 às 12:54 (UTC−03:00), por **GPT-6.1 Terra**. A seção 13 registra os achados, as retificações e os limites dessa revisão, sem alterar as decisões do dono nem autorizar implementação.
 
 ## 1. Escopo e fontes
 
@@ -42,8 +43,8 @@ Consequência: nada no app permite responder "a versão que estou executando é 
 
 Consequências:
 
-1. Com internet, um recarregamento já entrega o código novo. O problema real é a **sessão aberta** que nunca recarrega.
-2. Um arquivo de versão na raiz seria cacheado por essa mesma regra e poderia ser devolvido do cache offline — gerando leitura desatualizada. Precisa ser excluído explicitamente.
+1. Uma sessão aberta não recebe necessariamente o código novo sem recarregar. Mesmo com rede, a recarga não comprova por si só que todos os arquivos novos foram carregados: cache, falhas e propagação precisam ser verificados (auditoria, A04).
+2. Um arquivo de versão na raiz seria cacheado por essa mesma regra e poderia ser devolvido do cache offline — gerando leitura desatualizada. A proposta prevê excluí-lo explicitamente; a transição de clientes com o SW antigo continua exigindo validação (A03).
 
 ### F03 — O registro do service worker recarrega a página em `controllerchange`
 
@@ -53,7 +54,7 @@ Consequência (inferência, não observada em navegador): como `sw.js` usa `skip
 
 ### F04 — Nenhuma superfície expõe versão ou verificação
 
-A área do usuário (`#tituloAppSettings`) tem três seções: Perfil da conta, Google Agenda e Dados. Não há "Sobre", versão instalada nem ação de verificar atualização.
+A área do usuário (`#tituloAppSettings`) tem cinco seções: Perfil da conta, Google Agenda, Dados, Sessão e Informações Legais. Não há "Sobre", versão instalada nem ação de verificar atualização.
 
 ### F05 — Os componentes de feedback existentes não servem como aviso persistente
 
@@ -73,9 +74,9 @@ Consequência: um aviso de atualização com ação precisa de superfície próp
 
 Consequência: uma faixa em fluxo abaixo do header não exige recalcular `--header-height` nem disputa a âncora do `.topo-tela`. Uma faixa sticky precisaria das duas coisas. Uma pílula flutuante disputaria a faixa do toast e do FAB.
 
-### F07 — Toda chamada ao backend passa por um ponto único
+### F07 — O wrapper de API concentra chamadas, mas não representa toda a operação
 
-`apiFetchBackend` é exportado como `window.apiFetchBackend` e usado em 21 pontos de 7 arquivos, com `GET`, `POST`, `PUT`, `PATCH` e `DELETE`. É o lugar natural para contar escritas em andamento.
+`apiFetchBackend` é exportado como `window.apiFetchBackend` e usado em chamadas com `GET`, `POST`, `PUT`, `PATCH` e `DELETE`. A auditoria identificou também caminhos alternativos de `fetch` em [google-identity.js](../../assets/js/auth/google-identity.js), usados como fallback quando o wrapper está indisponível. Além disso, uma operação pode compreender várias requisições e processamento posterior à resposta. Contar apenas escritas no wrapper não comprova que toda a operação terminou (A01).
 
 ### F08 — Não há integração contínua
 
@@ -108,16 +109,16 @@ Tudo cabe em `fetch`, `sessionStorage`, CSS existente e o Font Awesome já carre
 ## 3. Reprodução e verificação possível
 
 - **Pré-condições**: app aberto em aba ou PWA instalado, sessão já carregada e um deploy novo publicado.
-- **Passos que reproduzem a lacuna**: publicar qualquer alteração de frontend na `main`; manter a aba aberta; observar que nada no app informa sobre a nova versão.
-- **Resultado observado**: ausência total de sinal. O código novo só entra em cena no próximo recarregamento, que o usuário precisa provocar sem saber que existe versão nova.
+- **Cenário proposto para reprodução**: publicar uma alteração de frontend na `main`, manter uma aba com a versão anterior aberta e verificar se o app informa a existência da versão nova. Não foi executado nesta investigação.
+- **Evidência estática**: não foi encontrado mecanismo de comparação de versões nem superfície de aviso. A recarga é um possível caminho para obter recursos novos, mas sua efetividade não foi comprovada.
 - **Resultado esperado**: sinal perceptível, com aplicação automática quando seguro.
-- **O que não foi medido**: se o `controllerchange` da primeira instalação realmente recarrega a página em navegador real; cabeçalhos de cache de produção; tempo real entre deploy e propagação.
+- **O que não foi medido**: comportamento do cenário em navegador real, inclusive recarga em `controllerchange`; cabeçalhos de cache de produção; tempo real entre deploy e propagação.
 
 ## 4. Cadeia causal
 
-Deploy publica arquivos novos → o service worker é network-first, então um recarregamento já pegaria o código novo → porém **a sessão aberta não recarrega sozinha** e **nada no app compara versões** → o usuário permanece em código antigo indefinidamente.
+Deploy publica arquivos novos → uma sessão já aberta pode continuar usando o código carregado → **não há comparação de versões nem superfície de aviso** → o usuário pode permanecer com código antigo sem saber. Uma recarga tenta buscar recursos pela rede, mas não garante, sem confirmação adicional, que todos correspondam à nova publicação.
 
-Ponto exato da divergência: **falta de identificador de versão** (F01) combinada com **falta de gatilho de verificação e de superfície de aviso** (F04, F05). O service worker não é a causa; é apenas o mecanismo que já resolve o próximo carregamento.
+Pontos centrais da lacuna: **falta de identificador de versão** (F01) e **de gatilho de verificação e superfície de aviso** (F04, F05). O service worker também participa dos riscos de transição e recarga: o listener existente pode recarregar em `controllerchange`, e o cache exige validação específica (A03–A04).
 
 ## 5. Relação com contratos e specs
 
@@ -140,7 +141,7 @@ Ponto exato da divergência: **falta de identificador de versão** (F01) combina
 | Dimensão | Avaliação |
 |---|---|
 | Usuário | Médio — sessão longa em código antigo; correções e melhorias não chegam sem recarregar |
-| Dados | Baixo pela proposta atual — a guarda impede recarregar com escrita em andamento ou alteração não confirmada |
+| Dados | Risco não comprovado como baixo: a guarda proposta ainda não protege demonstravelmente a operação inteira e a transição do cliente antigo (A01 e A03) |
 | Segurança | Baixo — o identificador de versão é público e não passa por `requireAuth`; não deve ser filtrado por `ownerEmail` |
 | Operação | Médio — o `sw.js` só é exercitado após deploy; sem staging, a validação é manual em produção |
 | Reversibilidade | Parcial — `git revert` do código não desfaz um service worker já instalado em clientes; é preciso publicar outro `sw.js` |
@@ -149,7 +150,7 @@ Ponto exato da divergência: **falta de identificador de versão** (F01) combina
 
 ### Opção A — `version.json` versionado na raiz (escolhida)
 
-Arquivo com token de build, versão legível e data, atualizado no PR de release. Leitura com `no-store`, exclusão explícita do cache do SW. Benefício: zero infra, zero build, funciona no mock. Risco: disciplina manual — esquecer o bump só suprime o aviso, não quebra. Teste: unitário da leitura/comparação e teste estático de que o caminho não entra no cache do SW.
+Arquivo com token de build, versão legível e data, atualizado no PR de release. A proposta prevê leitura com `no-store` e exclusão explícita do cache do SW, sem infraestrutura adicional nem build. Riscos: depender do bump manual, confundir a identidade publicada com a do código carregado e não comprovar a aplicação após recarregar (A02, A04 e A08). O mock e um teste estático não substituem a validação do comportamento do SW em navegador (A07).
 
 ### Opção B — Função serverless `/api/versao` no projeto do frontend
 
@@ -169,7 +170,7 @@ Benefício: nenhum artefato novo. Risco: só muda quando aquele arquivo muda; de
 
 ## 9. Recomendação
 
-Opção **A**, com a leitura isolada atrás de uma única constante para permitir migrar para B sem tocar em UI nem em testes. Evitar D como sinal principal por causa da corrida entre os dois deploys.
+Opção **A**, escolhida pelo dono, mantém a leitura isolada para uma possível evolução futura. A auditoria não valida que trocar apenas a URL preserve a identificação da versão em execução, a confirmação da atualização ou os testes; esses pontos exigem desenho e validação próprios (A02 e A04). Evitar D como sinal principal por causa da corrida entre os dois deploys.
 
 ## 10. Perguntas pendentes
 
@@ -186,7 +187,7 @@ Registrados, **não corrigidos**.
 
 | Achado | Destino sugerido |
 |---|---|
-| Reload em `controllerchange` pode ocorrer na primeira instalação do service worker (F03) | corrigido dentro desta frente, no cartão de unificação do service worker |
+| Reload em `controllerchange` pode ocorrer na primeira instalação do service worker (F03) | pendente nesta frente, no cartão de unificação do service worker; a transição do cliente antigo requer tratamento adicional (A03) |
 | Notificação com app fechado (push/WhatsApp) | roadmap 4.2; depende de mecanismo de agendamento no backend |
 | Falta de integração contínua (F08) | roadmap/infra; não é pré-requisito desta frente |
 | Cabeçalhos de cache da Vercel não verificados | conferência pós-deploy, registrada no plano |
@@ -194,4 +195,94 @@ Registrados, **não corrigidos**.
 
 ## 12. Critério para abrir o plano
 
-Decisões de escopo, fonte da versão, comportamento e posição do aviso **fechadas pelo dono em 2026-11-03**; leitura do código suficiente para listar arquivos e guardas; baseline da suíte medido. Critério atendido — a intervenção segue no [plano da frente](../plans/2026-11-03-plan-atualizacao-app.md).
+Decisões de escopo, fonte da versão, comportamento e posição do aviso **fechadas pelo dono em 2026-11-03**; baseline da suíte medido. O plano foi aberto com base nesse levantamento; a auditoria posterior identificou lacunas nas guardas e validações que precisam ser avaliadas antes de implementar (seção 13). A intervenção segue no [plano da frente](../plans/2026-11-03-plan-atualizacao-app.md).
+
+## 13. Auditoria posterior do diagnóstico e do plano
+
+- **Data e hora**: iniciada em **2026-11-03 às 12:54 (UTC−03:00)**.
+- **Modelo responsável**: **GPT-6.1 Terra**.
+- **Base da auditoria**: branch `feat/atualizacao-app`, commit `2f4a87f` sobre a base de código `1ff3ca3`; working tree limpo na revisão. O commit posterior à base inclui o diagnóstico, o plano, o índice documental e `.vscode/extensions.json`.
+
+**Método e limites**: leitura estática do diagnóstico, do plano e dos trechos relacionados de código, mock, testes e documentação. Não foram executados testes, navegador, deploy, requisições à produção ou medições de cabeçalhos nesta auditoria. Os números da seção 2 são da investigação original, não uma nova medição. As severidades abaixo avaliam riscos da **proposta**, salvo indicação em contrário; não descrevem falhas de uma implementação concluída. Os cenários de corrida e comportamento em navegador são inferências a validar, não reproduções observadas.
+
+### A01 — Guarda por requisição não cobre toda a operação · Alto
+
+**Evidência**: o T03 do [plano](../plans/2026-11-03-plan-atualizacao-app.md) prevê contar chamadas não-`GET` em `apiFetchBackend` e observar `#recuperacaoDados`. Em [storage.js](../../assets/js/storage.js), uma operação pode envolver leitura inicial, múltiplas escritas e processamento dos corpos das respostas; o wrapper retorna a resposta antes de o chamador necessariamente consumir o corpo. Em [recuperacao-dados.js](../../assets/js/app-shell/recuperacao-dados.js), o painel é ocultado enquanto uma operação está em andamento. [contexto-dados.js](../../assets/js/app-shell/contexto-dados.js) já acompanha o ciclo de vida de operações e pendências.
+
+**Inferência / impacto**: entre requisições, durante uma leitura ou após os headers, o contador proposto pode estar zerado enquanto o trabalho ainda não terminou e a recuperação continua oculta. Uma recarga nesse intervalo pode interromper a operação ou deixar seu resultado sem confirmação. Contar requisições também não cobre os caminhos de fallback fora do wrapper identificados em F07.
+
+**A tratar antes da implementação**: avaliar a proteção da operação completa, das pendências e dos caminhos fora do wrapper; testar leituras anteriores à escrita, intervalos entre etapas, consumo tardio do corpo e finalização com falha. Não se presume que o contador proposto seja suficiente.
+
+### A02 — Baseline remota não identifica o código carregado · Alto
+
+**Evidência**: o T02 do plano estabelece a baseline pela primeira leitura bem-sucedida de `version.json`; o T07 prevê mostrar a versão instalada.
+
+**Inferência / impacto**: se a página com código antigo já estiver aberta quando ocorrer o deploy e a primeira leitura for concluída depois, ela pode adotar o token novo como baseline sem ter recebido o código novo. Início offline e falha na primeira leitura também deixam a identidade carregada desconhecida. Assim, a comparação pode não detectar a atualização e a versão apresentada pode ser incorreta.
+
+**A tratar**: definir como relacionar a identidade publicada ao código efetivamente carregado, inclusive quando a identidade for desconhecida; testar deploy entre abertura e primeira leitura, falha inicial, retorno da rede e exibição da versão.
+
+### A03 — Primeiro deploy mantém o listener antigo nas abas abertas · Alto
+
+**Evidência**: [service-worker.js](../../assets/js/app-shell/service-worker.js) atualmente recarrega diretamente em `controllerchange`; [sw.js](../../sw.js) usa `skipWaiting()` e `clients.claim()`. O T06 altera o listener da versão nova, não o JavaScript já carregado nas abas antigas.
+
+**Inferência / impacto**: a atualização do worker pode causar `controllerchange` numa página ainda executando o listener antigo e provocar recarga sem a nova guarda, inclusive durante uma edição. A mesma transição exige análise para cada aba controlada. Esse comportamento não foi reproduzido em navegador nesta auditoria.
+
+**A tratar**: planejar e validar explicitamente a migração da versão antiga para a nova, com edição e múltiplas abas; declarar qualquer risco residual que não possa ser eliminado para clientes já abertos. A correção prevista em T06 não deve ser apresentada como retroativa.
+
+### A04 — Recarga e flag não comprovam atualização aplicada · Alto
+
+**Evidência**: o T05 prevê gravar uma flag antes da recarga e exibir depois o toast “App atualizado.”. O [sw.js](../../sw.js) tenta a rede e usa o cache em caso de falha; a auditoria não mediu cache HTTP, propagação ou cabeçalhos de produção.
+
+**Inferência / impacto**: uma recarga pode recuperar recursos antigos ou não comprovar uma combinação coerente de arquivos. Apenas encontrar a flag depois do boot não prova que o código carregado corresponda ao token detectado. Também é necessário avaliar falhas posteriores à recarga e o risco de novas tentativas repetidas.
+
+**A tratar**: definir critério de confirmação e estado inconclusivo, além de teste para indisponibilidade após detecção, recursos desatualizados, propagação desigual e ausência de laço. O texto de sucesso não deve pressupor uma comprovação ainda inexistente.
+
+### A05 — Verificação periódica não consta do cartão T02 · Médio
+
+**Evidência**: a opção de cadência proposta na seção 4 do plano inclui intervalo periódico com a aba visível; o T02 lista `visibilitychange` e `online`, sem incluir explicitamente esse intervalo.
+
+**Inferência / impacto**: se a implementação seguir apenas os gatilhos do cartão, uma aba mantida visível e online pode não verificar um deploy posterior.
+
+**A tratar**: obter a decisão do dono sobre cadência e gatilhos e alinhar o cartão, os critérios e os testes. Os intervalos indicados no plano são proposta, não decisão aprovada.
+
+### A06 — A guarda pode mudar durante a espera para recarregar · Médio
+
+**Evidência**: o T05 prevê tempo mínimo para o estado “aplicando”; o [index.html](../../index.html) também contém interação fora de modal, como a busca de alunos.
+
+**Inferência / impacto**: depois de a guarda indicar ociosidade, o usuário pode abrir um modal, iniciar uma operação ou interagir com outro campo antes da recarga. A guarda descrita não especifica quais interações fora de modal devem adiá-la.
+
+**A tratar**: reavaliar as condições imediatamente antes de recarregar e decidir com o dono quais interações não cobertas por modal devem preservar o trabalho. Testar a abertura de modal e o início de operação durante a espera; não presumir a política para a busca.
+
+### A07 — Mock e teste estático não comprovam o comportamento real · Médio
+
+**Evidência**: [sandbox.js](../../mocks/ui-runtime/sandbox.js) encaminha requisições que não são de API ou Google para o `fetch` nativo; o offline de [mock-runtime.js](../../mocks/ui-runtime/mock-runtime.js) simula o estado e as respostas da API. O plano propõe teste estático para exclusão de cache e roteiro manual no mock.
+
+**Inferência / impacto**: o offline simulado não garante, por si só, que a leitura de `version.json` falhe; um teste textual do SW não prova instalação, ativação, exclusão efetiva do cache ou fallback em navegador. O servidor local com `no-store` também não mede os cabeçalhos da Vercel.
+
+**A tratar**: prever validação comportamental da leitura e do cache, simulação explícita de indisponibilidade do arquivo de versão e roteiro em navegador para instalação e transição do SW antigo para o novo. Incluir múltiplas abas, falhas após a detecção e resultado após a recarga; manter declarada a limitação de produção.
+
+### A08 — Bump manual do token ainda depende de decisão operacional · Médio
+
+**Evidência**: a decisão 5 do plano deixa em aberto quando atualizar o token; a opção escolhida depende de um arquivo versionado manualmente.
+
+**Inferência / impacto**: uma publicação relevante sem alteração do token pode não ser detectada por clientes já abertos. A política e sua verificação não estão definidas.
+
+**A tratar**: decidir responsável, momento e escopo do bump e como verificar sua aplicação no fluxo de entrega, sem presumir uma nova infraestrutura.
+
+### A09 — Sequência do contrato e decisões ainda não está alinhada · Médio
+
+**Evidência**: o plano registra “documentação antes de código”, mas posiciona a spec durável no T09, após cartões de implementação. Também mantém pendentes decisões como aplicação com aba oculta, cadência e regra de bump. O [índice documental](../README.md) exige decisão explícita e contrato para comportamento durável.
+
+**Impacto**: a execução pode chegar a comportamentos dependentes de decisão sem contrato aprovado, ou tratar proposta como autorização.
+
+**A tratar**: resolver com o dono as decisões que bloqueiam os comportamentos correspondentes e alinhar a sequência de contrato, cartões e critérios de aceite. A auditoria não decide produto nem altera o plano.
+
+### A10 — Retificações de precisão documental · Baixo
+
+- A área do usuário tem **cinco**, não três, seções; uma seção adicional seria a sexta. F04 foi corrigido neste diagnóstico; a referência à quarta seção no plano ainda precisa ser avaliada separadamente.
+- F03 continua **pendente**, não corrigido; a tabela da seção 11 foi corrigida neste diagnóstico.
+- A reprodução da seção 3 era apresentada como observada apesar de não ter havido navegador ou deploy. A seção agora distingue cenário proposto de evidência estática.
+- A afirmação de que a recarga com internet garante código novo e a avaliação de risco baixo para dados não estavam comprovadas; F02, cadeia causal e impacto foram ajustados para refletir os limites da auditoria.
+- A descrição original de F07 como ponto único para toda chamada e para toda a escrita foi qualificada, inclusive pelos fallbacks identificados e pela duração mais ampla das operações.
+
+**Resultado da auditoria**: existem pontos relevantes a resolver antes de implementar. O diagnóstico registra as evidências e riscos; nenhuma alteração de código ou do plano foi realizada nesta rodada, e nenhum dos achados é considerado corrigido apenas por estar documentado.
