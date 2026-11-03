@@ -1,6 +1,6 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: Em produção · **Versão**: 15 · **Atualizado**: 2026-11-03
+> **Status**: Em produção · **Versão**: 16 · **Atualizado**: 2026-11-03
 > **Consolidação documental**: contrato e limites preservados; relatos de execução e medições não são requisitos vigentes.
 > **Limite de evidência**: cobertura parcial de I/O real (9.8); o gatilho automático de renovação não foi observado isoladamente. Esta edição não é nova validação de produção.
 >
@@ -159,6 +159,9 @@ para o `ownerEmail` da sessão.
 - itens `action: 'delete'` da `GcalReconciliationQueue` → `deleteEventFromGoogle`;
 - agendamentos com `gcalStatus: 'pendente'` → `pushEventToGoogle` (sem id) ou
   `updateEventInGoogle` (com id).
+
+Toda consulta e toda remoção na `GcalReconciliationQueue` é escopada por `ownerEmail`; o
+`_id` do item nunca é usado sozinho como filtro de escrita.
 
 O `googleCalendarEventId` devolvido pelo Google é persistido de volta no documento e
 retornado na resposta do flush. `assets/js/storage.js` dispara esse flush ao final do batch

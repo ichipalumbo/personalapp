@@ -1,6 +1,6 @@
 # Plano — Confiabilidade de Sincronização (GCal/Sessão), Blindagem Financeira e Operação Rápida em Alunos
 
-> **Status**: `Em execução` — T00, T01, T02, T03 e T04 concluídos; T05–T06 aguardando execução
+> **Status**: `Concluído` — T00, T01, T02, T03, T04, T05 e T06 executados; publicação pendente (§14)
 > **Abertura**: 2026-10-27
 > **Atualizado**: 2026-11-03
 > **Responsável**: Luccas (dono) + agente
@@ -30,8 +30,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - [x] **Contratos e Riscos (T04)**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md) e [`docs/reference/lessons-learned.md`](../reference/lessons-learned.md) atualizados refletindo o desacoplamento do CRUD, o Outbox no `DELETE`, a nova janela `[-1m, +6m]` e o encerramento dos riscos `1.1` e `1.3`.
 - [x] **Blindagem Financeira e de Reposições (T05 — Item `3.1`)**: lacunas inventariadas nas regras financeiras/reposições e os 2 gatilhos otimistas de reposição (enviar para reposição e reagendar reposição) cobertos por testes automatizados provados por mutação — incluindo o rollback local que faltava no reagendamento de reposição.
 - [x] **Operação Rápida em Alunos (T06 — Itens `1.7` e `1.4`)**: busca textual instantânea somente por nome na lista de alunos (`1.7`) e botão de atalho WhatsApp (`wa.me/55...` para números nacionais de 10–11 dígitos, oculto/desabilitado quando telefone ausente ou inválido, `1.4`).
-- [ ] **Segurança e Isolamento**: toda query e fila (`Agendamento`, `GcalReconciliationQueue`, `GoogleCalendarConnection`) estritamente filtrada por `ownerEmail` via `getOwnerEmailOrThrow(req)` (regra 4.1).
-- [ ] **Regressão e Validação Visual**: suítes de backend (`backend/`) e frontend (`tests-frontend/`) medidas antes e depois de cada cartão aplicável, com prova por mutação para todo teste novo; validação visual no mock no viewport de referência `433×762`, `DPR 2.81`.
+- [x] **Segurança e Isolamento**: toda query e fila (`Agendamento`, `GcalReconciliationQueue`, `GoogleCalendarConnection`) estritamente filtrada por `ownerEmail` via `getOwnerEmailOrThrow(req)` (regra 4.1). Fechamento de 2026-11-03: as remoções na fila de reconciliação passaram a filtrar por `ownerEmail` além do `_id` (ver §12), e a mutação M16 cobre o filtro em `listarFinancasDoOwner`.
+- [x] **Regressão e Validação Visual**: suítes de backend (`backend/`) e frontend (`tests-frontend/`) medidas antes e depois de cada cartão aplicável, com prova por mutação para todo teste novo; validação visual no mock no viewport de referência `433×762`, `DPR 2.81`.
 
 ---
 
@@ -294,6 +294,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 | **M40 (ajuste — `index.html`)**: inserir um elemento irmão depois da barra de ações | `ajuste — a barra fica no fim do form, com as três ações do modal` | Falhou (`1/3`): a barra deixaria de colar no rodapé | Sim |
 | **M41 (ajuste — `style.css`)**: devolver `padding: 24px` ao `.modal-alunos-corpo` | `ajuste — o rodapé ocupa a borda do modal, sem faixa do fundo sobrando` | Falhou (`3/4`): volta a faixa de fundo sob a barra | Sim |
 | **M42 (ajuste — `style.css`)**: devolver `max-height: calc(100dvh - 110px)` ao `.form-aluno` mobile | `ajuste — no bottom-sheet mobile o form preenche a altura, sem faixa sob a barra` | Falhou (`4/5`): volta a faixa de 42 px sob a barra no bottom-sheet | Sim |
+| **M43 (fechamento — `gcalSyncService.js`)**: remover `ownerEmail` do `deleteOne` do ramo `delete` da fila | `reconcileAndSyncRetroactiveAppointments filtra por ownerEmail ao remover itens da fila (delete e update)` | Falhou (`5/6`) | Sim |
+| **M44 (fechamento — `gcalSyncService.js`)**: remover `ownerEmail` do `deleteOne` do ramo `update` da fila | mesmo teste | Falhou (`5/6`) | Sim |
 
 ---
 
@@ -411,6 +413,17 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - **Prova por mutação**: **M41** (devolver `padding: 24px` ao `.modal-alunos-corpo`) derruba apenas o teste do rodapé; **M42** (devolver `max-height: calc(100dvh - 110px)` ao `.form-aluno` mobile) derruba apenas o teste do bottom-sheet. Ambas restauradas.
 - **Validado no mock**: em `433×762` (DPR 2.81), `390×844` e `320×568`, com o modal aberto e o form rolado até o fim, a distância entre o fim da barra e a borda do corpo do modal é **0,8 px** nos três, e barra e botão Salvar continuam dentro do viewport.
 
+### 2026-11-03 — Fechamento: isolamento por `ownerEmail` na remoção da fila de reconciliação
+- **Origem**: auditoria do critério *Segurança e Isolamento* na rodada de fechamento. `reconcileAndSyncRetroactiveAppointments` consultava a fila com `find({ ownerEmail })`, mas removia cada item consumido com `deleteOne({ _id: item._id })` — sem `ownerEmail`. Não havia vazamento (o `_id` vinha de uma leitura já escopada), mas o padrão divergia do `agendamentoController.js`, que filtra os dois campos.
+- **Autorização**: o dono autorizou o ajuste em `gcalSyncService.js` (área sensível, §7) nesta rodada.
+- **Arquivos alterados**:
+  - `backend/src/services/gcalSyncService.js`: os dois `deleteOne` da fila (ramo `delete` e ramo `update`) passam a filtrar por `{ _id, ownerEmail: normalizedOwnerEmail }`.
+  - `backend/test/gcal-login-fallback.test.js`: teste novo — `reconcileAndSyncRetroactiveAppointments filtra por ownerEmail ao remover itens da fila (delete e update)` — captura os filtros de remoção das duas ramificações e exige `ownerEmail` em ambos. Também passou a cobrir o ramo `action: 'update'`, que não tinha teste.
+  - `docs/specs/gcal-sync.md` (versão 15 → 16): frase de contrato no Momento 2 do flush.
+- **Resultado**: os quatro pontos de remoção da fila (`agendamentoController` e `gcalSyncService`) agora filtram por `ownerEmail`.
+- **Suíte antes/depois**: `backend/` antes `259/259` → depois `260/260` passando; `tests-frontend/` `517/517` sem alteração (mudança só de backend).
+- **Prova por mutação**: **M43** (remover `ownerEmail` do ramo `delete`) derruba o teste novo; **M44** (remover `ownerEmail` do ramo `update`) derruba o mesmo teste. Ambas restauradas.
+
 ---
 
 ## 13. Achados não alterados
@@ -436,8 +449,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: `concluído` (T00, T01, T02, T03, T04, T05 e T06 concluídos).
+- **Critérios atendidos**: `concluído` (T00, T01, T02, T03, T04, T05 e T06 concluídos; os dois critérios transversais de segurança e de regressão fechados em 2026-11-03).
 - **Implementação / validação / aceite / publicação**: T00 a T06 implementados e validados localmente; nenhum cartão desta frente foi publicado.
-- **Pendências**: o T02 depende de deploy coordenado (backend antes do frontend) para valer em produção. A validação visual de busca e atalho de WhatsApp no aparelho físico continua com o dono.
+- **Pendências**: o T02 depende de deploy coordenado (backend antes do frontend) para valer em produção — a branch está publicada no `origin` e ainda não tem PR. A validação visual de busca e atalho de WhatsApp no aparelho físico continua com o dono. As duas decisões não bloqueantes da seção 4 saem deste plano e passam a viver no roadmap: a escolha entre `1.2` (CSV) e `1.5` (presença/falta) é o primeiro item da Onda 4, e o item `4.9` (sessão própria do backend) segue em avaliação.
 - **Riscos aceitos**: nenhum adicional até o momento.
-- **Data de fechamento**: `em aberto`
+- **Data de fechamento**: `2026-11-03`

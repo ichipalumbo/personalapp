@@ -1599,7 +1599,7 @@ async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
             }
           }
           if (deveRemoverDaFila) {
-            await GcalReconciliationQueue.deleteOne({ _id: item._id });
+            await GcalReconciliationQueue.deleteOne({ _id: item._id, ownerEmail: normalizedOwnerEmail });
             reconciledDeletions++;
           }
         } else if (item.action === 'update') {
@@ -1634,7 +1634,7 @@ async function reconcileAndSyncRetroactiveAppointments(ownerEmail) {
               console.warn(`[GcalSync] Falha ao conciliar atualização de ${agendamento.id}:`, updateErr.message);
             }
           }
-          await GcalReconciliationQueue.deleteOne({ _id: item._id });
+          await GcalReconciliationQueue.deleteOne({ _id: item._id, ownerEmail: normalizedOwnerEmail });
         }
       } catch (actionErr) {
         console.warn('[GcalSync] Erro no processamento de item de reconciliação:', actionErr.message);

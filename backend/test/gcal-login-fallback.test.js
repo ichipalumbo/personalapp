@@ -285,6 +285,63 @@ test('reconcileAndSyncRetroactiveAppointments processa exclusoes da fila e publi
   }
 });
 
+test('reconcileAndSyncRetroactiveAppointments filtra por ownerEmail ao remover itens da fila (delete e update)', async () => {
+  const originalFindQueue = GcalReconciliationQueue.find;
+  const originalDeleteOneQueue = GcalReconciliationQueue.deleteOne;
+  const originalFindOneAgendamento = Agendamento.findOne;
+  const originalFindAgendamento = Agendamento.find;
+  const originalFindOneAndUpdateAgendamento = Agendamento.findOneAndUpdate;
+  const originalDeleteEventFromGoogle = gcalSyncService.deleteEventFromGoogle;
+  const originalUpdateEventInGoogle = gcalSyncService.updateEventInGoogle;
+
+  const filtrosRemocao = [];
+  const atualizadosNoGoogle = [];
+
+  try {
+    GcalReconciliationQueue.find = async () => [
+      { _id: 'queue-del', action: 'delete', googleCalendarEventId: 'evt-del' },
+      { _id: 'queue-upd', action: 'update', agendamentoId: 'ag-upd', googleCalendarEventId: 'evt-upd' }
+    ];
+    GcalReconciliationQueue.deleteOne = async (filtro) => {
+      filtrosRemocao.push(filtro);
+    };
+    gcalSyncService.deleteEventFromGoogle = async () => {};
+    gcalSyncService.updateEventInGoogle = async (_email, payload) => {
+      atualizadosNoGoogle.push(payload.id);
+      return { googleCalendarEventId: 'evt-upd' };
+    };
+    Agendamento.findOne = async () => ({ id: 'ag-upd', alunoNome: 'Aluno', data: '2026-11-10' });
+    Agendamento.find = async () => [];
+    Agendamento.findOneAndUpdate = async () => {};
+
+    const resultado = await gcalSyncService.reconcileAndSyncRetroactiveAppointments('personal@example.com');
+
+    assert.equal(resultado.reconciledDeletions, 1);
+    assert.equal(resultado.reconciledUpdates, 1);
+    assert.deepEqual(atualizadosNoGoogle, ['ag-upd']);
+    assert.equal(filtrosRemocao.length, 2, 'as duas ramificações da fila removem o item consumido');
+    assert.deepEqual(
+      filtrosRemocao.map((filtro) => filtro._id),
+      ['queue-del', 'queue-upd'],
+    );
+    for (const filtro of filtrosRemocao) {
+      assert.equal(
+        filtro.ownerEmail,
+        'personal@example.com',
+        'remoção da fila precisa ser escopada por ownerEmail (regra 4.1)',
+      );
+    }
+  } finally {
+    GcalReconciliationQueue.find = originalFindQueue;
+    GcalReconciliationQueue.deleteOne = originalDeleteOneQueue;
+    Agendamento.findOne = originalFindOneAgendamento;
+    Agendamento.find = originalFindAgendamento;
+    Agendamento.findOneAndUpdate = originalFindOneAndUpdateAgendamento;
+    gcalSyncService.deleteEventFromGoogle = originalDeleteEventFromGoogle;
+    gcalSyncService.updateEventInGoogle = originalUpdateEventInGoogle;
+  }
+});
+
 test('erro invalid_grant transiciona conexao para expired e agendamento para desconectado no flush', async () => {
   const originalFindOneAgendamento = Agendamento.findOne;
   const originalFindAgendamento = Agendamento.find;
