@@ -1,6 +1,6 @@
 # Roadmap de Melhorias — Personal Josy
 
-> **Status**: Roadmap oficial · **Atualizado**: 2026-10-27
+> **Status**: Roadmap oficial · **Atualizado**: 2026-11-03
 > Índice de evolução do produto: problemas a resolver, entregas, dependências e decisões pendentes.
 > Substitui o [roadmap anterior](archive/roadmaps/roadmap-v1.md), renomeado pelo dono e preservado como registro para consulta histórica.
 
@@ -56,18 +56,20 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 
 ## Confiabilidade e infraestrutura
 
-### [ ] 2.2 Consolidar os gatilhos de sincronização
+### [x] 2.2 Consolidar os gatilhos de sincronização
 
 - **Resultado esperado**: reduzir consultas redundantes e tornar previsível a coordenação entre boot, mudança de sessão e retorno à aba, além de eliminar o risco de divergência entre `gis_session_cache` e `gis_profile_cache` e desacoplar o envio ao Google Calendar do caminho crítico do CRUD (T04).
 - **Decisão confirmada (2026-10-27)**: (1) derivar perfil diretamente do JWT da sessão (Risco 1.3); (2) unificar boot + `auth-change` em coordenador único idempotente por `ownerEmail`; (3) no T04, CRUD grava/apaga no MongoDB imediatamente (`gcalStatus='pendente'` em `POST`/`PUT` e Outbox Pattern via `GcalReconciliationQueue` no `DELETE`) com flush dedicado pós-save mantendo os toasts de falha parcial.
+- **Entrega (2026-11-03)**: T01 e T02 executados no plano da frente. `_profile` passou a ser derivado do `idToken` válido, com `gis_profile_cache` descartado quando o `email` não confere ou a sessão está ausente/expirada; boot e `auth-change` passaram a usar `coordenarGCalParaSessao`, idempotente por `ownerEmail`; `POST`/`PUT`/`DELETE` de agendamento deixaram de chamar o Google, com `gcalStatus='pendente'` e `GcalReconciliationQueue` processados por `POST /api/agendamentos/flush-gcal`.
 - **Risco/dependência**: integração com GCal e autenticação são áreas sensíveis; confirmar antes de alterar cada caminho. O item 2.4 já está concluído e não deve ser reimplementado.
 - **Esforço**: médio.
 - **Referência**: [plano da frente (T01–T02)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de GCal, seção 9.14](specs/gcal-sync.md), [aprendizados, seção 1.3](reference/lessons-learned.md), [plano B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) e [plano de UI otimista encerrado](archive/plans/2026-10-26-plan-ui-otimista.md).
 
-### [ ] 2.3 Ampliar a janela do full sync
+### [x] 2.3 Ampliar a janela do full sync
 
 - **Resultado esperado**: recuperar bloqueios externos além da janela atual quando a leitura incremental não os trouxer de volta e alinhar a resolução da data base de recorrência.
 - **Decisão confirmada (2026-10-27)**: ampliar a janela do full sync de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]` e alinhar `gcalSyncService.js` à precedência canônica de data base de `recurrence-helpers.js` (Risco 1.1, sem tocar no cálculo financeiro).
+- **Entrega (2026-11-03)**: T03 executado no plano da frente. Janela do full sync ampliada para `[-1 mês, +6 meses]`, com `timeMin` inalterado e purge de `BloqueioExterno` ainda restrito a `isBloqueioDentroDaJanela`; precedência `dataCriacao || recorrenciaDataInicio || data` extraída para `resolverDataBaseCompromisso` em `recurrence-helpers.js` e consumida pelo `gcalSyncService` nos seis pontos de data base.
 - **Risco/dependência**: altera sincronização com estado remoto; requer autorização específica e validação do caminho real.
 - **Esforço**: baixo–médio.
 - **Referência**: [plano da frente (T03)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md), [spec de GCal, seção 5.2](specs/gcal-sync.md) e [aprendizados, seção 1.1](reference/lessons-learned.md).
@@ -170,6 +172,8 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 1.10 | `[x]` | Histórico de reposições e reagendamento contextual no card do aluno | [Contrato](specs/reposicoes-e-competencia.md) e [complementos recentes](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
 | 1.11 | `[x]` | Atualização manual de leitura em Finanças, com recuperação e feedback localizado | [Contrato](specs/financas-ciclo-cobranca.md) e [aceite/publicação](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
 | 2.1 | `[x]` | Séries GCal com RRULE, EXDATE e renovação ativa do canal | [Spec de GCal e ressalvas](specs/gcal-sync.md) |
+| 2.2 | `[x]` | Perfil derivado do JWT e gatilhos de boot/auth-change consolidados; CRUD de agendamento desacoplado do Google com flush dedicado e Outbox no `DELETE` | [Plano da frente (T01–T02)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) e [spec de GCal](specs/gcal-sync.md) |
+| 2.3 | `[x]` | Full sync com janela `[-1 mês, +6 meses]` e precedência da data base unificada em módulo compartilhado (Risco 1.1 encerrado) | [Plano da frente (T03)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) e [spec de GCal, 9.14.1](specs/gcal-sync.md) |
 | 2.4 | `[x]` | Revalidação segura do cache no boot, publicada pelo PR #70 | [Contratos](specs/financas-ciclo-cobranca.md) e [plano/aceite B2](archive/plans/2026-09-30-plan-b2-sync-boot.md) |
 | 3.2 | `[x]` | Backend executável localmente | [Setup](setup-ambiente-local.md) |
 | 3.3 | `[x]` | Frontend local com configuração de API local | [Setup](setup-ambiente-local.md) |
@@ -191,7 +195,7 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 ## Ressalvas e fontes
 
 - **Integração pendente**: complementos de 1.10/5.3 e a entrega de 1.11 têm aceite mobile relatado no deploy específico da branch; PR/merge para a `main` continuam com o dono, conforme o [fechamento da frente UX](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md). Isso não reabre funcionalidades publicadas anteriormente nem equivale a integração desses complementos.
-- **Google Calendar**: o item 2.1 preserva a ressalva de que o gatilho automático de renovação no boot não foi observado isoladamente. Defeitos e limites de I/O real permanecem na [spec de GCal](specs/gcal-sync.md).
+- **Google Calendar**: o item 2.1 preserva a ressalva de que o gatilho automático de renovação no boot não foi observado isoladamente; a coordenação entregue em 2.2 é coberta por teste automatizado, não por observação em produção. Defeitos e limites de I/O real permanecem na [spec de GCal](specs/gcal-sync.md).
 - **Validação visual**: testes de lógica/DOM não comprovam pixels, gestos físicos ou todos os fluxos. Usar o [mock e os viewports de referência](setup-ambiente-local.md), com limites registrados em cada plano.
 - **Regras de produto**: consultar [Finanças](specs/financas-ciclo-cobranca.md), [Reposições](specs/reposicoes-e-competencia.md) e [GCal](specs/gcal-sync.md). A regra antiga de alerta do item 0.8 não prevalece sobre a spec vigente.
 - **Riscos conhecidos**: consultar [Aprendizados](reference/lessons-learned.md); seu inventário não foi revalidado integralmente nesta reorganização nem convertido automaticamente em novos itens.

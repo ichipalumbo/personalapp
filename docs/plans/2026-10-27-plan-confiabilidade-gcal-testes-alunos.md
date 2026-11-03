@@ -1,6 +1,6 @@
 # Plano — Confiabilidade de Sincronização (GCal/Sessão), Blindagem Financeira e Operação Rápida em Alunos
 
-> **Status**: `Em execução` — T00, T01, T02 e T03 concluídos; T04–T06 aguardando execução
+> **Status**: `Em execução` — T00, T01, T02, T03 e T04 concluídos; T05–T06 aguardando execução
 > **Abertura**: 2026-10-27
 > **Atualizado**: 2026-11-03
 > **Responsável**: Luccas (dono) + agente
@@ -27,7 +27,7 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - [x] **Sessão e Boot (T01 — Item `2.2` + Risco `1.3`)**: perfil derivado diretamente do JWT válido em `gis_session_cache` (impedindo exibir conta A enquanto assina requisições com conta B no celular); gatilhos de sincronização e renovação do canal GCal coordenados de forma idempotente por `ownerEmail` entre boot, restauração tardia de sessão (`auth-change`) e retorno à aba (`visibilitychange`), preservando integralmente o B2 (`2.4`).
 - [x] **GCal fora do caminho crítico na Vercel (T02 — antigo `T04`)**: `POST`/`PUT`/`DELETE /api/agendamentos` confirmam imediatamente no MongoDB (`gcalStatus: 'pendente'` em criações/edições; deleção imediata no Mongo + registro em `GcalReconciliationQueue` pelo **Outbox Pattern** no `DELETE`); flush dedicado pós-save sincroniza os itens pendentes com o Google Calendar sem risco de congelamento de Lambda na Vercel e mantém os toasts de falha parcial (`gcalSyncFailed` / `tokenExpired`).
 - [x] **Janela de Full Sync e Data Base (T03 — Item `2.3` + Risco `1.1`)**: modo full de `listCalendarEvents` ampliado de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]`, com reconciliação restrita à mesma janela; `gcalSyncService.js` alinhado à precedência canônica de data base de `recurrence-helpers.js` (`dataCriacao || recorrenciaDataInicio || data`), sem alterar o motor financeiro.
-- [ ] **Contratos e Riscos (T04)**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md) e [`docs/reference/lessons-learned.md`](../reference/lessons-learned.md) atualizados refletindo o desacoplamento do CRUD, o Outbox no `DELETE`, a nova janela `[-1m, +6m]` e o encerramento dos riscos `1.1` e `1.3`.
+- [x] **Contratos e Riscos (T04)**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md) e [`docs/reference/lessons-learned.md`](../reference/lessons-learned.md) atualizados refletindo o desacoplamento do CRUD, o Outbox no `DELETE`, a nova janela `[-1m, +6m]` e o encerramento dos riscos `1.1` e `1.3`.
 - [ ] **Blindagem Financeira e de Reposições (T05 — Item `3.1`)**: lacunas inventariadas nas regras financeiras/reposições e os 2 gatilhos otimistas de reposição (enviar para reposição e reagendar reposição) cobertos por testes automatizados provados por mutação.
 - [ ] **Operação Rápida em Alunos (T06 — Itens `1.7` e `1.4`)**: busca textual instantânea somente por nome na lista de alunos (`1.7`) e botão de atalho WhatsApp (`wa.me/55...` para números nacionais de 10–11 dígitos, oculto/desabilitado quando telefone ausente ou inválido, `1.4`).
 - [ ] **Segurança e Isolamento**: toda query e fila (`Agendamento`, `GcalReconciliationQueue`, `GoogleCalendarConnection`) estritamente filtrada por `ownerEmail` via `getOwnerEmailOrThrow(req)` (regra 4.1).
@@ -315,6 +315,17 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - **Desvio do plano**: a única diferença em relação ao cartão é que a correção da precedência não ficou restrita ao `gcalSyncService.js`: para cumprir a regra 4.3, a ordem canônica foi extraída para o módulo compartilhado e o serviço passou a consumi-la. Autorizado pelo dono antes da edição.
 - **Decisão adicional tomada**: os 6 pontos do `gcalSyncService.js` foram unificados num adaptador único (e não apenas reordenados um a um), para que a divergência não possa voltar por edição parcial.
 
+### 2026-11-03 — T04 (Contratos vigentes: spec de GCal, aprendizados e roadmap)
+- **Arquivos alterados**:
+  - `docs/specs/gcal-sync.md` (versão 14 → 15, cabeçalho sem a pendência do boot): seção 3.2 reescrita para os dois momentos do sync (CRUD só grava no Mongo; `POST /api/agendamentos/flush-gcal` envia ao Google), 3.3 com a nova cadeia e a normalização de `gcalStatus` na comparação, 5.1.2 e 5.2 com a janela `−1 mês a +6 meses`, 5.1.3 reescrita para o coordenador `coordenarGCalParaSessao`, 5.1.5 de "débito técnico" para "coordenação consolidada", seção 6 com o contrato do flush, seção 7 com a nova resposta sobre quem chama o Google e uma linha sobre Outbox no `DELETE`, seção 8 sem o risco de precedência (encerrado), 9.4 ajustada à separação gravação/envio, 9.14 marcada como resolvida e nova 9.14.1 registrando a fonte única da precedência;
+  - `docs/reference/lessons-learned.md`: riscos `1.1` e `1.3` movidos de "Riscos ativos sem dono" para a nova seção `1A. Riscos encerrados — registro preservado`, com como foi encerrado e a evidência de mutação de cada um; nota na abertura da seção 1 apontando para 1A; `2.3` atualizada para indicar que a falha do Google passou a aparecer no flush;
+  - `docs/roadmap-v3.md`: itens `2.2` e `2.3` marcados como `[x]`, com bullet de entrega em cada um, duas linhas novas na tabela de acompanhamento e ressalva do Google Calendar ajustada;
+  - `docs/plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md`: atualizado com este registro e o fechamento do cartão.
+- **Resultado**: T04 concluído; as fontes permanentes descrevem o contrato vigente e nenhum dos riscos encerrados continua listado como ativo.
+- **Suíte antes/depois**: `não executado` (alteração estritamente documental), conforme a regra de validação do repositório.
+- **Desvio do plano**: o cartão listava as seções 5.2, 6, 7 e 9.14. Também foram ajustadas 3.2, 3.3, 5.1.2, 5.1.3, 5.1.5, 8, 9.4 e 11 — todas descreviam o comportamento antigo e ficariam contradizendo o novo contrato dentro da mesma spec, o que violaria o critério de "specs consistentes". Nenhuma regra de produto nova foi criada.
+- **Decisão adicional tomada**: os riscos encerrados foram preservados com o mesmo número (1.1 e 1.3) numa seção própria, em vez de apagados, para que as referências existentes no roadmap e em outros documentos continuem apontando para o registro correto.
+
 ---
 
 ## 13. Achados não alterados
@@ -340,8 +351,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: `em andamento` (T00, T01, T02 e T03 concluídos).
-- **Implementação / validação / aceite / publicação**: T00, T01, T02 e T03 implementados e validados localmente; T04–T06 pendentes de execução.
-- **Pendências**: executar T04 a T06 nas próximas rodadas. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção.
+- **Critérios atendidos**: `em andamento` (T00, T01, T02, T03 e T04 concluídos).
+- **Implementação / validação / aceite / publicação**: T00 a T04 implementados e validados localmente; T05 e T06 pendentes de execução.
+- **Pendências**: executar T05 e T06 nas próximas rodadas. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção; nenhum cartão desta frente foi publicado ainda.
 - **Riscos aceitos**: nenhum adicional até o momento.
 - **Data de fechamento**: `em aberto`

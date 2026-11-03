@@ -1,8 +1,7 @@
 # Spec — Sincronização com Google Calendar
 
-> **Status**: Em produção · **Versão**: 14 · **Atualizado**: 2026-10-14
+> **Status**: Em produção · **Versão**: 15 · **Atualizado**: 2026-11-03
 > **Consolidação documental**: contrato e limites preservados; relatos de execução e medições não são requisitos vigentes.
-> **Pendência funcional conhecida**: coordenação dos gatilhos do boot (9.14).
 > **Limite de evidência**: cobertura parcial de I/O real (9.8); o gatilho automático de renovação não foi observado isoladamente. Esta edição não é nova validação de produção.
 >
 > **Relação com outras specs**: `docs/specs/reposicoes-e-competencia.md` define a
@@ -143,31 +142,48 @@ declara isso: é ponte frontend → backend. Em particular:
 
 ### 3.2 Quem sincroniza de fato
 
-`backend/src/controllers/agendamentoController.js`, dentro do CRUD:
+`backend/src/controllers/agendamentoController.js` separa persistência de envio ao Google
+em dois momentos distintos.
 
-| Rota                       | Chamada ao Google                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------------- |
-| `POST /agendamentos`       | `updateEventInGoogle` se já existe `googleCalendarEventId`, senão `pushEventToGoogle` |
-| `PUT /agendamentos/:id`    | mesma lógica condicional                                                              |
-| `DELETE /agendamentos/:id` | `deleteEventFromGoogle`, se houver id                                                 |
+**Momento 1 — CRUD (`POST`, `PUT`, `DELETE`)**: só fala com o MongoDB.
 
-O `googleCalendarEventId` devolvido pelo Google é persistido de volta no documento.
+| Rota                       | Efeito no Mongo                                                                                       | Chamada ao Google na requisição |
+| -------------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
+| `POST /agendamentos`       | grava com `gcalStatus: 'pendente'`                                                                     | nenhuma                         |
+| `PUT /agendamentos/:id`    | grava com `gcalStatus: 'pendente'`; item em estado terminal preserva a pausa (`gcalSyncPausado`)        | nenhuma                         |
+| `DELETE /agendamentos/:id` | apaga o documento e, se havia `googleCalendarEventId`, grava `action: 'delete'` em `GcalReconciliationQueue` | nenhuma                         |
+
+**Momento 2 — flush (`POST /agendamentos/flush-gcal`)**: processa o que ficou pendente
+para o `ownerEmail` da sessão.
+
+- itens `action: 'delete'` da `GcalReconciliationQueue` → `deleteEventFromGoogle`;
+- agendamentos com `gcalStatus: 'pendente'` → `pushEventToGoogle` (sem id) ou
+  `updateEventInGoogle` (com id).
+
+O `googleCalendarEventId` devolvido pelo Google é persistido de volta no documento e
+retornado na resposta do flush. `assets/js/storage.js` dispara esse flush ao final do batch
+de `salvarDados`, quando alguma resposta do CRUD sinaliza `gcalStatus: 'pendente'` ou
+`queuedForGcalDelete: true`.
 
 **Não existe chamada explícita ao Google em nenhum fluxo de UI.** Qualquer alteração de
-agendamento chega ao Google como efeito colateral do CRUD. É por isso que o caminho de
-série do modal de reposição não precisa chamar nada.
+agendamento chega ao Google pelo flush, depois que a gravação no Mongo já foi confirmada.
+É por isso que o caminho de série do modal de reposição não precisa chamar nada.
 
 ### 3.3 Diff no frontend
 
 `salvarDados` (`assets/js/storage.js`) compara lista local × lista remota e opera item a
 item: `POST` para o que falta, `PUT` para o que mudou, `DELETE` para o que sumiu. A
 comparação é `_agendamentosSaoIguais`, que serializa os dois objetos com `JSON.stringify`
-depois de remover `ownerEmail`, `_id` e `__v`.
+depois de remover `ownerEmail`, `_id` e `__v`. `gcalStatus` só participa da comparação
+quando vale `'pendente'`: `sincronizado` e `desconectado` são normalizados fora, para não
+gerar diff falso contra o estado local.
 
 Cadeia completa de uma alteração:
 
 ```
-UI → salvarDados → diff → PUT /agendamentos/:id → updateEventInGoogle → Google
+UI → salvarDados → diff → PUT /agendamentos/:id → Mongo (gcalStatus 'pendente')
+                                                      ↓
+                                          flush-gcal → Google
 ```
 
 ### 3.4 Pendência server-side e teto de re-tentativa
@@ -329,7 +345,7 @@ Esse comportamento corrige o defeito anterior em que o full sync apagava bloquei
  pela mesma normalização antes da comparação. `isBloqueioDentroDaJanela` foi o ponto de
  proteção que tornou esse purge seguro.
 
-**Limite conhecido**: a janela do full sync é de `−1 mês a +2 meses`. Um evento externo fora
+**Limite conhecido**: a janela do full sync é de `−1 mês a +6 meses`. Um evento externo fora
  dessa faixa não é repovoado por um full sync. Consequência prática: apagar a collection
  `BloqueioExterno` faz perder permanentemente bloqueios fora dessa janela, porque o full
  sync não os traz de volta e o incremental só entrega mudanças.
@@ -339,13 +355,22 @@ Esse comportamento corrige o defeito anterior em que o full sync apagava bloquei
 
 ### 5.1.3 Gatilho no boot e escape hatch
 
-A verificação do canal no boot está ancorada em `assets/js/app-shell/bootstrap.js`, logo após a
- navegação inicial, protegida por `gcalWatchCheckDisparado` e disparada com
- `setTimeout(..., 0)` para não bloquear o primeiro render. A navegação inicial é
- `router.navigateTo(router.getTelaInicial())`: desde a Etapa 7 a tela vem da URL
- (`#tela-home` por padrão), então o trecho não depende de um literal fixo. Ela roda uma vez por
- carga de página. Nenhum dos três `carregarDados` existentes dispara a renovação; o gatilho do
- boot é independente do ciclo de sincronização normal.
+A verificação do canal no boot é coordenada por `coordenarGCalParaSessao`
+(`assets/js/app-shell/bootstrap.js`). A função normaliza o `ownerEmail` da sessão, sai sem
+forçar login quando não há sessão Google e só executa uma vez por conta: guarda o último
+`ownerEmail` coordenado em `ultimoOwnerEmailGCal` e retorna se a conta não mudou. Na
+primeira execução para uma conta ela dispara `iniciarSyncGoogleCalendarAutomatica` e, em
+`setTimeout(..., 0)` para não bloquear o primeiro render, `renovarCanalGoogleCalendar`; o
+callback revalida que a conta ativa continua a mesma antes de chamar o endpoint. Sem sessão,
+a guarda é zerada, de modo que uma autenticação posterior volte a coordenar.
+
+O coordenador é chamado nos três pontos que antes disparavam de forma independente: logo
+após a navegação inicial, no `iniciarSyncBoot` e no listener de `auth-change`. Como a
+idempotência é por `ownerEmail`, a sessão restaurada do cache e a confirmação posterior do
+GIS para a mesma conta resultam em **uma** verificação de status e **uma** renovação de
+canal; a troca de conta reexecuta para o novo `ownerEmail`. A navegação inicial é
+`router.navigateTo(router.getTelaInicial())`: desde a Etapa 7 a tela vem da URL
+(`#tela-home` por padrão), então o trecho não depende de um literal fixo.
 
 Se não há sessão Google, a função sai sem forçar login. O botão manual
  `btnRenewGoogleCalendarWatch` no modal de configurações chama o mesmo endpoint do boot para
@@ -367,13 +392,17 @@ Essa validação descartou a hipótese de descasamento entre id de série-mãe e
  executado em produção, mas a observação do boot automático permanece fora do escopo da
  validação documentada nessa rodada.
 
-### 5.1.5 Débito técnico a registrar
+### 5.1.5 Coordenação consolidada
 
-A sincronização é disparada em três pontos independentes no boot: no próprio bootstrap,
- no listener de auth-change e no `visibilitychange`/auto-refresh. O gatilho de renovação do
- canal foi deliberadamente mantido fora desse ciclo. A consolidação dos três continua
- pendente, e o fato de o sync funcionar em teste manual não resolve esse sintoma: o problema
- é chamada redundante, não erro visível.
+Até a versão 14 desta spec, a sincronização de leitura era disparada em três pontos
+independentes no boot — bootstrap, listener de `auth-change` e `visibilitychange`/
+auto-refresh — e a consolidação ficou registrada como débito. Boot e `auth-change` passaram
+a ser coordenados por `coordenarGCalParaSessao`, idempotente por `ownerEmail` (5.1.3), de
+modo que a mesma conta não gera verificação de status nem renovação repetidas.
+
+O caminho de `visibilitychange`/auto-refresh continua independente do coordenador e
+permanece regido pelo intervalo mínimo de refresh; ele não ganhou cobertura nova nesta
+edição.
 
 ### 5.2 Listagem
 
@@ -382,7 +411,7 @@ A sincronização é disparada em três pontos independentes no boot: no própri
 | Modo        | Quando               | Parâmetros                                                                                                    |
 | ----------- | -------------------- | ------------------------------------------------------------------------------------------------------------- |
 | Incremental | há `syncToken` salvo | `syncToken`, `singleEvents=true`, `maxResults=250`                                                            |
-| Full        | sem `syncToken`      | janela `−1 mês` a `+2 meses`, `singleEvents=true`, `orderBy=startTime`, `showDeleted=false`, `maxResults=250` |
+| Full        | sem `syncToken`      | janela `−1 mês` a `+6 meses`, `singleEvents=true`, `orderBy=startTime`, `showDeleted=false`, `maxResults=250`  |
 
 `syncToken` expirado (HTTP 410) zera o token e refaz o full — tratamento correto e já
 implementado.
@@ -427,10 +456,20 @@ Guarda `titulo`, `data`, `horarioInicio`, `horarioFim`, `fullDay`, `semanaISO`.
 
 ## 6. Falha de sincronização
 
+Desde a separação entre gravação e envio (3.2), a falha do Google nunca aparece na resposta
+do `POST`, do `PUT` ou do `DELETE`: essas rotas respondem **HTTP 200** com o resultado da
+gravação no Mongo, e o envio ao Google acontece depois, no flush.
+
 `montarRespostaFalhaGcal` responde **HTTP 200** com `partialSuccess: true`,
 `gcalSyncFailed: true` e o agendamento no corpo. Ou seja: o dado **foi gravado no
 Mongo** e a API confirma sucesso de persistência, mas sinaliza a falha externa do
 Google para aviso do usuário e auditoria.
+
+O flush (`POST /agendamentos/flush-gcal`) segue o mesmo contrato agregado: responde
+**HTTP 200** com `gcalSyncFailed`, a lista `agendamentos` já persistida com os
+`googleCalendarEventId` devolvidos e `deletedCount`; quando a credencial expirou, inclui
+`tokenExpired: true` e `needsReconnect: true`. `salvarDados` lê essa flag e mantém
+`{ ok: true, motivo: 'sucesso_com_falha_gcal' }`, com o toast de falha parcial.
 
 Quando a chamada ao Google foi pulada porque o item está em estado terminal, a rota
 responde **HTTP 200** com `gcalSyncPausado: true` e sem reutilizar `gcalSyncFailed`.
@@ -447,7 +486,7 @@ indisponibilidade do Google. Ver 9.4.
 
 | #   | Pergunta                              | Decisão                                                                 |
 | --- | ------------------------------------- | ----------------------------------------------------------------------- |
-| 1   | Quem chama a API do Google?           | **Só o backend**, dentro do CRUD de agendamento                         |
+| 1   | Quem chama a API do Google?           | **Só o backend**, num flush dedicado (`POST /agendamentos/flush-gcal`); o CRUD não chama o Google (3.2) |
 | 2   | Série vai como `RRULE`?               | **Sim.** Evento pai recorrente com `RRULE` (2.2)                        |
 | 3   | Quem expande a recorrência?           | O Google                                                                |
 | 4   | Série infinita?                       | Encerrada por `UNTIL`/`COUNT` na própria regra (2.3)                    |
@@ -458,6 +497,7 @@ indisponibilidade do Google. Ver 9.4.
 | 9   | Timezone                              | `dateTime` local + `timeZone`; `UNTIL` em UTC quando necessário          |
 | 10  | Instância enviada para reposição      | Desaparece do dia original no Google via `EXDATE`/instância (2.4)       |
 | 11  | Falha do Google reverte a gravação?   | **Não.** Grava no Mongo e responde `HTTP 200`; `gcalSyncFailed` sinaliza falha transitória e `gcalSyncPausado` sinaliza pausa por teto |
+| 12  | `DELETE` com Google indisponível ressuscita o agendamento? | **Não.** O documento já saiu do Mongo; a remoção fica em `GcalReconciliationQueue` (`action: 'delete'`) e é retentada no próximo flush |
 
 ---
 
@@ -470,10 +510,9 @@ indisponibilidade do Google. Ver 9.4.
 - **Importar evento externo como aula.** Evento do Google vira bloqueio, nunca aula.
 - **Cor por tipo de compromisso.** `colorId` é fixo.
 - **UI de aviso do estado terminal.** A flag `gcalSyncPausado` é contrato de API; o texto do toast e a apresentação visual ficam fora do escopo desta spec.
-- **Tentativa automática do Google no frontend.** O teto é server-side e o frontend só dispara `PUT` quando o diff local/remoto exige a gravação no Mongo.
+- **Tentativa automática do Google no frontend.** O teto é server-side e o frontend só dispara `PUT` quando o diff local/remoto exige a gravação no Mongo, além do `POST` de flush ao final do batch.
 - **`PUT` recorrente em item terminal sem edição.** Enquanto o item permanece no teto e não recebe edição, cada ciclo de sync emite um `PUT` que grava no Mongo e não chama o Google. Não é perda de dados; é escrita desperdiçada, consequência deliberada da persistência incondicional. Sem decisão de produto, permanece assim.
 - **Recuperação apenas eventual.** A edição de item em estado terminal não chega ao Google na requisição que a originou, e sim no ciclo seguinte. Não há sinal ao usuário durante o intervalo.
-- **Precedência divergente da data base.** `gcalSyncService` resolve `recorrenciaDataInicio || data || dataCriacao`; `recurrence-helpers` resolve `dataCriacao || recorrenciaDataInicio || data`. Somado ao fallback de `resolverDataISO` para `new Date()`, séries com campos divergentes podem alinhar `DTSTART` de formas diferentes no backend e no motor local. Unificação não foi feita.
 - **Detecção de edição por igualdade estrita.** `agendamentoRecebeuEdicao` usa `isDeepStrictEqual` após normalização. Uma origem futura que envie campos numéricos com tipos inconsistentes pode reabrir a janela de tentativas por diferença de tipo, não de valor. Coerção ampliada não foi implementada.
 - **Séries antigas com `DTSTART` defeituoso.** Séries criadas antes da correção de `DTSTART`/`BYDAY` precisam de reedição manual. Não há migração automática, e após a correção não há como identificá-las.
 
@@ -502,10 +541,11 @@ pai, conforme 2.4 e 9.12. Não publicar um evento independente por ocorrência c
 
 ### 9.4 Persistência confirmada e falha do Google
 
-Falha externa do Google não desfaz gravação confirmada no Mongo. A API responde HTTP 200
-com `partialSuccess: true` e `gcalSyncFailed: true`, mantendo o agendamento no corpo.
-Persistência e sincronização são estados distintos; não tratar esse aviso como rejeição
-da gravação nem bloquear o gate de reposição por ele.
+Falha externa do Google não desfaz gravação confirmada no Mongo. Com o envio separado em
+flush (3.2), a gravação já foi confirmada antes de qualquer chamada ao Google, e a falha do
+flush só acrescenta `gcalSyncFailed: true` à resposta. Persistência e sincronização são
+estados distintos; não tratar esse aviso como rejeição da gravação nem bloquear o gate de
+reposição por ele.
 
 ### 9.5 Horário que atravessa meia-noite
 
@@ -560,12 +600,27 @@ a conversão de exceções, não escolher outra fonte/semântica de dados nesta 
 propriedade continua aplicável; o volume é observação de custo/escala, não um bug funcional
 nem autorização para otimização preventiva.
 
-### 9.14 Coordenação dos gatilhos do boot — PENDENTE
+### 9.14 Coordenação dos gatilhos do boot — RESOLVIDA
 
-Boot, auth-change e retorno à aba têm gatilhos de leitura/renovação. Sua consolidação
-permanece no item 2.2 do roadmap, sem refazer a leitura segura de B2. A cadeia de renovação
-teve validação histórica por ação manual; o disparo automático no boot não foi observado
-isoladamente e não ganha nova certificação por esta edição.
+Boot e `auth-change` são coordenados por `coordenarGCalParaSessao`, idempotente por
+`ownerEmail` (5.1.3): a mesma conta dispara no máximo uma verificação de status e uma
+renovação de canal por carga de página, e a troca de conta reexecuta para o novo dono.
+O caminho de `visibilitychange`/auto-refresh permanece separado (5.1.5).
+
+A cadeia de renovação teve validação histórica por ação manual; o disparo automático no boot
+não foi observado isoladamente e não ganha nova certificação por esta edição.
+
+### 9.14.1 Precedência da data base — RESOLVIDA
+
+`recurrence-helpers.js` é a fonte única da precedência (`dataCriacao || recorrenciaDataInicio
+|| data`), exposta em `resolverDataBaseCompromisso`. `gcalSyncService.js` consome essa função
+por meio de `resolverDataBaseRecorrencia` em todos os pontos que resolviam a data base:
+alinhamento de `DTSTART`, checagem de `UNTIL`, `EXDATE`, `BYMONTHDAY` de série mensal,
+`BYMONTH`/`BYMONTHDAY` de anual e `UNTIL` de `monthOfDate`. Não reimplementar essa ordem em
+outro módulo; qualquer necessidade nova deve consumir o helper compartilhado.
+
+O fallback de `resolverDataISO` para a data corrente em entrada inválida permanece intacto e
+não faz parte desta decisão (Risco `1.2` em [aprendizados](../reference/lessons-learned.md)).
 
 ### 9.15 Corte de série sem ocorrência restante
 
@@ -688,7 +743,7 @@ reintroduzir horizonte de publicação para evitá-lo.
 
 ## 11. Evolução e limites de validação
 
-Prioridade e frente de execução pertencem ao roadmap oficial, especialmente o item 2.2.
+Prioridade e frente de execução pertencem ao roadmap oficial.
 Cobertura de I/O (9.8), investigação eventual de outra via de split (9.15) e observação de
 payload (9.13) conservam seus limites; não são declarações de correção ou autorização para
 mudar produto. Validação remota, decisão de intervenção e execução devem ser registradas
