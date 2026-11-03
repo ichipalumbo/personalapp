@@ -54,6 +54,38 @@ function normalizarStatusAlunoLocal(valorStatus) {
     );
 }
 
+function normalizarTextoBuscaFallbackLocal(valor) {
+    return String(valor === null || valor === undefined ? '' : valor)
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+}
+
+// Nome diferente do global de alunos-helpers.js de propósito: um `function
+// normalizarTextoBuscaAluno` no topo deste arquivo viraria window.normalizarTextoBuscaAluno
+// e sobrescreveria o helper, deixando o fallback local no comando.
+function normalizarTextoBuscaView(valor) {
+    return normalizarValorAlunoComFallback(
+        valor,
+        window.normalizarTextoBuscaAluno,
+        normalizarTextoBuscaFallbackLocal,
+        normalizarTextoBuscaView
+    );
+}
+
+// A busca vive no próprio campo (#buscaAlunos), que fica fora de #listaAlunos —
+// por isso o termo sobrevive a qualquer re-render otimista da lista.
+function lerValorCampoBuscaAlunos() {
+    const campo = document.getElementById('buscaAlunos');
+    return campo && typeof campo.value === 'string' ? campo.value : '';
+}
+
+function lerTermoBuscaAlunos() {
+    return normalizarTextoBuscaView(lerValorCampoBuscaAlunos());
+}
+
 function obterAlunoPorIdView(id) {
     if (typeof window.getAluno === 'function') {
         return window.getAluno(id);
@@ -1046,7 +1078,8 @@ window.renderizarListaAlunos = function() {
                     + '|' + _consistenciaAgendaErro
                     + '|' + JSON.stringify(_reposicoesHistorico)
                     + '|' + _reposicoesHistoricoErro
-                    + '|' + JSON.stringify(typeof aulasParaRepor === 'undefined' ? [] : aulasParaRepor);
+                    + '|' + JSON.stringify(typeof aulasParaRepor === 'undefined' ? [] : aulasParaRepor)
+                    + '|' + lerTermoBuscaAlunos();
             } catch (_) { return null; }
         })();
         if (_chaveAtual !== null && _chaveAtual === _ultimaChaveRenderAlunos) return;
@@ -1067,7 +1100,22 @@ window.renderizarListaAlunos = function() {
             return;
         }
 
-        listaContainer.innerHTML = alunos.map(aluno => {
+        const termoBusca = lerTermoBuscaAlunos();
+        const alunosVisiveis = termoBusca
+            ? alunos.filter((aluno) => normalizarTextoBuscaView(aluno && aluno.nome).includes(termoBusca))
+            : alunos;
+
+        if (alunosVisiveis.length === 0) {
+            listaContainer.innerHTML = `
+                <div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--cor-neutro-24);">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size: 2.5rem; margin-bottom: 10px; display: block;"></i>
+                    <p style="font-size: 1rem;">Nenhum aluno encontrado para “${escaparTextoAluno(lerValorCampoBuscaAlunos().trim())}”.</p>
+                </div>
+            `;
+            return;
+        }
+
+        listaContainer.innerHTML = alunosVisiveis.map(aluno => {
             const preco = aluno.preco ? parseFloat(aluno.preco) : 0;
             const freqAcordada = obterFrequenciaContratoAluno(aluno);
             const local = aluno.local || 'Não definido';
@@ -1090,6 +1138,9 @@ window.renderizarListaAlunos = function() {
                     ? 'Fecha por mês cheio'
                     : (aluno.diaVencimento ? `Vence dia ${aluno.diaVencimento}` : 'Sem vencimento definido'));
                     const observacoes = String(aluno.observacoes || '').trim();
+            const linkWhatsApp = typeof window.montarLinkWhatsApp === 'function'
+                ? window.montarLinkWhatsApp(aluno.telefone)
+                : null;
 
             // Indicadores do card: ciclo financeiro, consistência de agenda e reposições a vencer.
             const caixinhas = [
@@ -1110,6 +1161,15 @@ window.renderizarListaAlunos = function() {
                             </div>
                         </div>
                         <div onclick="event.stopPropagation();" style="margin-left: auto; display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-shrink: 0;">
+                            ${linkWhatsApp ? `<a
+                                class="aluno-card-whatsapp"
+                                href="${escaparTextoAluno(linkWhatsApp)}"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onclick="event.stopPropagation();"
+                                aria-label="Abrir WhatsApp de ${escaparTextoAluno(aluno.nome)}"
+                                title="Abrir WhatsApp"
+                            ><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>` : ''}
                             <!-- Etapa 7 (Cartão B, achado 4.6): o card continua clicável ao
                                  toque (alvo grande), mas NÃO é o alvo de teclado — ele tem
                                  interativo aninhado (toggle de status e <details>), o que
@@ -1280,6 +1340,12 @@ window.alternarStatusAluno = async function(id, ativoForcado) {
     }
 };
 document.addEventListener('DOMContentLoaded', () => {
+    const campoBuscaAlunos = document.getElementById('buscaAlunos');
+    if (campoBuscaAlunos) {
+        const aoMudarBusca = () => window.renderizarListaAlunos();
+        campoBuscaAlunos.addEventListener('input', aoMudarBusca);
+        campoBuscaAlunos.addEventListener('search', aoMudarBusca);
+    }
     document.getElementById('btnFecharHistoricoReposicoes')?.addEventListener('click', window.fecharHistoricoReposicoes);
     document.getElementById('btnRodapeHistoricoReposicoes')?.addEventListener('click', window.fecharHistoricoReposicoes);
     document.getElementById('btnCancelarEdicaoCobrancaReposicao')?.addEventListener('click', window.fecharEdicaoCobrancaReposicao);

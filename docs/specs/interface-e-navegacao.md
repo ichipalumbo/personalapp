@@ -1,7 +1,7 @@
 # Spec — Interface, navegação e acessibilidade
 
-> **Status**: Em implementação · **Versão**: 7 · **Atualizado**: 2026-10-26
-> **Escopo de publicação**: base das etapas mobile já entregue; padronização dos topos, listas e hierarquia tipográfica de Alunos/Finanças aprovada na branch; consolidação das diretrizes de mutações otimistas e reatividade imediata na Seção 8 (ADR 0001). Publicação e aceite dessas alterações continuam com o dono; o roadmap conserva a situação dos demais complementos.
+> **Status**: Em implementação · **Versão**: 10 · **Atualizado**: 2026-11-03
+> **Escopo de publicação**: base das etapas mobile já entregue; padronização dos topos, listas e hierarquia tipográfica de Alunos/Finanças aprovada na branch; consolidação das diretrizes de mutações otimistas e reatividade imediata na Seção 8 (ADR 0001); contrato da busca por nome e do atalho de WhatsApp na lista de alunos na Seção 6.4; barra de ações fixa no rodapé do modal de aluno na Seção 3. Publicação e aceite dessas alterações continuam com o dono; o roadmap conserva a situação dos demais complementos.
 
 ## 1. Objetivo e fronteira
 
@@ -23,6 +23,7 @@ de reposição continuam nas respectivas specs; esta não as redefine.
 - O diálogo tem nome acessível; o foco inicial vai para seu contexto, sem ativar automaticamente campo de texto e teclado virtual.
 - Fechar o topo devolve foco ao contexto anterior/disparador. Não simular empilhamento mantendo dois diálogos modais ativos sem coordenação.
 - Cadastro, agendamento e recorrência usam apresentação de tela completa no recorte de até 430px; o viewport de referência do projeto não altera esse breakpoint.
+- No modal de cadastro/edição de aluno, a barra de ações (Excluir, Cancelar e Salvar/Atualizar) fica fixa no rodapé do modal e acompanha a rolagem do formulário, com fundo opaco e separador, para concluir ou sair sem voltar ao topo. O foco de um campo deslocado pela rolagem não para atrás dessa barra. A barra alcança a borda inferior do modal: não sobra faixa do fundo entre ela e a moldura, e o espaço interno dos botões é dado pelo padding da própria barra, não pelo padding do corpo do modal. No bottom-sheet mobile, a altura do formulário é limitada pelo flex do corpo, não por um `max-height` próprio.
 - Descarte de formulário pergunta somente quando há alteração a abandonar. Recorrência e área do usuário não fecham apenas pelo toque no fundo.
 - Os fluxos específicos de retorno ao histórico de reposições e os formulários financeiros seguem os contratos das respectivas specs.
 
@@ -106,6 +107,25 @@ navegação anteriormente publicada.
 	financeiras preservados. A semelhança visual não equipara o status cadastral
 	do aluno ao pagamento do ciclo nem substitui o valor do ciclo pelo cadastro.
 
+### 6.4 Busca por nome e contato por WhatsApp na lista de alunos
+
+- **Busca**: a tela de Alunos tem um único campo de busca textual por nome, dentro do
+	cabeçalho fixo (`.topo-tela`), logo abaixo do subtítulo da tela, e fora do container
+	que é re-renderizado. Por estar no cabeçalho, o campo acompanha a rolagem e continua
+	alcançável em listas longas. A comparação ignora caixa, acentos e espaços excedentes,
+	e aceita correspondência parcial. O termo digitado é preservado durante re-renders
+	otimistas de cadastro, edição e exclusão.
+- **Busca sem resultado**: quando há alunos cadastrados mas nenhum corresponde ao
+	termo, a lista mostra um estado vazio próprio com o termo pesquisado — nunca o
+	estado vazio de "nenhum aluno cadastrado".
+- **Contato por WhatsApp**: o card exibe um atalho para `https://wa.me/<número>`
+	aberto em nova aba (`rel="noopener noreferrer"`), com alvo de toque mínimo de
+	44×44 px, isolado do clique que abre a edição do aluno.
+- **Número aceito**: o telefone é reduzido a dígitos; 10 ou 11 dígitos nacionais
+	recebem o DDI `55`, e números já com `55` + 10/11 dígitos são mantidos. Qualquer
+	outro comprimento é inválido e o atalho não é exibido. Não há envio automático
+	de mensagem: o atalho só abre a conversa.
+
 ## 7. Verificação e fora de escopo
 
 A validação visual usa o mock e os viewports do [manual de ambiente](../setup-ambiente-local.md).
@@ -113,7 +133,7 @@ Testes de lógica/DOM protegem recortes de navegação, diálogo, cards e render
 pixels, gestos físicos, todos os estados ou integrações remotas. Medições e limites de
 validação de cada alteração ficam no registro da frente, sem certificar o app inteiro.
 
-Fora dos topos, listas e hierarquia visual aprovados nas seções 6.1 a 6.3 e das mutações otimistas da seção 8, não inclui redesenho, nova identidade visual ou novas telas,
+Fora dos topos, listas e hierarquia visual aprovados nas seções 6.1 a 6.3, da busca e do contato por WhatsApp da seção 6.4 e das mutações otimistas da seção 8, não inclui redesenho, nova identidade visual ou novas telas,
 alteração de cobrança/recorrência, regra nova de cancelamento, revisão de autenticação ou
 nova integração com Google Calendar.
 

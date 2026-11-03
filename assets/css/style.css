@@ -1099,6 +1099,63 @@ body {
 .lista-tela {
   padding-top: 12px;
 }
+/* Busca por nome (item 1.7): campo no cabeçalho fixo da tela de Alunos, logo
+   abaixo do subtítulo, acompanhando a rolagem. Alvo de toque de 44px e ícone
+   como pista visual fora do fluxo do texto. */
+.alunos-busca {
+  position: relative;
+  margin-top: 10px;
+}
+.alunos-busca > i {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: var(--cor-neutro-32);
+  font-size: 0.9375rem;
+  pointer-events: none;
+}
+.alunos-busca-campo {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px 10px 38px;
+  border: 1px solid var(--cor-neutro-22);
+  border-radius: 8px;
+  background: var(--cor-neutro-17);
+  color: var(--cor-neutro-40);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.alunos-busca-campo::placeholder {
+  color: var(--cor-neutro-32);
+}
+.alunos-busca-campo:focus {
+  outline: none;
+  border-color: var(--cor-primaria);
+  box-shadow: 0 0 0 2px var(--cor-primaria-a22);
+}
+/* Atalho de WhatsApp no card (item 1.4): alvo de toque mínimo de 44x44. */
+.aluno-card-whatsapp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 8px;
+  background: var(--cor-primaria-a08);
+  color: var(--cor-primaria);
+  font-size: 1.125rem;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+.aluno-card-whatsapp:hover,
+.aluno-card-whatsapp:focus-visible {
+  background: var(--cor-primaria-a22);
+}
 .alunos-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -1285,7 +1342,9 @@ body {
 .modal-alunos-corpo {
   background: var(--cor-neutro-06);
   border-radius: 16px;
-  padding: 24px;
+  /* Sem padding inferior: o respiro do rodapé vive dentro da barra de ações,
+     para o fundo dela cobrir o modal até a borda (pedido do dono, 2026-11-03). */
+  padding: 24px 24px 0;
   width: 92%;
   max-width: 440px;
   max-height: 88vh;
@@ -1311,6 +1370,9 @@ body {
   padding-right: 4px;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* Reserva a altura da barra de ações fixa ao trazer um campo para a vista,
+     para o foco não parar atrás dela. */
+  scroll-padding-bottom: 84px;
 }
 
 .form-aluno::-webkit-scrollbar {
@@ -1612,6 +1674,17 @@ body {
   gap: 12px;
   margin-top: 24px;
   justify-content: flex-end;
+  /* Barra de ações fixa no rodapé do modal (pedido do dono, 2026-11-03):
+     Salvar/Cancelar/Excluir acompanham a rolagem do formulário, para concluir
+     ou sair sem voltar ao topo. O padding inferior entra no lugar do padding do
+     modal, então o fundo opaco cobre a borda sem deixar faixa do conteúdo atrás. */
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  padding-top: 12px;
+  padding-bottom: 24px;
+  background: var(--cor-neutro-06);
+  border-top: 1px solid var(--cor-neutro-17);
 }
 /* [TAG-STYLE-AGENDA-DIARIA] */
 .agenda-panel {
@@ -3873,11 +3946,18 @@ button.agenda-dia-aula {
     max-height: 100dvh;
     min-height: 100dvh;
     border-radius: 18px 18px 0 0;
-    padding: 16px 12px 8px;
+    padding: 16px 12px 0;
   }
 
+  /* No bottom-sheet o respiro inferior também vive na barra de ações. */
+  .modal-alunos-acoes {
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+  }
+
+  /* O bottom-sheet tem altura fixa e é uma coluna flex: o form preenche o espaço
+     que sobra do cabeçalho. Um max-height aqui deixaria faixa do fundo sob a barra. */
   .form-aluno {
-    max-height: calc(100dvh - 110px);
+    max-height: none;
     padding-right: 2px;
   }
 

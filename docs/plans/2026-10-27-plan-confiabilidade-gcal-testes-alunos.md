@@ -29,7 +29,7 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - [x] **Janela de Full Sync e Data Base (T03 — Item `2.3` + Risco `1.1`)**: modo full de `listCalendarEvents` ampliado de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]`, com reconciliação restrita à mesma janela; `gcalSyncService.js` alinhado à precedência canônica de data base de `recurrence-helpers.js` (`dataCriacao || recorrenciaDataInicio || data`), sem alterar o motor financeiro.
 - [x] **Contratos e Riscos (T04)**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md) e [`docs/reference/lessons-learned.md`](../reference/lessons-learned.md) atualizados refletindo o desacoplamento do CRUD, o Outbox no `DELETE`, a nova janela `[-1m, +6m]` e o encerramento dos riscos `1.1` e `1.3`.
 - [x] **Blindagem Financeira e de Reposições (T05 — Item `3.1`)**: lacunas inventariadas nas regras financeiras/reposições e os 2 gatilhos otimistas de reposição (enviar para reposição e reagendar reposição) cobertos por testes automatizados provados por mutação — incluindo o rollback local que faltava no reagendamento de reposição.
-- [ ] **Operação Rápida em Alunos (T06 — Itens `1.7` e `1.4`)**: busca textual instantânea somente por nome na lista de alunos (`1.7`) e botão de atalho WhatsApp (`wa.me/55...` para números nacionais de 10–11 dígitos, oculto/desabilitado quando telefone ausente ou inválido, `1.4`).
+- [x] **Operação Rápida em Alunos (T06 — Itens `1.7` e `1.4`)**: busca textual instantânea somente por nome na lista de alunos (`1.7`) e botão de atalho WhatsApp (`wa.me/55...` para números nacionais de 10–11 dígitos, oculto/desabilitado quando telefone ausente ou inválido, `1.4`).
 - [ ] **Segurança e Isolamento**: toda query e fila (`Agendamento`, `GcalReconciliationQueue`, `GoogleCalendarConnection`) estritamente filtrada por `ownerEmail` via `getOwnerEmailOrThrow(req)` (regra 4.1).
 - [ ] **Regressão e Validação Visual**: suítes de backend (`backend/`) e frontend (`tests-frontend/`) medidas antes e depois de cada cartão aplicável, com prova por mutação para todo teste novo; validação visual no mock no viewport de referência `433×762`, `DPR 2.81`.
 
@@ -274,6 +274,26 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 | **M20 (T05 — `modal-acao-slot.js`)**: remover o rollback `aulas.splice(0, aulas.length, ..._snapshotAulasReposicao)` do envio para reposição | `T05 — envio para reposição (avulsa): falha na persistência devolve a aula para a agenda` | Falhou (`1/18`): a agenda ficou vazia após a falha | Sim |
 | **M21 (T05 — `modal-acao-slot.js`)**: remover o `aulas.push(novoCompromisso)` otimista do reagendamento de reposição | `T05 — reagendamento de reposição: a aula nova entra na agenda antes da persistência confirmar` | Falhou (`1/18`): a aula da reposição não apareceu antes da escrita | Sim |
 | **M22 (T05 — `modal-acao-slot.js`)**: remover o bloco de rollback `if (Array.isArray(_snapshotAulasReposicao))` recém-adicionado ao reagendamento | `T05 — reagendamento de reposição: falha na persistência devolve a agenda ao estado anterior` | Falhou (`1/18`): a aula fantasma permaneceu na agenda após a falha | Sim |
+| **M23 (T06 — `alunos-helpers.js`)**: devolver o telefone sem prefixar o DDI (`return digitos;` em vez de `` `55${digitos}` ``) | `T06 — normalizarTelefoneWhatsApp aceita 10/11 dígitos e prefixa o DDI 55`, `T06 — montarLinkWhatsApp...`, `T06 — aluno com telefone válido...` e `T06 — aluno sem telefone ou com número inválido...` | Falharam `4/14` | Sim |
+| **M24 (T06 — `alunos-helpers.js`)**: aceitar qualquer comprimento ≥ 12 dígitos no lugar de `55` + 10/11 | `T06 — normalizarTelefoneWhatsApp rejeita vazio, curto, longo e DDI estrangeiro` | Falhou (`1/14`): DDI estrangeiro e 14 dígitos passaram a ser aceitos | Sim |
+| **M25 (T06 — `alunos-helpers.js`)**: montar a URL com o telefone cru em vez do número normalizado | `T06 — montarLinkWhatsApp...`, `T06 — aluno com telefone válido...` e `T06 — aluno sem telefone ou com número inválido...` | Falharam `3/14` | Sim |
+| **M26 (T06 — `alunos-helpers.js`)**: trocar `normalize('NFD')` por `normalize('NFC')`, mantendo acentos | `T06 — normalizarTextoBuscaAluno ignora caixa, acentos e espaços extras` e `T06 — a busca ignora acentos e caixa do nome cadastrado` | Falharam `2/14` — a segunda falha só aparece após renomear a função local de `view-alunos.js`, que antes sobrescrevia o global por ter o mesmo nome (ver desvio abaixo) | Sim |
+| **M27 (T06 — `view-alunos.js`)**: remover o filtro por nome (`? alunos` no lugar do `filter`) | `T06 — a busca filtra a lista...`, `T06 — busca sem resultado...`, `T06 — limpar a busca...` e `T06 — o termo da busca sobrevive...` | Falharam `4/14` | Sim |
+| **M28 (T06 — `view-alunos.js`)**: desligar o estado vazio da busca (`if (false)`) | `T06 — busca sem resultado mostra estado vazio claro e não o vazio de cadastro` | Falhou (`1/14`) | Sim |
+| **M29 (T06 — `view-alunos.js`)**: nunca calcular o link de WhatsApp (`false &&` na detecção do helper) | `T06 — aluno com telefone válido...`, `T06 — aluno sem telefone...` e `T06 — o atalho do WhatsApp fica no bloco de ações...` | Falharam `3/14` | Sim |
+| **M30 (T06 — `view-alunos.js`)**: montar o `href` direto com `wa.me/${telefone}` sem normalizar | `T06 — aluno com telefone válido...` e `T06 — aluno sem telefone ou com número inválido...` | Falharam `2/14`: telefone inválido passou a gerar link | Sim |
+| **M31 (T06 — `view-alunos.js`)**: remover o `onclick="event.stopPropagation();"` do link | `T06 — o atalho do WhatsApp fica no bloco de ações que isola o clique do card` | Falhou (`1/14`) | Sim |
+| **M32 (T06 — `view-alunos.js`)**: limpar o campo de busca no início de cada render | `T06 — a busca filtra...`, `T06 — busca sem resultado...`, `T06 — limpar a busca...` e `T06 — o termo da busca sobrevive...` | Falharam `4/14`: o termo digitado deixou de sobreviver ao re-render | Sim |
+| **M33 (T06 — `index.html`)**: remover o `<input id="buscaAlunos">` da tela de Alunos | `T06 — o index.html entrega o campo de busca ligado à lista de alunos` | Falhou (`1/14`) | Sim |
+| **M34 (T06 — `view-alunos.js`)**: tirar o termo da chave do dirty-check | `T06 — a busca filtra...`, `T06 — busca sem resultado...`, `T06 — limpar a busca...` e `T06 — o termo da busca sobrevive...` | Falharam `4/14`: sem o termo na chave o render era pulado e o filtro não aplicava | Sim |
+| **M35 (T05/T06 — `modal-acao-slot.js`)**: remover o bloco de rollback do reagendamento já com a guarda `aulaPersistida` | `T05 — reagendamento de reposição: falha na persistência devolve a agenda ao estado anterior` | Falhou (`1/18`); `backend/test/gcal-duplicata-fix.test.js` continuou `105/105` | Sim |
+| **M36 (T05/T06 — `modal-acao-slot.js`)**: remover a guarda `!aulaPersistida`, desfazendo a inserção mesmo depois da gravação local | `Ponto 3 — falha na gravação do reagendamento não repete PATCH e preserva aula e tentativa parcial` em `backend/test/gcal-duplicata-fix.test.js` | Falhou (`1/105`); `tests-frontend/modal-acao-slot.test.js` continuou `18/18` | Sim |
+| **M37 (T06 — `index.html`)**: devolver o bloco `.alunos-busca` para dentro do painel da lista, fora do cabeçalho fixo | `T06 — o campo de busca fica no cabeçalho fixo, logo abaixo do título da tela` | Falhou (`1/15`): as outras 14 continuaram verdes, porque o campo segue antes da lista | Sim |
+| **M38 (ajuste — `style.css`)**: trocar `position: sticky; bottom: 0` por `position: static` na barra de ações do modal de aluno | `ajuste — a barra de ações do modal de aluno é sticky no rodapé` | Falhou (`1/3`) | Sim |
+| **M39 (ajuste — `style.css`)**: remover `scroll-padding-bottom` do `.form-aluno` | `ajuste — o formulário do aluno desvia o foco da barra fixa ao rolar` | Falhou (`1/3`) | Sim |
+| **M40 (ajuste — `index.html`)**: inserir um elemento irmão depois da barra de ações | `ajuste — a barra fica no fim do form, com as três ações do modal` | Falhou (`1/3`): a barra deixaria de colar no rodapé | Sim |
+| **M41 (ajuste — `style.css`)**: devolver `padding: 24px` ao `.modal-alunos-corpo` | `ajuste — o rodapé ocupa a borda do modal, sem faixa do fundo sobrando` | Falhou (`3/4`): volta a faixa de fundo sob a barra | Sim |
+| **M42 (ajuste — `style.css`)**: devolver `max-height: calc(100dvh - 110px)` ao `.form-aluno` mobile | `ajuste — no bottom-sheet mobile o form preenche a altura, sem faixa sob a barra` | Falhou (`4/5`): volta a faixa de 42 px sob a barra no bottom-sheet | Sim |
 
 ---
 
@@ -351,6 +371,46 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - **Desvio do plano**: o cartão previa "apenas arquivos de teste". Ao escrever o teste de rollback do reagendamento, ficou comprovado que o fluxo **não tinha** rollback (o `catch` só fechava o modal e mostrava o toast, deixando a aula fantasma na agenda em memória até um `carregarDados` completo). O achado foi levado ao dono antes de qualquer edição e a correção foi autorizada; o teste do rollback foi provado por mutação (M22) sobre a correção.
 - **Decisão adicional tomada**: `aplicarStatusCiclo` é exercitado pelo alias exportado `recalcularStatusCiclo`, e o filtro `obterReposicoesDoAluno` (privado) é coberto via `agruparHistoricoReposicoes`/`resumoHistoricoReposicoesAluno` — nenhum export novo foi criado só para o teste.
 
+### 2026-11-03 — T06 (Busca por nome e atalho WhatsApp na tela de Alunos)
+- **Arquivos alterados**:
+  - `index.html`: campo `<input type="search" id="buscaAlunos">` no topo de `#tela-alunos`, acima de `#listaAlunos`, com `aria-label` e `placeholder` próprios;
+  - `assets/js/alunos-helpers.js`: três helpers puros — `normalizarTextoBuscaAluno` (minúsculas, sem acentos via `NFD`, espaços colapsados), `normalizarTelefoneWhatsApp` (só dígitos; 10/11 dígitos recebem `55`; `55` + 10/11 é mantido; qualquer outro comprimento devolve `null`) e `montarLinkWhatsApp` (URL `wa.me` ou `null`);
+  - `assets/js/view-alunos.js`: leitura do termo direto do campo (fonte única, fora do container re-renderizado), filtro por nome com correspondência parcial, estado vazio próprio da busca com o termo pesquisado, termo incluído na chave do dirty-check, atalho de WhatsApp no bloco de ações do card e listener de `input`/`search` no `DOMContentLoaded`;
+  - `assets/css/style.css`: `.alunos-busca` (campo com 44 px de altura e ícone fora do fluxo) e `.aluno-card-whatsapp` (alvo de 44×44 px);
+  - `tests-frontend/view-alunos-busca-whatsapp.test.js` (criado): 14 testes — 5 de helpers puros, 5 de busca na lista (filtro, acentos, estado vazio, limpar, sobrevivência ao re-render), 3 de atalho WhatsApp e 1 de contrato do `index.html`;
+  - `docs/specs/interface-e-navegacao.md` (versão 7 → 8): nova seção 6.4 com o contrato de busca e do atalho de WhatsApp, e seção 7 ajustada à nova seção;
+  - `docs/roadmap-v3.md`: itens `1.4` e `1.7` marcados como `[x]`, com bullet de entrega e duas linhas novas na tabela de acompanhamento;
+  - `docs/plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md`: atualizado com este registro, as mutações M23–M36 e o fechamento do cartão.
+- **Resultado**: T06 concluído; busca e atalho de WhatsApp entregues, com o contrato registrado na spec de interface.
+- **Suíte antes/depois**: `tests-frontend/` antes `497/497` → depois `511/511` passando; `backend/` antes `259/259` → depois `259/259` passando.
+- **Desvio do plano**: dois, ambos de correção de código fora do previsto pelo cartão:
+  1. a primeira versão do helper local de busca em `view-alunos.js` usava o mesmo nome do global (`normalizarTextoBuscaAluno`). No topo do script, essa declaração vira `window.normalizarTextoBuscaAluno` e **sobrescrevia** o helper de `alunos-helpers.js`, deixando o fallback local no comando — exatamente a duplicação que a regra 4.3 evita. A função local foi renomeada para `normalizarTextoBuscaView` e a mutação M26 passou a derrubar também o teste de render, comprovando que o helper canônico está em uso;
+  2. ao rodar a suíte de backend no início desta rodada, ela estava **vermelha** (`258/259`): a correção de rollback do T05 removia a aula do reagendamento em qualquer falha anterior à confirmação final, inclusive depois da gravação local, contrariando o contrato do teste `Ponto 3` de `gcal-duplicata-fix.test.js` ("a aula confirmada antes do PATCH não pode ser removida por compensação"). A regressão entrou no commit `ace92b2` porque o backend não foi remedido depois daquela correção. O rollback foi **estreitado** com a guarda `aulaPersistida`: só desfaz a inserção otimista quando a gravação local falhou. As mutações M35 e M36 comprovam os dois lados do contrato.
+- **Decisão adicional tomada**: o termo da busca vive no próprio campo (`#buscaAlunos`), que fica fora de `#listaAlunos`. Isso dispensa estado paralelo e faz o termo sobreviver a qualquer re-render otimista por construção, não por sincronização manual.
+- **Ajuste pedido pelo dono após a validação**: o campo de busca saiu do painel da lista e passou para dentro de `.topo-tela-conteudo`, logo abaixo do subtítulo da tela. Como `.topo-tela` é `position: sticky`, o campo acompanha a rolagem. Mudança só de markup e espaçamento (`.alunos-busca` trocou `margin-bottom: 12px` por `margin-top: 10px`); a leitura do termo, o filtro e o estado vazio não mudaram. O contrato ganhou um teste dedicado — `T06 — o campo de busca fica no cabeçalho fixo, logo abaixo do título da tela` — provado pela mutação M37, que devolve o bloco ao painel da lista e derruba apenas esse teste.
+
+### 2026-11-03 — Ajuste fora do escopo: barra de ações fixa no modal de aluno
+- **Origem**: pedido do dono na mesma rodada do T06, fora dos cartões desta frente. Ele pediu que os botões do rodapé do modal de cadastro/edição de aluno fiquem sempre acessíveis, para "sair da tela ou só atualizar o nome e clicar em atualizar ou salvar".
+- **Arquivos alterados**:
+  - `assets/css/style.css`: `.modal-alunos-acoes` passou a `position: sticky; bottom: 0` com `z-index: 2`, fundo opaco (`--cor-neutro-06`), `padding-top: 12px` e `border-top` como separador; `.form-aluno` ganhou `scroll-padding-bottom: 84px` para o campo focado não parar atrás da barra;
+  - `tests-frontend/modal-aluno-acoes-fixas.test.js` (criado): 3 testes — a regra CSS declara sticky/rodapé/fundo opaco/separador, o form reserva o espaço da barra ao rolar, e a barra é a última filha do `form`, contendo Excluir, Cancelar e o `submit` Salvar;
+  - `docs/specs/interface-e-navegacao.md` (versão 8 → 9): novo bullet na seção 3 com o contrato da barra fixa.
+- **Resultado**: a barra não exigiu mudança de markup — ela já era a última filha de `form#formNovoAluno`, então bastou fixá-la. O `type="submit"` do botão Salvar continua dentro do form.
+- **Suíte antes/depois**: `tests-frontend/` antes `512/512` → depois `515/515` passando; `backend/` `259/259` sem alteração.
+- **Prova por mutação**: **M38** (`position: sticky; bottom: 0` → `static`) derruba o teste do CSS; **M39** (remover `scroll-padding-bottom`) derruba o teste do form; **M40** (inserir um irmão depois da barra) derruba o teste de estrutura. Todas restauradas.
+- **Validado no mock**: em `433×762` DPR 2.81, `390×844` e `320×568`, com `scrollTop` em 0, meio e fim, a barra permanece colada ao rodapé do modal e os botões Salvar e Cancelar continuam visíveis.
+
+### 2026-11-03 — Ajuste fora do escopo: rodapé sem faixa do fundo escapando
+- **Origem**: o dono reportou, com print, que "escapam alguns pixels de trás em uma linha abaixo do rodapé" e pediu que a barra ocupasse melhor o rodapé. Causa medida no mock: `.modal-alunos-corpo` tinha `padding: 24px` em todos os lados, então abaixo da barra sobrava uma faixa de **24,8 px** de padding do modal pela qual o fundo aparecia.
+- **Arquivos alterados**:
+  - `assets/css/style.css`: `.modal-alunos-corpo` teve o padding inferior zerado (`24px` → `24px 24px 0`; no breakpoint mobile `16px 12px 8px` → `16px 12px 0`); `.modal-alunos-acoes` compensou o espaço com `padding-bottom: 24px` (no mobile, `max(8px, env(safe-area-inset-bottom))`) para os botões não encostarem na borda.
+  - `tests-frontend/modal-aluno-acoes-fixas.test.js`: quarto teste — `ajuste — o rodapé ocupa a borda do modal, sem faixa do fundo sobrando` — trava o contrato (corpo sem padding inferior e barra com `padding-bottom` ≥ 16 px, para o botão não ficar colado na borda).
+- **Segundo achado, na mesma família**: ao medir o bottom-sheet mobile (`390×844` e `320×568`) a faixa reaparecia com **42 px**. A causa era o override mobile `.form-aluno { max-height: calc(100dvh - 110px) }`: o corpo do modal é coluna flex de `100dvh` e o `flex: 1` do form já é limitado por ele, mas o `max-height` com valor fixo travava a altura antes, deixando o resto do corpo vazio abaixo da barra. O override passou a `max-height: none` — quem limita a altura agora é o próprio flex, que considera a altura real do cabeçalho em vez de uma constante de 110 px.
+- **Resultado**: a barra passa a alcançar a borda inferior do modal nos três viewports. Sobra apenas o `border` de 1 px do próprio modal (**0,8 px** medidos), que é a moldura, não padding.
+- **Suíte antes/depois**: `tests-frontend/` antes `515/515` → depois `517/517` passando (dois testes novos); `backend/` `259/259` sem alteração.
+- **Prova por mutação**: **M41** (devolver `padding: 24px` ao `.modal-alunos-corpo`) derruba apenas o teste do rodapé; **M42** (devolver `max-height: calc(100dvh - 110px)` ao `.form-aluno` mobile) derruba apenas o teste do bottom-sheet. Ambas restauradas.
+- **Validado no mock**: em `433×762` (DPR 2.81), `390×844` e `320×568`, com o modal aberto e o form rolado até o fim, a distância entre o fim da barra e a borda do corpo do modal é **0,8 px** nos três, e barra e botão Salvar continuam dentro do viewport.
+
 ---
 
 ## 13. Achados não alterados
@@ -376,8 +436,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: `em andamento` (T00, T01, T02, T03, T04 e T05 concluídos).
-- **Implementação / validação / aceite / publicação**: T00 a T05 implementados e validados localmente; T06 pendente de execução.
-- **Pendências**: executar T06 na próxima rodada. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção; nenhum cartão desta frente foi publicado ainda.
+- **Critérios atendidos**: `concluído` (T00, T01, T02, T03, T04, T05 e T06 concluídos).
+- **Implementação / validação / aceite / publicação**: T00 a T06 implementados e validados localmente; nenhum cartão desta frente foi publicado.
+- **Pendências**: o T02 depende de deploy coordenado (backend antes do frontend) para valer em produção. A validação visual de busca e atalho de WhatsApp no aparelho físico continua com o dono.
 - **Riscos aceitos**: nenhum adicional até o momento.
 - **Data de fechamento**: `em aberto`

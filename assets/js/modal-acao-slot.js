@@ -2220,6 +2220,7 @@ document.addEventListener("DOMContentLoaded", () => {
         { acao: "reagendar-reposicao", agendamento: novoCompromisso, reposicaoId: repObj.id, status: "agendada" });
       if (!op) { await apresentarRecuperacaoSlot(); return; }
       let escritaConfirmada = false;
+      let aulaPersistida = false;
       let _snapshotAulasReposicao = null;
       try {
         if (!window.contextoDados.operacaoAtual(op)) return;
@@ -2238,6 +2239,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ? await salvar(true, { operacao: op, contextoDados: op.contexto })
             : { ok: false, motivo: "falha_remota" };
         confirmarPersistenciaSlot(op, resultadoPersistencia);
+        aulaPersistida = true;
         if (!window.contextoDados.operacaoAtual(op)) return;
 
         const respostaPatch = await window.apiFetchBackend(
@@ -2328,7 +2330,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (!window.contextoDados.operacaoAtual(op)) return;
         if (escritaConfirmada) { avisarFalhaAtualizacaoSlot(); return; }
-        if (Array.isArray(_snapshotAulasReposicao)) {
+        // Só desfaz a inserção otimista quando a gravação local falhou: depois dela a
+        // aula já está no servidor e a tentativa precisa ser preservada para recuperação.
+        if (!aulaPersistida && Array.isArray(_snapshotAulasReposicao)) {
           aulas.splice(0, aulas.length, ..._snapshotAulasReposicao);
           if (typeof forçarRenderizacaoInterface === "function") forçarRenderizacaoInterface();
           window.log.warn("[reposicao]", "Rollback somente local; recuperação pendente", {

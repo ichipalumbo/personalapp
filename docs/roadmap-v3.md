@@ -24,12 +24,13 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: baixo para a proposta mínima em CSV; outros formatos dependem do escopo escolhido.
 - **Referência**: [spec de Finanças](specs/financas-ciclo-cobranca.md), modelo `CicloFinanceiro` e contratos da API. A exportação ainda precisa de definição própria.
 
-### [ ] 1.4 Contato rápido via WhatsApp
+### [x] 1.4 Contato rápido via WhatsApp
 
 - **Resultado esperado**: iniciar uma conversa a partir do telefone cadastrado no card do aluno, sem copiar o número manualmente.
 - **Decisão confirmada (2026-10-27)**: link `wa.me/55...` normalizando números nacionais de 10–11 dígitos; ocultar/desabilitar o atalho quando o aluno não tiver telefone válido cadastrado.
+- **Entrega (2026-11-03)**: T06 executado no plano da frente. O card do aluno exibe um atalho `https://wa.me/<número>` em nova aba (`rel="noopener noreferrer"`), com alvo de 44×44 px e clique isolado do card; `normalizarTelefoneWhatsApp` reduz a dígitos, prefixa `55` em 10/11 dígitos e mantém números que já vêm com `55` + 10/11 dígitos, devolvendo `null` para qualquer outro comprimento — nesse caso o atalho não é renderizado.
 - **Esforço**: muito baixo; a proposta atual é somente um atalho de contato, não envio automático de cobrança.
-- **Referência**: [tela de Alunos](../assets/js/view-alunos.js) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md); sem spec própria ainda.
+- **Referência**: [tela de Alunos](../assets/js/view-alunos.js), [spec de interface, seção 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md).
 
 ### [ ] 1.5 Presença, falta e cancelamento pelo aluno
 
@@ -46,13 +47,14 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: baixo.
 - **Referência**: [cadastro de Alunos](../assets/js/view-alunos.js) e [Home](../assets/js/view-home.js); sem spec própria ainda.
 
-### [ ] 1.7 Busca e filtros na lista de alunos
+### [x] 1.7 Busca e filtros na lista de alunos
 
 - **Resultado esperado**: localizar um aluno por nome sem percorrer toda a lista.
 - **Decisão confirmada (2026-10-27)**: somente busca textual instantânea por nome, sem filtros extras no topo.
+- **Entrega (2026-11-03)**: T06 executado no plano da frente. Campo único `#buscaAlunos` no cabeçalho fixo da tela (acompanha a rolagem), comparando nome sem caixa, sem acentos e com correspondência parcial; o termo vive no próprio campo (fora do container re-renderizado), então sobrevive a re-renders otimistas, e a busca sem resultado mostra estado vazio próprio com o termo pesquisado.
 - **Situação atual**: os antigos filtros de status/objetivo foram removidos; por isso o item deixa de ser descrito como parcialmente entregue.
 - **Esforço**: muito baixo para busca por nome.
-- **Referência**: [tela de Alunos](../assets/js/view-alunos.js) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md); sem spec própria ainda.
+- **Referência**: [tela de Alunos](../assets/js/view-alunos.js), [spec de interface, seção 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md).
 
 ## Confiabilidade e infraestrutura
 
@@ -168,6 +170,8 @@ Cada ID aparece uma vez no acompanhamento. Detalhes de implementação e mediç�
 | 0.12 | `[x]` | Cobertura de render do Dia, conflitos e fluxos principais dos modais | [Plano encerrado e limites](archive/plans/2026-10-12-plan-cobertura-render-conflitos-modais.md) |
 | 1.1 | `[x]` | Pagamentos, inadimplência e cobrança por ciclo | [Spec de Finanças](specs/financas-ciclo-cobranca.md) |
 | 1.3 | `[x]` | Observações no cadastro e card do aluno; não representa anotação por aula | [Registro anterior](archive/roadmaps/roadmap-v1.md) |
+| 1.4 | `[x]` | Atalho `wa.me` no card do aluno, com `55` prefixado em números nacionais e oculto quando o telefone é inválido | [Spec de interface, 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) |
+| 1.7 | `[x]` | Busca por nome na lista de alunos, sem acentos/caixa, com termo preservado e estado vazio próprio | [Spec de interface, 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) |
 | 1.8 | `[→]` | Avisos de aulas a repor consolidados no item 0.8 | [Regra de reposições](specs/reposicoes-e-competencia.md) |
 | 1.9 | `[x]` | Pagamento e ajuste de ciclo histórico ainda não pago | [Spec de Finanças, seção 6.3](specs/financas-ciclo-cobranca.md) |
 | 1.10 | `[x]` | Histórico de reposições e reagendamento contextual no card do aluno | [Contrato](specs/reposicoes-e-competencia.md) e [complementos recentes](archive/plans/2026-10-13-plan-melhorias-fluxos-ux.md) |
