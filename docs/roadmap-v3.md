@@ -56,6 +56,14 @@ Itens mapeados para a operação do personal trainer. Estar nesta seção não s
 - **Esforço**: muito baixo para busca por nome.
 - **Referência**: [tela de Alunos](../assets/js/view-alunos.js), [spec de interface, seção 6.4](specs/interface-e-navegacao.md) e [plano da frente (T06)](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md).
 
+### [ ] 1.8 Comunicados de novidades e correções
+
+- **Resultado esperado**: apresentar novidades relevantes em comunicado dispensável e permitir consulta posterior na Área do usuário, com estado de visto por conta.
+- **Decidir e comprovar antes**: compatibilidade dos recursos com o código carregado, sincronização segura/offline e automação de rascunhos revisados pelo dono. A implementação e a ativação de automação não estão autorizadas por este item.
+- **Risco/dependência**: a recarga existente do service worker é questão independente e não foi corrigida nesta frente.
+- **Esforço**: a estimar após investigação técnica.
+- **Referência**: [diagnóstico](diagnostics/2026-11-03-diag-comunicados-novidades.md), [benchmark](reference/benchmark-comunicados-novidades.md) e [plano da frente](plans/2026-11-03-plan-comunicados-novidades.md); a spec será vinculada após sua aprovação.
+
 ## Confiabilidade e infraestrutura
 
 ### [x] 2.2 Consolidar os gatilhos de sincronização

@@ -37,7 +37,8 @@
 | [Migração documental](plans/2026-10-14-plan-migracao-documental.md) | Matriz por trecho: origem, destino, conteúdo incorporado, duplicações e pendências | Para retomar as transferências incrementais sem reabrir a auditoria encerrada |
 | [Plano da frente: GCal/Sessão, Testes e Alunos](plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md) | Plano vivo das Ondas 1–3 definidas em 2026-10-27 (`2.2`, `2.3`, T04/Outbox, Riscos `1.1`/`1.3`, `3.1`, `1.7` e `1.4`) | Para executar, validar e registrar os cartões T01–T06 |
 | [Plano da frente: Landing dos serviços da Prô Josy](plans/2026-11-03-plan-landing-servicos-josy.md) | Plano vivo das decisões do grill de 2026-11-03: landing estática autocontida em `landing/` para alunos finais, com placeholders tipados e link no rodapé por último (T02) | Para executar, validar e registrar os cartões T01–T02 |
-| [Plano da frente: Sinalização de atualizações do app](plans/2026-11-03-plan-atualizacao-app.md) | Plano vivo da detecção de versão por `version.json`, faixa abaixo do header e recarga automática quando ocioso, com verificação manual em "Sobre o app" | Para executar, validar e registrar os cartões T01–T09, partindo do [diagnóstico datado](diagnostics/2026-11-03-diag-atualizacao-app.md) |
+| [Plano cancelado: Sinalização técnica de atualizações](plans/2026-11-03-plan-atualizacao-app.md) | Histórico da proposta de detecção de versão e recarga; cancelado após o objetivo ser esclarecido. Risco existente do worker não corrigido | Para consultar o contexto, sem executar seus cartões |
+| [Plano da frente: Comunicados de novidades](plans/2026-11-03-plan-comunicados-novidades.md) | Decisões e investigação para apresentar comunicados de novidades e correções, com histórico e dispensa por conta | Para acompanhar a frente, o [diagnóstico](diagnostics/2026-11-03-diag-comunicados-novidades.md) e o [benchmark](reference/benchmark-comunicados-novidades.md) |
 
 ---
 

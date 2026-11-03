@@ -1,6 +1,7 @@
 # Plano — Sinalização de atualizações do app
 
-> **Status**: `Aguardando decisão` — plano replanejado após auditoria; T00 concluído; investigação técnica e contrato precedem a implementação; cada publicação exige nova autorização do dono
+> **Status**: `Cancelado` — em 2026-11-03, o dono redirecionou o objetivo para comunicados de novidades; implementação técnica deste plano não foi iniciada. O risco existente de recarga pelo service worker permanece sem correção e será decidido separadamente.
+> **Continuação de produto**: [plano de comunicados de novidades](2026-11-03-plan-comunicados-novidades.md), baseado no [diagnóstico dos comunicados](../diagnostics/2026-11-03-diag-comunicados-novidades.md). Este plano é preservado como histórico; suas propostas e decisões de execução não autorizam implementação na nova frente.
 > **Abertura**: 2026-11-03
 > **Atualizado**: 2026-11-03
 > **Responsável**: Luccas (dono) + agente
@@ -240,7 +241,13 @@ Cada teste novo deve falhar quando sua proteção for mutada; registrar resultad
 - **Arquivo alterado**: este plano. O diagnóstico auditado, a spec, o roadmap e o código não foram alterados nesta rodada.
 - **Resultado**: decisões do dono registradas na seção 3; questões de prova, contrato anterior ao código, preparação P1 e portão separado para P2, cartões, validação e mutações reordenados para tratar A01–A10.
 - **Testes**: não executados; mudança exclusivamente documental. Nenhuma hipótese técnica foi considerada comprovada e nenhuma publicação foi realizada ou autorizada.
-- **Pontos a resolver**: T00-A/B, viabilidade do aviso com origem atribuível, identidade de worker, comportamento completo do cliente em P1, ausência de laço entre gatilhos, contrato T00-C, identificador do roadmap e aceite dos textos; pedir autorização antes da implementação e de cada publicação.
+- **Pontos a resolver à época**: T00-A/B, viabilidade do aviso com origem atribuível, identidade de worker, comportamento completo do cliente em P1, ausência de laço entre gatilhos, contrato T00-C, identificador do roadmap e aceite dos textos.
+
+### 2026-11-03 — Cancelamento e redirecionamento
+- **Decisão do dono**: cancelar este plano técnico e abrir uma frente de comunicados; preservar o documento como histórico sem executar os cartões.
+- **Situação**: apenas T00 documental havia sido realizado. Código, spec da feature, testes de implementação e publicação não foram executados.
+- **Risco residual**: a recarga existente em `controllerchange` e o impacto em clientes antigos permanecem não corrigidos; análise e prioridade ficam para decisão separada do dono.
+- **Nova frente**: [diagnóstico de comunicados](../diagnostics/2026-11-03-diag-comunicados-novidades.md) e [plano de comunicados](2026-11-03-plan-comunicados-novidades.md). A exigência de compatibilidade dos recursos pode demandar nova investigação técnica, sem reativar automaticamente as propostas deste plano.
 
 ## 13. Achados não alterados
 
@@ -262,10 +269,8 @@ Cada teste novo deve falhar quando sua proteção for mutada; registrar resultad
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: T00 documental; replanejamento registrado. A investigação técnica, spec, implementação e validação da solução ainda não foram executadas.
-- **Implementação**: não iniciada; depende de contrato, provas e autorização do dono.
-- **Validação**: 517/517 é medição histórica do frontend; nenhuma suíte ou teste de produto foi executado no replanejamento.
-- **Aceite / publicação**: não emitidos; P1 e P2 exigem decisões separadas.
-- **Pendências**: questões e portões da seção 4, T00-A/B/C/P e T01–T09, definição do ID do roadmap e aceite dos textos.
-- **Limites conhecidos, não aceites de risco de publicação**: bump manual com checklist; detecção automática restrita aos gatilhos aprovados; token do HTML não comprova todos os recursos; risco residual de abas antigas será submetido ao dono antes de P2.
-- **Data de fechamento**: não aplicável.
+- **Resultado**: plano cancelado pelo dono em 2026-11-03 após esclarecimento do objetivo; T00 e a pesquisa permanecem como histórico, sem afirmar entrega da solução técnica.
+- **Implementação / validação / publicação**: não realizadas. A medição histórica de 517/517 frontend corresponde à rodada documental inicial, não a esta decisão.
+- **Aceite**: não emitido para a solução técnica. Os cartões não executados deixam de constituir fila ativa; a nova frente é a de comunicados.
+- **Risco não resolvido**: reload existente em `controllerchange` e transição de clientes antigos; tratamento e prioridade requerem decisão separada do dono. A compatibilidade exigida na nova frente também precisa de investigação própria.
+- **Data de cancelamento**: 2026-11-03.
