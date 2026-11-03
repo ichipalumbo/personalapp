@@ -1,9 +1,9 @@
 # Plano — Comunicados de novidades e correções
 
-> **Status**: `Aguardando decisão` — decisões de produto registradas; viabilidade de compatibilidade, persistência e automação ainda não demonstrada; nenhuma implementação ou publicação autorizada
+> **Status**: `Aguardando decisão` — decisões de produto registradas, T01 (compatibilidade) concluída e P1–P6 decididas; mecanismo de prova é marcador auto-declarado em JS e HTML, sem recarga automática; persistência e automação ainda não demonstradas; nenhuma implementação ou publicação autorizada
 > **Abertura/Atualizado**: 2026-11-03 · **Responsável**: Luccas (dono) + agente
 > **Branch**: `feat/atualizacao-app`, escolhida pelo dono; **base de código**: `1ff3ca374443c6292c3518c1095054382ab8ce93`; **base documental**: `738af7b`, mais os registros desta rodada.
-> **Fontes**: [diagnóstico de comunicados](../diagnostics/2026-11-03-diag-comunicados-novidades.md), [benchmark](../reference/benchmark-comunicados-novidades.md), [spec de interface](../specs/interface-e-navegacao.md), [índice documental](../README.md) e [roadmap](../roadmap-v3.md). O [plano técnico anterior](2026-11-03-plan-atualizacao-app.md) foi cancelado e permanece como histórico.
+> **Fontes**: [diagnóstico de comunicados](../diagnostics/2026-11-03-diag-comunicados-novidades.md), [diagnóstico de compatibilidade](../diagnostics/2026-11-03-diag-compatibilidade-comunicados.md), [benchmark](../reference/benchmark-comunicados-novidades.md), [spec de interface](../specs/interface-e-navegacao.md), [índice documental](../README.md) e [roadmap](../roadmap-v3.md). O [plano técnico anterior](2026-11-03-plan-atualizacao-app.md) foi cancelado e permanece como histórico.
 
 Este plano é vivo e recebe nele próprio o registro das decisões adicionais, execução, medições e desvios. Ele não substitui a spec durável nem autoriza implementação, ativação de automação, deploy ou alterações em áreas sensíveis.
 
@@ -34,11 +34,25 @@ A identificação e a comprovação dessa compatibilidade **não estão resolvid
 
 **Correções de precedência**: a escolha de rascunho para cada PR com publicação apenas após revisão substitui a alternativa inicialmente mencionada de publicar automaticamente todos os PRs. Em caso de falha de armazenamento, fechar sem aviso e aceitar reaparecimento; não assumir gravação remota confirmada.
 
+### Decisões do dono — 2026-11-03, após T01
+
+Respondem às perguntas P1–P6 do [diagnóstico de compatibilidade](../diagnostics/2026-11-03-diag-compatibilidade-comunicados.md).
+
+| # | Tema | Decisão |
+|---|---|---|
+| P1/P5 | Mecanismo de prova | **Alternativa A completa**: marcador auto-declarado em cada recurso citado por comunicado, com contador monotônico por recurso, hash de integridade e verificação por teste. Inclui autorizar o marcador em módulos de `backend/shared/` (área sensível) quando o comunicado os citar. O marcador não altera lógica; a edição de módulo sensível continua exigindo confirmação específica no PR correspondente (T06). |
+| P2 | Momento de exibição | Aceito: o comunicado aparece na primeira abertura em que o cliente já executa o código provado; **nenhuma recarga automática** é introduzida por esta frente. |
+| P3 | Correção puramente de backend | **Não** vira comunicado. Sinal de release na API foi descartado nesta rodada; comunicado exige recurso de frontend provado. |
+| P4 | Escopo de recursos provados | **JS + HTML**: módulos JS e `index.html` têm marcador verificado por teste. CSS fica **fora** do conjunto comprovável — não existe mecanismo exato hoje e um comunicado dependente só de CSS não deve ser publicado. |
+| P6 | Estado sem item provado | A entrada **Novidades** na Área do usuário permanece **visível com estado vazio**; o modal automático não abre. |
+
+Consequências registradas: (a) o marcador em `backend/shared/` é mudança em área sensível e será confirmada no T06; (b) comunicados de CSS-only e de backend puro estão fora do conjunto publicável; (c) o atraso de uma abertura é comportamento aceito, não defeito; (d) a ordem do histórico usa `versão executada >= versão exigida`, então rollback pode ocultar comunicado já visto — efeito a declarar na spec.
+
 ## 3. Escopo, limites e invariantes
 
 ### Inclui
 
-- Catálogo editorial e identificação estável dos comunicados; critério e evidências de compatibilidade dos recursos relevantes a investigar antes de escolher arquitetura.
+- Catálogo editorial e identificação estável dos comunicados; marcador auto-declarado de versão nos recursos comprováveis (módulos JS e `index.html`), verificado por teste.
 - Histórico/estado de leitura por conta no backend, incluindo isolamento por `ownerEmail`, resposta de confirmação e testes entre contas.
 - Cópia e fila locais por conta, compatibilidade offline comprovada, sincronização posterior e proteção contra respostas antigas ou troca de sessão.
 - Modal automático e histórico em diálogo coordenado pela infraestrutura existente; acessibilidade e validação visual no mock.
@@ -49,7 +63,8 @@ A identificação e a comprovação dessa compatibilidade **não estão resolvid
 - Notificação push ou aviso com o app fechado; mudança de produto para recarregar automaticamente; implementação automática do plano técnico cancelado.
 - Alterar autenticação, Google Calendar, motor de recorrência, conflitos, sync em cascata ou service worker sem confirmação específica. Se compatibilidade completa exigir mudar cache, worker, build, introduzir dependência ou alterar os limites aprovados, **parar e pedir decisão**, não ampliar escopo silenciosamente.
 - Ligar CI/Actions, chamar APIs ou ferramentas de terceiros, conceder permissões ou publicar conteúdo sem revisão e autorização do dono.
-- Tratar o risco existente de `controllerchange` como corrigido. O destino e prioridade dessa correção continuam com o dono.
+- Comunicar correção **puramente de backend** (decidido em 2026-11-03: fora desta frente) e comunicado dependente **apenas de CSS** (fora do conjunto comprovável).
+- Tratar o risco existente de `controllerchange` como corrigido. O destino e a prioridade dessa correção continuam com o dono.
 
 ### Invariantes
 
@@ -76,6 +91,8 @@ A identificação e a comprovação dessa compatibilidade **não estão resolvid
 
 Nenhum bloqueio técnico é considerado resolvido por constar neste plano. Registrar resultados de investigação e pedir aprovação para mudanças de regra ou de escopo antes de implementar.
 
+**Situação em 2026-11-03 (T01)**: B1, B2, B3 e B7 foram investigados no [diagnóstico de compatibilidade](../diagnostics/2026-11-03-diag-compatibilidade-comunicados.md), com evidência local e medição de cabeçalhos publicados, e as perguntas P1–P6 foram decididas pelo dono (seção 2). Isso fecha B1, B2 e B3 no escopo escolhido — marcador auto-declarado em JS e HTML, sem recarga e sem comunicado de backend puro. A matriz de B7 vira contrato em T04. B4, B5, B6, B8 e B9 permanecem abertos nas tarefas correspondentes.
+
 ## 5. Critérios de aceite
 
 - [ ] Na abertura e após login, se houver dados e prova confiáveis, mostrar em um só modal os comunicados não vistos e compatíveis, na ordem escolhida; aguardar condições protegidas e não abrir ao simples retorno à aba.
@@ -94,6 +111,7 @@ Nenhum bloqueio técnico é considerado resolvido por constar neste plano. Regis
 - **Situação**: concluído nesta rodada documental. [Diagnóstico](../diagnostics/2026-11-03-diag-comunicados-novidades.md), [benchmark](../reference/benchmark-comunicados-novidades.md) e decisões da seção 2 registram a origem. O plano técnico anterior foi cancelado sem correção do worker.
 
 ### T01 — Investigar compatibilidade e viabilidade
+- **Situação**: concluído em 2026-11-03, na base de código `1ff3ca3`. Evidências, alternativas e perguntas em [diagnóstico de compatibilidade](../diagnostics/2026-11-03-diag-compatibilidade-comunicados.md). Resultado: a garantia é demonstrável apenas com marcador auto-declarado por recurso (alternativa A); as alternativas sem alteração de produto (tamanho do corpo, `fetch` + hash, token central) não produzem prova. Decisões P1–P6 tomadas pelo dono em 2026-11-03 (seção 2).
 - **Depende de**: T00. Apenas leitura, testes locais controlados e investigação documental; não alterar código do produto ou worker sem autorização.
 - **Inclui**: B1–B3 e B7; inventário dos recursos relevantes, carregamento de HTML/JS/CSS e módulos compartilhados, cache HTTP e do worker, recursos mistos, prova e validade no offline, rollback, cliente antigo e recursos necessários para correções de backend.
 - **Aceite**: registrar alternativas com evidências, prova discriminante e riscos; mostrar como o usuário recebe código compatível sem presumir reload; identificar requisitos externos ou mudanças de escopo. Se não for possível demonstrar a garantia, parar e consultar o dono; nunca substituir a exigência por token do HTML.
@@ -184,9 +202,19 @@ Para cada teste novo, demonstrar falha com a proteção revertida/mutada, restau
 - **Resultado**: escopo de comunicado separado da recarga; decisões de apresentação, compatibilidade, conta/offline e rascunhos registradas. Critérios técnicos não foram comprovados.
 - **Testes e publicação**: não executados; rodada exclusivamente documental. Nenhuma implementação, ativação de Actions ou deploy realizado.
 
+### 2026-11-03 — T01 (investigação de compatibilidade)
+
+- **Base**: branch `feat/atualizacao-app`, `HEAD` `3019494`; `git diff` desde `1ff3ca3` atinge somente `docs/`, `.github/` e `.vscode/`, então a base de código do diagnóstico é a mesma já registrada.
+- **Método**: leitura de código; medição no mock local; inspeção somente leitura de cabeçalhos HTTP publicados; experimento em cópia descartável do repositório, fora da árvore versionada e removida ao fim. Nenhum arquivo de produto, worker ou automação foi alterado.
+- **Medições**: suíte `tests-frontend/` antes de qualquer alteração — **517 testes, 517 passando, 0 falhas**, 75,2 s. Suíte de `backend/` não executada (nenhum arquivo por ela coberto tocado nesta rodada). Recursos executados no mock: 41 scripts locais com `decodedBodySize` igual ao tamanho em disco; com corpo antigo semeado e rede desligada, o recurso misto foi medido em 355 bytes contra 337 do arquivo atual; `fetch(..., { cache: 'no-store' })` devolveu `200` com o corpo antigo. Cabeçalhos publicados: `max-age=0, must-revalidate` com `ETag`, e `Content-Length` dos arquivos estáticos medidos igual ao tamanho local.
+- **Resultado**: prova de identidade executada só é obtível com marcador auto-declarado por recurso (alternativa A do diagnóstico), com contador monotônico verificado por teste; as demais alternativas medem, mas não provam. Cliente antigo recebe código compatível na próxima abertura (revalidação `max-age=0, must-revalidate` medida em produção), não na sessão em curso. Correção puramente de backend não é comprovável por identidade de frontend.
+- **Desvios registrados**: (1) o host documentado `josy-personal-app.vercel.app` responde `307` para `personal-josy.vercel.app` — a origem efetiva do app é a segunda, e o README/instruções ainda citam a primeira; não corrigido, fora do escopo desta rodada. (2) A cópia descartável exigiu um segundo servidor estático em porta alternativa; o servidor do mock em `127.0.0.2:5500` permaneceu no ar.
+- **Entregas documentais**: [diagnóstico de compatibilidade](../diagnostics/2026-11-03-diag-compatibilidade-comunicados.md), atualização de T01 e das seções 4, 10 e 11 deste plano, e linha no [índice documental](../README.md).
+- **Pendente**: P1–P6 do diagnóstico. T02–T03 seguem não iniciados; nenhuma spec aprovada, nenhum código escrito.
+
 ## 11. Estado de fechamento
 
-- **Concluído**: levantamento documental e decisões iniciais de produto; T00.
-- **Pendente**: investigações T01–T03, decisões B1–B9, spec, implementação, testes/mutações, autorização e validação de publicação.
+- **Concluído**: levantamento documental e decisões iniciais de produto; T00; investigação T01 (B1–B3 e B7), registrada no [diagnóstico de compatibilidade](../diagnostics/2026-11-03-diag-compatibilidade-comunicados.md).
+- **Pendente**: investigações T02–T03; decisões B4–B6, B8–B9; spec; implementação; testes/mutações; autorização e validação de publicação.
 - **Riscos independentes**: recarga existente no worker, propagação/cache de produção, disponibilidade do mecanismo de prova, sincronização offline e dados acessados por Actions.
 - **Aceite / publicação**: não emitidos. Plano aberto.

@@ -39,6 +39,7 @@
 | [Plano da frente: Landing dos serviços da Prô Josy](plans/2026-11-03-plan-landing-servicos-josy.md) | Plano vivo das decisões do grill de 2026-11-03: landing estática autocontida em `landing/` para alunos finais, com placeholders tipados e link no rodapé por último (T02) | Para executar, validar e registrar os cartões T01–T02 |
 | [Plano cancelado: Sinalização técnica de atualizações](plans/2026-11-03-plan-atualizacao-app.md) | Histórico da proposta de detecção de versão e recarga; cancelado após o objetivo ser esclarecido. Risco existente do worker não corrigido | Para consultar o contexto, sem executar seus cartões |
 | [Plano da frente: Comunicados de novidades](plans/2026-11-03-plan-comunicados-novidades.md) | Decisões e investigação para apresentar comunicados de novidades e correções, com histórico e dispensa por conta | Para acompanhar a frente, o [diagnóstico](diagnostics/2026-11-03-diag-comunicados-novidades.md) e o [benchmark](reference/benchmark-comunicados-novidades.md) |
+| [Diagnóstico: compatibilidade para comunicados](diagnostics/2026-11-03-diag-compatibilidade-comunicados.md) | Investigação T01: prova de identidade do código executado, cache do worker, cabeçalhos publicados, cliente antigo e correção de backend | Antes de aprovar contrato ou implementar comunicados; contém as perguntas P1–P6 ainda sem decisão |
 
 ---
 
