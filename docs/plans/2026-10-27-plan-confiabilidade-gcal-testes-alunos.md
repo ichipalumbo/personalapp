@@ -1,6 +1,6 @@
 # Plano — Confiabilidade de Sincronização (GCal/Sessão), Blindagem Financeira e Operação Rápida em Alunos
 
-> **Status**: `Em execução` — T00, T01 e T02 concluídos; T03–T06 aguardando execução
+> **Status**: `Em execução` — T00, T01, T02 e T03 concluídos; T04–T06 aguardando execução
 > **Abertura**: 2026-10-27
 > **Atualizado**: 2026-11-03
 > **Responsável**: Luccas (dono) + agente
@@ -26,7 +26,7 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - [x] **Documental (T00)**: planos concluídos (`2026-10-17-plan-aplicacao-identidade-visual.md` e `2026-10-26-plan-ui-otimista.md`) arquivados em [`docs/archive/plans/`](../archive/plans/) com links preservados; [`docs/roadmap-v3.md`](../roadmap-v3.md) atualizado com o item `5.11` e com as decisões desta frente.
 - [x] **Sessão e Boot (T01 — Item `2.2` + Risco `1.3`)**: perfil derivado diretamente do JWT válido em `gis_session_cache` (impedindo exibir conta A enquanto assina requisições com conta B no celular); gatilhos de sincronização e renovação do canal GCal coordenados de forma idempotente por `ownerEmail` entre boot, restauração tardia de sessão (`auth-change`) e retorno à aba (`visibilitychange`), preservando integralmente o B2 (`2.4`).
 - [x] **GCal fora do caminho crítico na Vercel (T02 — antigo `T04`)**: `POST`/`PUT`/`DELETE /api/agendamentos` confirmam imediatamente no MongoDB (`gcalStatus: 'pendente'` em criações/edições; deleção imediata no Mongo + registro em `GcalReconciliationQueue` pelo **Outbox Pattern** no `DELETE`); flush dedicado pós-save sincroniza os itens pendentes com o Google Calendar sem risco de congelamento de Lambda na Vercel e mantém os toasts de falha parcial (`gcalSyncFailed` / `tokenExpired`).
-- [ ] **Janela de Full Sync e Data Base (T03 — Item `2.3` + Risco `1.1`)**: modo full de `listCalendarEvents` ampliado de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]`, com reconciliação restrita à mesma janela; `gcalSyncService.js` alinhado à precedência canônica de data base de `recurrence-helpers.js` (`dataCriacao || recorrenciaDataInicio || data`), sem alterar o motor financeiro.
+- [x] **Janela de Full Sync e Data Base (T03 — Item `2.3` + Risco `1.1`)**: modo full de `listCalendarEvents` ampliado de `[-1 mês, +2 meses]` para `[-1 mês, +6 meses]`, com reconciliação restrita à mesma janela; `gcalSyncService.js` alinhado à precedência canônica de data base de `recurrence-helpers.js` (`dataCriacao || recorrenciaDataInicio || data`), sem alterar o motor financeiro.
 - [ ] **Contratos e Riscos (T04)**: [`docs/specs/gcal-sync.md`](../specs/gcal-sync.md) e [`docs/reference/lessons-learned.md`](../reference/lessons-learned.md) atualizados refletindo o desacoplamento do CRUD, o Outbox no `DELETE`, a nova janela `[-1m, +6m]` e o encerramento dos riscos `1.1` e `1.3`.
 - [ ] **Blindagem Financeira e de Reposições (T05 — Item `3.1`)**: lacunas inventariadas nas regras financeiras/reposições e os 2 gatilhos otimistas de reposição (enviar para reposição e reagendar reposição) cobertos por testes automatizados provados por mutação.
 - [ ] **Operação Rápida em Alunos (T06 — Itens `1.7` e `1.4`)**: busca textual instantânea somente por nome na lista de alunos (`1.7`) e botão de atalho WhatsApp (`wa.me/55...` para números nacionais de 10–11 dígitos, oculto/desabilitado quando telefone ausente ou inválido, `1.4`).
@@ -172,7 +172,7 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
   1. Em `listCalendarEvents` (`gcalSyncService.js`): alterar `timeMax` de `+2 meses` para `+6 meses`, mantendo `timeMin` em `-1 mês` e o purge de `BloqueioExterno` restrito a `isBloqueioDentroDaJanela`.
   2. Em `gcalSyncService.js`: alinhar a resolução da data base à ordem canônica de `recurrence-helpers.js` (`dataCriacao || recorrenciaDataInicio || data`).
 - **Não inclui**: alterar a lógica de `recurrence-helpers.js` usada pelo financeiro/agenda nem alterar o comportamento de fallback de data inválida (Risco `1.2`, mantido separado para não quebrar testes existentes sem decisão específica).
-- **Decisões pendentes / bloqueios**: confirmar aviso de área sensível (`gcalSyncService.js`) antes de editar.
+- **Decisões pendentes / bloqueios**: nenhum — aviso de área sensível (`gcalSyncService.js` e `recurrence-helpers.js`) confirmado pelo dono antes da edição.
 - **Critérios de aceite**:
   - `listCalendarEvents` sem `syncToken` consulta `timeMin = -1 mês` e `timeMax = +6 meses`;
   - Agendamento com `dataCriacao` e `recorrenciaDataInicio` distintos resolve a mesma data base em `recurrence-helpers.js` e em `gcalSyncService.js`.
@@ -258,6 +258,9 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 | **M4 (T02 — `agendamentoController.js`)**: desativar o upsert do Outbox em `excluirAgendamento` (`if (googleCalendarEventId && false)`), mantendo a deleção imediata no Mongo | `...enfileira na GcalReconciliationQueue e flush remove do Google`, `...trata 404/410 do Google como sucesso...` e `...quando o Google falha com 500...` | Falharam `3/8` (a ordem `['mongo','queue-outbox','google','queue-remove']` deixou de existir e a fila nunca foi populada) | Sim |
 | **M5 (T02 — `storage.js`)**: desativar o flush pós-CRUD (`if (precisaFlushGcal && false)`) | `T02-01` e `T02-02` em `tests-frontend/t02-flush-gcal-storage.test.js` | Ambos falharam (`0/2`): nenhuma chamada a `POST /api/agendamentos/flush-gcal` e `gcalSyncFailed` não propagado | Sim |
 | **M6 (T02 — `storage.js`)**: manter o flush mas remover a mesclagem de `googleCalendarEventId` retornado por ele | `T02-01` em `tests-frontend/t02-flush-gcal-storage.test.js` | Falhou (`1/2`): o agendamento local ficou sem `googleCalendarEventId`, enquanto `T02-02` (que não depende da mesclagem) continuou passando | Sim |
+| **M7 (T03 — `gcalSyncService.js`)**: regredir `timeMax` do full sync de `+6` para `+2` meses | `T03-01` e `T03-02` em `backend/test/t03-janela-fullsync-data-base.test.js` | Ambos falharam (`2/5`, restaram 3 verdes): `timeMax` veio com ~61 dias em vez de ~182 | Sim |
+| **M8 (T03 — `gcalSyncService.js`)**: trocar `resolverDataBaseRecorrencia` para a precedência antiga (`recorrenciaDataInicio \|\| data \|\| dataCriacao`) | `T03-04` em `backend/test/t03-janela-fullsync-data-base.test.js` | Falhou (`1/5`): o RRULE saiu com `BYMONTH=4;BYMONTHDAY=20` (de `recorrenciaDataInicio`) em vez de `BYMONTH=3;BYMONTHDAY=15` (de `dataCriacao`) | Sim |
+| **M9 (T03 — `recurrence-helpers.js`)**: inverter a ordem do helper canônico para `data \|\| recorrenciaDataInicio \|\| dataCriacao` | `T03-03`, `T03-04` e `T03-05` em `backend/test/t03-janela-fullsync-data-base.test.js` | Falharam `3/5`: a precedência canônica e os dois consumidores no `gcalSyncService` divergiram | Sim |
 
 ---
 
@@ -301,6 +304,17 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 - **Desvio do plano**: as 5 falhas encontradas no baseline do `backend/` não eram do T02 — vinham de asserções de rollback otimista anteriores ao PR #77. Com autorização do dono, foram atualizadas no lugar em vez de ignoradas, porque cobrem rollback de série (`occurrence` e `fromDate`) que nenhuma outra suíte exercita.
 - **Decisão adicional tomada**: o flush em `storage.js` só dispara quando a resposta do CRUD traz `gcalStatus: 'pendente'` ou `queuedForGcalDelete: true`, o que mantém compatibilidade com harnesses sintéticos de teste que não conhecem a rota nova.
 
+### 2026-11-03 — T03 (Janela do full sync `[-1m, +6m]` e precedência canônica da data base)
+- **Arquivos alterados**:
+  - `backend/shared/recurrence-helpers.js`: extraída `resolverDataBaseCompromisso(comp)` com a precedência canônica `dataCriacao || recorrenciaDataInicio || data`; `resolverCompromissoRecorrenteNaData` passou a consumi-la em vez de repetir a expressão, e o helper foi exportado. Refatoração sem mudança de comportamento — o motor financeiro/agenda continua idêntico;
+  - `backend/src/services/gcalSyncService.js`: novo adaptador `resolverDataBaseRecorrencia(agendamento)`, que consome o helper canônico e devolve a mesma `Date` em UTC-12h que o restante do serviço usa; **os 6 pontos** que resolviam a data base com a ordem divergente (`resolverDataInicioAlinhada`, `dtstartAlinhadoUltrapassaUntil`, `montarExdatesDeAgendamento`, `BYMONTHDAY` de mensal, `BYMONTH/BYMONTHDAY` de anual e `UNTL` de `monthOfDate`) passaram a usar o adaptador; `timeMax` do full sync ampliado de `+2` para `+6` meses, com `timeMin` mantido em `-1` mês e o purge de `BloqueioExterno` continuando restrito a `isBloqueioDentroDaJanela`;
+  - `backend/test/t03-janela-fullsync-data-base.test.js` (criado): 5 testes — janela do full sync (`T03-01`), ausência de regressão para `+2` meses (`T03-02`), precedência canônica no helper compartilhado (`T03-03`) e equivalência entre `gcalSyncService` e `recurrence-helpers` com campos divergentes (`T03-04` e `T03-05`);
+  - `docs/plans/2026-10-27-plan-confiabilidade-gcal-testes-alunos.md`: atualizado com este registro, as mutações M7–M9 e o fechamento do cartão.
+- **Resultado**: T03 concluído; o Risco `1.1` (duas implementações da mesma precedência) deixa de existir porque a ordem agora vive apenas em `recurrence-helpers.js`. O Risco `1.2` (fallback silencioso para "hoje" em data inválida) permanece intacto, como previsto no cartão.
+- **Suíte antes/depois**: `backend/` antes `245/245` → depois `250/250` passando; `tests-frontend/` antes `493/493` → depois `493/493` passando (nenhuma regressão no motor compartilhado).
+- **Desvio do plano**: a única diferença em relação ao cartão é que a correção da precedência não ficou restrita ao `gcalSyncService.js`: para cumprir a regra 4.3, a ordem canônica foi extraída para o módulo compartilhado e o serviço passou a consumi-la. Autorizado pelo dono antes da edição.
+- **Decisão adicional tomada**: os 6 pontos do `gcalSyncService.js` foram unificados num adaptador único (e não apenas reordenados um a um), para que a divergência não possa voltar por edição parcial.
+
 ---
 
 ## 13. Achados não alterados
@@ -326,8 +340,8 @@ Executar a sequência priorizada para o uso diário da Prô Josy após a entrega
 
 ## 15. Fechamento
 
-- **Critérios atendidos**: `em andamento` (T00, T01 e T02 concluídos).
-- **Implementação / validação / aceite / publicação**: T00, T01 e T02 implementados e validados localmente; T03–T06 pendentes de execução.
-- **Pendências**: executar T03 a T06 nas próximas rodadas. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção.
+- **Critérios atendidos**: `em andamento` (T00, T01, T02 e T03 concluídos).
+- **Implementação / validação / aceite / publicação**: T00, T01, T02 e T03 implementados e validados localmente; T04–T06 pendentes de execução.
+- **Pendências**: executar T04 a T06 nas próximas rodadas. O T02 depende de deploy coordenado (backend antes do frontend) para valer em produção.
 - **Riscos aceitos**: nenhum adicional até o momento.
 - **Data de fechamento**: `em aberto`

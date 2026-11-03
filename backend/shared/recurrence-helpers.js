@@ -38,10 +38,15 @@
         return null;
     }
 
-    function resolverCompromissoRecorrenteNaData(comp, dataAlvo, diaTexto) {
-        const dataCriacao = parseDataFlex(comp && comp.dataCriacao)
+    // Precedência canônica da data base de um compromisso (agenda e GCal usam esta função).
+    function resolverDataBaseCompromisso(comp) {
+        return parseDataFlex(comp && comp.dataCriacao)
             || parseDataFlex(comp && comp.recorrenciaDataInicio)
             || parseDataFlex(comp && comp.data);
+    }
+
+    function resolverCompromissoRecorrenteNaData(comp, dataAlvo, diaTexto) {
+        const dataCriacao = resolverDataBaseCompromisso(comp);
         if (!dataCriacao) return false;
 
         const dataRef = new Date(dataAlvo.getFullYear(), dataAlvo.getMonth(), dataAlvo.getDate());
@@ -211,6 +216,7 @@
     return {
         DEFAULT_DIAS_SEMANA,
         parseDataFlex,
+        resolverDataBaseCompromisso,
         resolverCompromissoRecorrenteNaData,
         checarCompromissoNaData,
         getDiasNoMes,
